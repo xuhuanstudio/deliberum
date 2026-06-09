@@ -52,7 +52,14 @@ importers:
 
   packages/client: {}
 
-  packages/core: {}
+  packages/core:
+    dependencies:
+      '@deliberum/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@deliberum/storage':
+        specifier: workspace:*
+        version: link:../storage
 
   packages/protocol:
     dependencies:

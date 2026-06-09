@@ -17,5 +17,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@deliberum/protocol": "workspace:*",
+    "@deliberum/storage": "workspace:*"
   }
 }

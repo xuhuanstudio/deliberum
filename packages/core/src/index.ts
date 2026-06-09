@@ -1,1 +1,2 @@
-export const workspacePackage = "@deliberum/core" as const;
+export * from "./errors";
+export * from "./session";
