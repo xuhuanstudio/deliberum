@@ -67,3 +67,31 @@ export class UnsupportedRevealPolicyError extends CoreError {
     this.name = "UnsupportedRevealPolicyError";
   }
 }
+
+export class InvalidExtractionProposalInputError extends CoreError {
+  constructor(message = "Invalid extraction proposal input.") {
+    super(message);
+    this.name = "InvalidExtractionProposalInputError";
+  }
+}
+
+export class ExtractionProposalNotFoundError extends CoreError {
+  constructor(eventId: string) {
+    super(`Extraction proposal event not found: ${eventId}`);
+    this.name = "ExtractionProposalNotFoundError";
+  }
+}
+
+export class ExtractionSourceEventNotFoundError extends CoreError {
+  constructor(eventId: string) {
+    super(`Extraction source event not found in session: ${eventId}`);
+    this.name = "ExtractionSourceEventNotFoundError";
+  }
+}
+
+export class InvalidExtractionProposalTargetError extends CoreError {
+  constructor(message = "Invalid extraction proposal target.") {
+    super(message);
+    this.name = "InvalidExtractionProposalTargetError";
+  }
+}

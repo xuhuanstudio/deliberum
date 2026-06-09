@@ -624,8 +624,7 @@ describe("sealed divergence lifecycle", () => {
 });
 
 describe("core sealed divergence architecture surface", () => {
-  it("does not export extraction, ranking, frontier, objection ledger, projection, judge, vote, chat, adapter, daemon, CLI, WebGET, or Web UI APIs", () => {
-    expect("ExtractionProposal" in core).toBe(false);
+  it("does not export ranking, frontier, objection ledger, projection, judge, vote, chat, adapter, daemon, CLI, WebGET, or Web UI APIs", () => {
     expect("RankingEngine" in core).toBe(false);
     expect("CandidateFrontier" in core).toBe(false);
     expect("ObjectionLedger" in core).toBe(false);

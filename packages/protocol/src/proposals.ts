@@ -1,6 +1,13 @@
 import { z } from "zod";
-import { IdSchema, NonEmptyStringSchema } from "./common";
+import { IdSchema, NonEmptyStringSchema, SourceEventIdsSchema } from "./common";
 import { BudgetLeaseSchema } from "./core";
+import {
+  CandidateSchema,
+  ClaimSchema,
+  EvidenceNeedSchema,
+  ObjectionSchema,
+  QualityObligationSchema
+} from "./deliberation";
 
 export const SemanticProposalStatusSchema = z.enum([
   "proposed",
@@ -44,6 +51,68 @@ export const SummaryProposalSchema = z
   })
   .strict();
 export type SummaryProposal = z.infer<typeof SummaryProposalSchema>;
+
+const NonEmptySourceEventIdsSchema = SourceEventIdsSchema.min(1);
+
+export const ExtractionCandidateSchema = CandidateSchema.extend({
+  sourceEventIds: NonEmptySourceEventIdsSchema
+}).strict();
+export type ExtractionCandidate = z.infer<typeof ExtractionCandidateSchema>;
+
+export const ExtractionClaimSchema = ClaimSchema.extend({
+  sourceEventIds: NonEmptySourceEventIdsSchema
+}).strict();
+export type ExtractionClaim = z.infer<typeof ExtractionClaimSchema>;
+
+export const ExtractionObjectionSchema = ObjectionSchema.extend({
+  sourceEventIds: NonEmptySourceEventIdsSchema
+}).strict();
+export type ExtractionObjection = z.infer<typeof ExtractionObjectionSchema>;
+
+export const ExtractionEvidenceNeedSchema = EvidenceNeedSchema.extend({
+  sourceEventIds: NonEmptySourceEventIdsSchema
+}).strict();
+export type ExtractionEvidenceNeed = z.infer<typeof ExtractionEvidenceNeedSchema>;
+
+export const ExtractionQualityObligationSchema = QualityObligationSchema.extend({
+  sourceEventIds: NonEmptySourceEventIdsSchema
+}).strict();
+export type ExtractionQualityObligation = z.infer<typeof ExtractionQualityObligationSchema>;
+
+export const ExtractionProposalSchema = z
+  .object({
+    id: IdSchema,
+    sourceEventIds: NonEmptySourceEventIdsSchema,
+    candidates: z.array(ExtractionCandidateSchema),
+    claims: z.array(ExtractionClaimSchema),
+    objections: z.array(ExtractionObjectionSchema),
+    evidenceNeeds: z.array(ExtractionEvidenceNeedSchema),
+    qualityObligations: z.array(ExtractionQualityObligationSchema),
+    rationale: NonEmptyStringSchema,
+    status: SemanticProposalStatusSchema
+  })
+  .strict();
+export type ExtractionProposal = z.infer<typeof ExtractionProposalSchema>;
+
+export const ProposalChallengePayloadSchema = z
+  .object({
+    id: IdSchema,
+    targetProposalEventId: IdSchema,
+    reason: NonEmptyStringSchema,
+    status: z.literal("challenged")
+  })
+  .strict();
+export type ProposalChallengePayload = z.infer<typeof ProposalChallengePayloadSchema>;
+
+export const ProposalAcceptancePayloadSchema = z
+  .object({
+    id: IdSchema,
+    targetProposalEventId: IdSchema,
+    rationale: NonEmptyStringSchema,
+    status: z.literal("accepted_for_now")
+  })
+  .strict();
+export type ProposalAcceptancePayload = z.infer<typeof ProposalAcceptancePayloadSchema>;
 
 export const MergeProposalSchema = z
   .object({
@@ -90,4 +159,3 @@ export const FinalDraftProposalSchema = z
   })
   .strict();
 export type FinalDraftProposal = z.infer<typeof FinalDraftProposalSchema>;
-

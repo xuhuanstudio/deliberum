@@ -140,7 +140,8 @@ export const EvidenceNeedSchema = z
     requiredKind: EvidenceNeedRequiredKindSchema,
     reason: NonEmptyStringSchema,
     priority: EvidenceNeedPrioritySchema,
-    status: EvidenceNeedStatusSchema
+    status: EvidenceNeedStatusSchema,
+    sourceEventIds: SourceEventIdsSchema
   })
   .strict();
 export type EvidenceNeed = z.infer<typeof EvidenceNeedSchema>;
@@ -157,4 +158,3 @@ export const EvidenceResultSchema = z
   })
   .strict();
 export type EvidenceResult = z.infer<typeof EvidenceResultSchema>;
-

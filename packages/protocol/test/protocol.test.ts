@@ -224,6 +224,116 @@ describe("proposal objects", () => {
     ).toBe(true);
   });
 
+  it("keeps extraction proposals status-bearing and source-traceable", () => {
+    const claim: protocol.ExtractionClaim = {
+      id: "claim-1",
+      content: "A factual claim",
+      scope: "factual",
+      sourceEventIds: ["event-1"]
+    };
+    const objection: protocol.ExtractionObjection = {
+      id: "objection-1",
+      targetId: "candidate-a",
+      failureMode: "Failure mode",
+      consequence: "Consequence",
+      severityClaim: "major",
+      status: "open",
+      sourceEventIds: ["event-1"]
+    };
+    const evidenceNeed: protocol.ExtractionEvidenceNeed = {
+      id: "evidence-need-1",
+      targetClaimId: "claim-1",
+      requiredKind: "web",
+      reason: "Verify the claim",
+      priority: "high",
+      status: "open",
+      sourceEventIds: ["event-1"]
+    };
+    const qualityObligation: protocol.ExtractionQualityObligation = {
+      id: "quality-obligation-1",
+      scope: "candidate",
+      targetCandidateId: "candidate-a",
+      requirement: "Address the failure mode",
+      status: "unanswered",
+      sourceEventIds: ["event-1"],
+      supportingRefIds: [],
+      unresolvedObjectionIds: ["objection-1"]
+    };
+
+    expect(
+      protocol.ExtractionProposalSchema.safeParse({
+        id: "extraction-proposal-1",
+        sourceEventIds: ["event-1"],
+        candidates: [candidateA],
+        claims: [claim],
+        objections: [objection],
+        evidenceNeeds: [evidenceNeed],
+        qualityObligations: [qualityObligation],
+        rationale: "Extraction rationale",
+        status: "proposed"
+      }).success
+    ).toBe(true);
+
+    expect(
+      protocol.ExtractionProposalSchema.safeParse({
+        id: "extraction-proposal-1",
+        sourceEventIds: ["event-1"],
+        candidates: [{ ...candidateA, sourceEventIds: [] }],
+        claims: [],
+        objections: [],
+        evidenceNeeds: [],
+        qualityObligations: [],
+        rationale: "Extraction rationale",
+        status: "proposed"
+      }).success
+    ).toBe(false);
+  });
+
+  it("requires EvidenceNeed source event references", () => {
+    expect(
+      protocol.EvidenceNeedSchema.safeParse({
+        id: "evidence-need-1",
+        targetClaimId: "claim-1",
+        requiredKind: "web",
+        reason: "Verify the claim",
+        priority: "high",
+        status: "open",
+        sourceEventIds: ["event-1"]
+      }).success
+    ).toBe(true);
+
+    expect(
+      protocol.EvidenceNeedSchema.safeParse({
+        id: "evidence-need-1",
+        targetClaimId: "claim-1",
+        requiredKind: "web",
+        reason: "Verify the claim",
+        priority: "high",
+        status: "open"
+      }).success
+    ).toBe(false);
+  });
+
+  it("validates proposal challenge and acceptance lifecycle payloads", () => {
+    expect(
+      protocol.ProposalChallengePayloadSchema.safeParse({
+        id: "challenge-1",
+        targetProposalEventId: "proposal-event-1",
+        reason: "Challenge reason",
+        status: "challenged"
+      }).success
+    ).toBe(true);
+
+    expect(
+      protocol.ProposalAcceptancePayloadSchema.safeParse({
+        id: "acceptance-1",
+        targetProposalEventId: "proposal-event-1",
+        rationale: "Accepted for now",
+        status: "accepted_for_now"
+      }).success
+    ).toBe(true);
+  });
+
   it("rejects truth-like fields on strict proposal objects", () => {
     expect(
       protocol.FinalDraftProposalSchema.safeParse({
