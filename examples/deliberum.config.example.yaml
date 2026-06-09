@@ -1,0 +1,46 @@
+session:
+  name: example-deliberation
+  allow_forks: true
+  default_budget:
+    max_model_calls: 80
+    max_wall_time: 30m
+
+models:
+  - id: api-model-a
+    kind: model
+    adapter: openai-compatible
+    model: example-model
+    base_url: https://api.example.com/v1
+    api_key_env: EXAMPLE_API_KEY
+    capabilities:
+      text: true
+      structured_output: true
+      image_base64: false
+
+  - id: web-only-model
+    kind: model
+    adapter: webget
+    transport:
+      submit_via_get: true
+      manual_paste_fallback: true
+      max_url_chars: 1800
+      chunk_size_chars: 1200
+    resources:
+      image:
+        mode: url
+        fallback: none
+      pdf:
+        mode: url
+        fallback: text_summary
+    network:
+      can_access_public_url: true
+      can_access_lan_url: false
+      can_access_localhost: false
+
+resource_server:
+  enabled: true
+  exposure: localhost
+  signed_urls: true
+  ttl_seconds: 900
+  require_confirmation_for_public: true
+  allow_public_sensitive: false
