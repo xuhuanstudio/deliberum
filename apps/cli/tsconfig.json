@@ -6,7 +6,8 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules"]

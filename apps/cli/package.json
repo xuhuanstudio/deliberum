@@ -6,10 +6,18 @@
   "license": "Apache-2.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "deliberum": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@deliberum/core": "workspace:*",
+    "@deliberum/protocol": "workspace:*",
+    "@deliberum/storage": "workspace:*"
   }
 }
