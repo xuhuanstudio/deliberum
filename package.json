@@ -8,11 +8,16 @@
     "pnpm": ">=11.0.0"
   },
   "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck",
-    "format": "pnpm -r format",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "build": "corepack pnpm -r build",
+    "test": "corepack pnpm -r test",
+    "lint": "corepack pnpm -r lint",
+    "typecheck": "corepack pnpm -r typecheck",
+    "format": "corepack pnpm -r --if-present format",
+    "ci": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   }
 }
