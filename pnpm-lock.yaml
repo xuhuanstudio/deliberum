@@ -62,7 +62,11 @@ importers:
 
   packages/resources: {}
 
-  packages/storage: {}
+  packages/storage:
+    dependencies:
+      '@deliberum/protocol':
+        specifier: workspace:*
+        version: link:../protocol
 
   packages/ui: {}
 

@@ -1,1 +1,4 @@
-export const workspacePackage = "@deliberum/storage" as const;
+export * from "./errors";
+export * from "./event-store";
+export * from "./immutable";
+export * from "./in-memory-event-store";
