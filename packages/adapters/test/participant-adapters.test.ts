@@ -16,10 +16,9 @@ const context = {
 };
 
 describe("Participant adapters", () => {
-  it("exposes a provider-neutral adapter surface", () => {
+  it("exposes only approved adapter surfaces", () => {
     const exportedNames = Object.keys(adapters);
     const forbiddenExportTerms = [
-      "OpenAI",
       "MCP",
       "WebGET",
       "Daemon",
@@ -38,7 +37,11 @@ describe("Participant adapters", () => {
     ];
 
     expect(exportedNames).toEqual(
-      expect.arrayContaining(["FakeParticipantAdapter", "ManualParticipantAdapter"])
+      expect.arrayContaining([
+        "FakeParticipantAdapter",
+        "ManualParticipantAdapter",
+        "OpenAICompatibleParticipantAdapter"
+      ])
     );
     for (const exportedName of exportedNames) {
       for (const forbiddenTerm of forbiddenExportTerms) {
