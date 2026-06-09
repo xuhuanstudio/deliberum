@@ -68,7 +68,12 @@ export type SealedBatchPurpose = z.infer<typeof SealedBatchPurposeSchema>;
 export const SealedBatchStatusSchema = z.enum(["open", "sealed", "revealed", "cancelled"]);
 export type SealedBatchStatus = z.infer<typeof SealedBatchStatusSchema>;
 
-export const SealedBatchRevealPolicySchema = z.enum(["all_completed", "quorum", "deadline"]);
+export const SealedBatchRevealPolicySchema = z.enum([
+  "all_completed",
+  "quorum",
+  "deadline",
+  "manual"
+]);
 export type SealedBatchRevealPolicy = z.infer<typeof SealedBatchRevealPolicySchema>;
 
 export const SealedBatchSchema = z

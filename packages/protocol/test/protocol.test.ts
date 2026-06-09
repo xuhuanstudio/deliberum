@@ -293,3 +293,21 @@ describe("session lifecycle", () => {
     );
   });
 });
+
+describe("sealed batch reveal policy", () => {
+  it("accepts manual, quorum, and deadline reveal policy values", () => {
+    for (const revealPolicy of ["manual", "quorum", "deadline"] as const) {
+      expect(
+        protocol.SealedBatchSchema.safeParse({
+          id: `batch-${revealPolicy}`,
+          sessionId: "session-1",
+          purpose: "initial_divergence",
+          status: "open",
+          participantIds: [],
+          openedAt: "2026-06-10T00:00:00.000Z",
+          revealPolicy
+        }).success
+      ).toBe(true);
+    }
+  });
+});
