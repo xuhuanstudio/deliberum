@@ -152,11 +152,7 @@ describe("createSession", () => {
 });
 
 describe("core architecture surface", () => {
-  it("does not export projection, frontier, judge, vote, current-best, ranker, truth-summary, or chat APIs", () => {
-    expect("CandidateFrontier" in core).toBe(false);
-    expect("CandidateFrontierSchema" in core).toBe(false);
-    expect("Projection" in core).toBe(false);
-    expect("ProjectionSchema" in core).toBe(false);
+  it("does not export judge, vote, current-best, ranker, truth-summary, or chat APIs", () => {
     expect("Judge" in core).toBe(false);
     expect("JudgeSchema" in core).toBe(false);
     expect("VoteWinner" in core).toBe(false);

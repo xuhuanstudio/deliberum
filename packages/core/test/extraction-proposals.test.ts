@@ -550,11 +550,10 @@ describe("extraction proposal lifecycle", () => {
 });
 
 describe("core extraction architecture surface", () => {
-  it("exports extraction APIs but not frontier, ranking, judge, vote, chat, adapter, daemon, CLI, WebGET, or Web UI APIs", () => {
+  it("exports extraction APIs but not ranking, judge, vote, chat, adapter, daemon, CLI, WebGET, or Web UI APIs", () => {
     expect("proposeExtraction" in core).toBe(true);
     expect("challengeProposal" in core).toBe(true);
     expect("acceptProposal" in core).toBe(true);
-    expect("CandidateFrontier" in core).toBe(false);
     expect("RankingEngine" in core).toBe(false);
     expect("Judge" in core).toBe(false);
     expect("VoteWinner" in core).toBe(false);

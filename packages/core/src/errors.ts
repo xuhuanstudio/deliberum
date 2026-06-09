@@ -95,3 +95,10 @@ export class InvalidExtractionProposalTargetError extends CoreError {
     this.name = "InvalidExtractionProposalTargetError";
   }
 }
+
+export class InvalidProjectionInputError extends CoreError {
+  constructor(message = "Invalid projection input.") {
+    super(message);
+    this.name = "InvalidProjectionInputError";
+  }
+}
