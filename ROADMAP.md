@@ -6,7 +6,7 @@ Deliberum is not an MVP-first project. The implementation is staged, but each st
 
 ## Current Implementation Status
 
-Implemented through Stage 15B:
+Implemented through Stage 15B runtime plus Stage 16 public-readiness hardening:
 
 - TypeScript monorepo with protocol, core, storage, adapters, resources, client, UI, CLI, daemon, and Web packages.
 - Runtime-validated protocol schemas for events, Topic Contracts, participants, sealed batches, deliberation objects, proposals, references, resources, final audit, and outcome compilation.

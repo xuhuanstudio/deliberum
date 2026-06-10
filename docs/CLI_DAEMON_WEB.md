@@ -18,7 +18,7 @@ The event ledger and derived projections remain the source of truth. The CLI, da
 
 ## CLI
 
-The Stage 15B CLI uses a local JSON EventStore at `.deliberum/events.json` by default. It supports `--store <path>` and `DELIBERUM_STORE` for explicit local storage. The JSON store is CLI-local, validates persisted ledgers on load, and is not daemon storage.
+The current CLI uses a local JSON EventStore at `.deliberum/events.json` by default. It supports `--store <path>` and `DELIBERUM_STORE` for explicit local storage. The JSON store is CLI-local, validates persisted ledgers on load, and is not daemon storage.
 
 Implemented commands:
 
@@ -40,7 +40,7 @@ CLI view commands return structured JSON. `frontier`, `objections`, and `obligat
 
 ## Daemon
 
-The Stage 15B daemon is a local Hono API. It binds to `127.0.0.1` by default, does not enable wildcard CORS by default, and uses a process-local `InMemoryEventStore`. State resets when the daemon process restarts.
+The current daemon is a local Hono API. It binds to `127.0.0.1` by default, does not enable wildcard CORS by default, and uses a process-local `InMemoryEventStore`. State resets when the daemon process restarts.
 
 Implemented endpoints:
 
@@ -75,6 +75,6 @@ Deferred daemon work includes persistent SQLite storage, final outcome endpoints
 
 ## Web UI
 
-The Stage 15B Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, final placeholder, and resources placeholder.
+The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, final placeholder, and resources placeholder.
 
 The Web UI does not own semantic deliberation state, implement Candidate Frontier logic, run adapters, serve resources, or compile final outcomes. Final and resource pages currently explain that core packages exist, but daemon/Web live integration for those pages is deferred.

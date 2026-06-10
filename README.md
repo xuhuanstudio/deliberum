@@ -89,7 +89,7 @@ examples/
 
 ## Status
 
-Deliberum is implemented through the Stage 15B stabilization pass. It is still a pre-production local-first codebase, not a production deployment or public hosted service.
+Deliberum is implemented through the Stage 15B runtime plus Stage 16 public-readiness hardening. It is still a pre-production local-first codebase, not a production deployment or public hosted service.
 
 Implemented today:
 

@@ -17,6 +17,6 @@
 
 ## 当前状态
 
-当前实现已经覆盖到 Stage 15B：协议 schema、追加式事件账本、Topic Contract、密封发散、Extraction Proposal、候选前沿/异议/质量义务投影、CLI、本地 daemon、Web UI 壳、参与者 adapter 接口、OpenAI-compatible adapter、Resource Broker / Delivery Planner、实验性 WebGET、本地 Outcome Compiler，以及投影元数据和安全加固。
+当前实现已经覆盖 Stage 15B runtime，并完成 Stage 16 public-readiness hardening：协议 schema、追加式事件账本、Topic Contract、密封发散、Extraction Proposal、候选前沿/异议/质量义务投影、CLI、本地 daemon、Web UI 壳、参与者 adapter 接口、OpenAI-compatible adapter、Resource Broker / Delivery Planner、实验性 WebGET、本地 Outcome Compiler，以及投影元数据和安全加固。
 
 项目仍然是本地优先、预生产状态。尚未实现的部分包括：daemon 持久化 SQLite、daemon final/resource endpoints、Web final/resource live pages、完整自适应原语调度器、公开/签名资源托管、MCP adapter、HTTP-template adapter，以及生产级认证和多人部署。
