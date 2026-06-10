@@ -21,6 +21,7 @@ import {
 import { InMemoryEventStore, type EventStore, type StoredEvent } from "@deliberum/storage";
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
+import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { DaemonEventBus } from "./event-stream";
@@ -78,6 +79,8 @@ export type SafeErrorResponse = {
     message: string;
   };
 };
+
+const LOCAL_WEB_DEV_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"];
 
 class DaemonHttpError extends Error {
   readonly code: string;
@@ -137,6 +140,15 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     handleWebGETRouteError(context, error) ??
     handleRunRouteError(context, error) ??
     safeError(context, error)
+  );
+
+  app.use(
+    "*",
+    cors({
+      origin: LOCAL_WEB_DEV_ORIGINS,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type"]
+    })
   );
 
   registerRunRoutes({

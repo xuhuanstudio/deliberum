@@ -867,6 +867,62 @@ describe("daemon API", () => {
     });
   });
 
+  it("allows only explicit local Web dev origins for CORS", async () => {
+    const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
+    const loopbackResponse = await daemonApp.app.request("/runs", {
+      headers: {
+        Origin: "http://127.0.0.1:5173"
+      }
+    });
+    const localhostResponse = await daemonApp.app.request("/runs", {
+      headers: {
+        Origin: "http://localhost:5173"
+      }
+    });
+    const remoteResponse = await daemonApp.app.request("/runs", {
+      headers: {
+        Origin: "https://example.com"
+      }
+    });
+
+    expect(loopbackResponse.status).toBe(200);
+    expect(loopbackResponse.headers.get("access-control-allow-origin")).toBe(
+      "http://127.0.0.1:5173"
+    );
+    expect(loopbackResponse.headers.get("access-control-allow-origin")).not.toBe("*");
+    expect(localhostResponse.status).toBe(200);
+    expect(localhostResponse.headers.get("access-control-allow-origin")).toBe(
+      "http://localhost:5173"
+    );
+    expect(localhostResponse.headers.get("access-control-allow-origin")).not.toBe("*");
+    expect(remoteResponse.status).toBe(200);
+    expect(remoteResponse.headers.get("access-control-allow-origin")).toBeNull();
+    expect(remoteResponse.headers.get("access-control-allow-origin")).not.toBe("*");
+    expect(remoteResponse.headers.get("access-control-allow-origin")).not.toBe(
+      "https://example.com"
+    );
+  });
+
+  it("handles local Web dev preflight for run requests without wildcard CORS", async () => {
+    const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
+    const response = await daemonApp.app.request("/runs", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://127.0.0.1:5173",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type"
+      }
+    });
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe(
+      "http://127.0.0.1:5173"
+    );
+    expect(response.headers.get("access-control-allow-origin")).not.toBe("*");
+    expect(response.headers.get("access-control-allow-methods")).toBe("GET,POST,OPTIONS");
+    expect(response.headers.get("access-control-allow-headers")).toBe("Content-Type");
+  });
+
   it("returns structured safe errors without stack traces or internals", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
     const response = await daemonApp.app.request("/sessions", {
