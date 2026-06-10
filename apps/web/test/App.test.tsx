@@ -483,6 +483,120 @@ describe("@deliberum/web shell", () => {
     );
   });
 
+  it("refreshes run projection panels after a successful start without page reload", async () => {
+    let started = false;
+    const initialProjection = {
+      version: "1" as const,
+      eventRange: {
+        fromSequence: 0,
+        toSequence: 0
+      },
+      eventIds: ["event-1"]
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        startRun: vi.fn(async () => {
+          started = true;
+
+          return {
+            run: {
+              ...runDetail,
+              status: "revealed"
+            },
+            stages: [
+              {
+                stage: "finalization",
+                executionStatus: "executed",
+                roundId: "final-round-1",
+                status: "completed",
+                eventIds: ["event-4"]
+              }
+            ],
+            stopped: false
+          };
+        }),
+        getFrontier: vi.fn(async () =>
+          started
+            ? {
+                basis: "accepted_active_candidates",
+                candidates: [
+                  {
+                    object: {
+                      id: "candidate-after-start",
+                      title: "Projection refreshed after start",
+                      status: "active"
+                    },
+                    proposalEventId: "proposal-after-start",
+                    sourceEventIds: ["event-4"]
+                  }
+                ],
+                projection
+              }
+            : {
+                basis: "accepted_active_candidates",
+                candidates: [],
+                projection: initialProjection
+              }
+        ),
+        getObjections: vi.fn(async () =>
+          started
+            ? {
+                objections: [
+                  {
+                    object: {
+                      id: "objection-after-start",
+                      failureMode: "Projection objection refreshed after start",
+                      status: "open"
+                    },
+                    proposalEventId: "proposal-after-start"
+                  }
+                ],
+                projection
+              }
+            : {
+                objections: [],
+                projection: initialProjection
+              }
+        ),
+        getObligations: vi.fn(async () =>
+          started
+            ? {
+                qualityObligations: [
+                  {
+                    object: {
+                      id: "quality-after-start",
+                      requirement: "Projection obligation refreshed after start",
+                      status: "unanswered"
+                    },
+                    proposalEventId: "proposal-after-start"
+                  }
+                ],
+                projection
+              }
+            : {
+                qualityObligations: [],
+                projection: initialProjection
+              }
+        )
+      })
+    );
+
+    await screen.findByText("No Candidate Frontier entries");
+    expect(screen.queryByText("Projection refreshed after start")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Start full local preset pipeline" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalled());
+    expect(await screen.findByText("Run request completed")).toBeTruthy();
+    expect(await screen.findByText("Projection refreshed after start")).toBeTruthy();
+    expect(screen.getByText("Projection objection refreshed after start")).toBeTruthy();
+    expect(screen.getByText("Projection obligation refreshed after start")).toBeTruthy();
+    expect(client.getFrontier).toHaveBeenCalledTimes(2);
+    expect(client.getObjections).toHaveBeenCalledTimes(2);
+    expect(client.getObligations).toHaveBeenCalledTimes(2);
+  });
+
   it("explains missing local preset components safely", async () => {
     const error = new Error("Required orchestration component is unavailable.");
     Object.assign(error, {

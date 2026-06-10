@@ -1,5 +1,10 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient
+} from "@tanstack/react-query";
 import {
   DataPanel,
   EmptyState,
@@ -205,7 +210,7 @@ export function RunDetailPage() {
           <RunSummary run={run} />
           <RunDetailGuide />
           <RunStageStatus run={run} />
-          <StartRunForm runId={runId} />
+          <StartRunForm runId={runId} sessionId={sessionId} />
           <DataPanel title="Run plan view">
             <JsonBlock value={sanitizeForDisplay(getRecordValue(run, "plan") ?? {})} />
           </DataPanel>
@@ -523,17 +528,18 @@ function StageStatusList({ stages }: { stages: Array<[string, unknown]> }) {
   );
 }
 
-function StartRunForm({ runId }: { runId: string }) {
+function StartRunForm({ runId, sessionId }: { runId: string; sessionId?: string }) {
   const { client } = useDaemonRuntime();
   const queryClient = useQueryClient();
   const [startRequestText, setStartRequestText] = useState(DEFAULT_START_REQUEST_TEXT);
   const [inputError, setInputError] = useState<string | null>(null);
   const startMutation = useMutation({
     mutationFn: (startRequest: Record<string, unknown>) => client.startRun(runId, startRequest),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["runs"] });
-      void queryClient.invalidateQueries({ queryKey: ["run", runId] });
-      void queryClient.invalidateQueries({ queryKey: ["run-outcome", runId] });
+    onSuccess: async (result) => {
+      const resultSessionId =
+        getStringRecordValue(getRecordValue(result, "run"), "sessionId") ?? sessionId;
+
+      await invalidateRunWorkspaceQueries(queryClient, runId, resultSessionId);
     }
   });
 
@@ -605,6 +611,31 @@ function StartRunForm({ runId }: { runId: string }) {
       {startMutation.data ? <StartResult result={startMutation.data} /> : null}
     </DataPanel>
   );
+}
+
+async function invalidateRunWorkspaceQueries(
+  queryClient: QueryClient,
+  runId: string,
+  sessionId?: string
+) {
+  const invalidations = [
+    queryClient.invalidateQueries({ queryKey: ["runs"] }),
+    queryClient.invalidateQueries({ queryKey: ["run", runId] }),
+    queryClient.invalidateQueries({ queryKey: ["run-outcome", runId] })
+  ];
+
+  if (sessionId) {
+    invalidations.push(
+      queryClient.invalidateQueries({ queryKey: ["run-frontier", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["run-objections", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["run-obligations", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["frontier", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["objections", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["obligations", sessionId] })
+    );
+  }
+
+  await Promise.all(invalidations);
 }
 
 function StartResult({ result }: { result: unknown }) {
