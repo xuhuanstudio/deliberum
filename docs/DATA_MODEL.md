@@ -44,6 +44,8 @@ type EventEnvelope<TPayload> = {
 }
 ```
 
+`eventHash` and `previousEventHash` are reserved for future tamper-evident ledger support. Current in-memory and CLI JSON stores do not compute cryptographic event hashes and should not be described as tamper-evident.
+
 ## TopicContract
 
 ```ts

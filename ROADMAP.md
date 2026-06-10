@@ -6,7 +6,7 @@ Deliberum is not an MVP-first project. The implementation is staged, but each st
 
 ## Current Implementation Status
 
-Implemented through Stage 15B runtime plus Stage 16 public-readiness hardening:
+Implemented through Stage 15B runtime plus Stage 16 public-readiness hardening and Stage 17 security/readiness hardening:
 
 - TypeScript monorepo with protocol, core, storage, adapters, resources, client, UI, CLI, daemon, and Web packages.
 - Runtime-validated protocol schemas for events, Topic Contracts, participants, sealed batches, deliberation objects, proposals, references, resources, final audit, and outcome compilation.
@@ -17,7 +17,7 @@ Implemented through Stage 15B runtime plus Stage 16 public-readiness hardening:
 - Local Hono daemon API using an in-memory store, structured safe errors, local binding defaults, SSE for new append-only events, and experimental WebGET endpoints.
 - React/Vite Web UI shell that reads daemon/client responses and does not own semantic state.
 - Participant adapter interfaces, fake/manual adapters, OpenAI-compatible adapter, Resource Broker / Delivery Planner, and experimental WebGET support.
-- Stabilization hardening for persisted ledger loading, WebGET decoded submission safety, commit finalization, and projection traceability.
+- Stabilization hardening for persisted ledger loading, WebGET decoded submission safety, commit finalization, projection traceability, idempotency result consistency, SSE idempotent publish guards, WebGET context visibility, and resource delivery safety.
 
 This is still a pre-production local-first implementation, not a production service.
 

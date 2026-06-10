@@ -22,7 +22,7 @@ A batch phase where participants contribute independently and their outputs are 
 
 ## Candidate Frontier
 
-The set of active non-dominated candidates under the current projection.
+The current implementation exposes accepted active candidates with `basis: "accepted_active_candidates"`. It is not a winner, `currentBest`, vote result, ranking, or single truth. Full non-dominated frontier semantics are a future design goal through explicit comparison, removal, and challengeable proposal mechanisms.
 
 ## Objection Ledger
 
