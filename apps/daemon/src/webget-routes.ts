@@ -1,0 +1,392 @@
+import {
+  projectAcceptedDeliberationObjects,
+  projectCandidateFrontier,
+  projectQualityObligations,
+  submitSealedContribution,
+  SEALED_BATCH_REVEALED_EVENT_TYPE,
+  type Clock,
+  type IdGenerator
+} from "@deliberum/core";
+import type { JsonValue } from "@deliberum/protocol";
+import type { EventStore } from "@deliberum/storage";
+import type {
+  DeliveryPlanner,
+  ResourceBroker,
+  ResourceDeliveryPlan
+} from "@deliberum/resources";
+import type { Hono, Context } from "hono";
+import type { DaemonEventBus } from "./event-stream";
+import {
+  WebGETSessionError,
+  WebGETSessionStore,
+  type WebGETSessionPublicView
+} from "./webget-session-store";
+
+export type WebGETRouteOptions = {
+  app: Hono;
+  eventStore: EventStore;
+  eventBus: DaemonEventBus;
+  webgetStore: WebGETSessionStore;
+  resourceBroker: ResourceBroker;
+  deliveryPlanner: DeliveryPlanner;
+  idGenerator: IdGenerator;
+  clock?: Clock;
+};
+
+export type WebGETSafeErrorResponse = {
+  error: {
+    code: string;
+    message: string;
+  };
+};
+
+export function registerWebGETRoutes(options: WebGETRouteOptions): void {
+  const { app } = options;
+
+  app.get("/webget/:token/start", (context) =>
+    noStoreJson(
+      context,
+      createStartPayload(options.webgetStore.getSession(context.req.param("token")))
+    )
+  );
+
+  app.get("/webget/:token/context", (context) =>
+    noStoreJson(
+      context,
+      createContextIndexPayload(options, options.webgetStore.getSession(context.req.param("token")))
+    )
+  );
+
+  app.get("/webget/:token/context/:page", (context) => {
+    const session = options.webgetStore.getSession(context.req.param("token"));
+
+    return noStoreJson(
+      context,
+      createContextPagePayload(options, session, context.req.param("page"))
+    );
+  });
+
+  app.get("/webget/:token/resources/:resourceId", (context) => {
+    const token = context.req.param("token");
+    const session = options.webgetStore.getSession(token);
+    const resourceId = context.req.param("resourceId");
+
+    if (!session.resourceIds.includes(resourceId)) {
+      return noStoreJson(
+        context,
+        createErrorResponse("resource_not_scoped", "Resource is not scoped to this WebGET session."),
+        400
+      );
+    }
+
+    const plan = options.deliveryPlanner.planDelivery({
+      resourceId,
+      participantId: session.participantId,
+      policy: session.resourcePolicy
+    });
+    options.webgetStore.recordResourceAccess(token, plan);
+
+    return noStoreJson(context, {
+      resource: sanitizeResource(options.resourceBroker.getResource(resourceId)),
+      delivery: plan
+    });
+  });
+
+  app.get("/webget/:token/submit", (context) => {
+    const result = options.webgetStore.submitChunk(context.req.param("token"), {
+      seq: context.req.query("seq"),
+      total: context.req.query("total"),
+      encoding: context.req.query("encoding"),
+      data: context.req.query("data")
+    });
+
+    return noStoreJson(context, result);
+  });
+
+  app.get("/webget/:token/commit", (context) => {
+    const committed = options.webgetStore.commitSubmission(context.req.param("token"), {
+      total: context.req.query("total"),
+      sha256: context.req.query("sha256"),
+      length: context.req.query("length")
+    });
+
+    const payload = createCommittedContributionPayload(
+      committed,
+      options.clock?.() ?? new Date().toISOString()
+    );
+    const result = submitSealedContribution(
+      {
+        sessionId: committed.session.sessionId,
+        batchId: committed.session.batchId,
+        authorId: committed.session.participantId,
+        visibility: "sealed",
+        payload,
+        idempotencyKey: `webget:${committed.session.sessionId}:${committed.session.batchId}:${committed.session.participantId}`
+      },
+      {
+        eventStore: options.eventStore,
+        idGenerator: options.idGenerator,
+        clock: options.clock
+      }
+    );
+
+    const markedSession = options.webgetStore.markCommitted(context.req.param("token"));
+    options.eventBus.publish(result.contributionEvent);
+
+    return noStoreJson(
+      context,
+      {
+        committed: true,
+        sessionId: markedSession.sessionId,
+        event: result.contributionEvent
+      },
+      201
+    );
+  });
+}
+
+export function handleWebGETRouteError(context: Context, error: Error): Response | undefined {
+  if (!context.req.path.startsWith("/webget/")) {
+    return undefined;
+  }
+
+  if (error instanceof WebGETSessionError) {
+    return noStoreJson(context, createErrorResponse(error.code, error.message), 400);
+  }
+
+  return noStoreJson(
+    context,
+    createErrorResponse("webget_request_failed", "WebGET request could not be processed."),
+    400
+  );
+}
+
+function createStartPayload(session: WebGETSessionPublicView) {
+  return {
+    experimental: true,
+    sessionId: session.sessionId,
+    participantId: session.participantId,
+    expiresAt: new Date(session.expiresAt).toISOString(),
+    context: {
+      index: "context",
+      pages: ["overview", "events", "frontier", "objections", "obligations", "resources", "output"]
+    },
+    instructions: [
+      "Read scoped context pages before contributing.",
+      "Include READ_REPORT in the committed JSON payload.",
+      "Never claim access to resources that were delivered as none.",
+      "Submit JSON bytes as base64url chunks through /submit, then call /commit with sha256 and length.",
+      session.instructions ?? "Produce an independent participant contribution."
+    ],
+    submission: {
+      encoding: "base64url",
+      submitPath: "submit",
+      commitPath: "commit",
+      requiredJsonFields: ["output", "readReport", "contextCompleteness"]
+    }
+  };
+}
+
+function createContextIndexPayload(
+  _options: WebGETRouteOptions,
+  session: WebGETSessionPublicView
+) {
+  return {
+    experimental: true,
+    sessionId: session.sessionId,
+    participantId: session.participantId,
+    pages: ["overview", "events", "frontier", "objections", "obligations", "resources", "output"],
+    readReportRequired: true
+  };
+}
+
+function createContextPagePayload(
+  options: WebGETRouteOptions,
+  session: WebGETSessionPublicView,
+  page: string
+): unknown {
+  if (page === "overview") {
+    return {
+      page,
+      sessionId: session.sessionId,
+      participantId: session.participantId,
+      instructions: session.instructions,
+      readReportRequired: true,
+      resourceIds: [...session.resourceIds]
+    };
+  }
+
+  if (page === "events") {
+    return {
+      page,
+      events: visibleEventsForWebGET(options.eventStore, session.sessionId)
+    };
+  }
+
+  if (page === "frontier") {
+    return {
+      page,
+      ...projectCandidateFrontier({
+        eventStore: options.eventStore,
+        sessionId: session.sessionId
+      })
+    };
+  }
+
+  if (page === "objections") {
+    return {
+      page,
+      objections: projectAcceptedDeliberationObjects({
+        eventStore: options.eventStore,
+        sessionId: session.sessionId
+      }).objections
+    };
+  }
+
+  if (page === "obligations") {
+    return {
+      page,
+      ...projectQualityObligations({
+        eventStore: options.eventStore,
+        sessionId: session.sessionId
+      })
+    };
+  }
+
+  if (page === "resources") {
+    return {
+      page,
+      resources: session.resourceIds.map((resourceId) => ({
+        resource: sanitizeResource(options.resourceBroker.getResource(resourceId)),
+        deliveryPath: `resources/${encodeURIComponent(resourceId)}`
+      })),
+      resourceAccessReports: session.resourceAccessReports
+    };
+  }
+
+  if (page === "output") {
+    return {
+      page,
+      requiredSubmissionShape: {
+        output: "JsonValue",
+        readReport: {
+          contextPagesRead: "string[]",
+          resourcesViewed: "string[]",
+          resourcesSummaryOnly: "string[]",
+          submissionMode: "chunked_get | manual_paste | browser_automation",
+          contextCompleteness: {
+            status: "complete | partial | unknown",
+            notes: "string[]"
+          }
+        },
+        contextCompleteness: {
+          status: "complete | partial | unknown",
+          notes: "string[]"
+        },
+        resourceAccessReports: "optional ResourceAccessReport[]"
+      },
+      readReportRequired: true
+    };
+  }
+
+  throw new WebGETSessionError("unknown_context_page", "WebGET context page is not available.");
+}
+
+function visibleEventsForWebGET(eventStore: EventStore, sessionId: string): unknown[] {
+  const events = eventStore.listEvents(sessionId);
+  const revealedBatchIds = new Set(
+    events
+      .filter((event) => event.type === SEALED_BATCH_REVEALED_EVENT_TYPE)
+      .map((event) => event.batchId)
+      .filter((batchId): batchId is string => typeof batchId === "string")
+  );
+
+  return events.map((event) => {
+    if (event.visibility !== "sealed" || (event.batchId && revealedBatchIds.has(event.batchId))) {
+      return event;
+    }
+
+    return {
+      ...event,
+      payload: {
+        redacted: true,
+        reason: "Sealed contribution payload is hidden until reveal."
+      }
+    };
+  });
+}
+
+function createCommittedContributionPayload(committed: {
+  session: WebGETSessionPublicView;
+  submission: unknown;
+  decodedLength: number;
+  sha256: string;
+}, committedAt: string): JsonValue {
+  return {
+    kind: "webget_committed_submission",
+    submission: committed.submission as JsonValue,
+    audit: {
+      participantId: committed.session.participantId,
+      decodedLength: committed.decodedLength,
+      sha256: committed.sha256,
+      committedAt,
+      resourceAccessReports: committed.session.resourceAccessReports as JsonValue
+    }
+  };
+}
+
+function sanitizeResource(resource: unknown): unknown {
+  if (!resource || typeof resource !== "object" || Array.isArray(resource)) {
+    return undefined;
+  }
+
+  const record = resource as {
+    variants?: unknown[];
+    [key: string]: unknown;
+  };
+
+  return {
+    ...record,
+    variants: (record.variants ?? []).map((variant) => {
+      if (!variant || typeof variant !== "object" || Array.isArray(variant)) {
+        return variant;
+      }
+
+      const variantRecord = variant as Record<string, unknown>;
+      if (variantRecord.mode === "url") {
+        return {
+          mode: "url",
+          exposure: variantRecord.exposure,
+          expiresAt: variantRecord.expiresAt
+        };
+      }
+
+      if (variantRecord.mode === "base64") {
+        return {
+          mode: "base64",
+          mime: variantRecord.mime,
+          sizeBytes: variantRecord.sizeBytes
+        };
+      }
+
+      return variantRecord;
+    })
+  };
+}
+
+function noStoreJson(context: Context, payload: unknown, status: 200 | 201 | 400 = 200): Response {
+  const response = context.json(payload, status);
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Pragma", "no-cache");
+
+  return response;
+}
+
+function createErrorResponse(code: string, message: string): WebGETSafeErrorResponse {
+  return {
+    error: {
+      code,
+      message
+    }
+  };
+}

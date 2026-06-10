@@ -20,7 +20,6 @@ describe("Participant adapters", () => {
     const exportedNames = Object.keys(adapters);
     const forbiddenExportTerms = [
       "MCP",
-      "WebGET",
       "Daemon",
       "CLI",
       "WebUI",
@@ -40,7 +39,8 @@ describe("Participant adapters", () => {
       expect.arrayContaining([
         "FakeParticipantAdapter",
         "ManualParticipantAdapter",
-        "OpenAICompatibleParticipantAdapter"
+        "OpenAICompatibleParticipantAdapter",
+        "WebGETParticipantAdapter"
       ])
     );
     for (const exportedName of exportedNames) {

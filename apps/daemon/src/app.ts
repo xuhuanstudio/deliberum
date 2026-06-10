@@ -13,16 +13,35 @@ import {
   type IdGenerator
 } from "@deliberum/core";
 import type { JsonValue, SealedBatchPurpose, SealedBatchRevealPolicy } from "@deliberum/protocol";
+import {
+  DeliveryPlanner,
+  InMemoryResourceBroker,
+  type ResourceBroker
+} from "@deliberum/resources";
 import { InMemoryEventStore, type EventStore, type StoredEvent } from "@deliberum/storage";
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { streamSSE } from "hono/streaming";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { DaemonEventBus } from "./event-stream";
+import { handleWebGETRouteError, registerWebGETRoutes } from "./webget-routes";
+import {
+  WebGETSessionStore,
+  type WebGETClock,
+  type WebGETSessionInput,
+  type WebGETSessionPublicView,
+  type WebGETTokenGenerator
+} from "./webget-session-store";
 
 export type DaemonAppOptions = {
   eventStore?: EventStore;
   eventBus?: DaemonEventBus;
+  webgetStore?: WebGETSessionStore;
+  webgetClock?: WebGETClock;
+  webgetTokenGenerator?: WebGETTokenGenerator;
+  webgetBaseUrl?: string;
+  resourceBroker?: ResourceBroker;
+  deliveryPlanner?: DeliveryPlanner;
   idGenerator?: IdGenerator;
   clock?: Clock;
   host?: string;
@@ -33,8 +52,12 @@ export type DaemonApp = {
   app: Hono;
   eventStore: EventStore;
   eventBus: DaemonEventBus;
+  webgetStore: WebGETSessionStore;
+  resourceBroker: ResourceBroker;
+  deliveryPlanner: DeliveryPlanner;
   host: string;
   port: number;
+  createWebGETSession: (input: WebGETSessionInput) => WebGETSessionPublicView;
 };
 
 export type SafeErrorResponse = {
@@ -65,6 +88,17 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   const idGenerator = options.idGenerator ?? (() => randomUUID());
   const host = options.host ?? DEFAULT_DAEMON_HOST;
   const port = options.port ?? DEFAULT_DAEMON_PORT;
+  const resourceBroker = options.resourceBroker ?? new InMemoryResourceBroker();
+  const deliveryPlanner = options.deliveryPlanner ?? new DeliveryPlanner({ broker: resourceBroker });
+  const webgetStore =
+    options.webgetStore ??
+    new WebGETSessionStore({
+      clock:
+        options.webgetClock ??
+        (() => (clock ? Date.parse(clock()) : Date.now())),
+      tokenGenerator: options.webgetTokenGenerator,
+      baseUrl: options.webgetBaseUrl ?? `http://${host}:${port}`
+    });
   const app = new Hono();
   const coreOptions = {
     eventStore,
@@ -72,7 +106,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     clock
   };
 
-  app.onError((error, context) => safeError(context, error));
+  app.onError((error, context) => handleWebGETRouteError(context, error) ?? safeError(context, error));
 
   app.get("/health", (context) =>
     context.json({
@@ -305,12 +339,27 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     );
   });
 
+  registerWebGETRoutes({
+    app,
+    eventStore,
+    eventBus,
+    webgetStore,
+    resourceBroker,
+    deliveryPlanner,
+    idGenerator,
+    clock
+  });
+
   return {
     app,
     eventStore,
     eventBus,
+    webgetStore,
+    resourceBroker,
+    deliveryPlanner,
     host,
-    port
+    port,
+    createWebGETSession: (input) => webgetStore.createSession(input)
   };
 }
 

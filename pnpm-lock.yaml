@@ -38,6 +38,9 @@ importers:
       '@deliberum/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@deliberum/resources':
+        specifier: workspace:*
+        version: link:../../packages/resources
       '@deliberum/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -96,6 +99,9 @@ importers:
       '@deliberum/protocol':
         specifier: workspace:*
         version: link:../protocol
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   packages/client: {}
 

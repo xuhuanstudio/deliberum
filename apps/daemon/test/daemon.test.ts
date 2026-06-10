@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
+import { InMemoryResourceBroker } from "@deliberum/resources";
 import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
@@ -6,6 +8,7 @@ import {
   type DaemonApp
 } from "../src";
 import * as daemon from "../src";
+import type { Resource } from "@deliberum/resources";
 
 const clock = () => "2026-06-10T00:00:00.000Z";
 
@@ -109,6 +112,21 @@ async function openBatch(
   return (await response.json()) as { batchId: string; event: { type: string } };
 }
 
+async function openRestrictedBatch(
+  daemonApp: DaemonApp,
+  sessionId: string,
+  participantIds: string[]
+): Promise<{ batchId: string; event: { type: string } }> {
+  const response = await postJson(daemonApp.app, `/sessions/${sessionId}/batches`, {
+    purpose: "initial_divergence",
+    revealPolicy: "manual",
+    participantIds
+  });
+
+  expect(response.status).toBe(201);
+  return (await response.json()) as { batchId: string; event: { type: string } };
+}
+
 async function addContribution(
   daemonApp: DaemonApp,
   sessionId: string,
@@ -128,6 +146,208 @@ async function addContribution(
   expect(response.status).toBe(201);
   return (await response.json()) as {
     event: { id: string; type: string; payload: Record<string, unknown> };
+  };
+}
+
+function encodeWebGETSubmission(submission: unknown, chunkSize = Number.POSITIVE_INFINITY) {
+  const json = JSON.stringify(submission);
+  const bytes = Buffer.from(json, "utf8");
+  const chunks: string[] = [];
+
+  for (let offset = 0; offset < bytes.byteLength; offset += chunkSize) {
+    chunks.push(bytes.subarray(offset, offset + chunkSize).toString("base64url"));
+  }
+
+  return {
+    chunks,
+    length: bytes.byteLength,
+    sha256: createHash("sha256").update(bytes).digest("hex")
+  };
+}
+
+function webgetSubmission(overrides: Record<string, unknown> = {}) {
+  return {
+    output: {
+      contribution: "webget output"
+    },
+    readReport: {
+      contextPagesRead: ["overview", "events"],
+      resourcesViewed: [],
+      resourcesSummaryOnly: [],
+      submissionMode: "chunked_get",
+      contextCompleteness: {
+        status: "partial",
+        notes: ["read scoped context"]
+      }
+    },
+    contextCompleteness: {
+      status: "partial",
+      notes: ["resource page read"]
+    },
+    ...overrides
+  };
+}
+
+function webgetPath(startUrl: string, suffix: string): string {
+  const url = new URL(startUrl);
+  const basePath = url.pathname.replace(/\/start$/, "");
+
+  return `${basePath}${suffix}`;
+}
+
+async function submitWebGETChunks(
+  daemonApp: DaemonApp,
+  startUrl: string,
+  chunks: readonly string[]
+): Promise<void> {
+  for (let index = 0; index < chunks.length; index += 1) {
+    const response = await daemonApp.app.request(
+      `${webgetPath(startUrl, "/submit")}?seq=${index + 1}&total=${chunks.length}&encoding=base64url&data=${chunks[index]}`
+    );
+
+    expect(response.status).toBe(200);
+  }
+}
+
+async function commitWebGET(
+  daemonApp: DaemonApp,
+  startUrl: string,
+  total: number,
+  sha256: string,
+  length: number
+): Promise<Response> {
+  return daemonApp.app.request(
+    `${webgetPath(startUrl, "/commit")}?total=${total}&sha256=${sha256}&length=${length}`
+  );
+}
+
+function createTokenGenerator(tokens: string[] = ["A".repeat(32), "B".repeat(32), "C".repeat(32)]): () => string {
+  let index = 0;
+
+  return () => {
+    const token = tokens[index] ?? `${index}`.padStart(32, "T");
+    index += 1;
+
+    return token;
+  };
+}
+
+function tokenFromStartUrl(startUrl: string): string {
+  return new URL(startUrl).pathname.split("/")[2] ?? "";
+}
+
+function expectNoStore(response: Response): void {
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("pragma")).toBe("no-cache");
+}
+
+async function expectWebGETError(response: Response, code: string): Promise<void> {
+  const body = (await response.json()) as { error: { code: string; message: string } };
+
+  expect(response.status).toBe(400);
+  expect(body.error.code).toBe(code);
+  expect(JSON.stringify(body)).not.toContain("stack");
+  expect(JSON.stringify(body)).not.toContain("Authorization");
+  expect(JSON.stringify(body)).not.toContain("api_key");
+  expect(JSON.stringify(body)).not.toContain("/Users/");
+}
+
+async function createWebGETBatch(
+  daemonApp: DaemonApp,
+  options: {
+    participantIds?: string[];
+    participantId?: string;
+    resourceIds?: string[];
+    resourcePolicy?: Parameters<DaemonApp["createWebGETSession"]>[0]["resourcePolicy"];
+    ttlMs?: number;
+  } = {}
+) {
+  const { sessionId } = await createSession(daemonApp);
+  const opened =
+    options.participantIds === undefined
+      ? await openBatch(daemonApp, sessionId)
+      : await openRestrictedBatch(daemonApp, sessionId, options.participantIds);
+  const webget = daemonApp.createWebGETSession({
+    sessionId,
+    batchId: opened.batchId,
+    participantId: options.participantId ?? "participant-web",
+    instructions: "Use scoped context only.",
+    resourceIds: options.resourceIds,
+    resourcePolicy: options.resourcePolicy,
+    ttlMs: options.ttlMs
+  });
+
+  return {
+    sessionId,
+    batchId: opened.batchId,
+    webget
+  };
+}
+
+async function submitAndCommitWebGET(
+  daemonApp: DaemonApp,
+  startUrl: string,
+  submission: unknown = webgetSubmission()
+): Promise<Response> {
+  const encoded = encodeWebGETSubmission(submission);
+
+  await submitWebGETChunks(daemonApp, startUrl, encoded.chunks);
+
+  return commitWebGET(daemonApp, startUrl, encoded.chunks.length, encoded.sha256, encoded.length);
+}
+
+function publicUrlResource(id = "public-url-resource"): Resource {
+  return {
+    id,
+    kind: "text",
+    mime: "text/plain",
+    sizeBytes: 12,
+    hash: `hash-${id}`,
+    privacy: "public",
+    variants: [
+      {
+        mode: "url",
+        url: "https://example.com/resource.txt",
+        exposure: "public"
+      }
+    ]
+  };
+}
+
+function sensitiveUrlResource(id = "sensitive-url-resource"): Resource {
+  return {
+    id,
+    kind: "text",
+    mime: "text/plain",
+    sizeBytes: 10,
+    hash: `hash-${id}`,
+    privacy: "sensitive",
+    variants: [
+      {
+        mode: "url",
+        url: "https://example.com/private?api_key=secret-value",
+        exposure: "public"
+      }
+    ]
+  };
+}
+
+function base64Resource(id = "base64-resource", dataRef = "base64-ref"): Resource {
+  return {
+    id,
+    kind: "text",
+    mime: "text/plain",
+    sizeBytes: 11,
+    hash: `hash-${id}`,
+    privacy: "public",
+    variants: [
+      {
+        mode: "base64",
+        mime: "text/plain",
+        dataRef,
+        sizeBytes: 11
+      }
+    ]
   };
 }
 
@@ -374,13 +594,499 @@ describe("daemon API", () => {
     await reader.cancel();
   });
 
+  it("creates scoped short-lived WebGET sessions and uses no-store endpoint headers", async () => {
+    let now = 1_000;
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetClock: () => now,
+      webgetTokenGenerator: createTokenGenerator()
+    });
+    const first = await createWebGETBatch(daemonApp, { ttlMs: 100 });
+    const second = await createWebGETBatch(daemonApp, { ttlMs: 1_000 });
+    const firstToken = tokenFromStartUrl(first.webget.startUrl);
+    const secondToken = tokenFromStartUrl(second.webget.startUrl);
+
+    expect(firstToken).toMatch(/^[A-Za-z0-9_-]{32,}$/);
+    expect(secondToken).toMatch(/^[A-Za-z0-9_-]{32,}$/);
+    expect(firstToken).not.toBe(secondToken);
+
+    const startResponse = await daemonApp.app.request(first.webget.startPath);
+    const startText = await startResponse.text();
+
+    expect(startResponse.status).toBe(200);
+    expectNoStore(startResponse);
+    expect(startText).toContain(first.sessionId);
+    expect(startText).not.toContain(firstToken);
+    expect(startText).not.toContain(second.sessionId);
+
+    const contextResponse = await daemonApp.app.request(webgetPath(first.webget.startUrl, "/context/overview"));
+    const contextText = await contextResponse.text();
+
+    expect(contextResponse.status).toBe(200);
+    expectNoStore(contextResponse);
+    expect(contextText).toContain(first.sessionId);
+    expect(contextText).not.toContain(firstToken);
+    expect(contextText).not.toContain(second.sessionId);
+
+    now = 1_101;
+
+    const expiredResponse = await daemonApp.app.request(first.webget.startPath);
+    const expiredText = await expiredResponse.clone().text();
+
+    expectNoStore(expiredResponse);
+    expect(expiredText).not.toContain(firstToken);
+    await expectWebGETError(expiredResponse, "expired_token");
+  });
+
+  it("WebGET context redacts unrevealed sealed contribution payloads", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetTokenGenerator: createTokenGenerator()
+    });
+    const { sessionId, batchId } = await createWebGETBatch(daemonApp);
+    const contributionResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${sessionId}/batches/${batchId}/contributions`,
+      {
+        authorId: "participant-1",
+        payload: {
+          secretNote: "sealed payload must stay hidden"
+        }
+      }
+    );
+    const webget = daemonApp.createWebGETSession({
+      sessionId,
+      batchId,
+      participantId: "participant-web"
+    });
+    const contextResponse = await daemonApp.app.request(webgetPath(webget.startUrl, "/context/events"));
+    const contextText = await contextResponse.text();
+
+    expect(contributionResponse.status).toBe(201);
+    expect(contextResponse.status).toBe(200);
+    expectNoStore(contextResponse);
+    expect(contextText).toContain("redacted");
+    expect(contextText).toContain("Sealed contribution payload is hidden until reveal.");
+    expect(contextText).not.toContain("sealed payload must stay hidden");
+  });
+
+  it("WebGET resource endpoint plans url, base64, and none delivery without leaking metadata material", async () => {
+    const resourceBroker = new InMemoryResourceBroker();
+    const publicResource = resourceBroker.registerResource({
+      resource: publicUrlResource()
+    });
+    const sensitiveResource = resourceBroker.registerResource({
+      resource: sensitiveUrlResource()
+    });
+    const b64Resource = resourceBroker.registerResource({
+      resource: base64Resource(),
+      contents: [
+        {
+          dataRef: "base64-ref",
+          base64: Buffer.from("hello world").toString("base64")
+        }
+      ]
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      resourceBroker,
+      webgetTokenGenerator: createTokenGenerator()
+    });
+    const noUrl = await createWebGETBatch(daemonApp, {
+      resourceIds: [publicResource.id]
+    });
+    const allowedUrl = await createWebGETBatch(daemonApp, {
+      resourceIds: [publicResource.id],
+      resourcePolicy: {
+        requestedMode: "url",
+        allowPublicUrl: true
+      }
+    });
+    const allowedBase64 = await createWebGETBatch(daemonApp, {
+      resourceIds: [b64Resource.id],
+      resourcePolicy: {
+        requestedMode: "base64",
+        allowBase64: true,
+        maxBase64SizeBytes: 64
+      }
+    });
+    const sensitive = await createWebGETBatch(daemonApp, {
+      resourceIds: [sensitiveResource.id],
+      resourcePolicy: {
+        requestedMode: "url",
+        allowPublicUrl: true,
+        allowBase64: true,
+        maxBase64SizeBytes: 64
+      }
+    });
+
+    const deniedUrlResponse = await daemonApp.app.request(
+      webgetPath(noUrl.webget.startUrl, `/resources/${publicResource.id}`)
+    );
+    const deniedUrlText = await deniedUrlResponse.text();
+    const deniedUrl = JSON.parse(deniedUrlText) as { delivery: { selectedMode: string; allowed: boolean } };
+
+    expectNoStore(deniedUrlResponse);
+    expect(deniedUrl.delivery).toMatchObject({
+      selectedMode: "none",
+      allowed: false
+    });
+    expect(deniedUrlText).not.toContain("https://example.com/resource.txt");
+
+    const allowedUrlBody = (await (
+      await daemonApp.app.request(webgetPath(allowedUrl.webget.startUrl, `/resources/${publicResource.id}`))
+    ).json()) as { delivery: { selectedMode: string; allowed: boolean; delivery?: { url?: string } } };
+
+    expect(allowedUrlBody.delivery).toMatchObject({
+      selectedMode: "url",
+      allowed: true,
+      delivery: {
+        url: "https://example.com/resource.txt"
+      }
+    });
+
+    const allowedBase64Body = (await (
+      await daemonApp.app.request(webgetPath(allowedBase64.webget.startUrl, `/resources/${b64Resource.id}`))
+    ).json()) as { delivery: { selectedMode: string; allowed: boolean; delivery?: { data?: string } } };
+
+    expect(allowedBase64Body.delivery).toMatchObject({
+      selectedMode: "base64",
+      allowed: true,
+      delivery: {
+        data: Buffer.from("hello world").toString("base64")
+      }
+    });
+
+    const sensitiveResponse = await daemonApp.app.request(
+      webgetPath(sensitive.webget.startUrl, `/resources/${sensitiveResource.id}`)
+    );
+    const sensitiveText = await sensitiveResponse.text();
+    const sensitiveBody = JSON.parse(sensitiveText) as { delivery: { selectedMode: string; allowed: boolean } };
+
+    expect(sensitiveBody.delivery).toMatchObject({
+      selectedMode: "none",
+      allowed: false
+    });
+    expect(sensitiveText).not.toContain("api_key");
+    expect(sensitiveText).not.toContain("secret-value");
+    expect(sensitiveText).not.toContain("/Users/");
+  });
+
+  it("WebGET submit validates canonical base64url chunks and append nothing by itself", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetTokenGenerator: createTokenGenerator()
+    });
+    const { sessionId, webget } = await createWebGETBatch(daemonApp);
+    const initialEventCount = daemonApp.eventStore.listEvents(sessionId).length;
+    const submitPath = webgetPath(webget.startUrl, "/submit");
+    const validChunk = Buffer.from('{"output":true}').toString("base64url");
+
+    await expectWebGETError(
+      await daemonApp.app.request(`${submitPath}?seq=1&total=1&encoding=utf8&data=${validChunk}`),
+      "invalid_encoding"
+    );
+    await expectWebGETError(
+      await daemonApp.app.request(`${submitPath}?seq=0&total=1&encoding=base64url&data=${validChunk}`),
+      "invalid_seq"
+    );
+    await expectWebGETError(
+      await daemonApp.app.request(`${submitPath}?seq=2&total=1&encoding=base64url&data=${validChunk}`),
+      "invalid_sequence"
+    );
+    await expectWebGETError(
+      await daemonApp.app.request(`${submitPath}?seq=1&total=65&encoding=base64url&data=${validChunk}`),
+      "too_many_chunks"
+    );
+    await expectWebGETError(
+      await daemonApp.app.request(`${submitPath}?seq=1&total=1&encoding=base64url&data=not=base64`),
+      "invalid_data"
+    );
+    await expectWebGETError(
+      await daemonApp.app.request(`${submitPath}?seq=1&total=1&encoding=base64url&data=secret`),
+      "unsafe_query"
+    );
+
+    const oversizedChunk = Buffer.alloc(16 * 1024 + 1, "x").toString("base64url");
+    await expectWebGETError(
+      await daemonApp.app.request(`${submitPath}?seq=1&total=1&encoding=base64url&data=${oversizedChunk}`),
+      "chunk_too_large"
+    );
+
+    const accepted = await daemonApp.app.request(
+      `${submitPath}?seq=1&total=2&encoding=base64url&data=${validChunk}`
+    );
+    expect(accepted.status).toBe(200);
+    expectNoStore(accepted);
+    await expectWebGETError(
+      await daemonApp.app.request(`${submitPath}?seq=1&total=2&encoding=base64url&data=${Buffer.from("{}").toString("base64url")}`),
+      "duplicate_chunk"
+    );
+    await expectWebGETError(
+      await daemonApp.app.request(`${submitPath}?seq=2&total=3&encoding=base64url&data=${validChunk}`),
+      "invalid_total"
+    );
+    expect(daemonApp.eventStore.listEvents(sessionId)).toHaveLength(initialEventCount);
+  });
+
+  it("WebGET commit rejects incomplete, malformed, mismatched, oversized, and expired submissions without append", async () => {
+    const makeDaemon = () =>
+      createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        webgetTokenGenerator: createTokenGenerator([
+          "D".repeat(32),
+          "E".repeat(32),
+          "F".repeat(32),
+          "G".repeat(32),
+          "H".repeat(32),
+          "I".repeat(32)
+        ])
+      });
+
+    const missingDaemon = makeDaemon();
+    const missing = await createWebGETBatch(missingDaemon);
+    const missingCount = missingDaemon.eventStore.listEvents(missing.sessionId).length;
+    await expectWebGETError(
+      await commitWebGET(missingDaemon, missing.webget.startUrl, 1, "0".repeat(64), 0),
+      "missing_chunks"
+    );
+    expect(missingDaemon.eventStore.listEvents(missing.sessionId)).toHaveLength(missingCount);
+
+    const malformedDaemon = makeDaemon();
+    const malformed = await createWebGETBatch(malformedDaemon);
+    const malformedBytes = Buffer.from("not-json", "utf8");
+    const malformedEncoded = {
+      chunks: [malformedBytes.toString("base64url")],
+      length: malformedBytes.byteLength,
+      sha256: createHash("sha256").update(malformedBytes).digest("hex")
+    };
+    await submitWebGETChunks(malformedDaemon, malformed.webget.startUrl, malformedEncoded.chunks);
+    await expectWebGETError(
+      await commitWebGET(
+        malformedDaemon,
+        malformed.webget.startUrl,
+        malformedEncoded.chunks.length,
+        malformedEncoded.sha256,
+        malformedEncoded.length
+      ),
+      "invalid_json"
+    );
+    expect(malformedDaemon.eventStore.listEvents(malformed.sessionId)).toHaveLength(2);
+
+    const noReportDaemon = makeDaemon();
+    const noReport = await createWebGETBatch(noReportDaemon);
+    const noReportEncoded = encodeWebGETSubmission({
+      output: "missing read report",
+      contextCompleteness: {
+        status: "unknown",
+        notes: []
+      }
+    });
+    await submitWebGETChunks(noReportDaemon, noReport.webget.startUrl, noReportEncoded.chunks);
+    await expectWebGETError(
+      await commitWebGET(
+        noReportDaemon,
+        noReport.webget.startUrl,
+        noReportEncoded.chunks.length,
+        noReportEncoded.sha256,
+        noReportEncoded.length
+      ),
+      "invalid_submission"
+    );
+    expect(noReportDaemon.eventStore.listEvents(noReport.sessionId)).toHaveLength(2);
+
+    const mismatchDaemon = makeDaemon();
+    const mismatch = await createWebGETBatch(mismatchDaemon);
+    const mismatchEncoded = encodeWebGETSubmission(webgetSubmission());
+    await submitWebGETChunks(mismatchDaemon, mismatch.webget.startUrl, mismatchEncoded.chunks);
+    await expectWebGETError(
+      await commitWebGET(
+        mismatchDaemon,
+        mismatch.webget.startUrl,
+        mismatchEncoded.chunks.length,
+        "1".repeat(64),
+        mismatchEncoded.length
+      ),
+      "invalid_hash"
+    );
+    await expectWebGETError(
+      await commitWebGET(
+        mismatchDaemon,
+        mismatch.webget.startUrl,
+        mismatchEncoded.chunks.length,
+        mismatchEncoded.sha256,
+        mismatchEncoded.length + 1
+      ),
+      "invalid_length"
+    );
+    expect(mismatchDaemon.eventStore.listEvents(mismatch.sessionId)).toHaveLength(2);
+
+    let now = 0;
+    const expiredDaemon = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetClock: () => now,
+      webgetTokenGenerator: createTokenGenerator(["J".repeat(32)])
+    });
+    const expired = await createWebGETBatch(expiredDaemon, { ttlMs: 1 });
+    const expiredEncoded = encodeWebGETSubmission(webgetSubmission());
+    await submitWebGETChunks(expiredDaemon, expired.webget.startUrl, expiredEncoded.chunks);
+    now = 2;
+    await expectWebGETError(
+      await commitWebGET(
+        expiredDaemon,
+        expired.webget.startUrl,
+        expiredEncoded.chunks.length,
+        expiredEncoded.sha256,
+        expiredEncoded.length
+      ),
+      "expired_token"
+    );
+    expect(expiredDaemon.eventStore.listEvents(expired.sessionId)).toHaveLength(2);
+  });
+
+  it("WebGET commit appends through sealed contribution lifecycle, records audit metadata, and publishes SSE only on success", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetTokenGenerator: createTokenGenerator()
+    });
+    const { sessionId, webget } = await createWebGETBatch(daemonApp);
+    const token = tokenFromStartUrl(webget.startUrl);
+    const received: Array<{ type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(sessionId, (event) => {
+      received.push({
+        type: event.type
+      });
+    });
+
+    await expectWebGETError(
+      await commitWebGET(daemonApp, webget.startUrl, 1, "0".repeat(64), 0),
+      "missing_chunks"
+    );
+    expect(received).toEqual([]);
+
+    const response = await submitAndCommitWebGET(daemonApp, webget.startUrl);
+    const responseText = await response.text();
+    const body = JSON.parse(responseText) as {
+      committed: boolean;
+      event: {
+        type: string;
+        visibility: string;
+        payload: {
+          kind: string;
+          submission: unknown;
+          audit: {
+            participantId: string;
+            decodedLength: number;
+            sha256: string;
+            resourceAccessReports: unknown[];
+          };
+        };
+      };
+    };
+
+    expect(response.status).toBe(201);
+    expectNoStore(response);
+    expect(responseText).not.toContain(token);
+    expect(body.committed).toBe(true);
+    expect(body.event).toMatchObject({
+      type: "sealed_contribution_submitted",
+      visibility: "sealed",
+      payload: {
+        kind: "webget_committed_submission",
+        submission: expect.objectContaining({
+          output: {
+            contribution: "webget output"
+          },
+          readReport: expect.objectContaining({
+            submissionMode: "chunked_get"
+          }),
+          contextCompleteness: expect.objectContaining({
+            status: "partial"
+          })
+        }),
+        audit: expect.objectContaining({
+          participantId: "participant-web",
+          resourceAccessReports: []
+        })
+      }
+    });
+    expect(received).toEqual([
+      {
+        type: "sealed_contribution_submitted"
+      }
+    ]);
+
+    const eventCountAfterSuccess = daemonApp.eventStore.listEvents(sessionId).length;
+    await expectWebGETError(
+      await commitWebGET(daemonApp, webget.startUrl, 1, "0".repeat(64), 0),
+      "already_committed"
+    );
+    expect(daemonApp.eventStore.listEvents(sessionId)).toHaveLength(eventCountAfterSuccess);
+    unsubscribe();
+  });
+
+  it("WebGET commit fails without append for missing, revealed, or unauthorized target batches", async () => {
+    const makeDaemon = () =>
+      createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        webgetTokenGenerator: createTokenGenerator(["K".repeat(32), "L".repeat(32), "M".repeat(32)])
+      });
+
+    const missingDaemon = makeDaemon();
+    const { sessionId: missingSessionId } = await createSession(missingDaemon);
+    const missingWebGET = missingDaemon.createWebGETSession({
+      sessionId: missingSessionId,
+      batchId: "missing-batch",
+      participantId: "participant-web"
+    });
+    await expectWebGETError(
+      await submitAndCommitWebGET(missingDaemon, missingWebGET.startUrl),
+      "webget_request_failed"
+    );
+    expect(missingDaemon.eventStore.listEvents(missingSessionId)).toHaveLength(1);
+
+    const revealedDaemon = makeDaemon();
+    const revealed = await createWebGETBatch(revealedDaemon);
+    const closeResponse = await postJson(
+      revealedDaemon.app,
+      `/sessions/${revealed.sessionId}/batches/${revealed.batchId}/close`,
+      {}
+    );
+    expect(closeResponse.status).toBe(201);
+    const revealedCount = revealedDaemon.eventStore.listEvents(revealed.sessionId).length;
+    await expectWebGETError(
+      await submitAndCommitWebGET(revealedDaemon, revealed.webget.startUrl),
+      "webget_request_failed"
+    );
+    expect(revealedDaemon.eventStore.listEvents(revealed.sessionId)).toHaveLength(revealedCount);
+
+    const unauthorizedDaemon = makeDaemon();
+    const unauthorized = await createWebGETBatch(unauthorizedDaemon, {
+      participantIds: ["allowed-participant"],
+      participantId: "participant-web"
+    });
+    const unauthorizedCount = unauthorizedDaemon.eventStore.listEvents(unauthorized.sessionId).length;
+    await expectWebGETError(
+      await submitAndCommitWebGET(unauthorizedDaemon, unauthorized.webget.startUrl),
+      "webget_request_failed"
+    );
+    expect(unauthorizedDaemon.eventStore.listEvents(unauthorized.sessionId)).toHaveLength(unauthorizedCount);
+  });
+
   it("does not export forbidden semantic or integration surfaces", () => {
     const exportedNames = Object.keys(daemon);
     const forbiddenTerms = [
       "Adapter",
       "OpenAI",
       "MCP",
-      "WebGET",
       "ResourceBroker",
       "PublicUrl",
       "WebUI",

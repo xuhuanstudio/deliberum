@@ -4,6 +4,8 @@ export * from "./app";
 export * from "./config";
 export * from "./event-stream";
 export * from "./server";
+export * from "./webget-routes";
+export * from "./webget-session-store";
 
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
