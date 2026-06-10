@@ -1,5 +1,5 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
@@ -13,5 +13,9 @@ export default defineConfig({
         new URL("../../packages/ui/src/index.tsx", import.meta.url)
       )
     }
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./test/setup.ts"]
   }
 });
