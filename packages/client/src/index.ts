@@ -92,17 +92,29 @@ export type EventsResponse = {
   events: unknown[];
 };
 
+export type ProjectionMetadataResponse = {
+  version: "1";
+  eventRange: {
+    fromSequence: number;
+    toSequence: number;
+  } | null;
+  eventIds: string[];
+};
+
 export type CandidateFrontierResponse = {
   basis: "accepted_active_candidates";
   candidates: unknown[];
+  projection: ProjectionMetadataResponse;
 };
 
 export type ObjectionsResponse = {
   objections: unknown[];
+  projection: ProjectionMetadataResponse;
 };
 
 export type ObligationsResponse = {
   qualityObligations: unknown[];
+  projection: ProjectionMetadataResponse;
 };
 
 export type DaemonErrorPayload = {

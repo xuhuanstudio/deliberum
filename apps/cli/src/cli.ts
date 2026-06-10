@@ -298,7 +298,8 @@ async function executeCommand(parsedArgs: ParsedArgs, dependencies: ExecuteDepen
     });
 
     return {
-      objections: projection.objections
+      objections: projection.objections,
+      projection: projection.projection
     };
   }
 

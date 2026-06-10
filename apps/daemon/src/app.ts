@@ -163,7 +163,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     });
 
     return context.json({
-      objections: projection.objections
+      objections: projection.objections,
+      projection: projection.projection
     });
   });
 

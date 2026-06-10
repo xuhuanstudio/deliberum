@@ -481,13 +481,16 @@ describe("daemon API", () => {
     );
     const frontier = (await (
       await daemonApp.app.request(`/sessions/${sessionId}/frontier`)
-    ).json()) as { basis: string; candidates: unknown[] };
+    ).json()) as { basis: string; candidates: unknown[]; projection: { version: string } };
     const objections = (await (
       await daemonApp.app.request(`/sessions/${sessionId}/objections`)
-    ).json()) as { objections: Array<{ object: { id: string } }> };
+    ).json()) as { objections: Array<{ object: { id: string } }>; projection: { version: string } };
     const obligations = (await (
       await daemonApp.app.request(`/sessions/${sessionId}/obligations`)
-    ).json()) as { qualityObligations: Array<{ object: { id: string; status: string } }> };
+    ).json()) as {
+      qualityObligations: Array<{ object: { id: string; status: string } }>;
+      projection: { version: string };
+    };
 
     expect(extractionResponse.status).toBe(201);
     expect(extractionBody.event).toMatchObject({
@@ -498,13 +501,16 @@ describe("daemon API", () => {
     });
     expect(challengeResponse.status).toBe(201);
     expect(acceptanceResponse.status).toBe(201);
-    expect(frontier).toEqual({
+    expect(frontier).toMatchObject({
       basis: "accepted_active_candidates",
       candidates: expect.arrayContaining([
         expect.objectContaining({
           object: expect.objectContaining({ id: "candidate-1" })
         })
-      ])
+      ]),
+      projection: {
+        version: "1"
+      }
     });
     expect(frontier).not.toHaveProperty("currentBest");
     expect(frontier).not.toHaveProperty("winner");
@@ -512,10 +518,12 @@ describe("daemon API", () => {
     expect(frontier).not.toHaveProperty("score");
     expect(frontier).not.toHaveProperty("vote");
     expect(objections.objections[0]?.object.id).toBe("objection-1");
+    expect(objections.projection.version).toBe("1");
     expect(obligations.qualityObligations[0]?.object).toMatchObject({
       id: "quality-1",
       status: "unanswered"
     });
+    expect(obligations.projection.version).toBe("1");
   });
 
   it("event bus publishes only after successful mutation and never replays history", async () => {

@@ -234,12 +234,15 @@ function createContextPagePayload(
   }
 
   if (page === "objections") {
+    const projection = projectAcceptedDeliberationObjects({
+      eventStore: options.eventStore,
+      sessionId: session.sessionId
+    });
+
     return {
       page,
-      objections: projectAcceptedDeliberationObjects({
-        eventStore: options.eventStore,
-        sessionId: session.sessionId
-      }).objections
+      objections: projection.objections,
+      projection: projection.projection
     };
   }
 

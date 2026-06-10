@@ -26,6 +26,17 @@ export type ProjectionInput =
       sessionId?: string;
     };
 
+export const PROJECTION_VERSION = "1" as const;
+
+export type ProjectionMetadata = {
+  version: typeof PROJECTION_VERSION;
+  eventRange: {
+    fromSequence: number;
+    toSequence: number;
+  } | null;
+  eventIds: string[];
+};
+
 export type ExtractionProposalState = {
   proposalEventId: string;
   proposalId: string;
@@ -37,6 +48,11 @@ export type ExtractionProposalState = {
   acceptanceEventIds: string[];
   isChallenged: boolean;
   isAcceptedForNow: boolean;
+};
+
+export type ExtractionProposalStatesProjection = {
+  proposalStates: ExtractionProposalState[];
+  projection: ProjectionMetadata;
 };
 
 export type DerivedCandidate = {
@@ -85,21 +101,25 @@ export type AcceptedDeliberationObjectsProjection = {
   objections: DerivedObjection[];
   evidenceNeeds: DerivedEvidenceNeed[];
   qualityObligations: DerivedQualityObligation[];
+  projection: ProjectionMetadata;
 };
 
 export type CandidateFrontierProjection = {
   basis: "accepted_active_candidates";
   candidates: DerivedCandidate[];
+  projection: ProjectionMetadata;
 };
 
 export type QualityObligationsProjection = {
   qualityObligations: DerivedQualityObligation[];
+  projection: ProjectionMetadata;
 };
 
 export function projectExtractionProposalStates(
   input: ProjectionInput
-): ExtractionProposalState[] {
-  const events = resolveProjectionEvents(input);
+): ExtractionProposalStatesProjection {
+  const resolved = resolveProjectionEvents(input);
+  const events = resolved.events;
   const statesByEventId = new Map<string, MutableExtractionProposalState>();
 
   for (const event of events) {
@@ -160,19 +180,23 @@ export function projectExtractionProposalStates(
     }
   }
 
-  return [...statesByEventId.values()].map((state) => ({
-    ...state,
-    sourceEventIds: [...state.sourceEventIds],
-    proposal: clonePlain(state.proposal),
-    challengeEventIds: [...state.challengeEventIds],
-    acceptanceEventIds: [...state.acceptanceEventIds]
-  }));
+  return {
+    proposalStates: [...statesByEventId.values()].map((state) => ({
+      ...state,
+      sourceEventIds: [...state.sourceEventIds],
+      proposal: clonePlain(state.proposal),
+      challengeEventIds: [...state.challengeEventIds],
+      acceptanceEventIds: [...state.acceptanceEventIds]
+    })),
+    projection: cloneProjectionMetadata(resolved.projection)
+  };
 }
 
 export function projectAcceptedDeliberationObjects(
   input: ProjectionInput
 ): AcceptedDeliberationObjectsProjection {
-  const acceptedStates = projectExtractionProposalStates(input).filter(
+  const proposalStatesProjection = projectExtractionProposalStates(input);
+  const acceptedStates = proposalStatesProjection.proposalStates.filter(
     (state) => state.isAcceptedForNow
   );
   const result: AcceptedDeliberationObjectsProjection = {
@@ -180,7 +204,8 @@ export function projectAcceptedDeliberationObjects(
     claims: [],
     objections: [],
     evidenceNeeds: [],
-    qualityObligations: []
+    qualityObligations: [],
+    projection: cloneProjectionMetadata(proposalStatesProjection.projection)
   };
 
   for (const state of acceptedStates) {
@@ -215,27 +240,40 @@ export function projectCandidateFrontier(input: ProjectionInput): CandidateFront
     basis: "accepted_active_candidates",
     candidates: acceptedObjects.candidates.filter(
       (candidate) => candidate.object.status === "active"
-    )
+    ),
+    projection: cloneProjectionMetadata(acceptedObjects.projection)
   };
 }
 
 export function projectQualityObligations(input: ProjectionInput): QualityObligationsProjection {
+  const acceptedObjects = projectAcceptedDeliberationObjects(input);
+
   return {
-    qualityObligations: projectAcceptedDeliberationObjects(input).qualityObligations
+    qualityObligations: acceptedObjects.qualityObligations,
+    projection: cloneProjectionMetadata(acceptedObjects.projection)
   };
 }
 
 type MutableExtractionProposalState = ExtractionProposalState;
 
-function resolveProjectionEvents(input: ProjectionInput): StoredEvent[] {
+type ResolvedProjectionEvents = {
+  events: StoredEvent[];
+  projection: ProjectionMetadata;
+};
+
+function resolveProjectionEvents(input: ProjectionInput): ResolvedProjectionEvents {
   const events =
     "eventStore" in input ? input.eventStore.listEvents(input.sessionId) : [...input.events];
   const sessionId = "sessionId" in input ? input.sessionId : undefined;
   const filteredEvents = sessionId
     ? events.filter((event) => event.sessionId === sessionId)
     : rejectMixedSessionEvents(events);
+  const sortedEvents = [...filteredEvents].sort((left, right) => left.sequence - right.sequence);
 
-  return [...filteredEvents].sort((left, right) => left.sequence - right.sequence);
+  return {
+    events: sortedEvents,
+    projection: createProjectionMetadata(sortedEvents)
+  };
 }
 
 function rejectMixedSessionEvents(events: readonly StoredEvent[]): StoredEvent[] {
@@ -271,6 +309,28 @@ function createDerivedObject<TObject extends { sourceEventIds: string[] }>(
     proposalId: state.proposalId,
     acceptedByEventIds: [...state.acceptanceEventIds],
     sourceEventIds: [...object.sourceEventIds]
+  };
+}
+
+function createProjectionMetadata(events: readonly StoredEvent[]): ProjectionMetadata {
+  return {
+    version: PROJECTION_VERSION,
+    eventRange:
+      events.length === 0
+        ? null
+        : {
+            fromSequence: events[0]!.sequence,
+            toSequence: events[events.length - 1]!.sequence
+          },
+    eventIds: events.map((event) => event.id)
+  };
+}
+
+function cloneProjectionMetadata(metadata: ProjectionMetadata): ProjectionMetadata {
+  return {
+    version: metadata.version,
+    eventRange: metadata.eventRange ? { ...metadata.eventRange } : null,
+    eventIds: [...metadata.eventIds]
   };
 }
 

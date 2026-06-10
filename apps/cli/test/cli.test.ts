@@ -63,6 +63,14 @@ function createFakeEvent(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function createFakeProjectionMetadata() {
+  return {
+    version: "1",
+    eventRange: null,
+    eventIds: []
+  };
+}
+
 function createFakeStore(): EventStore {
   return {
     appendEvent: vi.fn(),
@@ -172,17 +180,20 @@ describe("CLI command routing", () => {
       })),
       projectCandidateFrontier: vi.fn(() => ({
         basis: "accepted_active_candidates",
-        candidates: []
+        candidates: [],
+        projection: createFakeProjectionMetadata()
       })),
       projectAcceptedDeliberationObjects: vi.fn(() => ({
         candidates: [],
         claims: [],
         objections: [],
         evidenceNeeds: [],
-        qualityObligations: []
+        qualityObligations: [],
+        projection: createFakeProjectionMetadata()
       })),
       projectQualityObligations: vi.fn(() => ({
-        qualityObligations: []
+        qualityObligations: [],
+        projection: createFakeProjectionMetadata()
       }))
     };
     const commonDependencies = {
@@ -457,12 +468,17 @@ describe("CLI integration", () => {
     const frontier = parseOutput<{
       basis: "accepted_active_candidates";
       candidates: Array<{ object: { id: string } }>;
+      projection: { version: string };
     }>(await runWithStore(storePath, ["frontier", "--session", "session-1"], []));
-    const objections = parseOutput<{ objections: Array<{ object: { id: string } }> }>(
+    const objections = parseOutput<{
+      objections: Array<{ object: { id: string } }>;
+      projection: { version: string };
+    }>(
       await runWithStore(storePath, ["objections", "--session", "session-1"], [])
     );
     const obligations = parseOutput<{
       qualityObligations: Array<{ object: { id: string; status: string } }>;
+      projection: { version: string };
     }>(await runWithStore(storePath, ["obligations", "--session", "session-1"], []));
     const eventsOutput = parseOutput<{ events: Array<{ type: string; payload: Record<string, unknown> }> }>(
       await runWithStore(storePath, ["events", "--session", "session-1"], [])
@@ -470,25 +486,30 @@ describe("CLI integration", () => {
 
     expect(proposed.proposalId).toBe("proposal-1");
     expect(proposed.event.payload.status).toBe("proposed");
-    expect(frontier).toEqual({
+    expect(frontier).toMatchObject({
       basis: "accepted_active_candidates",
       candidates: expect.arrayContaining([
         expect.objectContaining({
           object: expect.objectContaining({ id: "candidate-1" })
         })
-      ])
+      ]),
+      projection: {
+        version: "1"
+      }
     });
-    expect(Object.keys(frontier)).toEqual(["basis", "candidates"]);
+    expect(Object.keys(frontier)).toEqual(["basis", "candidates", "projection"]);
     expect(frontier).not.toHaveProperty("currentBest");
     expect(frontier).not.toHaveProperty("winner");
     expect(frontier).not.toHaveProperty("rank");
     expect(frontier).not.toHaveProperty("score");
     expect(frontier).not.toHaveProperty("vote");
     expect(objections.objections[0]?.object.id).toBe("objection-1");
+    expect(objections.projection.version).toBe("1");
     expect(obligations.qualityObligations[0]?.object).toMatchObject({
       id: "quality-1",
       status: "unanswered"
     });
+    expect(obligations.projection.version).toBe("1");
     expect(
       eventsOutput.events.find((event) => event.type === "sealed_contribution_submitted")
         ?.payload.message

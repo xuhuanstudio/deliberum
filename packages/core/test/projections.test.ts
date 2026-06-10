@@ -279,8 +279,8 @@ describe("projection input handling", () => {
       sessionId: "session-1"
     });
 
-    expect(states).toHaveLength(1);
-    expect(states[0]?.acceptanceEventIds).toEqual(["acceptance-event-1"]);
+    expect(states.proposalStates).toHaveLength(1);
+    expect(states.proposalStates[0]?.acceptanceEventIds).toEqual(["acceptance-event-1"]);
   });
 
   it("sorts events by sequence before projection", () => {
@@ -291,8 +291,86 @@ describe("projection input handling", () => {
       events: [...eventStore.listEvents("session-1")].reverse()
     });
 
-    expect(states[0]?.isAcceptedForNow).toBe(true);
-    expect(states[0]?.acceptanceEventIds).toEqual(["acceptance-event-1"]);
+    expect(states.proposalStates[0]?.isAcceptedForNow).toBe(true);
+    expect(states.proposalStates[0]?.acceptanceEventIds).toEqual(["acceptance-event-1"]);
+  });
+
+  it("adds projection metadata to every projection result", () => {
+    const eventStore = createStore();
+    proposeAndAccept(eventStore, { includeAllObjects: true });
+    const expectedEventIds = eventStore.listEvents("session-1").map((event) => event.id);
+    const expectedMetadata = {
+      version: "1",
+      eventRange: {
+        fromSequence: 0,
+        toSequence: eventStore.listEvents("session-1").at(-1)?.sequence
+      },
+      eventIds: expectedEventIds
+    };
+
+    expect(
+      projectExtractionProposalStates({
+        eventStore,
+        sessionId: "session-1"
+      })
+    ).toMatchObject({
+      proposalStates: expect.any(Array),
+      projection: expectedMetadata
+    });
+    expect(
+      projectAcceptedDeliberationObjects({
+        eventStore,
+        sessionId: "session-1"
+      }).projection
+    ).toEqual(expectedMetadata);
+    expect(
+      projectCandidateFrontier({
+        eventStore,
+        sessionId: "session-1"
+      }).projection
+    ).toEqual(expectedMetadata);
+    expect(
+      projectQualityObligations({
+        eventStore,
+        sessionId: "session-1"
+      }).projection
+    ).toEqual(expectedMetadata);
+  });
+
+  it("uses safe metadata for empty projection inputs", () => {
+    const expectedMetadata = {
+      version: "1",
+      eventRange: null,
+      eventIds: []
+    };
+
+    expect(projectExtractionProposalStates({ events: [] })).toEqual({
+      proposalStates: [],
+      projection: expectedMetadata
+    });
+    expect(projectAcceptedDeliberationObjects({ events: [] }).projection).toEqual(
+      expectedMetadata
+    );
+    expect(projectCandidateFrontier({ events: [] }).projection).toEqual(expectedMetadata);
+    expect(projectQualityObligations({ events: [] }).projection).toEqual(expectedMetadata);
+  });
+
+  it("computes projection event range and event ids after sequence sorting", () => {
+    const eventStore = createStore();
+    proposeAndAccept(eventStore);
+    const sortedEvents = eventStore.listEvents("session-1");
+    const projection = projectCandidateFrontier({
+      events: [...sortedEvents].reverse()
+    });
+
+    expect(projection.projection).toEqual({
+      version: "1",
+      eventRange: {
+        fromSequence: 0,
+        toSequence: sortedEvents.at(-1)?.sequence
+      },
+      eventIds: sortedEvents.map((event) => event.id)
+    });
   });
 });
 
@@ -316,8 +394,8 @@ describe("projection lifecycle target handling", () => {
       sessionId: "session-1"
     });
 
-    expect(states[0]?.challengeEventIds).toEqual([]);
-    expect(states[0]?.acceptanceEventIds).toEqual(["acceptance-event-1"]);
+    expect(states.proposalStates[0]?.challengeEventIds).toEqual([]);
+    expect(states.proposalStates[0]?.acceptanceEventIds).toEqual(["acceptance-event-1"]);
   });
 
   it("does not let lifecycle events targeting non-extraction events affect proposal state", () => {
@@ -341,8 +419,8 @@ describe("projection lifecycle target handling", () => {
       sessionId: "session-1"
     });
 
-    expect(states[0]?.challengeEventIds).toEqual([]);
-    expect(states[0]?.acceptanceEventIds).toEqual(["acceptance-event-1"]);
+    expect(states.proposalStates[0]?.challengeEventIds).toEqual([]);
+    expect(states.proposalStates[0]?.acceptanceEventIds).toEqual(["acceptance-event-1"]);
   });
 
   it("does not let lifecycle events targeting later proposal events affect proposal state", () => {
@@ -374,10 +452,10 @@ describe("projection lifecycle target handling", () => {
       sessionId: "session-1"
     });
 
-    expect(states[0]?.isChallenged).toBe(false);
-    expect(states[0]?.isAcceptedForNow).toBe(false);
-    expect(states[0]?.challengeEventIds).toEqual([]);
-    expect(states[0]?.acceptanceEventIds).toEqual([]);
+    expect(states.proposalStates[0]?.isChallenged).toBe(false);
+    expect(states.proposalStates[0]?.isAcceptedForNow).toBe(false);
+    expect(states.proposalStates[0]?.challengeEventIds).toEqual([]);
+    expect(states.proposalStates[0]?.acceptanceEventIds).toEqual([]);
   });
 });
 
@@ -415,8 +493,8 @@ describe("accepted deliberation object projections", () => {
       sessionId: "session-1"
     });
 
-    expect(states[0]?.isChallenged).toBe(true);
-    expect(states[0]?.isAcceptedForNow).toBe(true);
+    expect(states.proposalStates[0]?.isChallenged).toBe(true);
+    expect(states.proposalStates[0]?.isAcceptedForNow).toBe(true);
     expect(acceptedObjects.candidates).toHaveLength(1);
     expect(acceptedObjects).not.toHaveProperty("finalAnswer");
     expect(acceptedObjects).not.toHaveProperty("truthSummary");
@@ -462,7 +540,15 @@ describe("candidate frontier projection", () => {
       })
     ).toEqual({
       basis: "accepted_active_candidates",
-      candidates: []
+      candidates: [],
+      projection: {
+        version: "1",
+        eventRange: {
+          fromSequence: 0,
+          toSequence: eventStore.listEvents("session-1").at(-1)?.sequence
+        },
+        eventIds: eventStore.listEvents("session-1").map((event) => event.id)
+      }
     });
   });
 

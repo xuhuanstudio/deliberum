@@ -421,6 +421,7 @@ describe("outcome compilation", () => {
       fromSequence: 0,
       toSequence: eventStore.listEvents("session-1").at(-1)?.sequence
     });
+    expect(result.provenance.projectionVersion).toBe("1");
     expect(result.recommendation).toBe(
       "Provisionally use candidate 1 when its edge case is addressed."
     );

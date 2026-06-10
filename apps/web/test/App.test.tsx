@@ -5,6 +5,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App, createWebQueryClient } from "../src/App";
 import { resolveDaemonBaseUrl, type WebDaemonClient } from "../src/client";
 
+const projection = {
+  version: "1" as const,
+  eventRange: {
+    fromSequence: 0,
+    toSequence: 1
+  },
+  eventIds: ["event-1", "proposal-event-1"]
+};
+
 function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient {
   return {
     health: vi.fn(async () => ({
@@ -37,7 +46,8 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           proposalEventId: "proposal-event-1",
           sourceEventIds: ["event-1"]
         }
-      ]
+      ],
+      projection
     })),
     getObjections: vi.fn(async () => ({
       objections: [
@@ -48,7 +58,8 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           },
           proposalEventId: "proposal-event-1"
         }
-      ]
+      ],
+      projection
     })),
     getObligations: vi.fn(async () => ({
       qualityObligations: [
@@ -59,7 +70,8 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           },
           proposalEventId: "proposal-event-1"
         }
-      ]
+      ],
+      projection
     })),
     ...overrides
   };

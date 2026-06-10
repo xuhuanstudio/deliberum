@@ -18,6 +18,7 @@ import {
 import {
   projectAcceptedDeliberationObjects,
   projectCandidateFrontier,
+  PROJECTION_VERSION,
   type AcceptedDeliberationObjectsProjection,
   type CandidateFrontierProjection,
   type DerivedCandidate,
@@ -107,6 +108,7 @@ export type OutcomeFinalAuditRecord = {
 
 export type OutcomeCompilationProvenance = {
   projectionBasis: "event_ledger_and_projections";
+  projectionVersion: typeof PROJECTION_VERSION;
   eventIds: string[];
   eventRange: {
     fromSequence: number | null;
@@ -296,6 +298,7 @@ export function compileOutcome(input: CompileOutcomeInput): OutcomeCompilationRe
     ),
     provenance: {
       projectionBasis: "event_ledger_and_projections",
+      projectionVersion: PROJECTION_VERSION,
       eventIds: events.map((event) => event.id),
       eventRange: getEventRange(events),
       finalCandidateProposalEventId: selectedProposalEvent?.id,
