@@ -114,7 +114,11 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
 
-  packages/resources: {}
+  packages/resources:
+    dependencies:
+      '@deliberum/protocol':
+        specifier: workspace:*
+        version: link:../protocol
 
   packages/storage:
     dependencies:
