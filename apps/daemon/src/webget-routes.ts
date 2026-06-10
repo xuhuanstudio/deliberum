@@ -130,14 +130,14 @@ export function registerWebGETRoutes(options: WebGETRouteOptions): void {
       }
     );
 
-    const markedSession = options.webgetStore.markCommitted(context.req.param("token"));
+    options.webgetStore.finalizeCommittedSession(context.req.param("token"));
     options.eventBus.publish(result.contributionEvent);
 
     return noStoreJson(
       context,
       {
         committed: true,
-        sessionId: markedSession.sessionId,
+        sessionId: committed.session.sessionId,
         event: result.contributionEvent
       },
       201

@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import * as realFs from "node:fs";
 import { join } from "node:path";
 import type { AppendEventInput } from "@deliberum/storage";
+import type { EventEnvelope } from "@deliberum/protocol";
 import {
   JsonFileEventStore,
   JsonFileEventStoreError,
@@ -31,6 +32,26 @@ function createInput(overrides: Partial<AppendEventInput> = {}): AppendEventInpu
     },
     ...overrides
   };
+}
+
+function createPersistedEvent(overrides: Partial<EventEnvelope> = {}): EventEnvelope {
+  return {
+    ...createInput(),
+    sequence: 0,
+    recordedAt: "2026-06-10T00:00:01.000Z",
+    ...overrides
+  } as EventEnvelope;
+}
+
+function writePersistedLedger(filePath: string, events: readonly EventEnvelope[]): void {
+  writeFileSync(
+    filePath,
+    JSON.stringify({
+      schemaVersion: 1,
+      events
+    }),
+    "utf8"
+  );
 }
 
 describe("JsonFileEventStore", () => {
@@ -185,6 +206,86 @@ describe("JsonFileEventStore", () => {
       }),
       "utf8"
     );
+
+    expect(() => new JsonFileEventStore({ filePath })).toThrow(JsonFileEventStoreError);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects duplicate event ids in persisted ledger files", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, "events.json");
+    writePersistedLedger(filePath, [
+      createPersistedEvent({ id: "event-1", sequence: 0 }),
+      createPersistedEvent({ id: "event-1", sequence: 1 })
+    ]);
+
+    expect(() => new JsonFileEventStore({ filePath })).toThrow(JsonFileEventStoreError);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects duplicate per-session sequence values in persisted ledger files", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, "events.json");
+    writePersistedLedger(filePath, [
+      createPersistedEvent({ id: "event-1", sequence: 0 }),
+      createPersistedEvent({ id: "event-2", sequence: 0 })
+    ]);
+
+    expect(() => new JsonFileEventStore({ filePath })).toThrow(JsonFileEventStoreError);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects negative sequence values in persisted ledger files", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, "events.json");
+    writePersistedLedger(filePath, [createPersistedEvent({ sequence: -1 })]);
+
+    expect(() => new JsonFileEventStore({ filePath })).toThrow(JsonFileEventStoreError);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects sequence gaps in persisted ledger files", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, "events.json");
+    writePersistedLedger(filePath, [
+      createPersistedEvent({ id: "event-1", sequence: 0 }),
+      createPersistedEvent({ id: "event-2", sequence: 2 })
+    ]);
+
+    expect(() => new JsonFileEventStore({ filePath })).toThrow(JsonFileEventStoreError);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects non-zero starting sequence values in persisted ledger files", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, "events.json");
+    writePersistedLedger(filePath, [createPersistedEvent({ sequence: 1 })]);
+
+    expect(() => new JsonFileEventStore({ filePath })).toThrow(JsonFileEventStoreError);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects reused session idempotency keys that point to different event ids", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, "events.json");
+    writePersistedLedger(filePath, [
+      createPersistedEvent({
+        id: "event-1",
+        sequence: 0,
+        idempotencyKey: "same-logical-event"
+      }),
+      createPersistedEvent({
+        id: "event-2",
+        sequence: 1,
+        idempotencyKey: "same-logical-event"
+      })
+    ]);
 
     expect(() => new JsonFileEventStore({ filePath })).toThrow(JsonFileEventStoreError);
 

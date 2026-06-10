@@ -195,6 +195,7 @@ export class WebGETSessionStore {
     if (decoded.byteLength > WEBGET_MAX_CHUNK_BYTES) {
       throw new WebGETSessionError("chunk_too_large", "WebGET chunk exceeds the maximum decoded size.");
     }
+    assertSafeSubmissionBytes(decoded);
 
     const existing = session.chunks.get(seq);
     if (existing) {
@@ -297,12 +298,16 @@ export class WebGETSessionStore {
       throw new WebGETSessionError("invalid_hash", "WebGET commit hash does not match decoded bytes.");
     }
 
+    const decodedText = new TextDecoder().decode(decoded);
+    assertSafeSubmissionText(decodedText);
+
     let parsed: unknown;
     try {
-      parsed = JSON.parse(new TextDecoder().decode(decoded));
+      parsed = JSON.parse(decodedText);
     } catch {
       throw new WebGETSessionError("invalid_json", "WebGET committed payload must be valid JSON.");
     }
+    assertSafeParsedSubmission(parsed);
 
     let submission: WebGETCommittedSubmission;
     try {
@@ -320,6 +325,13 @@ export class WebGETSessionStore {
       decodedLength: decoded.byteLength,
       sha256: actualHash
     };
+  }
+
+  finalizeCommittedSession(token: string): void {
+    const session = this.sessionsByToken.get(token);
+    if (session) {
+      session.committed = true;
+    }
   }
 
   markCommitted(token: string): WebGETSessionPublicView {
@@ -435,9 +447,27 @@ function concatBytes(chunks: readonly Uint8Array[]): Uint8Array {
 }
 
 function containsSecretLikeText(value: string): boolean {
-  return /api[_-]?key|secret|private[_-]?token|authorization|bearer\s+|sk-[a-z0-9]/i.test(
-    value
-  );
+  return /api[_-]?key|secret|private[_-]?token|authorization|bearer\s+|sk-[a-z0-9]|file:\/\/|\/Users\/|\/home\/[^/\s]+|\.ssh|-----BEGIN [A-Z ]*PRIVATE KEY-----/i.test(value);
+}
+
+function assertSafeSubmissionBytes(decoded: Uint8Array): void {
+  assertSafeSubmissionText(new TextDecoder().decode(decoded));
+}
+
+function assertSafeSubmissionText(value: string): void {
+  if (containsSecretLikeText(value)) {
+    throw new WebGETSessionError(
+      "unsafe_submission",
+      "WebGET submission contains private material."
+    );
+  }
+}
+
+function assertSafeParsedSubmission(input: unknown): void {
+  const serialized = JSON.stringify(input);
+  if (serialized !== undefined) {
+    assertSafeSubmissionText(serialized);
+  }
 }
 
 function parseCommittedSubmission(input: unknown): WebGETCommittedSubmission {

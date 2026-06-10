@@ -188,16 +188,20 @@ export class JsonFileEventStore implements EventStore {
       throw new JsonFileEventStoreError("JSON event store events must be an array.");
     }
 
+    const events = ledger.events.map((event) => {
+      const parsedEvent = EventEnvelopeSchema.safeParse(event);
+      if (!parsedEvent.success) {
+        throw new JsonFileEventStoreError(parsedEvent.error.message);
+      }
+
+      return parsedEvent.data;
+    });
+
+    validatePersistedLedgerIntegrity(events);
+
     return {
       schemaVersion: JSON_EVENT_STORE_SCHEMA_VERSION,
-      events: ledger.events.map((event) => {
-        const parsedEvent = EventEnvelopeSchema.safeParse(event);
-        if (!parsedEvent.success) {
-          throw new JsonFileEventStoreError(parsedEvent.error.message);
-        }
-
-        return parsedEvent.data;
-      })
+      events
     };
   }
 
@@ -271,6 +275,58 @@ function compareEvents(left: EventEnvelope, right: EventEnvelope): number {
   }
 
   return left.sessionId.localeCompare(right.sessionId);
+}
+
+function validatePersistedLedgerIntegrity(events: readonly EventEnvelope[]): void {
+  const eventIds = new Set<string>();
+  const sequencesBySession = new Map<string, Set<number>>();
+  const eventCountsBySession = new Map<string, number>();
+  const idempotencyEventIds = new Map<string, string>();
+
+  for (const event of events) {
+    if (eventIds.has(event.id)) {
+      throw new JsonFileEventStoreError(`Duplicate event id in JSON event store: ${event.id}`);
+    }
+    eventIds.add(event.id);
+
+    if (!Number.isInteger(event.sequence) || event.sequence < 0) {
+      throw new JsonFileEventStoreError(
+        `Invalid sequence in JSON event store for session ${event.sessionId}.`
+      );
+    }
+
+    const sessionSequences = sequencesBySession.get(event.sessionId) ?? new Set<number>();
+    if (sessionSequences.has(event.sequence)) {
+      throw new JsonFileEventStoreError(
+        `Duplicate sequence in JSON event store for session ${event.sessionId}: ${event.sequence}`
+      );
+    }
+    sessionSequences.add(event.sequence);
+    sequencesBySession.set(event.sessionId, sessionSequences);
+    eventCountsBySession.set(event.sessionId, (eventCountsBySession.get(event.sessionId) ?? 0) + 1);
+
+    if (event.idempotencyKey) {
+      const idempotencyLookupKey = `${event.sessionId}:${event.idempotencyKey}`;
+      const existingEventId = idempotencyEventIds.get(idempotencyLookupKey);
+      if (existingEventId !== undefined && existingEventId !== event.id) {
+        throw new JsonFileEventStoreError(
+          `Conflicting idempotency key in JSON event store for session ${event.sessionId}.`
+        );
+      }
+      idempotencyEventIds.set(idempotencyLookupKey, event.id);
+    }
+  }
+
+  for (const [sessionId, sequences] of sequencesBySession) {
+    const expectedCount = eventCountsBySession.get(sessionId) ?? 0;
+    for (let sequence = 0; sequence < expectedCount; sequence += 1) {
+      if (!sequences.has(sequence)) {
+        throw new JsonFileEventStoreError(
+          `JSON event store sequences for session ${sessionId} must be contiguous from 0.`
+        );
+      }
+    }
+  }
 }
 
 function cloneAndFreeze<TPayload>(event: EventEnvelope<TPayload>): StoredEvent<TPayload> {

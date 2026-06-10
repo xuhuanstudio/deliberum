@@ -150,7 +150,10 @@ async function addContribution(
 }
 
 function encodeWebGETSubmission(submission: unknown, chunkSize = Number.POSITIVE_INFINITY) {
-  const json = JSON.stringify(submission);
+  return encodeWebGETSubmissionJson(JSON.stringify(submission), chunkSize);
+}
+
+function encodeWebGETSubmissionJson(json: string, chunkSize = Number.POSITIVE_INFINITY) {
   const bytes = Buffer.from(json, "utf8");
   const chunks: string[] = [];
 
@@ -810,6 +813,12 @@ describe("daemon API", () => {
       await daemonApp.app.request(`${submitPath}?seq=1&total=1&encoding=base64url&data=secret`),
       "unsafe_query"
     );
+    await expectWebGETError(
+      await daemonApp.app.request(
+        `${submitPath}?seq=1&total=1&encoding=base64url&data=${Buffer.from('{"output":"sk-decoded123"}').toString("base64url")}`
+      ),
+      "unsafe_submission"
+    );
 
     const oversizedChunk = Buffer.alloc(16 * 1024 + 1, "x").toString("base64url");
     await expectWebGETError(
@@ -831,6 +840,85 @@ describe("daemon API", () => {
       "invalid_total"
     );
     expect(daemonApp.eventStore.listEvents(sessionId)).toHaveLength(initialEventCount);
+  });
+
+  it("WebGET commit rejects unsafe content after chunk reassembly and parsed JSON without append or SSE", async () => {
+    const reassembledDaemon = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetTokenGenerator: createTokenGenerator(["N".repeat(32)])
+    });
+    const reassembled = await createWebGETBatch(reassembledDaemon);
+    const reassembledReceived: unknown[] = [];
+    const unsubscribeReassembled = reassembledDaemon.eventBus.subscribe(reassembled.sessionId, (event) => {
+      reassembledReceived.push(event);
+    });
+    const splitJson = JSON.stringify(
+      webgetSubmission({
+        output: {
+          token: "sk-decoded123"
+        }
+      })
+    );
+    const splitAt = splitJson.indexOf("sk-") + "sk-".length;
+    const splitBytes = Buffer.from(splitJson, "utf8");
+    const splitEncoded = {
+      chunks: [
+        splitBytes.subarray(0, splitAt).toString("base64url"),
+        splitBytes.subarray(splitAt).toString("base64url")
+      ],
+      length: splitBytes.byteLength,
+      sha256: createHash("sha256").update(splitBytes).digest("hex")
+    };
+
+    await submitWebGETChunks(reassembledDaemon, reassembled.webget.startUrl, splitEncoded.chunks);
+    const reassembledResponse = await commitWebGET(
+      reassembledDaemon,
+      reassembled.webget.startUrl,
+      splitEncoded.chunks.length,
+      splitEncoded.sha256,
+      splitEncoded.length
+    );
+    const reassembledText = await reassembledResponse.clone().text();
+
+    await expectWebGETError(reassembledResponse, "unsafe_submission");
+    expect(reassembledText).not.toContain("sk-decoded123");
+    expect(reassembledDaemon.eventStore.listEvents(reassembled.sessionId)).toHaveLength(2);
+    expect(reassembledReceived).toEqual([]);
+    unsubscribeReassembled();
+
+    const parsedDaemon = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetTokenGenerator: createTokenGenerator(["O".repeat(32)])
+    });
+    const parsed = await createWebGETBatch(parsedDaemon);
+    const parsedReceived: unknown[] = [];
+    const unsubscribeParsed = parsedDaemon.eventBus.subscribe(parsed.sessionId, (event) => {
+      parsedReceived.push(event);
+    });
+    const escapedSecretJson = JSON.stringify(webgetSubmission({ output: "placeholder" })).replace(
+      '"placeholder"',
+      '"\\u0073\\u0065\\u0063\\u0072\\u0065\\u0074"'
+    );
+    const escapedEncoded = encodeWebGETSubmissionJson(escapedSecretJson);
+
+    await submitWebGETChunks(parsedDaemon, parsed.webget.startUrl, escapedEncoded.chunks);
+    const parsedResponse = await commitWebGET(
+      parsedDaemon,
+      parsed.webget.startUrl,
+      escapedEncoded.chunks.length,
+      escapedEncoded.sha256,
+      escapedEncoded.length
+    );
+    const parsedText = await parsedResponse.clone().text();
+
+    await expectWebGETError(parsedResponse, "unsafe_submission");
+    expect(parsedText).not.toContain("secret");
+    expect(parsedText).not.toContain("\\u0073");
+    expect(parsedDaemon.eventStore.listEvents(parsed.sessionId)).toHaveLength(2);
+    expect(parsedReceived).toEqual([]);
+    unsubscribeParsed();
   });
 
   it("WebGET commit rejects incomplete, malformed, mismatched, oversized, and expired submissions without append", async () => {
@@ -1029,6 +1117,70 @@ describe("daemon API", () => {
       "already_committed"
     );
     expect(daemonApp.eventStore.listEvents(sessionId)).toHaveLength(eventCountAfterSuccess);
+    unsubscribe();
+  });
+
+  it("WebGET commit finalization does not fail if the token expires after successful append", async () => {
+    let now = 0;
+    let expireDuringAppend = false;
+    const nextId = createIds();
+    const daemonApp = createDaemonApp({
+      idGenerator: () => {
+        const id = nextId();
+        if (expireDuringAppend) {
+          now = 2;
+        }
+        return id;
+      },
+      clock,
+      webgetClock: () => now,
+      webgetTokenGenerator: createTokenGenerator(["P".repeat(32)])
+    });
+    const { sessionId, webget } = await createWebGETBatch(daemonApp, { ttlMs: 1 });
+    const received: Array<{ type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(sessionId, (event) => {
+      received.push({
+        type: event.type
+      });
+    });
+    const encoded = encodeWebGETSubmission(webgetSubmission());
+
+    await submitWebGETChunks(daemonApp, webget.startUrl, encoded.chunks);
+    expireDuringAppend = true;
+
+    const response = await commitWebGET(
+      daemonApp,
+      webget.startUrl,
+      encoded.chunks.length,
+      encoded.sha256,
+      encoded.length
+    );
+    const body = (await response.json()) as { committed: boolean; event: { type: string } };
+
+    expect(response.status).toBe(201);
+    expect(body).toMatchObject({
+      committed: true,
+      event: {
+        type: "sealed_contribution_submitted"
+      }
+    });
+    expect(daemonApp.eventStore.listEvents(sessionId)).toHaveLength(3);
+    expect(received).toEqual([
+      {
+        type: "sealed_contribution_submitted"
+      }
+    ]);
+
+    const countAfterSuccess = daemonApp.eventStore.listEvents(sessionId).length;
+    const duplicateResponse = await commitWebGET(
+      daemonApp,
+      webget.startUrl,
+      encoded.chunks.length,
+      encoded.sha256,
+      encoded.length
+    );
+    expect(duplicateResponse.status).toBe(400);
+    expect(daemonApp.eventStore.listEvents(sessionId)).toHaveLength(countAfterSuccess);
     unsubscribe();
   });
 
