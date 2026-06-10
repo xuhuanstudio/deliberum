@@ -58,14 +58,17 @@ export type SealedDivergenceOptions = {
 export type OpenSealedBatchResult = {
   batchId: string;
   openedEvent: StoredEvent<SealedBatch>;
+  appended: boolean;
 };
 
 export type SubmitSealedContributionResult<TPayload = JsonValue> = {
   contributionEvent: StoredEvent<TPayload>;
+  appended: boolean;
 };
 
 export type CloseSealedBatchResult = {
   revealedEvent: StoredEvent<SealedBatch>;
+  appended: boolean;
 };
 
 type BatchState = {
@@ -94,7 +97,7 @@ export function openSealedBatch(
     revealPolicy: input.revealPolicy ?? "all_completed"
   });
 
-  const openedEvent = options.eventStore.appendEvent<SealedBatch>({
+  const appendResult = options.eventStore.appendEventResult<SealedBatch>({
     id: eventId,
     sessionId: input.sessionId,
     schemaVersion: getSchemaVersion(options),
@@ -108,10 +111,12 @@ export function openSealedBatch(
     trace: {},
     payload: openedBatch
   });
+  const openedEvent = appendResult.event;
 
   return {
     batchId: openedEvent.payload.id,
-    openedEvent
+    openedEvent,
+    appended: appendResult.appended
   };
 }
 
@@ -134,7 +139,7 @@ export function submitSealedContribution<TPayload = JsonValue>(
   assertNoDuplicateContribution(batchState, input);
 
   const payload = JsonValueSchema.parse(input.payload) as TPayload;
-  const contributionEvent = options.eventStore.appendEvent<TPayload>({
+  const appendResult = options.eventStore.appendEventResult<TPayload>({
     id: options.idGenerator(),
     sessionId: input.sessionId,
     schemaVersion: getSchemaVersion(options),
@@ -148,9 +153,11 @@ export function submitSealedContribution<TPayload = JsonValue>(
     trace: {},
     payload
   });
+  const contributionEvent = appendResult.event;
 
   return {
-    contributionEvent
+    contributionEvent,
+    appended: appendResult.appended
   };
 }
 
@@ -170,7 +177,7 @@ export function closeSealedBatch(
     revealedAt
   });
   const contributionEventIds = batchState.contributionEvents.map((event) => event.id);
-  const revealedEvent = options.eventStore.appendEvent<SealedBatch>({
+  const appendResult = options.eventStore.appendEventResult<SealedBatch>({
     id: options.idGenerator(),
     sessionId: input.sessionId,
     schemaVersion: getSchemaVersion(options),
@@ -184,9 +191,11 @@ export function closeSealedBatch(
     trace: {},
     payload: revealedBatch
   });
+  const revealedEvent = appendResult.event;
 
   return {
-    revealedEvent
+    revealedEvent,
+    appended: appendResult.appended
   };
 }
 

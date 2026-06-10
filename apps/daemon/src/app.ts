@@ -210,7 +210,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       coreOptions
     );
 
-    eventBus.publish(result.openedEvent);
+    if (result.appended) {
+      eventBus.publish(result.openedEvent);
+    }
 
     return context.json(
       {
@@ -235,7 +237,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       coreOptions
     );
 
-    eventBus.publish(result.contributionEvent);
+    if (result.appended) {
+      eventBus.publish(result.contributionEvent);
+    }
 
     return context.json(
       {
@@ -256,7 +260,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       coreOptions
     );
 
-    eventBus.publish(result.revealedEvent);
+    if (result.appended) {
+      eventBus.publish(result.revealedEvent);
+    }
 
     return context.json(
       {
@@ -283,7 +289,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       coreOptions
     );
 
-    eventBus.publish(result.proposalEvent);
+    if (result.appended) {
+      eventBus.publish(result.proposalEvent);
+    }
 
     return context.json(
       {
@@ -307,7 +315,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       coreOptions
     );
 
-    eventBus.publish(result.challengeEvent);
+    if (result.appended) {
+      eventBus.publish(result.challengeEvent);
+    }
 
     return context.json(
       {
@@ -330,7 +340,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       coreOptions
     );
 
-    eventBus.publish(result.acceptanceEvent);
+    if (result.appended) {
+      eventBus.publish(result.acceptanceEvent);
+    }
 
     return context.json(
       {

@@ -192,6 +192,8 @@ describe("extraction proposal lifecycle", () => {
       }
     );
 
+    expect(first.appended).toBe(true);
+    expect(retry.appended).toBe(false);
     expect(retry.proposalEvent).toEqual(first.proposalEvent);
     expect(retry.proposalId).toBe(first.proposalId);
     expect(retry.proposalId).toBe(retry.proposalEvent.payload.id);
@@ -297,6 +299,7 @@ describe("extraction proposal lifecycle", () => {
       }
     );
 
+    expect(result.appended).toBe(true);
     expect(result.challengeEvent.type).toBe(PROPOSAL_CHALLENGED_EVENT_TYPE);
     expect(result.challengeEvent.authorId).toBe("participant-3");
     expect(result.challengeEvent.basedOnEventIds).toEqual([proposal.id]);
@@ -307,6 +310,46 @@ describe("extraction proposal lifecycle", () => {
       status: "challenged"
     });
     expect(eventStore.getEvent(proposal.id)).toEqual(beforeChallenge);
+  });
+
+  it("reports idempotent challenge retries as existing events", () => {
+    const eventStore = createStore();
+    const proposal = proposeBasicExtraction(eventStore).proposalEvent;
+    const first = challengeProposal(
+      {
+        sessionId: "session-1",
+        targetProposalEventId: proposal.id,
+        authorId: "participant-3",
+        reason: "Challenge the extraction",
+        idempotencyKey: "same-challenge"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["challenge-1", "challenge-event-1"])
+      }
+    );
+    const retry = challengeProposal(
+      {
+        sessionId: "session-1",
+        targetProposalEventId: proposal.id,
+        authorId: "participant-3",
+        reason: "Challenge the extraction",
+        idempotencyKey: "same-challenge"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["challenge-2", "challenge-event-2"])
+      }
+    );
+
+    expect(first.appended).toBe(true);
+    expect(retry.appended).toBe(false);
+    expect(retry.challengeEvent).toEqual(first.challengeEvent);
+    expect(
+      eventStore
+        .listEvents("session-1")
+        .filter((event) => event.type === PROPOSAL_CHALLENGED_EVENT_TYPE)
+    ).toHaveLength(1);
   });
 
   it("appends acceptance events without assigning truth or mutating the original proposal", () => {
@@ -327,6 +370,7 @@ describe("extraction proposal lifecycle", () => {
       }
     );
 
+    expect(result.appended).toBe(true);
     expect(result.acceptanceEvent.type).toBe(PROPOSAL_ACCEPTED_EVENT_TYPE);
     expect(result.acceptanceEvent.basedOnEventIds).toEqual([proposal.id]);
     expect(result.acceptanceEvent.payload.status).toBe("accepted_for_now");
@@ -334,6 +378,46 @@ describe("extraction proposal lifecycle", () => {
     expect(result.acceptanceEvent.payload).not.toHaveProperty("finalAnswer");
     expect(result.acceptanceEvent.payload).not.toHaveProperty("currentBest");
     expect(eventStore.getEvent(proposal.id)).toEqual(beforeAcceptance);
+  });
+
+  it("reports idempotent acceptance retries as existing events", () => {
+    const eventStore = createStore();
+    const proposal = proposeBasicExtraction(eventStore).proposalEvent;
+    const first = acceptProposal(
+      {
+        sessionId: "session-1",
+        targetProposalEventId: proposal.id,
+        authorId: "participant-3",
+        rationale: "Useful enough for now",
+        idempotencyKey: "same-acceptance"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["acceptance-1", "acceptance-event-1"])
+      }
+    );
+    const retry = acceptProposal(
+      {
+        sessionId: "session-1",
+        targetProposalEventId: proposal.id,
+        authorId: "participant-3",
+        rationale: "Useful enough for now",
+        idempotencyKey: "same-acceptance"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["acceptance-2", "acceptance-event-2"])
+      }
+    );
+
+    expect(first.appended).toBe(true);
+    expect(retry.appended).toBe(false);
+    expect(retry.acceptanceEvent).toEqual(first.acceptanceEvent);
+    expect(
+      eventStore
+        .listEvents("session-1")
+        .filter((event) => event.type === PROPOSAL_ACCEPTED_EVENT_TYPE)
+    ).toHaveLength(1);
   });
 
   it("allows multiple extraction proposals to coexist for the same source events", () => {

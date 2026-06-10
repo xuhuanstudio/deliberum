@@ -568,6 +568,193 @@ describe("daemon API", () => {
     lateUnsubscribe();
   });
 
+  it("does not publish duplicate events for idempotent mutation retries", async () => {
+    const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
+    const { sessionId } = await createSession(daemonApp);
+    const received: Array<{ id: string; type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(sessionId, (event) => {
+      received.push({
+        id: event.id,
+        type: event.type
+      });
+    });
+
+    const firstOpen = (await (
+      await postJson(daemonApp.app, `/sessions/${sessionId}/batches`, {
+        purpose: "initial_divergence",
+        revealPolicy: "manual",
+        idempotencyKey: "open-batch"
+      })
+    ).json()) as { batchId: string; event: { id: string } };
+    const retryOpen = (await (
+      await postJson(daemonApp.app, `/sessions/${sessionId}/batches`, {
+        purpose: "initial_divergence",
+        revealPolicy: "manual",
+        idempotencyKey: "open-batch"
+      })
+    ).json()) as { batchId: string; event: { id: string } };
+
+    expect(retryOpen).toEqual(firstOpen);
+    expect(received).toEqual([
+      {
+        id: firstOpen.event.id,
+        type: "sealed_batch_opened"
+      }
+    ]);
+
+    const firstContribution = (await (
+      await postJson(
+        daemonApp.app,
+        `/sessions/${sessionId}/batches/${firstOpen.batchId}/contributions`,
+        {
+          authorId: "participant-1",
+          payload: {
+            message: "same logical contribution"
+          },
+          idempotencyKey: "contribution"
+        }
+      )
+    ).json()) as { event: { id: string } };
+    const retryContribution = (await (
+      await postJson(
+        daemonApp.app,
+        `/sessions/${sessionId}/batches/${firstOpen.batchId}/contributions`,
+        {
+          authorId: "participant-1",
+          payload: {
+            message: "same logical contribution"
+          },
+          idempotencyKey: "contribution"
+        }
+      )
+    ).json()) as { event: { id: string } };
+
+    expect(retryContribution).toEqual(firstContribution);
+    expect(received.map((event) => event.type)).toEqual([
+      "sealed_batch_opened",
+      "sealed_contribution_submitted"
+    ]);
+
+    const firstExtraction = (await (
+      await postJson(
+        daemonApp.app,
+        `/sessions/${sessionId}/extractions`,
+        {
+          ...extractionInput(firstContribution.event.id),
+          idempotencyKey: "extraction"
+        }
+      )
+    ).json()) as { proposalId: string; event: { id: string } };
+    const retryExtraction = (await (
+      await postJson(
+        daemonApp.app,
+        `/sessions/${sessionId}/extractions`,
+        {
+          ...extractionInput(firstContribution.event.id),
+          idempotencyKey: "extraction"
+        }
+      )
+    ).json()) as { proposalId: string; event: { id: string } };
+
+    expect(retryExtraction).toEqual(firstExtraction);
+    expect(received.map((event) => event.type)).toEqual([
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "extraction_proposed"
+    ]);
+
+    const firstChallenge = (await (
+      await postJson(
+        daemonApp.app,
+        `/sessions/${sessionId}/proposals/${firstExtraction.event.id}/challenges`,
+        {
+          authorId: "participant-2",
+          reason: "same challenge",
+          idempotencyKey: "challenge"
+        }
+      )
+    ).json()) as { event: { id: string } };
+    const retryChallenge = (await (
+      await postJson(
+        daemonApp.app,
+        `/sessions/${sessionId}/proposals/${firstExtraction.event.id}/challenges`,
+        {
+          authorId: "participant-2",
+          reason: "same challenge",
+          idempotencyKey: "challenge"
+        }
+      )
+    ).json()) as { event: { id: string } };
+
+    expect(retryChallenge).toEqual(firstChallenge);
+    expect(received.map((event) => event.type)).toEqual([
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "extraction_proposed",
+      "proposal_challenged"
+    ]);
+
+    const firstAcceptance = (await (
+      await postJson(
+        daemonApp.app,
+        `/sessions/${sessionId}/proposals/${firstExtraction.event.id}/acceptance`,
+        {
+          authorId: "participant-2",
+          rationale: "same acceptance",
+          idempotencyKey: "acceptance"
+        }
+      )
+    ).json()) as { event: { id: string } };
+    const retryAcceptance = (await (
+      await postJson(
+        daemonApp.app,
+        `/sessions/${sessionId}/proposals/${firstExtraction.event.id}/acceptance`,
+        {
+          authorId: "participant-2",
+          rationale: "same acceptance",
+          idempotencyKey: "acceptance"
+        }
+      )
+    ).json()) as { event: { id: string } };
+
+    expect(retryAcceptance).toEqual(firstAcceptance);
+    expect(received.map((event) => event.type)).toEqual([
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "extraction_proposed",
+      "proposal_challenged",
+      "proposal_accepted"
+    ]);
+
+    const closeResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${sessionId}/batches/${firstOpen.batchId}/close`,
+      {
+        idempotencyKey: "close"
+      }
+    );
+    const closeRetryResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${sessionId}/batches/${firstOpen.batchId}/close`,
+      {
+        idempotencyKey: "close"
+      }
+    );
+
+    expect(closeResponse.status).toBe(201);
+    expect(closeRetryResponse.status).toBe(400);
+    expect(received.map((event) => event.type)).toEqual([
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "extraction_proposed",
+      "proposal_challenged",
+      "proposal_accepted",
+      "sealed_batch_revealed"
+    ]);
+
+    unsubscribe();
+  });
+
   it("SSE endpoint streams new append-only events and not historical projection summaries", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
     const created = await createSession(daemonApp);
@@ -1125,6 +1312,46 @@ describe("daemon API", () => {
       "already_committed"
     );
     expect(daemonApp.eventStore.listEvents(sessionId)).toHaveLength(eventCountAfterSuccess);
+    unsubscribe();
+  });
+
+  it("WebGET commit does not republish when a second token hits the same contribution idempotency key", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetTokenGenerator: createTokenGenerator(["Q".repeat(32), "R".repeat(32)])
+    });
+    const { sessionId, batchId, webget: firstWebGET } = await createWebGETBatch(daemonApp);
+    const secondWebGET = daemonApp.createWebGETSession({
+      sessionId,
+      batchId,
+      participantId: "participant-web"
+    });
+    const received: Array<{ id: string; type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(sessionId, (event) => {
+      received.push({
+        id: event.id,
+        type: event.type
+      });
+    });
+
+    const firstResponse = await submitAndCommitWebGET(daemonApp, firstWebGET.startUrl);
+    const firstBody = (await firstResponse.json()) as { event: { id: string; type: string } };
+    const countAfterFirst = daemonApp.eventStore.listEvents(sessionId).length;
+    const secondResponse = await submitAndCommitWebGET(daemonApp, secondWebGET.startUrl);
+    const secondBody = (await secondResponse.json()) as { event: { id: string; type: string } };
+
+    expect(firstResponse.status).toBe(201);
+    expect(secondResponse.status).toBe(201);
+    expect(secondBody.event).toEqual(firstBody.event);
+    expect(daemonApp.eventStore.listEvents(sessionId)).toHaveLength(countAfterFirst);
+    expect(received).toEqual([
+      {
+        id: firstBody.event.id,
+        type: "sealed_contribution_submitted"
+      }
+    ]);
+
     unsubscribe();
   });
 

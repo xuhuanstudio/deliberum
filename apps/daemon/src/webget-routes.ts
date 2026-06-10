@@ -131,7 +131,9 @@ export function registerWebGETRoutes(options: WebGETRouteOptions): void {
     );
 
     options.webgetStore.finalizeCommittedSession(context.req.param("token"));
-    options.eventBus.publish(result.contributionEvent);
+    if (result.appended) {
+      options.eventBus.publish(result.contributionEvent);
+    }
 
     return noStoreJson(
       context,

@@ -74,6 +74,7 @@ function createFakeProjectionMetadata() {
 function createFakeStore(): EventStore {
   return {
     appendEvent: vi.fn(),
+    appendEventResult: vi.fn(),
     appendEvents: vi.fn(),
     getEvent: vi.fn(),
     listEvents: vi.fn(() => []),

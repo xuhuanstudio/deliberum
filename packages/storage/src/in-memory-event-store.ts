@@ -1,6 +1,7 @@
 import { EventEnvelopeSchema, type EventEnvelope, type EventVisibility } from "@deliberum/protocol";
 import { DuplicateEventIdError, InvalidEventInputError, InvalidEventRangeError } from "./errors";
-import type { AppendEventInput, EventStore } from "./event-store";
+import type { AppendEventInput, AppendEventResult, EventStore } from "./event-store";
+import { isCompatibleIdempotentEventInput } from "./idempotency";
 import { cloneAndFreezeEvent, type StoredEvent } from "./immutable";
 
 export type InMemoryEventStoreOptions = {
@@ -19,13 +20,28 @@ export class InMemoryEventStore implements EventStore {
   }
 
   appendEvent<TPayload = unknown>(input: AppendEventInput<TPayload>): StoredEvent<TPayload> {
+    return this.appendEventResult(input).event;
+  }
+
+  appendEventResult<TPayload = unknown>(
+    input: AppendEventInput<TPayload>
+  ): AppendEventResult<TPayload> {
     this.rejectStoreAssignedFields(input);
 
     const idempotencyLookupKey = this.createIdempotencyLookupKey(input);
     if (idempotencyLookupKey) {
       const existing = this.idempotencyBySessionAndKey.get(idempotencyLookupKey);
       if (existing) {
-        return cloneAndFreezeEvent(existing as EventEnvelope<TPayload>);
+        if (!isCompatibleIdempotentEventInput(existing as EventEnvelope, input)) {
+          throw new InvalidEventInputError(
+            "Idempotency key was reused for a different event input."
+          );
+        }
+
+        return {
+          event: cloneAndFreezeEvent(existing as EventEnvelope<TPayload>),
+          appended: false
+        };
       }
     }
 
@@ -53,7 +69,10 @@ export class InMemoryEventStore implements EventStore {
       this.idempotencyBySessionAndKey.set(idempotencyLookupKey, storedEvent);
     }
 
-    return cloneAndFreezeEvent(storedEvent as EventEnvelope<TPayload>);
+    return {
+      event: cloneAndFreezeEvent(storedEvent as EventEnvelope<TPayload>),
+      appended: true
+    };
   }
 
   appendEvents<TPayload = unknown>(inputs: AppendEventInput<TPayload>[]): StoredEvent<TPayload>[] {

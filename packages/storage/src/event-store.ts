@@ -9,8 +9,16 @@ export type AppendEventInput<TPayload = unknown> = Omit<
   recordedAt?: never;
 };
 
+export type AppendEventResult<TPayload = unknown> = {
+  event: StoredEvent<TPayload>;
+  appended: boolean;
+};
+
 export interface EventStore {
   appendEvent<TPayload = unknown>(input: AppendEventInput<TPayload>): StoredEvent<TPayload>;
+  appendEventResult<TPayload = unknown>(
+    input: AppendEventInput<TPayload>
+  ): AppendEventResult<TPayload>;
   appendEvents<TPayload = unknown>(inputs: AppendEventInput<TPayload>[]): StoredEvent<TPayload>[];
   getEvent<TPayload = unknown>(eventId: string): StoredEvent<TPayload> | undefined;
   listEvents(sessionId: string): StoredEvent[];

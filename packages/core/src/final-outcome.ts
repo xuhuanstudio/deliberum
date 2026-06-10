@@ -69,10 +69,12 @@ export type FinalOutcomeOptions = {
 export type ProposeFinalCandidateResult = {
   proposalId: string;
   proposalEvent: StoredEvent<FinalCandidateProposal>;
+  appended: boolean;
 };
 
 export type AuditFinalCandidateResult = {
   auditEvent: StoredEvent<FinalAudit>;
+  appended: boolean;
 };
 
 export type CompileOutcomeInput = {
@@ -178,7 +180,7 @@ export function proposeFinalCandidate(
     status: "proposed"
   });
 
-  const proposalEvent = options.eventStore.appendEvent<FinalCandidateProposal>({
+  const appendResult = options.eventStore.appendEventResult<FinalCandidateProposal>({
     id: options.idGenerator(),
     sessionId: input.sessionId,
     schemaVersion: getSchemaVersion(options),
@@ -191,10 +193,12 @@ export function proposeFinalCandidate(
     trace: {},
     payload: proposal
   });
+  const proposalEvent = appendResult.event;
 
   return {
     proposalId: proposalEvent.payload.id,
-    proposalEvent
+    proposalEvent,
+    appended: appendResult.appended
   };
 }
 
@@ -225,7 +229,7 @@ export function auditFinalCandidate(
     status: "recorded"
   });
 
-  const auditEvent = options.eventStore.appendEvent<FinalAudit>({
+  const appendResult = options.eventStore.appendEventResult<FinalAudit>({
     id: options.idGenerator(),
     sessionId: input.sessionId,
     schemaVersion: getSchemaVersion(options),
@@ -238,9 +242,11 @@ export function auditFinalCandidate(
     trace: {},
     payload: audit
   });
+  const auditEvent = appendResult.event;
 
   return {
-    auditEvent
+    auditEvent,
+    appended: appendResult.appended
   };
 }
 

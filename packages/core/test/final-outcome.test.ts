@@ -218,6 +218,7 @@ describe("final candidate proposal lifecycle", () => {
     );
 
     expect(eventStore.listEvents("session-1")).toHaveLength(beforeCount + 1);
+    expect(result.appended).toBe(true);
     expect(result.proposalEvent.type).toBe(FINAL_CANDIDATE_PROPOSED_EVENT_TYPE);
     expect(result.proposalEvent.payload.status).toBe("proposed");
     expect(result.proposalEvent.payload.candidateIds).toEqual(["candidate-1"]);
@@ -264,6 +265,8 @@ describe("final candidate proposal lifecycle", () => {
       }
     );
 
+    expect(first.appended).toBe(true);
+    expect(retry.appended).toBe(false);
     expect(retry.proposalEvent).toEqual(first.proposalEvent);
     expect(retry.proposalId).toBe(first.proposalId);
     expect(retry.proposalId).toBe(retry.proposalEvent.payload.id);
@@ -322,6 +325,7 @@ describe("final audit lifecycle", () => {
       }
     );
 
+    expect(result.appended).toBe(true);
     expect(result.auditEvent.type).toBe(FINAL_AUDIT_RECORDED_EVENT_TYPE);
     expect(result.auditEvent.basedOnEventIds).toEqual([proposal.id]);
     expect(result.auditEvent.payload.status).toBe("recorded");
@@ -330,6 +334,44 @@ describe("final audit lifecycle", () => {
     expect(result.auditEvent.payload).not.toHaveProperty("score");
     expect(result.auditEvent.payload).not.toHaveProperty("finalAnswer");
     expect(eventStore.getEvent(proposal.id)).toEqual(beforeAudit);
+  });
+
+  it("reports idempotent final audit retries as existing events", () => {
+    const eventStore = createStore();
+    proposeAndAcceptCandidateSet(eventStore);
+    const proposal = proposeFinal(eventStore);
+    const beforeCount = eventStore.listEvents("session-1").length;
+    const first = auditFinalCandidate(
+      {
+        sessionId: "session-1",
+        targetFinalCandidateProposalEventId: proposal.id,
+        authorId: "participant-7",
+        findings: ["The draft preserves alternatives."],
+        idempotencyKey: "same-final-audit"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["final-audit-1", "final-audit-event-1"])
+      }
+    );
+    const retry = auditFinalCandidate(
+      {
+        sessionId: "session-1",
+        targetFinalCandidateProposalEventId: proposal.id,
+        authorId: "participant-7",
+        findings: ["The draft preserves alternatives."],
+        idempotencyKey: "same-final-audit"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["final-audit-2", "final-audit-event-2"])
+      }
+    );
+
+    expect(first.appended).toBe(true);
+    expect(retry.appended).toBe(false);
+    expect(retry.auditEvent).toEqual(first.auditEvent);
+    expect(eventStore.listEvents("session-1")).toHaveLength(beforeCount + 1);
   });
 
   it("rejects missing, non-final-candidate, cross-session, and later target events", () => {
@@ -595,6 +637,7 @@ function createLaterTargetEventStore(
 ): EventStore {
   return {
     appendEvent: vi.fn(),
+    appendEventResult: vi.fn(),
     appendEvents: vi.fn(),
     getEvent: vi.fn(() => ({
       ...proposal,

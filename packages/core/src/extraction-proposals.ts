@@ -69,14 +69,17 @@ export type ExtractionProposalOptions = {
 export type ProposeExtractionResult = {
   proposalId: string;
   proposalEvent: StoredEvent<ExtractionProposal>;
+  appended: boolean;
 };
 
 export type ChallengeProposalResult = {
   challengeEvent: StoredEvent<ProposalChallengePayload>;
+  appended: boolean;
 };
 
 export type AcceptProposalResult = {
   acceptanceEvent: StoredEvent<ProposalAcceptancePayload>;
+  appended: boolean;
 };
 
 export function proposeExtraction(
@@ -143,7 +146,7 @@ export function proposeExtraction(
     status: "proposed"
   });
 
-  const proposalEvent = options.eventStore.appendEvent<ExtractionProposal>({
+  const appendResult = options.eventStore.appendEventResult<ExtractionProposal>({
     id: eventId,
     sessionId: input.sessionId,
     schemaVersion: getSchemaVersion(options),
@@ -156,10 +159,12 @@ export function proposeExtraction(
     trace: {},
     payload: proposal
   });
+  const proposalEvent = appendResult.event;
 
   return {
     proposalId: proposalEvent.payload.id,
-    proposalEvent
+    proposalEvent,
+    appended: appendResult.appended
   };
 }
 
@@ -181,7 +186,7 @@ export function challengeProposal(
     reason: input.reason,
     status: "challenged"
   });
-  const challengeEvent = options.eventStore.appendEvent<ProposalChallengePayload>({
+  const appendResult = options.eventStore.appendEventResult<ProposalChallengePayload>({
     id: options.idGenerator(),
     sessionId: input.sessionId,
     schemaVersion: getSchemaVersion(options),
@@ -194,9 +199,11 @@ export function challengeProposal(
     trace: {},
     payload: challengePayload
   });
+  const challengeEvent = appendResult.event;
 
   return {
-    challengeEvent
+    challengeEvent,
+    appended: appendResult.appended
   };
 }
 
@@ -218,7 +225,7 @@ export function acceptProposal(
     rationale: input.rationale,
     status: "accepted_for_now"
   });
-  const acceptanceEvent = options.eventStore.appendEvent<ProposalAcceptancePayload>({
+  const appendResult = options.eventStore.appendEventResult<ProposalAcceptancePayload>({
     id: options.idGenerator(),
     sessionId: input.sessionId,
     schemaVersion: getSchemaVersion(options),
@@ -231,9 +238,11 @@ export function acceptProposal(
     trace: {},
     payload: acceptancePayload
   });
+  const acceptanceEvent = appendResult.event;
 
   return {
-    acceptanceEvent
+    acceptanceEvent,
+    appended: appendResult.appended
   };
 }
 

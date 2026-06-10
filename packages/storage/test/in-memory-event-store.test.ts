@@ -139,15 +139,69 @@ describe("InMemoryEventStore append behavior", () => {
     const duplicate = store.appendEvent(
       createInput({
         id: "event-2",
-        idempotencyKey: "logical-event",
-        payload: {
-          label: "ignored duplicate"
-        }
+        idempotencyKey: "logical-event"
       })
     );
 
     expect(duplicate).toEqual(first);
     expect(duplicate).not.toBe(first);
+    expect(store.listEvents("session-1")).toHaveLength(1);
+  });
+
+  it("reports append result metadata for new appends and idempotent retries", () => {
+    const store = createStore();
+
+    const first = store.appendEventResult(
+      createInput({
+        id: "event-1",
+        idempotencyKey: "logical-event"
+      })
+    );
+    const retry = store.appendEventResult(
+      createInput({
+        id: "event-2",
+        idempotencyKey: "logical-event"
+      })
+    );
+
+    expect(first.appended).toBe(true);
+    expect(retry.appended).toBe(false);
+    expect(retry.event).toEqual(first.event);
+    expect(retry.event).not.toBe(first.event);
+    expect(store.listEvents("session-1")).toHaveLength(1);
+  });
+
+  it("rejects reused session-scoped idempotency keys for different event inputs", () => {
+    const store = createStore();
+
+    store.appendEvent(
+      createInput({
+        id: "event-1",
+        idempotencyKey: "logical-event"
+      })
+    );
+
+    expect(() =>
+      store.appendEventResult(
+        createInput({
+          id: "event-2",
+          idempotencyKey: "logical-event",
+          type: "different.event"
+        })
+      )
+    ).toThrow(InvalidEventInputError);
+
+    expect(() =>
+      store.appendEventResult(
+        createInput({
+          id: "event-3",
+          idempotencyKey: "logical-event",
+          payload: {
+            label: "different payload"
+          }
+        })
+      )
+    ).toThrow(InvalidEventInputError);
     expect(store.listEvents("session-1")).toHaveLength(1);
   });
 
@@ -181,6 +235,16 @@ describe("InMemoryEventStore append behavior", () => {
     store.appendEvent(createInput({ id: "event-1" }));
 
     expect(() => store.appendEvent(createInput({ id: "event-1" }))).toThrow(
+      DuplicateEventIdError
+    );
+  });
+
+  it("does not convert append conflicts into append result retries", () => {
+    const store = createStore();
+
+    store.appendEvent(createInput({ id: "event-1" }));
+
+    expect(() => store.appendEventResult(createInput({ id: "event-1" }))).toThrow(
       DuplicateEventIdError
     );
   });

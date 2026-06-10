@@ -84,6 +84,72 @@ describe("JsonFileEventStore", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("reports append result metadata while preserving idempotency across reloads", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, ".deliberum", "events.json");
+    const store = new JsonFileEventStore({
+      filePath,
+      clock: () => "2026-06-10T00:00:01.000Z"
+    });
+
+    const first = store.appendEventResult(
+      createInput({
+        idempotencyKey: "same-logical-event"
+      })
+    );
+    const retry = store.appendEventResult(
+      createInput({
+        id: "event-2",
+        idempotencyKey: "same-logical-event"
+      })
+    );
+    const reloaded = new JsonFileEventStore({ filePath });
+    const reloadedRetry = reloaded.appendEventResult(
+      createInput({
+        id: "event-3",
+        idempotencyKey: "same-logical-event"
+      })
+    );
+
+    expect(first.appended).toBe(true);
+    expect(retry.appended).toBe(false);
+    expect(retry.event).toEqual(first.event);
+    expect(reloadedRetry.appended).toBe(false);
+    expect(reloadedRetry.event).toEqual(first.event);
+    expect(reloaded.listEvents("session-1")).toHaveLength(1);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects append result retries with different event inputs", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, ".deliberum", "events.json");
+    const store = new JsonFileEventStore({
+      filePath,
+      clock: () => "2026-06-10T00:00:01.000Z"
+    });
+
+    store.appendEvent(
+      createInput({
+        idempotencyKey: "same-logical-event"
+      })
+    );
+
+    expect(() =>
+      store.appendEventResult(
+        createInput({
+          id: "event-2",
+          idempotencyKey: "same-logical-event",
+          payload: {
+            ok: false
+          }
+        })
+      )
+    ).toThrow(JsonFileEventStoreError);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("preserves query behavior across reloads", () => {
     const dir = createTempDir();
     const filePath = join(dir, ".deliberum", "events.json");

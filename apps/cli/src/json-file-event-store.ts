@@ -3,7 +3,13 @@ import {
   type EventEnvelope,
   type EventVisibility
 } from "@deliberum/protocol";
-import type { AppendEventInput, EventStore, StoredEvent } from "@deliberum/storage";
+import type {
+  AppendEventInput,
+  AppendEventResult,
+  EventStore,
+  StoredEvent
+} from "@deliberum/storage";
+import { isCompatibleIdempotentEventInput } from "@deliberum/storage";
 import { dirname, resolve } from "node:path";
 import {
   existsSync,
@@ -79,13 +85,28 @@ export class JsonFileEventStore implements EventStore {
   }
 
   appendEvent<TPayload = unknown>(input: AppendEventInput<TPayload>): StoredEvent<TPayload> {
+    return this.appendEventResult(input).event;
+  }
+
+  appendEventResult<TPayload = unknown>(
+    input: AppendEventInput<TPayload>
+  ): AppendEventResult<TPayload> {
     this.rejectStoreAssignedFields(input);
 
     const idempotencyLookupKey = this.createIdempotencyLookupKey(input);
     if (idempotencyLookupKey) {
       const existing = this.idempotencyBySessionAndKey.get(idempotencyLookupKey);
       if (existing) {
-        return cloneAndFreeze(existing as EventEnvelope<TPayload>);
+        if (!isCompatibleIdempotentEventInput(existing, input)) {
+          throw new JsonFileEventStoreError(
+            "Idempotency key was reused for a different event input."
+          );
+        }
+
+        return {
+          event: cloneAndFreeze(existing as EventEnvelope<TPayload>),
+          appended: false
+        };
       }
     }
 
@@ -104,7 +125,10 @@ export class JsonFileEventStore implements EventStore {
     this.storeEvent(parsedEvent);
     this.persist();
 
-    return cloneAndFreeze(parsedEvent);
+    return {
+      event: cloneAndFreeze(parsedEvent),
+      appended: true
+    };
   }
 
   appendEvents<TPayload = unknown>(inputs: AppendEventInput<TPayload>[]): StoredEvent<TPayload>[] {

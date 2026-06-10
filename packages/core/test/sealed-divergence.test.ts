@@ -95,6 +95,8 @@ describe("sealed divergence lifecycle", () => {
       }
     );
 
+    expect(first.appended).toBe(true);
+    expect(retry.appended).toBe(false);
     expect(retry.openedEvent).toEqual(first.openedEvent);
     expect(retry.batchId).toBe(first.batchId);
     expect(retry.batchId).toBe(retry.openedEvent.payload.id);
@@ -240,7 +242,7 @@ describe("sealed divergence lifecycle", () => {
         batchId: "batch-1",
         authorId: "participant-1",
         visibility: "sealed",
-        payload: "ignored duplicate",
+        payload: "sealed",
         idempotencyKey: "same-logical-contribution"
       },
       {
@@ -249,6 +251,8 @@ describe("sealed divergence lifecycle", () => {
       }
     );
 
+    expect(first.appended).toBe(true);
+    expect(sameLogical.appended).toBe(false);
     expect(sameLogical.contributionEvent).toEqual(first.contributionEvent);
     expect(eventStore.listEventsByBatch("session-1", "batch-1")).toHaveLength(2);
 
