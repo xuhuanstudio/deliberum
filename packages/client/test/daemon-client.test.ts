@@ -1,0 +1,201 @@
+import { describe, expect, it, vi } from "vitest";
+import {
+  DaemonClientError,
+  DeliberumDaemonClient,
+  type DaemonFetch,
+  type DaemonFetchInit
+} from "../src";
+import * as client from "../src";
+
+function createFetch(payload: unknown, ok = true, status = ok ? 200 : 400) {
+  return vi.fn(async () => ({
+    ok,
+    status,
+    json: vi.fn(async () => payload)
+  })) as unknown as ReturnType<typeof vi.fn> & DaemonFetch;
+}
+
+function getFetchCall(fetch: ReturnType<typeof vi.fn> & DaemonFetch) {
+  const call = fetch.mock.calls[0] as [string, DaemonFetchInit] | undefined;
+  if (!call) {
+    throw new Error("Expected fetch to be called.");
+  }
+
+  return call;
+}
+
+describe("DeliberumDaemonClient", () => {
+  it("calls health endpoint with the default local daemon base URL", async () => {
+    const fetch = createFetch({
+      status: "ok",
+      service: "deliberum-daemon",
+      host: "127.0.0.1",
+      port: 3877
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    const result = await daemonClient.health();
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:3877/health");
+    expect(init).toEqual({
+      method: "GET"
+    });
+    expect(result).toEqual({
+      status: "ok",
+      service: "deliberum-daemon",
+      host: "127.0.0.1",
+      port: 3877
+    });
+  });
+
+  it("posts session creation bodies without adding semantic logic", async () => {
+    const fetch = createFetch({
+      sessionId: "session-1",
+      event: {
+        type: "topic_contract_published"
+      }
+    });
+    const daemonClient = new DeliberumDaemonClient({
+      baseUrl: "http://127.0.0.1:4000/",
+      fetch
+    });
+    const topicContract = {
+      id: "topic-contract-1"
+    };
+
+    const result = await daemonClient.createSession({ topicContract });
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:4000/sessions");
+    expect(init.method).toBe("POST");
+    expect(init.headers).toEqual({
+      "Content-Type": "application/json"
+    });
+    expect(JSON.parse(init.body ?? "{}")).toEqual({ topicContract });
+    expect(result).toEqual({
+      sessionId: "session-1",
+      event: {
+        type: "topic_contract_published"
+      }
+    });
+  });
+
+  it("calls lifecycle and projection endpoints directly", async () => {
+    const fetch = createFetch({
+      basis: "accepted_active_candidates",
+      candidates: []
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    await daemonClient.openBatch("session/1", {
+      purpose: "initial_divergence",
+      revealPolicy: "manual"
+    });
+    await daemonClient.addContribution("session/1", "batch/1", {
+      authorId: "participant-1",
+      payload: {
+        message: "preserve user payload key"
+      }
+    });
+    await daemonClient.closeBatch("session/1", "batch/1");
+    await daemonClient.proposeExtraction("session/1", {
+      authorId: "participant-2",
+      rationale: "Extract proposal",
+      candidates: []
+    });
+    await daemonClient.challengeProposal("session/1", "proposal/1", {
+      authorId: "participant-3",
+      reason: "Challenge proposal"
+    });
+    await daemonClient.acceptProposal("session/1", "proposal/1", {
+      authorId: "participant-3",
+      rationale: "Accept for now"
+    });
+    await daemonClient.listEvents("session/1");
+    await daemonClient.getFrontier("session/1");
+    await daemonClient.getObjections("session/1");
+    await daemonClient.getObligations("session/1");
+
+    const urls = fetch.mock.calls.map((call) => call[0]);
+    expect(urls).toEqual([
+      "http://127.0.0.1:3877/sessions/session%2F1/batches",
+      "http://127.0.0.1:3877/sessions/session%2F1/batches/batch%2F1/contributions",
+      "http://127.0.0.1:3877/sessions/session%2F1/batches/batch%2F1/close",
+      "http://127.0.0.1:3877/sessions/session%2F1/extractions",
+      "http://127.0.0.1:3877/sessions/session%2F1/proposals/proposal%2F1/challenges",
+      "http://127.0.0.1:3877/sessions/session%2F1/proposals/proposal%2F1/acceptance",
+      "http://127.0.0.1:3877/sessions/session%2F1/events",
+      "http://127.0.0.1:3877/sessions/session%2F1/frontier",
+      "http://127.0.0.1:3877/sessions/session%2F1/objections",
+      "http://127.0.0.1:3877/sessions/session%2F1/obligations"
+    ]);
+  });
+
+  it("throws structured daemon client errors from daemon error payloads", async () => {
+    const fetch = createFetch(
+      {
+        error: {
+          code: "invalid_json",
+          message: "Request body must be valid JSON."
+        }
+      },
+      false,
+      400
+    );
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    await expect(daemonClient.createSession({ topicContract: {} })).rejects.toMatchObject({
+      name: "DaemonClientError",
+      status: 400,
+      code: "invalid_json",
+      message: "Request body must be valid JSON."
+    } satisfies Partial<DaemonClientError>);
+  });
+
+  it("does not export or implement projection or semantic-authority logic", () => {
+    const exportedNames = Object.keys(client);
+    const daemonClient = new DeliberumDaemonClient({
+      fetch: createFetch({})
+    }) as unknown as Record<string, unknown>;
+    const forbiddenNames = [
+      "projectCandidateFrontier",
+      "projectAcceptedDeliberationObjects",
+      "projectQualityObligations",
+      "Adapter",
+      "OpenAI",
+      "MCP",
+      "WebGET",
+      "ResourceBroker",
+      "PublicUrl",
+      "WebUI",
+      "Judge",
+      "VoteWinner",
+      "CurrentBest",
+      "CentralRanker",
+      "TruthSummary",
+      "Ranking",
+      "Voting",
+      "FinalAnswer"
+    ];
+
+    for (const exportedName of exportedNames) {
+      for (const forbiddenName of forbiddenNames) {
+        expect(exportedName).not.toContain(forbiddenName);
+      }
+    }
+
+    for (const methodName of [
+      "projectCandidateFrontier",
+      "currentBest",
+      "winner",
+      "rank",
+      "score",
+      "vote",
+      "finalAnswer",
+      "truthSummary"
+    ]) {
+      expect(daemonClient).not.toHaveProperty(methodName);
+    }
+  });
+});

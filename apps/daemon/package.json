@@ -13,6 +13,10 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@deliberum/core": "workspace:*",
+    "@deliberum/protocol": "workspace:*",
+    "@deliberum/storage": "workspace:*",
+    "@hono/node-server": "^2.0.2",
     "hono": "^4.12.24"
   }
 }
