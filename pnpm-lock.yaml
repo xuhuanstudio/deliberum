@@ -35,6 +35,9 @@ importers:
       '@deliberum/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@deliberum/orchestrator':
+        specifier: workspace:*
+        version: link:../../packages/orchestrator
       '@deliberum/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@deliberum/core": "workspace:*",
+    "@deliberum/orchestrator": "workspace:*",
     "@deliberum/protocol": "workspace:*",
     "@deliberum/resources": "workspace:*",
     "@deliberum/storage": "workspace:*",

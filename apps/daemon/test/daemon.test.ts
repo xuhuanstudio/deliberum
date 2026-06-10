@@ -2,6 +2,24 @@ import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import { InMemoryResourceBroker } from "@deliberum/resources";
 import {
+  AdapterRegistry,
+  ExtractionGeneratorRegistry,
+  FinalAuditGeneratorRegistry,
+  FinalCandidateGeneratorRegistry,
+  ProposalReviewGeneratorRegistry,
+  type ExtractionContext,
+  type ExtractionGenerator,
+  type ExtractionGeneratorResult,
+  type FinalAuditGenerator,
+  type FinalAuditGeneratorResult,
+  type FinalCandidateGenerator,
+  type FinalCandidateGeneratorResult,
+  type FinalizationContext,
+  type ProposalReviewGenerator,
+  type ProposalReviewGeneratorResult,
+  type RegisteredParticipantAdapter
+} from "@deliberum/orchestrator";
+import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
   createDaemonApp,
@@ -88,6 +106,139 @@ async function postJson(app: DaemonApp["app"], path: string, body: unknown): Pro
     },
     body: JSON.stringify(body)
   });
+}
+
+type SseFrame = {
+  event?: string;
+  id?: string;
+  data?: unknown;
+  raw: string;
+};
+
+async function readSseFramesUntil(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  predicate: (frames: readonly SseFrame[]) => boolean,
+  timeoutMs = 1000
+): Promise<SseFrame[]> {
+  const decoder = new TextDecoder();
+  const deadline = Date.now() + timeoutMs;
+  const frames: SseFrame[] = [];
+  let buffer = "";
+
+  while (Date.now() < deadline) {
+    const remainingMs = Math.max(deadline - Date.now(), 1);
+    const readResult = await Promise.race([
+      reader.read(),
+      new Promise<"timeout">((resolve) => {
+        setTimeout(() => resolve("timeout"), remainingMs);
+      })
+    ]);
+
+    if (readResult === "timeout" || readResult.done) {
+      break;
+    }
+
+    buffer += decoder.decode(readResult.value, { stream: true });
+
+    for (;;) {
+      const boundary = findSseFrameBoundary(buffer);
+      if (!boundary) {
+        break;
+      }
+
+      const rawFrame = buffer.slice(0, boundary.index);
+      buffer = buffer.slice(boundary.index + boundary.length);
+
+      if (rawFrame.trim().length > 0) {
+        frames.push(parseSseFrame(rawFrame));
+      }
+    }
+
+    if (predicate(frames)) {
+      return frames;
+    }
+  }
+
+  throw new Error("Timed out waiting for SSE frames.");
+}
+
+function findSseFrameBoundary(buffer: string): { index: number; length: number } | undefined {
+  const lfIndex = buffer.indexOf("\n\n");
+  const crlfIndex = buffer.indexOf("\r\n\r\n");
+
+  if (lfIndex === -1 && crlfIndex === -1) {
+    return undefined;
+  }
+
+  if (crlfIndex !== -1 && (lfIndex === -1 || crlfIndex < lfIndex)) {
+    return {
+      index: crlfIndex,
+      length: 4
+    };
+  }
+
+  return {
+    index: lfIndex,
+    length: 2
+  };
+}
+
+function parseSseFrame(raw: string): SseFrame {
+  const frame: SseFrame = {
+    raw
+  };
+  const dataLines: string[] = [];
+
+  for (const line of raw.split(/\r?\n/)) {
+    if (line.startsWith("event:")) {
+      frame.event = line.slice("event:".length).trimStart();
+      continue;
+    }
+
+    if (line.startsWith("id:")) {
+      frame.id = line.slice("id:".length).trimStart();
+      continue;
+    }
+
+    if (line.startsWith("data:")) {
+      dataLines.push(line.slice("data:".length).trimStart());
+    }
+  }
+
+  if (dataLines.length > 0) {
+    frame.data = JSON.parse(dataLines.join("\n"));
+  }
+
+  return frame;
+}
+
+function parseSseFramesText(text: string): SseFrame[] {
+  const frames: SseFrame[] = [];
+  let buffer = text;
+
+  for (;;) {
+    const boundary = findSseFrameBoundary(buffer);
+    if (!boundary) {
+      break;
+    }
+
+    const rawFrame = buffer.slice(0, boundary.index);
+    buffer = buffer.slice(boundary.index + boundary.length);
+
+    if (rawFrame.trim().length > 0) {
+      frames.push(parseSseFrame(rawFrame));
+    }
+  }
+
+  return frames;
+}
+
+function sseEventData(frames: readonly SseFrame[]): Record<string, unknown>[] {
+  return frames.map((frame) => frame.data).filter(isRecord);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function createSession(daemonApp: DaemonApp): Promise<{ sessionId: string; event: { type: string } }> {
@@ -255,6 +406,345 @@ async function expectWebGETError(response: Response, code: string): Promise<void
   expect(JSON.stringify(body)).not.toContain("/Users/");
 }
 
+function orchestratedRunPlan(
+  options: { providerConfig?: boolean; revealPolicy?: "all_completed" | "manual" } = {}
+) {
+  return {
+    title: "Daemon run orchestration",
+    topic: "Should Deliberum expose run orchestration through the local daemon?",
+    goals: ["Exercise the completed local orchestration pipeline."],
+    constraints: ["Keep the daemon as a transport and control surface."],
+    participants: [
+      {
+        id: "participant-cli",
+        kind: "model",
+        displayName: "CLI-first participant",
+        adapterId: "fake-cli",
+        ...(options.providerConfig ? { providerConfigId: "provider-cli" } : {})
+      },
+      {
+        id: "participant-web",
+        kind: "model",
+        displayName: "Web-first participant",
+        adapterId: "fake-web"
+      }
+    ],
+    providerConfigs: options.providerConfig
+      ? [
+          {
+            id: "provider-cli",
+            adapterId: "fake-cli",
+            providerConfigId: "provider-cli",
+            modelId: "fake-model",
+            baseUrl: "http://127.0.0.1:11434",
+            apiKeyEnvVar: "DELIBERUM_TEST_API_KEY",
+            timeoutMs: 1000
+          }
+        ]
+      : [],
+    budget: {
+      maxEvents: 80,
+      maxProviderCalls: 20
+    },
+    timeouts: {
+      participantMs: 1000,
+      overallMs: 30000
+    },
+    output: {
+      language: "en",
+      style: "concise",
+      expectations: ["Return provisional outcome material only."]
+    },
+    sealedDivergence: {
+      purpose: "initial_divergence",
+      revealPolicy: options.revealPolicy ?? "all_completed",
+      participantIds: ["participant-cli", "participant-web"]
+    }
+  };
+}
+
+function startFullRunRequest() {
+  return {
+    sealedDivergence: {
+      autoCloseManual: true
+    },
+    extraction: {
+      generatorIds: ["fake-extractor"]
+    },
+    review: {
+      reviewerIds: ["fake-reviewer"],
+      acceptancePolicy: {
+        mode: "all_generated_unchallenged",
+        authorId: "review-coordinator",
+        rationale: "Accept generated unchallenged proposals for this local daemon run."
+      }
+    },
+    finalization: {
+      finalCandidateGeneratorId: "fake-final",
+      auditGeneratorIds: ["fake-auditor"],
+      compileOutcome: true
+    }
+  };
+}
+
+async function createRun(
+  daemonApp: DaemonApp,
+  runPlan: unknown = orchestratedRunPlan()
+): Promise<{ run: { runId: string; sessionId: string }; event: { type: string } }> {
+  const response = await postJson(daemonApp.app, "/runs", {
+    runPlan
+  });
+
+  expect(response.status).toBe(201);
+
+  return (await response.json()) as {
+    run: { runId: string; sessionId: string };
+    event: { type: string };
+  };
+}
+
+function createRunDaemon(options: {
+  providerSecret?: string;
+  slowAdapter?: {
+    adapterId: "fake-cli" | "fake-web";
+    resolve: (resolvePayload: () => void) => void;
+    onCall?: () => void;
+  };
+} = {}): DaemonApp {
+  return createDaemonApp({
+    idGenerator: createIds(),
+    clock,
+    runEnv: options.providerSecret
+      ? {
+          DELIBERUM_TEST_API_KEY: options.providerSecret
+        }
+      : undefined,
+    runAdapterRegistry: new AdapterRegistry([
+      createParticipantAdapter("fake-cli", {
+        position: "Expose the run API after orchestrator hardening.",
+        reason: "The local daemon can control execution without owning semantic state."
+      }, options.slowAdapter?.adapterId === "fake-cli" ? options.slowAdapter : undefined),
+      createParticipantAdapter("fake-web", {
+        position: "Keep Web integration deferred.",
+        reason: "Stage 20A should stay local daemon-only."
+      }, options.slowAdapter?.adapterId === "fake-web" ? options.slowAdapter : undefined)
+    ]),
+    runExtractionGeneratorRegistry: new ExtractionGeneratorRegistry([
+      createExtractionGenerator()
+    ]),
+    runProposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([
+      createProposalReviewer()
+    ]),
+    runFinalCandidateGeneratorRegistry: new FinalCandidateGeneratorRegistry([
+      createFinalCandidateGenerator()
+    ]),
+    runFinalAuditGeneratorRegistry: new FinalAuditGeneratorRegistry([
+      createFinalAuditGenerator()
+    ])
+  });
+}
+
+function createParticipantAdapter(
+  adapterId: string,
+  payload: Record<string, string>,
+  slow?: {
+    resolve: (resolvePayload: () => void) => void;
+    onCall?: () => void;
+  }
+): RegisteredParticipantAdapter {
+  const capabilities = {
+    input: {
+      text: true,
+      markdown: true,
+      json: true,
+      imageUrl: false,
+      imageBase64: false,
+      pdfUrl: false,
+      fileUrl: false,
+      webBrowsing: false
+    },
+    output: {
+      structuredJson: true,
+      markdown: true,
+      streaming: false,
+      manualPaste: false
+    },
+    limits: {},
+    reliability: "high" as const
+  };
+
+  return {
+    adapterId,
+    capabilities,
+    async prepareContribution(_input, context) {
+      slow?.onCall?.();
+
+      if (slow) {
+        await new Promise<void>((resolve) => {
+          slow.resolve(resolve);
+        });
+      }
+
+      return {
+        payload: {
+          ...payload,
+          participantId: context.participantId
+        },
+        adapterId,
+        participantId: context.participantId,
+        capabilities,
+        contextCompleteness: {
+          status: "complete",
+          notes: []
+        },
+        warnings: []
+      };
+    }
+  };
+}
+
+function createExtractionGenerator(): ExtractionGenerator {
+  return {
+    generatorId: "fake-extractor",
+    generateExtractionProposal(_input, context) {
+      return createExtractionResult(context);
+    }
+  };
+}
+
+function createExtractionResult(context: ExtractionContext): ExtractionGeneratorResult {
+  const sourceEventIds = [context.metadata.allowedSourceEventIds[0]!];
+
+  return {
+    candidates: [
+      {
+        id: "candidate-daemon-run-api",
+        title: "Expose local daemon run orchestration API",
+        description: "Expose the completed orchestrator pipeline through safe local daemon routes.",
+        sourceEventIds,
+        status: "active",
+        supportedBy: ["claim-daemon-control-surface"],
+        attackedBy: ["objection-daemon-authority-risk"],
+        qualityObligationIds: ["quality-daemon-safe-view"],
+        assumptions: ["The EventStore remains the append-only source of truth."],
+        tradeoffs: ["CLI and Web run work remains deferred."]
+      }
+    ],
+    claims: [
+      {
+        id: "claim-daemon-control-surface",
+        content: "The daemon can start orchestrator stages without becoming semantic authority.",
+        scope: "design",
+        sourceEventIds,
+        supports: ["candidate-daemon-run-api"]
+      }
+    ],
+    objections: [
+      {
+        id: "objection-daemon-authority-risk",
+        targetId: "candidate-daemon-run-api",
+        failureMode: "A transport layer could accidentally expose authority-like fields.",
+        consequence: "Safe views must omit authority-only answer semantics.",
+        severityClaim: "major",
+        status: "open",
+        sourceEventIds,
+        responses: []
+      }
+    ],
+    qualityObligations: [
+      {
+        id: "quality-daemon-safe-view",
+        scope: "candidate",
+        targetCandidateId: "candidate-daemon-run-api",
+        requirement: "Run API responses must expose safe operational state only.",
+        status: "unanswered",
+        sourceEventIds,
+        supportingRefIds: ["claim-daemon-control-surface"],
+        unresolvedObjectionIds: ["objection-daemon-authority-risk"]
+      }
+    ],
+    rationale: "Extract traceable proposal material from revealed participant contributions."
+  };
+}
+
+function createProposalReviewer(): ProposalReviewGenerator {
+  return {
+    reviewerId: "fake-reviewer",
+    reviewProposals(): ProposalReviewGeneratorResult {
+      return {
+        challenges: [],
+        notes: ["No challenge for deterministic daemon pipeline coverage."]
+      };
+    }
+  };
+}
+
+function createFinalCandidateGenerator(): FinalCandidateGenerator {
+  return {
+    generatorId: "fake-final",
+    proposeFinalCandidate(_input, context): FinalCandidateGeneratorResult {
+      const candidateId = context.frontier.candidates[0]?.object.id;
+
+      if (!candidateId) {
+        throw new Error("Expected accepted candidate in test fixture.");
+      }
+
+      return {
+        candidateIds: [candidateId],
+        recommendation: "Use the local daemon run API as a provisional orchestration control surface.",
+        applicabilityConditions: ["Only for local process-bound daemon execution."],
+        rationale: "The accepted proposal keeps semantic writes inside orchestrator/core APIs.",
+        limitations: ["No CLI/Web run workspace and no real provider execution in Stage 20A."]
+      };
+    }
+  };
+}
+
+function createFinalAuditGenerator(): FinalAuditGenerator {
+  return {
+    auditorId: "fake-auditor",
+    auditFinalCandidate(_input, context: FinalizationContext): FinalAuditGeneratorResult {
+      return {
+        findings: ["The final candidate is recorded as a proposal, not a settled answer."],
+        risks: ["Persistent daemon storage and real providers remain deferred."],
+        unresolvedObjectionIds: context.unresolvedObjectionIds,
+        qualityObligationIds: context.qualityObligations.qualityObligations.map(
+          (entry) => entry.object.id
+        ),
+        evidenceNeedIds: context.evidenceNeedIds,
+        omissions: ["No public hosting or auth is included."],
+        compressionProblems: [],
+        limitations: ["The compiled outcome remains provisional."],
+        continuationSuggestions: ["Add CLI and Web run surfaces in later stages."]
+      };
+    }
+  };
+}
+
+function expectSafeRunApiPayload(value: unknown, secret = "sk-runtime-secret"): void {
+  const text = JSON.stringify(value);
+
+  expect(text).not.toContain(secret);
+  expect(text).not.toContain("Authorization");
+  expect(text).not.toContain("Bearer ");
+  expect(text).not.toContain("/Users/");
+  expect(text).not.toContain("\"apiKey\"");
+  expect(text).not.toContain("DELIBERUM_TEST_API_KEY");
+
+  for (const forbiddenTerm of [
+    "winner",
+    "currentBest",
+    "ranking",
+    "score",
+    "vote",
+    "finalAnswer",
+    "truthSummary",
+    "Judge"
+  ]) {
+    expect(text).not.toContain(forbiddenTerm);
+  }
+}
+
 async function createWebGETBatch(
   daemonApp: DaemonApp,
   options: {
@@ -406,6 +896,467 @@ describe("daemon API", () => {
     expect(bodyText).not.toContain("Authorization");
     expect(bodyText).not.toContain("SyntaxError");
     expect(bodyText).not.toContain("stack");
+  });
+
+  it("creates run records through orchestrator and returns safe run views only", async () => {
+    const secret = "sk-runtime-secret";
+    const daemonApp = createRunDaemon({ providerSecret: secret });
+    const created = await createRun(daemonApp, orchestratedRunPlan({ providerConfig: true }));
+    const listResponse = await daemonApp.app.request("/runs");
+    const detailResponse = await daemonApp.app.request(`/runs/${created.run.runId}`);
+    const listBody = (await listResponse.json()) as {
+      runs: Array<{ runId: string; sessionId: string; topic: string }>;
+    };
+    const detailBody = (await detailResponse.json()) as {
+      run: {
+        runId: string;
+        sessionId: string;
+        plan: {
+          providerConfigs: Array<{
+            id: string;
+            adapterId: string;
+            modelId?: string;
+            hasApiKeyEnvVar: boolean;
+          }>;
+        };
+      };
+    };
+    const sessionEvents = daemonApp.eventStore.listEvents(created.run.sessionId);
+
+    expect(created.event.type).toBe("topic_contract_published");
+    expect(created.run.runId).toBe("id-1");
+    expect(created.run.sessionId).toBe("id-3");
+    expect(sessionEvents).toHaveLength(1);
+    expect(listResponse.status).toBe(200);
+    expect(listBody.runs).toEqual([
+      expect.objectContaining({
+        runId: created.run.runId,
+        sessionId: created.run.sessionId,
+        topic: "Should Deliberum expose run orchestration through the local daemon?"
+      })
+    ]);
+    expect(detailResponse.status).toBe(200);
+    expect(detailBody.run.plan.providerConfigs).toEqual([
+      {
+        id: "provider-cli",
+        adapterId: "fake-cli",
+        providerConfigId: "provider-cli",
+        modelId: "fake-model",
+        timeoutMs: 1000,
+        hasApiKeyEnvVar: true
+      }
+    ]);
+    expectSafeRunApiPayload(created, secret);
+    expectSafeRunApiPayload(listBody, secret);
+    expectSafeRunApiPayload(detailBody, secret);
+  });
+
+  it("runs the full deterministic local pipeline through daemon run start", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const startResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    const startBody = (await startResponse.json()) as {
+      stopped: boolean;
+      stages: Array<{ stage: string; executionStatus: string; eventIds: string[] }>;
+      run: { rounds: { finalization: Array<{ outcomeCompilation?: { status: string } }> } };
+    };
+    const events = daemonApp.eventStore.listEvents(created.run.sessionId);
+    const eventTypes = events.map((event) => event.type);
+    const frontier = (await (
+      await daemonApp.app.request(`/sessions/${created.run.sessionId}/frontier`)
+    ).json()) as { candidates: Array<{ object: { id: string } }> };
+    const outcomeResponse = await daemonApp.app.request(`/runs/${created.run.runId}/outcome`);
+    const outcomeBody = (await outcomeResponse.json()) as {
+      status: string;
+      draftStatus?: string;
+      outcome?: { recommendation: string; provenance: { finalCandidateProposalEventId?: string } };
+    };
+
+    expect(startResponse.status).toBe(200);
+    expect(startBody.stopped).toBe(false);
+    expect(startBody.stages.map((stage) => stage.stage)).toEqual([
+      "sealed_divergence",
+      "extraction",
+      "proposal_review",
+      "finalization"
+    ]);
+    expect(startBody.stages.every((stage) => stage.executionStatus === "executed")).toBe(true);
+    expect(eventTypes).toEqual([
+      "topic_contract_published",
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "sealed_contribution_submitted",
+      "sealed_batch_revealed",
+      "extraction_proposed",
+      "proposal_accepted",
+      "final_candidate_proposed",
+      "final_audit_recorded"
+    ]);
+    expect(
+      events
+        .slice(1)
+        .every((event) => event.idempotencyKey?.startsWith("orchestrator:"))
+    ).toBe(true);
+    expect(frontier.candidates).toEqual([
+      expect.objectContaining({
+        object: expect.objectContaining({
+          id: "candidate-daemon-run-api"
+        })
+      })
+    ]);
+    expect(outcomeResponse.status).toBe(200);
+    expect(outcomeBody).toMatchObject({
+      status: "compiled",
+      draftStatus: "provisional",
+      outcome: {
+        recommendation: "Use the local daemon run API as a provisional orchestration control surface."
+      }
+    });
+    expect(outcomeBody.outcome?.provenance.finalCandidateProposalEventId).toBeDefined();
+    expect(startBody.run.rounds.finalization.at(-1)?.outcomeCompilation?.status).toBe("compiled");
+    expectSafeRunApiPayload(startBody);
+    expectSafeRunApiPayload(outcomeBody);
+  });
+
+  it("returns a safe not_available outcome before final candidate proposal exists", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const response = await daemonApp.app.request(`/runs/${created.run.runId}/outcome`);
+    const body = (await response.json()) as { status: string; reason: string };
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({
+      runId: created.run.runId,
+      sessionId: created.run.sessionId,
+      status: "not_available",
+      reason: "final_candidate_proposal_unavailable"
+    });
+    expectSafeRunApiPayload(body);
+  });
+
+  it("does not duplicate ledger events or SSE publications on run start retry", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const received: Array<{ id: string; type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(created.run.sessionId, (event) => {
+      received.push({
+        id: event.id,
+        type: event.type
+      });
+    });
+    const firstResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    const firstBody = (await firstResponse.json()) as { stages: Array<{ eventIds: string[] }> };
+    const eventCountAfterFirst = daemonApp.eventStore.listEvents(created.run.sessionId).length;
+    const receivedAfterFirst = received.length;
+    const secondResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    const secondBody = (await secondResponse.json()) as { stages: Array<{ eventIds: string[] }> };
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    expect(firstBody.stages.flatMap((stage) => stage.eventIds)).toHaveLength(8);
+    expect(secondBody.stages.flatMap((stage) => stage.eventIds)).toEqual([]);
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(eventCountAfterFirst);
+    expect(received).toHaveLength(receivedAfterFirst);
+
+    unsubscribe();
+  });
+
+  it("returns already_running for concurrent run start without duplicate component execution", async () => {
+    let resolveSlowAdapter!: () => void;
+    let slowAdapterCalls = 0;
+    const daemonApp = createRunDaemon({
+      slowAdapter: {
+        adapterId: "fake-cli",
+        onCall: () => {
+          slowAdapterCalls += 1;
+        },
+        resolve: (resolvePayload) => {
+          resolveSlowAdapter = resolvePayload;
+        }
+      }
+    });
+    const created = await createRun(daemonApp);
+    const request = {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    };
+    const firstStart = postJson(daemonApp.app, `/runs/${created.run.runId}/start`, request);
+
+    while (slowAdapterCalls === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    const secondResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      request
+    );
+    const secondBody = (await secondResponse.json()) as {
+      stopped: boolean;
+      stopReason?: string;
+      stages: Array<{ executionStatus: string }>;
+    };
+
+    resolveSlowAdapter();
+
+    const firstResponse = await firstStart;
+
+    expect(secondResponse.status).toBe(200);
+    expect(secondBody).toMatchObject({
+      stopped: true,
+      stopReason: "already_running",
+      stages: [
+        {
+          executionStatus: "already_running"
+        }
+      ]
+    });
+    expect(firstResponse.status).toBe(200);
+    expect(slowAdapterCalls).toBe(1);
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId).map((event) => event.type)).toEqual([
+      "topic_contract_published",
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "sealed_contribution_submitted",
+      "sealed_batch_revealed"
+    ]);
+  });
+
+  it("returns a safe structured error when requested run components are unavailable", async () => {
+    const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
+    const created = await createRun(daemonApp);
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
+    expectSafeRunApiPayload(body);
+  });
+
+  it("keeps injected provider secrets out of run responses, ledger events, and errors", async () => {
+    const secret = "sk-runtime-secret";
+    const daemonApp = createRunDaemon({ providerSecret: secret });
+    const created = await createRun(daemonApp, orchestratedRunPlan({ providerConfig: true }));
+    const startResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    const detailResponse = await daemonApp.app.request(`/runs/${created.run.runId}`);
+    const listResponse = await daemonApp.app.request("/runs");
+    const outcomeResponse = await daemonApp.app.request(`/runs/${created.run.runId}/outcome`);
+    const errorResponse = await daemonApp.app.request("/runs/missing-run", {
+      headers: {
+        Authorization: `Bearer ${secret}`
+      }
+    });
+    const payloads = [
+      await startResponse.json(),
+      await detailResponse.json(),
+      await listResponse.json(),
+      await outcomeResponse.json(),
+      await errorResponse.json(),
+      {
+        events: daemonApp.eventStore.listEvents(created.run.sessionId)
+      }
+    ];
+
+    expect(startResponse.status).toBe(200);
+    expect(detailResponse.status).toBe(200);
+    expect(listResponse.status).toBe(200);
+    expect(outcomeResponse.status).toBe(200);
+    expect(errorResponse.status).toBe(404);
+
+    for (const payload of payloads) {
+      expectSafeRunApiPayload(payload, secret);
+    }
+    expect(JSON.stringify(daemonApp.runStore.getRun(created.run.runId))).not.toContain(secret);
+  });
+
+  it("run SSE streams only new ledger events without projection or outcome summaries", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const response = await daemonApp.app.request(`/runs/${created.run.runId}/events/stream`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+    expect(response.body).not.toBeNull();
+
+    const reader = response.body!.getReader();
+    const pendingRead = reader.read();
+    const noReplay = await Promise.race([
+      pendingRead.then(() => "data"),
+      new Promise<"none">((resolve) => {
+        setTimeout(() => resolve("none"), 10);
+      })
+    ]);
+
+    expect(noReplay).toBe("none");
+
+    await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+
+    const chunk = await Promise.race([
+      pendingRead,
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("Timed out waiting for run SSE event.")), 1000);
+      })
+    ]);
+    const text = new TextDecoder().decode(chunk.value);
+    const frames = parseSseFramesText(text);
+    const events = sseEventData(frames);
+    const openedEvent = events.find((event) => event.type === "sealed_batch_opened");
+
+    expect(text).toContain("event: event");
+    expect(text).toContain("sealed_batch_opened");
+    expect(openedEvent?.payload).toEqual(
+      expect.objectContaining({
+        status: "open"
+      })
+    );
+    expect(text).not.toContain("accepted_active_candidates");
+    expect(text).not.toContain("candidateFrontierSummary");
+    expect(text).not.toContain("finalAnswer");
+    expect(text).not.toContain("truthSummary");
+
+    await reader.cancel();
+  });
+
+  it("run SSE redacts unrevealed sealed contribution payloads during manual reveal", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp, orchestratedRunPlan({ revealPolicy: "manual" }));
+    const response = await daemonApp.app.request(`/runs/${created.run.runId}/events/stream`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).not.toBeNull();
+
+    const reader = response.body!.getReader();
+    const framesPromise = readSseFramesUntil(reader, (frames) =>
+      sseEventData(frames).some((event) => event.type === "sealed_contribution_submitted")
+    );
+
+    const startResponse = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {}
+    });
+    const startBody = (await startResponse.json()) as { stopped: boolean; stopReason?: string };
+    const frames = await framesPromise;
+    const events = sseEventData(frames);
+    const contributionEvent = events.find((event) => event.type === "sealed_contribution_submitted");
+    const storedEvents = daemonApp.eventStore.listEvents(created.run.sessionId);
+    const serializedFrames = JSON.stringify(frames);
+
+    expect(startResponse.status).toBe(200);
+    expect(startBody).toMatchObject({
+      stopped: true,
+      stopReason: "waiting_for_reveal"
+    });
+    expect(storedEvents.some((event) => event.type === "sealed_contribution_submitted")).toBe(true);
+    expect(storedEvents.some((event) => event.type === "sealed_batch_revealed")).toBe(false);
+    expect(JSON.stringify(storedEvents)).toContain(
+      "The local daemon can control execution without owning semantic state."
+    );
+    expect(serializedFrames).not.toContain(
+      "The local daemon can control execution without owning semantic state."
+    );
+    expect(contributionEvent?.payload).toEqual({
+      redacted: true,
+      reason: "sealed_until_reveal"
+    });
+
+    await reader.cancel();
+  });
+
+  it("run SSE redacts private and redacted event payloads", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const response = await daemonApp.app.request(`/runs/${created.run.runId}/events/stream`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).not.toBeNull();
+
+    const reader = response.body!.getReader();
+    const framesPromise = readSseFramesUntil(reader, (frames) =>
+      sseEventData(frames).filter((event) =>
+        event.type === "daemon_private_test_event" ||
+        event.type === "daemon_redacted_test_event"
+      ).length === 2
+    );
+    const privateEvent = daemonApp.eventStore.appendEvent({
+      id: "run-sse-private-event",
+      sessionId: created.run.sessionId,
+      schemaVersion: "1",
+      type: "daemon_private_test_event",
+      authorId: "system",
+      createdAt: clock(),
+      basedOnEventIds: [],
+      visibility: "private",
+      trace: {},
+      payload: {
+        hidden: "run sse private payload must stay hidden"
+      }
+    });
+    const redactedEvent = daemonApp.eventStore.appendEvent({
+      id: "run-sse-redacted-event",
+      sessionId: created.run.sessionId,
+      schemaVersion: "1",
+      type: "daemon_redacted_test_event",
+      authorId: "system",
+      createdAt: clock(),
+      basedOnEventIds: [],
+      visibility: "redacted",
+      trace: {},
+      payload: {
+        hidden: "run sse redacted payload must stay hidden"
+      }
+    });
+
+    daemonApp.eventBus.publish(privateEvent);
+    daemonApp.eventBus.publish(redactedEvent);
+
+    const frames = await framesPromise;
+    const events = sseEventData(frames);
+    const privateView = events.find((event) => event.type === "daemon_private_test_event");
+    const redactedView = events.find((event) => event.type === "daemon_redacted_test_event");
+    const serializedFrames = JSON.stringify(frames);
+
+    expect(serializedFrames).not.toContain("run sse private payload must stay hidden");
+    expect(serializedFrames).not.toContain("run sse redacted payload must stay hidden");
+    expect(privateView?.payload).toEqual({
+      redacted: true,
+      reason: "event_visibility"
+    });
+    expect(redactedView?.payload).toEqual({
+      redacted: true,
+      reason: "event_visibility"
+    });
+
+    await reader.cancel();
   });
 
   it("creates sessions through core and returns append-only event entries", async () => {

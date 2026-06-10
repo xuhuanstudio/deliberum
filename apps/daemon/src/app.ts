@@ -24,6 +24,8 @@ import { Hono, type Context } from "hono";
 import { streamSSE } from "hono/streaming";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { DaemonEventBus } from "./event-stream";
+import { DaemonRunOrchestrationService, type DaemonRunOrchestrationOptions } from "./run-orchestration";
+import { handleRunRouteError, registerRunRoutes } from "./run-routes";
 import { handleWebGETRouteError, registerWebGETRoutes } from "./webget-routes";
 import {
   WebGETSessionStore,
@@ -42,6 +44,15 @@ export type DaemonAppOptions = {
   webgetBaseUrl?: string;
   resourceBroker?: ResourceBroker;
   deliveryPlanner?: DeliveryPlanner;
+  runStore?: DaemonRunOrchestrationOptions["runStore"];
+  runAdapterRegistry?: DaemonRunOrchestrationOptions["adapterRegistry"];
+  runExtractionGeneratorRegistry?: DaemonRunOrchestrationOptions["extractionGeneratorRegistry"];
+  runProposalReviewGeneratorRegistry?: DaemonRunOrchestrationOptions["proposalReviewGeneratorRegistry"];
+  runFinalCandidateGeneratorRegistry?: DaemonRunOrchestrationOptions["finalCandidateGeneratorRegistry"];
+  runFinalAuditGeneratorRegistry?: DaemonRunOrchestrationOptions["finalAuditGeneratorRegistry"];
+  runEnv?: DaemonRunOrchestrationOptions["env"];
+  runExecutionClaimTtlMs?: DaemonRunOrchestrationOptions["executionClaimTtlMs"];
+  runExecutionClaimOwnerIdGenerator?: DaemonRunOrchestrationOptions["executionClaimOwnerIdGenerator"];
   idGenerator?: IdGenerator;
   clock?: Clock;
   host?: string;
@@ -55,6 +66,7 @@ export type DaemonApp = {
   webgetStore: WebGETSessionStore;
   resourceBroker: ResourceBroker;
   deliveryPlanner: DeliveryPlanner;
+  runStore: NonNullable<DaemonRunOrchestrationOptions["runStore"]>;
   host: string;
   port: number;
   createWebGETSession: (input: WebGETSessionInput) => WebGETSessionPublicView;
@@ -99,6 +111,21 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       tokenGenerator: options.webgetTokenGenerator,
       baseUrl: options.webgetBaseUrl ?? `http://${host}:${port}`
     });
+  const runService = new DaemonRunOrchestrationService({
+    eventStore,
+    runStore: options.runStore,
+    eventBus,
+    idGenerator,
+    clock,
+    adapterRegistry: options.runAdapterRegistry,
+    extractionGeneratorRegistry: options.runExtractionGeneratorRegistry,
+    proposalReviewGeneratorRegistry: options.runProposalReviewGeneratorRegistry,
+    finalCandidateGeneratorRegistry: options.runFinalCandidateGeneratorRegistry,
+    finalAuditGeneratorRegistry: options.runFinalAuditGeneratorRegistry,
+    env: options.runEnv,
+    executionClaimTtlMs: options.runExecutionClaimTtlMs,
+    executionClaimOwnerIdGenerator: options.runExecutionClaimOwnerIdGenerator
+  });
   const app = new Hono();
   const coreOptions = {
     eventStore,
@@ -106,7 +133,18 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     clock
   };
 
-  app.onError((error, context) => handleWebGETRouteError(context, error) ?? safeError(context, error));
+  app.onError((error, context) =>
+    handleWebGETRouteError(context, error) ??
+    handleRunRouteError(context, error) ??
+    safeError(context, error)
+  );
+
+  registerRunRoutes({
+    app,
+    runService,
+    eventBus,
+    eventStore
+  });
 
   app.get("/health", (context) =>
     context.json({
@@ -370,6 +408,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     webgetStore,
     resourceBroker,
     deliveryPlanner,
+    runStore: runService.runStore,
     host,
     port,
     createWebGETSession: (input) => webgetStore.createSession(input)

@@ -42,10 +42,18 @@ CLI view commands return structured JSON. `frontier`, `objections`, and `obligat
 
 The current daemon is a local Hono API. It binds to `127.0.0.1` by default, does not enable wildcard CORS by default, and uses a process-local `InMemoryEventStore`. State resets when the daemon process restarts.
 
+The daemon also owns a process-local in-memory run store for local orchestration control. Run endpoints expose safe operational views over orchestrator state; they do not expose provider secrets, own Candidate Frontier semantics, select a single answer, or turn compiled outcomes into authoritative truth.
+
 Implemented endpoints:
 
 ```text
 GET  /health
+GET  /runs
+GET  /runs/:runId
+GET  /runs/:runId/events/stream
+GET  /runs/:runId/outcome
+POST /runs
+POST /runs/:runId/start
 GET  /sessions/:sessionId/events
 GET  /sessions/:sessionId/events/stream
 GET  /sessions/:sessionId/frontier
@@ -60,6 +68,8 @@ POST /sessions/:sessionId/proposals/:proposalEventId/challenges
 POST /sessions/:sessionId/proposals/:proposalEventId/acceptance
 ```
 
+Run orchestration is synchronous and local in the current daemon. Component registries must be injected by the embedding process or tests; the daemon does not provide fake or real provider-backed defaults.
+
 Experimental WebGET endpoints are local daemon endpoints:
 
 ```text
@@ -71,7 +81,7 @@ GET /webget/:token/submit
 GET /webget/:token/commit
 ```
 
-Deferred daemon work includes persistent SQLite storage, final outcome endpoints, resource delivery endpoints outside WebGET, production authentication, and remote/multi-user deployment.
+Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, real provider-backed execution defaults, CLI run commands, Web run workspace integration, production authentication, and remote/multi-user deployment.
 
 ## Web UI
 
