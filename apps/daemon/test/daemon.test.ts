@@ -863,11 +863,136 @@ describe("daemon API", () => {
     const contextText = await contextResponse.text();
 
     expect(contributionResponse.status).toBe(201);
+    const contribution = (await contributionResponse.json()) as { event: { id: string } };
     expect(contextResponse.status).toBe(200);
     expectNoStore(contextResponse);
     expect(contextText).toContain("redacted");
-    expect(contextText).toContain("Sealed contribution payload is hidden until reveal.");
+    expect(contextText).toContain("sealed_until_reveal");
     expect(contextText).not.toContain("sealed payload must stay hidden");
+
+    const storedContribution = daemonApp.eventStore.getEvent(contribution.event.id);
+    expect(storedContribution?.payload).toEqual({
+      secretNote: "sealed payload must stay hidden"
+    });
+
+    const revealResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${sessionId}/batches/${batchId}/close`,
+      {}
+    );
+    const revealedContextText = await (
+      await daemonApp.app.request(webgetPath(webget.startUrl, "/context/events"))
+    ).text();
+
+    expect(revealResponse.status).toBe(201);
+    expect(revealedContextText).toContain("sealed payload must stay hidden");
+  });
+
+  it("WebGET context redacts private and redacted event payloads while exposing public payloads", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetTokenGenerator: createTokenGenerator()
+    });
+    const { sessionId } = await createSession(daemonApp);
+    const publicEvent = daemonApp.eventStore.appendEvent({
+      id: "public-context-event",
+      sessionId,
+      schemaVersion: "1",
+      type: "context_public",
+      authorId: "system",
+      createdAt: "2026-06-10T00:00:00.000Z",
+      basedOnEventIds: [],
+      visibility: "public",
+      trace: {},
+      payload: {
+        note: "public payload may be visible"
+      }
+    });
+    const privateEvent = daemonApp.eventStore.appendEvent({
+      id: "private-context-event",
+      sessionId,
+      schemaVersion: "1",
+      type: "context_private",
+      authorId: "system",
+      createdAt: "2026-06-10T00:00:00.000Z",
+      basedOnEventIds: [publicEvent.id],
+      visibility: "private",
+      trace: {
+        promptHash: "private-event-trace-hash"
+      },
+      payload: {
+        secretNote: "private payload must not leak"
+      }
+    });
+    const redactedEvent = daemonApp.eventStore.appendEvent({
+      id: "redacted-context-event",
+      sessionId,
+      schemaVersion: "1",
+      type: "context_redacted",
+      authorId: "system",
+      createdAt: "2026-06-10T00:00:00.000Z",
+      basedOnEventIds: [],
+      visibility: "redacted",
+      trace: {},
+      payload: {
+        secretNote: "redacted payload must not leak"
+      }
+    });
+    const webget = daemonApp.createWebGETSession({
+      sessionId,
+      batchId: "context-batch",
+      participantId: "participant-web"
+    });
+    const contextResponse = await daemonApp.app.request(webgetPath(webget.startUrl, "/context/events"));
+    const contextText = await contextResponse.clone().text();
+    const contextBody = (await contextResponse.json()) as {
+      events: Array<{
+        id: string;
+        type: string;
+        sessionId: string;
+        sequence: number;
+        visibility: string;
+        basedOnEventIds: string[];
+        trace: unknown;
+        payload: unknown;
+      }>;
+    };
+    const eventsById = new Map(contextBody.events.map((event) => [event.id, event]));
+
+    expect(contextResponse.status).toBe(200);
+    expectNoStore(contextResponse);
+    expect(eventsById.get(publicEvent.id)?.payload).toEqual({
+      note: "public payload may be visible"
+    });
+    expect(eventsById.get(privateEvent.id)).toMatchObject({
+      id: privateEvent.id,
+      type: "context_private",
+      sessionId,
+      sequence: privateEvent.sequence,
+      visibility: "private",
+      basedOnEventIds: [publicEvent.id],
+      trace: {
+        promptHash: "private-event-trace-hash"
+      },
+      payload: {
+        redacted: true,
+        reason: "event_visibility"
+      }
+    });
+    expect(eventsById.get(redactedEvent.id)?.payload).toEqual({
+      redacted: true,
+      reason: "event_visibility"
+    });
+    expect(contextText).toContain("public payload may be visible");
+    expect(contextText).not.toContain("private payload must not leak");
+    expect(contextText).not.toContain("redacted payload must not leak");
+    expect(daemonApp.eventStore.getEvent(privateEvent.id)?.payload).toEqual({
+      secretNote: "private payload must not leak"
+    });
+    expect(daemonApp.eventStore.getEvent(redactedEvent.id)?.payload).toEqual({
+      secretNote: "redacted payload must not leak"
+    });
   });
 
   it("WebGET resource endpoint plans url, base64, and none delivery without leaking metadata material", async () => {

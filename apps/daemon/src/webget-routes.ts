@@ -4,6 +4,7 @@ import {
   projectQualityObligations,
   submitSealedContribution,
   SEALED_BATCH_REVEALED_EVENT_TYPE,
+  SEALED_CONTRIBUTION_SUBMITTED_EVENT_TYPE,
   type Clock,
   type IdGenerator
 } from "@deliberum/core";
@@ -301,24 +302,41 @@ function visibleEventsForWebGET(eventStore: EventStore, sessionId: string): unkn
   const events = eventStore.listEvents(sessionId);
   const revealedBatchIds = new Set(
     events
-      .filter((event) => event.type === SEALED_BATCH_REVEALED_EVENT_TYPE)
+      .filter(
+        (event) => event.type === SEALED_BATCH_REVEALED_EVENT_TYPE && event.visibility === "public"
+      )
       .map((event) => event.batchId)
       .filter((batchId): batchId is string => typeof batchId === "string")
   );
 
   return events.map((event) => {
-    if (event.visibility !== "sealed" || (event.batchId && revealedBatchIds.has(event.batchId))) {
+    if (event.type === SEALED_CONTRIBUTION_SUBMITTED_EVENT_TYPE) {
+      if (event.visibility === "sealed" && event.batchId && revealedBatchIds.has(event.batchId)) {
+        return event;
+      }
+
+      return redactEventPayloadForWebGET(event, "sealed_until_reveal");
+    }
+
+    if (event.visibility === "public") {
       return event;
     }
 
-    return {
-      ...event,
-      payload: {
-        redacted: true,
-        reason: "Sealed contribution payload is hidden until reveal."
-      }
-    };
+    return redactEventPayloadForWebGET(event, "event_visibility");
   });
+}
+
+function redactEventPayloadForWebGET(
+  event: ReturnType<EventStore["listEvents"]>[number],
+  reason: "event_visibility" | "sealed_until_reveal"
+): unknown {
+  return {
+    ...event,
+    payload: {
+      redacted: true,
+      reason
+    }
+  };
 }
 
 function createCommittedContributionPayload(committed: {
