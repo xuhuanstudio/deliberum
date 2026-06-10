@@ -25,6 +25,7 @@ import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { DaemonEventBus } from "./event-stream";
+import { createLocalPresetRunRegistries } from "./local-preset";
 import { DaemonRunOrchestrationService, type DaemonRunOrchestrationOptions } from "./run-orchestration";
 import { handleRunRouteError, registerRunRoutes } from "./run-routes";
 import { handleWebGETRouteError, registerWebGETRoutes } from "./webget-routes";
@@ -54,6 +55,7 @@ export type DaemonAppOptions = {
   runEnv?: DaemonRunOrchestrationOptions["env"];
   runExecutionClaimTtlMs?: DaemonRunOrchestrationOptions["executionClaimTtlMs"];
   runExecutionClaimOwnerIdGenerator?: DaemonRunOrchestrationOptions["executionClaimOwnerIdGenerator"];
+  enableLocalPreset?: boolean;
   idGenerator?: IdGenerator;
   clock?: Clock;
   host?: string;
@@ -105,6 +107,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   const port = options.port ?? DEFAULT_DAEMON_PORT;
   const resourceBroker = options.resourceBroker ?? new InMemoryResourceBroker();
   const deliveryPlanner = options.deliveryPlanner ?? new DeliveryPlanner({ broker: resourceBroker });
+  const localPresetRegistries = options.enableLocalPreset
+    ? createLocalPresetRunRegistries()
+    : undefined;
   const webgetStore =
     options.webgetStore ??
     new WebGETSessionStore({
@@ -120,11 +125,19 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     eventBus,
     idGenerator,
     clock,
-    adapterRegistry: options.runAdapterRegistry,
-    extractionGeneratorRegistry: options.runExtractionGeneratorRegistry,
-    proposalReviewGeneratorRegistry: options.runProposalReviewGeneratorRegistry,
-    finalCandidateGeneratorRegistry: options.runFinalCandidateGeneratorRegistry,
-    finalAuditGeneratorRegistry: options.runFinalAuditGeneratorRegistry,
+    adapterRegistry: options.runAdapterRegistry ?? localPresetRegistries?.adapterRegistry,
+    extractionGeneratorRegistry:
+      options.runExtractionGeneratorRegistry ??
+      localPresetRegistries?.extractionGeneratorRegistry,
+    proposalReviewGeneratorRegistry:
+      options.runProposalReviewGeneratorRegistry ??
+      localPresetRegistries?.proposalReviewGeneratorRegistry,
+    finalCandidateGeneratorRegistry:
+      options.runFinalCandidateGeneratorRegistry ??
+      localPresetRegistries?.finalCandidateGeneratorRegistry,
+    finalAuditGeneratorRegistry:
+      options.runFinalAuditGeneratorRegistry ??
+      localPresetRegistries?.finalAuditGeneratorRegistry,
     env: options.runEnv,
     executionClaimTtlMs: options.runExecutionClaimTtlMs,
     executionClaimOwnerIdGenerator: options.runExecutionClaimOwnerIdGenerator

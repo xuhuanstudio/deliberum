@@ -179,6 +179,7 @@ function readWebSource(): string {
     "src/client.ts",
     "src/daemon-runtime.tsx",
     "src/routes.tsx",
+    "src/run-presets.ts",
     "src/run-workspace.tsx",
     "src/view-components.tsx"
   ]
@@ -287,9 +288,15 @@ describe("@deliberum/web shell", () => {
 
     await screen.findByText("Daemon runs");
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    expect(screen.getByText("How local runs work")).toBeTruthy();
+    expect(screen.getByText("A controlled orchestration job owned by the local daemon run store.")).toBeTruthy();
+    expect(screen.getByText("The underlying append-only event ledger session created for the run.")).toBeTruthy();
+    expect(screen.getByText(/Recorded lifecycle events/)).toBeTruthy();
+    expect(screen.getByText(/compiled artifact from accepted proposal material/)).toBeTruthy();
     expect(screen.getByText("Run Alpha")).toBeTruthy();
     expect(screen.getByText("run-1")).toBeTruthy();
-    expect(screen.getAllByText("completed").length).toBeGreaterThan(0);
+    expect(screen.getByText("Created: run exists, pipeline has not started.")).toBeTruthy();
+    expect(screen.getAllByText("Completed").length).toBeGreaterThan(0);
   });
 
   it("creates a run from a JSON run plan object", async () => {
@@ -301,7 +308,7 @@ describe("@deliberum/web shell", () => {
     };
 
     await screen.findByText("Create a daemon run");
-    fireEvent.change(screen.getByLabelText("Run plan JSON"), {
+    fireEvent.change(screen.getByLabelText("Advanced run plan JSON"), {
       target: {
         value: JSON.stringify(runPlan)
       }
@@ -317,7 +324,7 @@ describe("@deliberum/web shell", () => {
     const client = renderApp("/runs/new");
 
     await screen.findByText("Create a daemon run");
-    fireEvent.change(screen.getByLabelText("Run plan JSON"), {
+    fireEvent.change(screen.getByLabelText("Advanced run plan JSON"), {
       target: {
         value: "{"
       }
@@ -327,7 +334,7 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Run plan must be valid JSON.")).toBeTruthy();
     expect(client.createRun).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Run plan JSON"), {
+    fireEvent.change(screen.getByLabelText("Advanced run plan JSON"), {
       target: {
         value: "[]"
       }
@@ -336,6 +343,38 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("Run plan must be a JSON object.")).toBeTruthy();
     expect(client.createRun).not.toHaveBeenCalled();
+  });
+
+  it("fills and creates the local preset run plan", async () => {
+    const client = renderApp("/runs/new");
+
+    await screen.findByText("Create a daemon run");
+    fireEvent.change(screen.getByLabelText("Advanced run plan JSON"), {
+      target: {
+        value: "{}"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Fill local preset run plan" }));
+
+    expect(
+      (screen.getByLabelText("Advanced run plan JSON") as HTMLTextAreaElement).value
+    ).toContain("local-preset-alpha");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create local preset run" }));
+
+    await waitFor(() =>
+      expect(client.createRun).toHaveBeenCalledWith({
+        runPlan: expect.objectContaining({
+          title: "Local preset run",
+          providerConfigs: [],
+          participants: expect.arrayContaining([
+            expect.objectContaining({
+              adapterId: "local-preset-alpha"
+            })
+          ])
+        })
+      })
+    );
   });
 
   it("renders run detail, stage status, and projection panels without raw event loading", async () => {
@@ -349,10 +388,42 @@ describe("@deliberum/web shell", () => {
 
     expect(screen.getByText("Run status")).toBeTruthy();
     expect(screen.getByText("Ledger events")).toBeTruthy();
+    expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
+    expect(screen.getByText("Current run meaning")).toBeTruthy();
     expect(screen.getByText("Stage status")).toBeTruthy();
     expect(screen.getByText("Candidate Frontier projection")).toBeTruthy();
-    expect(screen.getByText(/candidate-1/)).toBeTruthy();
+    expect(screen.getByText("Candidate A")).toBeTruthy();
+    expect(screen.getByText("Objections projection")).toBeTruthy();
+    expect(screen.getAllByText(/objection-1/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Quality obligations projection")).toBeTruthy();
+    expect(screen.getAllByText(/quality-1/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Projection events").length).toBeGreaterThan(0);
     expect(client.listEvents).not.toHaveBeenCalled();
+  });
+
+  it("explains created runs and stages that have not run yet", async () => {
+    renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: {
+            ...runDetail,
+            sealedDivergenceStatus: undefined,
+            latestExtractionStatus: undefined,
+            latestProposalReviewStatus: undefined,
+            latestFinalizationStatus: undefined,
+            ledger: {
+              eventCount: 1
+            }
+          }
+        }))
+      })
+    );
+
+    expect(await screen.findByText("Created: run exists, pipeline has not started.")).toBeTruthy();
+    expect(screen.getByText("1 recorded lifecycle event")).toBeTruthy();
+    expect(screen.getAllByText("Not run yet").length).toBeGreaterThanOrEqual(4);
+    expect(screen.getByText("No round has been recorded for that stage.")).toBeTruthy();
   });
 
   it("starts a run from a JSON start request and renders only stage metadata", async () => {
@@ -364,7 +435,7 @@ describe("@deliberum/web shell", () => {
     };
 
     await screen.findByText("Start orchestration");
-    fireEvent.change(screen.getByLabelText("Start request JSON"), {
+    fireEvent.change(screen.getByLabelText("Advanced start request JSON"), {
       target: {
         value: JSON.stringify(startRequest)
       }
@@ -379,13 +450,69 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("do not render this result payload");
   });
 
+  it("fills and starts the full local preset pipeline through the client", async () => {
+    const client = renderApp("/runs/run-1");
+
+    await screen.findByText("Start orchestration");
+    fireEvent.change(screen.getByLabelText("Advanced start request JSON"), {
+      target: {
+        value: "{}"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Fill local preset start request" }));
+
+    expect(
+      (screen.getByLabelText("Advanced start request JSON") as HTMLTextAreaElement).value
+    ).toContain("local-preset-extractor");
+
+    fireEvent.click(screen.getByRole("button", { name: "Start full local preset pipeline" }));
+
+    await waitFor(() =>
+      expect(client.startRun).toHaveBeenCalledWith(
+        "run-1",
+        expect.objectContaining({
+          extraction: {
+            generatorIds: ["local-preset-extractor"]
+          },
+          finalization: expect.objectContaining({
+            finalCandidateGeneratorId: "local-preset-final-candidate",
+            compileOutcome: true
+          })
+        })
+      )
+    );
+  });
+
+  it("explains missing local preset components safely", async () => {
+    const error = new Error("Required orchestration component is unavailable.");
+    Object.assign(error, {
+      code: "orchestration_component_unavailable",
+      status: 400
+    });
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        startRun: vi.fn(async () => {
+          throw error;
+        })
+      })
+    );
+
+    await screen.findByText("Start orchestration");
+    fireEvent.click(screen.getByRole("button", { name: "Start full local preset pipeline" }));
+
+    expect(await screen.findByText("Run start failed")).toBeTruthy();
+    expect(screen.getAllByText(/DELIBERUM_ENABLE_LOCAL_PRESET=true/).length).toBeGreaterThan(0);
+    expect(document.body.textContent ?? "").not.toContain("stack");
+  });
+
   it("renders compiled run output as a provisional outcome", async () => {
     const client = renderApp("/runs/run-1/outcome");
 
     await screen.findByText("Provisional outcome");
     await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
     expect(screen.getByText("Draft status")).toBeTruthy();
-    expect(screen.getByText(/provisional/)).toBeTruthy();
+    expect(screen.getAllByText(/provisional/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Provisional compiled material/)).toBeTruthy();
   });
 
@@ -402,7 +529,7 @@ describe("@deliberum/web shell", () => {
     renderApp("/runs/run-1/outcome", client);
 
     expect(await screen.findByText("Provisional outcome not available")).toBeTruthy();
-    expect(screen.getByText(/final_candidate_proposal_unavailable/)).toBeTruthy();
+    expect(screen.getByText(/No final candidate proposal exists yet/)).toBeTruthy();
   });
 
   it("redacts daemon and generic errors on run pages", async () => {

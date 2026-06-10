@@ -22,47 +22,14 @@ import {
   getStringRecordValue,
   sanitizeForDisplay
 } from "./view-components";
+import {
+  LOCAL_PRESET_RUN_PLAN,
+  LOCAL_PRESET_START_REQUEST,
+  formatPresetJson
+} from "./run-presets";
 
-const DEFAULT_RUN_PLAN_TEXT = JSON.stringify(
-  {
-    title: "Local run",
-    topic: "Describe the deliberation topic.",
-    goals: ["Map the main proposals and unresolved issues."],
-    constraints: ["Keep conclusions provisional."],
-    participants: [
-      {
-        id: "participant-1",
-        kind: "manual_bridge",
-        displayName: "Manual participant",
-        adapterId: "manual"
-      }
-    ],
-    providerConfigs: [],
-    budget: {
-      maxProviderCalls: 4
-    },
-    timeouts: {},
-    output: {
-      expectations: ["Preserve limitations and unresolved issues."]
-    },
-    sealedDivergence: {
-      purpose: "initial_divergence",
-      revealPolicy: "manual"
-    }
-  },
-  null,
-  2
-);
-
-const DEFAULT_START_REQUEST_TEXT = JSON.stringify(
-  {
-    sealedDivergence: {
-      autoCloseManual: true
-    }
-  },
-  null,
-  2
-);
+const DEFAULT_RUN_PLAN_TEXT = formatPresetJson(LOCAL_PRESET_RUN_PLAN);
+const DEFAULT_START_REQUEST_TEXT = formatPresetJson(LOCAL_PRESET_START_REQUEST);
 
 export function RunsListPage() {
   const { client } = useDaemonRuntime();
@@ -77,19 +44,20 @@ export function RunsListPage() {
       <ViewFrame
         eyebrow="Run workspace"
         title="Daemon runs"
-        description="Local orchestration runs from the daemon run store."
+        description="Controlled local orchestration jobs from the daemon run store."
         actions={
           <Link className="du-action-link" to="/runs/new">
             New run
           </Link>
         }
       >
+        <RunConceptPanel />
         <QueryState query={runsQuery}>
           <DataPanel title="Runs">
             {runs.length === 0 ? (
               <EmptyState
                 title="No runs"
-                description="Create a run from a JSON run plan to start local daemon orchestration."
+                description="Create a local preset run or submit an advanced JSON run plan."
               />
             ) : (
               <div className="du-run-list">
@@ -127,21 +95,55 @@ export function RunNewPage() {
     createMutation.mutate(parsed.value);
   }
 
+  function fillLocalPresetRunPlan() {
+    setInputError(null);
+    setRunPlanText(formatPresetJson(LOCAL_PRESET_RUN_PLAN));
+  }
+
+  function createLocalPresetRun() {
+    setInputError(null);
+    setRunPlanText(formatPresetJson(LOCAL_PRESET_RUN_PLAN));
+    createMutation.mutate(cloneJsonObject(LOCAL_PRESET_RUN_PLAN));
+  }
+
   return (
     <RunWorkspaceShell>
       <ViewFrame
         eyebrow="Run creation"
         title="Create a daemon run"
-        description="Submit a JSON run plan to the local daemon. Provider secrets stay outside Web input."
+        description="Create a controlled orchestration job. The local preset is deterministic development material, not real provider output."
       >
+        <StatusBanner
+          title="Local preset requires daemon opt-in"
+          detail="To run the built-in preset pipeline, start the daemon with DELIBERUM_ENABLE_LOCAL_PRESET=true. Without it, the run can be created but start will report missing local components."
+        />
         <JsonInputForm
           id="run-plan-json"
-          label="Run plan JSON"
+          label="Advanced run plan JSON"
           value={runPlanText}
           onChange={setRunPlanText}
           onSubmit={submitRunPlan}
           submitLabel={createMutation.isPending ? "Creating" : "Create run"}
           disabled={createMutation.isPending}
+          actions={
+            <>
+              <button
+                type="button"
+                className="du-secondary-button"
+                onClick={fillLocalPresetRunPlan}
+                disabled={createMutation.isPending}
+              >
+                Fill local preset run plan
+              </button>
+              <button
+                type="button"
+                onClick={createLocalPresetRun}
+                disabled={createMutation.isPending}
+              >
+                Create local preset run
+              </button>
+            </>
+          }
         />
         {inputError ? <StatusBanner tone="error" title={inputError} /> : null}
         {createMutation.isError ? (
@@ -192,7 +194,7 @@ export function RunDetailPage() {
       <ViewFrame
         eyebrow="Run detail"
         title={getStringRecordValue(run, "title") ?? getStringRecordValue(run, "topic") ?? runId}
-        description="Daemon run state, stage metadata, and projection views."
+        description="Run status, stage progress, safe projections, and local preset controls."
         actions={
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
             View provisional outcome
@@ -201,6 +203,7 @@ export function RunDetailPage() {
       >
         <QueryState query={runQuery}>
           <RunSummary run={run} />
+          <RunDetailGuide />
           <RunStageStatus run={run} />
           <StartRunForm runId={runId} />
           <DataPanel title="Run plan view">
@@ -233,7 +236,7 @@ export function RunOutcomePage() {
       <ViewFrame
         eyebrow="Outcome view"
         title="Provisional outcome"
-        description="A daemon-derived compiled view when the run has enough accepted proposal material."
+        description="A compiled artifact from accepted proposal material, not a final answer."
         actions={
           <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
             Back to run
@@ -261,7 +264,7 @@ export function RunOutcomePage() {
               />
               <DataPanel
                 title="Provisional outcome"
-                description="Rendered as daemon output, not as a settled conclusion."
+                description="Rendered from the daemon outcome endpoint as provisional material."
               >
                 <JsonBlock value={sanitizeForDisplay(outcome.outcome)} />
               </DataPanel>
@@ -270,7 +273,7 @@ export function RunOutcomePage() {
             <StatusBanner
               tone="warning"
               title="Provisional outcome not available"
-              detail={formatRecordValue(outcome?.reason)}
+              detail={describeOutcomeUnavailableReason(getRecordValue(outcome, "reason"))}
             />
           )}
         </QueryState>
@@ -344,6 +347,64 @@ function RunNavigation({ runId }: { runId?: string }) {
   );
 }
 
+function RunConceptPanel() {
+  return (
+    <DataPanel
+      title="How local runs work"
+      description="The Web workspace controls and views daemon runs; it is not a semantic authority."
+    >
+      <div className="du-explainer-grid">
+        <ExplainerItem
+          title="Run"
+          detail="A controlled orchestration job owned by the local daemon run store."
+        />
+        <ExplainerItem
+          title="Session"
+          detail="The underlying append-only event ledger session created for the run."
+        />
+        <ExplainerItem
+          title="Ledger events"
+          detail="Recorded lifecycle events. Web shows counts and ids here, not a raw event payload timeline."
+        />
+        <ExplainerItem
+          title="Provisional outcome"
+          detail="A compiled artifact from accepted proposal material, not a final answer."
+        />
+      </div>
+    </DataPanel>
+  );
+}
+
+function RunDetailGuide() {
+  return (
+    <DataPanel title="Current run meaning">
+      <div className="du-explainer-grid">
+        <ExplainerItem
+          title="Created"
+          detail="The run exists, but the pipeline has not started yet."
+        />
+        <ExplainerItem
+          title="Not run yet"
+          detail="No round has been recorded for that stage."
+        />
+        <ExplainerItem
+          title="Missing local components"
+          detail="Restart the daemon with DELIBERUM_ENABLE_LOCAL_PRESET=true before using the local preset start request."
+        />
+      </div>
+    </DataPanel>
+  );
+}
+
+function ExplainerItem({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="du-explainer-item">
+      <strong>{title}</strong>
+      <span>{detail}</span>
+    </div>
+  );
+}
+
 function RunListItem({ run, index }: { run: unknown; index: number }) {
   const runId = getStringRecordValue(run, "runId");
   const title = getStringRecordValue(run, "title") ?? getStringRecordValue(run, "topic");
@@ -359,7 +420,7 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
         items={[
           {
             label: "Status",
-            value: formatRecordValue(getRecordValue(run, "status"))
+            value: describeRunStatus(getRecordValue(run, "status"))
           },
           {
             label: "Session",
@@ -407,11 +468,11 @@ function RunSummary({ run }: { run: unknown }) {
         },
         {
           label: "Run status",
-          value: formatRecordValue(getRecordValue(run, "status"))
+          value: describeRunStatus(getRecordValue(run, "status"))
         },
         {
           label: "Ledger events",
-          value: formatRecordValue(getRecordValue(getRecordValue(run, "ledger"), "eventCount"))
+          value: describeLedgerEvents(getRecordValue(getRecordValue(run, "ledger"), "eventCount"))
         },
         {
           label: "Created",
@@ -430,7 +491,7 @@ function RunStageStatus({ run }: { run: unknown }) {
   return (
     <DataPanel
       title="Stage status"
-      description="Operational stage state from the daemon run view."
+      description="Each stage is controlled by the daemon. Not run yet means no stage round exists in this run."
     >
       <StageStatusList
         stages={[
@@ -447,12 +508,17 @@ function RunStageStatus({ run }: { run: unknown }) {
 function StageStatusList({ stages }: { stages: Array<[string, unknown]> }) {
   return (
     <div className="du-stage-grid">
-      {stages.map(([label, status]) => (
-        <div className="du-stage-pill" key={label}>
-          <span>{label}</span>
-          <strong>{formatRecordValue(status)}</strong>
-        </div>
-      ))}
+      {stages.map(([label, status]) => {
+        const statusView = describeStageStatus(status);
+
+        return (
+          <div className="du-stage-pill" key={label}>
+            <span>{label}</span>
+            <strong>{statusView.label}</strong>
+            <span>{statusView.detail}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -484,26 +550,56 @@ function StartRunForm({ runId }: { runId: string }) {
     startMutation.mutate(parsed.value);
   }
 
+  function fillLocalPresetStartRequest() {
+    setInputError(null);
+    setStartRequestText(formatPresetJson(LOCAL_PRESET_START_REQUEST));
+  }
+
+  function startLocalPresetPipeline() {
+    setInputError(null);
+    setStartRequestText(formatPresetJson(LOCAL_PRESET_START_REQUEST));
+    startMutation.mutate(cloneJsonObject(LOCAL_PRESET_START_REQUEST));
+  }
+
   return (
     <DataPanel
       title="Start orchestration"
-      description="Submit a JSON start request to the daemon run API."
+      description="Start requested stages through the daemon. The local preset pipeline requires the daemon preset flag."
     >
       <JsonInputForm
         id="start-request-json"
-        label="Start request JSON"
+        label="Advanced start request JSON"
         value={startRequestText}
         onChange={setStartRequestText}
         onSubmit={submitStartRequest}
         submitLabel={startMutation.isPending ? "Starting" : "Start run"}
         disabled={startMutation.isPending}
+        actions={
+          <>
+            <button
+              type="button"
+              className="du-secondary-button"
+              onClick={fillLocalPresetStartRequest}
+              disabled={startMutation.isPending}
+            >
+              Fill local preset start request
+            </button>
+            <button
+              type="button"
+              onClick={startLocalPresetPipeline}
+              disabled={startMutation.isPending}
+            >
+              Start full local preset pipeline
+            </button>
+          </>
+        }
       />
       {inputError ? <StatusBanner tone="error" title={inputError} /> : null}
       {startMutation.isError ? (
         <StatusBanner
           tone="error"
           title="Run start failed"
-          detail={formatSafeErrorMessage(startMutation.error)}
+          detail={formatRunStartErrorMessage(startMutation.error)}
         />
       ) : null}
       {startMutation.data ? <StartResult result={startMutation.data} /> : null}
@@ -555,39 +651,150 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
     <section className="du-projection-section" aria-label="Run projection panels">
       <DataPanel
         title="Candidate Frontier projection"
-        description="Read from the daemon projection endpoint."
+        description="Read from the daemon projection endpoint. Web displays the returned projection; it does not compute it."
       >
         <QueryState query={frontierQuery}>
-          <JsonBlock
-            value={sanitizeForDisplay({
-              basis: frontierQuery.data?.basis,
-              candidates: frontierQuery.data?.candidates ?? [],
-              projection: frontierQuery.data?.projection
-            })}
+          <ProjectionRecordList
+            records={asArray(frontierQuery.data?.candidates)}
+            emptyTitle="No Candidate Frontier entries"
+            emptyDescription="Accepted candidate projections will appear after extraction proposals are accepted."
+            kind="candidate"
           />
+          <ProjectionMetadata projection={frontierQuery.data?.projection} />
         </QueryState>
       </DataPanel>
-      <DataPanel title="Objections projection">
+      <DataPanel
+        title="Objections projection"
+        description="Accepted objection objects returned by the daemon projection endpoint."
+      >
         <QueryState query={objectionsQuery}>
-          <JsonBlock
-            value={sanitizeForDisplay({
-              objections: objectionsQuery.data?.objections ?? [],
-              projection: objectionsQuery.data?.projection
-            })}
+          <ProjectionRecordList
+            records={asArray(objectionsQuery.data?.objections)}
+            emptyTitle="No objections"
+            emptyDescription="Accepted objections will appear here when projection data is available."
+            kind="objection"
           />
+          <ProjectionMetadata projection={objectionsQuery.data?.projection} />
         </QueryState>
       </DataPanel>
-      <DataPanel title="Quality obligations projection">
+      <DataPanel
+        title="Quality obligations projection"
+        description="Accepted quality obligations returned by the daemon projection endpoint."
+      >
         <QueryState query={obligationsQuery}>
-          <JsonBlock
-            value={sanitizeForDisplay({
-              qualityObligations: obligationsQuery.data?.qualityObligations ?? [],
-              projection: obligationsQuery.data?.projection
-            })}
+          <ProjectionRecordList
+            records={asArray(obligationsQuery.data?.qualityObligations)}
+            emptyTitle="No quality obligations"
+            emptyDescription="Accepted quality obligations will appear after proposal material is accepted."
+            kind="quality obligation"
           />
+          <ProjectionMetadata projection={obligationsQuery.data?.projection} />
         </QueryState>
       </DataPanel>
     </section>
+  );
+}
+
+function ProjectionRecordList({
+  records,
+  emptyTitle,
+  emptyDescription,
+  kind
+}: {
+  records: unknown[];
+  emptyTitle: string;
+  emptyDescription: string;
+  kind: "candidate" | "objection" | "quality obligation";
+}) {
+  if (records.length === 0) {
+    return <EmptyState title={emptyTitle} description={emptyDescription} />;
+  }
+
+  return (
+    <div className="du-readable-list">
+      {records.map((record, index) => (
+        <ProjectionRecord
+          key={getProjectionRecordKey(record, index)}
+          record={record}
+          kind={kind}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ProjectionRecord({
+  record,
+  kind
+}: {
+  record: unknown;
+  kind: "candidate" | "objection" | "quality obligation";
+}) {
+  const object = getRecordValue(record, "object") ?? record;
+  const id = getStringRecordValue(object, "id") ?? `${kind}-${getProjectionRecordKey(record, 0)}`;
+  const title =
+    getStringRecordValue(object, "title") ??
+    getStringRecordValue(object, "content") ??
+    getStringRecordValue(object, "requirement") ??
+    getStringRecordValue(object, "failureMode") ??
+    id;
+  const status = getRecordValue(object, "status");
+  const description =
+    getStringRecordValue(object, "description") ??
+    getStringRecordValue(object, "consequence") ??
+    getStringRecordValue(object, "requirement") ??
+    getStringRecordValue(object, "content");
+  const proposalEventId = getRecordValue(record, "proposalEventId");
+  const sourceEventIds = asArray(getRecordValue(object, "sourceEventIds"));
+
+  return (
+    <article className="du-readable-item">
+      <p className="du-kicker">{kind}</p>
+      <h4>{title}</h4>
+      {description && description !== title ? <p>{description}</p> : null}
+      <KeyValueGrid
+        items={[
+          {
+            label: "Object id",
+            value: id
+          },
+          {
+            label: "Status",
+            value: formatRecordValue(status)
+          },
+          {
+            label: "Proposal event",
+            value: formatRecordValue(proposalEventId)
+          },
+          {
+            label: "Source events",
+            value: formatEventIds(sourceEventIds)
+          }
+        ]}
+      />
+    </article>
+  );
+}
+
+function ProjectionMetadata({ projection }: { projection: unknown }) {
+  const eventIds = asArray(getRecordValue(projection, "eventIds"));
+  const eventRange = getRecordValue(projection, "eventRange");
+
+  return (
+    <div className="du-projection-meta">
+      <KeyValueGrid
+        items={[
+          {
+            label: "Projection events",
+            value: formatEventIds(eventIds)
+          },
+          {
+            label: "Event range",
+            value: formatEventRange(eventRange)
+          }
+        ]}
+      />
+    </div>
   );
 }
 
@@ -598,7 +805,8 @@ function JsonInputForm({
   onChange,
   onSubmit,
   submitLabel,
-  disabled
+  disabled,
+  actions
 }: {
   id: string;
   label: string;
@@ -607,6 +815,7 @@ function JsonInputForm({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   submitLabel: string;
   disabled?: boolean;
+  actions?: ReactNode;
 }) {
   return (
     <form className="du-json-form" onSubmit={onSubmit}>
@@ -621,6 +830,7 @@ function JsonInputForm({
         <button type="submit" disabled={disabled}>
           {submitLabel}
         </button>
+        {actions}
       </div>
     </form>
   );
@@ -670,6 +880,122 @@ function toStageMetadata(stage: unknown): Record<string, unknown> {
     status: getRecordValue(stage, "status"),
     eventIds: asArray(getRecordValue(stage, "eventIds"))
   };
+}
+
+function describeRunStatus(status: unknown): string {
+  if (status === "created") {
+    return "Created: run exists, pipeline has not started.";
+  }
+
+  return formatRecordValue(status);
+}
+
+function describeLedgerEvents(eventCount: unknown): string {
+  if (typeof eventCount === "number") {
+    return `${eventCount} recorded lifecycle event${eventCount === 1 ? "" : "s"}`;
+  }
+
+  return "No recorded lifecycle event count";
+}
+
+function describeStageStatus(status: unknown): { label: string; detail: string } {
+  if (status === undefined || status === null) {
+    return {
+      label: "Not run yet",
+      detail: "This stage has no recorded round for the run."
+    };
+  }
+
+  if (status === "revealed") {
+    return {
+      label: "Revealed",
+      detail: "Sealed divergence has produced revealed contribution events."
+    };
+  }
+
+  if (status === "completed") {
+    return {
+      label: "Completed",
+      detail: "The daemon recorded this stage as completed."
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      label: "Failed",
+      detail: "The daemon could not process this stage safely."
+    };
+  }
+
+  if (typeof status === "string") {
+    return {
+      label: status,
+      detail: "Status reported by the daemon run view."
+    };
+  }
+
+  return {
+    label: "Unavailable",
+    detail: "The daemon did not return a readable stage status."
+  };
+}
+
+function describeOutcomeUnavailableReason(reason: unknown): string {
+  if (reason === "final_candidate_proposal_unavailable") {
+    return "No final candidate proposal exists yet. Start the local preset pipeline or run finalization before opening the provisional outcome.";
+  }
+
+  if (reason === "final_candidate_proposal_ambiguous") {
+    return "More than one final candidate proposal is available, so the daemon will not compile a provisional outcome for this view.";
+  }
+
+  if (reason === "outcome_compilation_unavailable") {
+    return "The daemon could not compile the provisional outcome safely.";
+  }
+
+  return formatRecordValue(reason);
+}
+
+function formatRunStartErrorMessage(error: Error | null | undefined): string {
+  if (getErrorCode(error) === "orchestration_component_unavailable") {
+    return "The daemon does not have the requested local preset components. Restart the local daemon with DELIBERUM_ENABLE_LOCAL_PRESET=true, then retry the local preset run.";
+  }
+
+  return formatSafeErrorMessage(error);
+}
+
+function getErrorCode(error: unknown): string | undefined {
+  const code = getRecordValue(error, "code");
+
+  return typeof code === "string" ? code : undefined;
+}
+
+function formatEventIds(eventIds: unknown[]): string {
+  const ids = eventIds.filter((eventId): eventId is string => typeof eventId === "string");
+
+  return ids.length > 0 ? ids.join(", ") : "No event ids";
+}
+
+function formatEventRange(eventRange: unknown): string {
+  const fromSequence = getRecordValue(eventRange, "fromSequence");
+  const toSequence = getRecordValue(eventRange, "toSequence");
+
+  if (typeof fromSequence === "number" && typeof toSequence === "number") {
+    return `${fromSequence} to ${toSequence}`;
+  }
+
+  return "No event range";
+}
+
+function cloneJsonObject(value: unknown): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+}
+
+function getProjectionRecordKey(record: unknown, fallback: number): string {
+  const object = getRecordValue(record, "object") ?? record;
+  const id = getRecordValue(object, "id");
+
+  return typeof id === "string" && id.length > 0 ? id : `projection-record-${fallback}`;
 }
 
 function getRunItemKey(run: unknown, fallback: number): string {

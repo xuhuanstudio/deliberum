@@ -23,6 +23,9 @@ import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
   createDaemonApp,
+  localPresetRunPlan,
+  localPresetStartRequest,
+  resolveStartDaemonEnableLocalPreset,
   type DaemonApp
 } from "../src";
 import * as daemon from "../src";
@@ -1210,6 +1213,120 @@ describe("daemon API", () => {
     });
     expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
     expectSafeRunApiPayload(body);
+  });
+
+  it("keeps the deterministic local preset disabled by default", async () => {
+    const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
+    const created = await createRun(daemonApp, localPresetRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      localPresetStartRequest()
+    );
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
+    expectSafeRunApiPayload(body);
+  });
+
+  it("resolves the deterministic local preset only from explicit option or exact env flag", () => {
+    expect(resolveStartDaemonEnableLocalPreset({ enableLocalPreset: true }, {})).toBe(true);
+    expect(
+      resolveStartDaemonEnableLocalPreset({}, { DELIBERUM_ENABLE_LOCAL_PRESET: "true" })
+    ).toBe(true);
+    expect(resolveStartDaemonEnableLocalPreset({}, {})).toBe(false);
+    expect(
+      resolveStartDaemonEnableLocalPreset({}, { DELIBERUM_ENABLE_LOCAL_PRESET: "false" })
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableLocalPreset({}, { DELIBERUM_ENABLE_LOCAL_PRESET: "TRUE" })
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableLocalPreset({}, { DELIBERUM_ENABLE_LOCAL_PRESET: "random" })
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableLocalPreset(
+        { enableLocalPreset: false },
+        { DELIBERUM_ENABLE_LOCAL_PRESET: "true" }
+      )
+    ).toBe(false);
+  });
+
+  it("runs the deterministic local preset pipeline only when explicitly enabled", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true
+    });
+    const created = await createRun(daemonApp, localPresetRunPlan());
+    const startResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      localPresetStartRequest()
+    );
+    const startBody = (await startResponse.json()) as {
+      stopped: boolean;
+      stages: Array<{ stage: string; executionStatus: string }>;
+    };
+    const frontier = (await (
+      await daemonApp.app.request(`/sessions/${created.run.sessionId}/frontier`)
+    ).json()) as { candidates: Array<{ object: { id: string } }> };
+    const obligations = (await (
+      await daemonApp.app.request(`/sessions/${created.run.sessionId}/obligations`)
+    ).json()) as { qualityObligations: Array<{ object: { id: string } }> };
+    const objections = (await (
+      await daemonApp.app.request(`/sessions/${created.run.sessionId}/objections`)
+    ).json()) as { objections: Array<{ object: { id: string } }> };
+    const outcomeResponse = await daemonApp.app.request(`/runs/${created.run.runId}/outcome`);
+    const outcomeBody = (await outcomeResponse.json()) as { status: string; draftStatus?: string };
+
+    expect(startResponse.status).toBe(200);
+    expect(startBody.stopped).toBe(false);
+    expect(startBody.stages.map((stage) => stage.stage)).toEqual([
+      "sealed_divergence",
+      "extraction",
+      "proposal_review",
+      "finalization"
+    ]);
+    expect(startBody.stages.every((stage) => stage.executionStatus === "executed")).toBe(true);
+    expect(frontier.candidates).toEqual([
+      expect.objectContaining({
+        object: expect.objectContaining({
+          id: "local-preset-candidate-run-workspace"
+        })
+      })
+    ]);
+    expect(obligations.qualityObligations).toEqual([
+      expect.objectContaining({
+        object: expect.objectContaining({
+          id: "local-preset-quality-labeling"
+        })
+      })
+    ]);
+    expect(objections.objections).toEqual([
+      expect.objectContaining({
+        object: expect.objectContaining({
+          id: "local-preset-objection-preset-scope"
+        })
+      })
+    ]);
+    expect(outcomeResponse.status).toBe(200);
+    expect(outcomeBody).toMatchObject({
+      status: "compiled",
+      draftStatus: "provisional"
+    });
+    expectSafeRunApiPayload(startBody);
+    expectSafeRunApiPayload(frontier);
+    expectSafeRunApiPayload(obligations);
+    expectSafeRunApiPayload(objections);
+    expectSafeRunApiPayload(outcomeBody);
   });
 
   it("keeps injected provider secrets out of run responses, ledger events, and errors", async () => {
