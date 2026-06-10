@@ -15,6 +15,8 @@ Deliberum is event-ledger first. The event ledger is the durable source of truth
 9. Deleted or redacted material must leave a redaction tombstone.
 10. Local runtime artifacts must not be committed.
 
+Event stores assign `sequence` and `recordedAt` at append time. Corrections, reveals, challenges, acceptances, audits, and redactions are represented by new events, not updates to old events.
+
 ## Event envelope
 
 ```ts
@@ -35,7 +37,7 @@ type EventEnvelope<TPayload> = {
     previousEventHash?: string
     eventHash?: string
   }
-  trace?: {
+  trace: {
     adapterId?: string
     participantId?: string
     modelId?: string
@@ -47,6 +49,22 @@ type EventEnvelope<TPayload> = {
   payload: TPayload
 }
 ```
+
+`trace` is required at the top level. Its nested fields may be empty when an event has no adapter/tool provenance.
+
+## Projection metadata
+
+Projection result objects include:
+
+```ts
+type ProjectionMetadata = {
+  version: '1'
+  eventRange: { fromSequence: number; toSequence: number } | null
+  eventIds: string[]
+}
+```
+
+`eventIds` are ordered by the sequence order used to derive the projection. Empty projections use `eventRange: null` and `eventIds: []`.
 
 ## Proposal-first semantic updates
 

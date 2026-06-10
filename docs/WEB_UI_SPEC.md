@@ -1,29 +1,37 @@
 # Web UI Spec
 
-The Web UI is a projection and operation surface for the daemon. It should not be a chat-first application.
+The Web UI is a projection and operation surface for the local daemon. It should not be a chat-first application, a whiteboard source of truth, or a hidden semantic state machine.
 
-## Recommended stack
+## Current stack
 
 - React + Vite + TypeScript;
 - TanStack Router;
 - TanStack Query;
-- Zustand for local UI state;
-- shadcn/ui + Radix primitives;
-- React Flow / xyflow for structured graphs;
-- tldraw later for free-form canvas projection, not as semantic source.
+- `@deliberum/client` for daemon reads.
 
-## Core pages
+The Web UI defaults to the local daemon URL and can be configured for development. It does not hardcode public daemon URLs, store provider credentials, execute adapters, or serve resources.
 
+## Current pages
+
+- Landing page with explicit session-id entry;
 - Session Overview;
 - Candidate Frontier;
+- Objections;
 - Quality Obligations;
-- Objection Ledger;
-- Evidence and Resources;
-- Semantic Board;
 - Event Timeline;
-- Final Compiler;
-- Adapter Settings.
+- Final placeholder;
+- Resources placeholder.
+
+The final and resources pages are placeholders only. Core Outcome Compiler and Resource Broker packages exist, but daemon/Web live endpoint integration for those pages is deferred.
+
+## Deferred pages and surfaces
+
+- live final outcome page backed by a daemon final endpoint;
+- live resource/evidence page backed by daemon resource endpoints;
+- semantic board projection;
+- adapter settings;
+- optional graph/canvas views such as xyflow or tldraw, only as projections.
 
 ## Whiteboard principle
 
-The semantic source is not a canvas JSON. The source is the event ledger and structured deliberation objects. Whiteboard views are projections and can be challenged.
+The semantic source is not canvas JSON. The source is the append-only event ledger and derived deliberation state. Whiteboard or board views are projections and can be challenged.

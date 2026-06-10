@@ -190,13 +190,13 @@ describe("@deliberum/web shell", () => {
     renderApp("/sessions/session-1/final");
 
     expect(await screen.findByText("Outcome Compiler placeholder")).toBeTruthy();
-    expect(screen.getByText("Outcome Compiler is not implemented")).toBeTruthy();
+    expect(screen.getByText("Outcome endpoint integration is not implemented")).toBeTruthy();
 
     cleanup();
     renderApp("/sessions/session-1/resources");
 
     expect(await screen.findByText("Resource Broker placeholder")).toBeTruthy();
-    expect(screen.getByText("Resource Broker is not implemented")).toBeTruthy();
+    expect(screen.getByText("Resource endpoint integration is not implemented")).toBeTruthy();
   });
 
   it("does not add hidden session persistence or forbidden semantic authority APIs", () => {

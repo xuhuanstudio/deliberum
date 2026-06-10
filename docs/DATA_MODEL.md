@@ -1,6 +1,6 @@
 # Data Model
 
-This document describes the core protocol data model. The implementation should define these in `packages/protocol` with runtime validation.
+This document describes the core protocol data model implemented in `packages/protocol` with runtime validation.
 
 ## Design rules
 
@@ -9,6 +9,7 @@ This document describes the core protocol data model. The implementation should 
 - Semantic updates use proposals instead of silent overwrites.
 - Every adapter-generated contribution must carry trace metadata.
 - Precise references must include enough context to avoid quote-mining.
+- Event stores assign `sequence` and `recordedAt`; append callers do not supply them.
 
 ## EventEnvelope
 
@@ -27,7 +28,7 @@ type EventEnvelope<TPayload> = {
   visibility: 'public' | 'sealed' | 'private' | 'redacted'
   idempotencyKey?: string
   payload: TPayload
-  trace?: {
+  trace: {
     adapterId?: string
     participantId?: string
     modelId?: string
@@ -86,9 +87,11 @@ type SealedBatch = {
   participantIds: string[]
   openedAt: string
   revealedAt?: string
-  revealPolicy: 'all_completed' | 'quorum' | 'deadline'
+  revealPolicy: 'all_completed' | 'manual' | 'quorum' | 'deadline'
 }
 ```
+
+`all_completed` and `manual` close behavior is implemented today. `quorum` and `deadline` are accepted protocol values but close attempts using them are rejected as unsupported in the current core lifecycle.
 
 ## Candidate
 
@@ -163,6 +166,7 @@ type EvidenceNeed = {
   reason: string
   priority: 'low' | 'medium' | 'high'
   status: 'open' | 'in_progress' | 'satisfied' | 'waived' | 'unresolved'
+  sourceEventIds: string[]
 }
 
 type EvidenceResult = {
@@ -258,6 +262,25 @@ type ResourceVariant =
   | { mode: 'ocr'; text: string }
   | { mode: 'caption'; text: string }
 ```
+
+## Projection metadata
+
+Projection result objects include traceability metadata:
+
+```ts
+type ProjectionMetadata = {
+  version: '1'
+  eventRange: { fromSequence: number; toSequence: number } | null
+  eventIds: string[]
+}
+```
+
+Current core projections return:
+
+- `projectExtractionProposalStates`: `{ proposalStates, projection }`;
+- `projectAcceptedDeliberationObjects`: `{ candidates, claims, objections, evidenceNeeds, qualityObligations, projection }`;
+- `projectCandidateFrontier`: `{ basis: 'accepted_active_candidates', candidates, projection }`;
+- `projectQualityObligations`: `{ qualityObligations, projection }`.
 
 ## Board objects
 

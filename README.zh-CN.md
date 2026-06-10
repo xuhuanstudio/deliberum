@@ -14,3 +14,9 @@
 - 白板、引用、可寻址对象、WebGET、MCP 等都是支撑层，服务于最终结果质量。
 
 公开仓库以英文为主。中文文档作为入口和设计补充保留。
+
+## 当前状态
+
+当前实现已经覆盖到 Stage 15B：协议 schema、追加式事件账本、Topic Contract、密封发散、Extraction Proposal、候选前沿/异议/质量义务投影、CLI、本地 daemon、Web UI 壳、参与者 adapter 接口、OpenAI-compatible adapter、Resource Broker / Delivery Planner、实验性 WebGET、本地 Outcome Compiler，以及投影元数据和安全加固。
+
+项目仍然是本地优先、预生产状态。尚未实现的部分包括：daemon 持久化 SQLite、daemon final/resource endpoints、Web final/resource live pages、完整自适应原语调度器、公开/签名资源托管、MCP adapter、HTTP-template adapter，以及生产级认证和多人部署。

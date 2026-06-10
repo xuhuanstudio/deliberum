@@ -17,14 +17,14 @@ WebGET is not the core architecture. It is an adapter that lowers walls between 
 
 ```text
 GET /webget/{token}/start
-GET /webget/{token}/context?part=overview
-GET /webget/{token}/context?part=candidates&page=1
-GET /webget/{token}/resource?rid=r123&mode=url
-GET /webget/{token}/resource?rid=r123&mode=base64&part=1
-GET /webget/{token}/submit?seq=1&total=3&data=...
-GET /webget/{token}/commit?total=3&sha256=...
-GET /webget/{token}/status
+GET /webget/{token}/context
+GET /webget/{token}/context/{page}
+GET /webget/{token}/resources/{resourceId}
+GET /webget/{token}/submit?seq=1&total=3&encoding=base64url&data=...
+GET /webget/{token}/commit?total=3&sha256=...&length=...
 ```
+
+The current daemon-local WebGET surface does not replay historical events over WebGET endpoints, does not create public URLs, and does not include a status endpoint.
 
 ## Required web-model prompt rules
 
@@ -81,12 +81,15 @@ Mitigations:
 
 - do not use GET submission for secrets;
 - use short-lived tokens;
+- keep tokens scoped to one daemon-local WebGET session;
 - keep chunks small;
 - require `/commit` before importing output;
 - verify `sha256` if available;
+- verify committed byte length;
+- require structured JSON with `output`, `readReport`, and `contextCompleteness`;
 - mark WebGET contributions with context and resource completeness;
 - sanitize logs.
 
 ## Security
 
-WebGET tokens must be short-lived, revocable, and logged. Public capsule exposure must be opt-in. Sensitive resources must not be exposed publicly by default.
+WebGET tokens must be short-lived, daemon-local, scoped to one WebGET session, and excluded from committed contribution payloads. Public capsule exposure must be opt-in. Sensitive resources must not be exposed publicly by default; current resource planning defaults sensitive resources to `none`.

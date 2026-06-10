@@ -416,11 +416,11 @@ function FinalPlaceholderPage() {
     <ViewFrame
       eyebrow="Future stage"
       title="Outcome Compiler placeholder"
-      description="No final output is compiled in Stage 11."
+      description="Core outcome compilation exists; daemon and Web live integration is deferred."
     >
       <StatusBanner
-        title="Outcome Compiler is not implemented"
-        detail="This page is reserved for a later compiler that reads accepted candidates, obligations, objections, evidence, and audit events."
+        title="Outcome endpoint integration is not implemented"
+        detail="This page is reserved for a daemon-backed final view that reads compiled outcomes from the ledger and projections."
       />
     </ViewFrame>
   );
@@ -431,11 +431,11 @@ function ResourcesPlaceholderPage() {
     <ViewFrame
       eyebrow="Future stage"
       title="Resource Broker placeholder"
-      description="No resources are fetched, served, or exposed in Stage 11."
+      description="Core resource planning exists; daemon and Web live resource integration is deferred."
     >
       <StatusBanner
-        title="Resource Broker is not implemented"
-        detail="This page is reserved for future resource delivery and evidence surfaces."
+        title="Resource endpoint integration is not implemented"
+        detail="This page is reserved for daemon-backed resource delivery and evidence surfaces."
       />
     </ViewFrame>
   );

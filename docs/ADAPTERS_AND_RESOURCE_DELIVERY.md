@@ -4,14 +4,14 @@ Adapters allow heterogeneous participant sources to join the same deliberation. 
 
 ## Participant adapters
 
-- API model adapters;
-- OpenAI-compatible base URL + key adapters;
-- local model adapters;
-- HTTP template adapters;
-- WebGET adapters for web-only models;
-- manual participant adapters;
-- tool adapters;
-- MCP-compatible tool adapters as optional integrations, not as the project core.
+- implemented: participant adapter interface;
+- implemented: fake and manual participant adapters;
+- implemented: OpenAI-compatible base URL adapter;
+- implemented: experimental WebGET adapter for web-only models;
+- deferred: local model adapters;
+- deferred: HTTP template adapters;
+- deferred: tool adapters;
+- deferred: MCP-compatible tool adapters as optional integrations, not as the project core.
 
 ## Adapter capability profile
 
@@ -66,6 +66,8 @@ This is a switch for a single delivery. Participant profiles may define fallback
 
 Public exposure must be opt-in, signed, time-limited, revocable, and logged. Sensitive resources must not be publicly exposed by default.
 
+Current implementation does not generate public URLs or host resources. The Delivery Planner can select `url`, `base64`, or `none` according to policy; sensitive resources default to `none`.
+
 ## Resource Broker
 
 The Resource Broker manages:
@@ -73,10 +75,9 @@ The Resource Broker manages:
 - resource metadata;
 - content hashes;
 - variants: URL, base64, summary, OCR, caption, transcript;
-- signed URLs;
-- TTL and revocation;
-- delivery records;
 - privacy classification.
+
+Signed URL hosting, TTL/revocation services, and delivery record persistence are future runtime work. The current package is a support layer for metadata registration and safe delivery planning.
 
 ## Delivery Planner
 
