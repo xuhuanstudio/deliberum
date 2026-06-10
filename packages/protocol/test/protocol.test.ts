@@ -348,6 +348,76 @@ describe("proposal objects", () => {
       }).success
     ).toBe(false);
   });
+
+  it("keeps final candidate proposals status-bearing and source-traceable", () => {
+    expect(
+      protocol.FinalCandidateProposalSchema.safeParse({
+        id: "final-candidate-proposal-1",
+        candidateIds: ["candidate-a"],
+        alternativeCandidateIds: ["candidate-b"],
+        sourceEventIds: ["proposal-event-1", "acceptance-event-1"],
+        recommendation: "Use candidate A when the stated constraints hold.",
+        applicabilityConditions: ["Constraint set remains unchanged"],
+        rationale: "Candidate A currently fits the accepted working state.",
+        limitations: ["Unresolved objections remain"],
+        status: "proposed"
+      }).success
+    ).toBe(true);
+
+    expect(
+      protocol.FinalCandidateProposalSchema.safeParse({
+        id: "final-candidate-proposal-1",
+        candidateIds: ["candidate-a"],
+        alternativeCandidateIds: [],
+        sourceEventIds: ["proposal-event-1"],
+        recommendation: "Use candidate A",
+        applicabilityConditions: [],
+        rationale: "Rationale",
+        limitations: [],
+        currentBest: "candidate-a",
+        status: "proposed"
+      }).success
+    ).toBe(false);
+  });
+
+  it("records final audits without verdict, winner, ranking, or final-answer fields", () => {
+    expect(
+      protocol.FinalAuditSchema.safeParse({
+        id: "final-audit-1",
+        targetFinalCandidateProposalEventId: "final-candidate-proposal-event-1",
+        findings: ["The draft preserves the main unresolved objection."],
+        risks: ["Compression may hide an edge case."],
+        unresolvedObjectionIds: ["objection-1"],
+        qualityObligationIds: ["quality-obligation-1"],
+        evidenceNeedIds: ["evidence-need-1"],
+        omissions: ["Alternative deployment condition needs more detail."],
+        compressionProblems: ["Risk wording is shorter than source objections."],
+        limitations: ["Audit does not verify evidence."],
+        continuationSuggestions: ["Run an evidence check."],
+        status: "recorded"
+      }).success
+    ).toBe(true);
+
+    for (const forbiddenField of ["verdict", "winner", "score", "finalAnswer"] as const) {
+      expect(
+        protocol.FinalAuditSchema.safeParse({
+          id: "final-audit-1",
+          targetFinalCandidateProposalEventId: "final-candidate-proposal-event-1",
+          findings: [],
+          risks: [],
+          unresolvedObjectionIds: [],
+          qualityObligationIds: [],
+          evidenceNeedIds: [],
+          omissions: [],
+          compressionProblems: [],
+          limitations: [],
+          continuationSuggestions: [],
+          status: "recorded",
+          [forbiddenField]: "not allowed"
+        }).success
+      ).toBe(false);
+    }
+  });
 });
 
 describe("candidate frontier compatibility", () => {

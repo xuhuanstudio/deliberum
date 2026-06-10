@@ -159,3 +159,36 @@ export const FinalDraftProposalSchema = z
   })
   .strict();
 export type FinalDraftProposal = z.infer<typeof FinalDraftProposalSchema>;
+
+export const FinalCandidateProposalSchema = z
+  .object({
+    id: IdSchema,
+    candidateIds: z.array(IdSchema).min(1),
+    alternativeCandidateIds: z.array(IdSchema),
+    sourceEventIds: SourceEventIdsSchema.min(1),
+    recommendation: NonEmptyStringSchema,
+    applicabilityConditions: z.array(NonEmptyStringSchema),
+    rationale: NonEmptyStringSchema,
+    limitations: z.array(NonEmptyStringSchema),
+    status: SemanticProposalStatusSchema
+  })
+  .strict();
+export type FinalCandidateProposal = z.infer<typeof FinalCandidateProposalSchema>;
+
+export const FinalAuditSchema = z
+  .object({
+    id: IdSchema,
+    targetFinalCandidateProposalEventId: IdSchema,
+    findings: z.array(NonEmptyStringSchema),
+    risks: z.array(NonEmptyStringSchema),
+    unresolvedObjectionIds: z.array(IdSchema),
+    qualityObligationIds: z.array(IdSchema),
+    evidenceNeedIds: z.array(IdSchema),
+    omissions: z.array(NonEmptyStringSchema),
+    compressionProblems: z.array(NonEmptyStringSchema),
+    limitations: z.array(NonEmptyStringSchema),
+    continuationSuggestions: z.array(NonEmptyStringSchema),
+    status: z.literal("recorded")
+  })
+  .strict();
+export type FinalAudit = z.infer<typeof FinalAuditSchema>;

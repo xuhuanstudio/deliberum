@@ -102,3 +102,31 @@ export class InvalidProjectionInputError extends CoreError {
     this.name = "InvalidProjectionInputError";
   }
 }
+
+export class InvalidFinalCandidateProposalInputError extends CoreError {
+  constructor(message = "Invalid final candidate proposal input.") {
+    super(message);
+    this.name = "InvalidFinalCandidateProposalInputError";
+  }
+}
+
+export class FinalCandidateProposalNotFoundError extends CoreError {
+  constructor(eventId: string) {
+    super(`Final candidate proposal event not found: ${eventId}`);
+    this.name = "FinalCandidateProposalNotFoundError";
+  }
+}
+
+export class InvalidFinalAuditInputError extends CoreError {
+  constructor(message = "Invalid final audit input.") {
+    super(message);
+    this.name = "InvalidFinalAuditInputError";
+  }
+}
+
+export class InvalidOutcomeCompilationInputError extends CoreError {
+  constructor(message = "Invalid outcome compilation input.") {
+    super(message);
+    this.name = "InvalidOutcomeCompilationInputError";
+  }
+}
