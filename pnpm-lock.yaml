@@ -114,6 +114,21 @@ importers:
         specifier: workspace:*
         version: link:../storage
 
+  packages/orchestrator:
+    dependencies:
+      '@deliberum/core':
+        specifier: workspace:*
+        version: link:../core
+      '@deliberum/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@deliberum/storage':
+        specifier: workspace:*
+        version: link:../storage
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+
   packages/protocol:
     dependencies:
       zod:
