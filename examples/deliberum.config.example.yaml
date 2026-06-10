@@ -1,46 +1,47 @@
-session:
-  name: example-deliberation
-  allow_forks: true
-  default_budget:
-    max_model_calls: 80
-    max_wall_time: 30m
+# Deliberum illustrative local configuration sketch.
+# This file is not loaded by the current runtime. It documents conservative
+# local-first defaults for future config work without enabling public hosting,
+# signed URLs, provider credentials, or production deployment.
 
-models:
-  - id: api-model-a
-    kind: model
-    adapter: openai-compatible
-    model: example-model
-    base_url: https://api.example.com/v1
-    api_key_env: EXAMPLE_API_KEY
-    capabilities:
-      text: true
-      structured_output: true
-      image_base64: false
+schemaVersion: 1
 
-  - id: web-only-model
-    kind: model
-    adapter: webget
-    transport:
-      submit_via_get: true
-      manual_paste_fallback: true
-      max_url_chars: 1800
-      chunk_size_chars: 1200
-    resources:
-      image:
-        mode: url
-        fallback: none
-      pdf:
-        mode: url
-        fallback: text_summary
-    network:
-      can_access_public_url: true
-      can_access_lan_url: false
-      can_access_localhost: false
+local:
+  daemon:
+    host: 127.0.0.1
+    port: 3877
+    storage: in_memory
+  cli:
+    store: .deliberum/events.json
+  web:
+    daemonUrl: http://127.0.0.1:3877
 
-resource_server:
-  enabled: true
-  exposure: localhost
-  signed_urls: true
-  ttl_seconds: 900
-  require_confirmation_for_public: true
-  allow_public_sensitive: false
+adapters:
+  manual:
+    enabled: true
+  fake:
+    enabled: true
+  openaiCompatible:
+    enabled: false
+    note: Configure programmatically in tests or local code. Do not commit API keys.
+  webget:
+    enabled: true
+    experimental: true
+    tokenScope: daemon_local
+
+resources:
+  defaultDeliveryMode: none
+  sensitiveDefault: none
+  publicUrlHosting: deferred
+  signedUrls: deferred
+  notes:
+    - Resource Broker and Delivery Planner exist as support packages.
+    - The current runtime does not host resources or generate public URLs.
+    - Sensitive resources must not be exposed by default.
+
+deferred:
+  daemonPersistentStorage: sqlite_or_equivalent
+  daemonFinalEndpoints: true
+  daemonResourceEndpoints: true
+  publicResourceHosting: true
+  signedUrlServer: true
+  productionAuth: true
