@@ -1,4 +1,9 @@
 import {
+  DEFAULT_DAEMON_BASE_URL,
+  DaemonClientError,
+  DeliberumDaemonClient
+} from "@deliberum/client";
+import {
   acceptProposal,
   challengeProposal,
   closeSealedBatch,
@@ -28,7 +33,12 @@ export const CLI_COMMANDS = [
   "frontier",
   "objections",
   "obligations",
-  "events"
+  "events",
+  "runs create",
+  "runs list",
+  "runs show",
+  "runs start",
+  "runs outcome"
 ] as const;
 
 export type CliCoreApi = {
@@ -47,6 +57,7 @@ export type CliCoreApi = {
 export type CliDependencies = {
   core?: Partial<CliCoreApi>;
   createEventStore?: (options: { filePath: string; clock?: () => string }) => EventStore;
+  createDaemonClient?: (options: { baseUrl: string }) => CliRunDaemonClient;
   idGenerator?: () => string;
   clock?: () => string;
   env?: Record<string, string | undefined>;
@@ -73,6 +84,11 @@ type ExtractionInputFile = {
   evidenceNeeds?: readonly unknown[];
   qualityObligations?: readonly unknown[];
 };
+
+export type CliRunDaemonClient = Pick<
+  DeliberumDaemonClient,
+  "createRun" | "listRuns" | "getRun" | "startRun" | "getRunOutcome"
+>;
 
 const defaultCoreApi: CliCoreApi = {
   createSession,
@@ -105,6 +121,12 @@ export async function runCli(args: string[], dependencies: CliDependencies = {})
             filePath: options.filePath,
             clock: options.clock
           })),
+      createDaemonClient:
+        dependencies.createDaemonClient ??
+        ((options) =>
+          new DeliberumDaemonClient({
+            baseUrl: options.baseUrl
+          })),
       idGenerator: dependencies.idGenerator ?? (() => randomUUID()),
       clock: dependencies.clock,
       env: dependencies.env ?? process.env,
@@ -118,12 +140,7 @@ export async function runCli(args: string[], dependencies: CliDependencies = {})
       output
     };
   } catch (error) {
-    const output = {
-      error: {
-        name: error instanceof Error ? error.name : "CliError",
-        detail: error instanceof Error ? error.message : String(error)
-      }
-    };
+    const output = createErrorOutput(error);
 
     return {
       exitCode: 1,
@@ -137,6 +154,7 @@ export async function runCli(args: string[], dependencies: CliDependencies = {})
 type ExecuteDependencies = {
   core: CliCoreApi;
   createEventStore: (options: { filePath: string; clock?: () => string }) => EventStore;
+  createDaemonClient: (options: { baseUrl: string }) => CliRunDaemonClient;
   idGenerator: () => string;
   clock?: () => string;
   env: Record<string, string | undefined>;
@@ -145,6 +163,11 @@ type ExecuteDependencies = {
 
 async function executeCommand(parsedArgs: ParsedArgs, dependencies: ExecuteDependencies): Promise<unknown> {
   const [command, subcommand, ...restPositionals] = parsedArgs.positionals;
+
+  if (command === "runs") {
+    return executeRunCommand(subcommand, restPositionals, parsedArgs, dependencies);
+  }
+
   const store = dependencies.createEventStore({
     filePath: getStorePath(parsedArgs, dependencies.env),
     clock: dependencies.clock
@@ -333,6 +356,171 @@ export class CliUsageError extends Error {
   }
 }
 
+async function executeRunCommand(
+  subcommand: string | undefined,
+  restPositionals: string[],
+  parsedArgs: ParsedArgs,
+  dependencies: ExecuteDependencies
+): Promise<unknown> {
+  const action = subcommand ?? "";
+  assertKnownRunCommand(action);
+  assertRunCommandOptions(action, parsedArgs);
+
+  const daemonClient = dependencies.createDaemonClient({
+    baseUrl: resolveDaemonUrl(parsedArgs, dependencies.env)
+  });
+
+  if (action === "create") {
+    requireNoPositionals(restPositionals, "Usage: deliberum runs create --input <run-plan.json>");
+    const runPlan = readJsonObjectInput(
+      dependencies,
+      requireOption(parsedArgs, "input"),
+      "Run plan input"
+    );
+
+    return daemonClient.createRun({ runPlan });
+  }
+
+  if (action === "list") {
+    requireNoPositionals(restPositionals, "Usage: deliberum runs list [--daemon-url <local-url>]");
+    return daemonClient.listRuns();
+  }
+
+  if (action === "show") {
+    const runId = requireRunId(restPositionals, "Usage: deliberum runs show <runId>");
+    return daemonClient.getRun(runId);
+  }
+
+  if (action === "start") {
+    const runId = requireRunId(restPositionals, "Usage: deliberum runs start <runId> --input <start.json>");
+    const startRequest = readJsonObjectInput(
+      dependencies,
+      requireOption(parsedArgs, "input"),
+      "Run start input"
+    );
+
+    return daemonClient.startRun(runId, startRequest);
+  }
+
+  if (action === "outcome") {
+    const runId = requireRunId(restPositionals, "Usage: deliberum runs outcome <runId>");
+    return daemonClient.getRunOutcome(runId);
+  }
+
+  throw new CliUsageError(`Unknown command: runs ${action || "(empty)"}`);
+}
+
+function assertKnownRunCommand(action: string): void {
+  if (["create", "list", "show", "start", "outcome"].includes(action)) {
+    return;
+  }
+
+  throw new CliUsageError(`Unknown command: runs ${action || "(empty)"}`);
+}
+
+function assertRunCommandOptions(action: string, parsedArgs: ParsedArgs): void {
+  const allowedOptions = new Set(["daemon-url"]);
+
+  if (action === "create" || action === "start") {
+    allowedOptions.add("input");
+  }
+
+  for (const optionName of parsedArgs.options.keys()) {
+    if (isSecretLikeKey(optionName)) {
+      throw new CliUsageError("Run commands do not accept provider secrets or credentials.");
+    }
+
+    if (!allowedOptions.has(optionName)) {
+      throw new CliUsageError(`Unknown option for runs ${action}: --${optionName}`);
+    }
+  }
+
+  for (const flagName of parsedArgs.flags) {
+    if (flagName !== "json") {
+      if (isSecretLikeKey(flagName)) {
+        throw new CliUsageError("Run commands do not accept provider secrets or credentials.");
+      }
+
+      throw new CliUsageError(`Unknown flag for runs ${action}: --${flagName}`);
+    }
+  }
+}
+
+function requireRunId(positionals: string[], usage: string): string {
+  if (positionals.length !== 1 || !positionals[0]) {
+    throw new CliUsageError(usage);
+  }
+
+  return positionals[0];
+}
+
+function requireNoPositionals(positionals: string[], usage: string): void {
+  if (positionals.length > 0) {
+    throw new CliUsageError(usage);
+  }
+}
+
+function readJsonObjectInput(
+  dependencies: ExecuteDependencies,
+  filePath: string,
+  label: string
+): Record<string, unknown> {
+  let input: unknown;
+
+  try {
+    input = dependencies.readJsonFile(filePath);
+  } catch {
+    throw new CliUsageError(`${label} must be a readable JSON object.`);
+  }
+
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    throw new CliUsageError(`${label} must contain a JSON object.`);
+  }
+
+  return input as Record<string, unknown>;
+}
+
+function resolveDaemonUrl(
+  parsedArgs: ParsedArgs,
+  env: Record<string, string | undefined>
+): string {
+  const envDaemonUrl = env.DELIBERUM_DAEMON_URL?.trim();
+  const configuredUrl =
+    getLastOption(parsedArgs, "daemon-url") ??
+    (envDaemonUrl && envDaemonUrl.length > 0 ? envDaemonUrl : undefined) ??
+    DEFAULT_DAEMON_BASE_URL;
+
+  return validateLocalDaemonUrl(configuredUrl);
+}
+
+function validateLocalDaemonUrl(input: string): string {
+  let url: URL;
+
+  try {
+    url = new URL(input);
+  } catch {
+    throw new CliUsageError("Daemon URL must be a local http(s) URL.");
+  }
+
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new CliUsageError("Daemon URL must use http or https.");
+  }
+
+  if (url.username || url.password) {
+    throw new CliUsageError("Daemon URL must not include credentials.");
+  }
+
+  if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname.toLowerCase())) {
+    throw new CliUsageError("Daemon URL must point to a local daemon host.");
+  }
+
+  if (url.search || url.hash || containsSecretLikeValue(input)) {
+    throw new CliUsageError("Daemon URL must not include query, fragment, or secret material.");
+  }
+
+  return input.replace(/\/$/, "");
+}
+
 function parseArgs(args: readonly string[]): ParsedArgs {
   const positionals: string[] = [];
   const options = new Map<string, string[]>();
@@ -410,4 +598,76 @@ function parseExtractionInput(input: unknown): ExtractionInputFile {
   }
 
   return input as ExtractionInputFile;
+}
+
+function createErrorOutput(error: unknown): {
+  error: {
+    name: string;
+    detail: string;
+    code?: string;
+    status?: number;
+  };
+} {
+  if (error instanceof DaemonClientError) {
+    return {
+      error: {
+        name: error.name,
+        code: error.code,
+        status: error.status,
+        detail: sanitizeErrorDetail(error.message)
+      }
+    };
+  }
+
+  return {
+    error: {
+      name: error instanceof Error ? error.name : "CliError",
+      detail: sanitizeErrorDetail(error instanceof Error ? error.message : String(error))
+    }
+  };
+}
+
+function sanitizeErrorDetail(detail: string): string {
+  return detail
+    .replace(/bearer\s+[a-z0-9._~+/-]{4,}/gi, "Bearer [redacted]")
+    .replace(/\bsk-[a-z0-9_-]{4,}\b/gi, "[redacted_secret]")
+    .replace(/\b(api[_-]?key|secret|access[_-]?token|private[_-]?token|authorization)=\S+/gi, "$1=[redacted]")
+    .replace(/(?:file:)?\/Users\/[^\s"']+/g, "[redacted_path]")
+    .replace(/(?:file:)?\/home\/[^\s"']+/g, "[redacted_path]")
+    .replace(/(?:file:)?\/private\/[^\s"']+/g, "[redacted_path]")
+    .replace(/~\/\.ssh\/[^\s"']*/g, "[redacted_path]");
+}
+
+const SECRET_KEY_NAMES = new Set([
+  "apikey",
+  "api_key",
+  "authorization",
+  "authtoken",
+  "auth_token",
+  "accesstoken",
+  "access_token",
+  "refreshtoken",
+  "refresh_token",
+  "secret",
+  "clientsecret",
+  "client_secret",
+  "password",
+  "privatekey",
+  "private_key",
+  "privatetoken",
+  "private_token",
+  "credential",
+  "credentials"
+]);
+
+function isSecretLikeKey(key: string): boolean {
+  return SECRET_KEY_NAMES.has(key.replace(/[-\s]/g, "").toLowerCase());
+}
+
+function containsSecretLikeValue(value: string): boolean {
+  return (
+    /bearer\s+[a-z0-9._~+/-]{8,}/i.test(value) ||
+    /\bsk-[a-z0-9_-]{8,}\b/i.test(value) ||
+    /\b(api[_-]?key|secret|access[_-]?token|private[_-]?token|authorization)=\S{4,}/i.test(value)
+  );
 }

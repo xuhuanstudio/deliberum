@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { DaemonClientError } from "@deliberum/client";
 import type { EventStore } from "@deliberum/storage";
 import {
   CLI_COMMANDS,
   JsonFileEventStore,
   runCli,
   type CliCoreApi,
+  type CliRunDaemonClient,
   type CliRunResult
 } from "../src";
 
@@ -83,6 +85,76 @@ function createFakeStore(): EventStore {
     listEventsByBatch: vi.fn(() => []),
     listEventsByVisibility: vi.fn(() => [])
   } as unknown as EventStore;
+}
+
+function createFakeRunDaemonClient(
+  overrides: Partial<CliRunDaemonClient> = {}
+): CliRunDaemonClient & Record<string, ReturnType<typeof vi.fn>> {
+  return {
+    createRun: vi.fn(async (input: unknown) => ({
+      run: {
+        runId: "run-1"
+      },
+      session: {
+        sessionId: "session-1"
+      },
+      event: {
+        type: "topic_contract_published"
+      },
+      input
+    })),
+    listRuns: vi.fn(async () => ({
+      runs: [
+        {
+          runId: "run-1"
+        }
+      ]
+    })),
+    getRun: vi.fn(async (runId: string) => ({
+      run: {
+        runId
+      }
+    })),
+    startRun: vi.fn(async (runId: string, startRequest: unknown) => ({
+      run: {
+        runId
+      },
+      stages: [],
+      stopped: false,
+      startRequest
+    })),
+    getRunOutcome: vi.fn(async (runId: string) => ({
+      runId,
+      sessionId: "session-1",
+      status: "not_available",
+      reason: "final_candidate_proposal_unavailable"
+    })),
+    ...overrides
+  } as CliRunDaemonClient & Record<string, ReturnType<typeof vi.fn>>;
+}
+
+function createRunCliDependencies(options: {
+  client?: CliRunDaemonClient;
+  env?: Record<string, string | undefined>;
+  readJsonFile?: (filePath: string) => unknown;
+} = {}) {
+  const daemonClient = options.client ?? createFakeRunDaemonClient();
+  const createDaemonClient = vi.fn(() => daemonClient);
+  const createEventStore = vi.fn(() => {
+    throw new Error("Run commands must not create the local EventStore.");
+  });
+
+  return {
+    daemonClient,
+    createDaemonClient,
+    createEventStore,
+    dependencies: {
+      createDaemonClient,
+      createEventStore,
+      env: options.env ?? {},
+      readJsonFile: options.readJsonFile ?? (() => ({}))
+    }
+  };
 }
 
 function extractionInput(sourceEventId: string) {
@@ -283,6 +355,205 @@ describe("CLI command routing", () => {
     expect(core.projectAcceptedDeliberationObjects).toHaveBeenCalledTimes(1);
     expect(core.projectQualityObligations).toHaveBeenCalledTimes(1);
     expect(createEventStore).toHaveBeenCalled();
+  });
+
+  it("routes run commands through the daemon client without creating the local EventStore", async () => {
+    const { daemonClient, createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies({
+        readJsonFile: (filePath) =>
+          filePath === "start.json"
+            ? {
+                sealedDivergence: {
+                  autoCloseManual: true
+                }
+              }
+            : {
+                topic: "Run from CLI"
+              }
+      });
+
+    const created = parseOutput<{ input: { runPlan: { topic: string } } }>(
+      await runCli(["runs", "create", "--input", "run-plan.json", "--json"], dependencies)
+    );
+    const listed = parseOutput<{ runs: Array<{ runId: string }> }>(
+      await runCli(["runs", "list", "--json"], dependencies)
+    );
+    const shown = parseOutput<{ run: { runId: string } }>(
+      await runCli(["runs", "show", "run-1", "--json"], dependencies)
+    );
+    const started = parseOutput<{ startRequest: { sealedDivergence: { autoCloseManual: boolean } } }>(
+      await runCli(["runs", "start", "run-1", "--input", "start.json", "--json"], dependencies)
+    );
+    const outcome = parseOutput<{ status: string; reason: string }>(
+      await runCli(["runs", "outcome", "run-1", "--json"], dependencies)
+    );
+
+    expect(created.input.runPlan.topic).toBe("Run from CLI");
+    expect(listed.runs).toEqual([{ runId: "run-1" }]);
+    expect(shown.run.runId).toBe("run-1");
+    expect(started.startRequest.sealedDivergence.autoCloseManual).toBe(true);
+    expect(outcome).toMatchObject({
+      status: "not_available",
+      reason: "final_candidate_proposal_unavailable"
+    });
+    expect(daemonClient.createRun).toHaveBeenCalledWith({
+      runPlan: {
+        topic: "Run from CLI"
+      }
+    });
+    expect(daemonClient.listRuns).toHaveBeenCalledTimes(1);
+    expect(daemonClient.getRun).toHaveBeenCalledWith("run-1");
+    expect(daemonClient.startRun).toHaveBeenCalledWith("run-1", {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    expect(daemonClient.getRunOutcome).toHaveBeenCalledWith("run-1");
+    expect(createDaemonClient).toHaveBeenCalledTimes(5);
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("resolves daemon URL from flag, injected env, and local default", async () => {
+    const flagged = createRunCliDependencies({
+      env: {
+        DELIBERUM_DAEMON_URL: "http://127.0.0.1:4888"
+      }
+    });
+    await runCli(
+      ["runs", "list", "--daemon-url", "http://localhost:4999", "--json"],
+      flagged.dependencies
+    );
+
+    const envBacked = createRunCliDependencies({
+      env: {
+        DELIBERUM_DAEMON_URL: " http://[::1]:5777 "
+      }
+    });
+    await runCli(["runs", "list", "--json"], envBacked.dependencies);
+
+    const defaulted = createRunCliDependencies({
+      env: {
+        DELIBERUM_DAEMON_URL: "   "
+      }
+    });
+    await runCli(["runs", "list", "--json"], defaulted.dependencies);
+
+    expect(flagged.createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://localhost:4999"
+    });
+    expect(envBacked.createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://[::1]:5777"
+    });
+    expect(defaulted.createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://127.0.0.1:3877"
+    });
+    expect(flagged.createEventStore).not.toHaveBeenCalled();
+    expect(envBacked.createEventStore).not.toHaveBeenCalled();
+    expect(defaulted.createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("rejects unsafe daemon URLs before creating daemon clients or stores", async () => {
+    for (const unsafeUrl of [
+      "ftp://localhost:3877",
+      "http://user:pass@localhost:3877",
+      "http://example.com:3877",
+      "http://localhost:3877?api_key=sk-secret123",
+      "http://localhost:3877#secret"
+    ]) {
+      const { createDaemonClient, createEventStore, dependencies } = createRunCliDependencies();
+      const result = await runCli(["runs", "list", "--daemon-url", unsafeUrl, "--json"], dependencies);
+      const text = result.stdout;
+
+      expect(result.exitCode).toBe(1);
+      expect(text).not.toContain(unsafeUrl);
+      expect(text).not.toContain("sk-secret123");
+      expect(text).not.toContain("user:pass");
+      expect(createDaemonClient).not.toHaveBeenCalled();
+      expect(createEventStore).not.toHaveBeenCalled();
+    }
+  });
+
+  it("returns safe daemon unavailable errors for run commands", async () => {
+    const { createEventStore, dependencies } = createRunCliDependencies({
+      client: createFakeRunDaemonClient({
+        listRuns: vi.fn(async () => {
+          throw new DaemonClientError(0, "daemon_unavailable", "Daemon is unavailable.");
+        })
+      })
+    });
+    const result = await runCli(["runs", "list", "--json"], dependencies);
+    const body = JSON.parse(result.stdout) as {
+      error: {
+        name: string;
+        code: string;
+        status: number;
+        detail: string;
+      };
+    };
+
+    expect(result.exitCode).toBe(1);
+    expect(body.error).toEqual({
+      name: "DaemonClientError",
+      code: "daemon_unavailable",
+      status: 0,
+      detail: "Daemon is unavailable."
+    });
+    expect(result.stdout).not.toContain("ECONNREFUSED");
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown and secret-like run flags without leaking provided material", async () => {
+    const unknown = createRunCliDependencies();
+    const unknownResult = await runCli(["runs", "list", "--unknown", "--json"], unknown.dependencies);
+
+    expect(unknownResult.exitCode).toBe(1);
+    expect(unknownResult.stdout).toContain("Unknown flag for runs list: --unknown");
+    expect(unknown.createDaemonClient).not.toHaveBeenCalled();
+    expect(unknown.createEventStore).not.toHaveBeenCalled();
+
+    const secret = createRunCliDependencies();
+    const secretResult = await runCli(
+      ["runs", "list", "--api-key", "sk-secret123", "--json"],
+      secret.dependencies
+    );
+
+    expect(secretResult.exitCode).toBe(1);
+    expect(secretResult.stdout).toContain("Run commands do not accept provider secrets or credentials.");
+    expect(secretResult.stdout).not.toContain("sk-secret123");
+    expect(secret.createDaemonClient).not.toHaveBeenCalled();
+    expect(secret.createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("keeps run command file and error output free of secrets and private paths", async () => {
+    const missing = createRunCliDependencies({
+      readJsonFile: () => {
+        throw new Error("Unable to read /Users/alice/private/run-plan.json with Bearer secret-token");
+      }
+    });
+    const missingResult = await runCli(
+      ["runs", "create", "--input", "/Users/alice/private/run-plan.json", "--json"],
+      missing.dependencies
+    );
+
+    expect(missingResult.exitCode).toBe(1);
+    expect(missingResult.stdout).toContain("Run plan input must be a readable JSON object.");
+    expect(missingResult.stdout).not.toContain("/Users/alice");
+    expect(missingResult.stdout).not.toContain("Bearer secret-token");
+    expect(missing.createEventStore).not.toHaveBeenCalled();
+
+    const leakingClient = createRunCliDependencies({
+      client: createFakeRunDaemonClient({
+        listRuns: vi.fn(async () => {
+          throw new Error("raw failure /Users/alice/.ssh/id_rsa Bearer secret-token sk-secret123");
+        })
+      })
+    });
+    const leakingResult = await runCli(["runs", "list", "--json"], leakingClient.dependencies);
+
+    expect(leakingResult.exitCode).toBe(1);
+    expect(leakingResult.stdout).not.toContain("/Users/alice");
+    expect(leakingResult.stdout).not.toContain("Bearer secret-token");
+    expect(leakingResult.stdout).not.toContain("sk-secret123");
   });
 });
 

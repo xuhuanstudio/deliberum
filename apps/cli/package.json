@@ -16,6 +16,7 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@deliberum/client": "workspace:*",
     "@deliberum/core": "workspace:*",
     "@deliberum/protocol": "workspace:*",
     "@deliberum/storage": "workspace:*"

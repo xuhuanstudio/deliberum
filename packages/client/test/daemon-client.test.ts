@@ -132,6 +132,60 @@ describe("DeliberumDaemonClient", () => {
     ]);
   });
 
+  it("calls run orchestration endpoints directly", async () => {
+    const fetch = createFetch({
+      run: {
+        runId: "run-1"
+      }
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+    const runPlan = {
+      topic: "Expose daemon run commands"
+    };
+    const startRequest = {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    };
+
+    await daemonClient.createRun({ runPlan });
+    await daemonClient.listRuns();
+    await daemonClient.getRun("run/1");
+    await daemonClient.startRun("run/1", startRequest);
+    await daemonClient.getRunOutcome("run/1");
+
+    expect(fetch.mock.calls.map((call) => call[0])).toEqual([
+      "http://127.0.0.1:3877/runs",
+      "http://127.0.0.1:3877/runs",
+      "http://127.0.0.1:3877/runs/run%2F1",
+      "http://127.0.0.1:3877/runs/run%2F1/start",
+      "http://127.0.0.1:3877/runs/run%2F1/outcome"
+    ]);
+    expect(fetch.mock.calls[0]?.[1]).toMatchObject({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    expect(JSON.parse(fetch.mock.calls[0]?.[1]?.body ?? "{}")).toEqual({ runPlan });
+    expect(fetch.mock.calls[1]?.[1]).toEqual({
+      method: "GET"
+    });
+    expect(fetch.mock.calls[2]?.[1]).toEqual({
+      method: "GET"
+    });
+    expect(fetch.mock.calls[3]?.[1]).toMatchObject({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    expect(JSON.parse(fetch.mock.calls[3]?.[1]?.body ?? "{}")).toEqual(startRequest);
+    expect(fetch.mock.calls[4]?.[1]).toEqual({
+      method: "GET"
+    });
+  });
+
   it("throws structured daemon client errors from daemon error payloads", async () => {
     const fetch = createFetch(
       {
@@ -150,6 +204,20 @@ describe("DeliberumDaemonClient", () => {
       status: 400,
       code: "invalid_json",
       message: "Request body must be valid JSON."
+    } satisfies Partial<DaemonClientError>);
+  });
+
+  it("converts fetch failures into safe daemon unavailable errors", async () => {
+    const fetch = vi.fn(async () => {
+      throw new Error("connect ECONNREFUSED 127.0.0.1:3877");
+    }) as unknown as ReturnType<typeof vi.fn> & DaemonFetch;
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    await expect(daemonClient.listRuns()).rejects.toMatchObject({
+      name: "DaemonClientError",
+      status: 0,
+      code: "daemon_unavailable",
+      message: "Daemon is unavailable."
     } satisfies Partial<DaemonClientError>);
   });
 

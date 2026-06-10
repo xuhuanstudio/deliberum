@@ -20,6 +20,9 @@ importers:
 
   apps/cli:
     dependencies:
+      '@deliberum/client':
+        specifier: workspace:*
+        version: link:../../packages/client
       '@deliberum/core':
         specifier: workspace:*
         version: link:../../packages/core

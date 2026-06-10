@@ -34,9 +34,16 @@ deliberum frontier --session <id>
 deliberum objections --session <id>
 deliberum obligations --session <id>
 deliberum events --session <id>
+deliberum runs create --input <run-plan.json> [--daemon-url <local-url>]
+deliberum runs list [--daemon-url <local-url>]
+deliberum runs show <runId> [--daemon-url <local-url>]
+deliberum runs start <runId> --input <start.json> [--daemon-url <local-url>]
+deliberum runs outcome <runId> [--daemon-url <local-url>]
 ```
 
 CLI view commands return structured JSON. `frontier`, `objections`, and `obligations` are projection-derived and include projection metadata.
+
+CLI run commands are local daemon control commands. They require a running local daemon, call daemon run endpoints through `@deliberum/client`, and do not use the CLI-local JSON EventStore for run orchestration.
 
 ## Daemon
 
@@ -68,7 +75,7 @@ POST /sessions/:sessionId/proposals/:proposalEventId/challenges
 POST /sessions/:sessionId/proposals/:proposalEventId/acceptance
 ```
 
-Run orchestration is synchronous and local in the current daemon. Component registries must be injected by the embedding process or tests; the daemon does not provide fake or real provider-backed defaults.
+Run orchestration is synchronous and local in the current daemon. Component registries must be injected by the embedding process or tests; the daemon does not provide fake or real provider-backed defaults. CLI run commands do not include real provider configuration UX, interactive setup, or run event follow.
 
 Experimental WebGET endpoints are local daemon endpoints:
 
@@ -81,7 +88,7 @@ GET /webget/:token/submit
 GET /webget/:token/commit
 ```
 
-Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, real provider-backed execution defaults, CLI run commands, Web run workspace integration, production authentication, and remote/multi-user deployment.
+Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, real provider-backed execution defaults and UX, interactive setup, run event follow, Web run workspace integration, production authentication, and remote/multi-user deployment.
 
 ## Web UI
 

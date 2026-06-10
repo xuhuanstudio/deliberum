@@ -33,6 +33,12 @@ export type CreateSessionRequest = {
   topicContract: unknown;
 };
 
+export type CreateRunRequest = {
+  runPlan: unknown;
+};
+
+export type StartRunRequest = Record<string, unknown>;
+
 export type OpenBatchRequest = {
   purpose: string;
   participantIds?: string[];
@@ -117,6 +123,44 @@ export type ObligationsResponse = {
   projection: ProjectionMetadataResponse;
 };
 
+export type CreateRunResponse = {
+  run: unknown;
+  session: {
+    sessionId: string;
+  };
+  event: unknown;
+};
+
+export type ListRunsResponse = {
+  runs: unknown[];
+};
+
+export type RunResponse = {
+  run: unknown;
+};
+
+export type StartRunResponse = {
+  run: unknown;
+  stages: unknown[];
+  stopped: boolean;
+  stopReason?: string;
+};
+
+export type RunOutcomeResponse =
+  | {
+      runId: string;
+      sessionId: string;
+      status: "compiled";
+      draftStatus: string;
+      outcome: unknown;
+    }
+  | {
+      runId: string;
+      sessionId: string;
+      status: "not_available";
+      reason: string;
+    };
+
 export type DaemonErrorPayload = {
   error?: {
     code?: string;
@@ -151,6 +195,26 @@ export class DeliberumDaemonClient {
 
   createSession(input: CreateSessionRequest): Promise<CreateSessionResponse> {
     return this.request("POST", "/sessions", input);
+  }
+
+  createRun(input: CreateRunRequest): Promise<CreateRunResponse> {
+    return this.request("POST", "/runs", input);
+  }
+
+  listRuns(): Promise<ListRunsResponse> {
+    return this.request("GET", "/runs");
+  }
+
+  getRun(runId: string): Promise<RunResponse> {
+    return this.request("GET", `/runs/${encodeURIComponent(runId)}`);
+  }
+
+  startRun(runId: string, startRequest: StartRunRequest): Promise<StartRunResponse> {
+    return this.request("POST", `/runs/${encodeURIComponent(runId)}/start`, startRequest);
+  }
+
+  getRunOutcome(runId: string): Promise<RunOutcomeResponse> {
+    return this.request("GET", `/runs/${encodeURIComponent(runId)}/outcome`);
   }
 
   listEvents(sessionId: string): Promise<EventsResponse> {
@@ -240,7 +304,14 @@ export class DeliberumDaemonClient {
       init.body = JSON.stringify(body);
     }
 
-    const response = await this.fetchImplementation(`${this.baseUrl}${path}`, init);
+    let response: DaemonFetchResponse;
+
+    try {
+      response = await this.fetchImplementation(`${this.baseUrl}${path}`, init);
+    } catch {
+      throw new DaemonClientError(0, "daemon_unavailable", "Daemon is unavailable.");
+    }
+
     const payload = await response.json();
 
     if (!response.ok) {
