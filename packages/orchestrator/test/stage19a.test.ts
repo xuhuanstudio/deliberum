@@ -483,6 +483,60 @@ describe("Stage 19A extraction proposal orchestration", () => {
     );
   });
 
+  it("rejects private and redacted source event ids without leaking hidden payloads", async () => {
+    const { eventStore, runStore, run } = await createRevealedRun();
+    appendHiddenEvents(eventStore);
+    const seen: unknown[] = [];
+    const generator = createValidGenerator({
+      onCall: (input, context) => {
+        seen.push(input, context);
+      },
+      result: (context) => ({
+        ...createValidExtractionResult(context),
+        candidates: [
+          {
+            ...createValidExtractionResult(context).candidates![0]!,
+            sourceEventIds: ["private-event-1", "redacted-event-1"]
+          }
+        ]
+      })
+    });
+
+    const result = await runExtractionProposalRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        extractionGeneratorRegistry: new ExtractionGeneratorRegistry([generator]),
+        idGenerator: createIds(["unused-proposal", "unused-event"])
+      }
+    );
+    const serializedSafeSurfaces = JSON.stringify({
+      seen,
+      result,
+      storedRun: runStore.getRun(run.id)
+    });
+
+    expect(result.proposalResults).toContainEqual(
+      expect.objectContaining({
+        generatorId: "generator-1",
+        status: "failed",
+        errorCategory: "extraction_validation_failed"
+      })
+    );
+    expect(eventStore.listEvents(run.sessionId).map((event) => event.type)).not.toContain(
+      EXTRACTION_PROPOSED_EVENT_TYPE
+    );
+    expect(serializedSafeSurfaces).toContain("extraction_validation_failed");
+    expect(serializedSafeSurfaces).not.toContain("private payload must not appear");
+    expect(serializedSafeSurfaces).not.toContain("redacted payload must not appear");
+    expect(serializedSafeSurfaces).not.toContain("unrevealed sealed payload must not appear");
+    expect(serializedSafeSurfaces).not.toContain("eventStore");
+    expect(serializedSafeSurfaces).not.toContain("appendEvent");
+  });
+
   it("rejects untraceable internal extraction object references", async () => {
     const { eventStore, runStore, run } = await createRevealedRun();
     const generator = createValidGenerator({
@@ -559,6 +613,85 @@ describe("Stage 19A extraction proposal orchestration", () => {
     expect(generator.callCount).toBe(1);
     expect(eventStore.listEvents(run.sessionId)).toHaveLength(eventCount);
     expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === EXTRACTION_PROPOSED_EVENT_TYPE)).toHaveLength(1);
+  });
+
+  it("prevents simultaneous extraction round calls from executing a generator twice", async () => {
+    const { eventStore, runStore, run } = await createRevealedRun();
+    let calls = 0;
+    let markStarted: () => void = () => undefined;
+    let resolveGenerator: () => void = () => undefined;
+    const generatorStarted = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    const generator: ExtractionGenerator & { readonly callCount: number } = {
+      generatorId: "generator-1",
+      generateExtractionProposal(_input, context) {
+        calls += 1;
+        markStarted();
+
+        return new Promise<ExtractionGeneratorResult>((resolve) => {
+          resolveGenerator = () => resolve(createValidExtractionResult(context));
+        });
+      },
+      get callCount() {
+        return calls;
+      }
+    };
+    const registry = new ExtractionGeneratorRegistry([generator]);
+    const first = runExtractionProposalRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        extractionGeneratorRegistry: registry,
+        idGenerator: createIds(["proposal-1", "proposal-event-1"]),
+        clock: () => "2026-06-10T00:00:06.000Z",
+        executionClaimOwnerIdGenerator: createIds(["extraction-claim-1"]),
+        executionClaimTtlMs: 30000
+      }
+    );
+
+    await generatorStarted;
+
+    const second = await runExtractionProposalRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        extractionGeneratorRegistry: registry,
+        idGenerator: createIds(["unused-proposal", "unused-event"]),
+        clock: () => "2026-06-10T00:00:07.000Z",
+        executionClaimOwnerIdGenerator: createIds(["extraction-claim-2"]),
+        executionClaimTtlMs: 30000
+      }
+    );
+
+    expect(second.executionStatus).toBe("already_running");
+    expect(generator.callCount).toBe(1);
+    expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === EXTRACTION_PROPOSED_EVENT_TYPE)).toHaveLength(0);
+
+    resolveGenerator();
+
+    const firstResult = await first;
+    const extractionEvents = eventStore
+      .listEvents(run.sessionId)
+      .filter((event) => event.type === EXTRACTION_PROPOSED_EVENT_TYPE);
+
+    expect(firstResult.executionStatus).toBe("executed");
+    expect(firstResult.proposalResults).toContainEqual(
+      expect.objectContaining({
+        generatorId: "generator-1",
+        status: "proposed",
+        proposalEventId: "proposal-event-1"
+      })
+    );
+    expect(generator.callCount).toBe(1);
+    expect(extractionEvents).toHaveLength(1);
+    expect(extractionEvents.map((event) => event.id)).toEqual(["proposal-event-1"]);
   });
 
   it("stores only safe generator failure category and no raw error", async () => {
