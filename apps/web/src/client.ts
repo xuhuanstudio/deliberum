@@ -2,10 +2,17 @@ import {
   DEFAULT_DAEMON_BASE_URL,
   DeliberumDaemonClient,
   type CandidateFrontierResponse,
+  type CreateRunRequest,
+  type CreateRunResponse,
   type DaemonHealthResponse,
   type EventsResponse,
   type ObjectionsResponse,
-  type ObligationsResponse
+  type ObligationsResponse,
+  type ListRunsResponse,
+  type RunOutcomeResponse,
+  type RunResponse,
+  type StartRunRequest,
+  type StartRunResponse
 } from "@deliberum/client";
 
 export type WebRuntimeEnv = {
@@ -14,6 +21,11 @@ export type WebRuntimeEnv = {
 
 export type WebDaemonClient = {
   health: () => Promise<DaemonHealthResponse>;
+  createRun: (input: CreateRunRequest) => Promise<CreateRunResponse>;
+  listRuns: () => Promise<ListRunsResponse>;
+  getRun: (runId: string) => Promise<RunResponse>;
+  startRun: (runId: string, startRequest: StartRunRequest) => Promise<StartRunResponse>;
+  getRunOutcome: (runId: string) => Promise<RunOutcomeResponse>;
   listEvents: (sessionId: string) => Promise<EventsResponse>;
   getFrontier: (sessionId: string) => Promise<CandidateFrontierResponse>;
   getObjections: (sessionId: string) => Promise<ObjectionsResponse>;

@@ -19,8 +19,23 @@ import {
   StatusBanner,
   WorkspaceShell
 } from "@deliberum/ui";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
+import {
+  RunDetailPage,
+  RunNewPage,
+  RunOutcomePage,
+  RunsListPage
+} from "./run-workspace";
+import {
+  DaemonStatus,
+  QueryState,
+  RecordCollection,
+  ViewFrame,
+  asArray,
+  formatRecordValue,
+  getRecordValue
+} from "./view-components";
 
 const rootRoute = createRootRoute({
   component: RootRoute
@@ -30,6 +45,30 @@ const landingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: LandingPage
+});
+
+const runsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "runs",
+  component: RunsListPage
+});
+
+const runsNewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "runs/new",
+  component: RunNewPage
+});
+
+const runDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "runs/$runId",
+  component: RunDetailPage
+});
+
+const runOutcomeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "runs/$runId/outcome",
+  component: RunOutcomePage
 });
 
 const sessionRoute = createRoute({
@@ -82,6 +121,10 @@ const sessionResourcesRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   landingRoute,
+  runsRoute,
+  runsNewRoute,
+  runDetailRoute,
+  runOutcomeRoute,
   sessionRoute.addChildren([
     sessionOverviewRoute,
     sessionFrontierRoute,
@@ -156,6 +199,11 @@ function LandingPage() {
           eyebrow="Projection workspace"
           title="Open a deliberation session"
           description="Enter a session id from the local daemon. Session discovery is future daemon behavior."
+          actions={
+            <Link className="du-action-link" to="/runs">
+              Open runs
+            </Link>
+          }
         />
         <form className="du-session-form" onSubmit={submitSession}>
           <label htmlFor="session-id">Session id</label>
@@ -315,7 +363,7 @@ function FrontierPage() {
     <ViewFrame
       eyebrow="Candidate Frontier"
       title="Accepted active candidates"
-      description="This view renders the daemon projection basis and candidate set without selecting a single answer."
+      description="This view renders the daemon projection basis and candidate set without selecting one proposal."
     >
       <QueryState query={frontierQuery}>
         <DataPanel title="Projection shape">
@@ -441,116 +489,6 @@ function ResourcesPlaceholderPage() {
   );
 }
 
-type ViewFrameProps = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  children: ReactNode;
-};
-
-function ViewFrame({ eyebrow, title, description, children }: ViewFrameProps) {
-  return (
-    <div className="du-view">
-      <PageHeader eyebrow={eyebrow} title={title} description={description} />
-      <div className="du-view-body">{children}</div>
-    </div>
-  );
-}
-
-function DaemonStatus() {
-  const { client } = useDaemonRuntime();
-  const healthQuery = useQuery({
-    queryKey: ["daemon-health"],
-    queryFn: () => client.health(),
-    retry: false
-  });
-
-  if (healthQuery.isLoading) {
-    return <StatusBanner title="Checking daemon" />;
-  }
-
-  if (healthQuery.isError) {
-    return (
-      <StatusBanner
-        tone="warning"
-        title="Daemon unavailable"
-        detail="Views will retry when routes request data."
-      />
-    );
-  }
-
-  if (!healthQuery.data) {
-    return <StatusBanner title="Daemon status unavailable" />;
-  }
-
-  return (
-    <StatusBanner
-      tone="ok"
-      title="Daemon online"
-      detail={`${healthQuery.data.service} on ${healthQuery.data.host}:${healthQuery.data.port}`}
-    />
-  );
-}
-
-type QueryStateProps = {
-  query: {
-    isLoading: boolean;
-    isError: boolean;
-    error: Error | null;
-  };
-  children: ReactNode;
-};
-
-function QueryState({ query, children }: QueryStateProps) {
-  if (query.isLoading) {
-    return <StatusBanner title="Loading daemon view" />;
-  }
-
-  if (query.isError) {
-    return (
-      <StatusBanner
-        tone="error"
-        title="Daemon request failed"
-        detail={query.error?.message ?? "The daemon did not return a usable response."}
-      />
-    );
-  }
-
-  return children;
-}
-
-type RecordCollectionProps = {
-  title: string;
-  records: unknown[];
-  emptyTitle: string;
-  emptyDescription: string;
-};
-
-function RecordCollection({
-  title,
-  records,
-  emptyTitle,
-  emptyDescription
-}: RecordCollectionProps) {
-  return (
-    <DataPanel title={title}>
-      {records.length === 0 ? (
-        <EmptyState title={emptyTitle} description={emptyDescription} />
-      ) : (
-        <div className="du-record-list">
-          {records.map((record, index) => (
-            <JsonBlock
-              key={getRecordKey(record, index)}
-              label={String(getRecordValue(record, "id") ?? `Record ${index + 1}`)}
-              value={record}
-            />
-          ))}
-        </div>
-      )}
-    </DataPanel>
-  );
-}
-
 function useSessionEventsQuery(sessionId: string) {
   const { client } = useDaemonRuntime();
 
@@ -564,30 +502,4 @@ function useSessionParams(): { sessionId: string } {
   return useParams({
     strict: false
   }) as { sessionId: string };
-}
-
-function asArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function getRecordValue(record: unknown, key: string): unknown {
-  if (!record || typeof record !== "object" || Array.isArray(record)) {
-    return undefined;
-  }
-
-  return (record as Record<string, unknown>)[key];
-}
-
-function formatRecordValue(value: unknown): string {
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-
-  return "None";
-}
-
-function getRecordKey(record: unknown, fallback: number): string {
-  const id = getRecordValue(record, "id");
-
-  return typeof id === "string" && id.length > 0 ? id : `record-${fallback}`;
 }

@@ -14,6 +14,43 @@ const projection = {
   eventIds: ["event-1", "proposal-event-1"]
 };
 
+const runDetail = {
+  runId: "run-1",
+  sessionId: "session-1",
+  status: "created",
+  title: "Run Alpha",
+  topic: "Evaluate the local daemon run workspace",
+  createdAt: "2026-06-10T00:00:00.000Z",
+  updatedAt: "2026-06-10T00:01:00.000Z",
+  sealedDivergenceStatus: "completed",
+  latestExtractionStatus: "completed",
+  latestProposalReviewStatus: "completed",
+  latestFinalizationStatus: "completed",
+  ledger: {
+    eventCount: 7
+  },
+  plan: {
+    topic: "Evaluate the local daemon run workspace",
+    goals: ["Inspect run state"],
+    constraints: ["Keep outcomes provisional"],
+    providerConfigs: []
+  },
+  rounds: {
+    sealedDivergence: {
+      roundId: "sealed-round-1",
+      status: "completed"
+    },
+    extraction: [
+      {
+        roundId: "extraction-round-1",
+        status: "completed"
+      }
+    ],
+    proposalReview: [],
+    finalization: []
+  }
+};
+
 function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient {
   return {
     health: vi.fn(async () => ({
@@ -33,6 +70,52 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           }
         }
       ]
+    })),
+    createRun: vi.fn(async (input) => ({
+      run: runDetail,
+      session: {
+        sessionId: runDetail.sessionId
+      },
+      event: {
+        id: "event-1",
+        type: "topic_contract_published",
+        payload: input.runPlan
+      }
+    })),
+    listRuns: vi.fn(async () => ({
+      runs: [runDetail]
+    })),
+    getRun: vi.fn(async () => ({
+      run: runDetail
+    })),
+    startRun: vi.fn(async () => ({
+      run: {
+        ...runDetail,
+        status: "running"
+      },
+      stages: [
+        {
+          stage: "sealed_divergence",
+          executionStatus: "executed",
+          roundId: "sealed-round-1",
+          status: "completed",
+          eventIds: ["event-2", "event-3"],
+          result: {
+            hiddenPayload: "do not render this result payload"
+          }
+        }
+      ],
+      stopped: false
+    })),
+    getRunOutcome: vi.fn(async () => ({
+      runId: runDetail.runId,
+      sessionId: runDetail.sessionId,
+      status: "compiled",
+      draftStatus: "provisional",
+      outcome: {
+        summary: "Provisional compiled material",
+        limitations: ["Needs further audit"]
+      }
     })),
     getFrontier: vi.fn(async () => ({
       basis: "accepted_active_candidates",
@@ -88,6 +171,19 @@ function renderApp(initialPath: string, client = createClient()) {
   );
 
   return client;
+}
+
+function readWebSource(): string {
+  return [
+    "src/App.tsx",
+    "src/client.ts",
+    "src/daemon-runtime.tsx",
+    "src/routes.tsx",
+    "src/run-workspace.tsx",
+    "src/view-components.tsx"
+  ]
+    .map((filePath) => readFileSync(resolve(process.cwd(), filePath), "utf8"))
+    .join("\n");
 }
 
 afterEach(() => {
@@ -186,6 +282,148 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText(/legitimate user payload field/)).toBeTruthy();
   });
 
+  it("lists daemon runs", async () => {
+    const client = renderApp("/runs");
+
+    await screen.findByText("Daemon runs");
+    await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    expect(screen.getByText("Run Alpha")).toBeTruthy();
+    expect(screen.getByText("run-1")).toBeTruthy();
+    expect(screen.getAllByText("completed").length).toBeGreaterThan(0);
+  });
+
+  it("creates a run from a JSON run plan object", async () => {
+    const client = renderApp("/runs/new");
+    const runPlan = {
+      topic: "New local run",
+      goals: ["Inspect"],
+      constraints: ["Keep provisional"]
+    };
+
+    await screen.findByText("Create a daemon run");
+    fireEvent.change(screen.getByLabelText("Run plan JSON"), {
+      target: {
+        value: JSON.stringify(runPlan)
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create run" }));
+
+    await waitFor(() => expect(client.createRun).toHaveBeenCalledWith({ runPlan }));
+    expect(await screen.findByText("Run created")).toBeTruthy();
+    expect(screen.getByText(/run-1/)).toBeTruthy();
+  });
+
+  it("rejects invalid run plan JSON without calling the daemon", async () => {
+    const client = renderApp("/runs/new");
+
+    await screen.findByText("Create a daemon run");
+    fireEvent.change(screen.getByLabelText("Run plan JSON"), {
+      target: {
+        value: "{"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create run" }));
+
+    expect(await screen.findByText("Run plan must be valid JSON.")).toBeTruthy();
+    expect(client.createRun).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Run plan JSON"), {
+      target: {
+        value: "[]"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create run" }));
+
+    expect(await screen.findByText("Run plan must be a JSON object.")).toBeTruthy();
+    expect(client.createRun).not.toHaveBeenCalled();
+  });
+
+  it("renders run detail, stage status, and projection panels without raw event loading", async () => {
+    const client = renderApp("/runs/run-1");
+
+    await screen.findByText("Run detail");
+    await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
+    await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
+
+    expect(screen.getByText("Run status")).toBeTruthy();
+    expect(screen.getByText("Ledger events")).toBeTruthy();
+    expect(screen.getByText("Stage status")).toBeTruthy();
+    expect(screen.getByText("Candidate Frontier projection")).toBeTruthy();
+    expect(screen.getByText(/candidate-1/)).toBeTruthy();
+    expect(client.listEvents).not.toHaveBeenCalled();
+  });
+
+  it("starts a run from a JSON start request and renders only stage metadata", async () => {
+    const client = renderApp("/runs/run-1");
+    const startRequest = {
+      extraction: {
+        generatorIds: ["generator-1"]
+      }
+    };
+
+    await screen.findByText("Start orchestration");
+    fireEvent.change(screen.getByLabelText("Start request JSON"), {
+      target: {
+        value: JSON.stringify(startRequest)
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Start run" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledWith("run-1", startRequest));
+    expect(await screen.findByText("Run request completed")).toBeTruthy();
+    expect(screen.getByText("Stage results")).toBeTruthy();
+    expect(screen.getByText(/sealed_divergence/)).toBeTruthy();
+    expect(screen.getByText(/event-2/)).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("do not render this result payload");
+  });
+
+  it("renders compiled run output as a provisional outcome", async () => {
+    const client = renderApp("/runs/run-1/outcome");
+
+    await screen.findByText("Provisional outcome");
+    await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
+    expect(screen.getByText("Draft status")).toBeTruthy();
+    expect(screen.getByText(/provisional/)).toBeTruthy();
+    expect(screen.getByText(/Provisional compiled material/)).toBeTruthy();
+  });
+
+  it("renders unavailable provisional outcome reasons safely", async () => {
+    const client = createClient({
+      getRunOutcome: vi.fn(async () => ({
+        runId: "run-1",
+        sessionId: "session-1",
+        status: "not_available",
+        reason: "final_candidate_proposal_unavailable"
+      }))
+    });
+
+    renderApp("/runs/run-1/outcome", client);
+
+    expect(await screen.findByText("Provisional outcome not available")).toBeTruthy();
+    expect(screen.getByText(/final_candidate_proposal_unavailable/)).toBeTruthy();
+  });
+
+  it("redacts daemon and generic errors on run pages", async () => {
+    const client = createClient({
+      getRun: vi.fn(async () => {
+        throw new Error(
+          "raw failure /Users/alice/private/run.json Bearer secret-token sk-secret123\n    at privateStack"
+        );
+      })
+    });
+
+    renderApp("/runs/run-1", client);
+
+    expect(await screen.findByText("Daemon request failed")).toBeTruthy();
+    const renderedText = document.body.textContent ?? "";
+    expect(renderedText).not.toContain("/Users/alice");
+    expect(renderedText).not.toContain("Bearer secret-token");
+    expect(renderedText).not.toContain("sk-secret123");
+    expect(renderedText).not.toContain("privateStack");
+  });
+
   it("keeps final and resources pages as explicit placeholders", async () => {
     renderApp("/sessions/session-1/final");
 
@@ -200,10 +438,7 @@ describe("@deliberum/web shell", () => {
   });
 
   it("does not add hidden session persistence or forbidden semantic authority APIs", () => {
-    const appSource = readFileSync(resolve(process.cwd(), "src/App.tsx"), "utf8");
-    const routesSource = readFileSync(resolve(process.cwd(), "src/routes.tsx"), "utf8");
-    const clientSource = readFileSync(resolve(process.cwd(), "src/client.ts"), "utf8");
-    const source = `${appSource}\n${routesSource}\n${clientSource}`;
+    const source = readWebSource();
 
     for (const forbiddenSnippet of [
       "localStorage",
@@ -211,15 +446,25 @@ describe("@deliberum/web shell", () => {
       "currentSession",
       "@deliberum/core",
       "@deliberum/storage",
+      "@deliberum/orchestrator",
       "@deliberum/adapters",
+      "@deliberum/resources",
+      "EventSource",
+      "events/stream",
       "WebGET",
       "MCP",
       "Judge",
       "VoteWinner",
       "CurrentBest",
       "CentralRanker",
+      "winner",
+      "currentBest",
+      "ranking",
+      "score",
+      "vote",
       "finalAnswer",
-      "truthSummary"
+      "truthSummary",
+      "best answer"
     ]) {
       expect(source).not.toContain(forbiddenSnippet);
     }

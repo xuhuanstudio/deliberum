@@ -88,10 +88,12 @@ GET /webget/:token/submit
 GET /webget/:token/commit
 ```
 
-Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, real provider-backed execution defaults and UX, interactive setup, run event follow, Web run workspace integration, production authentication, and remote/multi-user deployment.
+Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, real provider-backed execution defaults and UX, interactive setup, run event follow, production authentication, and remote/multi-user deployment.
 
 ## Web UI
 
-The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, final placeholder, and resources placeholder.
+The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, final placeholder, resources placeholder, and local daemon run workspace views.
 
-The Web UI does not own semantic deliberation state, implement Candidate Frontier logic, run adapters, serve resources, or compile final outcomes. Final and resource pages currently explain that core packages exist, but daemon/Web live integration for those pages is deferred.
+The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, persistent daemon storage, or real provider setup UX yet. It can list runs, create a run from JSON, inspect daemon run state, start requested run stages from a JSON request, read safe projection endpoints by run session id, and display compiled output only as a provisional outcome. It does not implement run event follow or a raw run event timeline.
+
+The Web UI does not own semantic deliberation state, implement Candidate Frontier logic, run adapters, serve resources, or compile outcomes. Session final and resource pages currently explain that core packages exist, but daemon/Web live integration for those session pages is deferred.
