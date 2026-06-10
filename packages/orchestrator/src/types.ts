@@ -6,6 +6,7 @@ import {
   ExtractionEvidenceNeedSchema,
   ExtractionObjectionSchema,
   ExtractionQualityObligationSchema,
+  FinalAuditSchema,
   JsonRecordSchema,
   NonEmptyStringSchema,
   ParticipantCapabilitiesSchema,
@@ -18,6 +19,7 @@ import {
   type ExtractionEvidenceNeed,
   type ExtractionObjection,
   type ExtractionQualityObligation,
+  type FinalAudit,
   type ParticipantCapabilities,
   type ParticipantKind,
   type JsonValue,
@@ -31,6 +33,8 @@ import type {
   CreateSessionOptions,
   IdGenerator,
   ExtractionProposalState,
+  OutcomeCompilationResult,
+  ProjectionMetadata,
   QualityObligationsProjection,
   SealedDivergenceOptions
 } from "@deliberum/core";
@@ -159,6 +163,20 @@ export const ProposalReviewRunErrorCategorySchema = z.enum([
 ]);
 export type ProposalReviewRunErrorCategory = z.infer<
   typeof ProposalReviewRunErrorCategorySchema
+>;
+
+export const FinalizationRunErrorCategorySchema = z.enum([
+  "finalization_context_unavailable",
+  "final_candidate_generator_failed",
+  "final_candidate_validation_failed",
+  "final_audit_generator_failed",
+  "final_audit_validation_failed",
+  "core_lifecycle_failed",
+  "outcome_compilation_failed",
+  "round_conflict"
+]);
+export type FinalizationRunErrorCategory = z.infer<
+  typeof FinalizationRunErrorCategorySchema
 >;
 
 export const ParticipantDispatchStatusSchema = z.enum([
@@ -319,6 +337,104 @@ export const ProposalReviewRoundStateSchema = z
   .strict();
 export type ProposalReviewRoundState = z.infer<typeof ProposalReviewRoundStateSchema>;
 
+export const FinalCandidateGenerationStatusSchema = z.enum([
+  "pending",
+  "running",
+  "proposed",
+  "failed",
+  "skipped"
+]);
+export type FinalCandidateGenerationStatus = z.infer<
+  typeof FinalCandidateGenerationStatusSchema
+>;
+
+export const FinalCandidateGenerationStateSchema = z
+  .object({
+    sourceId: IdSchema,
+    sourceType: z.enum(["explicit", "generator"]),
+    status: FinalCandidateGenerationStatusSchema,
+    proposalEventId: IdSchema.optional(),
+    errorCategory: FinalizationRunErrorCategorySchema.optional(),
+    previousErrorCategories: z.array(FinalizationRunErrorCategorySchema).optional(),
+    attempts: z.number().int().nonnegative(),
+    startedAt: NonEmptyStringSchema.optional(),
+    completedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type FinalCandidateGenerationState = z.infer<
+  typeof FinalCandidateGenerationStateSchema
+>;
+
+export const FinalAuditGenerationStatusSchema = z.enum([
+  "pending",
+  "running",
+  "recorded",
+  "failed",
+  "skipped"
+]);
+export type FinalAuditGenerationStatus = z.infer<typeof FinalAuditGenerationStatusSchema>;
+
+export const FinalAuditGenerationStateSchema = z
+  .object({
+    auditorId: IdSchema,
+    status: FinalAuditGenerationStatusSchema,
+    auditEventId: IdSchema.optional(),
+    errorCategory: FinalizationRunErrorCategorySchema.optional(),
+    previousErrorCategories: z.array(FinalizationRunErrorCategorySchema).optional(),
+    attempts: z.number().int().nonnegative(),
+    startedAt: NonEmptyStringSchema.optional(),
+    completedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type FinalAuditGenerationState = z.infer<typeof FinalAuditGenerationStateSchema>;
+
+export const OutcomeCompilationMetadataSchema = z
+  .object({
+    status: z.enum(["not_requested", "compiled", "failed"]),
+    compiledAt: NonEmptyStringSchema.optional(),
+    projectionVersion: NonEmptyStringSchema.optional(),
+    eventRange: z
+      .object({
+        fromSequence: z.number().int().nonnegative().nullable(),
+        toSequence: z.number().int().nonnegative().nullable()
+      })
+      .strict()
+      .optional(),
+    eventIds: z.array(IdSchema).optional(),
+    finalCandidateProposalEventId: IdSchema.optional(),
+    finalAuditEventIds: z.array(IdSchema).optional(),
+    errorCategory: FinalizationRunErrorCategorySchema.optional()
+  })
+  .strict();
+export type OutcomeCompilationMetadata = z.infer<typeof OutcomeCompilationMetadataSchema>;
+
+export const FinalizationRoundStatusSchema = z.enum([
+  "running",
+  "waiting_for_final_candidate",
+  "waiting_for_auditors",
+  "completed",
+  "failed"
+]);
+export type FinalizationRoundStatus = z.infer<typeof FinalizationRoundStatusSchema>;
+
+export const FinalizationRoundStateSchema = z
+  .object({
+    roundId: IdSchema,
+    sourceProposalReviewRoundId: IdSchema.optional(),
+    status: FinalizationRoundStatusSchema,
+    finalCandidate: FinalCandidateGenerationStateSchema.optional(),
+    auditorStates: z.array(FinalAuditGenerationStateSchema),
+    finalCandidateProposalEventId: IdSchema.optional(),
+    auditEventIds: z.array(IdSchema),
+    outcomeCompilation: OutcomeCompilationMetadataSchema.optional(),
+    lastErrorCategory: FinalizationRunErrorCategorySchema.optional(),
+    executionClaim: RoundExecutionClaimSchema.optional(),
+    startedAt: NonEmptyStringSchema.optional(),
+    updatedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type FinalizationRoundState = z.infer<typeof FinalizationRoundStateSchema>;
+
 export const DeliberationRunStatusSchema = z.enum([
   "created",
   "running",
@@ -343,6 +459,7 @@ export const DeliberationRunRecordSchema = z
     sealedDivergenceRound: SealedDivergenceRoundStateSchema.optional(),
     extractionRounds: z.array(ExtractionRoundStateSchema).optional(),
     proposalReviewRounds: z.array(ProposalReviewRoundStateSchema).optional(),
+    finalizationRounds: z.array(FinalizationRoundStateSchema).optional(),
     createdAt: NonEmptyStringSchema,
     updatedAt: NonEmptyStringSchema
   })
@@ -808,4 +925,165 @@ export type RunProposalReviewRoundResult = {
   executionStatus: "executed" | "already_running" | "already_completed";
   reviewResults: ProposalReviewerRoundResult[];
   acceptanceResults: ProposalAcceptanceRoundResult[];
+};
+
+export const FinalCandidateGeneratorResultSchema = z
+  .object({
+    candidateIds: z.array(IdSchema).min(1),
+    recommendation: NonEmptyStringSchema,
+    applicabilityConditions: z.array(NonEmptyStringSchema).optional(),
+    rationale: NonEmptyStringSchema,
+    limitations: z.array(NonEmptyStringSchema).optional()
+  })
+  .strict();
+export type FinalCandidateGeneratorResult = z.infer<
+  typeof FinalCandidateGeneratorResultSchema
+>;
+export type ExplicitFinalCandidateDraft = FinalCandidateGeneratorResult;
+
+export const FinalAuditGeneratorResultSchema = FinalAuditSchema.omit({
+  id: true,
+  targetFinalCandidateProposalEventId: true,
+  status: true
+}).partial();
+export type FinalAuditGeneratorResult = z.infer<typeof FinalAuditGeneratorResultSchema>;
+
+export type FinalizationContextPublicEvent = {
+  id: string;
+  type: string;
+  sessionId: string;
+  sequence: number;
+  authorId: string;
+  createdAt: string;
+  recordedAt: string;
+  visibility: EventVisibility | string;
+  basedOnEventIds: string[];
+  trace: EventTrace;
+};
+
+export type FinalizationContextMetadata = {
+  version: "1";
+  sourceProposalReviewRoundId?: string;
+  acceptanceEventIds: string[];
+  eventRange: ProjectionMetadata["eventRange"];
+  eventIds: string[];
+};
+
+export type FinalizationContext = {
+  runId: string;
+  sessionId: string;
+  topic: string;
+  goals: string[];
+  constraints: string[];
+  output: RunOutputPreferences;
+  acceptedObjects: AcceptedDeliberationObjectsProjection;
+  frontier: CandidateFrontierProjection;
+  qualityObligations: QualityObligationsProjection;
+  unresolvedObjectionIds: string[];
+  evidenceNeedIds: string[];
+  publicEvents: FinalizationContextPublicEvent[];
+  metadata: FinalizationContextMetadata;
+  runMetadata: {
+    status: RunOperationalStatus;
+    participantIds: string[];
+    proposalReviewRoundStatus?: ProposalReviewRoundStatus;
+  };
+};
+
+export type BuildFinalizationContextInput = {
+  run: DeliberationRunRecord;
+  eventStore: EventStore;
+  proposalReviewRoundId?: string;
+};
+
+export type FinalCandidateGeneratorInput = {
+  instructions: string;
+  context: FinalizationContext;
+};
+
+export interface FinalCandidateGenerator {
+  generatorId: string;
+  proposeFinalCandidate(
+    input: FinalCandidateGeneratorInput,
+    context: FinalizationContext
+  ): Promise<FinalCandidateGeneratorResult> | FinalCandidateGeneratorResult;
+}
+
+export type FinalCandidateGeneratorRegistryEntry = {
+  generatorId: string;
+};
+
+export type FinalAuditGeneratorInput = {
+  instructions: string;
+  context: FinalizationContext;
+  finalCandidateProposalEventId: string;
+};
+
+export interface FinalAuditGenerator {
+  auditorId: string;
+  auditFinalCandidate(
+    input: FinalAuditGeneratorInput,
+    context: FinalizationContext
+  ): Promise<FinalAuditGeneratorResult> | FinalAuditGeneratorResult;
+}
+
+export type FinalAuditGeneratorRegistryEntry = {
+  auditorId: string;
+};
+
+export type RunFinalizationRoundInput = {
+  runId: string;
+  roundId?: string;
+  proposalReviewRoundId?: string;
+  finalCandidateDraft?: ExplicitFinalCandidateDraft;
+  finalCandidateGeneratorId?: string;
+  auditGeneratorIds?: readonly string[];
+  retryFailedFinalCandidate?: boolean;
+  retryFailedAuditors?: boolean;
+  compileOutcome?: boolean;
+};
+
+export type RunFinalizationRoundOptions = {
+  eventStore: EventStore;
+  runStore: RunStore;
+  finalCandidateGeneratorRegistry: {
+    require(generatorId: string): FinalCandidateGenerator;
+    list(): FinalCandidateGeneratorRegistryEntry[];
+  };
+  finalAuditGeneratorRegistry: {
+    require(auditorId: string): FinalAuditGenerator;
+    list(): FinalAuditGeneratorRegistryEntry[];
+  };
+  idGenerator: IdGenerator;
+  clock?: Clock;
+  schemaVersion?: string;
+  executionClaimTtlMs?: number;
+  executionClaimOwnerIdGenerator?: () => string;
+};
+
+export type FinalCandidateRoundResult = {
+  sourceId: string;
+  sourceType: "explicit" | "generator";
+  status: FinalCandidateGenerationStatus;
+  proposalEventId?: string;
+  appended?: boolean;
+  errorCategory?: FinalizationRunErrorCategory;
+};
+
+export type FinalAuditRoundResult = {
+  auditorId: string;
+  status: FinalAuditGenerationStatus;
+  auditEventId?: string;
+  appended?: boolean;
+  errorCategory?: FinalizationRunErrorCategory;
+};
+
+export type RunFinalizationRoundResult = {
+  run: DeliberationRunRecord;
+  roundId: string;
+  executionStatus: "executed" | "already_running" | "already_completed";
+  finalCandidateResult?: FinalCandidateRoundResult;
+  auditResults: FinalAuditRoundResult[];
+  outcomeCompilation?: OutcomeCompilationMetadata;
+  outcome?: OutcomeCompilationResult;
 };

@@ -125,3 +125,34 @@ export class RunProposalReviewRoundError extends Error {
     this.category = category;
   }
 }
+
+export class FinalizationGeneratorRegistryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FinalizationGeneratorRegistryError";
+  }
+}
+
+export class FinalizationContextError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FinalizationContextError";
+  }
+}
+
+export class FinalizationValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FinalizationValidationError";
+  }
+}
+
+export class RunFinalizationRoundError extends Error {
+  readonly category: string;
+
+  constructor(category: string, message: string) {
+    super(message);
+    this.name = "RunFinalizationRoundError";
+    this.category = category;
+  }
+}

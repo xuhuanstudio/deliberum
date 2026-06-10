@@ -22,6 +22,7 @@ import {
   buildProposalReviewContext,
   createDeliberationRun,
   runExtractionProposalRound,
+  runFinalizationRound,
   runProposalReviewRound,
   runSealedDivergenceRound
 } from "../src";
@@ -1338,7 +1339,7 @@ describe("Stage 19B-1 proposal review orchestration", () => {
     expect(fieldNames).not.toContain("truthSummary");
     expect(fieldNames).not.toContain("Judge");
     expect("runProposalReviewRound" in orchestratorExportSurface()).toBe(true);
-    expect("runFinalizationRound" in orchestratorExportSurface()).toBe(false);
+    expect("runFinalizationRound" in orchestratorExportSurface()).toBe(true);
   });
 });
 
@@ -1356,6 +1357,7 @@ function collectFieldNames(value: unknown): string[] {
 
 function orchestratorExportSurface() {
   return {
+    runFinalizationRound,
     runProposalReviewRound
   };
 }
