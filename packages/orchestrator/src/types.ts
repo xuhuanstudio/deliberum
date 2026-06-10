@@ -1,6 +1,11 @@
 import { z } from "zod";
 import {
   IdSchema,
+  ExtractionCandidateSchema,
+  ExtractionClaimSchema,
+  ExtractionEvidenceNeedSchema,
+  ExtractionObjectionSchema,
+  ExtractionQualityObligationSchema,
   JsonRecordSchema,
   NonEmptyStringSchema,
   ParticipantCapabilitiesSchema,
@@ -8,6 +13,11 @@ import {
   SealedBatchPurposeSchema,
   type EventTrace,
   type EventVisibility,
+  type ExtractionCandidate,
+  type ExtractionClaim,
+  type ExtractionEvidenceNeed,
+  type ExtractionObjection,
+  type ExtractionQualityObligation,
   type ParticipantCapabilities,
   type ParticipantKind,
   type JsonValue,
@@ -127,6 +137,15 @@ export const RunErrorCategorySchema = z.enum([
 ]);
 export type RunErrorCategory = z.infer<typeof RunErrorCategorySchema>;
 
+export const ExtractionRunErrorCategorySchema = z.enum([
+  "extraction_context_unavailable",
+  "extraction_generator_failed",
+  "extraction_validation_failed",
+  "core_lifecycle_failed",
+  "round_conflict"
+]);
+export type ExtractionRunErrorCategory = z.infer<typeof ExtractionRunErrorCategorySchema>;
+
 export const ParticipantDispatchStatusSchema = z.enum([
   "pending",
   "running",
@@ -188,6 +207,54 @@ export const SealedDivergenceRoundStateSchema = z
   .strict();
 export type SealedDivergenceRoundState = z.infer<typeof SealedDivergenceRoundStateSchema>;
 
+export const ExtractionGeneratorRunStatusSchema = z.enum([
+  "pending",
+  "running",
+  "proposed",
+  "failed",
+  "skipped"
+]);
+export type ExtractionGeneratorRunStatus = z.infer<
+  typeof ExtractionGeneratorRunStatusSchema
+>;
+
+export const ExtractionGeneratorStateSchema = z
+  .object({
+    generatorId: IdSchema,
+    status: ExtractionGeneratorRunStatusSchema,
+    proposalEventId: IdSchema.optional(),
+    errorCategory: ExtractionRunErrorCategorySchema.optional(),
+    previousErrorCategories: z.array(ExtractionRunErrorCategorySchema).optional(),
+    attempts: z.number().int().nonnegative(),
+    startedAt: NonEmptyStringSchema.optional(),
+    completedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type ExtractionGeneratorState = z.infer<typeof ExtractionGeneratorStateSchema>;
+
+export const ExtractionRoundStatusSchema = z.enum([
+  "running",
+  "waiting_for_generators",
+  "completed",
+  "failed"
+]);
+export type ExtractionRoundStatus = z.infer<typeof ExtractionRoundStatusSchema>;
+
+export const ExtractionRoundStateSchema = z
+  .object({
+    roundId: IdSchema,
+    sourceSealedDivergenceRoundId: IdSchema,
+    status: ExtractionRoundStatusSchema,
+    generatorStates: z.array(ExtractionGeneratorStateSchema),
+    proposalEventIds: z.array(IdSchema),
+    lastErrorCategory: ExtractionRunErrorCategorySchema.optional(),
+    executionClaim: RoundExecutionClaimSchema.optional(),
+    startedAt: NonEmptyStringSchema.optional(),
+    updatedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type ExtractionRoundState = z.infer<typeof ExtractionRoundStateSchema>;
+
 export const DeliberationRunStatusSchema = z.enum([
   "created",
   "running",
@@ -210,6 +277,7 @@ export const DeliberationRunRecordSchema = z
     topicContractEventId: IdSchema,
     currentBatchId: IdSchema.optional(),
     sealedDivergenceRound: SealedDivergenceRoundStateSchema.optional(),
+    extractionRounds: z.array(ExtractionRoundStateSchema).optional(),
     createdAt: NonEmptyStringSchema,
     updatedAt: NonEmptyStringSchema
   })
@@ -257,6 +325,18 @@ export type RunStoreUpdate = (run: DeliberationRunRecord) => DeliberationRunReco
 export type TopicContractBudgetLease = z.infer<typeof JsonRecordSchema>;
 export type RunTopicContractPurpose = SealedBatchPurpose;
 
+export const ExtractionGeneratorResultSchema = z
+  .object({
+    candidates: z.array(ExtractionCandidateSchema).optional(),
+    claims: z.array(ExtractionClaimSchema).optional(),
+    objections: z.array(ExtractionObjectionSchema).optional(),
+    evidenceNeeds: z.array(ExtractionEvidenceNeedSchema).optional(),
+    qualityObligations: z.array(ExtractionQualityObligationSchema).optional(),
+    rationale: NonEmptyStringSchema
+  })
+  .strict();
+export type ExtractionGeneratorResult = z.infer<typeof ExtractionGeneratorResultSchema>;
+
 export type RedactedEventPayload = {
   redacted: true;
   reason: "event_visibility" | "sealed_until_reveal";
@@ -300,6 +380,56 @@ export type ParticipantDeliberationContext = {
   resources: ContextResourceReference[];
   events: VisibleContextEvent[];
   metadata: ParticipantContextMetadata;
+};
+
+export type ExtractionContextPublicEvent = {
+  id: string;
+  type: string;
+  sessionId: string;
+  sequence: number;
+  authorId: string;
+  createdAt: string;
+  recordedAt: string;
+  visibility: EventVisibility | string;
+  batchId?: string;
+  basedOnEventIds: string[];
+  trace: EventTrace;
+};
+
+export type ExtractionContextContribution = ExtractionContextPublicEvent & {
+  participantId: string;
+  payload: JsonValue;
+};
+
+export type ExtractionContextMetadata = {
+  version: "1";
+  sourceSealedDivergenceRoundId: string;
+  batchId: string;
+  revealedEventId: string;
+  allowedSourceEventIds: string[];
+  eventRange: {
+    fromSequence: number;
+    toSequence: number;
+  } | null;
+};
+
+export type ExtractionContext = {
+  runId: string;
+  sessionId: string;
+  topic: string;
+  goals: string[];
+  constraints: string[];
+  output: RunOutputPreferences;
+  participants: ParticipantRegistryEntry[];
+  contributions: ExtractionContextContribution[];
+  publicEvents: ExtractionContextPublicEvent[];
+  metadata: ExtractionContextMetadata;
+};
+
+export type BuildExtractionContextInput = {
+  run: DeliberationRunRecord;
+  eventStore: EventStore;
+  sealedDivergenceRoundId?: string;
 };
 
 export type BuildParticipantContextInput = {
@@ -367,6 +497,32 @@ export type ParticipantDispatchEnvelope = {
   providerRuntimeConfig?: ProviderRuntimeConfig;
 };
 
+export type ExtractionGeneratorInput = {
+  instructions: string;
+  context: ExtractionContext;
+};
+
+export interface ExtractionGenerator {
+  generatorId: string;
+  generateExtractionProposal(
+    input: ExtractionGeneratorInput,
+    context: ExtractionContext
+  ): Promise<ExtractionGeneratorResult> | ExtractionGeneratorResult;
+}
+
+export type ExtractionGeneratorRegistryEntry = {
+  generatorId: string;
+};
+
+export type ExtractionGeneratorDraft = {
+  candidates: ExtractionCandidate[];
+  claims: ExtractionClaim[];
+  objections: ExtractionObjection[];
+  evidenceNeeds: ExtractionEvidenceNeed[];
+  qualityObligations: ExtractionQualityObligation[];
+  rationale: string;
+};
+
 export type RunSealedDivergenceRoundInput = {
   runId: string;
   roundId?: string;
@@ -408,4 +564,41 @@ export type RunSealedDivergenceRoundResult = {
   participantResults: ParticipantRoundResult[];
   revealedEventId?: string;
   revealAppended?: boolean;
+};
+
+export type RunExtractionProposalRoundInput = {
+  runId: string;
+  roundId?: string;
+  sealedDivergenceRoundId?: string;
+  generatorIds?: readonly string[];
+  retryFailedGenerators?: boolean;
+};
+
+export type RunExtractionProposalRoundOptions = {
+  eventStore: EventStore;
+  runStore: RunStore;
+  extractionGeneratorRegistry: {
+    require(generatorId: string): ExtractionGenerator;
+    list(): ExtractionGeneratorRegistryEntry[];
+  };
+  idGenerator: IdGenerator;
+  clock?: Clock;
+  schemaVersion?: string;
+  executionClaimTtlMs?: number;
+  executionClaimOwnerIdGenerator?: () => string;
+};
+
+export type ExtractionGeneratorRoundResult = {
+  generatorId: string;
+  status: ExtractionGeneratorRunStatus;
+  proposalEventId?: string;
+  appended?: boolean;
+  errorCategory?: ExtractionRunErrorCategory;
+};
+
+export type RunExtractionProposalRoundResult = {
+  run: DeliberationRunRecord;
+  roundId: string;
+  executionStatus: "executed" | "already_running" | "already_completed";
+  proposalResults: ExtractionGeneratorRoundResult[];
 };

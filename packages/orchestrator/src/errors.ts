@@ -63,3 +63,34 @@ export class RunSealedDivergenceRoundError extends Error {
     this.category = category;
   }
 }
+
+export class ExtractionGeneratorRegistryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ExtractionGeneratorRegistryError";
+  }
+}
+
+export class ExtractionContextError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ExtractionContextError";
+  }
+}
+
+export class ExtractionGeneratorValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ExtractionGeneratorValidationError";
+  }
+}
+
+export class RunExtractionProposalRoundError extends Error {
+  readonly category: string;
+
+  constructor(category: string, message: string) {
+    super(message);
+    this.name = "RunExtractionProposalRoundError";
+    this.category = category;
+  }
+}
