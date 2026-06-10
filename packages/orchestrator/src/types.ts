@@ -14,7 +14,12 @@ import {
   type SealedBatchPurpose,
   type TopicContract
 } from "@deliberum/protocol";
-import type { CreateSessionOptions } from "@deliberum/core";
+import type {
+  Clock,
+  CreateSessionOptions,
+  IdGenerator,
+  SealedDivergenceOptions
+} from "@deliberum/core";
 import type { EventStore, StoredEvent } from "@deliberum/storage";
 import type { AdapterCapabilities, ParticipantAdapter, ParticipantAdapterContext, ParticipantAdapterInput } from "@deliberum/adapters";
 
@@ -111,8 +116,78 @@ export const DeliberationRunPlanSchema = z
   .strict();
 export type DeliberationRunPlan = z.infer<typeof DeliberationRunPlanSchema>;
 
-export const DeliberationRunStatusSchema = z.enum(["created"]);
+export const RunErrorCategorySchema = z.enum([
+  "adapter_failed",
+  "adapter_timed_out",
+  "budget_exceeded",
+  "core_lifecycle_failed",
+  "provider_secret_missing",
+  "round_conflict",
+  "unsupported_reveal_policy"
+]);
+export type RunErrorCategory = z.infer<typeof RunErrorCategorySchema>;
+
+export const ParticipantDispatchStatusSchema = z.enum([
+  "pending",
+  "running",
+  "submitted",
+  "failed",
+  "timed_out",
+  "skipped"
+]);
+export type ParticipantDispatchStatus = z.infer<typeof ParticipantDispatchStatusSchema>;
+
+export const ParticipantDispatchStateSchema = z
+  .object({
+    participantId: IdSchema,
+    adapterId: IdSchema,
+    status: ParticipantDispatchStatusSchema,
+    contributionEventId: IdSchema.optional(),
+    errorCategory: RunErrorCategorySchema.optional(),
+    previousErrorCategories: z.array(RunErrorCategorySchema).optional(),
+    attempts: z.number().int().nonnegative(),
+    startedAt: NonEmptyStringSchema.optional(),
+    completedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type ParticipantDispatchState = z.infer<typeof ParticipantDispatchStateSchema>;
+
+export const SealedDivergenceRoundStatusSchema = z.enum([
+  "running",
+  "waiting_for_participants",
+  "waiting_for_reveal",
+  "revealed",
+  "failed"
+]);
+export type SealedDivergenceRoundStatus = z.infer<typeof SealedDivergenceRoundStatusSchema>;
+
+export const SealedDivergenceRoundStateSchema = z
+  .object({
+    roundId: IdSchema,
+    status: SealedDivergenceRoundStatusSchema,
+    batchId: IdSchema.optional(),
+    openedEventId: IdSchema.optional(),
+    revealedEventId: IdSchema.optional(),
+    participantDispatches: z.array(ParticipantDispatchStateSchema),
+    providerCallCount: z.number().int().nonnegative(),
+    lastErrorCategory: RunErrorCategorySchema.optional(),
+    startedAt: NonEmptyStringSchema.optional(),
+    updatedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type SealedDivergenceRoundState = z.infer<typeof SealedDivergenceRoundStateSchema>;
+
+export const DeliberationRunStatusSchema = z.enum([
+  "created",
+  "running",
+  "waiting_for_participants",
+  "waiting_for_reveal",
+  "revealed",
+  "failed",
+  "cancelled"
+]);
 export type DeliberationRunStatus = z.infer<typeof DeliberationRunStatusSchema>;
+export type RunOperationalStatus = DeliberationRunStatus;
 
 export const DeliberationRunRecordSchema = z
   .object({
@@ -122,6 +197,8 @@ export const DeliberationRunRecordSchema = z
     status: DeliberationRunStatusSchema,
     plan: DeliberationRunPlanSchema,
     topicContractEventId: IdSchema,
+    currentBatchId: IdSchema.optional(),
+    sealedDivergenceRound: SealedDivergenceRoundStateSchema.optional(),
     createdAt: NonEmptyStringSchema,
     updatedAt: NonEmptyStringSchema
   })
@@ -159,9 +236,12 @@ export type CreateDeliberationRunResult = {
 
 export interface RunStore {
   createRun(input: DeliberationRunRecord): DeliberationRunRecord;
+  updateRun(runId: string, update: RunStoreUpdate): DeliberationRunRecord;
   getRun(runId: string): DeliberationRunRecord | undefined;
   listRuns(): DeliberationRunRecord[];
 }
+
+export type RunStoreUpdate = (run: DeliberationRunRecord) => DeliberationRunRecord;
 
 export type TopicContractBudgetLease = z.infer<typeof JsonRecordSchema>;
 export type RunTopicContractPurpose = SealedBatchPurpose;
@@ -274,4 +354,44 @@ export type ParticipantDispatchEnvelope = {
   adapterContext: ParticipantAdapterContext;
   providerSafeView?: ProviderConfigSafeView;
   providerRuntimeConfig?: ProviderRuntimeConfig;
+};
+
+export type RunSealedDivergenceRoundInput = {
+  runId: string;
+  roundId?: string;
+  autoCloseManual?: boolean;
+  retryFailedParticipants?: boolean;
+  env?: Record<string, string | undefined>;
+};
+
+export type RunSealedDivergenceRoundOptions = Pick<
+  SealedDivergenceOptions,
+  "eventStore" | "schemaVersion"
+> & {
+  runStore: RunStore;
+  adapterRegistry: {
+    require(adapterId: string): RegisteredParticipantAdapter;
+  };
+  idGenerator: IdGenerator;
+  clock?: Clock;
+};
+
+export type ParticipantRoundResult = {
+  participantId: string;
+  adapterId: string;
+  status: ParticipantDispatchStatus;
+  contributionEventId?: string;
+  appended?: boolean;
+  errorCategory?: RunErrorCategory;
+};
+
+export type RunSealedDivergenceRoundResult = {
+  run: DeliberationRunRecord;
+  roundId: string;
+  batchId?: string;
+  openedEventId?: string;
+  openedAppended?: boolean;
+  participantResults: ParticipantRoundResult[];
+  revealedEventId?: string;
+  revealAppended?: boolean;
 };

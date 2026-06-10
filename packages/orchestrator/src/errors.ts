@@ -19,6 +19,13 @@ export class RunStoreNotFoundError extends Error {
   }
 }
 
+export class RunStoreUpdateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RunStoreUpdateError";
+  }
+}
+
 export class ContextBuilderError extends Error {
   constructor(message: string) {
     super(message);
@@ -44,5 +51,15 @@ export class DispatchInputError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "DispatchInputError";
+  }
+}
+
+export class RunSealedDivergenceRoundError extends Error {
+  readonly category: string;
+
+  constructor(category: string, message: string) {
+    super(message);
+    this.name = "RunSealedDivergenceRoundError";
+    this.category = category;
   }
 }

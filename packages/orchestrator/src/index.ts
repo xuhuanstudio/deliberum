@@ -6,6 +6,7 @@ export * from "./errors";
 export * from "./participant-registry";
 export * from "./provider-secret-resolver";
 export * from "./run-store";
+export * from "./sealed-divergence-runner";
 export * from "./topic-contract";
 export * from "./types";
 export * from "./validation";
