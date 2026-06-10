@@ -52,7 +52,9 @@ Initial contributions are converted into candidates, claims, assumptions, object
 
 ## Candidate Frontier
 
-The Candidate Frontier is the set of active, non-dominated candidates under a projection. It should not be treated as a single truth or a vote result.
+The current Candidate Frontier projection exposes accepted active candidates with `basis: "accepted_active_candidates"`. It should not be treated as a single truth, a vote result, a winner, or a current-best answer.
+
+Full non-dominated frontier semantics remain a design goal. They should be introduced only through explicit comparison, removal, and challengeable proposal mechanisms, not through hidden ranking or implicit winner selection.
 
 Candidates can be:
 

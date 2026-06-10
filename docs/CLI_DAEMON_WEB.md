@@ -18,7 +18,7 @@ The event ledger and derived projections remain the source of truth. The CLI, da
 
 ## CLI
 
-The current CLI uses a local JSON EventStore at `.deliberum/events.json` by default. It supports `--store <path>` and `DELIBERUM_STORE` for explicit local storage. The JSON store is CLI-local, validates persisted ledgers on load, and is not daemon storage.
+The current CLI uses a local JSON EventStore at `.deliberum/events.json` by default. It supports `--store <path>` and `DELIBERUM_STORE` for explicit local storage. The JSON store is CLI-local, validates persisted ledgers on load, and is not daemon storage. It is local-first and single-writer oriented; concurrent CLI writes are not guaranteed yet. Future persistent daemon storage may address multi-writer and concurrent use.
 
 Implemented commands:
 

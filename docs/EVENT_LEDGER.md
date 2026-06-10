@@ -52,6 +52,8 @@ type EventEnvelope<TPayload> = {
 
 `trace` is required at the top level. Its nested fields may be empty when an event has no adapter/tool provenance.
 
+`integrity.previousEventHash` and `integrity.eventHash` are reserved for future tamper-evident ledger support. The current in-memory and CLI JSON stores assign `sequence` and `recordedAt` and validate ledger invariants, but they do not compute cryptographic event hashes and should not be described as tamper-evident stores.
+
 ## Projection metadata
 
 Projection result objects include:

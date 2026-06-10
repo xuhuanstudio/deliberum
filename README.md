@@ -24,7 +24,7 @@ Deliberum treats deliberation as a quality-centered process. It starts with a sy
 - **Topic Contract**: the system, not a privileged user message, publishes the discussion topic, goals, constraints, participants, and output expectations.
 - **Peer Participants**: humans, models, tools, web-only participants, and external systems are represented uniformly as participants.
 - **Sealed Divergence**: initial contributions are generated independently and revealed as a batch to reduce anchoring.
-- **Candidate Frontier**: the system tracks multiple non-dominated candidate answers instead of forcing a single “current best” too early.
+- **Candidate Frontier**: the current projection exposes accepted active candidates with explicit basis metadata instead of forcing a single “current best”; non-dominated frontier semantics remain a future challengeable proposal mechanism.
 - **Objection Ledger**: objections are first-class objects with targets, severity claims, status, and responses.
 - **Quality Obligations**: candidates must answer explicit requirements; quality is not decided by votes or identity.
 - **Adaptive Deliberation**: the runtime chooses primitives such as red-team, repair, evidence check, blind reframe, fork, omission audit, and final audit based on quality gaps.
@@ -89,7 +89,7 @@ examples/
 
 ## Status
 
-Deliberum is implemented through the Stage 15B runtime plus Stage 16 public-readiness hardening. It is still a pre-production local-first codebase, not a production deployment or public hosted service.
+Deliberum is implemented through the Stage 15B runtime plus Stage 16 public-readiness hardening and Stage 17 security/readiness hardening. It is still a pre-production local-first codebase, not a production deployment or public hosted service.
 
 Implemented today:
 
@@ -105,7 +105,7 @@ Implemented today:
 - React/Vite Web UI shell that reads daemon/client data and does not own semantic state;
 - participant adapter interface, fake/manual adapters, OpenAI-compatible adapter, and experimental WebGET adapter;
 - Resource Broker and Delivery Planner support package;
-- hardening for persisted ledger loading, WebGET submission safety, and projection traceability metadata.
+- hardening for persisted ledger loading, WebGET submission safety, projection traceability metadata, idempotency result consistency, SSE idempotent publish guards, WebGET context visibility, and resource delivery safety.
 
 Deferred work includes SQLite or other persistent daemon storage, daemon final/resource endpoints, live Web UI final/resource pages, the full adaptive primitive scheduler, signed/public resource hosting, MCP and HTTP-template adapters, and production authentication or multi-user deployment.
 
