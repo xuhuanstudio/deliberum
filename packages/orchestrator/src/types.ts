@@ -275,6 +275,7 @@ export const ProposalReviewerRunStatusSchema = z.enum([
   "running",
   "reviewed",
   "failed",
+  "timed_out",
   "skipped"
 ]);
 export type ProposalReviewerRunStatus = z.infer<typeof ProposalReviewerRunStatusSchema>;

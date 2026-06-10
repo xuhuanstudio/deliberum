@@ -23,8 +23,9 @@ export function buildProposalReviewContext(
   const events = input.eventStore
     .listEvents(input.run.sessionId)
     .sort((left, right) => left.sequence - right.sequence);
+  const safeLifecycleEvents = filterSafeProposalLifecycleEvents(events);
   const proposalStatesProjection = projectExtractionProposalStates({
-    events,
+    events: safeLifecycleEvents,
     sessionId: input.run.sessionId
   });
   const proposalStatesByEventId = new Map(
@@ -42,18 +43,18 @@ export function buildProposalReviewContext(
     return structuredClone(state);
   });
   const acceptedObjects = projectAcceptedDeliberationObjects({
-    events,
+    events: safeLifecycleEvents,
     sessionId: input.run.sessionId
   });
   const frontier = projectCandidateFrontier({
-    events,
+    events: safeLifecycleEvents,
     sessionId: input.run.sessionId
   });
   const qualityObligations = projectQualityObligations({
-    events,
+    events: safeLifecycleEvents,
     sessionId: input.run.sessionId
   });
-  const safeProjection = createSafeProposalLifecycleProjectionMetadata(events);
+  const safeProjection = createProjectionMetadata(safeLifecycleEvents);
 
   return {
     runId: input.run.id,
@@ -121,17 +122,17 @@ function resolveSourceExtractionRound(
   return structuredClone(round);
 }
 
-function createSafeProposalLifecycleProjectionMetadata(
-  events: readonly StoredEvent[]
-): ProjectionMetadata {
-  const lifecycleEvents = events.filter(
+function filterSafeProposalLifecycleEvents(events: readonly StoredEvent[]): StoredEvent[] {
+  return events.filter(
     (event) =>
       event.visibility === "public" &&
       (event.type === EXTRACTION_PROPOSED_EVENT_TYPE ||
         event.type === PROPOSAL_CHALLENGED_EVENT_TYPE ||
         event.type === PROPOSAL_ACCEPTED_EVENT_TYPE)
   );
+}
 
+function createProjectionMetadata(lifecycleEvents: readonly StoredEvent[]): ProjectionMetadata {
   return {
     version: "1",
     eventRange:

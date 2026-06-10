@@ -451,6 +451,108 @@ function appendHiddenEvents(eventStore: InMemoryEventStore) {
   });
 }
 
+function appendHiddenExtractionProposalEvents(eventStore: InMemoryEventStore) {
+  eventStore.appendEvent({
+    id: "private-proposal-event-1",
+    sessionId: "session-1",
+    schemaVersion: "1",
+    type: EXTRACTION_PROPOSED_EVENT_TYPE,
+    authorId: "hidden-generator",
+    createdAt: "2026-06-10T00:00:06.100Z",
+    basedOnEventIds: ["contribution-1"],
+    visibility: "private",
+    trace: {},
+    payload: createHiddenExtractionProposalPayload(
+      "private-proposal-1",
+      "hidden-private-candidate",
+      "private extraction-like payload must not appear"
+    )
+  });
+  eventStore.appendEvent({
+    id: "redacted-proposal-event-1",
+    sessionId: "session-1",
+    schemaVersion: "1",
+    type: EXTRACTION_PROPOSED_EVENT_TYPE,
+    authorId: "hidden-generator",
+    createdAt: "2026-06-10T00:00:06.200Z",
+    basedOnEventIds: ["contribution-1"],
+    visibility: "redacted",
+    trace: {},
+    payload: createHiddenExtractionProposalPayload(
+      "redacted-proposal-1",
+      "hidden-redacted-candidate",
+      "redacted extraction-like payload must not appear"
+    )
+  });
+  eventStore.appendEvent({
+    id: "hidden-acceptance-event-1",
+    sessionId: "session-1",
+    schemaVersion: "1",
+    type: PROPOSAL_ACCEPTED_EVENT_TYPE,
+    authorId: "hidden-acceptor",
+    createdAt: "2026-06-10T00:00:06.300Z",
+    basedOnEventIds: ["private-proposal-event-1"],
+    visibility: "public",
+    trace: {},
+    payload: {
+      id: "hidden-acceptance-1",
+      targetProposalEventId: "private-proposal-event-1",
+      rationale: "Public lifecycle event must not make a private proposal visible.",
+      status: "accepted_for_now"
+    }
+  });
+}
+
+function createHiddenExtractionProposalPayload(
+  proposalId: string,
+  candidateId: string,
+  hiddenText: string
+) {
+  return {
+    id: proposalId,
+    sourceEventIds: ["contribution-1"],
+    candidates: [
+      {
+        id: candidateId,
+        title: hiddenText,
+        description: hiddenText,
+        sourceEventIds: ["contribution-1"],
+        status: "active",
+        supportedBy: [],
+        attackedBy: [],
+        qualityObligationIds: [],
+        assumptions: [hiddenText],
+        tradeoffs: [hiddenText]
+      }
+    ],
+    claims: [],
+    objections: [],
+    evidenceNeeds: [],
+    qualityObligations: [],
+    rationale: hiddenText,
+    status: "proposed"
+  };
+}
+
+function replaceExtractionRoundProposalIds(
+  runStore: InMemoryRunStore,
+  runId: string,
+  proposalEventIds: string[]
+) {
+  return runStore.updateRun(runId, (currentRun: DeliberationRunRecord) => ({
+    ...currentRun,
+    extractionRounds: currentRun.extractionRounds?.map((round) =>
+      round.roundId === "initial"
+        ? {
+            ...round,
+            proposalEventIds
+          }
+        : round
+    ),
+    updatedAt: "2026-06-10T00:00:07.000Z"
+  }));
+}
+
 describe("Stage 19B-1 proposal review orchestration", () => {
   it("builds safe proposal review context from projections", async () => {
     const { eventStore, runStore, run, proposalEventIds } =
@@ -483,6 +585,62 @@ describe("Stage 19B-1 proposal review orchestration", () => {
     expect(contextJson).not.toContain("eventStore");
     expect(context.metadata.eventIds).not.toContain("private-event-1");
     expect(context.metadata.eventIds).not.toContain("redacted-event-1");
+  });
+
+  it("excludes private and redacted extraction-like proposal payloads from review context", async () => {
+    const { eventStore, runStore, run } = await createRunWithExtractionProposals();
+    appendHiddenExtractionProposalEvents(eventStore);
+
+    const context = buildProposalReviewContext({
+      run: runStore.getRun(run.id)!,
+      eventStore
+    });
+    const contextJson = JSON.stringify(context);
+
+    expect(contextJson).not.toContain("private extraction-like payload must not appear");
+    expect(contextJson).not.toContain("redacted extraction-like payload must not appear");
+    expect(contextJson).not.toContain("hidden-private-candidate");
+    expect(contextJson).not.toContain("hidden-redacted-candidate");
+    expect(context.proposalStates.map((state) => state.proposalEventId)).toEqual([
+      "proposal-event-1"
+    ]);
+    expect(context.frontier.candidates).toEqual([]);
+    expect(context.metadata.eventIds).not.toContain("private-proposal-event-1");
+    expect(context.metadata.eventIds).not.toContain("redacted-proposal-event-1");
+  });
+
+  it("rejects private and redacted proposal event ids as source extraction proposals", async () => {
+    const { eventStore, runStore, run } = await createRunWithExtractionProposals();
+    appendHiddenExtractionProposalEvents(eventStore);
+    replaceExtractionRoundProposalIds(runStore, run.id, [
+      "private-proposal-event-1",
+      "redacted-proposal-event-1"
+    ]);
+
+    expect(() =>
+      buildProposalReviewContext({
+        run: runStore.getRun(run.id)!,
+        eventStore
+      })
+    ).toThrow("unavailable proposal event");
+  });
+
+  it("builds proposal review projections from safe public lifecycle events only", async () => {
+    const { eventStore, runStore, run } = await createRunWithExtractionProposals();
+    appendHiddenExtractionProposalEvents(eventStore);
+
+    const context = buildProposalReviewContext({
+      run: runStore.getRun(run.id)!,
+      eventStore
+    });
+
+    expect(context.metadata.eventIds).toEqual([
+      "proposal-event-1",
+      "hidden-acceptance-event-1"
+    ]);
+    expect(context.acceptedObjects.candidates).toEqual([]);
+    expect(context.frontier.candidates).toEqual([]);
+    expect(context.qualityObligations.qualityObligations).toEqual([]);
   });
 
   it("creates challenge events through core proposal lifecycle only", async () => {
@@ -595,6 +753,142 @@ describe("Stage 19B-1 proposal review orchestration", () => {
       PROPOSAL_ACCEPTED_EVENT_TYPE
     );
     expect(frontier.candidates).toEqual([]);
+  });
+
+  it("failed reviewer with explicit acceptance policy produces no acceptance events", async () => {
+    const { eventStore, runStore, run, proposalEventIds } =
+      await createRunWithExtractionProposals();
+    const reviewer = createReviewer({
+      fail: true
+    });
+
+    const result = await runProposalReviewRound(
+      {
+        runId: run.id,
+        acceptancePolicy: {
+          mode: "explicit_proposal_event_ids",
+          proposalEventIds: [proposalEventIds[0]!],
+          authorId: "review-coordinator",
+          rationale: "This must not run while review is incomplete."
+        }
+      },
+      {
+        eventStore,
+        runStore,
+        proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([reviewer]),
+        idGenerator: createIds(["unused-acceptance", "unused-acceptance-event"])
+      }
+    );
+    const frontier = projectCandidateFrontier({
+      eventStore,
+      sessionId: run.sessionId
+    });
+
+    expect(result.run.proposalReviewRounds?.[0]?.status).toBe("waiting_for_reviewers");
+    expect(result.reviewResults).toContainEqual(
+      expect.objectContaining({
+        reviewerId: "reviewer-1",
+        status: "failed",
+        errorCategory: "proposal_review_generator_failed"
+      })
+    );
+    expect(result.acceptanceResults).toEqual([]);
+    expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === PROPOSAL_ACCEPTED_EVENT_TYPE)).toHaveLength(0);
+    expect(frontier.candidates).toEqual([]);
+  });
+
+  it("all_generated_unchallenged does not accept while review is incomplete", async () => {
+    const { eventStore, runStore, run } =
+      await createRunWithExtractionProposals({ proposalCount: 2 });
+    const reviewer = createReviewer({
+      fail: true
+    });
+
+    const result = await runProposalReviewRound(
+      {
+        runId: run.id,
+        acceptancePolicy: {
+          mode: "all_generated_unchallenged",
+          authorId: "review-coordinator",
+          rationale: "This must not accept proposals while review is incomplete."
+        }
+      },
+      {
+        eventStore,
+        runStore,
+        proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([reviewer]),
+        idGenerator: createIds(["unused-acceptance", "unused-acceptance-event"])
+      }
+    );
+
+    expect(result.run.proposalReviewRounds?.[0]?.status).toBe("waiting_for_reviewers");
+    expect(result.acceptanceResults).toEqual([]);
+    expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === PROPOSAL_ACCEPTED_EVENT_TYPE)).toHaveLength(0);
+  });
+
+  it("explicit retry can accept after a previously failed reviewer succeeds", async () => {
+    const { eventStore, runStore, run, proposalEventIds } =
+      await createRunWithExtractionProposals();
+
+    await runProposalReviewRound(
+      {
+        runId: run.id,
+        acceptancePolicy: {
+          mode: "explicit_proposal_event_ids",
+          proposalEventIds: [proposalEventIds[0]!],
+          authorId: "review-coordinator",
+          rationale: "This must not run while review is incomplete."
+        }
+      },
+      {
+        eventStore,
+        runStore,
+        proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([
+          createReviewer({
+            fail: true
+          })
+        ]),
+        idGenerator: createIds(["unused-acceptance", "unused-acceptance-event"])
+      }
+    );
+
+    const retry = await runProposalReviewRound(
+      {
+        runId: run.id,
+        retryFailedReviewers: true,
+        acceptancePolicy: {
+          mode: "explicit_proposal_event_ids",
+          proposalEventIds: [proposalEventIds[0]!],
+          authorId: "review-coordinator",
+          rationale: "Accept only after review succeeds."
+        }
+      },
+      {
+        eventStore,
+        runStore,
+        proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([
+          createReviewer()
+        ]),
+        idGenerator: createIds(["acceptance-1", "acceptance-event-1"])
+      }
+    );
+
+    expect(retry.run.proposalReviewRounds?.[0]?.status).toBe("completed");
+    expect(retry.reviewResults).toContainEqual(
+      expect.objectContaining({
+        reviewerId: "reviewer-1",
+        status: "reviewed"
+      })
+    );
+    expect(retry.acceptanceResults).toEqual([
+      {
+        proposalEventId: proposalEventIds[0],
+        status: "accepted",
+        acceptanceEventId: "acceptance-event-1",
+        appended: true
+      }
+    ]);
+    expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === PROPOSAL_ACCEPTED_EVENT_TYPE)).toHaveLength(1);
   });
 
   it("explicit acceptance calls core acceptance and Candidate Frontier changes only by projection", async () => {
@@ -868,6 +1162,95 @@ describe("Stage 19B-1 proposal review orchestration", () => {
     expect(firstResult.executionStatus).toBe("executed");
     expect(delayed.reviewer.callCount).toBe(1);
     expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === PROPOSAL_CHALLENGED_EVENT_TYPE)).toHaveLength(1);
+  });
+
+  it("late reviewer result after stale claim reclaim appends no duplicate challenge or acceptance", async () => {
+    const { eventStore, runStore, run, proposalEventIds } =
+      await createRunWithExtractionProposals();
+    const delayed = createDelayedReviewer({
+      challengeTarget: () => proposalEventIds[0]!
+    });
+    const first = runProposalReviewRound(
+      {
+        runId: run.id,
+        acceptancePolicy: {
+          mode: "explicit_proposal_event_ids",
+          proposalEventIds: [proposalEventIds[0]!],
+          authorId: "review-coordinator",
+          rationale: "The late first invocation must not reach acceptance.",
+          allowChallenged: true
+        }
+      },
+      {
+        eventStore,
+        runStore,
+        proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([
+          delayed.reviewer
+        ]),
+        idGenerator: createIds(["late-challenge", "late-challenge-event"]),
+        clock: () => "2026-06-10T00:00:08.000Z",
+        executionClaimOwnerIdGenerator: createIds(["proposal-review-claim-1"]),
+        executionClaimTtlMs: 1
+      }
+    );
+
+    await delayed.started;
+
+    const second = await runProposalReviewRound(
+      {
+        runId: run.id,
+        acceptancePolicy: {
+          mode: "explicit_proposal_event_ids",
+          proposalEventIds: [proposalEventIds[0]!],
+          authorId: "review-coordinator",
+          rationale: "The reclaimed invocation may accept.",
+          allowChallenged: true
+        }
+      },
+      {
+        eventStore,
+        runStore,
+        proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([
+          createReviewer({
+            challengeTarget: proposalEventIds[0]!
+          })
+        ]),
+        idGenerator: createIds([
+          "challenge-1",
+          "challenge-event-1",
+          "acceptance-1",
+          "acceptance-event-1"
+        ]),
+        clock: () => "2026-06-10T00:00:09.000Z",
+        executionClaimOwnerIdGenerator: createIds(["proposal-review-claim-2"]),
+        executionClaimTtlMs: 30000
+      }
+    );
+
+    expect(second.executionStatus).toBe("executed");
+    expect(second.reviewResults).toContainEqual(
+      expect.objectContaining({
+        reviewerId: "reviewer-1",
+        status: "reviewed",
+        challengeEventIds: ["challenge-event-1"]
+      })
+    );
+    expect(second.acceptanceResults).toEqual([
+      {
+        proposalEventId: proposalEventIds[0],
+        status: "accepted",
+        acceptanceEventId: "acceptance-event-1",
+        appended: true
+      }
+    ]);
+
+    delayed.resolveReview();
+
+    await expect(first).rejects.toMatchObject({
+      category: "round_conflict"
+    });
+    expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === PROPOSAL_CHALLENGED_EVENT_TYPE)).toHaveLength(1);
+    expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === PROPOSAL_ACCEPTED_EVENT_TYPE)).toHaveLength(1);
   });
 
   it("stores raw reviewer errors only as safe categories", async () => {

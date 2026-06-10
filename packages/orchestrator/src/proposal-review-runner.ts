@@ -213,17 +213,11 @@ async function executeClaimedProposalReviewRound(
     reviewResults.flatMap((result) => result.challengeEventIds ?? [])
   );
   const reviewErrorCategory = getLastProposalReviewErrorCategory(updatedReviewerStates);
-  const hasFailedReviewer = updatedReviewerStates.some(
-    (reviewerState) => reviewerState.status === "failed"
-  );
-  const hasPendingReviewer = updatedReviewerStates.some(
-    (reviewerState) =>
-      reviewerState.status === "pending" || reviewerState.status === "running"
-  );
+  const reviewIsIncomplete = updatedReviewerStates.some(isReviewerIncomplete);
 
   workingRun = setProposalReviewRoundState(workingRun, options, {
     ...updatedRound,
-    status: hasFailedReviewer || hasPendingReviewer ? "waiting_for_reviewers" : "running",
+    status: reviewIsIncomplete ? "waiting_for_reviewers" : "running",
     reviewerStates: updatedReviewerStates,
     challengeEventIds,
     lastErrorCategory: reviewErrorCategory,
@@ -231,22 +225,25 @@ async function executeClaimedProposalReviewRound(
   }, claimOwnerId);
 
   assertProposalReviewRoundExecutionClaimOwned(options, run.id, roundId, claimOwnerId);
-  const acceptanceResults = runAcceptancePolicy({
-    run: workingRun,
-    roundId,
-    sourceExtractionRoundId,
-    proposalEventIds: context.metadata.proposalEventIds,
-    acceptancePolicy,
-    options
-  });
+  const acceptanceResults = reviewIsIncomplete
+    ? []
+    : runAcceptancePolicy({
+        run: workingRun,
+        roundId,
+        sourceExtractionRoundId,
+        proposalEventIds: context.metadata.proposalEventIds,
+        acceptancePolicy,
+        options
+      });
   const acceptanceEventIds = collectEventIds(
     findProposalReviewRound(workingRun, roundId)?.acceptanceEventIds ?? [],
     acceptanceResults.flatMap((result) => result.acceptanceEventId ? [result.acceptanceEventId] : [])
   );
   const acceptanceErrorCategory = getLastAcceptanceErrorCategory(acceptanceResults);
-  const finalErrorCategory = acceptanceErrorCategory ?? reviewErrorCategory;
-  const finalStatus =
-    hasFailedReviewer || hasPendingReviewer ? "waiting_for_reviewers" : "completed";
+  const finalErrorCategory = reviewIsIncomplete
+    ? reviewErrorCategory
+    : acceptanceErrorCategory ?? reviewErrorCategory;
+  const finalStatus = reviewIsIncomplete ? "waiting_for_reviewers" : "completed";
   const finalRun = setProposalReviewRoundState(workingRun, options, {
     ...findProposalReviewRound(workingRun, roundId)!,
     status: finalStatus,
@@ -424,6 +421,15 @@ function runAcceptancePolicy(input: {
       };
     }
   });
+}
+
+function isReviewerIncomplete(reviewerState: ProposalReviewerState): boolean {
+  return (
+    reviewerState.status === "failed" ||
+    reviewerState.status === "pending" ||
+    reviewerState.status === "running" ||
+    reviewerState.status === "timed_out"
+  );
 }
 
 function resolveAcceptanceProposalEventIds(input: {
