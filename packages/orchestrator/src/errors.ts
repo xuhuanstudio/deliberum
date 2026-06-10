@@ -94,3 +94,34 @@ export class RunExtractionProposalRoundError extends Error {
     this.category = category;
   }
 }
+
+export class ProposalReviewGeneratorRegistryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProposalReviewGeneratorRegistryError";
+  }
+}
+
+export class ProposalReviewContextError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProposalReviewContextError";
+  }
+}
+
+export class ProposalReviewValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProposalReviewValidationError";
+  }
+}
+
+export class RunProposalReviewRoundError extends Error {
+  readonly category: string;
+
+  constructor(category: string, message: string) {
+    super(message);
+    this.name = "RunProposalReviewRoundError";
+    this.category = category;
+  }
+}

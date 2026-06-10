@@ -25,9 +25,13 @@ import {
   type TopicContract
 } from "@deliberum/protocol";
 import type {
+  AcceptedDeliberationObjectsProjection,
+  CandidateFrontierProjection,
   Clock,
   CreateSessionOptions,
   IdGenerator,
+  ExtractionProposalState,
+  QualityObligationsProjection,
   SealedDivergenceOptions
 } from "@deliberum/core";
 import type { EventStore, StoredEvent } from "@deliberum/storage";
@@ -146,6 +150,17 @@ export const ExtractionRunErrorCategorySchema = z.enum([
 ]);
 export type ExtractionRunErrorCategory = z.infer<typeof ExtractionRunErrorCategorySchema>;
 
+export const ProposalReviewRunErrorCategorySchema = z.enum([
+  "proposal_review_context_unavailable",
+  "proposal_review_generator_failed",
+  "proposal_review_validation_failed",
+  "core_lifecycle_failed",
+  "round_conflict"
+]);
+export type ProposalReviewRunErrorCategory = z.infer<
+  typeof ProposalReviewRunErrorCategorySchema
+>;
+
 export const ParticipantDispatchStatusSchema = z.enum([
   "pending",
   "running",
@@ -255,6 +270,54 @@ export const ExtractionRoundStateSchema = z
   .strict();
 export type ExtractionRoundState = z.infer<typeof ExtractionRoundStateSchema>;
 
+export const ProposalReviewerRunStatusSchema = z.enum([
+  "pending",
+  "running",
+  "reviewed",
+  "failed",
+  "skipped"
+]);
+export type ProposalReviewerRunStatus = z.infer<typeof ProposalReviewerRunStatusSchema>;
+
+export const ProposalReviewerStateSchema = z
+  .object({
+    reviewerId: IdSchema,
+    status: ProposalReviewerRunStatusSchema,
+    challengeEventIds: z.array(IdSchema).optional(),
+    errorCategory: ProposalReviewRunErrorCategorySchema.optional(),
+    previousErrorCategories: z.array(ProposalReviewRunErrorCategorySchema).optional(),
+    attempts: z.number().int().nonnegative(),
+    startedAt: NonEmptyStringSchema.optional(),
+    completedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type ProposalReviewerState = z.infer<typeof ProposalReviewerStateSchema>;
+
+export const ProposalReviewRoundStatusSchema = z.enum([
+  "running",
+  "waiting_for_reviewers",
+  "completed",
+  "failed"
+]);
+export type ProposalReviewRoundStatus = z.infer<typeof ProposalReviewRoundStatusSchema>;
+
+export const ProposalReviewRoundStateSchema = z
+  .object({
+    roundId: IdSchema,
+    sourceExtractionRoundId: IdSchema,
+    status: ProposalReviewRoundStatusSchema,
+    reviewerStates: z.array(ProposalReviewerStateSchema),
+    proposalEventIds: z.array(IdSchema),
+    challengeEventIds: z.array(IdSchema),
+    acceptanceEventIds: z.array(IdSchema),
+    lastErrorCategory: ProposalReviewRunErrorCategorySchema.optional(),
+    executionClaim: RoundExecutionClaimSchema.optional(),
+    startedAt: NonEmptyStringSchema.optional(),
+    updatedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type ProposalReviewRoundState = z.infer<typeof ProposalReviewRoundStateSchema>;
+
 export const DeliberationRunStatusSchema = z.enum([
   "created",
   "running",
@@ -278,6 +341,7 @@ export const DeliberationRunRecordSchema = z
     currentBatchId: IdSchema.optional(),
     sealedDivergenceRound: SealedDivergenceRoundStateSchema.optional(),
     extractionRounds: z.array(ExtractionRoundStateSchema).optional(),
+    proposalReviewRounds: z.array(ProposalReviewRoundStateSchema).optional(),
     createdAt: NonEmptyStringSchema,
     updatedAt: NonEmptyStringSchema
   })
@@ -601,4 +665,146 @@ export type RunExtractionProposalRoundResult = {
   roundId: string;
   executionStatus: "executed" | "already_running" | "already_completed";
   proposalResults: ExtractionGeneratorRoundResult[];
+};
+
+export const ProposalReviewChallengeDraftSchema = z
+  .object({
+    targetProposalEventId: IdSchema,
+    reason: NonEmptyStringSchema
+  })
+  .strict();
+export type ProposalReviewChallengeDraft = z.infer<
+  typeof ProposalReviewChallengeDraftSchema
+>;
+
+export const ProposalReviewGeneratorResultSchema = z
+  .object({
+    challenges: z.array(ProposalReviewChallengeDraftSchema).optional(),
+    notes: z.array(NonEmptyStringSchema).optional()
+  })
+  .strict();
+export type ProposalReviewGeneratorResult = z.infer<
+  typeof ProposalReviewGeneratorResultSchema
+>;
+
+export type ProposalReviewContextMetadata = {
+  version: "1";
+  sourceExtractionRoundId: string;
+  proposalEventIds: string[];
+  eventRange: {
+    fromSequence: number;
+    toSequence: number;
+  } | null;
+  eventIds: string[];
+};
+
+export type ProposalReviewContext = {
+  runId: string;
+  sessionId: string;
+  topic: string;
+  goals: string[];
+  constraints: string[];
+  output: RunOutputPreferences;
+  sourceExtractionRoundId: string;
+  proposalStates: ExtractionProposalState[];
+  acceptedObjects: AcceptedDeliberationObjectsProjection;
+  frontier: CandidateFrontierProjection;
+  qualityObligations: QualityObligationsProjection;
+  metadata: ProposalReviewContextMetadata;
+  runMetadata: {
+    status: RunOperationalStatus;
+    participantIds: string[];
+    extractionRoundStatus: ExtractionRoundStatus;
+  };
+};
+
+export type ProposalReviewGeneratorInput = {
+  instructions: string;
+  context: ProposalReviewContext;
+};
+
+export interface ProposalReviewGenerator {
+  reviewerId: string;
+  reviewProposals(
+    input: ProposalReviewGeneratorInput,
+    context: ProposalReviewContext
+  ): Promise<ProposalReviewGeneratorResult> | ProposalReviewGeneratorResult;
+}
+
+export type ProposalReviewGeneratorRegistryEntry = {
+  reviewerId: string;
+};
+
+export const ExtractionAcceptancePolicySchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("none") }).strict(),
+  z
+    .object({
+      mode: z.literal("explicit_proposal_event_ids"),
+      proposalEventIds: z.array(IdSchema),
+      authorId: IdSchema,
+      rationale: NonEmptyStringSchema,
+      allowChallenged: z.boolean().optional()
+    })
+    .strict(),
+  z
+    .object({
+      mode: z.literal("all_generated_unchallenged"),
+      authorId: IdSchema,
+      rationale: NonEmptyStringSchema
+    })
+    .strict()
+]);
+export type ExtractionAcceptancePolicy = z.infer<typeof ExtractionAcceptancePolicySchema>;
+
+export type BuildProposalReviewContextInput = {
+  run: DeliberationRunRecord;
+  eventStore: EventStore;
+  extractionRoundId?: string;
+};
+
+export type RunProposalReviewRoundInput = {
+  runId: string;
+  roundId?: string;
+  extractionRoundId?: string;
+  reviewerIds?: readonly string[];
+  retryFailedReviewers?: boolean;
+  acceptancePolicy?: ExtractionAcceptancePolicy;
+};
+
+export type RunProposalReviewRoundOptions = {
+  eventStore: EventStore;
+  runStore: RunStore;
+  proposalReviewGeneratorRegistry: {
+    require(reviewerId: string): ProposalReviewGenerator;
+    list(): ProposalReviewGeneratorRegistryEntry[];
+  };
+  idGenerator: IdGenerator;
+  clock?: Clock;
+  schemaVersion?: string;
+  executionClaimTtlMs?: number;
+  executionClaimOwnerIdGenerator?: () => string;
+};
+
+export type ProposalReviewerRoundResult = {
+  reviewerId: string;
+  status: ProposalReviewerRunStatus;
+  challengeEventIds?: string[];
+  appendedChallengeEventIds?: string[];
+  errorCategory?: ProposalReviewRunErrorCategory;
+};
+
+export type ProposalAcceptanceRoundResult = {
+  proposalEventId: string;
+  status: "accepted" | "skipped" | "rejected";
+  acceptanceEventId?: string;
+  appended?: boolean;
+  errorCategory?: ProposalReviewRunErrorCategory;
+};
+
+export type RunProposalReviewRoundResult = {
+  run: DeliberationRunRecord;
+  roundId: string;
+  executionStatus: "executed" | "already_running" | "already_completed";
+  reviewResults: ProposalReviewerRoundResult[];
+  acceptanceResults: ProposalAcceptanceRoundResult[];
 };
