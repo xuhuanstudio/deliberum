@@ -162,6 +162,46 @@ describe("extraction proposal lifecycle", () => {
     expect(result.proposalEvent.payload).not.toHaveProperty("finalAnswer");
   });
 
+  it("returns the stored proposal id on idempotent proposeExtraction retry", () => {
+    const eventStore = createStore();
+    appendSourceEvent(eventStore);
+    const first = proposeExtraction(
+      {
+        sessionId: "session-1",
+        authorId: "participant-2",
+        candidates: [candidate()],
+        rationale: "Extraction rationale",
+        idempotencyKey: "same-extraction"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["proposal-1", "proposal-event-1"])
+      }
+    );
+    const retry = proposeExtraction(
+      {
+        sessionId: "session-1",
+        authorId: "participant-2",
+        candidates: [candidate()],
+        rationale: "Extraction rationale",
+        idempotencyKey: "same-extraction"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["proposal-2", "proposal-event-2"])
+      }
+    );
+
+    expect(retry.proposalEvent).toEqual(first.proposalEvent);
+    expect(retry.proposalId).toBe(first.proposalId);
+    expect(retry.proposalId).toBe(retry.proposalEvent.payload.id);
+    expect(
+      eventStore
+        .listEvents("session-1")
+        .filter((event) => event.type === EXTRACTION_PROPOSED_EVENT_TYPE)
+    ).toHaveLength(1);
+  });
+
   it("allows proposed objects of each extractable type when they reference source events", () => {
     const eventStore = createStore();
     appendSourceEvent(eventStore);

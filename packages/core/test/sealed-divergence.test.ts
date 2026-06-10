@@ -68,6 +68,39 @@ describe("sealed divergence lifecycle", () => {
     });
   });
 
+  it("returns the stored batch id on idempotent openSealedBatch retry", () => {
+    const eventStore = createStore();
+    const first = openSealedBatch(
+      {
+        sessionId: "session-1",
+        purpose: "initial_divergence",
+        participantIds: ["participant-1"],
+        idempotencyKey: "same-open-batch"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["batch-1", "open-event-1"])
+      }
+    );
+    const retry = openSealedBatch(
+      {
+        sessionId: "session-1",
+        purpose: "initial_divergence",
+        participantIds: ["participant-1"],
+        idempotencyKey: "same-open-batch"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["batch-2", "open-event-2"])
+      }
+    );
+
+    expect(retry.openedEvent).toEqual(first.openedEvent);
+    expect(retry.batchId).toBe(first.batchId);
+    expect(retry.batchId).toBe(retry.openedEvent.payload.id);
+    expect(eventStore.listEvents("session-1")).toHaveLength(1);
+  });
+
   it("submits sealed participant contributions with exact payload and batch id", () => {
     const eventStore = createStore();
     openSealedBatch(

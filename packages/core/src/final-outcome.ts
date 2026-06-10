@@ -193,7 +193,7 @@ export function proposeFinalCandidate(
   });
 
   return {
-    proposalId,
+    proposalId: proposalEvent.payload.id,
     proposalEvent
   };
 }

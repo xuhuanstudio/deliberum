@@ -227,6 +227,49 @@ describe("final candidate proposal lifecycle", () => {
     expect(result.proposalEvent.payload).not.toHaveProperty("winner");
   });
 
+  it("returns the stored proposal id on idempotent proposeFinalCandidate retry", () => {
+    const eventStore = createStore();
+    proposeAndAcceptCandidateSet(eventStore);
+    const beforeCount = eventStore.listEvents("session-1").length;
+    const first = proposeFinalCandidate(
+      {
+        sessionId: "session-1",
+        authorId: "participant-6",
+        candidateIds: ["candidate-1"],
+        recommendation: "Provisionally use candidate 1 under stated conditions.",
+        applicabilityConditions: ["Condition remains true"],
+        rationale: "Drafting rationale",
+        limitations: ["Still provisional"],
+        idempotencyKey: "same-final-candidate"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["final-proposal-1", "final-proposal-event-1"])
+      }
+    );
+    const retry = proposeFinalCandidate(
+      {
+        sessionId: "session-1",
+        authorId: "participant-6",
+        candidateIds: ["candidate-1"],
+        recommendation: "Provisionally use candidate 1 under stated conditions.",
+        applicabilityConditions: ["Condition remains true"],
+        rationale: "Drafting rationale",
+        limitations: ["Still provisional"],
+        idempotencyKey: "same-final-candidate"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["final-proposal-2", "final-proposal-event-2"])
+      }
+    );
+
+    expect(retry.proposalEvent).toEqual(first.proposalEvent);
+    expect(retry.proposalId).toBe(first.proposalId);
+    expect(retry.proposalId).toBe(retry.proposalEvent.payload.id);
+    expect(eventStore.listEvents("session-1")).toHaveLength(beforeCount + 1);
+  });
+
   it("rejects proposals for candidates outside the accepted active candidate set", () => {
     const eventStore = createStore();
     proposeAndAcceptCandidateSet(eventStore);

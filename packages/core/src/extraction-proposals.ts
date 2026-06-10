@@ -158,7 +158,7 @@ export function proposeExtraction(
   });
 
   return {
-    proposalId,
+    proposalId: proposalEvent.payload.id,
     proposalEvent
   };
 }

@@ -110,7 +110,7 @@ export function openSealedBatch(
   });
 
   return {
-    batchId,
+    batchId: openedEvent.payload.id,
     openedEvent
   };
 }
