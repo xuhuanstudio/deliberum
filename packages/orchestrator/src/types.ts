@@ -161,6 +161,16 @@ export const SealedDivergenceRoundStatusSchema = z.enum([
 ]);
 export type SealedDivergenceRoundStatus = z.infer<typeof SealedDivergenceRoundStatusSchema>;
 
+export const RoundExecutionClaimSchema = z
+  .object({
+    ownerId: NonEmptyStringSchema,
+    acquiredAt: NonEmptyStringSchema,
+    expiresAt: NonEmptyStringSchema,
+    status: z.literal("active")
+  })
+  .strict();
+export type RoundExecutionClaim = z.infer<typeof RoundExecutionClaimSchema>;
+
 export const SealedDivergenceRoundStateSchema = z
   .object({
     roundId: IdSchema,
@@ -171,6 +181,7 @@ export const SealedDivergenceRoundStateSchema = z
     participantDispatches: z.array(ParticipantDispatchStateSchema),
     providerCallCount: z.number().int().nonnegative(),
     lastErrorCategory: RunErrorCategorySchema.optional(),
+    executionClaim: RoundExecutionClaimSchema.optional(),
     startedAt: NonEmptyStringSchema.optional(),
     updatedAt: NonEmptyStringSchema.optional()
   })
@@ -374,6 +385,8 @@ export type RunSealedDivergenceRoundOptions = Pick<
   };
   idGenerator: IdGenerator;
   clock?: Clock;
+  executionClaimTtlMs?: number;
+  executionClaimOwnerIdGenerator?: () => string;
 };
 
 export type ParticipantRoundResult = {
@@ -388,6 +401,7 @@ export type ParticipantRoundResult = {
 export type RunSealedDivergenceRoundResult = {
   run: DeliberationRunRecord;
   roundId: string;
+  executionStatus: "executed" | "already_running" | "already_revealed";
   batchId?: string;
   openedEventId?: string;
   openedAppended?: boolean;

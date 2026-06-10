@@ -224,6 +224,23 @@ function runIds() {
   return createIds(["batch-1", "opened-event-1", "contribution-1", "contribution-2", "reveal-1"]);
 }
 
+function pendingDispatches() {
+  return [
+    {
+      participantId: "participant-cli",
+      adapterId: "adapter-cli",
+      status: "pending" as const,
+      attempts: 0
+    },
+    {
+      participantId: "participant-web",
+      adapterId: "adapter-web",
+      status: "pending" as const,
+      attempts: 0
+    }
+  ];
+}
+
 describe("runSealedDivergenceRound", () => {
   it("opens exactly one sealed batch, submits fake adapter outputs, and reveals all_completed", async () => {
     const { eventStore, runStore, run } = createFixture();
@@ -267,6 +284,181 @@ describe("runSealedDivergenceRound", () => {
         contributionEventId: "contribution-2"
       })
     ]);
+  });
+
+  it("prevents simultaneous same-run execution from dispatching adapters twice", async () => {
+    let resolveCliPayload: (payload: JsonValue) => void = () => undefined;
+    let resolveWebPayload: (payload: JsonValue) => void = () => undefined;
+    const cliPayload = new Promise<JsonValue>((resolve) => {
+      resolveCliPayload = resolve;
+    });
+    const webPayload = new Promise<JsonValue>((resolve) => {
+      resolveWebPayload = resolve;
+    });
+    const { eventStore, runStore, run } = createFixture();
+    const adapterCli = createAdapter({
+      adapterId: "adapter-cli",
+      deferredPayload: cliPayload
+    });
+    const adapterWeb = createAdapter({
+      adapterId: "adapter-web",
+      deferredPayload: webPayload
+    });
+    const registry = createRegistry([adapterCli, adapterWeb]);
+
+    const first = runSealedDivergenceRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: registry,
+        idGenerator: runIds(),
+        clock: () => "2026-06-10T00:00:02.000Z",
+        executionClaimOwnerIdGenerator: createIds(["claim-owner-1"]),
+        executionClaimTtlMs: 30000
+      }
+    );
+    const second = await runSealedDivergenceRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: registry,
+        idGenerator: createIds(["unused-batch", "unused-open"]),
+        clock: () => "2026-06-10T00:00:03.000Z",
+        executionClaimOwnerIdGenerator: createIds(["claim-owner-2"]),
+        executionClaimTtlMs: 30000
+      }
+    );
+
+    expect(second.executionStatus).toBe("already_running");
+    expect(second.run.sealedDivergenceRound?.executionClaim?.ownerId).toBe("claim-owner-1");
+
+    resolveCliPayload({
+      content: "deferred CLI output"
+    });
+    resolveWebPayload({
+      content: "deferred Web output"
+    });
+
+    const firstResult = await first;
+    const events = eventStore.listEvents(run.sessionId);
+    const storedRun = JSON.stringify(runStore.getRun(run.id));
+
+    expect(firstResult.executionStatus).toBe("executed");
+    expect(firstResult.run.status).toBe("revealed");
+    expect(firstResult.run.sealedDivergenceRound?.executionClaim).toBeUndefined();
+    expect(getAdapterCallCount(adapterCli)).toBe(1);
+    expect(getAdapterCallCount(adapterWeb)).toBe(1);
+    expect(events.filter((event) => event.type === "sealed_batch_opened")).toHaveLength(1);
+    expect(events.filter((event) => event.type === "sealed_contribution_submitted")).toHaveLength(2);
+    expect(events.filter((event) => event.type === "sealed_batch_revealed")).toHaveLength(1);
+    expect(JSON.stringify(events)).not.toContain("claim-owner-1");
+    expect(storedRun).not.toContain("deferred CLI output");
+    expect(storedRun).not.toContain("deferred Web output");
+  });
+
+  it("does not steal active execution claims before expiration", async () => {
+    const { eventStore, runStore, run } = createFixture();
+    const adapterCli = createAdapter({ adapterId: "adapter-cli" });
+    const adapterWeb = createAdapter({ adapterId: "adapter-web" });
+
+    runStore.updateRun(run.id, (currentRun) => ({
+      ...currentRun,
+      status: "running",
+      sealedDivergenceRound: {
+        roundId: "initial",
+        status: "running",
+        participantDispatches: pendingDispatches(),
+        providerCallCount: 0,
+        executionClaim: {
+          ownerId: "active-owner",
+          acquiredAt: "2026-06-10T00:00:00.000Z",
+          expiresAt: "2026-06-10T00:01:00.000Z",
+          status: "active"
+        },
+        startedAt: "2026-06-10T00:00:00.000Z",
+        updatedAt: "2026-06-10T00:00:00.000Z"
+      },
+      updatedAt: "2026-06-10T00:00:00.000Z"
+    }));
+
+    const result = await runSealedDivergenceRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: createRegistry([adapterCli, adapterWeb]),
+        idGenerator: runIds(),
+        clock: () => "2026-06-10T00:00:30.000Z",
+        executionClaimOwnerIdGenerator: createIds(["claim-owner-2"])
+      }
+    );
+
+    expect(result.executionStatus).toBe("already_running");
+    expect(result.run.sealedDivergenceRound?.executionClaim?.ownerId).toBe("active-owner");
+    expect(getAdapterCallCount(adapterCli)).toBe(0);
+    expect(getAdapterCallCount(adapterWeb)).toBe(0);
+    expect(eventStore.listEvents(run.sessionId).map((event) => event.type)).toEqual([
+      "topic_contract_published"
+    ]);
+  });
+
+  it("reclaims stale execution claims after expiration", async () => {
+    const { eventStore, runStore, run } = createFixture();
+    const adapterCli = createAdapter({ adapterId: "adapter-cli" });
+    const adapterWeb = createAdapter({ adapterId: "adapter-web" });
+
+    runStore.updateRun(run.id, (currentRun) => ({
+      ...currentRun,
+      status: "running",
+      sealedDivergenceRound: {
+        roundId: "initial",
+        status: "running",
+        participantDispatches: pendingDispatches(),
+        providerCallCount: 0,
+        executionClaim: {
+          ownerId: "stale-owner",
+          acquiredAt: "2026-06-10T00:00:00.000Z",
+          expiresAt: "2026-06-10T00:00:05.000Z",
+          status: "active"
+        },
+        startedAt: "2026-06-10T00:00:00.000Z",
+        updatedAt: "2026-06-10T00:00:00.000Z"
+      },
+      updatedAt: "2026-06-10T00:00:00.000Z"
+    }));
+
+    const result = await runSealedDivergenceRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: createRegistry([adapterCli, adapterWeb]),
+        idGenerator: runIds(),
+        clock: () => "2026-06-10T00:00:10.000Z",
+        executionClaimOwnerIdGenerator: createIds(["fresh-owner"]),
+        executionClaimTtlMs: 30000
+      }
+    );
+
+    expect(result.executionStatus).toBe("executed");
+    expect(result.run.status).toBe("revealed");
+    expect(result.run.sealedDivergenceRound?.executionClaim).toBeUndefined();
+    expect(getAdapterCallCount(adapterCli)).toBe(1);
+    expect(getAdapterCallCount(adapterWeb)).toBe(1);
+    expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === "sealed_batch_opened")).toHaveLength(1);
+    expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === "sealed_contribution_submitted")).toHaveLength(2);
+    expect(eventStore.listEvents(run.sessionId).filter((event) => event.type === "sealed_batch_revealed")).toHaveLength(1);
+    expect(JSON.stringify(runStore.getRun(run.id))).not.toContain("stale-owner");
   });
 
   it("appends adapter output only as sealed contributions through core", async () => {
@@ -401,6 +593,9 @@ describe("runSealedDivergenceRound", () => {
     expect(eventStore.listEvents(run.sessionId).map((event) => event.type)).not.toContain(
       "sealed_batch_revealed"
     );
+    expect(JSON.stringify(runStore.getRun(run.id))).not.toContain(
+      "raw adapter failure must not be stored"
+    );
   });
 
   it("does not reveal manual auto-close with failed participants", async () => {
@@ -431,6 +626,9 @@ describe("runSealedDivergenceRound", () => {
     expect(result.run.status).toBe("waiting_for_participants");
     expect(eventStore.listEvents(run.sessionId).map((event) => event.type)).not.toContain(
       "sealed_batch_revealed"
+    );
+    expect(JSON.stringify(runStore.getRun(run.id))).not.toContain(
+      "raw adapter failure must not be stored"
     );
   });
 
