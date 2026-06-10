@@ -116,6 +116,9 @@ importers:
 
   packages/orchestrator:
     dependencies:
+      '@deliberum/adapters':
+        specifier: workspace:*
+        version: link:../adapters
       '@deliberum/core':
         specifier: workspace:*
         version: link:../core

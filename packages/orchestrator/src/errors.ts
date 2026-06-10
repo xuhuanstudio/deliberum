@@ -18,3 +18,31 @@ export class RunStoreNotFoundError extends Error {
     this.name = "RunStoreNotFoundError";
   }
 }
+
+export class ContextBuilderError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ContextBuilderError";
+  }
+}
+
+export class AdapterRegistryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AdapterRegistryError";
+  }
+}
+
+export class ProviderSecretResolutionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProviderSecretResolutionError";
+  }
+}
+
+export class DispatchInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DispatchInputError";
+  }
+}

@@ -6,13 +6,17 @@ import {
   ParticipantCapabilitiesSchema,
   ParticipantKindSchema,
   SealedBatchPurposeSchema,
+  type EventTrace,
+  type EventVisibility,
   type ParticipantCapabilities,
   type ParticipantKind,
+  type JsonValue,
   type SealedBatchPurpose,
   type TopicContract
 } from "@deliberum/protocol";
 import type { CreateSessionOptions } from "@deliberum/core";
-import type { StoredEvent } from "@deliberum/storage";
+import type { EventStore, StoredEvent } from "@deliberum/storage";
+import type { AdapterCapabilities, ParticipantAdapter, ParticipantAdapterContext, ParticipantAdapterInput } from "@deliberum/adapters";
 
 export const ORCHESTRATOR_RUN_SCHEMA_VERSION = "1" as const;
 
@@ -161,3 +165,113 @@ export interface RunStore {
 
 export type TopicContractBudgetLease = z.infer<typeof JsonRecordSchema>;
 export type RunTopicContractPurpose = SealedBatchPurpose;
+
+export type RedactedEventPayload = {
+  redacted: true;
+  reason: "event_visibility" | "sealed_until_reveal";
+};
+
+export type VisibleContextEvent = {
+  id: string;
+  type: string;
+  sessionId: string;
+  sequence: number;
+  authorId: string;
+  createdAt: string;
+  recordedAt: string;
+  visibility: EventVisibility | string;
+  batchId?: string;
+  basedOnEventIds: string[];
+  trace: EventTrace;
+  payload: JsonValue | RedactedEventPayload;
+};
+
+export type ParticipantContextMetadata = {
+  version: "1";
+  eventRange: {
+    fromSequence: number;
+    toSequence: number;
+  } | null;
+  eventIds: string[];
+  redactedEventIds: string[];
+};
+
+export type ContextResourceReference = RunResourceReference;
+
+export type ParticipantDeliberationContext = {
+  runId: string;
+  sessionId: string;
+  participant: ParticipantRegistryEntry;
+  topic: string;
+  goals: string[];
+  constraints: string[];
+  output: RunOutputPreferences;
+  resources: ContextResourceReference[];
+  events: VisibleContextEvent[];
+  metadata: ParticipantContextMetadata;
+};
+
+export type BuildParticipantContextInput = {
+  run: DeliberationRunRecord;
+  eventStore: EventStore;
+  participantId: string;
+};
+
+export type AdapterRegistryEntry = {
+  adapterId: string;
+  capabilities: AdapterCapabilities;
+};
+
+export type RegisteredParticipantAdapter = ParticipantAdapter;
+
+export type ProviderRuntimeConfig = {
+  id: string;
+  adapterId: string;
+  providerConfigId?: string;
+  modelId?: string;
+  baseUrl?: string;
+  endpointPath?: string;
+  timeoutMs?: number;
+  apiKeyEnvVar?: string;
+  apiKey?: string;
+};
+
+export type ProviderConfigSafeView = {
+  id: string;
+  adapterId: string;
+  providerConfigId?: string;
+  modelId?: string;
+  baseUrl?: string;
+  endpointPath?: string;
+  timeoutMs?: number;
+  apiKeyEnvVar?: string;
+  hasApiKey: boolean;
+};
+
+export type ProviderSecretResolverInput = {
+  providerConfig: ProviderModelConfigRef;
+  env?: Record<string, string | undefined>;
+};
+
+export type BuildParticipantDispatchInput = {
+  run: DeliberationRunRecord;
+  eventStore: EventStore;
+  adapterRegistry: {
+    require(adapterId: string): RegisteredParticipantAdapter;
+  };
+  participantId: string;
+  env?: Record<string, string | undefined>;
+};
+
+export type ParticipantDispatchEnvelope = {
+  runId: string;
+  sessionId: string;
+  participantId: string;
+  adapterId: string;
+  adapter: RegisteredParticipantAdapter;
+  context: ParticipantDeliberationContext;
+  adapterInput: ParticipantAdapterInput;
+  adapterContext: ParticipantAdapterContext;
+  providerSafeView?: ProviderConfigSafeView;
+  providerRuntimeConfig?: ProviderRuntimeConfig;
+};
