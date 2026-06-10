@@ -149,7 +149,7 @@ function planUrlDelivery(
       continue;
     }
 
-    const safeMaterial = createSafeUrlMaterial(variant);
+    const safeMaterial = createSafeUrlMaterial(variant, policy);
 
     if (!safeMaterial.allowed) {
       continue;
@@ -211,7 +211,7 @@ function getFirstUrlDenialReason(
       return exposureReason;
     }
 
-    const safeMaterial = createSafeUrlMaterial(variant);
+    const safeMaterial = createSafeUrlMaterial(variant, policy);
     if (!safeMaterial.allowed) {
       return safeMaterial.reason;
     }
@@ -220,7 +220,10 @@ function getFirstUrlDenialReason(
   return "No safe URL variant is available.";
 }
 
-function createSafeUrlMaterial(variant: Extract<ResourceVariant, { mode: "url" }>):
+function createSafeUrlMaterial(
+  variant: Extract<ResourceVariant, { mode: "url" }>,
+  policy: ResourceDeliveryPolicyOverrides
+):
   | {
       allowed: true;
       material: UrlDeliveryMaterial;
@@ -254,14 +257,23 @@ function createSafeUrlMaterial(variant: Extract<ResourceVariant, { mode: "url" }
     };
   }
 
-  if (variant.exposure === "public" && isLocalNetworkHost(parsedUrl.hostname)) {
+  const hostSafety = classifyUrlHostSafety(parsedUrl.hostname);
+
+  if (hostSafety === "localhost" && (variant.exposure !== "localhost" || policy.allowLocalhostUrl !== true)) {
     return {
       allowed: false,
-      reason: "Public URL delivery requires a non-local URL host."
+      reason: "Registered URL is not safe for delivery."
     };
   }
 
-  if (containsSensitiveQueryParam(parsedUrl) || looksLikeLocalFilePath(parsedUrl.pathname)) {
+  if (hostSafety === "lan" && (variant.exposure !== "lan" || policy.allowLanUrl !== true)) {
+    return {
+      allowed: false,
+      reason: "Registered URL is not safe for delivery."
+    };
+  }
+
+  if (containsUnsafeUrlMaterial(parsedUrl)) {
     return {
       allowed: false,
       reason: "Registered URL contains private delivery material."
@@ -300,18 +312,16 @@ function planBase64Delivery(
   }
 
   for (const variant of base64Variants) {
-    if (variant.sizeBytes > policy.maxBase64SizeBytes) {
-      continue;
-    }
-
     const content = broker.getExplicitInMemoryContent(variant.dataRef);
 
     if (content === undefined) {
       continue;
     }
 
-    if (containsSecretLikeText(content)) {
-      return createNonePlan(request, "In-memory base64 content contains private delivery material.");
+    const safeContent = createSafeBase64Material(variant, content, policy.maxBase64SizeBytes);
+
+    if (!safeContent.allowed) {
+      return createNonePlan(request, safeContent.reason);
     }
 
     return {
@@ -321,7 +331,7 @@ function planBase64Delivery(
       allowed: true,
       reason: "Base64 delivery is explicitly allowed by policy and within size limit.",
       warnings: ["Base64 delivery sends resource content to the participant."],
-      delivery: createBase64Material(variant, content)
+      delivery: safeContent.material
     };
   }
 
@@ -331,15 +341,58 @@ function planBase64Delivery(
   );
 }
 
-function createBase64Material(
+function createSafeBase64Material(
   variant: Extract<ResourceVariant, { mode: "base64" }>,
-  content: string
-): Base64DeliveryMaterial {
+  content: string,
+  maxBase64SizeBytes: number
+):
+  | {
+      allowed: true;
+      material: Base64DeliveryMaterial;
+    }
+  | {
+      allowed: false;
+      reason: string;
+    } {
+  const decoded = decodeStrictBase64(content);
+
+  if (!decoded) {
+    return {
+      allowed: false,
+      reason: "In-memory base64 content is not safe for delivery."
+    };
+  }
+
+  if (decoded.byteLength > maxBase64SizeBytes) {
+    return {
+      allowed: false,
+      reason: "In-memory base64 content exceeds the configured size limit."
+    };
+  }
+
+  if (decoded.byteLength > variant.sizeBytes) {
+    return {
+      allowed: false,
+      reason: "In-memory base64 content does not match registered resource metadata."
+    };
+  }
+
+  const decodedText = decodeValidUtf8(decoded);
+  if (decodedText !== undefined && containsSecretLikeText(decodedText)) {
+    return {
+      allowed: false,
+      reason: "In-memory base64 content contains private delivery material."
+    };
+  }
+
   return {
-    mode: "base64",
-    mime: variant.mime,
-    data: content,
-    sizeBytes: variant.sizeBytes
+    allowed: true,
+    material: {
+      mode: "base64",
+      mime: variant.mime,
+      data: content,
+      sizeBytes: decoded.byteLength
+    }
   };
 }
 
@@ -362,20 +415,77 @@ function isResourceDeliveryMode(value: unknown): value is ResourceDeliveryMode {
   return value === "url" || value === "base64" || value === "none";
 }
 
-function containsSensitiveQueryParam(url: URL): boolean {
-  for (const key of url.searchParams.keys()) {
-    const normalizedKey = key.toLowerCase();
+function decodeStrictBase64(value: string): Uint8Array | undefined {
+  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) {
+    return undefined;
+  }
 
-    if (
-      normalizedKey.includes("token") ||
-      normalizedKey.includes("secret") ||
-      normalizedKey.includes("api_key") ||
-      normalizedKey.includes("apikey") ||
-      normalizedKey.includes("authorization") ||
-      normalizedKey.includes("signature") ||
-      normalizedKey === "sig" ||
-      normalizedKey === "key"
-    ) {
+  let binary: string;
+
+  try {
+    binary = atob(value);
+  } catch {
+    return undefined;
+  }
+
+  const decoded = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    decoded[index] = binary.charCodeAt(index);
+  }
+
+  return encodeBase64(decoded) === value ? decoded : undefined;
+}
+
+function decodeValidUtf8(bytes: Uint8Array): string | undefined {
+  let text: string;
+
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return undefined;
+  }
+
+  const encoded = new TextEncoder().encode(text);
+
+  if (encoded.byteLength !== bytes.byteLength) {
+    return undefined;
+  }
+
+  for (let index = 0; index < encoded.byteLength; index += 1) {
+    if (encoded[index] !== bytes[index]) {
+      return undefined;
+    }
+  }
+
+  return text;
+}
+
+function encodeBase64(bytes: Uint8Array): string {
+  const chunkSize = 8192;
+  let binary = "";
+
+  for (let offset = 0; offset < bytes.byteLength; offset += chunkSize) {
+    const chunk = bytes.subarray(offset, offset + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return btoa(binary);
+}
+
+function containsUnsafeUrlMaterial(url: URL): boolean {
+  const decodedPathname = decodePathname(url.pathname);
+
+  if (
+    decodedPathname === undefined ||
+    containsSecretLikeText(url.toString()) ||
+    containsSecretLikeText(decodedPathname) ||
+    looksLikeLocalFilePath(decodedPathname)
+  ) {
+    return true;
+  }
+
+  for (const [key, value] of url.searchParams) {
+    if (containsSecretLikeText(key) || containsSecretLikeText(value)) {
       return true;
     }
   }
@@ -383,33 +493,55 @@ function containsSensitiveQueryParam(url: URL): boolean {
   return false;
 }
 
-function looksLikeLocalFilePath(pathname: string): boolean {
-  const decodedPathname = decodeURIComponent(pathname).toLowerCase();
+function decodePathname(pathname: string): string | undefined {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return undefined;
+  }
+}
+
+function looksLikeLocalFilePath(decodedPathname: string): boolean {
+  const normalizedPathname = decodedPathname.toLowerCase();
 
   return (
-    decodedPathname.startsWith("/users/") ||
-    decodedPathname.startsWith("/home/") ||
-    decodedPathname.startsWith("/private/") ||
-    decodedPathname.includes("/.ssh/") ||
-    decodedPathname.includes("\\")
+    normalizedPathname.startsWith("/users/") ||
+    normalizedPathname.startsWith("/home/") ||
+    normalizedPathname.startsWith("/private/") ||
+    normalizedPathname.includes("/.ssh/") ||
+    normalizedPathname.includes("\\")
   );
 }
 
-function isLocalNetworkHost(hostname: string): boolean {
+function classifyUrlHostSafety(hostname: string): "public" | "localhost" | "lan" {
   const normalizedHostname = hostname.toLowerCase();
 
-  return (
+  if (
     normalizedHostname === "localhost" ||
     normalizedHostname === "127.0.0.1" ||
     normalizedHostname === "::1" ||
+    normalizedHostname === "[::1]" ||
+    normalizedHostname.startsWith("127.")
+  ) {
+    return "localhost";
+  }
+
+  if (
     normalizedHostname.startsWith("10.") ||
     normalizedHostname.startsWith("192.168.") ||
-    /^172\.(1[6-9]|2\d|3[0-1])\./.test(normalizedHostname)
-  );
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(normalizedHostname) ||
+    normalizedHostname.startsWith("[fc") ||
+    normalizedHostname.startsWith("[fd") ||
+    normalizedHostname.startsWith("[fe80:") ||
+    normalizedHostname.startsWith("169.254.") ||
+    normalizedHostname === "0.0.0.0"
+  ) {
+    return "lan";
+  }
+
+  return "public";
 }
 
 function containsSecretLikeText(value: string): boolean {
-  return /api[_-]?key|secret|private[_-]?token|authorization|bearer\s+|sk-[a-z0-9]/i.test(
-    value
-  );
+  return /api[_-]?key|apikey|secret|private[_-]?token|access[_-]?token|auth(orization)?|bearer\s+|signature|sig=|sk-[a-z0-9]|token[=:/?&]|[?&]token=/i.test(value);
 }

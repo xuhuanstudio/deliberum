@@ -55,6 +55,56 @@ function createPlanner(resource = createResource(), content = "aW1hZ2UtZGF0YQ=="
   };
 }
 
+function createBase64Plan(content: string, overrides: Partial<Resource> = {}) {
+  const { planner } = createPlanner(
+    createResource({
+      variants: [
+        {
+          mode: "base64",
+          mime: "text/plain",
+          dataRef: "content-1",
+          sizeBytes: 64
+        }
+      ],
+      ...overrides
+    }),
+    content
+  );
+
+  return planner.planDelivery({
+    resourceId: "resource-1",
+    participantId: "participant-1",
+    policy: {
+      requestedMode: "base64",
+      allowBase64: true,
+      maxBase64SizeBytes: 64
+    }
+  });
+}
+
+function createUrlPlan(url: string, exposure: "localhost" | "lan" | "public" = "public") {
+  const { planner } = createPlanner(
+    createResource({
+      variants: [
+        {
+          mode: "url",
+          url,
+          exposure
+        }
+      ]
+    })
+  );
+
+  return planner.planDelivery({
+    resourceId: "resource-1",
+    participantId: "participant-1",
+    policy: {
+      requestedMode: "url",
+      allowPublicUrl: true
+    }
+  });
+}
+
 function planText(plan: ResourceDeliveryPlan): string {
   return JSON.stringify(plan);
 }
@@ -192,7 +242,7 @@ describe("DeliveryPlanner", () => {
     });
     expect(deniedByLimit).toMatchObject({
       selectedMode: "none",
-      reason: "No base64 variant has explicit in-memory content within the configured size limit."
+      reason: "In-memory base64 content exceeds the configured size limit."
     });
     expect(allowed).toMatchObject({
       selectedMode: "base64",
@@ -201,7 +251,7 @@ describe("DeliveryPlanner", () => {
         mode: "base64",
         mime: "image/png",
         data: "aW1hZ2UtZGF0YQ==",
-        sizeBytes: 12
+        sizeBytes: 10
       }
     });
   });
@@ -227,6 +277,97 @@ describe("DeliveryPlanner", () => {
       selectedMode: "none",
       allowed: false,
       reason: "No base64 variant has explicit in-memory content within the configured size limit."
+    });
+  });
+
+  it("rejects invalid, base64url, whitespace, and malformed padding base64 without leaking content", () => {
+    const unsafeContents = ["not base64!", "YWJj-ZA==", "YW JjZA==", "YQ="];
+
+    for (const content of unsafeContents) {
+      const plan = createBase64Plan(content);
+
+      expect(plan).toMatchObject({
+        selectedMode: "none",
+        allowed: false,
+        reason: "In-memory base64 content is not safe for delivery."
+      });
+      expect(planText(plan)).not.toContain(content);
+    }
+  });
+
+  it("enforces base64 limits using decoded byte length", () => {
+    const { planner } = createPlanner(
+      createResource({
+        variants: [
+          {
+            mode: "base64",
+            mime: "text/plain",
+            dataRef: "content-1",
+            sizeBytes: 8
+          }
+        ]
+      }),
+      Buffer.from("12345").toString("base64")
+    );
+
+    const plan = planner.planDelivery({
+      resourceId: "resource-1",
+      participantId: "participant-1",
+      policy: {
+        requestedMode: "base64",
+        allowBase64: true,
+        maxBase64SizeBytes: 4
+      }
+    });
+
+    expect(plan).toMatchObject({
+      selectedMode: "none",
+      allowed: false,
+      reason: "In-memory base64 content exceeds the configured size limit."
+    });
+  });
+
+  it("rejects decoded secret-like base64 text and declared-size mismatches without leaking content", () => {
+    const secretText = "api_key=secret-value";
+    const secretContent = Buffer.from(secretText).toString("base64");
+    const secretPlan = createBase64Plan(secretContent);
+    const mismatchPlan = createBase64Plan(Buffer.from("12345").toString("base64"), {
+      variants: [
+        {
+          mode: "base64",
+          mime: "text/plain",
+          dataRef: "content-1",
+          sizeBytes: 4
+        }
+      ]
+    });
+
+    expect(secretPlan).toMatchObject({
+      selectedMode: "none",
+      allowed: false,
+      reason: "In-memory base64 content contains private delivery material."
+    });
+    expect(mismatchPlan).toMatchObject({
+      selectedMode: "none",
+      allowed: false,
+      reason: "In-memory base64 content does not match registered resource metadata."
+    });
+    expect(planText(secretPlan)).not.toContain(secretContent);
+    expect(planText(secretPlan)).not.toContain(secretText);
+  });
+
+  it("keeps safe base64 delivery working when explicitly allowed", () => {
+    const content = Buffer.from("safe text").toString("base64");
+    const plan = createBase64Plan(content);
+
+    expect(plan).toMatchObject({
+      selectedMode: "base64",
+      allowed: true,
+      delivery: {
+        mode: "base64",
+        data: content,
+        sizeBytes: 9
+      }
     });
   });
 
@@ -332,6 +473,70 @@ describe("DeliveryPlanner", () => {
     ).toMatchObject({
       selectedMode: "url",
       allowed: true
+    });
+  });
+
+  it("rejects unsafe URL path and query material without leaking the URL", () => {
+    const unsafeUrls = [
+      "https://resources.example/file.txt?download=private-token-value",
+      "https://resources.example/file.txt?api_key=redacted",
+      "https://resources.example/private-token/file.txt",
+      "https://resources.example/private%2Dtoken/file.txt"
+    ];
+
+    for (const url of unsafeUrls) {
+      const plan = createUrlPlan(url);
+
+      expect(plan).toMatchObject({
+        selectedMode: "none",
+        allowed: false,
+        reason: "Registered URL contains private delivery material."
+      });
+      expect(planText(plan)).not.toContain(url);
+      expect(planText(plan)).not.toContain("private-token-value");
+      expect(planText(plan)).not.toContain("api_key");
+    }
+  });
+
+  it("rejects file URLs and local network public URLs without leaking the URL", () => {
+    const fileUrl = "file:///Users/person/secret.txt";
+    const localhostUrl = "http://localhost:3877/resource";
+    const loopbackUrl = "http://127.0.0.1:3877/resource";
+    const privateIpUrl = "http://10.0.0.12/resource";
+    const privateIpv6Url = "http://[fc00::1]/resource";
+
+    for (const plan of [
+      createUrlPlan(fileUrl),
+      createUrlPlan(localhostUrl),
+      createUrlPlan(loopbackUrl),
+      createUrlPlan(privateIpUrl),
+      createUrlPlan(privateIpv6Url)
+    ]) {
+      expect(plan).toMatchObject({
+        selectedMode: "none",
+        allowed: false,
+        reason: "Registered URL is not safe for delivery."
+      });
+      const serialized = planText(plan);
+      expect(serialized).not.toContain("file://");
+      expect(serialized).not.toContain("localhost");
+      expect(serialized).not.toContain("127.0.0.1");
+      expect(serialized).not.toContain("10.0.0.12");
+      expect(serialized).not.toContain("fc00::1");
+      expect(serialized).not.toContain("/Users/person/secret.txt");
+    }
+  });
+
+  it("keeps safe public URL delivery working when explicitly allowed", () => {
+    const plan = createUrlPlan("https://resources.example/public/file.txt");
+
+    expect(plan).toMatchObject({
+      selectedMode: "url",
+      allowed: true,
+      delivery: {
+        mode: "url",
+        url: "https://resources.example/public/file.txt"
+      }
     });
   });
 
