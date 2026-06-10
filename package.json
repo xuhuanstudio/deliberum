@@ -8,12 +8,17 @@
     "pnpm": ">=11.0.0"
   },
   "scripts": {
+    "clean:dist": "node scripts/clean-workspace-dist.mjs",
+    "build:packages": "corepack pnpm -r --filter './packages/*' build",
     "build": "corepack pnpm -r build",
-    "test": "corepack pnpm -r test",
-    "lint": "corepack pnpm -r lint",
-    "typecheck": "corepack pnpm -r typecheck",
+    "test": "corepack pnpm build:packages && corepack pnpm test:workspace",
+    "test:workspace": "corepack pnpm -r test",
+    "lint": "corepack pnpm build:packages && corepack pnpm lint:workspace",
+    "lint:workspace": "corepack pnpm -r lint",
+    "typecheck": "corepack pnpm build:packages && corepack pnpm typecheck:workspace",
+    "typecheck:workspace": "corepack pnpm -r typecheck",
     "format": "corepack pnpm -r --if-present format",
-    "ci": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build"
+    "ci": "corepack pnpm clean:dist && corepack pnpm build:packages && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build"
   },
   "devDependencies": {
     "@types/node": "^24.13.1",
