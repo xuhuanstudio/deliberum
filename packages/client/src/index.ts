@@ -130,6 +130,25 @@ export type SessionFinalResponse = {
   outcome: unknown;
 };
 
+export type SessionResourcesResponse = {
+  sessionId: string;
+  source: {
+    kind: "run_plan" | "none";
+    runId?: string;
+  };
+  plannedResources: Array<{
+    reference: {
+      resourceId: string;
+      required?: boolean;
+      preferredDeliveryMode?: "url" | "base64" | "none";
+    };
+    registered: boolean;
+    resource?: unknown;
+  }>;
+  evidenceNeeds: unknown[];
+  projection: ProjectionMetadataResponse;
+};
+
 export type CreateRunResponse = {
   run: unknown;
   session: {
@@ -242,6 +261,10 @@ export class DeliberumDaemonClient {
 
   getSessionFinal(sessionId: string): Promise<SessionFinalResponse> {
     return this.request("GET", `/sessions/${encodeURIComponent(sessionId)}/final`);
+  }
+
+  getSessionResources(sessionId: string): Promise<SessionResourcesResponse> {
+    return this.request("GET", `/sessions/${encodeURIComponent(sessionId)}/resources`);
   }
 
   openBatch(sessionId: string, input: OpenBatchRequest): Promise<OpenBatchResponse> {

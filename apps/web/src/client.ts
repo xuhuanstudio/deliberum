@@ -12,6 +12,7 @@ import {
   type RunOutcomeResponse,
   type RunResponse,
   type SessionFinalResponse,
+  type SessionResourcesResponse,
   type StartRunRequest,
   type StartRunResponse
 } from "@deliberum/client";
@@ -32,6 +33,7 @@ export type WebDaemonClient = {
   getObjections: (sessionId: string) => Promise<ObjectionsResponse>;
   getObligations: (sessionId: string) => Promise<ObligationsResponse>;
   getSessionFinal: (sessionId: string) => Promise<SessionFinalResponse>;
+  getSessionResources: (sessionId: string) => Promise<SessionResourcesResponse>;
 };
 
 export function resolveDaemonBaseUrl(

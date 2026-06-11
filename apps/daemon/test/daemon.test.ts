@@ -1045,6 +1045,7 @@ function getOpenAICompatibleFetchCall(
 
 function createRunDaemon(options: {
   providerSecret?: string;
+  resourceBroker?: InMemoryResourceBroker;
   slowAdapter?: {
     adapterId: "fake-cli" | "fake-web";
     resolve: (resolvePayload: () => void) => void;
@@ -1054,6 +1055,7 @@ function createRunDaemon(options: {
   return createDaemonApp({
     idGenerator: createIds(),
     clock,
+    resourceBroker: options.resourceBroker,
     runEnv: options.providerSecret
       ? {
           DELIBERUM_TEST_API_KEY: options.providerSecret
@@ -1385,6 +1387,23 @@ function base64Resource(id = "base64-resource", dataRef = "base64-ref"): Resourc
   };
 }
 
+function summaryResource(id = "summary-resource"): Resource {
+  return {
+    id,
+    kind: "text",
+    mime: "text/plain",
+    sizeBytes: 39,
+    hash: `hash-${id}`,
+    privacy: "private",
+    variants: [
+      {
+        mode: "summary",
+        text: "Resource content summary must not leak."
+      }
+    ]
+  };
+}
+
 describe("daemon API", () => {
   it("serves health locally without wildcard CORS", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
@@ -1698,6 +1717,204 @@ describe("daemon API", () => {
     expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(
       eventCountBeforeFinalRead
     );
+    expectSafeRunApiPayload(body);
+  });
+
+  it("projects session resources from the run plan with safe broker metadata and evidence needs", async () => {
+    const resourceBroker = new InMemoryResourceBroker();
+    const registeredUrlResource = resourceBroker.registerResource({
+      resource: publicUrlResource("resource-url")
+    });
+    const registeredBase64Resource = resourceBroker.registerResource({
+      resource: base64Resource("resource-base64", "projection-data-ref")
+    });
+    const registeredSummaryResource = resourceBroker.registerResource({
+      resource: summaryResource("resource-summary")
+    });
+    const daemonApp = createRunDaemon({
+      resourceBroker
+    });
+    const created = await createRun(daemonApp, {
+      ...orchestratedRunPlan(),
+      resources: [
+        {
+          resourceId: registeredUrlResource.id,
+          required: true,
+          preferredDeliveryMode: "url"
+        },
+        {
+          resourceId: registeredBase64Resource.id,
+          required: false,
+          preferredDeliveryMode: "base64"
+        },
+        {
+          resourceId: registeredSummaryResource.id,
+          required: false,
+          preferredDeliveryMode: "none"
+        },
+        {
+          resourceId: "resource-missing",
+          required: false,
+          preferredDeliveryMode: "none"
+        }
+      ]
+    });
+    const batch = await openBatch(daemonApp, created.run.sessionId);
+    const contribution = await addContribution(daemonApp, created.run.sessionId, batch.batchId);
+    const closeResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/batches/${batch.batchId}/close`,
+      {}
+    );
+    const extractionResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/extractions`,
+      {
+        authorId: "participant-2",
+        rationale: "Extract a claim that still needs evidence.",
+        candidates: [
+          {
+            id: "candidate-resource-surface",
+            title: "Expose resource projection",
+            description: "Expose run-plan resources and accepted evidence needs as safe view data.",
+            sourceEventIds: [contribution.event.id],
+            status: "active",
+            supportedBy: ["claim-resource-surface"],
+            attackedBy: [],
+            qualityObligationIds: [],
+            assumptions: [],
+            tradeoffs: []
+          }
+        ],
+        claims: [
+          {
+            id: "claim-resource-surface",
+            content: "The Resources page should show planned resources and evidence needs.",
+            scope: "design",
+            sourceEventIds: [contribution.event.id],
+            supports: ["candidate-resource-surface"]
+          }
+        ],
+        evidenceNeeds: [
+          {
+            id: "evidence-need-resource-surface",
+            targetClaimId: "claim-resource-surface",
+            requiredKind: "file",
+            reason: "Validate external evidence before treating resource coverage as complete.",
+            priority: "high",
+            status: "open",
+            sourceEventIds: [contribution.event.id]
+          }
+        ],
+        objections: [],
+        qualityObligations: []
+      }
+    );
+    const extraction = (await extractionResponse.json()) as { event: { id: string } };
+
+    expect(closeResponse.status).toBe(201);
+    expect(extractionResponse.status).toBe(201);
+    await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/proposals/${extraction.event.id}/acceptance`,
+      {
+        authorId: "reviewer-1",
+        rationale: "Accept resource projection fixture material for this local test."
+      }
+    );
+
+    const response = await daemonApp.app.request(
+      `/sessions/${created.run.sessionId}/resources`
+    );
+    const text = await response.text();
+    const body = JSON.parse(text) as {
+      source: { kind: string; runId?: string };
+      plannedResources: Array<{
+        registered: boolean;
+        reference: { resourceId: string; required?: boolean; preferredDeliveryMode?: string };
+        resource?: { variants: Array<Record<string, unknown>> };
+      }>;
+      evidenceNeeds: Array<{ object: { id: string; targetClaimId: string } }>;
+    };
+
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(body.source).toEqual({
+      kind: "run_plan",
+      runId: created.run.runId
+    });
+    expect(body.plannedResources).toMatchObject([
+      {
+        registered: true,
+        reference: {
+          resourceId: registeredUrlResource.id,
+          required: true,
+          preferredDeliveryMode: "url"
+        },
+        resource: {
+          variants: [
+            {
+              mode: "url",
+              exposure: "public"
+            }
+          ]
+        }
+      },
+      {
+        registered: true,
+        reference: {
+          resourceId: registeredBase64Resource.id,
+          required: false,
+          preferredDeliveryMode: "base64"
+        },
+        resource: {
+          variants: [
+            {
+              mode: "base64",
+              mime: "text/plain",
+              sizeBytes: 11
+            }
+          ]
+        }
+      },
+      {
+        registered: true,
+        reference: {
+          resourceId: registeredSummaryResource.id,
+          required: false,
+          preferredDeliveryMode: "none"
+        },
+        resource: {
+          variants: [
+            {
+              mode: "summary",
+              textLength: 39
+            }
+          ]
+        }
+      },
+      {
+        registered: false,
+        reference: {
+          resourceId: "resource-missing",
+          required: false,
+          preferredDeliveryMode: "none"
+        }
+      }
+    ]);
+    expect(body.evidenceNeeds).toEqual([
+      expect.objectContaining({
+        object: expect.objectContaining({
+          id: "evidence-need-resource-surface",
+          targetClaimId: "claim-resource-surface"
+        })
+      })
+    ]);
+    expect(text).not.toContain("https://example.com/resource.txt");
+    expect(text).not.toContain("Resource content summary must not leak.");
+    expect(text).not.toContain("projection-data-ref");
+    expect(text).not.toContain("dataRef");
+    expect(text).not.toContain("api_key");
     expectSafeRunApiPayload(body);
   });
 

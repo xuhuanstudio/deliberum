@@ -46,6 +46,7 @@ import {
 } from "./openai-compatible-profile";
 import { DaemonRunOrchestrationService, type DaemonRunOrchestrationOptions } from "./run-orchestration";
 import { handleRunRouteError, registerRunRoutes } from "./run-routes";
+import { buildSessionResourcesProjection } from "./session-resources";
 import { handleWebGETRouteError, registerWebGETRoutes } from "./webget-routes";
 import {
   WebGETSessionStore,
@@ -320,6 +321,18 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       outcome
     });
   });
+
+  app.get("/sessions/:sessionId/resources", (context) =>
+    noStoreJson(
+      context,
+      buildSessionResourcesProjection({
+        eventStore,
+        runStore: runService.runStore,
+        resourceBroker,
+        sessionId: context.req.param("sessionId")
+      })
+    )
+  );
 
   app.post("/sessions", async (context) => {
     const body = await readJsonObject(context);
@@ -749,6 +762,14 @@ function normalizeOptionalQueryValue(value: string | undefined): string | undefi
   const trimmed = value?.trim();
 
   return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
+
+function noStoreJson(context: Context, payload: unknown, status: 200 | 201 | 400 = 200): Response {
+  const response = context.json(payload, status);
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Pragma", "no-cache");
+
+  return response;
 }
 
 function safeError(context: Context, error: Error): Response {

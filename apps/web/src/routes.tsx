@@ -118,7 +118,7 @@ const sessionFinalRoute = createRoute({
 const sessionResourcesRoute = createRoute({
   getParentRoute: () => sessionRoute,
   path: "resources",
-  component: ResourcesPlaceholderPage
+  component: ResourcesPage
 });
 
 const routeTree = rootRoute.addChildren([
@@ -562,17 +562,78 @@ function FinalPage() {
   );
 }
 
-function ResourcesPlaceholderPage() {
+function ResourcesPage() {
+  const { sessionId } = useSessionParams();
+  const { client } = useDaemonRuntime();
+  const resourcesQuery = useQuery({
+    queryKey: ["session-resources", sessionId],
+    queryFn: () => client.getSessionResources(sessionId)
+  });
+  const plannedResources = asArray(resourcesQuery.data?.plannedResources);
+  const evidenceNeeds = asArray(resourcesQuery.data?.evidenceNeeds);
+  const registeredResourceCount = plannedResources.filter(
+    (resource) => getRecordValue(resource, "registered") === true
+  ).length;
+  const source = resourcesQuery.data?.source;
+
   return (
     <ViewFrame
-      eyebrow="Future stage"
-      title="Resource Broker placeholder"
-      description="Core resource planning exists; daemon and Web live resource integration is deferred."
+      eyebrow="Resources and evidence"
+      title="Session resource projection"
+      description="A daemon-backed view of run-plan resource references, safe broker metadata, and accepted evidence needs."
     >
-      <StatusBanner
-        title="Resource endpoint integration is not implemented"
-        detail="This page is reserved for daemon-backed resource delivery and evidence surfaces."
-      />
+      <QueryState query={resourcesQuery}>
+        <StatusBanner
+          tone={plannedResources.length > 0 ? "ok" : "neutral"}
+          title={
+            plannedResources.length > 0
+              ? "Run-plan resources projected"
+              : "No run-plan resources"
+          }
+          detail="This page does not host resources, generate public URLs, or treat evidence needs as satisfied."
+        />
+        <KeyValueGrid
+          items={[
+            {
+              label: "Session id",
+              value: resourcesQuery.data?.sessionId ?? sessionId
+            },
+            {
+              label: "Source",
+              value:
+                source?.kind === "run_plan" && source.runId
+                  ? `run plan ${source.runId}`
+                  : "No run plan"
+            },
+            {
+              label: "Registered resources",
+              value: `${registeredResourceCount} of ${plannedResources.length}`
+            },
+            {
+              label: "Evidence needs",
+              value: evidenceNeeds.length
+            }
+          ]}
+        />
+        <RecordCollection
+          title="Planned resources"
+          records={plannedResources}
+          emptyTitle="No resource references"
+          emptyDescription="No run plan is linked to this session, or the linked run plan does not reference resources."
+        />
+        <RecordCollection
+          title="Accepted evidence needs"
+          records={evidenceNeeds}
+          emptyTitle="No accepted evidence needs"
+          emptyDescription="Accepted extraction proposals have not introduced evidence needs for this session."
+        />
+        <DataPanel
+          title="Resource projection JSON"
+          description="Complete daemon response for inspection; rendered without client-side delivery planning."
+        >
+          <JsonBlock value={sanitizeForDisplay(resourcesQuery.data ?? {})} />
+        </DataPanel>
+      </QueryState>
     </ViewFrame>
   );
 }

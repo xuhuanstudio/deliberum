@@ -20,13 +20,13 @@ The Web UI defaults to the local daemon URL and can be configured for developmen
 - Quality Obligations;
 - Event Timeline;
 - Final outcome projection;
-- Resources placeholder.
+- Resources and evidence projection.
 
-The final page reads the local daemon final endpoint and renders the compiled outcome projection, draft status, unresolved material, and provenance. It remains a projection/view surface and does not compile outcomes in the browser. The resources page is still a placeholder. Core Resource Broker packages exist, but daemon/Web live resource endpoint integration remains deferred.
+The final page reads the local daemon final endpoint and renders the compiled outcome projection, draft status, unresolved material, and provenance. It remains a projection/view surface and does not compile outcomes in the browser. The resources page reads the local daemon resources endpoint and renders run-plan resource references, safe broker metadata when the resource is registered, accepted evidence needs, and projection metadata. It does not upload, host, download, or deliver resources in the browser.
 
 ## Deferred pages and surfaces
 
-- live resource/evidence page backed by daemon resource endpoints;
+- resource delivery and hosting controls;
 - semantic board projection;
 - adapter settings;
 - optional graph/canvas views such as xyflow or tldraw, only as projections.

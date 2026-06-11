@@ -139,6 +139,59 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         }
       }
     })),
+    getSessionResources: vi.fn(async () => ({
+      sessionId: runDetail.sessionId,
+      source: {
+        kind: "run_plan",
+        runId: runDetail.runId
+      },
+      plannedResources: [
+        {
+          reference: {
+            resourceId: "resource-1",
+            required: true,
+            preferredDeliveryMode: "url"
+          },
+          registered: true,
+          resource: {
+            id: "resource-1",
+            kind: "text",
+            mime: "text/plain",
+            sizeBytes: 12,
+            hash: "hash-resource-1",
+            privacy: "public",
+            variants: [
+              {
+                mode: "url",
+                exposure: "public"
+              }
+            ]
+          }
+        },
+        {
+          reference: {
+            resourceId: "resource-missing",
+            required: false,
+            preferredDeliveryMode: "none"
+          },
+          registered: false
+        }
+      ],
+      evidenceNeeds: [
+        {
+          object: {
+            id: "evidence-need-1",
+            targetClaimId: "claim-1",
+            status: "open"
+          },
+          proposalEventId: "proposal-event-1",
+          proposalId: "proposal-1",
+          acceptedByEventIds: ["acceptance-event-1"],
+          sourceEventIds: ["event-1"]
+        }
+      ],
+      projection
+    })),
     getFrontier: vi.fn(async () => ({
       basis: "accepted_active_candidates",
       candidates: [
@@ -707,11 +760,25 @@ describe("@deliberum/web shell", () => {
     expect(renderedText).not.toContain("privateStack");
   });
 
-  it("keeps resources page as an explicit placeholder", async () => {
-    renderApp("/sessions/session-1/resources");
+  it("renders session resources and evidence needs from the daemon endpoint", async () => {
+    const client = renderApp("/sessions/session-1/resources");
 
-    expect(await screen.findByText("Resource Broker placeholder")).toBeTruthy();
-    expect(screen.getByText("Resource endpoint integration is not implemented")).toBeTruthy();
+    expect(await screen.findByText("Session resource projection")).toBeTruthy();
+    await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
+    expect(screen.getByText("Run-plan resources projected")).toBeTruthy();
+    expect(screen.getByText("Registered resources")).toBeTruthy();
+    expect(screen.getByText("1 of 2")).toBeTruthy();
+    expect(screen.getAllByText(/resource-1/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/resource-missing/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Accepted evidence needs")).toBeTruthy();
+    expect(screen.getAllByText(/evidence-need-1/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Resource projection JSON")).toBeTruthy();
+    expect(client.getRunOutcome).not.toHaveBeenCalled();
+    expect(
+      Array.from(document.querySelectorAll(".du-nav-link.is-active")).map(
+        (element) => element.textContent
+      )
+    ).toEqual(["Resources"]);
   });
 
   it("does not add hidden session persistence or forbidden semantic authority APIs", () => {

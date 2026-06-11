@@ -66,7 +66,7 @@ This is a switch for a single delivery. Participant profiles may define fallback
 
 Public exposure must be opt-in, signed, time-limited, revocable, and logged. Sensitive resources must not be publicly exposed by default.
 
-Current implementation does not generate public URLs or host resources. The Delivery Planner can select `url`, `base64`, or `none` according to policy; sensitive resources default to `none`.
+Current implementation does not generate public URLs or host resources. The daemon can expose a local session resources projection with run-plan resource references and safe broker metadata when registered. The Delivery Planner can select `url`, `base64`, or `none` according to policy; sensitive resources default to `none`.
 
 ## Resource Broker
 

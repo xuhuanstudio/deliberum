@@ -69,6 +69,7 @@ GET  /sessions/:sessionId/final
 GET  /sessions/:sessionId/frontier
 GET  /sessions/:sessionId/objections
 GET  /sessions/:sessionId/obligations
+GET  /sessions/:sessionId/resources
 POST /sessions
 POST /sessions/:sessionId/batches
 POST /sessions/:sessionId/batches/:batchId/contributions
@@ -144,14 +145,14 @@ GET /webget/:token/submit
 GET /webget/:token/commit
 ```
 
-Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, real provider setup UX, interactive setup, run event follow, production authentication, and remote/multi-user deployment.
+Deferred daemon work includes persistent SQLite storage, resource delivery or hosting endpoints outside WebGET, real provider setup UX, interactive setup, run event follow, production authentication, and remote/multi-user deployment.
 
 ## Web UI
 
-The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, a daemon-backed compiled outcome projection, a resources placeholder, and local daemon run workspace views.
+The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, a daemon-backed compiled outcome projection, a session resources/evidence projection, and local daemon run workspace views.
 
 The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, persistent daemon storage, or provider setup UX yet. It can list runs, create a run from JSON or a deterministic local preset template, inspect daemon run state, start requested run stages from JSON or the local preset start request, read safe projection endpoints by run session id, and display compiled output only as a provisional outcome. The session Final page reads `GET /sessions/:sessionId/final` and renders the compiled outcome projection with provenance and unresolved material. It does not implement run event follow or a raw run event timeline.
 
 The Web local preset controls require the daemon to be started with `DELIBERUM_ENABLE_LOCAL_PRESET=true`. Without that opt-in daemon profile, created runs remain valid but starting a preset pipeline reports missing local components.
 
-The Web UI does not own semantic deliberation state, implement Candidate Frontier logic, run adapters, serve resources, or compile outcomes. The session Final page reads a daemon projection endpoint; the Resources page remains a placeholder until daemon resource endpoints outside WebGET are implemented.
+The Web UI does not own semantic deliberation state, implement Candidate Frontier logic, run adapters, serve resources, or compile outcomes. The session Final and Resources pages read daemon projection endpoints; the Resources page shows run-plan resource references, safe broker metadata when registered, and accepted evidence needs without hosting files or planning delivery in the browser.
