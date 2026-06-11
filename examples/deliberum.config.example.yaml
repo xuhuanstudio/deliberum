@@ -9,7 +9,12 @@ local:
   daemon:
     host: 127.0.0.1
     port: 3877
-    storage: in_memory
+    storage:
+      default: in_memory
+      # Set both path env vars for local run workspace continuity across daemon restarts.
+      optionalEventLedgerPathEnv: DELIBERUM_DAEMON_EVENT_STORE_PATH
+      optionalRunMetadataPathEnv: DELIBERUM_DAEMON_RUN_STORE_PATH
+      productionGradeStorage: deferred
   cli:
     store: .deliberum/events.json
   web:
@@ -22,7 +27,13 @@ adapters:
     enabled: true
   openaiCompatible:
     enabled: false
-    note: Configure programmatically in tests or local code. Do not commit API keys.
+    daemonEnvProfile:
+      profile: DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE
+      extraction: DELIBERUM_ENABLE_OPENAI_COMPATIBLE_EXTRACTION
+      review: DELIBERUM_ENABLE_OPENAI_COMPATIBLE_REVIEW
+      finalization: DELIBERUM_ENABLE_OPENAI_COMPATIBLE_FINALIZATION
+      apiKeyEnvVar: DELIBERUM_OPENAI_API_KEY
+    note: Use the daemon env profile for local/pre-production provider-backed runs. Do not commit API keys.
   webget:
     enabled: true
     experimental: true
@@ -39,9 +50,10 @@ resources:
     - Sensitive resources must not be exposed by default.
 
 deferred:
-  daemonPersistentStorage: sqlite_or_equivalent
-  daemonFinalEndpoints: true
-  daemonResourceEndpoints: true
+  productionDaemonStorage: sqlite_or_equivalent
+  multiWriterCoordination: true
+  resourceDeliveryOutsideWebGET: true
   publicResourceHosting: true
   signedUrlServer: true
+  providerSetupUx: true
   productionAuth: true
