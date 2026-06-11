@@ -5,7 +5,7 @@
 Deliberum is currently a local-first, pre-production implementation. The supported runtime surfaces are:
 
 - local CLI commands using the shared JSON EventStore for local file persistence;
-- local daemon API using a process-local in-memory EventStore by default;
+- local daemon API using process-local in-memory stores by default, with optional JSON event ledger and run metadata persistence for local development;
 - separate local Vite Web UI shell reading the daemon through `@deliberum/client`.
 
 The daemon binds to `127.0.0.1` by default and does not provide production authentication, multi-user deployment, or production-grade daemon storage yet.
@@ -35,7 +35,7 @@ The following remain future work:
 - SQLite or equivalent production-grade daemon storage;
 - multi-writer coordination;
 - daemon-served Web UI assets;
-- daemon final/resource endpoints;
+- resource delivery or hosting endpoints outside WebGET;
 - signed or public resource hosting;
 - production authentication and authorization;
 - SSH/remote deployment guidance beyond manual local port forwarding;
