@@ -37,6 +37,7 @@ export const CLI_COMMANDS = [
   "runs create",
   "runs list",
   "runs show",
+  "runs events",
   "runs start",
   "runs outcome"
 ] as const;
@@ -58,6 +59,8 @@ export type CliDependencies = {
   core?: Partial<CliCoreApi>;
   createEventStore?: (options: { filePath: string; clock?: () => string }) => EventStore;
   createDaemonClient?: (options: { baseUrl: string }) => CliRunDaemonClient;
+  runEventStreamFetch?: CliRunEventStreamFetch;
+  writeStdout?: (chunk: string) => void | Promise<void>;
   idGenerator?: () => string;
   clock?: () => string;
   env?: Record<string, string | undefined>;
@@ -87,8 +90,48 @@ type ExtractionInputFile = {
 
 export type CliRunDaemonClient = Pick<
   DeliberumDaemonClient,
-  "createRun" | "listRuns" | "getRun" | "startRun" | "getRunOutcome"
+  | "createRun"
+  | "listRuns"
+  | "getRun"
+  | "getRunEvents"
+  | "getRunEventsStreamUrl"
+  | "startRun"
+  | "getRunOutcome"
 >;
+
+type CliRunEventStreamReader = {
+  read: () => Promise<{
+    done?: boolean;
+    value?: Uint8Array;
+  }>;
+  releaseLock: () => void;
+};
+
+type CliRunEventStreamReadable = {
+  getReader: () => CliRunEventStreamReader;
+};
+
+type CliRunEventStreamBody = CliRunEventStreamReadable | AsyncIterable<Uint8Array>;
+
+export type CliRunEventStreamFetchResponse = {
+  ok: boolean;
+  status: number;
+  body: CliRunEventStreamBody | null;
+};
+
+export type CliRunEventStreamFetch = (
+  url: string,
+  init?: {
+    method?: string;
+    headers?: Record<string, string>;
+    signal?: AbortSignal;
+  }
+) => Promise<CliRunEventStreamFetchResponse>;
+
+type RawCliOutput = {
+  kind: "raw";
+  output?: unknown;
+};
 
 const defaultCoreApi: CliCoreApi = {
   createSession,
@@ -106,6 +149,12 @@ const defaultCoreApi: CliCoreApi = {
 export async function runCli(args: string[], dependencies: CliDependencies = {}): Promise<CliRunResult> {
   const parsedArgs = parseArgs(args);
   const compactOutput = parsedArgs.flags.has("json");
+  const stdoutChunks: string[] = [];
+  const writeStdout =
+    dependencies.writeStdout ??
+    ((chunk: string) => {
+      stdoutChunks.push(chunk);
+    });
   const coreApi = {
     ...defaultCoreApi,
     ...dependencies.core
@@ -127,11 +176,24 @@ export async function runCli(args: string[], dependencies: CliDependencies = {})
           new DeliberumDaemonClient({
             baseUrl: options.baseUrl
           })),
+      runEventStreamFetch:
+        dependencies.runEventStreamFetch ??
+        ((url, init) => getDefaultRunEventStreamFetch()(url, init)),
+      writeStdout,
       idGenerator: dependencies.idGenerator ?? (() => randomUUID()),
       clock: dependencies.clock,
       env: dependencies.env ?? process.env,
       readJsonFile: dependencies.readJsonFile ?? readJsonFile
     });
+
+    if (isRawCliOutput(output)) {
+      return {
+        exitCode: 0,
+        stdout: dependencies.writeStdout ? "" : stdoutChunks.join(""),
+        stderr: "",
+        output: output.output
+      };
+    }
 
     return {
       exitCode: 0,
@@ -155,6 +217,8 @@ type ExecuteDependencies = {
   core: CliCoreApi;
   createEventStore: (options: { filePath: string; clock?: () => string }) => EventStore;
   createDaemonClient: (options: { baseUrl: string }) => CliRunDaemonClient;
+  runEventStreamFetch: CliRunEventStreamFetch;
+  writeStdout: (chunk: string) => void | Promise<void>;
   idGenerator: () => string;
   clock?: () => string;
   env: Record<string, string | undefined>;
@@ -343,7 +407,11 @@ async function executeCommand(parsedArgs: ParsedArgs, dependencies: ExecuteDepen
 }
 
 export async function main(args: string[]): Promise<number> {
-  const result = await runCli(args);
+  const result = await runCli(args, {
+    writeStdout: (chunk) => {
+      process.stdout.write(chunk);
+    }
+  });
   process.stdout.write(result.stdout);
   process.stderr.write(result.stderr);
   return result.exitCode;
@@ -391,6 +459,21 @@ async function executeRunCommand(
     return daemonClient.getRun(runId);
   }
 
+  if (action === "events") {
+    const runId = requireRunId(restPositionals, "Usage: deliberum runs events <runId> [--follow]");
+
+    if (parsedArgs.flags.has("follow")) {
+      return followRunEvents({
+        runId,
+        daemonClient,
+        fetch: dependencies.runEventStreamFetch,
+        writeStdout: dependencies.writeStdout
+      });
+    }
+
+    return daemonClient.getRunEvents(runId);
+  }
+
   if (action === "start") {
     const runId = requireRunId(restPositionals, "Usage: deliberum runs start <runId> --input <start.json>");
     const startRequest = readJsonObjectInput(
@@ -411,7 +494,7 @@ async function executeRunCommand(
 }
 
 function assertKnownRunCommand(action: string): void {
-  if (["create", "list", "show", "start", "outcome"].includes(action)) {
+  if (["create", "list", "show", "events", "start", "outcome"].includes(action)) {
     return;
   }
 
@@ -436,6 +519,10 @@ function assertRunCommandOptions(action: string, parsedArgs: ParsedArgs): void {
   }
 
   for (const flagName of parsedArgs.flags) {
+    if (flagName === "follow" && action === "events") {
+      continue;
+    }
+
     if (flagName !== "json") {
       if (isSecretLikeKey(flagName)) {
         throw new CliUsageError("Run commands do not accept provider secrets or credentials.");
@@ -670,4 +757,257 @@ function containsSecretLikeValue(value: string): boolean {
     /\bsk-[a-z0-9_-]{8,}\b/i.test(value) ||
     /\b(api[_-]?key|secret|access[_-]?token|private[_-]?token|authorization)=\S{4,}/i.test(value)
   );
+}
+
+function isRawCliOutput(output: unknown): output is RawCliOutput {
+  return (
+    typeof output === "object" &&
+    output !== null &&
+    (output as { kind?: unknown }).kind === "raw"
+  );
+}
+
+async function followRunEvents(options: {
+  runId: string;
+  daemonClient: CliRunDaemonClient;
+  fetch: CliRunEventStreamFetch;
+  writeStdout: (chunk: string) => void | Promise<void>;
+}): Promise<RawCliOutput> {
+  const eventCount = await streamRunEvents({
+    url: options.daemonClient.getRunEventsStreamUrl(options.runId),
+    fetch: options.fetch,
+    onEvent: async (event) => {
+      await options.writeStdout(`${JSON.stringify(event)}\n`);
+    }
+  });
+
+  return {
+    kind: "raw",
+    output: {
+      runId: options.runId,
+      followed: true,
+      events: eventCount
+    }
+  };
+}
+
+async function streamRunEvents(options: {
+  url: string;
+  fetch: CliRunEventStreamFetch;
+  onEvent: (event: unknown) => void | Promise<void>;
+}): Promise<number> {
+  let response: CliRunEventStreamFetchResponse;
+
+  try {
+    response = await options.fetch(options.url, {
+      method: "GET",
+      headers: {
+        Accept: "text/event-stream"
+      }
+    });
+  } catch {
+    throw new DaemonClientError(0, "daemon_unavailable", "Daemon is unavailable.");
+  }
+
+  if (!response.ok) {
+    throw new DaemonClientError(
+      response.status,
+      "request_failed",
+      "Daemon event stream request failed."
+    );
+  }
+
+  if (!response.body) {
+    throw new DaemonClientError(
+      response.status,
+      "empty_stream",
+      "Daemon event stream is unavailable."
+    );
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let eventCount = 0;
+
+  for await (const chunk of iterateStreamChunks(response.body)) {
+    buffer += decoder.decode(chunk, { stream: true });
+    const result = await consumeSseFrames(buffer, options.onEvent);
+    buffer = result.remaining;
+    eventCount += result.eventCount;
+  }
+
+  buffer += decoder.decode();
+  const finalResult = await consumeSseFrames(buffer, options.onEvent, true);
+  return eventCount + finalResult.eventCount;
+}
+
+async function* iterateStreamChunks(body: CliRunEventStreamBody): AsyncIterable<Uint8Array> {
+  if (isAsyncIterable(body)) {
+    yield* body;
+    return;
+  }
+
+  const reader = body.getReader();
+
+  try {
+    for (;;) {
+      const result = await reader.read();
+      if (result.done) {
+        return;
+      }
+
+      if (result.value) {
+        yield result.value;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+function isAsyncIterable(input: unknown): input is AsyncIterable<Uint8Array> {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    Symbol.asyncIterator in input
+  );
+}
+
+async function consumeSseFrames(
+  input: string,
+  onEvent: (event: unknown) => void | Promise<void>,
+  flush = false
+): Promise<{ remaining: string; eventCount: number }> {
+  let remaining = input;
+  let eventCount = 0;
+
+  for (;;) {
+    const boundary = findSseFrameBoundary(remaining);
+    if (!boundary) {
+      break;
+    }
+
+    const rawFrame = remaining.slice(0, boundary.index);
+    remaining = remaining.slice(boundary.index + boundary.length);
+    const processed = await consumeSseFrame(rawFrame, onEvent);
+    eventCount += processed ? 1 : 0;
+  }
+
+  if (flush && remaining.trim().length > 0) {
+    const processed = await consumeSseFrame(remaining, onEvent);
+    eventCount += processed ? 1 : 0;
+    remaining = "";
+  }
+
+  return {
+    remaining,
+    eventCount
+  };
+}
+
+async function consumeSseFrame(
+  rawFrame: string,
+  onEvent: (event: unknown) => void | Promise<void>
+): Promise<boolean> {
+  const frame = parseSseFrame(rawFrame);
+
+  if (!frame || frame.event !== "event" || frame.data.length === 0) {
+    return false;
+  }
+
+  let event: unknown;
+
+  try {
+    event = JSON.parse(frame.data);
+  } catch {
+    throw new DaemonClientError(
+      0,
+      "invalid_event_stream",
+      "Daemon event stream returned invalid event data."
+    );
+  }
+
+  await onEvent(event);
+  return true;
+}
+
+function findSseFrameBoundary(input: string): { index: number; length: number } | undefined {
+  const lfIndex = input.indexOf("\n\n");
+  const crlfIndex = input.indexOf("\r\n\r\n");
+
+  if (lfIndex === -1 && crlfIndex === -1) {
+    return undefined;
+  }
+
+  if (lfIndex === -1) {
+    return {
+      index: crlfIndex,
+      length: 4
+    };
+  }
+
+  if (crlfIndex === -1 || lfIndex < crlfIndex) {
+    return {
+      index: lfIndex,
+      length: 2
+    };
+  }
+
+  return {
+    index: crlfIndex,
+    length: 4
+  };
+}
+
+function parseSseFrame(rawFrame: string): { event?: string; data: string } | undefined {
+  let eventName: string | undefined;
+  const dataLines: string[] = [];
+
+  for (const rawLine of rawFrame.replace(/\r\n/g, "\n").split("\n")) {
+    if (rawLine.length === 0 || rawLine.startsWith(":")) {
+      continue;
+    }
+
+    const separatorIndex = rawLine.indexOf(":");
+    const field = separatorIndex === -1 ? rawLine : rawLine.slice(0, separatorIndex);
+    let value = separatorIndex === -1 ? "" : rawLine.slice(separatorIndex + 1);
+
+    if (value.startsWith(" ")) {
+      value = value.slice(1);
+    }
+
+    if (field === "event") {
+      eventName = value;
+      continue;
+    }
+
+    if (field === "data") {
+      dataLines.push(value);
+    }
+  }
+
+  if (eventName === undefined && dataLines.length === 0) {
+    return undefined;
+  }
+
+  return {
+    event: eventName,
+    data: dataLines.join("\n")
+  };
+}
+
+function getDefaultRunEventStreamFetch(): CliRunEventStreamFetch {
+  if (typeof globalThis.fetch !== "function") {
+    throw new DaemonClientError(0, "fetch_unavailable", "A fetch implementation is required.");
+  }
+
+  return async (url, init) => {
+    const response = await globalThis.fetch(url, init);
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      body: response.body
+    };
+  };
 }

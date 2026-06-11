@@ -115,6 +115,19 @@ function createFakeRunDaemonClient(
         runId
       }
     })),
+    getRunEvents: vi.fn(async (runId: string) => ({
+      runId,
+      sessionId: "session-1",
+      events: [
+        {
+          id: "event-1",
+          type: "sealed_batch_opened"
+        }
+      ]
+    })),
+    getRunEventsStreamUrl: vi.fn((runId: string) =>
+      `http://127.0.0.1:3877/runs/${encodeURIComponent(runId)}/events/stream`
+    ),
     startRun: vi.fn(async (runId: string, startRequest: unknown) => ({
       run: {
         runId
@@ -220,6 +233,20 @@ function extractionInput(sourceEventId: string) {
       }
     ]
   };
+}
+
+function createSseStream(frames: readonly string[]): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const frame of frames) {
+        controller.enqueue(encoder.encode(frame));
+      }
+
+      controller.close();
+    }
+  });
 }
 
 describe("CLI command routing", () => {
@@ -381,6 +408,9 @@ describe("CLI command routing", () => {
     const shown = parseOutput<{ run: { runId: string } }>(
       await runCli(["runs", "show", "run-1", "--json"], dependencies)
     );
+    const events = parseOutput<{ runId: string; sessionId: string; events: Array<{ type: string }> }>(
+      await runCli(["runs", "events", "run-1", "--json"], dependencies)
+    );
     const started = parseOutput<{ startRequest: { sealedDivergence: { autoCloseManual: boolean } } }>(
       await runCli(["runs", "start", "run-1", "--input", "start.json", "--json"], dependencies)
     );
@@ -391,6 +421,15 @@ describe("CLI command routing", () => {
     expect(created.input.runPlan.topic).toBe("Run from CLI");
     expect(listed.runs).toEqual([{ runId: "run-1" }]);
     expect(shown.run.runId).toBe("run-1");
+    expect(events).toMatchObject({
+      runId: "run-1",
+      sessionId: "session-1",
+      events: [
+        {
+          type: "sealed_batch_opened"
+        }
+      ]
+    });
     expect(started.startRequest.sealedDivergence.autoCloseManual).toBe(true);
     expect(outcome).toMatchObject({
       status: "not_available",
@@ -403,13 +442,102 @@ describe("CLI command routing", () => {
     });
     expect(daemonClient.listRuns).toHaveBeenCalledTimes(1);
     expect(daemonClient.getRun).toHaveBeenCalledWith("run-1");
+    expect(daemonClient.getRunEvents).toHaveBeenCalledWith("run-1");
     expect(daemonClient.startRun).toHaveBeenCalledWith("run-1", {
       sealedDivergence: {
         autoCloseManual: true
       }
     });
     expect(daemonClient.getRunOutcome).toHaveBeenCalledWith("run-1");
-    expect(createDaemonClient).toHaveBeenCalledTimes(5);
+    expect(createDaemonClient).toHaveBeenCalledTimes(6);
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("follows daemon-redacted run event SSE as JSON lines without using the local EventStore", async () => {
+    const { createDaemonClient, createEventStore, dependencies } = createRunCliDependencies();
+    const firstEvent = {
+      id: "event-1",
+      type: "sealed_batch_opened",
+      payload: {
+        status: "open"
+      }
+    };
+    const secondEvent = {
+      id: "event-2",
+      type: "sealed_contribution_submitted",
+      payload: {
+        redacted: true,
+        reason: "sealed_until_reveal"
+      }
+    };
+    const streamFetch = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      body: createSseStream([
+        `event: event\nid: event-1\ndata: ${JSON.stringify(firstEvent)}\n\n`,
+        ": keepalive\n\n",
+        `event: event\nid: event-2\ndata: ${JSON.stringify(secondEvent)}\n\n`
+      ])
+    }));
+    const writes: string[] = [];
+
+    const result = await runCli(["runs", "events", "run-1", "--follow", "--json"], {
+      ...dependencies,
+      runEventStreamFetch: streamFetch,
+      writeStdout: (chunk) => {
+        writes.push(chunk);
+      }
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
+    expect(result.output).toEqual({
+      runId: "run-1",
+      followed: true,
+      events: 2
+    });
+    expect(writes.join("")).toBe(`${JSON.stringify(firstEvent)}\n${JSON.stringify(secondEvent)}\n`);
+    expect(streamFetch).toHaveBeenCalledWith(
+      "http://127.0.0.1:3877/runs/run-1/events/stream",
+      {
+        method: "GET",
+        headers: {
+          Accept: "text/event-stream"
+        }
+      }
+    );
+    expect(createDaemonClient).toHaveBeenCalledTimes(1);
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("buffers split CRLF run event SSE frames before writing JSON lines", async () => {
+    const { createEventStore, dependencies } = createRunCliDependencies();
+    const event = {
+      id: "event-1",
+      type: "sealed_batch_opened",
+      payload: {
+        status: "open"
+      }
+    };
+    const frame = `event: event\r\nid: event-1\r\ndata: ${JSON.stringify(event)}\r\n\r\n`;
+    const streamFetch = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      body: createSseStream([frame.slice(0, 11), frame.slice(11, 37), frame.slice(37)])
+    }));
+
+    const result = await runCli(["runs", "events", "run-1", "--follow", "--json"], {
+      ...dependencies,
+      runEventStreamFetch: streamFetch
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe(`${JSON.stringify(event)}\n`);
+    expect(result.output).toEqual({
+      runId: "run-1",
+      followed: true,
+      events: 1
+    });
     expect(createEventStore).not.toHaveBeenCalled();
   });
 

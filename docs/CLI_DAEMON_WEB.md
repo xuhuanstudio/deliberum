@@ -37,6 +37,7 @@ deliberum events --session <id>
 deliberum runs create --input <run-plan.json> [--daemon-url <local-url>]
 deliberum runs list [--daemon-url <local-url>]
 deliberum runs show <runId> [--daemon-url <local-url>]
+deliberum runs events <runId> [--follow] [--daemon-url <local-url>]
 deliberum runs start <runId> --input <start.json> [--daemon-url <local-url>]
 deliberum runs outcome <runId> [--daemon-url <local-url>]
 ```
@@ -44,6 +45,8 @@ deliberum runs outcome <runId> [--daemon-url <local-url>]
 CLI view commands return structured JSON. `frontier`, `objections`, and `obligations` are projection-derived and include projection metadata.
 
 CLI run commands are local daemon control commands. They require a running local daemon, call daemon run endpoints through `@deliberum/client`, and do not use the CLI-local JSON EventStore for run orchestration.
+
+`deliberum runs events <runId>` reads the daemon-redacted run event timeline from the local daemon. With `--follow`, it opens the daemon-redacted run event stream and writes each new named SSE `event` frame as a compact JSON line. Follow mode does not replay history; use the non-follow command first when the historical timeline is required. The CLI does not compute projections from either event view.
 
 ## Daemon
 
@@ -133,7 +136,7 @@ DELIBERUM_OPENAI_THINKING=disabled
 
 The extraction prompt requests exactly one JSON object with no surrounding prose or Markdown, and the parser remains strict: it accepts only a raw JSON object or a single full fenced JSON object. If a provider response fails only this strict JSON shape check, the extractor may make one corrective retry without including the rejected response text. Additional non-secret request options are available for local compatibility testing: `DELIBERUM_OPENAI_TOP_P`, `DELIBERUM_OPENAI_STREAM=false`, `DELIBERUM_OPENAI_FREQUENCY_PENALTY`, and `DELIBERUM_OPENAI_PRESENCE_PENALTY`. Streaming output is not implemented, so `DELIBERUM_OPENAI_STREAM=true` is rejected as invalid provider configuration.
 
-CLI run commands do not include provider setup UX, API key flags or fields, interactive setup, or run event follow. The Web run detail page reads a non-stream daemon-redacted run event timeline and can manually follow the daemon-redacted run event stream.
+CLI run commands do not include provider setup UX, API key flags or fields, or interactive setup. They can read the daemon-redacted run event timeline and follow the daemon-redacted run event stream. The Web run detail page reads the same non-stream timeline and can manually follow the same stream.
 
 Experimental WebGET endpoints are local daemon endpoints:
 
@@ -146,7 +149,7 @@ GET /webget/:token/submit
 GET /webget/:token/commit
 ```
 
-Deferred daemon work includes persistent SQLite storage, resource delivery or hosting endpoints outside WebGET, real provider setup UX, interactive setup, CLI run event follow, production authentication, and remote/multi-user deployment.
+Deferred daemon work includes persistent SQLite storage, resource delivery or hosting endpoints outside WebGET, real provider setup UX, interactive setup, production authentication, and remote/multi-user deployment.
 
 ## Web UI
 
