@@ -34,6 +34,13 @@ import {
   OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR,
   OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
   OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR,
+  OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR,
+  OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR,
+  OPENAI_COMPATIBLE_FINAL_AUDITOR_ID,
+  OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID,
+  OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR,
+  OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR,
+  OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR,
   OPENAI_COMPATIBLE_FREQUENCY_PENALTY_ENV_VAR,
   OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR,
   OPENAI_COMPATIBLE_MODEL_ENV_VAR,
@@ -53,6 +60,7 @@ import {
   localPresetRunPlan,
   localPresetStartRequest,
   resolveStartDaemonEnableOpenAICompatibleExtraction,
+  resolveStartDaemonEnableOpenAICompatibleFinalization,
   resolveStartDaemonEnableOpenAICompatibleProfile,
   resolveStartDaemonEnableOpenAICompatibleReview,
   resolveStartDaemonEnableLocalPreset,
@@ -593,6 +601,50 @@ function openAICompatibleReviewStartRequest() {
   };
 }
 
+function openAICompatibleFinalizationStartRequest() {
+  const request = localPresetStartRequest();
+
+  return {
+    ...request,
+    finalization: {
+      finalCandidateGeneratorId: OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID,
+      auditGeneratorIds: [OPENAI_COMPATIBLE_FINAL_AUDITOR_ID],
+      compileOutcome: true
+    }
+  };
+}
+
+function openAICompatibleFinalizationRunPlan() {
+  const plan = localPresetRunPlan();
+
+  return {
+    ...plan,
+    title: "OpenAI-compatible finalization run",
+    providerConfigs: [
+      {
+        id: "final-candidate-provider",
+        adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+        providerConfigId: "final-candidate-provider",
+        modelId: "final-candidate-runtime-model",
+        baseUrl: "https://final-candidate-runtime.example/api",
+        endpointPath: "/chat/completions",
+        apiKeyEnvVar: OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
+        timeoutMs: 1000
+      },
+      {
+        id: "final-audit-provider",
+        adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+        providerConfigId: "final-audit-provider",
+        modelId: "final-audit-runtime-model",
+        baseUrl: "https://final-audit-runtime.example/api",
+        endpointPath: "/chat/completions",
+        apiKeyEnvVar: OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
+        timeoutMs: 1000
+      }
+    ]
+  };
+}
+
 function startFullRunRequest() {
   return {
     sealedDivergence: {
@@ -818,6 +870,152 @@ function findReviewContextPayload(
         return {
           allowedProposalEventIds: parsed.allowedProposalEventIds.filter(
             (eventId): eventId is string => typeof eventId === "string"
+          )
+        };
+      }
+    } catch {
+      // Corrective retry messages are plain text and intentionally ignored here.
+    }
+  }
+
+  return undefined;
+}
+
+function createOpenAICompatibleFinalizationFetch(options: {
+  contents?: string[];
+  contentTransforms?: Array<(content: string) => string>;
+} = {}): MockedFetchLike {
+  let callIndex = 0;
+
+  return vi.fn(async (_url, init) => {
+    const request = JSON.parse(init.body) as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    const currentCallIndex = callIndex;
+    callIndex += 1;
+    const generatedContent = findFinalCandidateContextPayload(request.messages)
+      ? createOpenAICompatibleFinalCandidateContent(request.messages)
+      : createOpenAICompatibleFinalAuditContent(request.messages);
+    const content = options.contents?.[currentCallIndex] ??
+      options.contentTransforms?.[currentCallIndex]?.(generatedContent) ??
+      generatedContent;
+
+    return {
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => ({
+        choices: [
+          {
+            message: {
+              content
+            }
+          }
+        ]
+      }))
+    };
+  }) as unknown as MockedFetchLike;
+}
+
+function createOpenAICompatibleFinalCandidateContent(
+  messages: Array<{ role: string; content: string }>
+): string {
+  const contextPayload = findFinalCandidateContextPayload(messages);
+  const candidateId = contextPayload?.allowedCandidateIds[0] ?? "missing-candidate";
+
+  return JSON.stringify({
+    candidateIds: [candidateId],
+    recommendation:
+      "Use provider-backed final candidate material as a provisional proposal.",
+    applicabilityConditions: [
+      "Only when OpenAI-compatible finalization is explicitly enabled."
+    ],
+    rationale:
+      "The provider-selected candidate remains proposal material and is still recorded through finalization lifecycle APIs.",
+    limitations: [
+      "Provider output does not become an authoritative outcome."
+    ]
+  });
+}
+
+function createOpenAICompatibleFinalAuditContent(
+  messages: Array<{ role: string; content: string }>
+): string {
+  const contextPayload = findFinalAuditContextPayload(messages);
+
+  return JSON.stringify({
+    findings: ["Provider-backed final audit recorded limitations only."],
+    risks: ["The compiled outcome remains provisional."],
+    unresolvedObjectionIds: contextPayload?.allowedUnresolvedObjectionIds ?? [],
+    qualityObligationIds: contextPayload?.allowedQualityObligationIds ?? [],
+    evidenceNeedIds: contextPayload?.allowedEvidenceNeedIds ?? [],
+    omissions: ["No real provider smoke is performed in this mocked test."],
+    compressionProblems: [],
+    limitations: ["Final audit output is not audit authority."],
+    continuationSuggestions: ["Run an explicit real-provider smoke stage later."]
+  });
+}
+
+function findFinalCandidateContextPayload(
+  messages: Array<{ role: string; content: string }>
+): { allowedCandidateIds: string[] } | undefined {
+  for (const message of messages) {
+    if (message.role !== "user") {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(message.content) as {
+        allowedCandidateIds?: unknown;
+      };
+
+      if (Array.isArray(parsed.allowedCandidateIds)) {
+        return {
+          allowedCandidateIds: parsed.allowedCandidateIds.filter(
+            (candidateId): candidateId is string => typeof candidateId === "string"
+          )
+        };
+      }
+    } catch {
+      // Corrective retry messages are plain text and intentionally ignored here.
+    }
+  }
+
+  return undefined;
+}
+
+function findFinalAuditContextPayload(
+  messages: Array<{ role: string; content: string }>
+): {
+  allowedUnresolvedObjectionIds: string[];
+  allowedQualityObligationIds: string[];
+  allowedEvidenceNeedIds: string[];
+} | undefined {
+  for (const message of messages) {
+    if (message.role !== "user") {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(message.content) as {
+        allowedUnresolvedObjectionIds?: unknown;
+        allowedQualityObligationIds?: unknown;
+        allowedEvidenceNeedIds?: unknown;
+      };
+
+      if (
+        Array.isArray(parsed.allowedUnresolvedObjectionIds) &&
+        Array.isArray(parsed.allowedQualityObligationIds) &&
+        Array.isArray(parsed.allowedEvidenceNeedIds)
+      ) {
+        return {
+          allowedUnresolvedObjectionIds: parsed.allowedUnresolvedObjectionIds.filter(
+            (id): id is string => typeof id === "string"
+          ),
+          allowedQualityObligationIds: parsed.allowedQualityObligationIds.filter(
+            (id): id is string => typeof id === "string"
+          ),
+          allowedEvidenceNeedIds: parsed.allowedEvidenceNeedIds.filter(
+            (id): id is string => typeof id === "string"
           )
         };
       }
@@ -3316,6 +3514,447 @@ describe("daemon API", () => {
     }
   });
 
+  it("requires the separate exact OpenAI-compatible finalization flag", async () => {
+    expect(resolveStartDaemonEnableOpenAICompatibleFinalization(
+      { enableOpenAICompatibleFinalization: true },
+      {}
+    )).toBe(true);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleFinalization(
+        {},
+        { [OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR]: "true" }
+      )
+    ).toBe(true);
+    expect(resolveStartDaemonEnableOpenAICompatibleFinalization({}, {})).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleFinalization(
+        {},
+        { [OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR]: "false" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleFinalization(
+        {},
+        { [OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR]: "TRUE" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleFinalization(
+        { enableOpenAICompatibleFinalization: false },
+        { [OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR]: "true" }
+      )
+    ).toBe(false);
+  });
+
+  it("installs OpenAI-compatible finalization registries only when finalization is enabled", () => {
+    const disabled = createOpenAICompatibleRunRegistries({
+      enableReview: true
+    });
+    const enabled = createOpenAICompatibleRunRegistries({
+      enableFinalization: true
+    });
+
+    expect(disabled.finalCandidateGeneratorRegistry).toBeUndefined();
+    expect(disabled.finalAuditGeneratorRegistry).toBeUndefined();
+    expect(enabled.finalCandidateGeneratorRegistry?.list()).toEqual([
+      {
+        generatorId: OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID
+      }
+    ]);
+    expect(enabled.finalAuditGeneratorRegistry?.list()).toEqual([
+      {
+        auditorId: OPENAI_COMPATIBLE_FINAL_AUDITOR_ID
+      }
+    ]);
+  });
+
+  it("does not install provider finalization when finalization is enabled without the profile", async () => {
+    const fetch = createOpenAICompatibleFinalizationFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleFinalization: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, localPresetRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleFinalizationStartRequest()
+    );
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expectSafeRunApiPayload(body);
+  });
+
+  it("runs provider-backed finalization through daemon with mocked fetch", async () => {
+    const secret = "sk-openai-runtime-secret";
+    const fetch = createOpenAICompatibleFinalizationFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleFinalization: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: secret,
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model",
+        [OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR]:
+          "final-candidate-provider",
+        [OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR]: "final-audit-provider",
+        [OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR]: "json_object",
+        [OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR]: "json_object"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleFinalizationRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleFinalizationStartRequest()
+    );
+    const body = (await response.json()) as {
+      stopped: boolean;
+      stages: Array<{
+        stage: string;
+        status?: string;
+        result: {
+          finalCandidateResult?: {
+            sourceId: string;
+            status: string;
+          };
+          auditResults?: Array<{
+            auditorId: string;
+            status: string;
+          }>;
+        };
+      }>;
+    };
+    const [candidateUrl, candidateInit] = getOpenAICompatibleFetchCall(fetch, 0);
+    const [auditUrl, auditInit] = getOpenAICompatibleFetchCall(fetch, 1);
+    const candidateRequestBody = JSON.parse(candidateInit.body) as {
+      model: string;
+      messages: Array<{ role: string; content: string }>;
+      response_format?: unknown;
+    };
+    const auditRequestBody = JSON.parse(auditInit.body) as {
+      model: string;
+      messages: Array<{ role: string; content: string }>;
+      response_format?: unknown;
+    };
+    const candidatePromptPayload = findFinalCandidateContextPayload(
+      candidateRequestBody.messages
+    );
+    const auditPromptPayload = findFinalAuditContextPayload(auditRequestBody.messages);
+    const outcome = await (await daemonApp.app.request(
+      `/runs/${created.run.runId}/outcome`
+    )).json();
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const serializedSafeState = JSON.stringify({
+      body,
+      detail: detailBody,
+      outcome,
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      events: daemonApp.eventStore.listEvents(created.run.sessionId)
+    });
+
+    expect(response.status).toBe(200);
+    expect(body.stopped).toBe(false);
+    expect(body.stages.find((stage) => stage.stage === "finalization")).toMatchObject({
+      status: "completed",
+      result: {
+        finalCandidateResult: {
+          sourceId: OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID,
+          status: "proposed"
+        },
+        auditResults: [
+          expect.objectContaining({
+            auditorId: OPENAI_COMPATIBLE_FINAL_AUDITOR_ID,
+            status: "recorded"
+          })
+        ]
+      }
+    });
+    expect(candidateUrl).toBe("https://final-candidate-runtime.example/api/chat/completions");
+    expect(candidateRequestBody.model).toBe("final-candidate-runtime-model");
+    expect(candidateRequestBody.response_format).toEqual({
+      type: "json_object"
+    });
+    expect(candidateRequestBody.messages[0].content).toContain(
+      "The final candidate is a proposal, not an authoritative answer."
+    );
+    expect(candidatePromptPayload?.allowedCandidateIds.length).toBeGreaterThan(0);
+    expect(auditUrl).toBe("https://final-audit-runtime.example/api/chat/completions");
+    expect(auditRequestBody.model).toBe("final-audit-runtime-model");
+    expect(auditRequestBody.response_format).toEqual({
+      type: "json_object"
+    });
+    expect(auditRequestBody.messages[0].content).toContain(
+      "The final audit records limitations, unresolved issues, risks, omissions, and continuation suggestions only."
+    );
+    expect(auditPromptPayload).toBeDefined();
+    expect(outcome).toMatchObject({
+      status: "compiled",
+      draftStatus: "provisional"
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expectSafeRunApiPayload(body, secret);
+    expectSafeRunApiPayload(outcome, secret);
+    expectSafeRunApiPayload(detailBody, secret);
+    expect(serializedSafeState).not.toContain(secret);
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("raw provider");
+    expect(serializedSafeState).not.toContain("responseFormat");
+    expect(serializedSafeState).not.toContain("json_object");
+    expect(serializedSafeState).not.toContain("/Users/");
+    expect(serializedSafeState).not.toContain("stack");
+  });
+
+  it("rejects invalid finalization response formats before provider calls", () => {
+    const cases = [
+      OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR,
+      OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR
+    ];
+
+    for (const responseFormatEnvVar of cases) {
+      const fetch = createOpenAICompatibleFinalizationFetch();
+      let thrown: unknown;
+
+      try {
+        createDaemonApp({
+          idGenerator: createIds(),
+          clock,
+          enableOpenAICompatibleProfile: true,
+          enableOpenAICompatibleFinalization: true,
+          openAICompatibleEnv: {
+            [responseFormatEnvVar]: "json_schema"
+          },
+          openAICompatibleFetch: fetch
+        });
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toBeInstanceOf(OpenAICompatibleAdapterError);
+      expect((thrown as OpenAICompatibleAdapterError).safeCategory).toBe(
+        "provider_config_invalid"
+      );
+      expect(fetch).not.toHaveBeenCalled();
+    }
+  });
+
+  it("retries malformed provider finalization output once without storing rejected text", async () => {
+    const cases = [
+      {
+        rejectedResponseMarker: "FINAL_CANDIDATE_REJECTED_PROSE_WRAPPER",
+        contentTransforms: [
+          (content: string) => `FINAL_CANDIDATE_REJECTED_PROSE_WRAPPER\n${content}`,
+          (content: string) => content,
+          (content: string) => content
+        ],
+        expectedCalls: 3,
+        retryCallIndex: 1
+      },
+      {
+        rejectedResponseMarker: "FINAL_AUDIT_REJECTED_PROSE_WRAPPER",
+        contentTransforms: [
+          (content: string) => content,
+          (content: string) => `FINAL_AUDIT_REJECTED_PROSE_WRAPPER\n${content}`,
+          (content: string) => content
+        ],
+        expectedCalls: 3,
+        retryCallIndex: 2
+      }
+    ] as const;
+
+    for (const testCase of cases) {
+      const fetch = createOpenAICompatibleFinalizationFetch({
+        contentTransforms: testCase.contentTransforms
+      });
+      const daemonApp = createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        enableLocalPreset: true,
+        enableOpenAICompatibleProfile: true,
+        enableOpenAICompatibleFinalization: true,
+        openAICompatibleEnv: {
+          [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
+          [OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR]:
+            "final-candidate-provider",
+          [OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR]: "final-audit-provider",
+          [OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR]: "json_object",
+          [OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR]: "json_object"
+        },
+        openAICompatibleFetch: fetch
+      });
+      const created = await createRun(daemonApp, openAICompatibleFinalizationRunPlan());
+      const response = await postJson(
+        daemonApp.app,
+        `/runs/${created.run.runId}/start`,
+        openAICompatibleFinalizationStartRequest()
+      );
+      const body = (await response.json()) as {
+        stages: Array<{
+          stage: string;
+          status?: string;
+        }>;
+      };
+      const retryRequest = JSON.parse(
+        getOpenAICompatibleFetchCall(fetch, testCase.retryCallIndex)[1].body
+      ) as {
+        messages: Array<{ role: string; content: string }>;
+        response_format?: unknown;
+      };
+      const serializedSafeState = JSON.stringify({
+        body,
+        detail: await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json(),
+        storedRun: daemonApp.runStore.getRun(created.run.runId),
+        events: daemonApp.eventStore.listEvents(created.run.sessionId)
+      });
+
+      expect(response.status).toBe(200);
+      expect(fetch).toHaveBeenCalledTimes(testCase.expectedCalls);
+      expect(retryRequest.messages).toHaveLength(3);
+      expect(retryRequest.messages[2]).toMatchObject({
+        role: "user",
+        content: expect.stringContaining(
+          "The previous response was rejected because it was not exactly one JSON object."
+        )
+      });
+      expect(JSON.stringify(retryRequest)).not.toContain(testCase.rejectedResponseMarker);
+      expect(retryRequest.response_format).toEqual({
+        type: "json_object"
+      });
+      expect(body.stages.find((stage) => stage.stage === "finalization")).toMatchObject({
+        status: "completed"
+      });
+      expect(serializedSafeState).not.toContain(testCase.rejectedResponseMarker);
+      expect(serializedSafeState).not.toContain("sk-openai-runtime-secret");
+      expect(serializedSafeState).not.toContain("Authorization");
+      expect(serializedSafeState).not.toContain("Bearer");
+      expect(serializedSafeState).not.toContain("/Users/");
+      expect(serializedSafeState).not.toContain("stack");
+    }
+  });
+
+  it("surfaces safe provider finalization contract failures without retrying", async () => {
+    const cases = [
+      {
+        contents: [
+          JSON.stringify({
+            candidateIds: ["missing-candidate"],
+            recommendation: "Invalid candidate reference.",
+            rationale: "This should fail candidate validation."
+          })
+        ],
+        expectedCalls: 1,
+        finalCandidateErrorCategory: "final_candidate_validation_failed",
+        rejectedResponseMarker: "missing-candidate"
+      },
+      {
+        contentTransforms: [
+          (content: string) => content,
+          () => JSON.stringify({
+            findings: [],
+            risks: [],
+            unresolvedObjectionIds: ["missing-objection"],
+            qualityObligationIds: [],
+            evidenceNeedIds: [],
+            omissions: [],
+            compressionProblems: [],
+            limitations: [],
+            continuationSuggestions: []
+          })
+        ],
+        expectedCalls: 2,
+        auditErrorCategory: "final_audit_validation_failed",
+        rejectedResponseMarker: "missing-objection"
+      }
+    ] as const;
+
+    for (const testCase of cases) {
+      const fetch = createOpenAICompatibleFinalizationFetch({
+        contents: "contents" in testCase ? testCase.contents : undefined,
+        contentTransforms:
+          "contentTransforms" in testCase ? testCase.contentTransforms : undefined
+      });
+      const daemonApp = createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        enableLocalPreset: true,
+        enableOpenAICompatibleProfile: true,
+        enableOpenAICompatibleFinalization: true,
+        openAICompatibleEnv: {
+          [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
+          [OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR]:
+            "final-candidate-provider",
+          [OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR]: "final-audit-provider"
+        },
+        openAICompatibleFetch: fetch
+      });
+      const created = await createRun(daemonApp, openAICompatibleFinalizationRunPlan());
+      const response = await postJson(
+        daemonApp.app,
+        `/runs/${created.run.runId}/start`,
+        openAICompatibleFinalizationStartRequest()
+      );
+      const body = (await response.json()) as {
+        stages: Array<{
+          stage: string;
+          result: {
+            finalCandidateResult?: {
+              errorCategory?: string;
+            };
+            auditResults?: Array<{
+              errorCategory?: string;
+            }>;
+          };
+        }>;
+      };
+      const finalizationResult = body.stages.find((stage) => stage.stage === "finalization")
+        ?.result;
+      const serializedSafeState = JSON.stringify({
+        body,
+        detail: await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json(),
+        storedRun: daemonApp.runStore.getRun(created.run.runId),
+        events: daemonApp.eventStore.listEvents(created.run.sessionId)
+      });
+
+      expect(response.status).toBe(200);
+      expect(fetch).toHaveBeenCalledTimes(testCase.expectedCalls);
+      if ("finalCandidateErrorCategory" in testCase) {
+        expect(finalizationResult?.finalCandidateResult).toMatchObject({
+          errorCategory: testCase.finalCandidateErrorCategory
+        });
+        expect(finalizationResult?.auditResults).toEqual([]);
+      } else {
+        expect(finalizationResult?.auditResults?.[0]).toMatchObject({
+          errorCategory: testCase.auditErrorCategory
+        });
+      }
+      expect(serializedSafeState).not.toContain(testCase.rejectedResponseMarker);
+      expect(serializedSafeState).not.toContain("sk-openai-runtime-secret");
+      expect(serializedSafeState).not.toContain("Authorization");
+      expect(serializedSafeState).not.toContain("Bearer");
+      expect(serializedSafeState).not.toContain("/Users/");
+      expect(serializedSafeState).not.toContain("stack");
+    }
+  });
+
   it("does not override explicitly injected adapter registries with the OpenAI-compatible profile", async () => {
     const fetch = createOpenAICompatibleFetch();
     const daemonApp = createDaemonApp({
@@ -4784,6 +5423,13 @@ describe("daemon API", () => {
       "OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID",
       "OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR",
       "OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR",
+      "OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR",
+      "OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR",
+      "OPENAI_COMPATIBLE_FINAL_AUDITOR_ID",
+      "OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID",
+      "OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR",
+      "OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR",
+      "OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR",
       "OPENAI_COMPATIBLE_FREQUENCY_PENALTY_ENV_VAR",
       "OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR",
       "OPENAI_COMPATIBLE_MODEL_ENV_VAR",
@@ -4802,13 +5448,18 @@ describe("daemon API", () => {
       "createOpenAICompatibleRunRegistries",
       "createOpenAICompatibleRuntimeEnv",
       "isOpenAICompatibleExtractionEnabledFromEnv",
+      "isOpenAICompatibleFinalizationEnabledFromEnv",
       "isOpenAICompatibleProfileEnabledFromEnv",
       "isOpenAICompatibleReviewEnabledFromEnv",
       "OpenAICompatibleExtractionGenerator",
       "OpenAICompatibleExtractionGeneratorError",
+      "OpenAICompatibleFinalAuditGenerator",
+      "OpenAICompatibleFinalCandidateGenerator",
+      "OpenAICompatibleFinalizationGeneratorError",
       "OpenAICompatibleReviewGenerator",
       "OpenAICompatibleReviewGeneratorError",
       "resolveStartDaemonEnableOpenAICompatibleExtraction",
+      "resolveStartDaemonEnableOpenAICompatibleFinalization",
       "resolveStartDaemonEnableOpenAICompatibleProfile",
       "resolveStartDaemonEnableOpenAICompatibleReview"
     ]);

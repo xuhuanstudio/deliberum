@@ -8,12 +8,20 @@ import {
 import {
   AdapterRegistry,
   ExtractionGeneratorRegistry,
+  FinalAuditGeneratorRegistry,
+  FinalCandidateGeneratorRegistry,
   ProposalReviewGeneratorRegistry
 } from "@deliberum/orchestrator";
 import {
   OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
   OpenAICompatibleExtractionGenerator
 } from "./openai-compatible-extraction-generator";
+import {
+  OPENAI_COMPATIBLE_FINAL_AUDITOR_ID,
+  OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID,
+  OpenAICompatibleFinalAuditGenerator,
+  OpenAICompatibleFinalCandidateGenerator
+} from "./openai-compatible-finalization-generators";
 import {
   OPENAI_COMPATIBLE_REVIEWER_ID,
   OpenAICompatibleReviewGenerator
@@ -26,6 +34,8 @@ export const OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR =
   "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_EXTRACTION" as const;
 export const OPENAI_COMPATIBLE_REVIEW_ENV_VAR =
   "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_REVIEW" as const;
+export const OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR =
+  "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_FINALIZATION" as const;
 export const OPENAI_COMPATIBLE_ADAPTER_ID = "openai-compatible" as const;
 export const OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR =
   "DELIBERUM_OPENAI_EXTRACTION_PROVIDER_CONFIG_ID" as const;
@@ -35,6 +45,14 @@ export const OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR =
   "DELIBERUM_OPENAI_REVIEW_PROVIDER_CONFIG_ID" as const;
 export const OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR =
   "DELIBERUM_OPENAI_REVIEW_RESPONSE_FORMAT" as const;
+export const OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR =
+  "DELIBERUM_OPENAI_FINAL_CANDIDATE_PROVIDER_CONFIG_ID" as const;
+export const OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR =
+  "DELIBERUM_OPENAI_FINAL_CANDIDATE_RESPONSE_FORMAT" as const;
+export const OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR =
+  "DELIBERUM_OPENAI_FINAL_AUDIT_PROVIDER_CONFIG_ID" as const;
+export const OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR =
+  "DELIBERUM_OPENAI_FINAL_AUDIT_RESPONSE_FORMAT" as const;
 export const OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID = "openai-main" as const;
 export const OPENAI_COMPATIBLE_API_KEY_ENV_VAR = "DELIBERUM_OPENAI_API_KEY" as const;
 export const OPENAI_COMPATIBLE_BASE_URL_ENV_VAR = "DELIBERUM_OPENAI_BASE_URL" as const;
@@ -71,6 +89,7 @@ export type OpenAICompatibleProfileOptions = {
   fetch?: FetchLike;
   enableExtraction?: boolean;
   enableReview?: boolean;
+  enableFinalization?: boolean;
 };
 
 export function isOpenAICompatibleProfileEnabledFromEnv(
@@ -91,6 +110,12 @@ export function isOpenAICompatibleReviewEnabledFromEnv(
   return env[OPENAI_COMPATIBLE_REVIEW_ENV_VAR] === "true";
 }
 
+export function isOpenAICompatibleFinalizationEnabledFromEnv(
+  env: Record<string, string | undefined>
+): boolean {
+  return env[OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR] === "true";
+}
+
 export function createOpenAICompatibleRunRegistries(
   options: OpenAICompatibleProfileOptions = {}
 ): OpenAICompatibleProfileRegistries {
@@ -107,6 +132,20 @@ export function createOpenAICompatibleRunRegistries(
         options.env,
         requestOptions,
         OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR
+      )
+    : undefined;
+  const finalCandidateRequestOptions = options.enableFinalization
+    ? createOpenAICompatibleComponentRequestOptionsFromEnv(
+        options.env,
+        requestOptions,
+        OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR
+      )
+    : undefined;
+  const finalAuditRequestOptions = options.enableFinalization
+    ? createOpenAICompatibleComponentRequestOptionsFromEnv(
+        options.env,
+        requestOptions,
+        OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR
       )
     : undefined;
 
@@ -171,6 +210,52 @@ export function createOpenAICompatibleRunRegistries(
                 readOptionalEnv(options.env, OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR)
               ),
               requestOptions: reviewRequestOptions,
+              fetch: options.fetch
+            })
+          ])
+        }
+      : {}),
+    ...(options.enableFinalization
+      ? {
+          finalCandidateGeneratorRegistry: new FinalCandidateGeneratorRegistry([
+            new OpenAICompatibleFinalCandidateGenerator({
+              generatorId: OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID,
+              adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+              providerConfigId:
+                readOptionalEnv(
+                  options.env,
+                  OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR
+                ) ?? OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
+              baseUrl: readOptionalEnv(options.env, OPENAI_COMPATIBLE_BASE_URL_ENV_VAR),
+              endpointPath:
+                readOptionalEnv(options.env, OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR) ??
+                OPENAI_COMPATIBLE_DEFAULT_ENDPOINT_PATH,
+              model: readOptionalEnv(options.env, OPENAI_COMPATIBLE_MODEL_ENV_VAR),
+              timeoutMs: parseOptionalPositiveInteger(
+                readOptionalEnv(options.env, OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR)
+              ),
+              requestOptions: finalCandidateRequestOptions,
+              fetch: options.fetch
+            })
+          ]),
+          finalAuditGeneratorRegistry: new FinalAuditGeneratorRegistry([
+            new OpenAICompatibleFinalAuditGenerator({
+              auditorId: OPENAI_COMPATIBLE_FINAL_AUDITOR_ID,
+              adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+              providerConfigId:
+                readOptionalEnv(
+                  options.env,
+                  OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR
+                ) ?? OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
+              baseUrl: readOptionalEnv(options.env, OPENAI_COMPATIBLE_BASE_URL_ENV_VAR),
+              endpointPath:
+                readOptionalEnv(options.env, OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR) ??
+                OPENAI_COMPATIBLE_DEFAULT_ENDPOINT_PATH,
+              model: readOptionalEnv(options.env, OPENAI_COMPATIBLE_MODEL_ENV_VAR),
+              timeoutMs: parseOptionalPositiveInteger(
+                readOptionalEnv(options.env, OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR)
+              ),
+              requestOptions: finalAuditRequestOptions,
               fetch: options.fetch
             })
           ])
