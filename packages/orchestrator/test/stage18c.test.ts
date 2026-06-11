@@ -8,6 +8,7 @@ import type {
   ParticipantAdapter,
   ParticipantAdapterContext,
   ParticipantAdapterInput,
+  ParticipantAdapterProviderRuntimeConfig,
   ParticipantAdapterResult
 } from "@deliberum/adapters";
 import {
@@ -135,7 +136,11 @@ function createAdapter(options: {
   adapterId: string;
   payload?: JsonValue;
   fail?: boolean;
-  onCall?: (input: ParticipantAdapterInput, context: ParticipantAdapterContext) => void;
+  onCall?: (
+    input: ParticipantAdapterInput,
+    context: ParticipantAdapterContext,
+    providerRuntimeConfig: ParticipantAdapterProviderRuntimeConfig | undefined
+  ) => void;
   deferredPayload?: Promise<JsonValue>;
 }): ParticipantAdapter {
   let calls = 0;
@@ -164,10 +169,11 @@ function createAdapter(options: {
     },
     async prepareContribution(
       input: ParticipantAdapterInput,
-      context: ParticipantAdapterContext
+      context: ParticipantAdapterContext,
+      providerRuntimeConfig?: ParticipantAdapterProviderRuntimeConfig
     ): Promise<ParticipantAdapterResult> {
       calls += 1;
-      options.onCall?.(input, context);
+      options.onCall?.(input, context, providerRuntimeConfig);
 
       if (options.fail) {
         throw new Error("raw adapter failure must not be stored");
@@ -845,6 +851,52 @@ describe("runSealedDivergenceRound", () => {
     expect(storedRun).not.toContain(secret);
     expect(storedRun).not.toContain("sensitive adapter output");
     expect(storedRun).toContain("contributionEventId");
+  });
+
+  it("passes provider runtime config into the adapter only at participant dispatch", async () => {
+    const { eventStore, runStore, run } = createFixture({
+      providerConfig: true
+    });
+    const secret = "sk-runtime-secret";
+    let capturedRuntimeConfig: ParticipantAdapterProviderRuntimeConfig | undefined;
+    let capturedWebRuntimeConfig: ParticipantAdapterProviderRuntimeConfig | undefined;
+
+    await runSealedDivergenceRound(
+      {
+        runId: run.id,
+        env: {
+          DELIBERUM_TEST_API_KEY: secret
+        }
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: createRegistry([
+          createAdapter({
+            adapterId: "adapter-cli",
+            onCall: (_input, _context, providerRuntimeConfig) => {
+              capturedRuntimeConfig = providerRuntimeConfig;
+            }
+          }),
+          createAdapter({
+            adapterId: "adapter-web",
+            onCall: (_input, _context, providerRuntimeConfig) => {
+              capturedWebRuntimeConfig = providerRuntimeConfig;
+            }
+          })
+        ]),
+        idGenerator: runIds()
+      }
+    );
+
+    expect(capturedRuntimeConfig).toMatchObject({
+      apiKey: secret,
+      baseUrl: "http://127.0.0.1:11434",
+      modelId: "test-model"
+    });
+    expect(capturedWebRuntimeConfig).toBeUndefined();
+    expect(JSON.stringify(runStore.getRun(run.id))).not.toContain(secret);
+    expect(JSON.stringify(eventStore.listEvents(run.sessionId))).not.toContain(secret);
   });
 
   it("does not expose forbidden semantic fields", async () => {

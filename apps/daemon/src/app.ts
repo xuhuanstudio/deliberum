@@ -23,9 +23,15 @@ import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
+import { AdapterRegistry, type RegisteredParticipantAdapter } from "@deliberum/orchestrator";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { DaemonEventBus } from "./event-stream";
 import { createLocalPresetRunRegistries } from "./local-preset";
+import {
+  createOpenAICompatibleRunRegistries,
+  createOpenAICompatibleRuntimeEnv,
+  type OpenAICompatibleProfileOptions
+} from "./openai-compatible-profile";
 import { DaemonRunOrchestrationService, type DaemonRunOrchestrationOptions } from "./run-orchestration";
 import { handleRunRouteError, registerRunRoutes } from "./run-routes";
 import { handleWebGETRouteError, registerWebGETRoutes } from "./webget-routes";
@@ -56,6 +62,9 @@ export type DaemonAppOptions = {
   runExecutionClaimTtlMs?: DaemonRunOrchestrationOptions["executionClaimTtlMs"];
   runExecutionClaimOwnerIdGenerator?: DaemonRunOrchestrationOptions["executionClaimOwnerIdGenerator"];
   enableLocalPreset?: boolean;
+  enableOpenAICompatibleProfile?: boolean;
+  openAICompatibleEnv?: Record<string, string | undefined>;
+  openAICompatibleFetch?: OpenAICompatibleProfileOptions["fetch"];
   idGenerator?: IdGenerator;
   clock?: Clock;
   host?: string;
@@ -110,6 +119,12 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   const localPresetRegistries = options.enableLocalPreset
     ? createLocalPresetRunRegistries()
     : undefined;
+  const openAICompatibleRegistries = options.enableOpenAICompatibleProfile
+    ? createOpenAICompatibleRunRegistries({
+        env: options.openAICompatibleEnv,
+        fetch: options.openAICompatibleFetch
+      })
+    : undefined;
   const webgetStore =
     options.webgetStore ??
     new WebGETSessionStore({
@@ -125,7 +140,12 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     eventBus,
     idGenerator,
     clock,
-    adapterRegistry: options.runAdapterRegistry ?? localPresetRegistries?.adapterRegistry,
+    adapterRegistry:
+      options.runAdapterRegistry ??
+      mergeAdapterRegistries(
+        localPresetRegistries?.adapterRegistry,
+        openAICompatibleRegistries?.adapterRegistry
+      ),
     extractionGeneratorRegistry:
       options.runExtractionGeneratorRegistry ??
       localPresetRegistries?.extractionGeneratorRegistry,
@@ -138,7 +158,11 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     finalAuditGeneratorRegistry:
       options.runFinalAuditGeneratorRegistry ??
       localPresetRegistries?.finalAuditGeneratorRegistry,
-    env: options.runEnv,
+    env:
+      options.runEnv ??
+      (options.enableOpenAICompatibleProfile
+        ? createOpenAICompatibleRuntimeEnv(options.openAICompatibleEnv)
+        : undefined),
     executionClaimTtlMs: options.runExecutionClaimTtlMs,
     executionClaimOwnerIdGenerator: options.runExecutionClaimOwnerIdGenerator
   });
@@ -438,6 +462,36 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     port,
     createWebGETSession: (input) => webgetStore.createSession(input)
   };
+}
+
+function mergeAdapterRegistries(
+  ...registries: unknown[]
+): DaemonRunOrchestrationOptions["adapterRegistry"] | undefined {
+  const adapters = registries.flatMap((registry) => {
+    if (!isMergeableAdapterRegistry(registry)) {
+      return [];
+    }
+
+    return registry.list().map((entry) => registry.require(entry.adapterId));
+  });
+
+  return adapters.length > 0 ? new AdapterRegistry(adapters) : undefined;
+}
+
+function isMergeableAdapterRegistry(
+  value: unknown
+): value is {
+  require(adapterId: string): RegisteredParticipantAdapter;
+  list(): Array<{ adapterId: string }>;
+} {
+  const candidate = value as { require?: unknown; list?: unknown } | null;
+
+  return (
+    candidate !== null &&
+    typeof candidate === "object" &&
+    typeof candidate.require === "function" &&
+    typeof candidate.list === "function"
+  );
 }
 
 async function readJsonObject(context: Context): Promise<Record<string, unknown>> {

@@ -4,6 +4,7 @@ export * from "./app";
 export * from "./config";
 export * from "./event-stream";
 export * from "./local-preset";
+export * from "./openai-compatible-profile";
 export * from "./server";
 export * from "./webget-routes";
 export * from "./webget-session-store";

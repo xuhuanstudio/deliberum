@@ -5,6 +5,7 @@ import type {
   ParticipantAdapter,
   ParticipantAdapterContext,
   ParticipantAdapterInput,
+  ParticipantAdapterProviderRuntimeConfig,
   ParticipantAdapterResult
 } from "./types";
 import {
@@ -39,9 +40,9 @@ export const OPENAI_COMPATIBLE_PARTICIPANT_ADAPTER_CAPABILITIES: AdapterCapabili
 
 export type OpenAICompatibleAdapterConfig = {
   adapterId?: string;
-  baseUrl: string;
+  baseUrl?: string;
   apiKey?: string;
-  model: string;
+  model?: string;
   endpointPath?: string;
   headers?: Record<string, string>;
   timeoutMs?: number;
@@ -79,6 +80,15 @@ type ChatCompletionRequest = {
   messages: ChatCompletionMessage[];
 };
 
+type EffectiveOpenAICompatibleConfig = {
+  baseUrl: string;
+  apiKey?: string;
+  model: string;
+  endpointPath: string;
+  headers: Record<string, string>;
+  timeoutMs?: number;
+};
+
 export class OpenAICompatibleAdapterError extends Error {
   constructor(message: string) {
     super(message);
@@ -89,9 +99,9 @@ export class OpenAICompatibleAdapterError extends Error {
 export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
   readonly adapterId: string;
   readonly capabilities: AdapterCapabilities;
-  private readonly baseUrl: string;
+  private readonly baseUrl?: string;
   private readonly apiKey?: string;
-  private readonly model: string;
+  private readonly model?: string;
   private readonly endpointPath: string;
   private readonly headers: Record<string, string>;
   private readonly timeoutMs?: number;
@@ -100,14 +110,6 @@ export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
   private readonly warnings: string[];
 
   constructor(config: OpenAICompatibleAdapterConfig) {
-    if (!config.baseUrl) {
-      throw new OpenAICompatibleAdapterError("OpenAI-compatible adapter baseUrl is required.");
-    }
-
-    if (!config.model) {
-      throw new OpenAICompatibleAdapterError("OpenAI-compatible adapter model is required.");
-    }
-
     assertNoCustomAuthorizationHeader(config.headers);
 
     this.adapterId = config.adapterId ?? "openai-compatible";
@@ -129,23 +131,37 @@ export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
 
   async prepareContribution(
     input: ParticipantAdapterInput,
-    context: ParticipantAdapterContext
+    context: ParticipantAdapterContext,
+    providerRuntimeConfig?: ParticipantAdapterProviderRuntimeConfig
   ): Promise<ParticipantAdapterResult> {
-    const request = createChatCompletionRequest(this.model, input, context);
-    const requestBody = JSON.stringify(request);
-    const sensitiveValues = collectSensitiveValues({
+    const effectiveConfig = resolveEffectiveConfig({
+      baseUrl: this.baseUrl,
       apiKey: this.apiKey,
-      customHeaders: this.headers,
+      model: this.model,
+      endpointPath: this.endpointPath,
+      headers: this.headers,
+      timeoutMs: this.timeoutMs,
+      providerRuntimeConfig
+    });
+    const request = createChatCompletionRequest(effectiveConfig.model, input, context);
+    const requestBody = JSON.stringify(request);
+    const providerSecretValues = collectProviderSecretValues({
+      apiKey: effectiveConfig.apiKey,
+      customHeaders: effectiveConfig.headers
+    });
+    const sensitiveValues = collectSensitiveValues({
+      apiKey: effectiveConfig.apiKey,
+      customHeaders: effectiveConfig.headers,
       request
     });
-    const response = await this.performRequest(requestBody, sensitiveValues);
-    const payload = extractMessageContent(response);
+    const response = await this.performRequest(requestBody, sensitiveValues, effectiveConfig);
+    const payload = redactSecrets(extractMessageContent(response), providerSecretValues);
 
     return {
       payload,
       adapterId: this.adapterId,
       participantId: context.participantId,
-      modelId: this.model,
+      modelId: effectiveConfig.model,
       capabilities: cloneCapabilities(this.capabilities),
       contextCompleteness: cloneContextCompleteness(this.contextCompleteness),
       warnings: [...this.warnings]
@@ -154,17 +170,18 @@ export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
 
   private async performRequest(
     requestBody: string,
-    sensitiveValues: readonly string[]
+    sensitiveValues: readonly string[],
+    effectiveConfig: EffectiveOpenAICompatibleConfig
   ): Promise<unknown> {
-    const controller = this.timeoutMs ? new AbortController() : undefined;
+    const controller = effectiveConfig.timeoutMs ? new AbortController() : undefined;
     const timeout = controller
-      ? setTimeout(() => controller.abort(), this.timeoutMs)
+      ? setTimeout(() => controller.abort(), effectiveConfig.timeoutMs)
       : undefined;
 
     try {
-      const response = await this.fetchImplementation(createRequestUrl(this.baseUrl, this.endpointPath), {
+      const response = await this.fetchImplementation(createRequestUrl(effectiveConfig.baseUrl, effectiveConfig.endpointPath), {
         method: "POST",
-        headers: createRequestHeaders(this.headers, this.apiKey),
+        headers: createRequestHeaders(effectiveConfig.headers, effectiveConfig.apiKey),
         body: requestBody,
         signal: controller?.signal
       });
@@ -194,6 +211,36 @@ export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
       }
     }
   }
+}
+
+function resolveEffectiveConfig(input: {
+  baseUrl?: string;
+  apiKey?: string;
+  model?: string;
+  endpointPath: string;
+  headers: Record<string, string>;
+  timeoutMs?: number;
+  providerRuntimeConfig?: ParticipantAdapterProviderRuntimeConfig;
+}): EffectiveOpenAICompatibleConfig {
+  const baseUrl = input.providerRuntimeConfig?.baseUrl ?? input.baseUrl;
+  const model = input.providerRuntimeConfig?.modelId ?? input.model;
+
+  if (!baseUrl) {
+    throw new OpenAICompatibleAdapterError("OpenAI-compatible adapter baseUrl is required.");
+  }
+
+  if (!model) {
+    throw new OpenAICompatibleAdapterError("OpenAI-compatible adapter model is required.");
+  }
+
+  return {
+    baseUrl,
+    apiKey: input.providerRuntimeConfig?.apiKey ?? input.apiKey,
+    model,
+    endpointPath: input.providerRuntimeConfig?.endpointPath ?? input.endpointPath,
+    headers: input.headers,
+    timeoutMs: input.providerRuntimeConfig?.timeoutMs ?? input.timeoutMs
+  };
 }
 
 function createChatCompletionRequest(
@@ -329,10 +376,20 @@ function collectSensitiveValues(input: {
   request: ChatCompletionRequest;
 }): string[] {
   return [
-    input.apiKey,
-    ...Object.values(input.customHeaders),
+    ...collectProviderSecretValues(input),
     JSON.stringify(input.request),
     ...input.request.messages.map((message) => message.content)
+  ].filter((value): value is string => Boolean(value));
+}
+
+function collectProviderSecretValues(input: {
+  apiKey?: string;
+  customHeaders: Record<string, string>;
+}): string[] {
+  return [
+    input.apiKey,
+    input.apiKey ? `Bearer ${input.apiKey}` : undefined,
+    ...Object.values(input.customHeaders)
   ].filter((value): value is string => Boolean(value));
 }
 

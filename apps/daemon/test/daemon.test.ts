@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
+import type { FetchLike, OpenAICompatibleFetchInit } from "@deliberum/adapters";
 import { InMemoryResourceBroker } from "@deliberum/resources";
 import {
   AdapterRegistry,
@@ -22,9 +23,15 @@ import {
 import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
+  OPENAI_COMPATIBLE_ADAPTER_ID,
+  OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
+  OPENAI_COMPATIBLE_BASE_URL_ENV_VAR,
+  OPENAI_COMPATIBLE_MODEL_ENV_VAR,
+  OPENAI_COMPATIBLE_PROFILE_ENV_VAR,
   createDaemonApp,
   localPresetRunPlan,
   localPresetStartRequest,
+  resolveStartDaemonEnableOpenAICompatibleProfile,
   resolveStartDaemonEnableLocalPreset,
   type DaemonApp
 } from "../src";
@@ -466,6 +473,54 @@ function orchestratedRunPlan(
   };
 }
 
+function openAICompatibleRunPlan() {
+  return {
+    title: "OpenAI-compatible sealed divergence",
+    topic: "Should Stage 22A expose opt-in provider-backed sealed participants?",
+    goals: ["Exercise provider-backed sealed divergence through daemon and orchestrator."],
+    constraints: ["Resolve provider keys from daemon env only."],
+    participants: [
+      {
+        id: "provider-alpha",
+        kind: "model",
+        displayName: "Provider alpha",
+        adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+        providerConfigId: "provider-openai-compatible"
+      }
+    ],
+    providerConfigs: [
+      {
+        id: "provider-openai-compatible",
+        adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+        providerConfigId: "provider-openai-compatible",
+        modelId: "runtime-model",
+        baseUrl: "https://runtime.example/api",
+        endpointPath: "/chat/completions",
+        apiKeyEnvVar: OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
+        timeoutMs: 1000
+      }
+    ],
+    budget: {
+      maxEvents: 20,
+      maxProviderCalls: 4
+    },
+    timeouts: {
+      participantMs: 1000,
+      overallMs: 30000
+    },
+    output: {
+      language: "en",
+      style: "concise",
+      expectations: ["Return contribution material only."]
+    },
+    sealedDivergence: {
+      purpose: "initial_divergence",
+      revealPolicy: "all_completed",
+      participantIds: ["provider-alpha"]
+    }
+  };
+}
+
 function startFullRunRequest() {
   return {
     sealedDivergence: {
@@ -504,6 +559,34 @@ async function createRun(
     run: { runId: string; sessionId: string };
     event: { type: string };
   };
+}
+
+type MockedFetchLike = ReturnType<typeof vi.fn> & FetchLike;
+
+function createOpenAICompatibleFetch(output = "provider sealed contribution"): MockedFetchLike {
+  return vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: vi.fn(async () => ({
+      choices: [
+        {
+          message: {
+            content: output
+          }
+        }
+      ]
+    }))
+  })) as unknown as MockedFetchLike;
+}
+
+function getOpenAICompatibleFetchCall(fetch: MockedFetchLike): [string, OpenAICompatibleFetchInit] {
+  const call = fetch.mock.calls[0] as [string, OpenAICompatibleFetchInit] | undefined;
+
+  if (!call) {
+    throw new Error("Expected mocked OpenAI-compatible fetch to be called.");
+  }
+
+  return call;
 }
 
 function createRunDaemon(options: {
@@ -733,6 +816,7 @@ function expectSafeRunApiPayload(value: unknown, secret = "sk-runtime-secret"): 
   expect(text).not.toContain("/Users/");
   expect(text).not.toContain("\"apiKey\"");
   expect(text).not.toContain("DELIBERUM_TEST_API_KEY");
+  expect(text).not.toContain(OPENAI_COMPATIBLE_API_KEY_ENV_VAR);
 
   for (const forbiddenTerm of [
     "winner",
@@ -1327,6 +1411,297 @@ describe("daemon API", () => {
     expectSafeRunApiPayload(obligations);
     expectSafeRunApiPayload(objections);
     expectSafeRunApiPayload(outcomeBody);
+  });
+
+  it("keeps the OpenAI-compatible provider profile disabled by default", async () => {
+    const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
+    const created = await createRun(daemonApp, openAICompatibleRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
+    expectSafeRunApiPayload(body);
+  });
+
+  it("resolves the OpenAI-compatible provider profile only from explicit option or exact env flag", () => {
+    expect(resolveStartDaemonEnableOpenAICompatibleProfile(
+      { enableOpenAICompatibleProfile: true },
+      {}
+    )).toBe(true);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleProfile(
+        {},
+        { [OPENAI_COMPATIBLE_PROFILE_ENV_VAR]: "true" }
+      )
+    ).toBe(true);
+    expect(resolveStartDaemonEnableOpenAICompatibleProfile({}, {})).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleProfile(
+        {},
+        { [OPENAI_COMPATIBLE_PROFILE_ENV_VAR]: "false" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleProfile(
+        {},
+        { [OPENAI_COMPATIBLE_PROFILE_ENV_VAR]: "TRUE" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleProfile(
+        {},
+        { [OPENAI_COMPATIBLE_PROFILE_ENV_VAR]: "random" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleProfile(
+        { enableOpenAICompatibleProfile: false },
+        { [OPENAI_COMPATIBLE_PROFILE_ENV_VAR]: "true" }
+      )
+    ).toBe(false);
+  });
+
+  it("runs OpenAI-compatible sealed divergence through daemon with mocked fetch", async () => {
+    const secret = "sk-openai-runtime-secret";
+    const fetch = createOpenAICompatibleFetch("provider-backed sealed contribution");
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleProfile: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: secret,
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleRunPlan());
+    const startResponse = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const startBody = (await startResponse.json()) as {
+      stopped: boolean;
+      stages: Array<{
+        stage: string;
+        executionStatus: string;
+        result: { participantResults?: Array<{ status: string; errorCategory?: string }> };
+      }>;
+    };
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const listBody = await (await daemonApp.app.request("/runs")).json();
+    const [url, init] = getOpenAICompatibleFetchCall(fetch);
+    const requestBody = JSON.parse(init.body) as { model: string };
+    const events = daemonApp.eventStore.listEvents(created.run.sessionId);
+    const safePayloads = [
+      startBody,
+      detailBody,
+      listBody,
+      {
+        events
+      }
+    ];
+
+    expect(startResponse.status).toBe(200);
+    expect(startBody.stopped).toBe(false);
+    expect(startBody.stages).toHaveLength(1);
+    expect(startBody.stages[0]).toMatchObject({
+      stage: "sealed_divergence",
+      executionStatus: "executed",
+      result: {
+        participantResults: [
+          expect.objectContaining({
+            status: "submitted"
+          })
+        ]
+      }
+    });
+    expect(url).toBe("https://runtime.example/api/chat/completions");
+    expect(requestBody.model).toBe("runtime-model");
+    expect(init.headers).toMatchObject({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secret}`
+    });
+    expect(events.map((event) => event.type)).toEqual([
+      "topic_contract_published",
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "sealed_batch_revealed"
+    ]);
+
+    for (const payload of safePayloads) {
+      expectSafeRunApiPayload(payload, secret);
+    }
+    expect(JSON.stringify(daemonApp.runStore.getRun(created.run.runId))).not.toContain(secret);
+    expect(JSON.stringify(daemonApp.runStore.getRun(created.run.runId))).not.toContain(
+      "Authorization"
+    );
+  });
+
+  it("returns safe provider_secret_missing when OpenAI-compatible env key is absent", async () => {
+    const fetch = createOpenAICompatibleFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleProfile: true,
+      openAICompatibleEnv: {},
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const body = (await response.json()) as {
+      stopped: boolean;
+      stopReason?: string;
+      stages: Array<{
+        status?: string;
+        result: {
+          participantResults?: Array<{
+            status: string;
+            errorCategory?: string;
+          }>;
+        };
+      }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(body).toMatchObject({
+      stopped: true,
+      stopReason: "waiting_for_participants",
+      stages: [
+        {
+          status: "waiting_for_participants",
+          result: {
+            participantResults: [
+              expect.objectContaining({
+                status: "failed",
+                errorCategory: "provider_secret_missing"
+              })
+            ]
+          }
+        }
+      ]
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId).map((event) => event.type)).toEqual([
+      "topic_contract_published",
+      "sealed_batch_opened"
+    ]);
+    expectSafeRunApiPayload(body);
+  });
+
+  it("does not install extraction generators through the OpenAI-compatible profile", async () => {
+    const fetch = createOpenAICompatibleFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleProfile: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      },
+      extraction: {}
+    });
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
+    expectSafeRunApiPayload(body);
+  });
+
+  it("does not override explicitly injected adapter registries with the OpenAI-compatible profile", async () => {
+    const fetch = createOpenAICompatibleFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleProfile: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret"
+      },
+      openAICompatibleFetch: fetch,
+      runAdapterRegistry: new AdapterRegistry()
+    });
+    const created = await createRun(daemonApp, openAICompatibleRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expectSafeRunApiPayload(body);
+  });
+
+  it("keeps local preset execution unchanged when both daemon profiles are enabled", async () => {
+    const fetch = createOpenAICompatibleFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, localPresetRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      localPresetStartRequest()
+    );
+    const body = (await response.json()) as {
+      stopped: boolean;
+      stages: Array<{ stage: string; executionStatus: string }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.stopped).toBe(false);
+    expect(body.stages.map((stage) => stage.stage)).toEqual([
+      "sealed_divergence",
+      "extraction",
+      "proposal_review",
+      "finalization"
+    ]);
+    expect(body.stages.every((stage) => stage.executionStatus === "executed")).toBe(true);
+    expect(fetch).not.toHaveBeenCalled();
+    expectSafeRunApiPayload(body);
   });
 
   it("keeps injected provider secrets out of run responses, ledger events, and errors", async () => {
@@ -2719,6 +3094,20 @@ describe("daemon API", () => {
 
   it("does not export forbidden semantic or integration surfaces", () => {
     const exportedNames = Object.keys(daemon);
+    const allowedOpenAICompatibleProfileExports = new Set([
+      "OPENAI_COMPATIBLE_ADAPTER_ID",
+      "OPENAI_COMPATIBLE_API_KEY_ENV_VAR",
+      "OPENAI_COMPATIBLE_BASE_URL_ENV_VAR",
+      "OPENAI_COMPATIBLE_DEFAULT_ENDPOINT_PATH",
+      "OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR",
+      "OPENAI_COMPATIBLE_MODEL_ENV_VAR",
+      "OPENAI_COMPATIBLE_PROFILE_ENV_VAR",
+      "OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR",
+      "createOpenAICompatibleRunRegistries",
+      "createOpenAICompatibleRuntimeEnv",
+      "isOpenAICompatibleProfileEnabledFromEnv",
+      "resolveStartDaemonEnableOpenAICompatibleProfile"
+    ]);
     const forbiddenTerms = [
       "Adapter",
       "OpenAI",
@@ -2738,6 +3127,13 @@ describe("daemon API", () => {
 
     for (const exportedName of exportedNames) {
       for (const forbiddenTerm of forbiddenTerms) {
+        if (
+          forbiddenTerm === "OpenAI" &&
+          allowedOpenAICompatibleProfileExports.has(exportedName)
+        ) {
+          continue;
+        }
+
         expect(exportedName).not.toContain(forbiddenTerm);
       }
     }

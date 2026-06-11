@@ -35,6 +35,9 @@ importers:
 
   apps/daemon:
     dependencies:
+      '@deliberum/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
       '@deliberum/core':
         specifier: workspace:*
         version: link:../../packages/core

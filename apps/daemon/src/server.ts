@@ -3,6 +3,7 @@ import type { ServerType } from "@hono/node-server";
 import { createDaemonApp, type DaemonApp, type DaemonAppOptions } from "./app";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { isLocalPresetEnabledFromEnv } from "./local-preset";
+import { isOpenAICompatibleProfileEnabledFromEnv } from "./openai-compatible-profile";
 
 export { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT };
 
@@ -21,13 +22,26 @@ export function resolveStartDaemonEnableLocalPreset(
   return options.enableLocalPreset ?? isLocalPresetEnabledFromEnv(env);
 }
 
+export function resolveStartDaemonEnableOpenAICompatibleProfile(
+  options: Pick<StartDaemonOptions, "enableOpenAICompatibleProfile"> = {},
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  return options.enableOpenAICompatibleProfile ?? isOpenAICompatibleProfileEnabledFromEnv(env);
+}
+
 export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const host = options.host ?? DEFAULT_DAEMON_HOST;
   const port = options.port ?? DEFAULT_DAEMON_PORT;
   const enableLocalPreset = resolveStartDaemonEnableLocalPreset(options);
+  const enableOpenAICompatibleProfile =
+    resolveStartDaemonEnableOpenAICompatibleProfile(options);
   const daemon = createDaemonApp({
     ...options,
     enableLocalPreset,
+    enableOpenAICompatibleProfile,
+    openAICompatibleEnv:
+      options.openAICompatibleEnv ??
+      (enableOpenAICompatibleProfile ? process.env : undefined),
     host,
     port
   });

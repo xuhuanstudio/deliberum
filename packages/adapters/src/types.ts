@@ -50,6 +50,14 @@ export type ParticipantAdapterInput = {
   payload?: JsonValue;
 };
 
+export type ParticipantAdapterProviderRuntimeConfig = {
+  apiKey?: string;
+  baseUrl?: string;
+  modelId?: string;
+  endpointPath?: string;
+  timeoutMs?: number;
+};
+
 export type ParticipantAdapterResult = {
   payload: JsonValue;
   adapterId: string;
@@ -65,7 +73,8 @@ export interface ParticipantAdapter<TInput extends ParticipantAdapterInput = Par
   readonly capabilities: AdapterCapabilities;
   prepareContribution(
     input: TInput,
-    context: ParticipantAdapterContext
+    context: ParticipantAdapterContext,
+    providerRuntimeConfig?: ParticipantAdapterProviderRuntimeConfig
   ): ParticipantAdapterResult | Promise<ParticipantAdapterResult>;
 }
 

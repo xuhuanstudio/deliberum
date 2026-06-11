@@ -388,7 +388,8 @@ async function executeParticipant(input: {
       () =>
         dispatchEnvelope.adapter.prepareContribution(
           dispatchEnvelope.adapterInput,
-          dispatchEnvelope.adapterContext
+          dispatchEnvelope.adapterContext,
+          dispatchEnvelope.providerRuntimeConfig
         ),
       input.run.plan.timeouts.participantMs
     );

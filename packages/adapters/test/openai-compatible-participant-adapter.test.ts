@@ -125,6 +125,64 @@ describe("OpenAICompatibleParticipantAdapter", () => {
     expect(init.headers).not.toHaveProperty("Authorization");
   });
 
+  it("uses runtime provider config at dispatch time over constructor defaults", async () => {
+    const fetch = createSuccessfulFetch("runtime provider output");
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://constructor.example/api",
+      apiKey: "sk-constructor-secret",
+      model: "constructor-model",
+      endpointPath: "/constructor/completions",
+      timeoutMs: 500,
+      fetch
+    });
+
+    const result = await adapter.prepareContribution(
+      { instructions: "Use runtime provider settings." },
+      context,
+      {
+        apiKey: "sk-runtime-secret",
+        baseUrl: "https://runtime.example/api",
+        modelId: "runtime-model",
+        endpointPath: "/chat/completions",
+        timeoutMs: 1000
+      }
+    );
+    const [url, init] = getFetchCall(fetch);
+    const body = JSON.parse(init.body) as { model: string };
+    const resultText = JSON.stringify(result);
+
+    expect(url).toBe("https://runtime.example/api/chat/completions");
+    expect(body.model).toBe("runtime-model");
+    expect(init.headers).toMatchObject({
+      "Content-Type": "application/json",
+      Authorization: "Bearer sk-runtime-secret"
+    });
+    expect(result).toMatchObject({
+      payload: "runtime provider output",
+      modelId: "runtime-model"
+    });
+    expect(resultText).not.toContain("sk-runtime-secret");
+    expect(resultText).not.toContain("sk-constructor-secret");
+    expect(resultText).not.toContain("Authorization");
+  });
+
+  it("requires an effective baseUrl and model from constructor or runtime config", async () => {
+    const fetch = createSuccessfulFetch();
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      fetch
+    });
+
+    await expect(adapter.prepareContribution({ payload: "missing config" }, context)).rejects.toThrow(
+      "OpenAI-compatible adapter baseUrl is required."
+    );
+    await expect(
+      adapter.prepareContribution({ payload: "missing model" }, context, {
+        baseUrl: "https://runtime.example"
+      })
+    ).rejects.toThrow("OpenAI-compatible adapter model is required.");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("omits Authorization when apiKey is not configured", async () => {
     const fetch = createSuccessfulFetch();
     const adapter = new OpenAICompatibleParticipantAdapter({
@@ -192,6 +250,29 @@ describe("OpenAICompatibleParticipantAdapter", () => {
     expect(metadata).not.toContain("account-secret");
     expect(metadata).not.toContain("Secret prompt should stay out of metadata.");
     expect(metadata).not.toContain("privateContext");
+  });
+
+  it("redacts known provider secrets from contribution payloads", async () => {
+    const fetch = createSuccessfulFetch(
+      "provider echoed sk-runtime-secret and Bearer sk-runtime-secret and account-secret"
+    );
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      apiKey: "sk-runtime-secret",
+      model: "model-1",
+      headers: {
+        "X-Provider-Account": "account-secret"
+      },
+      fetch
+    });
+
+    const result = await adapter.prepareContribution({ payload: "safe prompt" }, context);
+    const resultText = JSON.stringify(result);
+
+    expect(resultText).not.toContain("sk-runtime-secret");
+    expect(resultText).not.toContain("Bearer sk-runtime-secret");
+    expect(resultText).not.toContain("account-secret");
+    expect(result.payload).toContain("[REDACTED]");
   });
 
   it("throws a redacted error for failed HTTP responses", async () => {

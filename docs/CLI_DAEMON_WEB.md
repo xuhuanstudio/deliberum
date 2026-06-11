@@ -75,7 +75,7 @@ POST /sessions/:sessionId/proposals/:proposalEventId/challenges
 POST /sessions/:sessionId/proposals/:proposalEventId/acceptance
 ```
 
-Run orchestration is synchronous and local in the current daemon. By default, component registries must be injected by the embedding process or tests; the daemon does not install deterministic local preset components, fake adapters, or real provider-backed defaults automatically.
+Run orchestration is synchronous and local in the current daemon. By default, component registries must be injected by the embedding process or tests; the daemon does not install deterministic local preset components, fake adapters, or provider-backed adapters automatically.
 
 For local development and testing only, the daemon can be started with:
 
@@ -85,7 +85,15 @@ DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js
 
 That opt-in profile registers deterministic local preset participant adapters and generators so the Web run workspace can exercise the full run pipeline without real provider calls. This profile is not production behavior, does not add provider setup UX, does not persist daemon state, and does not make preset output authoritative.
 
-CLI run commands do not include real provider configuration UX, interactive setup, or run event follow.
+Stage 22A also adds an opt-in OpenAI-compatible daemon profile for local/pre-production sealed divergence participant execution only:
+
+```bash
+DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE=true node apps/daemon/dist/index.js
+```
+
+When this profile is enabled, the daemon registers the OpenAI-compatible participant adapter. Run plans may reference provider configuration such as `baseUrl`, `modelId`, `endpointPath`, `timeoutMs`, and `apiKeyEnvVar`; the actual key must remain in the daemon environment, for example `DELIBERUM_OPENAI_API_KEY`. Provider secrets are not accepted through Web forms, CLI flags, daemon request bodies, run-plan inline values, events, run records, or API responses. This profile does not install extraction generators, proposal reviewers, final candidate generators, or final auditors, and provider output enters Deliberum only as sealed contribution material.
+
+CLI and Web run commands do not include provider setup UX, API key flags or fields, interactive setup, or run event follow.
 
 Experimental WebGET endpoints are local daemon endpoints:
 
@@ -98,13 +106,13 @@ GET /webget/:token/submit
 GET /webget/:token/commit
 ```
 
-Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, real provider-backed execution defaults and UX, interactive setup, run event follow, production authentication, and remote/multi-user deployment.
+Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, provider-backed extraction/review/finalization components, real provider setup UX, interactive setup, run event follow, production authentication, and remote/multi-user deployment.
 
 ## Web UI
 
 The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, final placeholder, resources placeholder, and local daemon run workspace views.
 
-The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, persistent daemon storage, or real provider setup UX yet. It can list runs, create a run from JSON or a deterministic local preset template, inspect daemon run state, start requested run stages from JSON or the local preset start request, read safe projection endpoints by run session id, and display compiled output only as a provisional outcome. It does not implement run event follow or a raw run event timeline.
+The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, persistent daemon storage, or provider setup UX yet. It can list runs, create a run from JSON or a deterministic local preset template, inspect daemon run state, start requested run stages from JSON or the local preset start request, read safe projection endpoints by run session id, and display compiled output only as a provisional outcome. It does not implement run event follow or a raw run event timeline.
 
 The Web local preset controls require the daemon to be started with `DELIBERUM_ENABLE_LOCAL_PRESET=true`. Without that opt-in daemon profile, created runs remain valid but starting a preset pipeline reports missing local components.
 

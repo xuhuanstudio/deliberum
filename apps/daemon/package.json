@@ -13,6 +13,7 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@deliberum/adapters": "workspace:*",
     "@deliberum/core": "workspace:*",
     "@deliberum/orchestrator": "workspace:*",
     "@deliberum/protocol": "workspace:*",
