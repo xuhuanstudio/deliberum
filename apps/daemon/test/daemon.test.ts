@@ -4364,6 +4364,109 @@ describe("daemon API", () => {
     expect(JSON.stringify(daemonApp.runStore.getRun(created.run.runId))).not.toContain(secret);
   });
 
+  it("run events endpoint returns the current safe ledger timeline without semantic projections", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const startResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    const response = await daemonApp.app.request(`/runs/${created.run.runId}/events`);
+    const text = await response.text();
+    const body = JSON.parse(text) as {
+      runId: string;
+      sessionId: string;
+      events: Array<{ id: string; type: string; sequence: number; payload: unknown }>;
+    };
+
+    expect(startResponse.status).toBe(200);
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(body.runId).toBe(created.run.runId);
+    expect(body.sessionId).toBe(created.run.sessionId);
+    expect(body.events.map((event) => event.sequence)).toEqual(
+      [...body.events.map((event) => event.sequence)].sort((left, right) => left - right)
+    );
+    expect(body.events.map((event) => event.type)).toEqual(
+      daemonApp.eventStore.listEvents(created.run.sessionId).map((event) => event.type)
+    );
+    expect(body.events.some((event) => event.type === "sealed_batch_opened")).toBe(true);
+    expect(body.events.some((event) => event.type === "final_candidate_proposed")).toBe(true);
+    expect(text).not.toContain("accepted_active_candidates");
+    expect(text).not.toContain("candidateFrontierSummary");
+    expect(text).not.toContain("finalAnswer");
+    expect(text).not.toContain("truthSummary");
+    expectSafeRunApiPayload(body);
+  });
+
+  it("run events endpoint redacts unrevealed sealed, private, and redacted payloads", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp, orchestratedRunPlan({ revealPolicy: "manual" }));
+    const startResponse = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {}
+    });
+    const privateEvent = daemonApp.eventStore.appendEvent({
+      id: "run-events-private-event",
+      sessionId: created.run.sessionId,
+      schemaVersion: "1",
+      type: "daemon_private_test_event",
+      authorId: "system",
+      createdAt: clock(),
+      basedOnEventIds: [],
+      visibility: "private",
+      trace: {},
+      payload: {
+        hidden: "run events private payload must stay hidden"
+      }
+    });
+    const redactedEvent = daemonApp.eventStore.appendEvent({
+      id: "run-events-redacted-event",
+      sessionId: created.run.sessionId,
+      schemaVersion: "1",
+      type: "daemon_redacted_test_event",
+      authorId: "system",
+      createdAt: clock(),
+      basedOnEventIds: [],
+      visibility: "redacted",
+      trace: {},
+      payload: {
+        hidden: "run events redacted payload must stay hidden"
+      }
+    });
+    const response = await daemonApp.app.request(`/runs/${created.run.runId}/events`);
+    const text = await response.text();
+    const body = JSON.parse(text) as {
+      events: Array<{ id: string; type: string; payload: unknown }>;
+    };
+    const sealedContribution = body.events.find(
+      (event) => event.type === "sealed_contribution_submitted"
+    );
+    const privateView = body.events.find((event) => event.id === privateEvent.id);
+    const redactedView = body.events.find((event) => event.id === redactedEvent.id);
+
+    expect(startResponse.status).toBe(200);
+    expect(response.status).toBe(200);
+    expect(sealedContribution?.payload).toEqual({
+      redacted: true,
+      reason: "sealed_until_reveal"
+    });
+    expect(privateView?.payload).toEqual({
+      redacted: true,
+      reason: "event_visibility"
+    });
+    expect(redactedView?.payload).toEqual({
+      redacted: true,
+      reason: "event_visibility"
+    });
+    expect(text).not.toContain(
+      "The local daemon can control execution without owning semantic state."
+    );
+    expect(text).not.toContain("run events private payload must stay hidden");
+    expect(text).not.toContain("run events redacted payload must stay hidden");
+    expectSafeRunApiPayload(body);
+  });
+
   it("run SSE streams only new ledger events without projection or outcome summaries", async () => {
     const daemonApp = createRunDaemon();
     const created = await createRun(daemonApp);

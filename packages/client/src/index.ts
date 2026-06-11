@@ -165,6 +165,12 @@ export type RunResponse = {
   run: unknown;
 };
 
+export type RunEventsResponse = {
+  runId: string;
+  sessionId: string;
+  events: unknown[];
+};
+
 export type StartRunResponse = {
   run: unknown;
   stages: unknown[];
@@ -233,6 +239,10 @@ export class DeliberumDaemonClient {
 
   getRun(runId: string): Promise<RunResponse> {
     return this.request("GET", `/runs/${encodeURIComponent(runId)}`);
+  }
+
+  getRunEvents(runId: string): Promise<RunEventsResponse> {
+    return this.request("GET", `/runs/${encodeURIComponent(runId)}/events`);
   }
 
   startRun(runId: string, startRequest: StartRunRequest): Promise<StartRunResponse> {

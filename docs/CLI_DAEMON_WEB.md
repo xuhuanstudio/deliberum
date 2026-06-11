@@ -59,6 +59,7 @@ Implemented endpoints:
 GET  /health
 GET  /runs
 GET  /runs/:runId
+GET  /runs/:runId/events
 GET  /runs/:runId/events/stream
 GET  /runs/:runId/outcome
 POST /runs
@@ -132,7 +133,7 @@ DELIBERUM_OPENAI_THINKING=disabled
 
 The extraction prompt requests exactly one JSON object with no surrounding prose or Markdown, and the parser remains strict: it accepts only a raw JSON object or a single full fenced JSON object. If a provider response fails only this strict JSON shape check, the extractor may make one corrective retry without including the rejected response text. Additional non-secret request options are available for local compatibility testing: `DELIBERUM_OPENAI_TOP_P`, `DELIBERUM_OPENAI_STREAM=false`, `DELIBERUM_OPENAI_FREQUENCY_PENALTY`, and `DELIBERUM_OPENAI_PRESENCE_PENALTY`. Streaming output is not implemented, so `DELIBERUM_OPENAI_STREAM=true` is rejected as invalid provider configuration.
 
-CLI and Web run commands do not include provider setup UX, API key flags or fields, interactive setup, or run event follow.
+CLI run commands do not include provider setup UX, API key flags or fields, interactive setup, or run event follow. The Web run detail page reads a non-stream daemon-redacted run event timeline; live run event follow remains deferred.
 
 Experimental WebGET endpoints are local daemon endpoints:
 
@@ -151,7 +152,7 @@ Deferred daemon work includes persistent SQLite storage, resource delivery or ho
 
 The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, a daemon-backed compiled outcome projection, a session resources/evidence projection, and local daemon run workspace views.
 
-The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, persistent daemon storage, or provider setup UX yet. It can list runs, create a run from JSON or a deterministic local preset template, inspect daemon run state, start requested run stages from JSON or the local preset start request, read safe projection endpoints by run session id, and display compiled output only as a provisional outcome. The session Final page reads `GET /sessions/:sessionId/final` and renders the compiled outcome projection with provenance and unresolved material. It does not implement run event follow or a raw run event timeline.
+The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, persistent daemon storage, or provider setup UX yet. It can list runs, create a run from JSON or a deterministic local preset template, inspect daemon run state, start requested run stages from JSON or the local preset start request, read safe projection endpoints by run session id, display daemon-redacted run ledger events, and display compiled output only as a provisional outcome. The session Final page reads `GET /sessions/:sessionId/final` and renders the compiled outcome projection with provenance and unresolved material. The run detail page reads `GET /runs/:runId/events` for the current safe ledger timeline, but it does not open the SSE endpoint or implement live event follow yet.
 
 The Web local preset controls require the daemon to be started with `DELIBERUM_ENABLE_LOCAL_PRESET=true`. Without that opt-in daemon profile, created runs remain valid but starting a preset pipeline reports missing local components.
 

@@ -155,6 +155,7 @@ describe("DeliberumDaemonClient", () => {
     await daemonClient.createRun({ runPlan });
     await daemonClient.listRuns();
     await daemonClient.getRun("run/1");
+    await daemonClient.getRunEvents("run/1");
     await daemonClient.startRun("run/1", startRequest);
     await daemonClient.getRunOutcome("run/1");
 
@@ -162,6 +163,7 @@ describe("DeliberumDaemonClient", () => {
       "http://127.0.0.1:3877/runs",
       "http://127.0.0.1:3877/runs",
       "http://127.0.0.1:3877/runs/run%2F1",
+      "http://127.0.0.1:3877/runs/run%2F1/events",
       "http://127.0.0.1:3877/runs/run%2F1/start",
       "http://127.0.0.1:3877/runs/run%2F1/outcome"
     ]);
@@ -178,14 +180,17 @@ describe("DeliberumDaemonClient", () => {
     expect(fetch.mock.calls[2]?.[1]).toEqual({
       method: "GET"
     });
-    expect(fetch.mock.calls[3]?.[1]).toMatchObject({
+    expect(fetch.mock.calls[3]?.[1]).toEqual({
+      method: "GET"
+    });
+    expect(fetch.mock.calls[4]?.[1]).toMatchObject({
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       }
     });
-    expect(JSON.parse(fetch.mock.calls[3]?.[1]?.body ?? "{}")).toEqual(startRequest);
-    expect(fetch.mock.calls[4]?.[1]).toEqual({
+    expect(JSON.parse(fetch.mock.calls[4]?.[1]?.body ?? "{}")).toEqual(startRequest);
+    expect(fetch.mock.calls[5]?.[1]).toEqual({
       method: "GET"
     });
   });

@@ -19,13 +19,13 @@ export type RunRouteOptions = {
   eventStore: EventStore;
 };
 
-type RunSseRedactedPayload = {
+type RunRedactedPayload = {
   redacted: true;
   reason: "event_visibility" | "sealed_until_reveal";
 };
 
-type RunSseEventView = Omit<StoredEvent, "payload"> & {
-  payload: unknown | RunSseRedactedPayload;
+type RunEventView = Omit<StoredEvent, "payload"> & {
+  payload: unknown | RunRedactedPayload;
 };
 
 export function registerRunRoutes(options: RunRouteOptions): void {
@@ -66,6 +66,20 @@ export function registerRunRoutes(options: RunRouteOptions): void {
     context.json(runService.getOutcome(context.req.param("runId")))
   );
 
+  app.get("/runs/:runId/events", (context) => {
+    const runId = context.req.param("runId");
+    const sessionId = runService.getRunSessionId(runId);
+
+    return noStoreJson(context, {
+      runId,
+      sessionId,
+      events: eventStore
+        .listEvents(sessionId)
+        .sort((left, right) => left.sequence - right.sequence)
+        .map((event) => createSafeRunEventView(event, eventStore))
+    });
+  });
+
   app.get("/runs/:runId/events/stream", (context) => {
     const sessionId = runService.getRunSessionId(context.req.param("runId"));
 
@@ -74,7 +88,7 @@ export function registerRunRoutes(options: RunRouteOptions): void {
         await stream.writeSSE({
           event: "event",
           id: event.id,
-          data: JSON.stringify(createRunSseEventView(event, eventStore))
+          data: JSON.stringify(createSafeRunEventView(event, eventStore))
         });
       });
 
@@ -91,7 +105,7 @@ export function registerRunRoutes(options: RunRouteOptions): void {
   });
 }
 
-function createRunSseEventView(event: StoredEvent, eventStore: EventStore): RunSseEventView {
+function createSafeRunEventView(event: StoredEvent, eventStore: EventStore): RunEventView {
   if (event.visibility === "public") {
     return cloneEventWithPayload(event, structuredClone(event.payload));
   }
@@ -133,11 +147,19 @@ function isSealedContributionRevealed(event: StoredEvent, eventStore: EventStore
     );
 }
 
-function cloneEventWithPayload(event: StoredEvent, payload: unknown): RunSseEventView {
+function cloneEventWithPayload(event: StoredEvent, payload: unknown): RunEventView {
   return {
     ...structuredClone(event),
     payload
   };
+}
+
+function noStoreJson(context: Context, payload: unknown, status: 200 | 201 | 400 = 200): Response {
+  const response = context.json(payload, status);
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Pragma", "no-cache");
+
+  return response;
 }
 
 export function handleRunRouteError(context: Context, error: Error): Response | undefined {

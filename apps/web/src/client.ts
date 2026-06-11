@@ -9,6 +9,7 @@ import {
   type ObjectionsResponse,
   type ObligationsResponse,
   type ListRunsResponse,
+  type RunEventsResponse,
   type RunOutcomeResponse,
   type RunResponse,
   type SessionFinalResponse,
@@ -26,6 +27,7 @@ export type WebDaemonClient = {
   createRun: (input: CreateRunRequest) => Promise<CreateRunResponse>;
   listRuns: () => Promise<ListRunsResponse>;
   getRun: (runId: string) => Promise<RunResponse>;
+  getRunEvents: (runId: string) => Promise<RunEventsResponse>;
   startRun: (runId: string, startRequest: StartRunRequest) => Promise<StartRunResponse>;
   getRunOutcome: (runId: string) => Promise<RunOutcomeResponse>;
   listEvents: (sessionId: string) => Promise<EventsResponse>;

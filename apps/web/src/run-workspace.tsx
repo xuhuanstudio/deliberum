@@ -210,6 +210,7 @@ export function RunDetailPage() {
           <RunSummary run={run} />
           <RunDetailGuide />
           <RunStageStatus run={run} />
+          <RunEventTimeline runId={runId} />
           <StartRunForm runId={runId} sessionId={sessionId} />
           <DataPanel title="Run plan view">
             <JsonBlock value={sanitizeForDisplay(getRecordValue(run, "plan") ?? {})} />
@@ -373,7 +374,7 @@ function RunConceptPanel() {
         />
         <ExplainerItem
           title="Ledger events"
-          detail="Recorded lifecycle events. Web shows counts and ids here, not a raw event payload timeline."
+          detail="Recorded lifecycle events from the daemon. Payload visibility follows daemon redaction rules."
         />
         <ExplainerItem
           title="Provisional outcome"
@@ -514,6 +515,47 @@ function RunStageStatus({ run }: { run: unknown }) {
   );
 }
 
+function RunEventTimeline({ runId }: { runId: string }) {
+  const { client } = useDaemonRuntime();
+  const eventsQuery = useQuery({
+    queryKey: ["run-events", runId],
+    queryFn: () => client.getRunEvents(runId)
+  });
+  const events = asArray(eventsQuery.data?.events).map(toEventMetadata);
+
+  return (
+    <DataPanel
+      title="Run ledger timeline"
+      description="Daemon-redacted ledger events for this run. Web renders the returned event view without computing projections."
+    >
+      <QueryState query={eventsQuery}>
+        <KeyValueGrid
+          items={[
+            {
+              label: "Run id",
+              value: eventsQuery.data?.runId ?? runId
+            },
+            {
+              label: "Session id",
+              value: eventsQuery.data?.sessionId ?? "None"
+            },
+            {
+              label: "Event entries",
+              value: events.length
+            }
+          ]}
+        />
+        <RecordCollection
+          title="Events"
+          records={events}
+          emptyTitle="No ledger events"
+          emptyDescription="The daemon returned no event entries for this run."
+        />
+      </QueryState>
+    </DataPanel>
+  );
+}
+
 function StageStatusList({ stages }: { stages: Array<[string, unknown]> }) {
   return (
     <div className="du-stage-grid">
@@ -625,6 +667,7 @@ async function invalidateRunWorkspaceQueries(
   const invalidations = [
     queryClient.invalidateQueries({ queryKey: ["runs"] }),
     queryClient.invalidateQueries({ queryKey: ["run", runId] }),
+    queryClient.invalidateQueries({ queryKey: ["run-events", runId] }),
     queryClient.invalidateQueries({ queryKey: ["run-outcome", runId] })
   ];
 
@@ -914,6 +957,20 @@ function toStageMetadata(stage: unknown): Record<string, unknown> {
     roundId: getRecordValue(stage, "roundId"),
     status: getRecordValue(stage, "status"),
     eventIds: asArray(getRecordValue(stage, "eventIds"))
+  };
+}
+
+function toEventMetadata(event: unknown): Record<string, unknown> {
+  return {
+    id: getRecordValue(event, "id"),
+    type: getRecordValue(event, "type"),
+    sequence: getRecordValue(event, "sequence"),
+    visibility: getRecordValue(event, "visibility"),
+    authorId: getRecordValue(event, "authorId"),
+    createdAt: getRecordValue(event, "createdAt"),
+    payload: getRecordValue(event, "payload"),
+    basedOnEventIds: asArray(getRecordValue(event, "basedOnEventIds")),
+    trace: sanitizeForDisplay(getRecordValue(event, "trace") ?? {})
   };
 }
 

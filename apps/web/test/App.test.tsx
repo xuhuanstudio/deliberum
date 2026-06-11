@@ -88,6 +88,39 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
     getRun: vi.fn(async () => ({
       run: runDetail
     })),
+    getRunEvents: vi.fn(async () => ({
+      runId: runDetail.runId,
+      sessionId: runDetail.sessionId,
+      events: [
+        {
+          id: "event-1",
+          type: "topic_contract_published",
+          sequence: 0,
+          visibility: "public",
+          authorId: "system",
+          createdAt: "2026-06-10T00:00:00.000Z",
+          payload: {
+            topic: "Evaluate the local daemon run workspace"
+          },
+          basedOnEventIds: [],
+          trace: {}
+        },
+        {
+          id: "event-redacted",
+          type: "sealed_contribution_submitted",
+          sequence: 1,
+          visibility: "sealed",
+          authorId: "participant-1",
+          createdAt: "2026-06-10T00:00:01.000Z",
+          payload: {
+            redacted: true,
+            reason: "sealed_until_reveal"
+          },
+          basedOnEventIds: [],
+          trace: {}
+        }
+      ]
+    })),
     startRun: vi.fn(async () => ({
       run: {
         ...runDetail,
@@ -457,6 +490,7 @@ describe("@deliberum/web shell", () => {
 
     await screen.findByText("Run detail");
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
+    await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
@@ -464,6 +498,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Run status")).toBeTruthy();
     expect(screen.getByText("Ledger events")).toBeTruthy();
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
+    expect(screen.getByText("Run ledger timeline")).toBeTruthy();
+    expect(screen.getByText("Event entries")).toBeTruthy();
+    expect(screen.getByText(/topic_contract_published/)).toBeTruthy();
+    expect(screen.getByText(/sealed_until_reveal/)).toBeTruthy();
     expect(screen.getByText("Current run meaning")).toBeTruthy();
     expect(screen.getByText("Stage status")).toBeTruthy();
     expect(screen.getByText("Candidate Frontier projection")).toBeTruthy();
