@@ -17,14 +17,19 @@ import {
   createDeliberationRun,
   runSealedDivergenceRound
 } from "../src";
-import type { DeliberationRunRecord, RunErrorCategory } from "../src";
-import type { RunSafeDiagnostics } from "../src";
+import type {
+  DeliberationRunRecord,
+  OpenAICompatibleRequestOptions,
+  RunErrorCategory,
+  RunSafeDiagnostics
+} from "../src";
 
 function createRunPlan(
   options: {
     revealPolicy?: SealedBatchRevealPolicy;
     participantMs?: number;
     providerConfig?: boolean;
+    providerRequestOptions?: OpenAICompatibleRequestOptions;
   } = {}
 ) {
   return {
@@ -55,7 +60,8 @@ function createRunPlan(
             providerConfigId: "provider-cli",
             modelId: "test-model",
             baseUrl: "http://127.0.0.1:11434",
-            apiKeyEnvVar: "DELIBERUM_TEST_API_KEY"
+            apiKeyEnvVar: "DELIBERUM_TEST_API_KEY",
+            ...(options.providerRequestOptions ?? {})
           }
         ]
       : [],
@@ -91,6 +97,7 @@ function createFixture(
     revealPolicy?: SealedBatchRevealPolicy;
     participantMs?: number;
     providerConfig?: boolean;
+    providerRequestOptions?: OpenAICompatibleRequestOptions;
   } = {}
 ) {
   const eventStore = new InMemoryEventStore({
@@ -977,6 +984,62 @@ describe("runSealedDivergenceRound", () => {
       modelId: "test-model"
     });
     expect(capturedWebRuntimeConfig).toBeUndefined();
+    expect(JSON.stringify(runStore.getRun(run.id))).not.toContain(secret);
+    expect(JSON.stringify(eventStore.listEvents(run.sessionId))).not.toContain(secret);
+  });
+
+  it("passes OpenAI-compatible request options into the adapter at dispatch time", async () => {
+    const { eventStore, runStore, run } = createFixture({
+      providerConfig: true,
+      providerRequestOptions: {
+        tokenParameter: "max_completion_tokens",
+        maxCompletionTokens: 1024,
+        temperature: 1,
+        topP: 0.95,
+        stream: false,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        thinking: "disabled"
+      }
+    });
+    const secret = "sk-runtime-secret";
+    let capturedRuntimeConfig: ParticipantAdapterProviderRuntimeConfig | undefined;
+
+    await runSealedDivergenceRound(
+      {
+        runId: run.id,
+        env: {
+          DELIBERUM_TEST_API_KEY: secret
+        }
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: createRegistry([
+          createAdapter({
+            adapterId: "adapter-cli",
+            onCall: (_input, _context, providerRuntimeConfig) => {
+              capturedRuntimeConfig = providerRuntimeConfig;
+            }
+          }),
+          createAdapter({
+            adapterId: "adapter-web"
+          })
+        ]),
+        idGenerator: runIds()
+      }
+    );
+
+    expect(capturedRuntimeConfig?.requestOptions).toEqual({
+      tokenParameter: "max_completion_tokens",
+      maxCompletionTokens: 1024,
+      temperature: 1,
+      topP: 0.95,
+      stream: false,
+      frequencyPenalty: 0,
+      presencePenalty: 0,
+      thinking: "disabled"
+    });
     expect(JSON.stringify(runStore.getRun(run.id))).not.toContain(secret);
     expect(JSON.stringify(eventStore.listEvents(run.sessionId))).not.toContain(secret);
   });

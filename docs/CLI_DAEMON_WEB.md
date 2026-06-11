@@ -93,6 +93,19 @@ DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE=true node apps/daemon/dist/index.js
 
 When this profile is enabled, the daemon registers the OpenAI-compatible participant adapter. Run plans may reference provider configuration such as `baseUrl`, `modelId`, `endpointPath`, `timeoutMs`, and `apiKeyEnvVar`; the actual key must remain in the daemon environment, for example `DELIBERUM_OPENAI_API_KEY`. Provider secrets are not accepted through Web forms, CLI flags, daemon request bodies, run-plan inline values, events, run records, or API responses. This profile does not install extraction generators, proposal reviewers, final candidate generators, or final auditors, and provider output enters Deliberum only as sealed contribution material.
 
+For local provider smoke only, the profile also supports optional non-secret request compatibility settings. If these are omitted, the OpenAI-compatible adapter still sends only `model` and `messages`. For MiMo-compatible local smoke, a conservative example is:
+
+```bash
+DELIBERUM_OPENAI_BASE_URL=https://token-plan-cn.xiaomimimo.com
+DELIBERUM_OPENAI_ENDPOINT_PATH=/v1/chat/completions
+DELIBERUM_OPENAI_MODEL=mimo-v2.5-pro
+DELIBERUM_OPENAI_TOKEN_PARAMETER=max_completion_tokens
+DELIBERUM_OPENAI_MAX_COMPLETION_TOKENS=1024
+DELIBERUM_OPENAI_THINKING=disabled
+```
+
+Additional non-secret request options are available for local compatibility testing: `DELIBERUM_OPENAI_TEMPERATURE`, `DELIBERUM_OPENAI_TOP_P`, `DELIBERUM_OPENAI_STREAM=false`, `DELIBERUM_OPENAI_FREQUENCY_PENALTY`, and `DELIBERUM_OPENAI_PRESENCE_PENALTY`. Streaming output is not implemented, so `DELIBERUM_OPENAI_STREAM=true` is rejected as invalid provider configuration.
+
 CLI and Web run commands do not include provider setup UX, API key flags or fields, interactive setup, or run event follow.
 
 Experimental WebGET endpoints are local daemon endpoints:

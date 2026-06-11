@@ -56,6 +56,23 @@ export type ParticipantAdapterProviderRuntimeConfig = {
   modelId?: string;
   endpointPath?: string;
   timeoutMs?: number;
+  requestOptions?: OpenAICompatibleRequestOptions;
+};
+
+export type OpenAICompatibleTokenParameter =
+  | "none"
+  | "max_tokens"
+  | "max_completion_tokens";
+
+export type OpenAICompatibleRequestOptions = {
+  tokenParameter?: OpenAICompatibleTokenParameter;
+  maxCompletionTokens?: number;
+  temperature?: number;
+  topP?: number;
+  stream?: false;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  thinking?: "disabled";
 };
 
 export type ParticipantAdapterSafeErrorCategory =

@@ -2,6 +2,7 @@ import type {
   AdapterCapabilities,
   ContextCompleteness,
   JsonValue,
+  OpenAICompatibleRequestOptions,
   ParticipantAdapter,
   ParticipantAdapterContext,
   ParticipantAdapterInput,
@@ -48,6 +49,7 @@ export type OpenAICompatibleAdapterConfig = {
   endpointPath?: string;
   headers?: Record<string, string>;
   timeoutMs?: number;
+  requestOptions?: OpenAICompatibleRequestOptions;
   fetch?: FetchLike;
   capabilities?: AdapterCapabilities;
   contextCompleteness?: ContextCompleteness;
@@ -80,6 +82,16 @@ type ChatCompletionMessage = {
 type ChatCompletionRequest = {
   model: string;
   messages: ChatCompletionMessage[];
+  max_tokens?: number;
+  max_completion_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  stream?: false;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  thinking?: {
+    type: "disabled";
+  };
 };
 
 type EffectiveOpenAICompatibleConfig = {
@@ -89,6 +101,7 @@ type EffectiveOpenAICompatibleConfig = {
   endpointPath: string;
   headers: Record<string, string>;
   timeoutMs?: number;
+  requestOptions: OpenAICompatibleRequestOptions;
 };
 
 export class OpenAICompatibleAdapterError extends Error {
@@ -122,6 +135,7 @@ export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
   private readonly endpointPath: string;
   private readonly headers: Record<string, string>;
   private readonly timeoutMs?: number;
+  private readonly requestOptions: OpenAICompatibleRequestOptions;
   private readonly fetchImplementation: FetchLike;
   private readonly contextCompleteness: ContextCompleteness;
   private readonly warnings: string[];
@@ -136,6 +150,7 @@ export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
     this.endpointPath = config.endpointPath ?? OPENAI_COMPATIBLE_DEFAULT_ENDPOINT_PATH;
     this.headers = { ...(config.headers ?? {}) };
     this.timeoutMs = config.timeoutMs;
+    this.requestOptions = normalizeRequestOptions(config.requestOptions);
     this.fetchImplementation = config.fetch ?? getDefaultFetch();
     this.capabilities = cloneCapabilities(
       config.capabilities ?? OPENAI_COMPATIBLE_PARTICIPANT_ADAPTER_CAPABILITIES
@@ -158,9 +173,15 @@ export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
       endpointPath: this.endpointPath,
       headers: this.headers,
       timeoutMs: this.timeoutMs,
+      requestOptions: this.requestOptions,
       providerRuntimeConfig
     });
-    const request = createChatCompletionRequest(effectiveConfig.model, input, context);
+    const request = createChatCompletionRequest(
+      effectiveConfig.model,
+      input,
+      context,
+      effectiveConfig.requestOptions
+    );
     const requestBody = JSON.stringify(request);
     const providerSecretValues = collectProviderSecretValues({
       apiKey: effectiveConfig.apiKey,
@@ -253,6 +274,7 @@ function resolveEffectiveConfig(input: {
   endpointPath: string;
   headers: Record<string, string>;
   timeoutMs?: number;
+  requestOptions: OpenAICompatibleRequestOptions;
   providerRuntimeConfig?: ParticipantAdapterProviderRuntimeConfig;
 }): EffectiveOpenAICompatibleConfig {
   const baseUrl = input.providerRuntimeConfig?.baseUrl ?? input.baseUrl;
@@ -281,14 +303,19 @@ function resolveEffectiveConfig(input: {
     model,
     endpointPath,
     headers: input.headers,
-    timeoutMs: input.providerRuntimeConfig?.timeoutMs ?? input.timeoutMs
+    timeoutMs: input.providerRuntimeConfig?.timeoutMs ?? input.timeoutMs,
+    requestOptions: normalizeRequestOptions({
+      ...input.requestOptions,
+      ...(input.providerRuntimeConfig?.requestOptions ?? {})
+    })
   };
 }
 
 function createChatCompletionRequest(
   model: string,
   input: ParticipantAdapterInput,
-  context: ParticipantAdapterContext
+  context: ParticipantAdapterContext,
+  requestOptions: OpenAICompatibleRequestOptions
 ): ChatCompletionRequest {
   const messages: ChatCompletionMessage[] = [];
 
@@ -304,10 +331,66 @@ function createChatCompletionRequest(
     content: renderUserContent(input)
   });
 
-  return {
+  const request: ChatCompletionRequest = {
     model,
     messages
   };
+
+  applyRequestOptions(request, requestOptions);
+
+  return request;
+}
+
+function applyRequestOptions(
+  request: ChatCompletionRequest,
+  requestOptions: OpenAICompatibleRequestOptions
+): void {
+  const tokenParameter =
+    requestOptions.tokenParameter ??
+    (requestOptions.maxCompletionTokens !== undefined ? "max_completion_tokens" : undefined);
+
+  if (tokenParameter === "max_tokens") {
+    request.max_tokens = requireMaxCompletionTokens(requestOptions);
+  } else if (tokenParameter === "max_completion_tokens") {
+    request.max_completion_tokens = requireMaxCompletionTokens(requestOptions);
+  }
+
+  if (requestOptions.temperature !== undefined) {
+    request.temperature = requestOptions.temperature;
+  }
+
+  if (requestOptions.topP !== undefined) {
+    request.top_p = requestOptions.topP;
+  }
+
+  if (requestOptions.stream !== undefined) {
+    request.stream = requestOptions.stream;
+  }
+
+  if (requestOptions.frequencyPenalty !== undefined) {
+    request.frequency_penalty = requestOptions.frequencyPenalty;
+  }
+
+  if (requestOptions.presencePenalty !== undefined) {
+    request.presence_penalty = requestOptions.presencePenalty;
+  }
+
+  if (requestOptions.thinking === "disabled") {
+    request.thinking = {
+      type: "disabled"
+    };
+  }
+}
+
+function requireMaxCompletionTokens(requestOptions: OpenAICompatibleRequestOptions): number {
+  if (requestOptions.maxCompletionTokens === undefined) {
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible token request option is invalid.",
+      "provider_config_invalid"
+    );
+  }
+
+  return requestOptions.maxCompletionTokens;
 }
 
 function renderUserContent(input: ParticipantAdapterInput): string {
@@ -339,6 +422,94 @@ function createRequestUrl(baseUrl: string, endpointPath: string): string {
     : endpointPath;
 
   return new URL(normalizedEndpointPath, normalizedBaseUrl).toString();
+}
+
+function normalizeRequestOptions(
+  requestOptions: OpenAICompatibleRequestOptions | undefined
+): OpenAICompatibleRequestOptions {
+  if (!requestOptions) {
+    return {};
+  }
+
+  const normalized: OpenAICompatibleRequestOptions = {};
+
+  if (requestOptions.tokenParameter !== undefined) {
+    if (
+      requestOptions.tokenParameter !== "none" &&
+      requestOptions.tokenParameter !== "max_tokens" &&
+      requestOptions.tokenParameter !== "max_completion_tokens"
+    ) {
+      throwInvalidRequestOption();
+    }
+
+    normalized.tokenParameter = requestOptions.tokenParameter;
+  }
+
+  if (requestOptions.maxCompletionTokens !== undefined) {
+    if (
+      typeof requestOptions.maxCompletionTokens !== "number" ||
+      !Number.isFinite(requestOptions.maxCompletionTokens) ||
+      !Number.isInteger(requestOptions.maxCompletionTokens) ||
+      requestOptions.maxCompletionTokens <= 0
+    ) {
+      throwInvalidRequestOption();
+    }
+
+    normalized.maxCompletionTokens = requestOptions.maxCompletionTokens;
+  }
+
+  if (requestOptions.temperature !== undefined) {
+    normalized.temperature = validateNumberRange(requestOptions.temperature, 0, 2);
+  }
+
+  if (requestOptions.topP !== undefined) {
+    normalized.topP = validateNumberRange(requestOptions.topP, 0, 1);
+  }
+
+  if (requestOptions.stream !== undefined) {
+    if (requestOptions.stream !== false) {
+      throwInvalidRequestOption();
+    }
+
+    normalized.stream = false;
+  }
+
+  if (requestOptions.frequencyPenalty !== undefined) {
+    normalized.frequencyPenalty = validateNumberRange(
+      requestOptions.frequencyPenalty,
+      -2,
+      2
+    );
+  }
+
+  if (requestOptions.presencePenalty !== undefined) {
+    normalized.presencePenalty = validateNumberRange(requestOptions.presencePenalty, -2, 2);
+  }
+
+  if (requestOptions.thinking !== undefined) {
+    if (requestOptions.thinking !== "disabled") {
+      throwInvalidRequestOption();
+    }
+
+    normalized.thinking = "disabled";
+  }
+
+  return normalized;
+}
+
+function validateNumberRange(value: number, min: number, max: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max) {
+    throwInvalidRequestOption();
+  }
+
+  return value;
+}
+
+function throwInvalidRequestOption(): never {
+  throw new OpenAICompatibleAdapterError(
+    "OpenAI-compatible request option is invalid.",
+    "provider_config_invalid"
+  );
 }
 
 function assertEffectiveRequestUrl(baseUrl: string, endpointPath: string): void {

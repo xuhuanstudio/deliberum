@@ -65,6 +65,7 @@ export type DaemonRunPlanView = {
     providerConfigId?: string;
     modelId?: string;
     timeoutMs?: number;
+    requestOptions?: unknown;
     hasApiKeyEnvVar: boolean;
   }>;
   budget: unknown;
@@ -794,22 +795,50 @@ function safePlanView(run: DeliberationRunRecord): DaemonRunPlanView {
       ...(participant.profileId ? { profileId: participant.profileId } : {}),
       ...(participant.capabilities ? { capabilities: structuredClone(participant.capabilities) } : {})
     })),
-    providerConfigs: run.plan.providerConfigs.map((providerConfig) => ({
-      id: providerConfig.id,
-      adapterId: providerConfig.adapterId,
-      ...(providerConfig.providerConfigId
-        ? { providerConfigId: providerConfig.providerConfigId }
-        : {}),
-      ...(providerConfig.modelId ? { modelId: providerConfig.modelId } : {}),
-      ...(providerConfig.timeoutMs ? { timeoutMs: providerConfig.timeoutMs } : {}),
-      hasApiKeyEnvVar: Boolean(providerConfig.apiKeyEnvVar)
-    })),
+    providerConfigs: run.plan.providerConfigs.map((providerConfig) => {
+      const requestOptions = safeProviderRequestOptions(providerConfig);
+
+      return {
+        id: providerConfig.id,
+        adapterId: providerConfig.adapterId,
+        ...(providerConfig.providerConfigId
+          ? { providerConfigId: providerConfig.providerConfigId }
+          : {}),
+        ...(providerConfig.modelId ? { modelId: providerConfig.modelId } : {}),
+        ...(providerConfig.timeoutMs ? { timeoutMs: providerConfig.timeoutMs } : {}),
+        ...(requestOptions ? { requestOptions } : {}),
+        hasApiKeyEnvVar: Boolean(providerConfig.apiKeyEnvVar)
+      };
+    }),
     budget: structuredClone(run.plan.budget),
     timeouts: structuredClone(run.plan.timeouts),
     output: structuredClone(run.plan.output),
     sealedDivergence: structuredClone(run.plan.sealedDivergence),
     ...(run.plan.resources ? { resources: structuredClone(run.plan.resources) } : {})
   };
+}
+
+function safeProviderRequestOptions(
+  providerConfig: DeliberationRunRecord["plan"]["providerConfigs"][number]
+): unknown | undefined {
+  const requestOptions = {
+    ...(providerConfig.tokenParameter ? { tokenParameter: providerConfig.tokenParameter } : {}),
+    ...(providerConfig.maxCompletionTokens !== undefined
+      ? { maxCompletionTokens: providerConfig.maxCompletionTokens }
+      : {}),
+    ...(providerConfig.temperature !== undefined ? { temperature: providerConfig.temperature } : {}),
+    ...(providerConfig.topP !== undefined ? { topP: providerConfig.topP } : {}),
+    ...(providerConfig.stream !== undefined ? { stream: providerConfig.stream } : {}),
+    ...(providerConfig.frequencyPenalty !== undefined
+      ? { frequencyPenalty: providerConfig.frequencyPenalty }
+      : {}),
+    ...(providerConfig.presencePenalty !== undefined
+      ? { presencePenalty: providerConfig.presencePenalty }
+      : {}),
+    ...(providerConfig.thinking ? { thinking: providerConfig.thinking } : {})
+  };
+
+  return Object.keys(requestOptions).length > 0 ? requestOptions : undefined;
 }
 
 function withoutExecutionClaim<TRecord extends { executionClaim?: unknown }>(

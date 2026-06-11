@@ -120,6 +120,7 @@ describe("OpenAICompatibleParticipantAdapter", () => {
       "Content-Type": "application/json",
       Authorization: "Bearer sk-test-secret"
     });
+    expect(Object.keys(body)).toEqual(["model", "messages"]);
     expect(body.model).toBe("model-1");
     expect(body.messages).toEqual([
       {
@@ -207,6 +208,148 @@ describe("OpenAICompatibleParticipantAdapter", () => {
     expect(resultText).not.toContain("sk-runtime-secret");
     expect(resultText).not.toContain("sk-constructor-secret");
     expect(resultText).not.toContain("Authorization");
+  });
+
+  it("emits max_completion_tokens when configured", async () => {
+    const fetch = createSuccessfulFetch();
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      model: "model-1",
+      requestOptions: {
+        tokenParameter: "max_completion_tokens",
+        maxCompletionTokens: 1024
+      },
+      fetch
+    });
+
+    await adapter.prepareContribution({ payload: "safe prompt" }, context);
+    const [, init] = getFetchCall(fetch);
+    const body = JSON.parse(init.body) as {
+      max_completion_tokens?: number;
+      max_tokens?: number;
+    };
+
+    expect(body.max_completion_tokens).toBe(1024);
+    expect(body.max_tokens).toBeUndefined();
+  });
+
+  it("emits max_tokens when configured", async () => {
+    const fetch = createSuccessfulFetch();
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      model: "model-1",
+      requestOptions: {
+        tokenParameter: "max_tokens",
+        maxCompletionTokens: 512
+      },
+      fetch
+    });
+
+    await adapter.prepareContribution({ payload: "safe prompt" }, context);
+    const [, init] = getFetchCall(fetch);
+    const body = JSON.parse(init.body) as {
+      max_completion_tokens?: number;
+      max_tokens?: number;
+    };
+
+    expect(body.max_tokens).toBe(512);
+    expect(body.max_completion_tokens).toBeUndefined();
+  });
+
+  it("emits MiMo-style non-secret request options when configured", async () => {
+    const fetch = createSuccessfulFetch();
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      model: "model-1",
+      requestOptions: {
+        maxCompletionTokens: 1024,
+        temperature: 1,
+        topP: 0.95,
+        stream: false,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        thinking: "disabled"
+      },
+      fetch
+    });
+
+    await adapter.prepareContribution({ payload: "safe prompt" }, context);
+    const [, init] = getFetchCall(fetch);
+    const body = JSON.parse(init.body) as {
+      max_completion_tokens?: number;
+      temperature?: number;
+      top_p?: number;
+      stream?: boolean;
+      frequency_penalty?: number;
+      presence_penalty?: number;
+      thinking?: unknown;
+    };
+
+    expect(body).toMatchObject({
+      max_completion_tokens: 1024,
+      temperature: 1,
+      top_p: 0.95,
+      stream: false,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+      thinking: {
+        type: "disabled"
+      }
+    });
+  });
+
+  it("rejects unsupported stream true before fetch", async () => {
+    const fetch = createSuccessfulFetch();
+    let thrown: unknown;
+
+    try {
+      new OpenAICompatibleParticipantAdapter({
+        baseUrl: "https://provider.example",
+        model: "model-1",
+        requestOptions: {
+          stream: true
+        } as never,
+        fetch
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(OpenAICompatibleAdapterError);
+    expect((thrown as OpenAICompatibleAdapterError).safeCategory).toBe(
+      "provider_config_invalid"
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid numeric request options before fetch", async () => {
+    const fetch = createSuccessfulFetch();
+    let thrown: unknown;
+
+    try {
+      new OpenAICompatibleParticipantAdapter({
+        baseUrl: "https://provider.example",
+        model: "model-1",
+        requestOptions: {
+          maxCompletionTokens: 0,
+          temperature: Number.NaN
+        },
+        fetch
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(OpenAICompatibleAdapterError);
+    const adapterError = thrown as OpenAICompatibleAdapterError;
+    const serializedError = `${adapterError.message}\n${JSON.stringify(adapterError)}`;
+
+    expect(adapterError.safeCategory).toBe("provider_config_invalid");
+    expect(serializedError).not.toContain("safe prompt");
+    expect(serializedError).not.toContain("Authorization");
+    expect(serializedError).not.toContain("Bearer");
+    expect(serializedError).not.toContain("/Users/");
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("requires an effective baseUrl and model from constructor or runtime config", async () => {

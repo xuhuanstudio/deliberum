@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
-import type { FetchLike, OpenAICompatibleFetchInit } from "@deliberum/adapters";
+import {
+  OpenAICompatibleAdapterError,
+  type FetchLike,
+  type OpenAICompatibleFetchInit
+} from "@deliberum/adapters";
 import { InMemoryResourceBroker } from "@deliberum/resources";
 import {
   AdapterRegistry,
@@ -26,8 +30,16 @@ import {
   OPENAI_COMPATIBLE_ADAPTER_ID,
   OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
   OPENAI_COMPATIBLE_BASE_URL_ENV_VAR,
+  OPENAI_COMPATIBLE_FREQUENCY_PENALTY_ENV_VAR,
+  OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR,
   OPENAI_COMPATIBLE_MODEL_ENV_VAR,
+  OPENAI_COMPATIBLE_PRESENCE_PENALTY_ENV_VAR,
   OPENAI_COMPATIBLE_PROFILE_ENV_VAR,
+  OPENAI_COMPATIBLE_STREAM_ENV_VAR,
+  OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR,
+  OPENAI_COMPATIBLE_THINKING_ENV_VAR,
+  OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
+  OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
   createDaemonApp,
   localPresetRunPlan,
   localPresetStartRequest,
@@ -1548,6 +1560,104 @@ describe("daemon API", () => {
     expect(JSON.stringify(daemonApp.runStore.getRun(created.run.runId))).not.toContain(
       "Authorization"
     );
+  });
+
+  it("maps OpenAI-compatible request option env vars into mocked provider requests", async () => {
+    const secret = "sk-openai-runtime-secret";
+    const fetch = createOpenAICompatibleFetch("provider-backed sealed contribution");
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleProfile: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: secret,
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model",
+        [OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR]: "max_completion_tokens",
+        [OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR]: "1024",
+        [OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR]: "1",
+        [OPENAI_COMPATIBLE_TOP_P_ENV_VAR]: "0.95",
+        [OPENAI_COMPATIBLE_STREAM_ENV_VAR]: "false",
+        [OPENAI_COMPATIBLE_FREQUENCY_PENALTY_ENV_VAR]: "0",
+        [OPENAI_COMPATIBLE_PRESENCE_PENALTY_ENV_VAR]: "0",
+        [OPENAI_COMPATIBLE_THINKING_ENV_VAR]: "disabled"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleRunPlan());
+    const startResponse = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const startBody = await startResponse.json();
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const [url, init] = getOpenAICompatibleFetchCall(fetch);
+    const requestBody = JSON.parse(init.body) as {
+      max_completion_tokens?: number;
+      temperature?: number;
+      top_p?: number;
+      stream?: boolean;
+      frequency_penalty?: number;
+      presence_penalty?: number;
+      thinking?: unknown;
+    };
+    const serializedSafeState = JSON.stringify({
+      start: startBody,
+      detail: detailBody,
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      events: daemonApp.eventStore.listEvents(created.run.sessionId)
+    });
+
+    expect(startResponse.status).toBe(200);
+    expect(url).toBe("https://runtime.example/api/chat/completions");
+    expect(requestBody).toMatchObject({
+      max_completion_tokens: 1024,
+      temperature: 1,
+      top_p: 0.95,
+      stream: false,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+      thinking: {
+        type: "disabled"
+      }
+    });
+    expect(serializedSafeState).not.toContain(secret);
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("private prompt");
+    expect(serializedSafeState).not.toContain("/Users/");
+    expect(serializedSafeState).not.toContain("stack");
+    expectSafeRunApiPayload(startBody, secret);
+    expectSafeRunApiPayload(detailBody, secret);
+  });
+
+  it("rejects invalid OpenAI-compatible request option env values before fetch", () => {
+    const fetch = createOpenAICompatibleFetch();
+    let thrown: unknown;
+
+    try {
+      createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        enableOpenAICompatibleProfile: true,
+        openAICompatibleEnv: {
+          [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
+          [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+          [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model",
+          [OPENAI_COMPATIBLE_STREAM_ENV_VAR]: "true"
+        },
+        openAICompatibleFetch: fetch
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(OpenAICompatibleAdapterError);
+    expect((thrown as OpenAICompatibleAdapterError).safeCategory).toBe(
+      "provider_config_invalid"
+    );
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("surfaces safe OpenAI-compatible provider HTTP status through run API", async () => {
@@ -3213,9 +3323,17 @@ describe("daemon API", () => {
       "OPENAI_COMPATIBLE_BASE_URL_ENV_VAR",
       "OPENAI_COMPATIBLE_DEFAULT_ENDPOINT_PATH",
       "OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR",
+      "OPENAI_COMPATIBLE_FREQUENCY_PENALTY_ENV_VAR",
+      "OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR",
       "OPENAI_COMPATIBLE_MODEL_ENV_VAR",
+      "OPENAI_COMPATIBLE_PRESENCE_PENALTY_ENV_VAR",
       "OPENAI_COMPATIBLE_PROFILE_ENV_VAR",
+      "OPENAI_COMPATIBLE_STREAM_ENV_VAR",
+      "OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR",
+      "OPENAI_COMPATIBLE_THINKING_ENV_VAR",
       "OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR",
+      "OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR",
+      "OPENAI_COMPATIBLE_TOP_P_ENV_VAR",
       "createOpenAICompatibleRunRegistries",
       "createOpenAICompatibleRuntimeEnv",
       "isOpenAICompatibleProfileEnabledFromEnv",

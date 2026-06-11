@@ -44,6 +44,27 @@ import type { AdapterCapabilities, ParticipantAdapter, ParticipantAdapterContext
 export const ORCHESTRATOR_RUN_SCHEMA_VERSION = "1" as const;
 
 export const EnvVarNameSchema = z.string().regex(/^[A-Z][A-Z0-9_]*$/);
+export const OpenAICompatibleTokenParameterSchema = z.enum([
+  "none",
+  "max_tokens",
+  "max_completion_tokens"
+]);
+export const OpenAICompatibleThinkingSchema = z.literal("disabled");
+export const OpenAICompatibleRequestOptionsSchema = z
+  .object({
+    tokenParameter: OpenAICompatibleTokenParameterSchema.optional(),
+    maxCompletionTokens: z.number().int().positive().optional(),
+    temperature: z.number().finite().min(0).max(2).optional(),
+    topP: z.number().finite().min(0).max(1).optional(),
+    stream: z.literal(false).optional(),
+    frequencyPenalty: z.number().finite().min(-2).max(2).optional(),
+    presencePenalty: z.number().finite().min(-2).max(2).optional(),
+    thinking: OpenAICompatibleThinkingSchema.optional()
+  })
+  .strict();
+export type OpenAICompatibleRequestOptions = z.infer<
+  typeof OpenAICompatibleRequestOptionsSchema
+>;
 
 export const RunParticipantSchema = z
   .object({
@@ -67,7 +88,15 @@ export const ProviderModelConfigRefSchema = z
     baseUrl: NonEmptyStringSchema.optional(),
     endpointPath: NonEmptyStringSchema.optional(),
     apiKeyEnvVar: EnvVarNameSchema.optional(),
-    timeoutMs: z.number().int().positive().optional()
+    timeoutMs: z.number().int().positive().optional(),
+    tokenParameter: OpenAICompatibleTokenParameterSchema.optional(),
+    maxCompletionTokens: z.number().int().positive().optional(),
+    temperature: z.number().finite().min(0).max(2).optional(),
+    topP: z.number().finite().min(0).max(1).optional(),
+    stream: z.literal(false).optional(),
+    frequencyPenalty: z.number().finite().min(-2).max(2).optional(),
+    presencePenalty: z.number().finite().min(-2).max(2).optional(),
+    thinking: OpenAICompatibleThinkingSchema.optional()
   })
   .strict();
 export type ProviderModelConfigRef = z.infer<typeof ProviderModelConfigRefSchema>;
@@ -656,6 +685,7 @@ export type ProviderRuntimeConfig = {
   timeoutMs?: number;
   apiKeyEnvVar?: string;
   apiKey?: string;
+  requestOptions?: OpenAICompatibleRequestOptions;
 };
 
 export type ProviderConfigSafeView = {
@@ -667,6 +697,7 @@ export type ProviderConfigSafeView = {
   endpointPath?: string;
   timeoutMs?: number;
   apiKeyEnvVar?: string;
+  requestOptions?: OpenAICompatibleRequestOptions;
   hasApiKey: boolean;
 };
 
