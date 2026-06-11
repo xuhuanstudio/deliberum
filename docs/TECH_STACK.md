@@ -20,6 +20,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - Hono and `@hono/node-server` for the local daemon API;
 - process-local `InMemoryEventStore` for daemon defaults;
 - shared Node `JsonFileEventStore` for CLI persistence and optional local daemon event ledger persistence;
+- daemon-local `JsonFileRunStore` for optional local run metadata persistence;
 - Server-Sent Events for daemon event streaming;
 - React + Vite + TypeScript for the Web shell;
 - TanStack Router and TanStack Query for Web routing and daemon reads.
@@ -45,8 +46,8 @@ packages/
 
 The following are planned or possible future additions, not current implementation dependencies:
 
-- durable daemon run metadata storage;
 - SQLite or another production-grade daemon store;
+- multi-writer coordination for durable daemon stores;
 - Postgres for future team/server deployments;
 - WebSocket streaming if SSE becomes insufficient;
 - Zustand or another local UI-state helper if Web UI complexity requires it;

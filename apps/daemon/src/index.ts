@@ -3,6 +3,7 @@
 export * from "./app";
 export * from "./config";
 export * from "./event-stream";
+export * from "./json-file-run-store";
 export * from "./local-preset";
 export * from "./openai-compatible-extraction-generator";
 export * from "./openai-compatible-finalization-generators";

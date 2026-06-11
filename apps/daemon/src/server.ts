@@ -8,6 +8,7 @@ import {
 } from "./app";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { JsonFileEventStore, type EventStore } from "@deliberum/storage";
+import { JsonFileRunStore } from "./json-file-run-store";
 import { isLocalPresetEnabledFromEnv } from "./local-preset";
 import {
   isOpenAICompatibleExtractionEnabledFromEnv,
@@ -19,6 +20,7 @@ import {
 export { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT };
 
 export const DAEMON_EVENT_STORE_PATH_ENV_VAR = "DELIBERUM_DAEMON_EVENT_STORE_PATH" as const;
+export const DAEMON_RUN_STORE_PATH_ENV_VAR = "DELIBERUM_DAEMON_RUN_STORE_PATH" as const;
 
 export type StartDaemonOptions = DaemonAppOptions & {
   onListening?: (address: { host: string; port: number }) => void;
@@ -45,6 +47,25 @@ export function createStartDaemonEventStore(
 
   const filePath = resolveStartDaemonEventStorePath(env);
   return filePath ? new JsonFileEventStore({ filePath, clock: options.clock }) : undefined;
+}
+
+export function resolveStartDaemonRunStorePath(
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  const value = env[DAEMON_RUN_STORE_PATH_ENV_VAR]?.trim();
+  return value && value.length > 0 ? value : undefined;
+}
+
+export function createStartDaemonRunStore(
+  options: Pick<StartDaemonOptions, "runStore"> = {},
+  env: Record<string, string | undefined> = process.env
+): StartDaemonOptions["runStore"] | undefined {
+  if (options.runStore) {
+    return options.runStore;
+  }
+
+  const filePath = resolveStartDaemonRunStorePath(env);
+  return filePath ? new JsonFileRunStore({ filePath }) : undefined;
 }
 
 export function resolveStartDaemonEnableLocalPreset(
@@ -89,6 +110,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const host = options.host ?? DEFAULT_DAEMON_HOST;
   const port = options.port ?? DEFAULT_DAEMON_PORT;
   const eventStore = createStartDaemonEventStore(options);
+  const runStore = createStartDaemonRunStore(options);
   const enableLocalPreset = resolveStartDaemonEnableLocalPreset(options);
   const enableOpenAICompatibleProfile =
     resolveStartDaemonEnableOpenAICompatibleProfile(options);
@@ -104,6 +126,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const daemon = createDaemonApp({
     ...options,
     eventStore,
+    runStore,
     enableLocalPreset,
     enableOpenAICompatibleProfile,
     enableOpenAICompatibleExtraction,

@@ -15,6 +15,7 @@ import {
   ExtractionGeneratorRegistry,
   FinalAuditGeneratorRegistry,
   FinalCandidateGeneratorRegistry,
+  InMemoryRunStore,
   ProposalReviewGeneratorRegistry,
   type ExtractionContext,
   type ExtractionGenerator,
@@ -33,6 +34,7 @@ import {
   DEFAULT_DAEMON_PORT,
   DAEMON_CORS_ORIGINS_ENV_VAR,
   DAEMON_EVENT_STORE_PATH_ENV_VAR,
+  DAEMON_RUN_STORE_PATH_ENV_VAR,
   DEFAULT_DAEMON_CORS_ORIGINS,
   OPENAI_COMPATIBLE_ADAPTER_ID,
   OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
@@ -63,12 +65,14 @@ import {
   OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
   createStartDaemonEventStore,
+  createStartDaemonRunStore,
   createDaemonApp,
   createOpenAICompatibleRunRegistries,
   localPresetRunPlan,
   localPresetStartRequest,
   parseDaemonCorsOriginsFromEnv,
   resolveStartDaemonEventStorePath,
+  resolveStartDaemonRunStorePath,
   resolveStartDaemonEnableOpenAICompatibleExtraction,
   resolveStartDaemonEnableOpenAICompatibleFinalization,
   resolveStartDaemonEnableOpenAICompatibleProfile,
@@ -2127,6 +2131,30 @@ describe("daemon API", () => {
     ).toBe(injectedStore);
   });
 
+  it("resolves optional daemon JSON run store path from env without overriding explicit stores", () => {
+    const injectedStore = new InMemoryRunStore();
+
+    expect(
+      resolveStartDaemonRunStorePath({
+        [DAEMON_RUN_STORE_PATH_ENV_VAR]: " /tmp/deliberum-daemon-runs.json "
+      })
+    ).toBe("/tmp/deliberum-daemon-runs.json");
+    expect(resolveStartDaemonRunStorePath({})).toBeUndefined();
+    expect(
+      resolveStartDaemonRunStorePath({
+        [DAEMON_RUN_STORE_PATH_ENV_VAR]: "   "
+      })
+    ).toBeUndefined();
+    expect(
+      createStartDaemonRunStore(
+        { runStore: injectedStore },
+        {
+          [DAEMON_RUN_STORE_PATH_ENV_VAR]: "/tmp/ignored-runs.json"
+        }
+      )
+    ).toBe(injectedStore);
+  });
+
   it("can opt into JSON event ledger persistence while keeping run metadata in memory", async () => {
     const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-events-"));
     const filePath = join(dir, "events.json");
@@ -2172,6 +2200,84 @@ describe("daemon API", () => {
         payload: expect.any(Object)
       });
       expect(secondDaemon.runStore.listRuns()).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("can opt into JSON run metadata and event ledger continuity together", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-run-workspace-"));
+    const eventStorePath = join(dir, "events.json");
+    const runStorePath = join(dir, "runs.json");
+
+    try {
+      const firstDaemon = createDaemonApp({
+        eventStore: createStartDaemonEventStore(
+          { clock },
+          {
+            [DAEMON_EVENT_STORE_PATH_ENV_VAR]: eventStorePath
+          }
+        ),
+        runStore: createStartDaemonRunStore(
+          {},
+          {
+            [DAEMON_RUN_STORE_PATH_ENV_VAR]: runStorePath
+          }
+        ),
+        idGenerator: createIds(),
+        clock
+      });
+      const created = await createRun(firstDaemon);
+
+      expect(firstDaemon.runStore.listRuns()).toHaveLength(1);
+      expect(firstDaemon.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
+
+      const secondDaemon = createDaemonApp({
+        eventStore: createStartDaemonEventStore(
+          { clock },
+          {
+            [DAEMON_EVENT_STORE_PATH_ENV_VAR]: eventStorePath
+          }
+        ),
+        runStore: createStartDaemonRunStore(
+          {},
+          {
+            [DAEMON_RUN_STORE_PATH_ENV_VAR]: runStorePath
+          }
+        ),
+        idGenerator: createIds(),
+        clock
+      });
+      const runResponse = await secondDaemon.app.request(`/runs/${created.run.runId}`);
+      const runBody = (await runResponse.json()) as {
+        run: {
+          runId: string;
+          sessionId: string;
+        };
+      };
+      const eventsResponse = await secondDaemon.app.request(
+        `/runs/${created.run.runId}/events`
+      );
+      const eventsBody = (await eventsResponse.json()) as {
+        runId: string;
+        sessionId: string;
+        events: Array<{ type: string }>;
+      };
+
+      expect(runResponse.status).toBe(200);
+      expect(runBody.run).toMatchObject({
+        runId: created.run.runId,
+        sessionId: created.run.sessionId
+      });
+      expect(eventsResponse.status).toBe(200);
+      expect(eventsBody).toMatchObject({
+        runId: created.run.runId,
+        sessionId: created.run.sessionId
+      });
+      expect(eventsBody.events).toHaveLength(1);
+      expect(eventsBody.events[0]).toMatchObject({
+        type: "topic_contract_published"
+      });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
