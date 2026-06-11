@@ -89,7 +89,7 @@ examples/
 
 ## Status
 
-Deliberum is implemented through the Stage 15B runtime plus Stage 16 public-readiness hardening and Stage 17 security/readiness hardening. It is still a pre-production local-first codebase, not a production deployment or public hosted service.
+Deliberum is a pre-production local-first codebase with the core deliberation ledger, local daemon, CLI, Web projection workspace, local deterministic run profile, and opt-in OpenAI-compatible provider profile implemented. It is not a production deployment or public hosted service.
 
 Implemented today:
 
@@ -100,14 +100,14 @@ Implemented today:
 - Extraction Proposals and challenge/accept lifecycle events;
 - Candidate Frontier, objection, quality obligation, and accepted-object projections with projection metadata;
 - Final Audit and Outcome Compiler in core as proposal/derived output, not final truth;
-- local CLI commands for sessions, batches, contributions, extraction proposals, projections, and events;
-- local Hono daemon API with in-memory store, projection endpoints, mutation endpoints, SSE, and WebGET endpoints;
-- React/Vite Web UI shell that reads daemon/client data and does not own semantic state;
-- participant adapter interface, fake/manual adapters, OpenAI-compatible adapter, and experimental WebGET adapter;
+- local CLI commands for sessions, batches, contributions, extraction proposals, projections, events, and daemon run orchestration;
+- local Hono daemon API with in-memory store, projection endpoints, mutation endpoints, session final projection endpoint, run orchestration endpoints, SSE, and WebGET endpoints;
+- React/Vite Web UI shell with session projections, daemon run workspace, run outcome view, and session final projection page;
+- participant adapter interface, fake/manual adapters, OpenAI-compatible adapter, OpenAI-compatible extraction/review/finalization components, and experimental WebGET adapter;
 - Resource Broker and Delivery Planner support package;
 - hardening for persisted ledger loading, WebGET submission safety, projection traceability metadata, idempotency result consistency, SSE idempotent publish guards, WebGET context visibility, and resource delivery safety.
 
-Deferred work includes SQLite or other persistent daemon storage, daemon final/resource endpoints, live Web UI final/resource pages, the full adaptive primitive scheduler, signed/public resource hosting, MCP and HTTP-template adapters, and production authentication or multi-user deployment.
+Deferred work includes SQLite or other persistent daemon storage, daemon resource endpoints outside WebGET, live Web UI resource pages, the full adaptive primitive scheduler, signed/public resource hosting, MCP and HTTP-template adapters, provider setup UX, and production authentication or multi-user deployment.
 
 The public name **Deliberum** should be treated as the current project name. Before a formal public launch, maintainers should complete the name, domain, package-scope, and trademark checks described in the private launch checklist.
 

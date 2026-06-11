@@ -316,6 +316,7 @@ function RunNavigation({ runId }: { runId?: string }) {
     <>
       <Link
         to="/runs"
+        activeOptions={{ exact: true }}
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
@@ -323,6 +324,7 @@ function RunNavigation({ runId }: { runId?: string }) {
       </Link>
       <Link
         to="/runs/new"
+        activeOptions={{ exact: true }}
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
@@ -332,6 +334,7 @@ function RunNavigation({ runId }: { runId?: string }) {
         <Link
           to="/runs/$runId"
           params={{ runId }}
+          activeOptions={{ exact: true }}
           activeProps={{ className: `${linkClass} is-active` }}
           inactiveProps={{ className: linkClass }}
         >
@@ -342,6 +345,7 @@ function RunNavigation({ runId }: { runId?: string }) {
         <Link
           to="/runs/$runId/outcome"
           params={{ runId }}
+          activeOptions={{ exact: true }}
           activeProps={{ className: `${linkClass} is-active` }}
           inactiveProps={{ className: linkClass }}
         >

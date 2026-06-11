@@ -49,6 +49,8 @@ CLI run commands are local daemon control commands. They require a running local
 
 The current daemon is a local Hono API. It binds to `127.0.0.1` by default, does not enable wildcard CORS by default, and uses a process-local `InMemoryEventStore`. State resets when the daemon process restarts.
 
+By default, browser CORS is limited to the local Web development origins `http://127.0.0.1:5173` and `http://localhost:5173`. If the Web dev server must run on another local port, set `DELIBERUM_DAEMON_CORS_ORIGINS` to a comma-separated local-origin allow-list, for example `http://127.0.0.1:5180,http://localhost:5180`. The daemon rejects non-local origins for this configuration and never uses wildcard CORS.
+
 The daemon also owns a process-local in-memory run store for local orchestration control. Run endpoints expose safe operational views over orchestrator state; they do not expose provider secrets, own Candidate Frontier semantics, select a single answer, or turn compiled outcomes into authoritative truth.
 
 Implemented endpoints:
@@ -63,6 +65,7 @@ POST /runs
 POST /runs/:runId/start
 GET  /sessions/:sessionId/events
 GET  /sessions/:sessionId/events/stream
+GET  /sessions/:sessionId/final
 GET  /sessions/:sessionId/frontier
 GET  /sessions/:sessionId/objections
 GET  /sessions/:sessionId/obligations
@@ -101,7 +104,18 @@ DELIBERUM_ENABLE_OPENAI_COMPATIBLE_EXTRACTION=true \
 node apps/daemon/dist/index.js
 ```
 
-With both flags enabled, the daemon registers `openai-compatible-extractor`. It reads only the revealed extraction context, calls the configured OpenAI-compatible provider, parses strict JSON extraction proposal material, and then still uses the existing orchestrator/core proposal lifecycle. Provider extraction output is proposal material only; Candidate Frontier changes only through later accepted proposal projection. Provider-backed proposal review, final candidate generation, final audit, and outcome compilation remain deferred. The optional non-secret `DELIBERUM_OPENAI_EXTRACTION_PROVIDER_CONFIG_ID` can select the run-plan provider config id for the extractor and defaults to `openai-main`. The optional non-secret `DELIBERUM_OPENAI_EXTRACTION_RESPONSE_FORMAT=json_object` requests JSON-object provider output for the extraction generator only; it is not applied to participant sealed-divergence calls.
+With both flags enabled, the daemon registers `openai-compatible-extractor`. It reads only the revealed extraction context, calls the configured OpenAI-compatible provider, parses strict JSON extraction proposal material, and then still uses the existing orchestrator/core proposal lifecycle. Provider extraction output is proposal material only; Candidate Frontier changes only through later accepted proposal projection. The optional non-secret `DELIBERUM_OPENAI_EXTRACTION_PROVIDER_CONFIG_ID` can select the run-plan provider config id for the extractor and defaults to `openai-main`. The optional non-secret `DELIBERUM_OPENAI_EXTRACTION_RESPONSE_FORMAT=json_object` requests JSON-object provider output for the extraction generator only; it is not applied to participant sealed-divergence calls.
+
+Stage 22C adds separate opt-in OpenAI-compatible proposal review and finalization components:
+
+```bash
+DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE=true \
+DELIBERUM_ENABLE_OPENAI_COMPATIBLE_REVIEW=true \
+DELIBERUM_ENABLE_OPENAI_COMPATIBLE_FINALIZATION=true \
+node apps/daemon/dist/index.js
+```
+
+With review enabled, the daemon registers `openai-compatible-reviewer`. With finalization enabled, it registers `openai-compatible-final-candidate` and `openai-compatible-final-auditor`. These components still produce proposal, review, and audit material only; they do not become a Judge, select a winner, rank candidates, or turn compiled outcomes into authority. Non-secret provider config id overrides are available as `DELIBERUM_OPENAI_REVIEW_PROVIDER_CONFIG_ID`, `DELIBERUM_OPENAI_FINAL_CANDIDATE_PROVIDER_CONFIG_ID`, and `DELIBERUM_OPENAI_FINAL_AUDIT_PROVIDER_CONFIG_ID`. JSON-object response format can be requested independently with `DELIBERUM_OPENAI_REVIEW_RESPONSE_FORMAT=json_object`, `DELIBERUM_OPENAI_FINAL_CANDIDATE_RESPONSE_FORMAT=json_object`, and `DELIBERUM_OPENAI_FINAL_AUDIT_RESPONSE_FORMAT=json_object`.
 
 For local provider smoke only, the profile also supports optional non-secret request compatibility settings. If these are omitted, the OpenAI-compatible adapter still sends only `model` and `messages`. For MiMo-compatible local smoke, a conservative example is:
 
@@ -130,14 +144,14 @@ GET /webget/:token/submit
 GET /webget/:token/commit
 ```
 
-Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, provider-backed review/finalization components, real provider setup UX, interactive setup, run event follow, production authentication, and remote/multi-user deployment.
+Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, real provider setup UX, interactive setup, run event follow, production authentication, and remote/multi-user deployment.
 
 ## Web UI
 
-The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, final placeholder, resources placeholder, and local daemon run workspace views.
+The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, a daemon-backed compiled outcome projection, a resources placeholder, and local daemon run workspace views.
 
-The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, persistent daemon storage, or provider setup UX yet. It can list runs, create a run from JSON or a deterministic local preset template, inspect daemon run state, start requested run stages from JSON or the local preset start request, read safe projection endpoints by run session id, and display compiled output only as a provisional outcome. It does not implement run event follow or a raw run event timeline.
+The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, persistent daemon storage, or provider setup UX yet. It can list runs, create a run from JSON or a deterministic local preset template, inspect daemon run state, start requested run stages from JSON or the local preset start request, read safe projection endpoints by run session id, and display compiled output only as a provisional outcome. The session Final page reads `GET /sessions/:sessionId/final` and renders the compiled outcome projection with provenance and unresolved material. It does not implement run event follow or a raw run event timeline.
 
 The Web local preset controls require the daemon to be started with `DELIBERUM_ENABLE_LOCAL_PRESET=true`. Without that opt-in daemon profile, created runs remain valid but starting a preset pipeline reports missing local components.
 
-The Web UI does not own semantic deliberation state, implement Candidate Frontier logic, run adapters, serve resources, or compile outcomes. Session final and resource pages currently explain that core packages exist, but daemon/Web live integration for those session pages is deferred.
+The Web UI does not own semantic deliberation state, implement Candidate Frontier logic, run adapters, serve resources, or compile outcomes. The session Final page reads a daemon projection endpoint; the Resources page remains a placeholder until daemon resource endpoints outside WebGET are implemented.

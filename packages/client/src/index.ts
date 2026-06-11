@@ -123,6 +123,13 @@ export type ObligationsResponse = {
   projection: ProjectionMetadataResponse;
 };
 
+export type SessionFinalResponse = {
+  sessionId: string;
+  status: "compiled";
+  draftStatus: string;
+  outcome: unknown;
+};
+
 export type CreateRunResponse = {
   run: unknown;
   session: {
@@ -231,6 +238,10 @@ export class DeliberumDaemonClient {
 
   getObligations(sessionId: string): Promise<ObligationsResponse> {
     return this.request("GET", `/sessions/${encodeURIComponent(sessionId)}/obligations`);
+  }
+
+  getSessionFinal(sessionId: string): Promise<SessionFinalResponse> {
+    return this.request("GET", `/sessions/${encodeURIComponent(sessionId)}/final`);
   }
 
   openBatch(sessionId: string, input: OpenBatchRequest): Promise<OpenBatchResponse> {

@@ -116,6 +116,7 @@ describe("DeliberumDaemonClient", () => {
     await daemonClient.getFrontier("session/1");
     await daemonClient.getObjections("session/1");
     await daemonClient.getObligations("session/1");
+    await daemonClient.getSessionFinal("session/1");
 
     const urls = fetch.mock.calls.map((call) => call[0]);
     expect(urls).toEqual([
@@ -128,7 +129,8 @@ describe("DeliberumDaemonClient", () => {
       "http://127.0.0.1:3877/sessions/session%2F1/events",
       "http://127.0.0.1:3877/sessions/session%2F1/frontier",
       "http://127.0.0.1:3877/sessions/session%2F1/objections",
-      "http://127.0.0.1:3877/sessions/session%2F1/obligations"
+      "http://127.0.0.1:3877/sessions/session%2F1/obligations",
+      "http://127.0.0.1:3877/sessions/session%2F1/final"
     ]);
   });
 

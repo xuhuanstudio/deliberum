@@ -27,6 +27,8 @@ import {
 import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
+  DAEMON_CORS_ORIGINS_ENV_VAR,
+  DEFAULT_DAEMON_CORS_ORIGINS,
   OPENAI_COMPATIBLE_ADAPTER_ID,
   OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
   OPENAI_COMPATIBLE_BASE_URL_ENV_VAR,
@@ -59,6 +61,7 @@ import {
   createOpenAICompatibleRunRegistries,
   localPresetRunPlan,
   localPresetStartRequest,
+  parseDaemonCorsOriginsFromEnv,
   resolveStartDaemonEnableOpenAICompatibleExtraction,
   resolveStartDaemonEnableOpenAICompatibleFinalization,
   resolveStartDaemonEnableOpenAICompatibleProfile,
@@ -1439,6 +1442,40 @@ describe("daemon API", () => {
     expect(remoteResponse.headers.get("access-control-allow-origin")).not.toBe(
       "https://example.com"
     );
+    expect(DEFAULT_DAEMON_CORS_ORIGINS).toEqual([
+      "http://127.0.0.1:5173",
+      "http://localhost:5173"
+    ]);
+  });
+
+  it("allows configured local Web dev origins without enabling remote CORS", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      corsOrigins: [" http://127.0.0.1:5180/path ", "http://127.0.0.1:5180"]
+    });
+    const allowedResponse = await daemonApp.app.request("/sessions/session-1/final", {
+      headers: {
+        Origin: "http://127.0.0.1:5180"
+      }
+    });
+    const remoteResponse = await daemonApp.app.request("/sessions/session-1/final", {
+      headers: {
+        Origin: "https://example.com"
+      }
+    });
+
+    expect(allowedResponse.status).toBe(200);
+    expect(allowedResponse.headers.get("access-control-allow-origin")).toBe(
+      "http://127.0.0.1:5180"
+    );
+    expect(allowedResponse.headers.get("access-control-allow-origin")).not.toBe("*");
+    expect(remoteResponse.status).toBe(200);
+    expect(remoteResponse.headers.get("access-control-allow-origin")).toBeNull();
+    expect(parseDaemonCorsOriginsFromEnv({
+      [DAEMON_CORS_ORIGINS_ENV_VAR]:
+        " http://127.0.0.1:5180 , http://localhost:5180/path "
+    })).toEqual(["http://127.0.0.1:5180", "http://localhost:5180"]);
   });
 
   it("handles local Web dev preflight for run requests without wildcard CORS", async () => {
@@ -1614,6 +1651,54 @@ describe("daemon API", () => {
     expect(startBody.run.rounds.finalization.at(-1)?.outcomeCompilation?.status).toBe("compiled");
     expectSafeRunApiPayload(startBody);
     expectSafeRunApiPayload(outcomeBody);
+  });
+
+  it("compiles a daemon-backed session final projection without mutating the ledger", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const startResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    const eventCountBeforeFinalRead =
+      daemonApp.eventStore.listEvents(created.run.sessionId).length;
+    const response = await daemonApp.app.request(
+      `/sessions/${created.run.sessionId}/final`
+    );
+    const body = (await response.json()) as {
+      sessionId: string;
+      status: string;
+      draftStatus: string;
+      outcome: {
+        recommendation: string;
+        provenance: {
+          projectionBasis: string;
+          finalCandidateProposalEventId?: string;
+          finalAuditEventIds: string[];
+        };
+      };
+    };
+
+    expect(startResponse.status).toBe(200);
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      sessionId: created.run.sessionId,
+      status: "compiled",
+      draftStatus: "provisional",
+      outcome: {
+        recommendation: "Use the local daemon run API as a provisional orchestration control surface.",
+        provenance: {
+          projectionBasis: "event_ledger_and_projections"
+        }
+      }
+    });
+    expect(body.outcome.provenance.finalCandidateProposalEventId).toBeDefined();
+    expect(body.outcome.provenance.finalAuditEventIds).toHaveLength(1);
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(
+      eventCountBeforeFinalRead
+    );
+    expectSafeRunApiPayload(body);
   });
 
   it("returns a safe not_available outcome before final candidate proposal exists", async () => {

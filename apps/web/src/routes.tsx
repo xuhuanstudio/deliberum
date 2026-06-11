@@ -34,7 +34,9 @@ import {
   ViewFrame,
   asArray,
   formatRecordValue,
-  getRecordValue
+  getRecordValue,
+  getStringRecordValue,
+  sanitizeForDisplay
 } from "./view-components";
 
 const rootRoute = createRootRoute({
@@ -110,7 +112,7 @@ const sessionEventsRoute = createRoute({
 const sessionFinalRoute = createRoute({
   getParentRoute: () => sessionRoute,
   path: "final",
-  component: FinalPlaceholderPage
+  component: FinalPage
 });
 
 const sessionResourcesRoute = createRoute({
@@ -250,6 +252,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
       <Link
         to="/sessions/$sessionId"
         params={{ sessionId }}
+        activeOptions={{ exact: true }}
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
@@ -459,17 +462,102 @@ function EventsPage() {
   );
 }
 
-function FinalPlaceholderPage() {
+function FinalPage() {
+  const { sessionId } = useSessionParams();
+  const { client } = useDaemonRuntime();
+  const finalQuery = useQuery({
+    queryKey: ["session-final", sessionId],
+    queryFn: () => client.getSessionFinal(sessionId)
+  });
+  const outcome = finalQuery.data?.outcome;
+  const provenance = getRecordValue(outcome, "provenance");
+  const eventRange = getRecordValue(provenance, "eventRange");
+  const fromSequence = getRecordValue(eventRange, "fromSequence");
+  const toSequence = getRecordValue(eventRange, "toSequence");
+  const finalCandidateProposalEventId = getStringRecordValue(
+    provenance,
+    "finalCandidateProposalEventId"
+  );
+  const recommendation = getRecordValue(outcome, "recommendation");
+
   return (
     <ViewFrame
-      eyebrow="Future stage"
-      title="Outcome Compiler placeholder"
-      description="Core outcome compilation exists; daemon and Web live integration is deferred."
+      eyebrow="Outcome Compiler"
+      title="Compiled outcome projection"
+      description="A daemon-backed projection from accepted proposal material and ledger provenance. It remains reviewable deliberation material, not authority."
     >
-      <StatusBanner
-        title="Outcome endpoint integration is not implemented"
-        detail="This page is reserved for a daemon-backed final view that reads compiled outcomes from the ledger and projections."
-      />
+      <QueryState query={finalQuery}>
+        <StatusBanner
+          tone={finalQuery.data?.draftStatus === "draft" ? "ok" : "warning"}
+          title={
+            finalQuery.data?.draftStatus === "draft"
+              ? "Draft compiled"
+              : "Projection remains provisional"
+          }
+          detail="The page reads the daemon session final endpoint and preserves unresolved material in the returned projection."
+        />
+        <KeyValueGrid
+          items={[
+            {
+              label: "Session id",
+              value: finalQuery.data?.sessionId ?? sessionId
+            },
+            {
+              label: "Draft status",
+              value: finalQuery.data?.draftStatus ?? "None"
+            },
+            {
+              label: "Event range",
+              value:
+                typeof fromSequence === "number" || typeof toSequence === "number"
+                  ? `${formatRecordValue(fromSequence)} to ${formatRecordValue(toSequence)}`
+                  : "None"
+            },
+            {
+              label: "Candidate proposal event",
+              value: finalCandidateProposalEventId ?? "None"
+            }
+          ]}
+        />
+        <DataPanel
+          title="Recommendation"
+          description="The compiled recommendation is shown as projection material."
+        >
+          {typeof recommendation === "string" && recommendation.length > 0 ? (
+            <JsonBlock value={recommendation} />
+          ) : (
+            <EmptyState
+              title="No recommendation"
+              description="The daemon compiled no recommendation text for this session."
+            />
+          )}
+        </DataPanel>
+        <DataPanel title="Unresolved questions">
+          <JsonBlock
+            value={sanitizeForDisplay(getRecordValue(outcome, "unresolvedQuestions") ?? [])}
+          />
+        </DataPanel>
+        <DataPanel title="Continuation suggestions">
+          <JsonBlock
+            value={sanitizeForDisplay(getRecordValue(outcome, "continuationSuggestions") ?? [])}
+          />
+        </DataPanel>
+        <DataPanel title="Limitations">
+          <JsonBlock value={sanitizeForDisplay(getRecordValue(outcome, "limitations") ?? [])} />
+        </DataPanel>
+        <DataPanel
+          title="Provenance"
+          description="Projection version, event ids, and selected candidate proposal reference."
+        >
+          <JsonBlock value={sanitizeForDisplay(provenance ?? {})} />
+        </DataPanel>
+        <DataPanel
+          title="Compiled outcome JSON"
+          description="Complete daemon response for inspection; rendered without client-side semantic mutation."
+        >
+          <JsonBlock value={sanitizeForDisplay(outcome ?? {})} />
+        </DataPanel>
+      </QueryState>
     </ViewFrame>
   );
 }

@@ -1,6 +1,11 @@
 import { serve } from "@hono/node-server";
 import type { ServerType } from "@hono/node-server";
-import { createDaemonApp, type DaemonApp, type DaemonAppOptions } from "./app";
+import {
+  createDaemonApp,
+  parseDaemonCorsOriginsFromEnv,
+  type DaemonApp,
+  type DaemonAppOptions
+} from "./app";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { isLocalPresetEnabledFromEnv } from "./local-preset";
 import {
@@ -83,6 +88,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
     openAICompatibleEnv:
       options.openAICompatibleEnv ??
       (enableOpenAICompatibleProfile ? process.env : undefined),
+    corsOrigins: options.corsOrigins ?? parseDaemonCorsOriginsFromEnv(process.env),
     host,
     port
   });

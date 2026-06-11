@@ -2,6 +2,7 @@ import {
   acceptProposal,
   challengeProposal,
   closeSealedBatch,
+  compileOutcome,
   createSession,
   openSealedBatch,
   projectAcceptedDeliberationObjects,
@@ -79,6 +80,7 @@ export type DaemonAppOptions = {
   enableOpenAICompatibleFinalization?: boolean;
   openAICompatibleEnv?: Record<string, string | undefined>;
   openAICompatibleFetch?: OpenAICompatibleProfileOptions["fetch"];
+  corsOrigins?: readonly string[];
   idGenerator?: IdGenerator;
   clock?: Clock;
   host?: string;
@@ -105,7 +107,11 @@ export type SafeErrorResponse = {
   };
 };
 
-const LOCAL_WEB_DEV_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"];
+export const DAEMON_CORS_ORIGINS_ENV_VAR = "DELIBERUM_DAEMON_CORS_ORIGINS" as const;
+export const DEFAULT_DAEMON_CORS_ORIGINS = [
+  "http://127.0.0.1:5173",
+  "http://localhost:5173"
+] as const;
 
 class DaemonHttpError extends Error {
   readonly code: string;
@@ -130,6 +136,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   const port = options.port ?? DEFAULT_DAEMON_PORT;
   const resourceBroker = options.resourceBroker ?? new InMemoryResourceBroker();
   const deliveryPlanner = options.deliveryPlanner ?? new DeliveryPlanner({ broker: resourceBroker });
+  const corsOrigins = normalizeCorsOrigins(options.corsOrigins) ?? [
+    ...DEFAULT_DAEMON_CORS_ORIGINS
+  ];
   const localPresetRegistries = options.enableLocalPreset
     ? createLocalPresetRunRegistries()
     : undefined;
@@ -211,7 +220,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   app.use(
     "*",
     cors({
-      origin: LOCAL_WEB_DEV_ORIGINS,
+      origin: corsOrigins,
       allowMethods: ["GET", "POST", "OPTIONS"],
       allowHeaders: ["Content-Type"]
     })
@@ -292,6 +301,25 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       })
     )
   );
+
+  app.get("/sessions/:sessionId/final", (context) => {
+    const sessionId = context.req.param("sessionId");
+    const finalCandidateProposalEventId = normalizeOptionalQueryValue(
+      context.req.query("finalCandidateProposalEventId")
+    );
+    const outcome = compileOutcome({
+      eventStore,
+      sessionId,
+      finalCandidateProposalEventId
+    });
+
+    return context.json({
+      sessionId,
+      status: "compiled",
+      draftStatus: outcome.draftStatus,
+      outcome
+    });
+  });
 
   app.post("/sessions", async (context) => {
     const body = await readJsonObject(context);
@@ -657,6 +685,70 @@ async function readJsonObject(context: Context): Promise<Record<string, unknown>
   }
 
   return parsed as Record<string, unknown>;
+}
+
+export function parseDaemonCorsOriginsFromEnv(
+  env: Record<string, string | undefined>
+): string[] | undefined {
+  const rawValue = env[DAEMON_CORS_ORIGINS_ENV_VAR]?.trim();
+
+  if (!rawValue) {
+    return undefined;
+  }
+
+  return normalizeCorsOrigins(rawValue.split(","));
+}
+
+function normalizeCorsOrigins(values: readonly string[] | undefined): string[] | undefined {
+  const origins = values
+    ?.map((value) => normalizeCorsOrigin(value))
+    .filter((value): value is string => value !== undefined);
+
+  return origins && origins.length > 0 ? [...new Set(origins)] : undefined;
+}
+
+function normalizeCorsOrigin(value: string): string | undefined {
+  const trimmed = value.trim();
+
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+
+  let parsed: URL;
+
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error("Daemon CORS origins must be valid URLs.");
+  }
+
+  if (
+    parsed.protocol !== "http:" &&
+    parsed.protocol !== "https:"
+  ) {
+    throw new Error("Daemon CORS origins must use http or https.");
+  }
+
+  if (!isLocalHost(parsed.hostname)) {
+    throw new Error("Daemon CORS origins must be local host origins.");
+  }
+
+  return parsed.origin;
+}
+
+function isLocalHost(hostname: string): boolean {
+  return (
+    hostname === "127.0.0.1" ||
+    hostname === "localhost" ||
+    hostname === "::1" ||
+    hostname === "[::1]"
+  );
+}
+
+function normalizeOptionalQueryValue(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
 }
 
 function safeError(context: Context, error: Error): Response {

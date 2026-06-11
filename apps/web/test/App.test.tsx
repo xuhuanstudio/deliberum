@@ -117,6 +117,28 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         limitations: ["Needs further audit"]
       }
     })),
+    getSessionFinal: vi.fn(async () => ({
+      sessionId: runDetail.sessionId,
+      status: "compiled",
+      draftStatus: "provisional",
+      outcome: {
+        recommendation: "Use the daemon-backed final projection as reviewable material.",
+        unresolvedQuestions: ["Evidence coverage remains incomplete."],
+        continuationSuggestions: ["Collect another source before relying on this draft."],
+        limitations: ["Compiled from accepted proposal material only."],
+        provenance: {
+          projectionBasis: "event_ledger_and_projections",
+          projectionVersion: "1",
+          eventRange: {
+            fromSequence: 0,
+            toSequence: 8
+          },
+          eventIds: ["event-1", "proposal-event-1", "final-candidate-event-1"],
+          finalCandidateProposalEventId: "final-candidate-event-1",
+          finalAuditEventIds: ["final-audit-event-1"]
+        }
+      }
+    })),
     getFrontier: vi.fn(async () => ({
       basis: "accepted_active_candidates",
       candidates: [
@@ -646,6 +668,26 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText(/No final candidate proposal exists yet/)).toBeTruthy();
   });
 
+  it("renders session final projection from the daemon endpoint", async () => {
+    const client = renderApp("/sessions/session-1/final");
+
+    await screen.findByText("Compiled outcome projection");
+    await waitFor(() => expect(client.getSessionFinal).toHaveBeenCalledWith("session-1"));
+    expect(screen.getByText("Projection remains provisional")).toBeTruthy();
+    expect(screen.getByText("Candidate proposal event")).toBeTruthy();
+    expect(screen.getAllByText(/final-candidate-event-1/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Use the daemon-backed final projection/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Unresolved questions")).toBeTruthy();
+    expect(screen.getAllByText(/Evidence coverage remains incomplete/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Provenance")).toBeTruthy();
+    expect(client.getRunOutcome).not.toHaveBeenCalled();
+    expect(
+      Array.from(document.querySelectorAll(".du-nav-link.is-active")).map(
+        (element) => element.textContent
+      )
+    ).toEqual(["Final"]);
+  });
+
   it("redacts daemon and generic errors on run pages", async () => {
     const client = createClient({
       getRun: vi.fn(async () => {
@@ -665,13 +707,7 @@ describe("@deliberum/web shell", () => {
     expect(renderedText).not.toContain("privateStack");
   });
 
-  it("keeps final and resources pages as explicit placeholders", async () => {
-    renderApp("/sessions/session-1/final");
-
-    expect(await screen.findByText("Outcome Compiler placeholder")).toBeTruthy();
-    expect(screen.getByText("Outcome endpoint integration is not implemented")).toBeTruthy();
-
-    cleanup();
+  it("keeps resources page as an explicit placeholder", async () => {
     renderApp("/sessions/session-1/resources");
 
     expect(await screen.findByText("Resource Broker placeholder")).toBeTruthy();
