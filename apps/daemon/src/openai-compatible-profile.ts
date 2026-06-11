@@ -19,6 +19,8 @@ export const OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR =
 export const OPENAI_COMPATIBLE_ADAPTER_ID = "openai-compatible" as const;
 export const OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR =
   "DELIBERUM_OPENAI_EXTRACTION_PROVIDER_CONFIG_ID" as const;
+export const OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR =
+  "DELIBERUM_OPENAI_EXTRACTION_RESPONSE_FORMAT" as const;
 export const OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID = "openai-main" as const;
 export const OPENAI_COMPATIBLE_API_KEY_ENV_VAR = "DELIBERUM_OPENAI_API_KEY" as const;
 export const OPENAI_COMPATIBLE_BASE_URL_ENV_VAR = "DELIBERUM_OPENAI_BASE_URL" as const;
@@ -68,6 +70,9 @@ export function createOpenAICompatibleRunRegistries(
   options: OpenAICompatibleProfileOptions = {}
 ): OpenAICompatibleProfileRegistries {
   const requestOptions = createOpenAICompatibleRequestOptionsFromEnv(options.env);
+  const extractionRequestOptions = options.enableExtraction
+    ? createOpenAICompatibleExtractionRequestOptionsFromEnv(options.env, requestOptions)
+    : undefined;
 
   return {
     adapterRegistry: new AdapterRegistry([
@@ -104,7 +109,7 @@ export function createOpenAICompatibleRunRegistries(
               timeoutMs: parseOptionalPositiveInteger(
                 readOptionalEnv(options.env, OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR)
               ),
-              requestOptions,
+              requestOptions: extractionRequestOptions,
               fetch: options.fetch
             })
           ])
@@ -119,6 +124,29 @@ export function createOpenAICompatibleRuntimeEnv(
   return {
     [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: env?.[OPENAI_COMPATIBLE_API_KEY_ENV_VAR]
   };
+}
+
+function createOpenAICompatibleExtractionRequestOptionsFromEnv(
+  env: Record<string, string | undefined> | undefined,
+  baseRequestOptions: OpenAICompatibleRequestOptions | undefined
+): OpenAICompatibleRequestOptions | undefined {
+  const requestOptions: OpenAICompatibleRequestOptions = {
+    ...(baseRequestOptions ?? {})
+  };
+  const responseFormat = readOptionalEnv(
+    env,
+    OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR
+  );
+
+  if (responseFormat !== undefined) {
+    if (responseFormat !== "json_object") {
+      throwInvalidOpenAICompatibleRequestOption();
+    }
+
+    requestOptions.responseFormat = "json_object";
+  }
+
+  return Object.keys(requestOptions).length > 0 ? requestOptions : undefined;
 }
 
 function readOptionalEnv(

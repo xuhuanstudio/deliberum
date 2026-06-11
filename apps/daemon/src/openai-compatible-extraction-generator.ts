@@ -201,17 +201,7 @@ function createExtractionUserPrompt(context: ExtractionContext): string {
 }
 
 function parseExtractionOutput(content: string): ExtractionGeneratorResult {
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    throw new OpenAICompatibleExtractionGeneratorError(
-      "OpenAI-compatible extraction output was not valid JSON.",
-      "provider_malformed_response"
-    );
-  }
-
+  const parsed = parseExtractionJsonObject(content);
   const extraction = ExtractionGeneratorResultSchema.safeParse(parsed);
   if (!extraction.success) {
     throw new OpenAICompatibleExtractionGeneratorError(
@@ -221,4 +211,45 @@ function parseExtractionOutput(content: string): ExtractionGeneratorResult {
   }
 
   return extraction.data;
+}
+
+function parseExtractionJsonObject(content: string): unknown {
+  const trimmed = content.trim();
+  const jsonSource = extractRawJsonObjectSource(trimmed) ??
+    extractSingleFencedJsonObjectSource(trimmed);
+
+  if (!jsonSource) {
+    throw new OpenAICompatibleExtractionGeneratorError(
+      "OpenAI-compatible extraction output was not a JSON object.",
+      "provider_malformed_response"
+    );
+  }
+
+  try {
+    const parsed = JSON.parse(jsonSource);
+
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("not an object");
+    }
+
+    return parsed;
+  } catch {
+    throw new OpenAICompatibleExtractionGeneratorError(
+      "OpenAI-compatible extraction output was not valid JSON.",
+      "provider_malformed_response"
+    );
+  }
+}
+
+function extractRawJsonObjectSource(trimmedContent: string): string | undefined {
+  return trimmedContent.startsWith("{") && trimmedContent.endsWith("}")
+    ? trimmedContent
+    : undefined;
+}
+
+function extractSingleFencedJsonObjectSource(trimmedContent: string): string | undefined {
+  const match = /^```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```$/i.exec(trimmedContent);
+  const inner = match?.[1]?.trim();
+
+  return inner && inner.startsWith("{") && inner.endsWith("}") ? inner : undefined;
 }

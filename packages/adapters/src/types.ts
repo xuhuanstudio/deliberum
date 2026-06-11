@@ -73,6 +73,7 @@ export type OpenAICompatibleRequestOptions = {
   frequencyPenalty?: number;
   presencePenalty?: number;
   thinking?: "disabled";
+  responseFormat?: "json_object";
 };
 
 export type ParticipantAdapterSafeErrorCategory =

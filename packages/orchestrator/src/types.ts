@@ -50,6 +50,7 @@ export const OpenAICompatibleTokenParameterSchema = z.enum([
   "max_completion_tokens"
 ]);
 export const OpenAICompatibleThinkingSchema = z.literal("disabled");
+export const OpenAICompatibleResponseFormatSchema = z.literal("json_object");
 export const OpenAICompatibleRequestOptionsSchema = z
   .object({
     tokenParameter: OpenAICompatibleTokenParameterSchema.optional(),
@@ -59,7 +60,8 @@ export const OpenAICompatibleRequestOptionsSchema = z
     stream: z.literal(false).optional(),
     frequencyPenalty: z.number().finite().min(-2).max(2).optional(),
     presencePenalty: z.number().finite().min(-2).max(2).optional(),
-    thinking: OpenAICompatibleThinkingSchema.optional()
+    thinking: OpenAICompatibleThinkingSchema.optional(),
+    responseFormat: OpenAICompatibleResponseFormatSchema.optional()
   })
   .strict();
 export type OpenAICompatibleRequestOptions = z.infer<

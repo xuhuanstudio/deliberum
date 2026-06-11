@@ -42,6 +42,9 @@ export type OpenAICompatibleChatRequest = {
   thinking?: {
     type: "disabled";
   };
+  response_format?: {
+    type: "json_object";
+  };
 };
 
 export type OpenAICompatibleChatRequestConfig = {
@@ -166,6 +169,14 @@ export function normalizeOpenAICompatibleRequestOptions(
     }
 
     normalized.thinking = "disabled";
+  }
+
+  if (requestOptions.responseFormat !== undefined) {
+    if (requestOptions.responseFormat !== "json_object") {
+      throwInvalidRequestOption();
+    }
+
+    normalized.responseFormat = "json_object";
   }
 
   return normalized;
@@ -312,6 +323,12 @@ function applyRequestOptions(
   if (requestOptions.thinking === "disabled") {
     request.thinking = {
       type: "disabled"
+    };
+  }
+
+  if (requestOptions.responseFormat === "json_object") {
+    request.response_format = {
+      type: "json_object"
     };
   }
 }

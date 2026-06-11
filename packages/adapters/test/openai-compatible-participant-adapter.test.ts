@@ -298,6 +298,52 @@ describe("OpenAICompatibleParticipantAdapter", () => {
     });
   });
 
+  it("emits JSON object response format only when configured", async () => {
+    const fetch = createSuccessfulFetch();
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      model: "model-1",
+      requestOptions: {
+        responseFormat: "json_object"
+      },
+      fetch
+    });
+
+    await adapter.prepareContribution({ payload: "safe prompt" }, context);
+    const [, init] = getFetchCall(fetch);
+    const body = JSON.parse(init.body) as {
+      response_format?: unknown;
+    };
+
+    expect(body.response_format).toEqual({
+      type: "json_object"
+    });
+  });
+
+  it("rejects unsupported response format before fetch", async () => {
+    const fetch = createSuccessfulFetch();
+    let thrown: unknown;
+
+    try {
+      new OpenAICompatibleParticipantAdapter({
+        baseUrl: "https://provider.example",
+        model: "model-1",
+        requestOptions: {
+          responseFormat: "json_schema"
+        } as never,
+        fetch
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(OpenAICompatibleAdapterError);
+    expect((thrown as OpenAICompatibleAdapterError).safeCategory).toBe(
+      "provider_config_invalid"
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("rejects unsupported stream true before fetch", async () => {
     const fetch = createSuccessfulFetch();
     let thrown: unknown;
