@@ -5,6 +5,7 @@ import {
 } from "@deliberum/core";
 import type { OutcomeCompilationResult } from "@deliberum/core";
 import {
+  ProviderSecretResolutionError,
   FinalizationContextError,
   FinalizationValidationError,
   RunFinalizationRoundError,
@@ -15,6 +16,11 @@ import {
   validateFinalAuditGeneratorResult,
   validateFinalCandidateGeneratorResult
 } from "./finalization-validation";
+import { resolveProviderRuntimeConfig } from "./provider-secret-resolver";
+import {
+  FinalizationRunErrorCategorySchema,
+  RunSafeProviderResponseShapeSchema
+} from "./types";
 import type {
   DeliberationRunRecord,
   ExplicitFinalCandidateDraft,
@@ -29,7 +35,8 @@ import type {
   RoundExecutionClaim,
   RunFinalizationRoundInput,
   RunFinalizationRoundOptions,
-  RunFinalizationRoundResult
+  RunFinalizationRoundResult,
+  RunSafeDiagnostics
 } from "./types";
 
 const DEFAULT_FINALIZATION_ROUND_ID = "initial" as const;
@@ -266,7 +273,8 @@ async function executeClaimedFinalizationRound(
           auditorId,
           status: "skipped",
           auditEventId: state?.auditEventId,
-          errorCategory: state?.errorCategory
+          errorCategory: state?.errorCategory,
+          safeDiagnostics: state?.safeDiagnostics
         };
       }
 
@@ -367,27 +375,39 @@ async function executeFinalCandidateSource(input: {
 
     const generatorResult = input.finalCandidateSource.sourceType === "explicit"
       ? input.finalCandidateSource.draft
-      : await Promise.resolve()
-          .then(() => {
-            const generator = input.options.finalCandidateGeneratorRegistry.require(
-              input.finalCandidateSource.sourceId
-            );
+      : await (async () => {
+          const generator = input.options.finalCandidateGeneratorRegistry.require(
+            input.finalCandidateSource.sourceId
+          );
+          const providerRuntimeConfig = resolveFinalCandidateRuntimeConfig(
+            input.run,
+            generator,
+            input.options.env
+          );
 
-            return generator.proposeFinalCandidate(
-              {
-                instructions:
-                  "Prepare final candidate proposal material only. Do not return authority or single-answer semantics.",
-                context: structuredClone(input.context)
-              },
-              structuredClone(input.context)
-            );
-          })
-          .catch(() => {
-            throw new RunFinalizationRoundError(
-              "final_candidate_generator_failed",
-              "Final candidate generator failed to produce proposal material."
-            );
-          });
+          return Promise.resolve()
+            .then(() =>
+              generator.proposeFinalCandidate(
+                {
+                  instructions:
+                    "Prepare final candidate proposal material only. Do not return authority or single-answer semantics.",
+                  context: structuredClone(input.context)
+                },
+                structuredClone(input.context),
+                providerRuntimeConfig
+              )
+            )
+            .catch((error) => {
+              if (isSafeFinalizationGeneratorFailure(error)) {
+                throw error;
+              }
+
+              throw new RunFinalizationRoundError(
+                "final_candidate_generator_failed",
+                "Final candidate generator failed to produce proposal material."
+              );
+            });
+        })();
     const draft = validateFinalCandidateGeneratorResult(generatorResult, input.context);
 
     assertFinalizationRoundExecutionClaimOwned(
@@ -423,11 +443,14 @@ async function executeFinalCandidateSource(input: {
       appended: proposed.appended
     };
   } catch (error) {
+    const failure = getFinalCandidateFailure(error);
+
     return {
       sourceId: input.finalCandidateSource.sourceId,
       sourceType: input.finalCandidateSource.sourceType,
       status: "failed",
-      errorCategory: getFinalCandidateErrorCategory(error)
+      errorCategory: failure.errorCategory,
+      safeDiagnostics: failure.safeDiagnostics
     };
   }
 }
@@ -450,6 +473,11 @@ async function executeFinalAuditGenerator(input: {
     );
 
     const generator = input.options.finalAuditGeneratorRegistry.require(input.auditorId);
+    const providerRuntimeConfig = resolveFinalAuditRuntimeConfig(
+      input.run,
+      generator,
+      input.options.env
+    );
     const generatorResult = await Promise.resolve()
       .then(() =>
         generator.auditFinalCandidate(
@@ -459,10 +487,15 @@ async function executeFinalAuditGenerator(input: {
             context: structuredClone(input.context),
             finalCandidateProposalEventId: input.finalCandidateProposalEventId
           },
-          structuredClone(input.context)
+          structuredClone(input.context),
+          providerRuntimeConfig
         )
       )
-      .catch(() => {
+      .catch((error) => {
+        if (isSafeFinalizationGeneratorFailure(error)) {
+          throw error;
+        }
+
         throw new RunFinalizationRoundError(
           "final_audit_generator_failed",
           "Final audit generator failed to produce audit material."
@@ -508,10 +541,13 @@ async function executeFinalAuditGenerator(input: {
       appended: recorded.appended
     };
   } catch (error) {
+    const failure = getFinalAuditFailure(error);
+
     return {
       auditorId: input.auditorId,
       status: "failed",
-      errorCategory: getFinalAuditErrorCategory(error)
+      errorCategory: failure.errorCategory,
+      safeDiagnostics: failure.safeDiagnostics
     };
   }
 }
@@ -911,7 +947,8 @@ function createSkippedFinalCandidateResult(
     sourceType: state.sourceType,
     status: "skipped",
     proposalEventId: state.proposalEventId,
-    errorCategory: state.errorCategory
+    errorCategory: state.errorCategory,
+    safeDiagnostics: state.safeDiagnostics
   };
 }
 
@@ -934,6 +971,7 @@ function mergeFinalCandidateResult(
     status: result.status,
     proposalEventId: result.proposalEventId,
     errorCategory: result.status === "proposed" ? undefined : result.errorCategory,
+    safeDiagnostics: result.status === "proposed" ? undefined : result.safeDiagnostics,
     previousErrorCategories,
     completedAt
   };
@@ -1004,6 +1042,7 @@ function mergeAuditResults(
       status: result.status,
       auditEventId: result.auditEventId,
       errorCategory: result.status === "recorded" ? undefined : result.errorCategory,
+      safeDiagnostics: result.status === "recorded" ? undefined : result.safeDiagnostics,
       previousErrorCategories,
       completedAt
     };
@@ -1144,22 +1183,110 @@ function createResultFromFinalizationRound(
           sourceType: round.finalCandidate.sourceType,
           status: "skipped",
           proposalEventId: round.finalCandidate.proposalEventId,
-          errorCategory: round.finalCandidate.errorCategory
+          errorCategory: round.finalCandidate.errorCategory,
+          safeDiagnostics: round.finalCandidate.safeDiagnostics
         }
       : undefined,
     auditResults: round.auditorStates.map((auditorState) => ({
       auditorId: auditorState.auditorId,
       status: "skipped",
       auditEventId: auditorState.auditEventId,
-      errorCategory: auditorState.errorCategory
+      errorCategory: auditorState.errorCategory,
+      safeDiagnostics: auditorState.safeDiagnostics
     })),
     outcomeCompilation: round.outcomeCompilation
+  };
+}
+
+function resolveFinalCandidateRuntimeConfig(
+  run: DeliberationRunRecord,
+  generator: {
+    adapterId?: string;
+    providerConfigId?: string;
+  },
+  env: Record<string, string | undefined> | undefined
+) {
+  if (!generator.providerConfigId) {
+    return undefined;
+  }
+
+  const providerConfig = run.plan.providerConfigs.find(
+    (candidate) => candidate.id === generator.providerConfigId
+  );
+
+  if (!providerConfig) {
+    throw new RunFinalizationRoundError(
+      "provider_config_invalid",
+      "Final candidate generator provider config was not found."
+    );
+  }
+
+  if (generator.adapterId && providerConfig.adapterId !== generator.adapterId) {
+    throw new RunFinalizationRoundError(
+      "provider_config_invalid",
+      "Final candidate generator provider config adapter is invalid."
+    );
+  }
+
+  return resolveProviderRuntimeConfig({
+    providerConfig,
+    env
+  });
+}
+
+function resolveFinalAuditRuntimeConfig(
+  run: DeliberationRunRecord,
+  auditor: {
+    adapterId?: string;
+    providerConfigId?: string;
+  },
+  env: Record<string, string | undefined> | undefined
+) {
+  if (!auditor.providerConfigId) {
+    return undefined;
+  }
+
+  const providerConfig = run.plan.providerConfigs.find(
+    (candidate) => candidate.id === auditor.providerConfigId
+  );
+
+  if (!providerConfig) {
+    throw new RunFinalizationRoundError(
+      "provider_config_invalid",
+      "Final audit generator provider config was not found."
+    );
+  }
+
+  if (auditor.adapterId && providerConfig.adapterId !== auditor.adapterId) {
+    throw new RunFinalizationRoundError(
+      "provider_config_invalid",
+      "Final audit generator provider config adapter is invalid."
+    );
+  }
+
+  return resolveProviderRuntimeConfig({
+    providerConfig,
+    env
+  });
+}
+
+function getFinalCandidateFailure(error: unknown): {
+  errorCategory: FinalizationRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
+} {
+  return {
+    errorCategory: getFinalCandidateErrorCategory(error),
+    safeDiagnostics: getSafeFinalizationDiagnostics(error)
   };
 }
 
 function getFinalCandidateErrorCategory(error: unknown): FinalizationRunErrorCategory {
   if (error instanceof FinalizationContextError) {
     return "finalization_context_unavailable";
+  }
+
+  if (error instanceof ProviderSecretResolutionError) {
+    return "provider_secret_missing";
   }
 
   if (error instanceof FinalizationValidationError) {
@@ -1180,14 +1307,33 @@ function getFinalCandidateErrorCategory(error: unknown): FinalizationRunErrorCat
     return "final_candidate_generator_failed";
   }
 
+  const safeCategory = getSafeFinalizationErrorCategory(error);
+  if (safeCategory) {
+    return safeCategory;
+  }
+
   return error instanceof RunFinalizationRoundError
     ? (error.category as FinalizationRunErrorCategory)
     : "core_lifecycle_failed";
 }
 
+function getFinalAuditFailure(error: unknown): {
+  errorCategory: FinalizationRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
+} {
+  return {
+    errorCategory: getFinalAuditErrorCategory(error),
+    safeDiagnostics: getSafeFinalizationDiagnostics(error)
+  };
+}
+
 function getFinalAuditErrorCategory(error: unknown): FinalizationRunErrorCategory {
   if (error instanceof FinalizationContextError) {
     return "finalization_context_unavailable";
+  }
+
+  if (error instanceof ProviderSecretResolutionError) {
+    return "provider_secret_missing";
   }
 
   if (error instanceof FinalizationValidationError) {
@@ -1208,9 +1354,69 @@ function getFinalAuditErrorCategory(error: unknown): FinalizationRunErrorCategor
     return "final_audit_generator_failed";
   }
 
+  const safeCategory = getSafeFinalizationErrorCategory(error);
+  if (safeCategory) {
+    return safeCategory;
+  }
+
   return error instanceof RunFinalizationRoundError
     ? (error.category as FinalizationRunErrorCategory)
     : "core_lifecycle_failed";
+}
+
+function isSafeFinalizationGeneratorFailure(error: unknown): boolean {
+  return error instanceof ProviderSecretResolutionError ||
+    Boolean(getSafeFinalizationErrorCategory(error));
+}
+
+function getSafeFinalizationErrorCategory(
+  error: unknown
+): FinalizationRunErrorCategory | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const safeCategory = (error as { safeCategory?: unknown }).safeCategory;
+  if (typeof safeCategory !== "string") {
+    return undefined;
+  }
+
+  const parsed = FinalizationRunErrorCategorySchema.safeParse(safeCategory);
+  return parsed.success ? parsed.data : undefined;
+}
+
+function getSafeFinalizationDiagnostics(error: unknown): RunSafeDiagnostics | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const diagnostics = (error as { safeDiagnostics?: unknown }).safeDiagnostics;
+  if (typeof diagnostics !== "object" || diagnostics === null || Array.isArray(diagnostics)) {
+    return undefined;
+  }
+
+  const safeDiagnostics: RunSafeDiagnostics = {};
+  const httpStatus = (diagnostics as { httpStatus?: unknown }).httpStatus;
+  if (
+    typeof httpStatus === "number" &&
+    Number.isFinite(httpStatus) &&
+    Number.isInteger(httpStatus) &&
+    httpStatus >= 100 &&
+    httpStatus <= 599
+  ) {
+    safeDiagnostics.httpStatus = httpStatus;
+  }
+
+  const providerResponseShape = (diagnostics as {
+    providerResponseShape?: unknown;
+  }).providerResponseShape;
+  const parsedProviderResponseShape =
+    RunSafeProviderResponseShapeSchema.safeParse(providerResponseShape);
+  if (parsedProviderResponseShape.success) {
+    safeDiagnostics.providerResponseShape = parsedProviderResponseShape.data;
+  }
+
+  return Object.keys(safeDiagnostics).length > 0 ? safeDiagnostics : undefined;
 }
 
 function createFinalizationExecutionClaimOwnerId(

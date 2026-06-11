@@ -4,6 +4,7 @@ import {
   projectExtractionProposalStates
 } from "@deliberum/core";
 import {
+  ProviderSecretResolutionError,
   ProposalReviewContextError,
   ProposalReviewValidationError,
   RunProposalReviewRoundError,
@@ -11,8 +12,11 @@ import {
 } from "./errors";
 import { buildProposalReviewContext } from "./proposal-review-context";
 import { validateProposalReviewGeneratorResult } from "./proposal-review-validation";
+import { resolveProviderRuntimeConfig } from "./provider-secret-resolver";
 import {
   ExtractionAcceptancePolicySchema,
+  ProposalReviewRunErrorCategorySchema,
+  RunSafeProviderResponseShapeSchema,
   type DeliberationRunRecord,
   type ExtractionAcceptancePolicy,
   type ProposalAcceptanceRoundResult,
@@ -24,7 +28,8 @@ import {
   type RoundExecutionClaim,
   type RunProposalReviewRoundInput,
   type RunProposalReviewRoundOptions,
-  type RunProposalReviewRoundResult
+  type RunProposalReviewRoundResult,
+  type RunSafeDiagnostics
 } from "./types";
 
 const DEFAULT_PROPOSAL_REVIEW_ROUND_ID = "initial" as const;
@@ -187,7 +192,8 @@ async function executeClaimedProposalReviewRound(
           reviewerId,
           status: "skipped",
           challengeEventIds: state?.challengeEventIds,
-          errorCategory: state?.errorCategory
+          errorCategory: state?.errorCategory,
+          safeDiagnostics: state?.safeDiagnostics
         };
       }
 
@@ -280,6 +286,11 @@ async function executeProposalReviewer(input: {
     );
 
     const reviewer = input.options.proposalReviewGeneratorRegistry.require(input.reviewerId);
+    const providerRuntimeConfig = resolveProposalReviewerRuntimeConfig(
+      input.run,
+      reviewer,
+      input.options.env
+    );
     const generatorResult = await Promise.resolve()
       .then(() =>
         reviewer.reviewProposals(
@@ -288,10 +299,15 @@ async function executeProposalReviewer(input: {
               "Review extraction proposal events. Return challenge drafts only; do not return acceptance decisions.",
             context: structuredClone(input.context)
           },
-          structuredClone(input.context)
+          structuredClone(input.context),
+          providerRuntimeConfig
         )
       )
-      .catch(() => {
+      .catch((error) => {
+        if (isSafeProposalReviewGeneratorFailure(error)) {
+          throw error;
+        }
+
         throw new RunProposalReviewRoundError(
           "proposal_review_generator_failed",
           "Proposal review generator failed to produce review material."
@@ -338,10 +354,13 @@ async function executeProposalReviewer(input: {
       appendedChallengeEventIds
     };
   } catch (error) {
+    const failure = getProposalReviewerFailure(error);
+
     return {
       reviewerId: input.reviewerId,
       status: "failed",
-      errorCategory: getProposalReviewerErrorCategory(error)
+      errorCategory: failure.errorCategory,
+      safeDiagnostics: failure.safeDiagnostics
     };
   }
 }
@@ -601,6 +620,7 @@ function mergeReviewerResults(
       status: result.status,
       challengeEventIds: result.challengeEventIds,
       errorCategory: result.status === "reviewed" ? undefined : result.errorCategory,
+      safeDiagnostics: result.status === "reviewed" ? undefined : result.safeDiagnostics,
       previousErrorCategories,
       completedAt
     };
@@ -928,15 +948,66 @@ function createResultFromProposalReviewRound(
       reviewerId: reviewerState.reviewerId,
       status: "skipped",
       challengeEventIds: reviewerState.challengeEventIds,
-      errorCategory: reviewerState.errorCategory
+      errorCategory: reviewerState.errorCategory,
+      safeDiagnostics: reviewerState.safeDiagnostics
     })),
     acceptanceResults: []
+  };
+}
+
+function resolveProposalReviewerRuntimeConfig(
+  run: DeliberationRunRecord,
+  reviewer: {
+    adapterId?: string;
+    providerConfigId?: string;
+  },
+  env: Record<string, string | undefined> | undefined
+) {
+  if (!reviewer.providerConfigId) {
+    return undefined;
+  }
+
+  const providerConfig = run.plan.providerConfigs.find(
+    (candidate) => candidate.id === reviewer.providerConfigId
+  );
+
+  if (!providerConfig) {
+    throw new RunProposalReviewRoundError(
+      "provider_config_invalid",
+      "Proposal reviewer provider config was not found."
+    );
+  }
+
+  if (reviewer.adapterId && providerConfig.adapterId !== reviewer.adapterId) {
+    throw new RunProposalReviewRoundError(
+      "provider_config_invalid",
+      "Proposal reviewer provider config adapter is invalid."
+    );
+  }
+
+  return resolveProviderRuntimeConfig({
+    providerConfig,
+    env
+  });
+}
+
+function getProposalReviewerFailure(error: unknown): {
+  errorCategory: ProposalReviewRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
+} {
+  return {
+    errorCategory: getProposalReviewerErrorCategory(error),
+    safeDiagnostics: getSafeProposalReviewDiagnostics(error)
   };
 }
 
 function getProposalReviewerErrorCategory(error: unknown): ProposalReviewRunErrorCategory {
   if (error instanceof ProposalReviewContextError) {
     return "proposal_review_context_unavailable";
+  }
+
+  if (error instanceof ProviderSecretResolutionError) {
+    return "provider_secret_missing";
   }
 
   if (
@@ -957,9 +1028,69 @@ function getProposalReviewerErrorCategory(error: unknown): ProposalReviewRunErro
     return "proposal_review_validation_failed";
   }
 
+  const safeCategory = getSafeProposalReviewErrorCategory(error);
+  if (safeCategory) {
+    return safeCategory;
+  }
+
   return error instanceof RunProposalReviewRoundError
     ? (error.category as ProposalReviewRunErrorCategory)
     : "core_lifecycle_failed";
+}
+
+function isSafeProposalReviewGeneratorFailure(error: unknown): boolean {
+  return error instanceof ProviderSecretResolutionError ||
+    Boolean(getSafeProposalReviewErrorCategory(error));
+}
+
+function getSafeProposalReviewErrorCategory(
+  error: unknown
+): ProposalReviewRunErrorCategory | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const safeCategory = (error as { safeCategory?: unknown }).safeCategory;
+  if (typeof safeCategory !== "string") {
+    return undefined;
+  }
+
+  const parsed = ProposalReviewRunErrorCategorySchema.safeParse(safeCategory);
+  return parsed.success ? parsed.data : undefined;
+}
+
+function getSafeProposalReviewDiagnostics(error: unknown): RunSafeDiagnostics | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const diagnostics = (error as { safeDiagnostics?: unknown }).safeDiagnostics;
+  if (typeof diagnostics !== "object" || diagnostics === null || Array.isArray(diagnostics)) {
+    return undefined;
+  }
+
+  const safeDiagnostics: RunSafeDiagnostics = {};
+  const httpStatus = (diagnostics as { httpStatus?: unknown }).httpStatus;
+  if (
+    typeof httpStatus === "number" &&
+    Number.isFinite(httpStatus) &&
+    Number.isInteger(httpStatus) &&
+    httpStatus >= 100 &&
+    httpStatus <= 599
+  ) {
+    safeDiagnostics.httpStatus = httpStatus;
+  }
+
+  const providerResponseShape = (diagnostics as {
+    providerResponseShape?: unknown;
+  }).providerResponseShape;
+  const parsedProviderResponseShape =
+    RunSafeProviderResponseShapeSchema.safeParse(providerResponseShape);
+  if (parsedProviderResponseShape.success) {
+    safeDiagnostics.providerResponseShape = parsedProviderResponseShape.data;
+  }
+
+  return Object.keys(safeDiagnostics).length > 0 ? safeDiagnostics : undefined;
 }
 
 function createProposalReviewExecutionClaimOwnerId(

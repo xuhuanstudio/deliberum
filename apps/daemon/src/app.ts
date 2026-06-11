@@ -26,7 +26,13 @@ import { streamSSE } from "hono/streaming";
 import {
   AdapterRegistry,
   ExtractionGeneratorRegistry,
+  FinalAuditGeneratorRegistry,
+  FinalCandidateGeneratorRegistry,
+  ProposalReviewGeneratorRegistry,
   type ExtractionGenerator,
+  type FinalAuditGenerator,
+  type FinalCandidateGenerator,
+  type ProposalReviewGenerator,
   type RegisteredParticipantAdapter
 } from "@deliberum/orchestrator";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
@@ -161,13 +167,22 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       ),
     proposalReviewGeneratorRegistry:
       options.runProposalReviewGeneratorRegistry ??
-      localPresetRegistries?.proposalReviewGeneratorRegistry,
+      mergeProposalReviewGeneratorRegistries(
+        localPresetRegistries?.proposalReviewGeneratorRegistry,
+        openAICompatibleRegistries?.proposalReviewGeneratorRegistry
+      ),
     finalCandidateGeneratorRegistry:
       options.runFinalCandidateGeneratorRegistry ??
-      localPresetRegistries?.finalCandidateGeneratorRegistry,
+      mergeFinalCandidateGeneratorRegistries(
+        localPresetRegistries?.finalCandidateGeneratorRegistry,
+        openAICompatibleRegistries?.finalCandidateGeneratorRegistry
+      ),
     finalAuditGeneratorRegistry:
       options.runFinalAuditGeneratorRegistry ??
-      localPresetRegistries?.finalAuditGeneratorRegistry,
+      mergeFinalAuditGeneratorRegistries(
+        localPresetRegistries?.finalAuditGeneratorRegistry,
+        openAICompatibleRegistries?.finalAuditGeneratorRegistry
+      ),
     env:
       options.runEnv ??
       (options.enableOpenAICompatibleProfile
@@ -523,6 +538,96 @@ function isMergeableExtractionGeneratorRegistry(
 ): value is {
   require(generatorId: string): ExtractionGenerator;
   list(): Array<{ generatorId: string }>;
+} {
+  const candidate = value as { require?: unknown; list?: unknown } | null;
+
+  return (
+    candidate !== null &&
+    typeof candidate === "object" &&
+    typeof candidate.require === "function" &&
+    typeof candidate.list === "function"
+  );
+}
+
+function mergeProposalReviewGeneratorRegistries(
+  ...registries: unknown[]
+): DaemonRunOrchestrationOptions["proposalReviewGeneratorRegistry"] | undefined {
+  const reviewers = registries.flatMap((registry) => {
+    if (!isMergeableProposalReviewGeneratorRegistry(registry)) {
+      return [];
+    }
+
+    return registry.list().map((entry) => registry.require(entry.reviewerId));
+  });
+
+  return reviewers.length > 0 ? new ProposalReviewGeneratorRegistry(reviewers) : undefined;
+}
+
+function isMergeableProposalReviewGeneratorRegistry(
+  value: unknown
+): value is {
+  require(reviewerId: string): ProposalReviewGenerator;
+  list(): Array<{ reviewerId: string }>;
+} {
+  const candidate = value as { require?: unknown; list?: unknown } | null;
+
+  return (
+    candidate !== null &&
+    typeof candidate === "object" &&
+    typeof candidate.require === "function" &&
+    typeof candidate.list === "function"
+  );
+}
+
+function mergeFinalCandidateGeneratorRegistries(
+  ...registries: unknown[]
+): DaemonRunOrchestrationOptions["finalCandidateGeneratorRegistry"] | undefined {
+  const generators = registries.flatMap((registry) => {
+    if (!isMergeableFinalCandidateGeneratorRegistry(registry)) {
+      return [];
+    }
+
+    return registry.list().map((entry) => registry.require(entry.generatorId));
+  });
+
+  return generators.length > 0 ? new FinalCandidateGeneratorRegistry(generators) : undefined;
+}
+
+function isMergeableFinalCandidateGeneratorRegistry(
+  value: unknown
+): value is {
+  require(generatorId: string): FinalCandidateGenerator;
+  list(): Array<{ generatorId: string }>;
+} {
+  const candidate = value as { require?: unknown; list?: unknown } | null;
+
+  return (
+    candidate !== null &&
+    typeof candidate === "object" &&
+    typeof candidate.require === "function" &&
+    typeof candidate.list === "function"
+  );
+}
+
+function mergeFinalAuditGeneratorRegistries(
+  ...registries: unknown[]
+): DaemonRunOrchestrationOptions["finalAuditGeneratorRegistry"] | undefined {
+  const auditors = registries.flatMap((registry) => {
+    if (!isMergeableFinalAuditGeneratorRegistry(registry)) {
+      return [];
+    }
+
+    return registry.list().map((entry) => registry.require(entry.auditorId));
+  });
+
+  return auditors.length > 0 ? new FinalAuditGeneratorRegistry(auditors) : undefined;
+}
+
+function isMergeableFinalAuditGeneratorRegistry(
+  value: unknown
+): value is {
+  require(auditorId: string): FinalAuditGenerator;
+  list(): Array<{ auditorId: string }>;
 } {
   const candidate = value as { require?: unknown; list?: unknown } | null;
 

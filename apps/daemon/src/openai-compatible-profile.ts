@@ -45,7 +45,11 @@ export const OPENAI_COMPATIBLE_THINKING_ENV_VAR = "DELIBERUM_OPENAI_THINKING" as
 
 export type OpenAICompatibleProfileRegistries = Pick<
   DaemonRunOrchestrationOptions,
-  "adapterRegistry" | "extractionGeneratorRegistry"
+  | "adapterRegistry"
+  | "extractionGeneratorRegistry"
+  | "proposalReviewGeneratorRegistry"
+  | "finalCandidateGeneratorRegistry"
+  | "finalAuditGeneratorRegistry"
 >;
 
 export type OpenAICompatibleProfileOptions = {

@@ -39,6 +39,16 @@ import type {
 function createRunPlan(
   options: {
     revealPolicy?: SealedBatchRevealPolicy;
+    providerConfigs?: Array<{
+      id: string;
+      adapterId: string;
+      providerConfigId?: string;
+      modelId?: string;
+      baseUrl?: string;
+      endpointPath?: string;
+      apiKeyEnvVar?: string;
+      timeoutMs?: number;
+    }>;
   } = {}
 ) {
   return {
@@ -60,7 +70,7 @@ function createRunPlan(
         adapterId: "adapter-web"
       }
     ],
-    providerConfigs: [],
+    providerConfigs: options.providerConfigs ?? [],
     budget: {
       maxEvents: 50,
       maxProviderCalls: 20
@@ -159,14 +169,20 @@ function createAdapterRegistry() {
   ]);
 }
 
-function createFixture() {
+function createFixture(
+  options: {
+    providerConfigs?: ReturnType<typeof createRunPlan>["providerConfigs"];
+  } = {}
+) {
   const eventStore = new InMemoryEventStore({
     clock: () => "2026-06-10T00:00:01.000Z"
   });
   const runStore = new InMemoryRunStore();
   const created = createDeliberationRun(
     {
-      runPlan: createRunPlan()
+      runPlan: createRunPlan({
+        providerConfigs: options.providerConfigs
+      })
     },
     {
       eventStore,
@@ -183,8 +199,12 @@ function createFixture() {
   };
 }
 
-async function createRevealedRun() {
-  const fixture = createFixture();
+async function createRevealedRun(
+  options: {
+    providerConfigs?: ReturnType<typeof createRunPlan>["providerConfigs"];
+  } = {}
+) {
+  const fixture = createFixture(options);
   const sealedResult = await runSealedDivergenceRound(
     {
       runId: fixture.run.id
@@ -212,8 +232,11 @@ async function createRevealedRun() {
 
 async function createRunWithExtractionProposals(options: {
   proposalCount?: 1 | 2;
+  providerConfigs?: ReturnType<typeof createRunPlan>["providerConfigs"];
 } = {}) {
-  const fixture = await createRevealedRun();
+  const fixture = await createRevealedRun({
+    providerConfigs: options.providerConfigs
+  });
   const proposalCount = options.proposalCount ?? 1;
   const generators = Array.from({ length: proposalCount }, (_, index) =>
     createValidGenerator({
@@ -1283,6 +1306,101 @@ describe("Stage 19B-1 proposal review orchestration", () => {
     expect(storedRunJson).toContain("proposal_review_generator_failed");
     expect(storedRunJson).not.toContain("raw reviewer failure");
     expect(storedRunJson).not.toContain("sk-live-should-not-appear");
+    expect(eventStore.listEvents(run.sessionId).map((event) => event.type)).not.toContain(
+      PROPOSAL_CHALLENGED_EVENT_TYPE
+    );
+  });
+
+  it("passes provider runtime config to proposal reviewers and preserves safe diagnostics", async () => {
+    const { eventStore, runStore, run } = await createRunWithExtractionProposals({
+      providerConfigs: [
+        {
+          id: "review-provider",
+          adapterId: "openai-compatible",
+          providerConfigId: "provider-main",
+          modelId: "review-model",
+          baseUrl: "https://provider.example",
+          apiKeyEnvVar: "DELIBERUM_TEST_PROVIDER_KEY"
+        }
+      ]
+    });
+    const rawProviderFailure =
+      "raw review provider failure test-review-secret Authorization Bearer /Users/review.log";
+    let observedApiKey: string | undefined;
+    let observedModelId: string | undefined;
+    const reviewer: ProposalReviewGenerator = {
+      reviewerId: "provider-reviewer",
+      adapterId: "openai-compatible",
+      providerConfigId: "review-provider",
+      reviewProposals(_input, _context, providerRuntimeConfig) {
+        observedApiKey = providerRuntimeConfig?.apiKey;
+        observedModelId = providerRuntimeConfig?.modelId;
+
+        const error = new Error(rawProviderFailure);
+        Object.defineProperty(error, "safeCategory", {
+          value: "provider_http_error"
+        });
+        Object.defineProperty(error, "safeDiagnostics", {
+          value: {
+            httpStatus: 503,
+            providerResponseShape: "other_text"
+          }
+        });
+        throw error;
+      }
+    };
+
+    const result = await runProposalReviewRound(
+      {
+        runId: run.id,
+        reviewerIds: ["provider-reviewer"]
+      },
+      {
+        eventStore,
+        runStore,
+        proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([reviewer]),
+        idGenerator: createIds(["unused-challenge", "unused-challenge-event"]),
+        env: {
+          DELIBERUM_TEST_PROVIDER_KEY: "test-review-secret"
+        }
+      }
+    );
+    const serializedSafeState = JSON.stringify({
+      result,
+      storedRun: runStore.getRun(run.id),
+      events: eventStore.listEvents(run.sessionId)
+    });
+
+    expect(observedApiKey).toBe("test-review-secret");
+    expect(observedModelId).toBe("review-model");
+    expect(result.reviewResults).toContainEqual(
+      expect.objectContaining({
+        reviewerId: "provider-reviewer",
+        status: "failed",
+        errorCategory: "provider_http_error",
+        safeDiagnostics: {
+          httpStatus: 503,
+          providerResponseShape: "other_text"
+        }
+      })
+    );
+    expect(runStore.getRun(run.id)?.proposalReviewRounds?.[0]?.reviewerStates).toContainEqual(
+      expect.objectContaining({
+        reviewerId: "provider-reviewer",
+        errorCategory: "provider_http_error",
+        safeDiagnostics: {
+          httpStatus: 503,
+          providerResponseShape: "other_text"
+        }
+      })
+    );
+    expect(serializedSafeState).toContain("\"httpStatus\":503");
+    expect(serializedSafeState).toContain("\"providerResponseShape\":\"other_text\"");
+    expect(serializedSafeState).not.toContain(rawProviderFailure);
+    expect(serializedSafeState).not.toContain("test-review-secret");
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("/Users/");
     expect(eventStore.listEvents(run.sessionId).map((event) => event.type)).not.toContain(
       PROPOSAL_CHALLENGED_EVENT_TYPE
     );

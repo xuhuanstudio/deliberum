@@ -374,6 +374,7 @@ export class DaemonRunOrchestrationService {
             proposalReviewGeneratorRegistry: this.requireProposalReviewGeneratorRegistry(),
             idGenerator: this.idGenerator,
             clock: this.clock,
+            env: this.env,
             executionClaimTtlMs: this.executionClaimTtlMs,
             executionClaimOwnerIdGenerator: this.executionClaimOwnerIdGenerator
           }
@@ -424,6 +425,7 @@ export class DaemonRunOrchestrationService {
             finalAuditGeneratorRegistry: this.requireFinalAuditGeneratorRegistry(),
             idGenerator: this.idGenerator,
             clock: this.clock,
+            env: this.env,
             executionClaimTtlMs: this.executionClaimTtlMs,
             executionClaimOwnerIdGenerator: this.executionClaimOwnerIdGenerator
           }

@@ -237,6 +237,18 @@ export const ProposalReviewRunErrorCategorySchema = z.enum([
   "proposal_review_context_unavailable",
   "proposal_review_generator_failed",
   "proposal_review_validation_failed",
+  "provider_auth_failed",
+  "provider_not_found",
+  "provider_rate_limited",
+  "provider_timeout",
+  "provider_network_error",
+  "provider_http_error",
+  "provider_malformed_response",
+  "provider_config_invalid",
+  "provider_response_empty",
+  "provider_response_missing_content",
+  "provider_secret_missing",
+  "provider_unknown_error",
   "core_lifecycle_failed",
   "round_conflict"
 ]);
@@ -250,6 +262,18 @@ export const FinalizationRunErrorCategorySchema = z.enum([
   "final_candidate_validation_failed",
   "final_audit_generator_failed",
   "final_audit_validation_failed",
+  "provider_auth_failed",
+  "provider_not_found",
+  "provider_rate_limited",
+  "provider_timeout",
+  "provider_network_error",
+  "provider_http_error",
+  "provider_malformed_response",
+  "provider_config_invalid",
+  "provider_response_empty",
+  "provider_response_missing_content",
+  "provider_secret_missing",
+  "provider_unknown_error",
   "core_lifecycle_failed",
   "outcome_compilation_failed",
   "round_conflict"
@@ -385,6 +409,7 @@ export const ProposalReviewerStateSchema = z
     status: ProposalReviewerRunStatusSchema,
     challengeEventIds: z.array(IdSchema).optional(),
     errorCategory: ProposalReviewRunErrorCategorySchema.optional(),
+    safeDiagnostics: RunSafeDiagnosticsSchema.optional(),
     previousErrorCategories: z.array(ProposalReviewRunErrorCategorySchema).optional(),
     attempts: z.number().int().nonnegative(),
     startedAt: NonEmptyStringSchema.optional(),
@@ -436,6 +461,7 @@ export const FinalCandidateGenerationStateSchema = z
     status: FinalCandidateGenerationStatusSchema,
     proposalEventId: IdSchema.optional(),
     errorCategory: FinalizationRunErrorCategorySchema.optional(),
+    safeDiagnostics: RunSafeDiagnosticsSchema.optional(),
     previousErrorCategories: z.array(FinalizationRunErrorCategorySchema).optional(),
     attempts: z.number().int().nonnegative(),
     startedAt: NonEmptyStringSchema.optional(),
@@ -461,6 +487,7 @@ export const FinalAuditGenerationStateSchema = z
     status: FinalAuditGenerationStatusSchema,
     auditEventId: IdSchema.optional(),
     errorCategory: FinalizationRunErrorCategorySchema.optional(),
+    safeDiagnostics: RunSafeDiagnosticsSchema.optional(),
     previousErrorCategories: z.array(FinalizationRunErrorCategorySchema).optional(),
     attempts: z.number().int().nonnegative(),
     startedAt: NonEmptyStringSchema.optional(),
@@ -932,9 +959,12 @@ export type ProposalReviewGeneratorInput = {
 
 export interface ProposalReviewGenerator {
   reviewerId: string;
+  adapterId?: string;
+  providerConfigId?: string;
   reviewProposals(
     input: ProposalReviewGeneratorInput,
-    context: ProposalReviewContext
+    context: ProposalReviewContext,
+    providerRuntimeConfig?: ProviderRuntimeConfig
   ): Promise<ProposalReviewGeneratorResult> | ProposalReviewGeneratorResult;
 }
 
@@ -988,6 +1018,7 @@ export type RunProposalReviewRoundOptions = {
   idGenerator: IdGenerator;
   clock?: Clock;
   schemaVersion?: string;
+  env?: Record<string, string | undefined>;
   executionClaimTtlMs?: number;
   executionClaimOwnerIdGenerator?: () => string;
 };
@@ -998,6 +1029,7 @@ export type ProposalReviewerRoundResult = {
   challengeEventIds?: string[];
   appendedChallengeEventIds?: string[];
   errorCategory?: ProposalReviewRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
 };
 
 export type ProposalAcceptanceRoundResult = {
@@ -1092,9 +1124,12 @@ export type FinalCandidateGeneratorInput = {
 
 export interface FinalCandidateGenerator {
   generatorId: string;
+  adapterId?: string;
+  providerConfigId?: string;
   proposeFinalCandidate(
     input: FinalCandidateGeneratorInput,
-    context: FinalizationContext
+    context: FinalizationContext,
+    providerRuntimeConfig?: ProviderRuntimeConfig
   ): Promise<FinalCandidateGeneratorResult> | FinalCandidateGeneratorResult;
 }
 
@@ -1110,9 +1145,12 @@ export type FinalAuditGeneratorInput = {
 
 export interface FinalAuditGenerator {
   auditorId: string;
+  adapterId?: string;
+  providerConfigId?: string;
   auditFinalCandidate(
     input: FinalAuditGeneratorInput,
-    context: FinalizationContext
+    context: FinalizationContext,
+    providerRuntimeConfig?: ProviderRuntimeConfig
   ): Promise<FinalAuditGeneratorResult> | FinalAuditGeneratorResult;
 }
 
@@ -1146,6 +1184,7 @@ export type RunFinalizationRoundOptions = {
   idGenerator: IdGenerator;
   clock?: Clock;
   schemaVersion?: string;
+  env?: Record<string, string | undefined>;
   executionClaimTtlMs?: number;
   executionClaimOwnerIdGenerator?: () => string;
 };
@@ -1157,6 +1196,7 @@ export type FinalCandidateRoundResult = {
   proposalEventId?: string;
   appended?: boolean;
   errorCategory?: FinalizationRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
 };
 
 export type FinalAuditRoundResult = {
@@ -1165,6 +1205,7 @@ export type FinalAuditRoundResult = {
   auditEventId?: string;
   appended?: boolean;
   errorCategory?: FinalizationRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
 };
 
 export type RunFinalizationRoundResult = {

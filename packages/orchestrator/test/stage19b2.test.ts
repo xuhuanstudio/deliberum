@@ -541,6 +541,91 @@ describe("Stage 19B-2 finalization orchestration", () => {
     expect(eventStore.listEventsByType(run.sessionId, FINAL_CANDIDATE_PROPOSED_EVENT_TYPE)).toHaveLength(0);
   });
 
+  it("passes provider runtime config to final candidate generators and preserves safe diagnostics", async () => {
+    const { eventStore, runStore, run } = await createAcceptedRun();
+    const rawProviderFailure =
+      "raw final candidate provider failure test-final-secret Authorization Bearer /Users/final.log";
+    let observedApiKey: string | undefined;
+    let observedProviderConfigId: string | undefined;
+    const generator: FinalCandidateGenerator = {
+      generatorId: "provider-final-generator",
+      adapterId: "adapter-cli",
+      providerConfigId: "provider-ref",
+      proposeFinalCandidate(_input, _context, providerRuntimeConfig) {
+        observedApiKey = providerRuntimeConfig?.apiKey;
+        observedProviderConfigId = providerRuntimeConfig?.providerConfigId;
+
+        const error = new Error(rawProviderFailure);
+        Object.defineProperty(error, "safeCategory", {
+          value: "provider_malformed_response"
+        });
+        Object.defineProperty(error, "safeDiagnostics", {
+          value: {
+            providerResponseShape: "prose_with_json_object"
+          }
+        });
+        throw error;
+      }
+    };
+
+    const result = await runFinalizationRound(
+      {
+        runId: run.id,
+        finalCandidateGeneratorId: "provider-final-generator",
+        auditGeneratorIds: []
+      },
+      {
+        eventStore,
+        runStore,
+        finalCandidateGeneratorRegistry: new FinalCandidateGeneratorRegistry([generator]),
+        finalAuditGeneratorRegistry: new FinalAuditGeneratorRegistry(),
+        idGenerator: createIds([]),
+        clock: () => "2026-06-10T00:00:10.000Z",
+        executionClaimOwnerIdGenerator: createIds(["finalization-claim-1"]),
+        env: {
+          DELIBERUM_TEST_PROVIDER_KEY: "test-final-secret"
+        }
+      }
+    );
+    const serializedSafeState = JSON.stringify({
+      result,
+      storedRun: runStore.getRun(run.id),
+      events: eventStore.listEvents(run.sessionId)
+    });
+
+    expect(observedApiKey).toBe("test-final-secret");
+    expect(observedProviderConfigId).toBe("local-provider");
+    expect(result.finalCandidateResult).toEqual(
+      expect.objectContaining({
+        sourceId: "provider-final-generator",
+        sourceType: "generator",
+        status: "failed",
+        errorCategory: "provider_malformed_response",
+        safeDiagnostics: {
+          providerResponseShape: "prose_with_json_object"
+        }
+      })
+    );
+    expect(runStore.getRun(run.id)?.finalizationRounds?.[0]?.finalCandidate).toEqual(
+      expect.objectContaining({
+        sourceId: "provider-final-generator",
+        errorCategory: "provider_malformed_response",
+        safeDiagnostics: {
+          providerResponseShape: "prose_with_json_object"
+        }
+      })
+    );
+    expect(eventStore.listEventsByType(run.sessionId, FINAL_CANDIDATE_PROPOSED_EVENT_TYPE)).toHaveLength(0);
+    expect(serializedSafeState).toContain(
+      "\"providerResponseShape\":\"prose_with_json_object\""
+    );
+    expect(serializedSafeState).not.toContain(rawProviderFailure);
+    expect(serializedSafeState).not.toContain("test-final-secret");
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("/Users/");
+  });
+
   it("records final audit events through core and rejects invalid audit references", async () => {
     const { eventStore, runStore, run } = await createAcceptedRun();
     const invalidAuditGenerator = createFinalAuditGenerator({
@@ -601,6 +686,93 @@ describe("Stage 19B-2 finalization orchestration", () => {
     expect(auditEvent.payload.findings).toEqual([
       "The proposal preserves alternatives and unresolved issues."
     ]);
+  });
+
+  it("passes provider runtime config to final auditors and preserves safe diagnostics", async () => {
+    const { eventStore, runStore, run } = await createAcceptedRun();
+    const rawProviderFailure =
+      "raw final audit provider failure test-audit-secret Authorization Bearer /Users/audit.log";
+    let observedApiKey: string | undefined;
+    let observedProviderConfigId: string | undefined;
+    const auditor: FinalAuditGenerator = {
+      auditorId: "provider-final-auditor",
+      adapterId: "adapter-cli",
+      providerConfigId: "provider-ref",
+      auditFinalCandidate(_input, _context, providerRuntimeConfig) {
+        observedApiKey = providerRuntimeConfig?.apiKey;
+        observedProviderConfigId = providerRuntimeConfig?.providerConfigId;
+
+        const error = new Error(rawProviderFailure);
+        Object.defineProperty(error, "safeCategory", {
+          value: "provider_http_error"
+        });
+        Object.defineProperty(error, "safeDiagnostics", {
+          value: {
+            httpStatus: 504,
+            providerResponseShape: "empty_text"
+          }
+        });
+        throw error;
+      }
+    };
+
+    const result = await runFinalizationRound(
+      {
+        runId: run.id,
+        finalCandidateDraft: createFinalCandidateDraft(),
+        auditGeneratorIds: ["provider-final-auditor"]
+      },
+      {
+        eventStore,
+        runStore,
+        finalCandidateGeneratorRegistry: new FinalCandidateGeneratorRegistry(),
+        finalAuditGeneratorRegistry: new FinalAuditGeneratorRegistry([auditor]),
+        idGenerator: createIds(["final-proposal-1", "final-proposal-event-1"]),
+        clock: () => "2026-06-10T00:00:10.000Z",
+        executionClaimOwnerIdGenerator: createIds(["finalization-claim-1"]),
+        env: {
+          DELIBERUM_TEST_PROVIDER_KEY: "test-audit-secret"
+        }
+      }
+    );
+    const serializedSafeState = JSON.stringify({
+      result,
+      storedRun: runStore.getRun(run.id),
+      events: eventStore.listEvents(run.sessionId)
+    });
+
+    expect(observedApiKey).toBe("test-audit-secret");
+    expect(observedProviderConfigId).toBe("local-provider");
+    expect(result.auditResults).toContainEqual(
+      expect.objectContaining({
+        auditorId: "provider-final-auditor",
+        status: "failed",
+        errorCategory: "provider_http_error",
+        safeDiagnostics: {
+          httpStatus: 504,
+          providerResponseShape: "empty_text"
+        }
+      })
+    );
+    expect(runStore.getRun(run.id)?.finalizationRounds?.[0]?.auditorStates).toContainEqual(
+      expect.objectContaining({
+        auditorId: "provider-final-auditor",
+        errorCategory: "provider_http_error",
+        safeDiagnostics: {
+          httpStatus: 504,
+          providerResponseShape: "empty_text"
+        }
+      })
+    );
+    expect(eventStore.listEventsByType(run.sessionId, FINAL_CANDIDATE_PROPOSED_EVENT_TYPE)).toHaveLength(1);
+    expect(eventStore.listEventsByType(run.sessionId, FINAL_AUDIT_RECORDED_EVENT_TYPE)).toHaveLength(0);
+    expect(serializedSafeState).toContain("\"httpStatus\":504");
+    expect(serializedSafeState).toContain("\"providerResponseShape\":\"empty_text\"");
+    expect(serializedSafeState).not.toContain(rawProviderFailure);
+    expect(serializedSafeState).not.toContain("test-audit-secret");
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("/Users/");
   });
 
   it("compiles a provisional outcome read-only without storing the outcome body", async () => {
