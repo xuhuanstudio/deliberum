@@ -5,7 +5,8 @@ import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { isLocalPresetEnabledFromEnv } from "./local-preset";
 import {
   isOpenAICompatibleExtractionEnabledFromEnv,
-  isOpenAICompatibleProfileEnabledFromEnv
+  isOpenAICompatibleProfileEnabledFromEnv,
+  isOpenAICompatibleReviewEnabledFromEnv
 } from "./openai-compatible-profile";
 
 export { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT };
@@ -40,6 +41,14 @@ export function resolveStartDaemonEnableOpenAICompatibleExtraction(
     isOpenAICompatibleExtractionEnabledFromEnv(env);
 }
 
+export function resolveStartDaemonEnableOpenAICompatibleReview(
+  options: Pick<StartDaemonOptions, "enableOpenAICompatibleReview"> = {},
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  return options.enableOpenAICompatibleReview ??
+    isOpenAICompatibleReviewEnabledFromEnv(env);
+}
+
 export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const host = options.host ?? DEFAULT_DAEMON_HOST;
   const port = options.port ?? DEFAULT_DAEMON_PORT;
@@ -49,11 +58,15 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const enableOpenAICompatibleExtraction =
     enableOpenAICompatibleProfile &&
     resolveStartDaemonEnableOpenAICompatibleExtraction(options);
+  const enableOpenAICompatibleReview =
+    enableOpenAICompatibleProfile &&
+    resolveStartDaemonEnableOpenAICompatibleReview(options);
   const daemon = createDaemonApp({
     ...options,
     enableLocalPreset,
     enableOpenAICompatibleProfile,
     enableOpenAICompatibleExtraction,
+    enableOpenAICompatibleReview,
     openAICompatibleEnv:
       options.openAICompatibleEnv ??
       (enableOpenAICompatibleProfile ? process.env : undefined),

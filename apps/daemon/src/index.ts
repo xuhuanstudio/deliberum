@@ -6,6 +6,7 @@ export * from "./event-stream";
 export * from "./local-preset";
 export * from "./openai-compatible-extraction-generator";
 export * from "./openai-compatible-profile";
+export * from "./openai-compatible-review-generator";
 export * from "./server";
 export * from "./webget-routes";
 export * from "./webget-session-store";

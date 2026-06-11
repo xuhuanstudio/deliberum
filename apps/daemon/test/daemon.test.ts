@@ -39,16 +39,22 @@ import {
   OPENAI_COMPATIBLE_MODEL_ENV_VAR,
   OPENAI_COMPATIBLE_PRESENCE_PENALTY_ENV_VAR,
   OPENAI_COMPATIBLE_PROFILE_ENV_VAR,
+  OPENAI_COMPATIBLE_REVIEW_ENV_VAR,
+  OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR,
+  OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR,
+  OPENAI_COMPATIBLE_REVIEWER_ID,
   OPENAI_COMPATIBLE_STREAM_ENV_VAR,
   OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR,
   OPENAI_COMPATIBLE_THINKING_ENV_VAR,
   OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
   createDaemonApp,
+  createOpenAICompatibleRunRegistries,
   localPresetRunPlan,
   localPresetStartRequest,
   resolveStartDaemonEnableOpenAICompatibleExtraction,
   resolveStartDaemonEnableOpenAICompatibleProfile,
+  resolveStartDaemonEnableOpenAICompatibleReview,
   resolveStartDaemonEnableLocalPreset,
   type DaemonApp
 } from "../src";
@@ -570,6 +576,23 @@ function openAICompatibleExtractionStartRequest() {
   };
 }
 
+function openAICompatibleReviewStartRequest() {
+  const request = localPresetStartRequest();
+
+  return {
+    ...request,
+    review: {
+      reviewerIds: [OPENAI_COMPATIBLE_REVIEWER_ID],
+      acceptancePolicy: {
+        mode: "all_generated_unchallenged",
+        authorId: "provider-review-coordinator",
+        rationale:
+          "Accept unchallenged proposals after provider-backed review for this local test."
+      }
+    }
+  };
+}
+
 function startFullRunRequest() {
   return {
     sealedDivergence: {
@@ -726,6 +749,74 @@ function findExtractionContextPayload(
       if (Array.isArray(parsed.allowedSourceEventIds)) {
         return {
           allowedSourceEventIds: parsed.allowedSourceEventIds.filter(
+            (eventId): eventId is string => typeof eventId === "string"
+          )
+        };
+      }
+    } catch {
+      // Corrective retry messages are plain text and intentionally ignored here.
+    }
+  }
+
+  return undefined;
+}
+
+function createOpenAICompatibleReviewFetch(options: {
+  content?: string;
+  contents?: string[];
+  contentTransform?: (content: string) => string;
+  contentTransforms?: Array<(content: string) => string>;
+  ok?: boolean;
+  status?: number;
+} = {}): MockedFetchLike {
+  let callIndex = 0;
+
+  return vi.fn(async (_url, init) => {
+    const currentCallIndex = callIndex;
+    callIndex += 1;
+    const generatedContent = JSON.stringify({
+      challenges: [],
+      notes: [
+        "Provider-backed review leaves proposal material unchallenged for this mocked local test."
+      ]
+    });
+    const content = options.contents?.[currentCallIndex] ??
+      options.contentTransforms?.[currentCallIndex]?.(generatedContent) ??
+      options.content ??
+      (options.contentTransform ? options.contentTransform(generatedContent) : generatedContent);
+
+    return {
+      ok: options.ok ?? true,
+      status: options.status ?? 200,
+      json: vi.fn(async () => ({
+        choices: [
+          {
+            message: {
+              content
+            }
+          }
+        ]
+      }))
+    };
+  }) as unknown as MockedFetchLike;
+}
+
+function findReviewContextPayload(
+  messages: Array<{ role: string; content: string }>
+): { allowedProposalEventIds: string[] } | undefined {
+  for (const message of messages) {
+    if (message.role !== "user") {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(message.content) as {
+        allowedProposalEventIds?: unknown;
+      };
+
+      if (Array.isArray(parsed.allowedProposalEventIds)) {
+        return {
+          allowedProposalEventIds: parsed.allowedProposalEventIds.filter(
             (eventId): eventId is string => typeof eventId === "string"
           )
         };
@@ -2819,6 +2910,412 @@ describe("daemon API", () => {
     );
   });
 
+  it("requires the separate exact OpenAI-compatible review flag", async () => {
+    expect(resolveStartDaemonEnableOpenAICompatibleReview(
+      { enableOpenAICompatibleReview: true },
+      {}
+    )).toBe(true);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleReview(
+        {},
+        { [OPENAI_COMPATIBLE_REVIEW_ENV_VAR]: "true" }
+      )
+    ).toBe(true);
+    expect(resolveStartDaemonEnableOpenAICompatibleReview({}, {})).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleReview(
+        {},
+        { [OPENAI_COMPATIBLE_REVIEW_ENV_VAR]: "false" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleReview(
+        {},
+        { [OPENAI_COMPATIBLE_REVIEW_ENV_VAR]: "TRUE" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleReview(
+        {},
+        { [OPENAI_COMPATIBLE_REVIEW_ENV_VAR]: "random" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleReview(
+        { enableOpenAICompatibleReview: false },
+        { [OPENAI_COMPATIBLE_REVIEW_ENV_VAR]: "true" }
+      )
+    ).toBe(false);
+  });
+
+  it("installs OpenAI-compatible review registries only when review is enabled", () => {
+    const disabled = createOpenAICompatibleRunRegistries({
+      enableExtraction: true
+    });
+    const enabled = createOpenAICompatibleRunRegistries({
+      enableReview: true
+    });
+
+    expect(disabled.proposalReviewGeneratorRegistry).toBeUndefined();
+    expect(enabled.proposalReviewGeneratorRegistry?.list()).toEqual([
+      {
+        reviewerId: OPENAI_COMPATIBLE_REVIEWER_ID
+      }
+    ]);
+  });
+
+  it("does not install provider review when review is enabled without the profile", async () => {
+    const fetch = createOpenAICompatibleReviewFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleReview: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleReviewStartRequest()
+    );
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expectSafeRunApiPayload(body);
+  });
+
+  it("runs provider-backed proposal review through daemon with mocked fetch", async () => {
+    const secret = "sk-openai-runtime-secret";
+    const fetch = createOpenAICompatibleReviewFetch();
+    const plan = {
+      ...openAICompatibleExtractionRunPlan(),
+      providerConfigs: [
+        ...openAICompatibleExtractionRunPlan().providerConfigs,
+        {
+          id: "review-provider",
+          adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+          providerConfigId: "review-provider",
+          modelId: "review-runtime-model",
+          baseUrl: "https://review-runtime.example/api",
+          endpointPath: "/chat/completions",
+          apiKeyEnvVar: OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
+          timeoutMs: 1000
+        }
+      ]
+    };
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleReview: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: secret,
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model",
+        [OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR]: "review-provider",
+        [OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR]: "json_object"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, plan);
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleReviewStartRequest()
+    );
+    const body = (await response.json()) as {
+      stopped: boolean;
+      stages: Array<{
+        stage: string;
+        status?: string;
+        result: {
+          reviewResults?: Array<{
+            reviewerId: string;
+            status: string;
+          }>;
+        };
+      }>;
+    };
+    const [url, init] = getOpenAICompatibleFetchCall(fetch);
+    const requestBody = JSON.parse(init.body) as {
+      model: string;
+      messages: Array<{ role: string; content: string }>;
+      response_format?: unknown;
+    };
+    const reviewPromptPayload = findReviewContextPayload(requestBody.messages);
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const serializedSafeState = JSON.stringify({
+      body,
+      detail: detailBody,
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      events: daemonApp.eventStore.listEvents(created.run.sessionId)
+    });
+
+    expect(response.status).toBe(200);
+    expect(body.stopped).toBe(false);
+    expect(body.stages.find((stage) => stage.stage === "proposal_review")).toMatchObject({
+      status: "completed",
+      result: {
+        reviewResults: [
+          expect.objectContaining({
+            reviewerId: OPENAI_COMPATIBLE_REVIEWER_ID,
+            status: "reviewed"
+          })
+        ]
+      }
+    });
+    expect(url).toBe("https://review-runtime.example/api/chat/completions");
+    expect(requestBody.model).toBe("review-runtime-model");
+    expect(requestBody.response_format).toEqual({
+      type: "json_object"
+    });
+    expect(requestBody.messages[0]).toMatchObject({
+      role: "system",
+      content: expect.stringContaining(
+        "Your entire assistant response must be exactly one JSON object."
+      )
+    });
+    expect(requestBody.messages[0].content).toContain(
+      "Challenges must target only proposal event IDs listed in allowedProposalEventIds."
+    );
+    expect(requestBody.messages[0].content).toContain("Return only review challenges and notes.");
+    expect(reviewPromptPayload?.allowedProposalEventIds.length).toBeGreaterThan(0);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(serializedSafeState).not.toContain(secret);
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("raw provider");
+    expect(serializedSafeState).not.toContain("/Users/");
+    expect(serializedSafeState).not.toContain("stack");
+    expect(serializedSafeState).not.toContain("responseFormat");
+    expect(serializedSafeState).not.toContain("json_object");
+    expectSafeRunApiPayload(body, secret);
+    expectSafeRunApiPayload(detailBody, secret);
+  });
+
+  it("rejects invalid review response format before provider calls", () => {
+    const fetch = createOpenAICompatibleReviewFetch();
+    let thrown: unknown;
+
+    try {
+      createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        enableOpenAICompatibleProfile: true,
+        enableOpenAICompatibleReview: true,
+        openAICompatibleEnv: {
+          [OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR]: "json_schema"
+        },
+        openAICompatibleFetch: fetch
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(OpenAICompatibleAdapterError);
+    expect((thrown as OpenAICompatibleAdapterError).safeCategory).toBe(
+      "provider_config_invalid"
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("retries malformed provider review shape once and succeeds without storing the rejected response", async () => {
+    const rejectedResponseMarker = "REVIEW_REJECTED_PROSE_WRAPPER";
+    const fetch = createOpenAICompatibleReviewFetch({
+      contentTransforms: [
+        (content) => `${rejectedResponseMarker}\n${content}`,
+        (content) => content
+      ]
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleReview: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
+        [OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR]: "json_object"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleReviewStartRequest()
+    );
+    const body = (await response.json()) as {
+      stages: Array<{
+        stage: string;
+        status?: string;
+        result: {
+          reviewResults?: Array<{
+            reviewerId: string;
+            status: string;
+          }>;
+        };
+      }>;
+    };
+    const retryRequest = JSON.parse(getOpenAICompatibleFetchCall(fetch, 1)[1].body) as {
+      messages: Array<{ role: string; content: string }>;
+      response_format?: unknown;
+    };
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const serializedSafeState = JSON.stringify({
+      body,
+      detail: detailBody,
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      events: daemonApp.eventStore.listEvents(created.run.sessionId)
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(retryRequest.messages).toHaveLength(3);
+    expect(retryRequest.messages[2]).toMatchObject({
+      role: "user",
+      content: expect.stringContaining(
+        "The previous response was rejected because it was not exactly one JSON object."
+      )
+    });
+    expect(JSON.stringify(retryRequest)).not.toContain(rejectedResponseMarker);
+    expect(retryRequest.response_format).toEqual({
+      type: "json_object"
+    });
+    expect(body.stages.find((stage) => stage.stage === "proposal_review")).toMatchObject({
+      status: "completed",
+      result: {
+        reviewResults: [
+          expect.objectContaining({
+            reviewerId: OPENAI_COMPATIBLE_REVIEWER_ID,
+            status: "reviewed"
+          })
+        ]
+      }
+    });
+    expect(serializedSafeState).not.toContain(rejectedResponseMarker);
+    expect(serializedSafeState).not.toContain("sk-openai-runtime-secret");
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("/Users/");
+    expect(serializedSafeState).not.toContain("stack");
+  });
+
+  it("surfaces safe provider review parse and contract failures", async () => {
+    const cases = [
+      {
+        contentTransform: (content: string) => `Review JSON:\n${content}`,
+        expectedCalls: 2,
+        errorCategory: "provider_malformed_response",
+        providerResponseShape: "prose_with_json_object"
+      },
+      {
+        content: "[]",
+        expectedCalls: 2,
+        errorCategory: "provider_malformed_response",
+        providerResponseShape: "json_array"
+      },
+      {
+        content: JSON.stringify({
+          challenges: [
+            {
+              targetProposalEventId: "missing-proposal-event",
+              reason: "Schema-valid challenge with disallowed target."
+            }
+          ],
+          notes: []
+        }),
+        expectedCalls: 1,
+        errorCategory: "proposal_review_validation_failed"
+      }
+    ] as const;
+
+    for (const testCase of cases) {
+      const fetch = createOpenAICompatibleReviewFetch({
+        content: "content" in testCase ? testCase.content : undefined,
+        contentTransform:
+          "contentTransform" in testCase ? testCase.contentTransform : undefined
+      });
+      const daemonApp = createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        enableLocalPreset: true,
+        enableOpenAICompatibleProfile: true,
+        enableOpenAICompatibleReview: true,
+        openAICompatibleEnv: {
+          [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret"
+        },
+        openAICompatibleFetch: fetch
+      });
+      const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+      const response = await postJson(
+        daemonApp.app,
+        `/runs/${created.run.runId}/start`,
+        openAICompatibleReviewStartRequest()
+      );
+      const body = (await response.json()) as {
+        stages: Array<{
+          stage: string;
+          result: {
+            reviewResults?: Array<{
+              errorCategory?: string;
+              safeDiagnostics?: {
+                providerResponseShape?: string;
+              };
+            }>;
+          };
+        }>;
+      };
+      const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+      const reviewResult = body.stages.find((stage) => stage.stage === "proposal_review")?.result
+        .reviewResults?.[0];
+      const serializedSafeState = JSON.stringify({
+        body,
+        detail: detailBody,
+        storedRun: daemonApp.runStore.getRun(created.run.runId),
+        events: daemonApp.eventStore.listEvents(created.run.sessionId)
+      });
+
+      expect(response.status).toBe(200);
+      expect(fetch).toHaveBeenCalledTimes(testCase.expectedCalls);
+      expect(reviewResult).toMatchObject({
+        errorCategory: testCase.errorCategory
+      });
+      if ("providerResponseShape" in testCase) {
+        expect(reviewResult).toMatchObject({
+          safeDiagnostics: {
+            providerResponseShape: testCase.providerResponseShape
+          }
+        });
+        expect(serializedSafeState).toContain(
+          `"providerResponseShape":"${testCase.providerResponseShape}"`
+        );
+      } else {
+        expect(reviewResult?.safeDiagnostics).toBeUndefined();
+        expect(serializedSafeState).not.toContain("providerResponseShape");
+      }
+      expect(serializedSafeState).not.toContain("Review JSON");
+      expect(serializedSafeState).not.toContain("missing-proposal-event");
+      expect(serializedSafeState).not.toContain("sk-openai-runtime-secret");
+      expect(serializedSafeState).not.toContain("Authorization");
+      expect(serializedSafeState).not.toContain("Bearer");
+      expect(serializedSafeState).not.toContain("/Users/");
+      expect(serializedSafeState).not.toContain("stack");
+    }
+  });
+
   it("does not override explicitly injected adapter registries with the OpenAI-compatible profile", async () => {
     const fetch = createOpenAICompatibleFetch();
     const daemonApp = createDaemonApp({
@@ -4292,6 +4789,10 @@ describe("daemon API", () => {
       "OPENAI_COMPATIBLE_MODEL_ENV_VAR",
       "OPENAI_COMPATIBLE_PRESENCE_PENALTY_ENV_VAR",
       "OPENAI_COMPATIBLE_PROFILE_ENV_VAR",
+      "OPENAI_COMPATIBLE_REVIEW_ENV_VAR",
+      "OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR",
+      "OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR",
+      "OPENAI_COMPATIBLE_REVIEWER_ID",
       "OPENAI_COMPATIBLE_STREAM_ENV_VAR",
       "OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR",
       "OPENAI_COMPATIBLE_THINKING_ENV_VAR",
@@ -4302,10 +4803,14 @@ describe("daemon API", () => {
       "createOpenAICompatibleRuntimeEnv",
       "isOpenAICompatibleExtractionEnabledFromEnv",
       "isOpenAICompatibleProfileEnabledFromEnv",
+      "isOpenAICompatibleReviewEnabledFromEnv",
       "OpenAICompatibleExtractionGenerator",
       "OpenAICompatibleExtractionGeneratorError",
+      "OpenAICompatibleReviewGenerator",
+      "OpenAICompatibleReviewGeneratorError",
       "resolveStartDaemonEnableOpenAICompatibleExtraction",
-      "resolveStartDaemonEnableOpenAICompatibleProfile"
+      "resolveStartDaemonEnableOpenAICompatibleProfile",
+      "resolveStartDaemonEnableOpenAICompatibleReview"
     ]);
     const forbiddenTerms = [
       "Adapter",

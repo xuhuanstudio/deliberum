@@ -75,6 +75,7 @@ export type DaemonAppOptions = {
   enableLocalPreset?: boolean;
   enableOpenAICompatibleProfile?: boolean;
   enableOpenAICompatibleExtraction?: boolean;
+  enableOpenAICompatibleReview?: boolean;
   openAICompatibleEnv?: Record<string, string | undefined>;
   openAICompatibleFetch?: OpenAICompatibleProfileOptions["fetch"];
   idGenerator?: IdGenerator;
@@ -135,7 +136,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     ? createOpenAICompatibleRunRegistries({
         env: options.openAICompatibleEnv,
         fetch: options.openAICompatibleFetch,
-        enableExtraction: options.enableOpenAICompatibleExtraction === true
+        enableExtraction: options.enableOpenAICompatibleExtraction === true,
+        enableReview: options.enableOpenAICompatibleReview === true
       })
     : undefined;
   const webgetStore =

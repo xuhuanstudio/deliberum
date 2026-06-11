@@ -5,22 +5,36 @@ import {
   type FetchLike,
   type OpenAICompatibleRequestOptions
 } from "@deliberum/adapters";
-import { AdapterRegistry, ExtractionGeneratorRegistry } from "@deliberum/orchestrator";
+import {
+  AdapterRegistry,
+  ExtractionGeneratorRegistry,
+  ProposalReviewGeneratorRegistry
+} from "@deliberum/orchestrator";
 import {
   OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
   OpenAICompatibleExtractionGenerator
 } from "./openai-compatible-extraction-generator";
+import {
+  OPENAI_COMPATIBLE_REVIEWER_ID,
+  OpenAICompatibleReviewGenerator
+} from "./openai-compatible-review-generator";
 import type { DaemonRunOrchestrationOptions } from "./run-orchestration";
 
 export const OPENAI_COMPATIBLE_PROFILE_ENV_VAR =
   "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE" as const;
 export const OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR =
   "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_EXTRACTION" as const;
+export const OPENAI_COMPATIBLE_REVIEW_ENV_VAR =
+  "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_REVIEW" as const;
 export const OPENAI_COMPATIBLE_ADAPTER_ID = "openai-compatible" as const;
 export const OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR =
   "DELIBERUM_OPENAI_EXTRACTION_PROVIDER_CONFIG_ID" as const;
 export const OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR =
   "DELIBERUM_OPENAI_EXTRACTION_RESPONSE_FORMAT" as const;
+export const OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR =
+  "DELIBERUM_OPENAI_REVIEW_PROVIDER_CONFIG_ID" as const;
+export const OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR =
+  "DELIBERUM_OPENAI_REVIEW_RESPONSE_FORMAT" as const;
 export const OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID = "openai-main" as const;
 export const OPENAI_COMPATIBLE_API_KEY_ENV_VAR = "DELIBERUM_OPENAI_API_KEY" as const;
 export const OPENAI_COMPATIBLE_BASE_URL_ENV_VAR = "DELIBERUM_OPENAI_BASE_URL" as const;
@@ -56,6 +70,7 @@ export type OpenAICompatibleProfileOptions = {
   env?: Record<string, string | undefined>;
   fetch?: FetchLike;
   enableExtraction?: boolean;
+  enableReview?: boolean;
 };
 
 export function isOpenAICompatibleProfileEnabledFromEnv(
@@ -70,12 +85,29 @@ export function isOpenAICompatibleExtractionEnabledFromEnv(
   return env[OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR] === "true";
 }
 
+export function isOpenAICompatibleReviewEnabledFromEnv(
+  env: Record<string, string | undefined>
+): boolean {
+  return env[OPENAI_COMPATIBLE_REVIEW_ENV_VAR] === "true";
+}
+
 export function createOpenAICompatibleRunRegistries(
   options: OpenAICompatibleProfileOptions = {}
 ): OpenAICompatibleProfileRegistries {
   const requestOptions = createOpenAICompatibleRequestOptionsFromEnv(options.env);
   const extractionRequestOptions = options.enableExtraction
-    ? createOpenAICompatibleExtractionRequestOptionsFromEnv(options.env, requestOptions)
+    ? createOpenAICompatibleComponentRequestOptionsFromEnv(
+        options.env,
+        requestOptions,
+        OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR
+      )
+    : undefined;
+  const reviewRequestOptions = options.enableReview
+    ? createOpenAICompatibleComponentRequestOptionsFromEnv(
+        options.env,
+        requestOptions,
+        OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR
+      )
     : undefined;
 
   return {
@@ -118,6 +150,31 @@ export function createOpenAICompatibleRunRegistries(
             })
           ])
         }
+      : {}),
+    ...(options.enableReview
+      ? {
+          proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([
+            new OpenAICompatibleReviewGenerator({
+              reviewerId: OPENAI_COMPATIBLE_REVIEWER_ID,
+              adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+              providerConfigId:
+                readOptionalEnv(
+                  options.env,
+                  OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR
+                ) ?? OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
+              baseUrl: readOptionalEnv(options.env, OPENAI_COMPATIBLE_BASE_URL_ENV_VAR),
+              endpointPath:
+                readOptionalEnv(options.env, OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR) ??
+                OPENAI_COMPATIBLE_DEFAULT_ENDPOINT_PATH,
+              model: readOptionalEnv(options.env, OPENAI_COMPATIBLE_MODEL_ENV_VAR),
+              timeoutMs: parseOptionalPositiveInteger(
+                readOptionalEnv(options.env, OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR)
+              ),
+              requestOptions: reviewRequestOptions,
+              fetch: options.fetch
+            })
+          ])
+        }
       : {})
   };
 }
@@ -130,17 +187,15 @@ export function createOpenAICompatibleRuntimeEnv(
   };
 }
 
-function createOpenAICompatibleExtractionRequestOptionsFromEnv(
+function createOpenAICompatibleComponentRequestOptionsFromEnv(
   env: Record<string, string | undefined> | undefined,
-  baseRequestOptions: OpenAICompatibleRequestOptions | undefined
+  baseRequestOptions: OpenAICompatibleRequestOptions | undefined,
+  responseFormatEnvVar: string
 ): OpenAICompatibleRequestOptions | undefined {
   const requestOptions: OpenAICompatibleRequestOptions = {
     ...(baseRequestOptions ?? {})
   };
-  const responseFormat = readOptionalEnv(
-    env,
-    OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR
-  );
+  const responseFormat = readOptionalEnv(env, responseFormatEnvVar);
 
   if (responseFormat !== undefined) {
     if (responseFormat !== "json_object") {
