@@ -245,6 +245,10 @@ export class DeliberumDaemonClient {
     return this.request("GET", `/runs/${encodeURIComponent(runId)}/events`);
   }
 
+  getRunEventsStreamUrl(runId: string): string {
+    return `${this.baseUrl}/runs/${encodeURIComponent(runId)}/events/stream`;
+  }
+
   startRun(runId: string, startRequest: StartRunRequest): Promise<StartRunResponse> {
     return this.request("POST", `/runs/${encodeURIComponent(runId)}/start`, startRequest);
   }

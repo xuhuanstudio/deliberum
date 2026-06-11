@@ -422,6 +422,23 @@ a {
   padding: 16px;
 }
 
+.du-follow-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px;
+}
+
+.du-follow-actions {
+  display: flex;
+  align-items: stretch;
+}
+
+.du-follow-actions button {
+  white-space: nowrap;
+}
+
 .du-readable-list {
   display: grid;
   gap: 1px;
@@ -583,7 +600,8 @@ a {
   .du-session-form-row,
   .du-key-value-grid,
   .du-explainer-grid,
-  .du-stage-grid {
+  .du-stage-grid,
+  .du-follow-controls {
     grid-template-columns: 1fr;
   }
 }

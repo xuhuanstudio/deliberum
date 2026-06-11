@@ -28,6 +28,7 @@ export type WebDaemonClient = {
   listRuns: () => Promise<ListRunsResponse>;
   getRun: (runId: string) => Promise<RunResponse>;
   getRunEvents: (runId: string) => Promise<RunEventsResponse>;
+  getRunEventsStreamUrl: (runId: string) => string;
   startRun: (runId: string, startRequest: StartRunRequest) => Promise<StartRunResponse>;
   getRunOutcome: (runId: string) => Promise<RunOutcomeResponse>;
   listEvents: (sessionId: string) => Promise<EventsResponse>;

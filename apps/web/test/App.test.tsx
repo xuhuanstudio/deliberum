@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -121,6 +121,9 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         }
       ]
     })),
+    getRunEventsStreamUrl: vi.fn(
+      (runId) => `http://127.0.0.1:3877/runs/${encodeURIComponent(runId)}/events/stream`
+    ),
     startRun: vi.fn(async () => ({
       run: {
         ...runDetail,
@@ -281,6 +284,74 @@ function renderApp(initialPath: string, client = createClient()) {
   return client;
 }
 
+class MockEventSource {
+  static instances: MockEventSource[] = [];
+
+  readonly url: string;
+  onopen: ((event: Event) => void) | null = null;
+  onmessage: ((event: MessageEvent<string>) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
+  private readonly listeners = new Map<string, Set<(event: Event) => void>>();
+  closed = false;
+
+  constructor(url: string) {
+    this.url = url;
+    MockEventSource.instances.push(this);
+  }
+
+  close() {
+    this.closed = true;
+  }
+
+  emitOpen() {
+    this.onopen?.(new Event("open"));
+  }
+
+  emitMessage(data: unknown) {
+    this.onmessage?.(
+      new MessageEvent("message", {
+        data: JSON.stringify(data)
+      })
+    );
+  }
+
+  addEventListener(type: string, listener: (event: Event) => void) {
+    const listeners = this.listeners.get(type) ?? new Set<(event: Event) => void>();
+
+    listeners.add(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  removeEventListener(type: string, listener: (event: Event) => void) {
+    this.listeners.get(type)?.delete(listener);
+  }
+
+  emitNamedEvent(type: string, data: unknown) {
+    const event = new MessageEvent(type, {
+      data: JSON.stringify(data)
+    });
+
+    for (const listener of this.listeners.get(type) ?? []) {
+      listener(event);
+    }
+  }
+
+  emitError() {
+    this.onerror?.(new Event("error"));
+  }
+}
+
+function installMockEventSource() {
+  MockEventSource.instances = [];
+  Object.defineProperty(globalThis, "EventSource", {
+    configurable: true,
+    writable: true,
+    value: MockEventSource
+  });
+
+  return MockEventSource;
+}
+
 function readWebSource(): string {
   return [
     "src/App.tsx",
@@ -298,6 +369,8 @@ function readWebSource(): string {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  delete (globalThis as { EventSource?: unknown }).EventSource;
+  MockEventSource.instances = [];
 });
 
 describe("@deliberum/web shell", () => {
@@ -512,6 +585,53 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText(/quality-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Projection events").length).toBeGreaterThan(0);
     expect(client.listEvents).not.toHaveBeenCalled();
+  });
+
+  it("follows daemon-redacted run events only after the user starts live follow", async () => {
+    const EventSourceMock = installMockEventSource();
+    const client = renderApp("/runs/run-1");
+
+    await screen.findByText("Run ledger timeline");
+    expect(EventSourceMock.instances).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start live follow" }));
+
+    await waitFor(() => expect(client.getRunEventsStreamUrl).toHaveBeenCalledWith("run-1"));
+    expect(EventSourceMock.instances).toHaveLength(1);
+    expect(EventSourceMock.instances[0]?.url).toBe(
+      "http://127.0.0.1:3877/runs/run-1/events/stream"
+    );
+
+    act(() => {
+      EventSourceMock.instances[0]?.emitOpen();
+    });
+
+    expect(await screen.findByText("Live follow connected")).toBeTruthy();
+
+    act(() => {
+      EventSourceMock.instances[0]?.emitNamedEvent("event", {
+        id: "event-live",
+        type: "final_audit_recorded",
+        sequence: 9,
+        visibility: "public",
+        authorId: "system",
+        createdAt: "2026-06-10T00:00:09.000Z",
+        payload: {
+          redacted: true,
+          reason: "event_visibility"
+        },
+        basedOnEventIds: ["event-1"],
+        trace: {}
+      });
+    });
+
+    expect(await screen.findByText(/final_audit_recorded/)).toBeTruthy();
+    expect(screen.getByText("Connected")).toBeTruthy();
+    expect(client.listEvents).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Stop live follow" }));
+
+    await waitFor(() => expect(EventSourceMock.instances[0]?.closed).toBe(true));
   });
 
   it("explains created runs and stages that have not run yet", async () => {
@@ -831,8 +951,6 @@ describe("@deliberum/web shell", () => {
       "@deliberum/orchestrator",
       "@deliberum/adapters",
       "@deliberum/resources",
-      "EventSource",
-      "events/stream",
       "WebGET",
       "MCP",
       "Judge",

@@ -156,6 +156,9 @@ describe("DeliberumDaemonClient", () => {
     await daemonClient.listRuns();
     await daemonClient.getRun("run/1");
     await daemonClient.getRunEvents("run/1");
+    expect(daemonClient.getRunEventsStreamUrl("run/1")).toBe(
+      "http://127.0.0.1:3877/runs/run%2F1/events/stream"
+    );
     await daemonClient.startRun("run/1", startRequest);
     await daemonClient.getRunOutcome("run/1");
 

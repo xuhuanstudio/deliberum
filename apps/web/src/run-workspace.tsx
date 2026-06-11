@@ -13,7 +13,7 @@ import {
   StatusBanner,
   WorkspaceShell
 } from "@deliberum/ui";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
 import {
   DaemonStatus,
@@ -35,6 +35,7 @@ import {
 
 const DEFAULT_RUN_PLAN_TEXT = formatPresetJson(LOCAL_PRESET_RUN_PLAN);
 const DEFAULT_START_REQUEST_TEXT = formatPresetJson(LOCAL_PRESET_START_REQUEST);
+type RunFollowStatus = "idle" | "connecting" | "connected" | "error" | "unsupported";
 
 export function RunsListPage() {
   const { client } = useDaemonRuntime();
@@ -517,11 +518,102 @@ function RunStageStatus({ run }: { run: unknown }) {
 
 function RunEventTimeline({ runId }: { runId: string }) {
   const { client } = useDaemonRuntime();
+  const queryClient = useQueryClient();
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followStatus, setFollowStatus] = useState<RunFollowStatus>("idle");
+  const [followError, setFollowError] = useState<string | null>(null);
+  const [streamedEvents, setStreamedEvents] = useState<unknown[]>([]);
   const eventsQuery = useQuery({
     queryKey: ["run-events", runId],
     queryFn: () => client.getRunEvents(runId)
   });
-  const events = asArray(eventsQuery.data?.events).map(toEventMetadata);
+  const sessionId = eventsQuery.data?.sessionId;
+  const events = mergeRunEvents(asArray(eventsQuery.data?.events), streamedEvents).map(
+    toEventMetadata
+  );
+
+  useEffect(() => {
+    setIsFollowing(false);
+    setFollowStatus("idle");
+    setFollowError(null);
+    setStreamedEvents([]);
+  }, [runId]);
+
+  useEffect(() => {
+    if (!isFollowing) {
+      if (followStatus !== "error" && followStatus !== "unsupported") {
+        setFollowStatus("idle");
+        setFollowError(null);
+      }
+      return;
+    }
+
+    if (typeof EventSource !== "function") {
+      setFollowStatus("unsupported");
+      setFollowError("This browser does not support live run event follow.");
+      setIsFollowing(false);
+      return;
+    }
+
+    const source = new EventSource(client.getRunEventsStreamUrl(runId));
+    let closed = false;
+
+    setFollowStatus("connecting");
+    setFollowError(null);
+
+    source.onopen = () => {
+      if (!closed) {
+        setFollowStatus("connected");
+      }
+    };
+
+    function handleStreamEvent(event: Event) {
+      if (closed) {
+        return;
+      }
+
+      const parsed = parseStreamedRunEvent((event as MessageEvent<string>).data);
+
+      if (!parsed.ok) {
+        setFollowStatus("error");
+        setFollowError(parsed.message);
+        setIsFollowing(false);
+        source.close();
+        return;
+      }
+
+      setFollowStatus("connected");
+      setStreamedEvents((currentEvents) => mergeRunEvents(currentEvents, [parsed.event]));
+      void invalidateRunWorkspaceQueries(queryClient, runId, sessionId);
+    }
+
+    source.addEventListener("event", handleStreamEvent);
+
+    source.onerror = () => {
+      if (!closed) {
+        setFollowStatus("error");
+        setFollowError("Live run event follow connection failed.");
+        setIsFollowing(false);
+        source.close();
+      }
+    };
+
+    return () => {
+      closed = true;
+      source.removeEventListener("event", handleStreamEvent);
+      source.close();
+    };
+  }, [client, isFollowing, queryClient, runId, sessionId]);
+
+  function toggleLiveFollow() {
+    if (typeof EventSource !== "function") {
+      setFollowStatus("unsupported");
+      setFollowError("This browser does not support live run event follow.");
+      return;
+    }
+
+    setIsFollowing((current) => !current);
+  }
 
   return (
     <DataPanel
@@ -529,6 +621,21 @@ function RunEventTimeline({ runId }: { runId: string }) {
       description="Daemon-redacted ledger events for this run. Web renders the returned event view without computing projections."
     >
       <QueryState query={eventsQuery}>
+        <div className="du-follow-controls">
+          <StatusBanner
+            tone={describeRunFollowTone(followStatus)}
+            title={describeRunFollowTitle(followStatus)}
+            detail={
+              followError ??
+              "Live follow subscribes only to the daemon-redacted run event stream."
+            }
+          />
+          <div className="du-follow-actions">
+            <button type="button" onClick={toggleLiveFollow}>
+              {isFollowing ? "Stop live follow" : "Start live follow"}
+            </button>
+          </div>
+        </div>
         <KeyValueGrid
           items={[
             {
@@ -542,6 +649,10 @@ function RunEventTimeline({ runId }: { runId: string }) {
             {
               label: "Event entries",
               value: events.length
+            },
+            {
+              label: "Live follow",
+              value: describeRunFollowValue(followStatus)
             }
           ]}
         />
@@ -968,10 +1079,119 @@ function toEventMetadata(event: unknown): Record<string, unknown> {
     visibility: getRecordValue(event, "visibility"),
     authorId: getRecordValue(event, "authorId"),
     createdAt: getRecordValue(event, "createdAt"),
-    payload: getRecordValue(event, "payload"),
+    payload: sanitizeForDisplay(getRecordValue(event, "payload")),
     basedOnEventIds: asArray(getRecordValue(event, "basedOnEventIds")),
     trace: sanitizeForDisplay(getRecordValue(event, "trace") ?? {})
   };
+}
+
+function mergeRunEvents(...eventGroups: unknown[][]): unknown[] {
+  const eventsByKey = new Map<string, unknown>();
+
+  for (const event of eventGroups.flat()) {
+    eventsByKey.set(getRunEventMergeKey(event, eventsByKey.size), event);
+  }
+
+  return [...eventsByKey.values()].sort(compareRunEvents);
+}
+
+function getRunEventMergeKey(event: unknown, fallback: number): string {
+  const id = getRecordValue(event, "id");
+
+  if (typeof id === "string" && id.length > 0) {
+    return `id:${id}`;
+  }
+
+  return `fallback:${fallback}`;
+}
+
+function compareRunEvents(left: unknown, right: unknown): number {
+  const leftSequence = getRecordValue(left, "sequence");
+  const rightSequence = getRecordValue(right, "sequence");
+
+  if (typeof leftSequence === "number" && typeof rightSequence === "number") {
+    return leftSequence - rightSequence;
+  }
+
+  return 0;
+}
+
+function parseStreamedRunEvent(data: string):
+  | {
+      ok: true;
+      event: unknown;
+    }
+  | {
+      ok: false;
+      message: string;
+    } {
+  try {
+    return {
+      ok: true,
+      event: JSON.parse(data) as unknown
+    };
+  } catch {
+    return {
+      ok: false,
+      message: "Live run event follow returned invalid JSON."
+    };
+  }
+}
+
+function describeRunFollowTitle(status: RunFollowStatus): string {
+  if (status === "connecting") {
+    return "Live follow connecting";
+  }
+
+  if (status === "connected") {
+    return "Live follow connected";
+  }
+
+  if (status === "error") {
+    return "Live follow interrupted";
+  }
+
+  if (status === "unsupported") {
+    return "Live follow unavailable";
+  }
+
+  return "Live follow idle";
+}
+
+function describeRunFollowValue(status: RunFollowStatus): string {
+  if (status === "connected") {
+    return "Connected";
+  }
+
+  if (status === "connecting") {
+    return "Connecting";
+  }
+
+  if (status === "error") {
+    return "Interrupted";
+  }
+
+  if (status === "unsupported") {
+    return "Unavailable";
+  }
+
+  return "Stopped";
+}
+
+function describeRunFollowTone(status: RunFollowStatus): "neutral" | "ok" | "warning" | "error" {
+  if (status === "connected") {
+    return "ok";
+  }
+
+  if (status === "error") {
+    return "error";
+  }
+
+  if (status === "unsupported") {
+    return "warning";
+  }
+
+  return "neutral";
 }
 
 function describeRunStatus(status: unknown): string {
