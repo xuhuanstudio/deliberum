@@ -156,6 +156,13 @@ export const RunErrorCategorySchema = z.enum([
 ]);
 export type RunErrorCategory = z.infer<typeof RunErrorCategorySchema>;
 
+export const RunSafeDiagnosticsSchema = z
+  .object({
+    httpStatus: z.number().int().min(100).max(599).optional()
+  })
+  .strict();
+export type RunSafeDiagnostics = z.infer<typeof RunSafeDiagnosticsSchema>;
+
 export const ExtractionRunErrorCategorySchema = z.enum([
   "extraction_context_unavailable",
   "extraction_generator_failed",
@@ -207,6 +214,7 @@ export const ParticipantDispatchStateSchema = z
     status: ParticipantDispatchStatusSchema,
     contributionEventId: IdSchema.optional(),
     errorCategory: RunErrorCategorySchema.optional(),
+    safeDiagnostics: RunSafeDiagnosticsSchema.optional(),
     previousErrorCategories: z.array(RunErrorCategorySchema).optional(),
     attempts: z.number().int().nonnegative(),
     startedAt: NonEmptyStringSchema.optional(),
@@ -745,6 +753,7 @@ export type ParticipantRoundResult = {
   contributionEventId?: string;
   appended?: boolean;
   errorCategory?: RunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
 };
 
 export type RunSealedDivergenceRoundResult = {

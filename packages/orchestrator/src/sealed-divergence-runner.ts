@@ -15,6 +15,7 @@ import type {
   ParticipantRoundResult,
   RoundExecutionClaim,
   RunErrorCategory,
+  RunSafeDiagnostics,
   RunSealedDivergenceRoundInput,
   RunSealedDivergenceRoundOptions,
   RunSealedDivergenceRoundResult,
@@ -49,6 +50,7 @@ type AdapterExecutionOutcome =
   | {
       kind: "failed";
       errorCategory: RunErrorCategory;
+      safeDiagnostics?: RunSafeDiagnostics;
     }
   | {
       kind: "timed_out";
@@ -399,7 +401,7 @@ async function executeParticipant(input: {
       participantId: input.participantId,
       adapterId: participant.adapterId,
       status: "failed",
-      errorCategory: getParticipantErrorCategory(error)
+      ...getParticipantFailure(error)
     };
   }
 
@@ -408,7 +410,8 @@ async function executeParticipant(input: {
       participantId: input.participantId,
       adapterId: participant.adapterId,
       status: outcome.kind === "timed_out" ? "timed_out" : "failed",
-      errorCategory: outcome.errorCategory
+      errorCategory: outcome.errorCategory,
+      safeDiagnostics: outcome.kind === "failed" ? outcome.safeDiagnostics : undefined
     };
   }
 
@@ -455,21 +458,31 @@ async function executeParticipant(input: {
   }
 }
 
-function getParticipantErrorCategory(error: unknown): RunErrorCategory {
+function getParticipantFailure(error: unknown): {
+  errorCategory: RunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
+} {
   if (error instanceof ProviderSecretResolutionError) {
-    return "provider_secret_missing";
+    return { errorCategory: "provider_secret_missing" };
   }
 
   if (error instanceof RunSealedDivergenceRoundError) {
-    return error.category as RunErrorCategory;
+    return { errorCategory: error.category as RunErrorCategory };
   }
 
   const safeAdapterCategory = getSafeAdapterErrorCategory(error);
   if (safeAdapterCategory) {
-    return safeAdapterCategory;
+    return {
+      errorCategory: safeAdapterCategory,
+      safeDiagnostics: getSafeAdapterDiagnostics(error)
+    };
   }
 
-  return "adapter_failed";
+  return { errorCategory: "adapter_failed" };
+}
+
+function getParticipantErrorCategory(error: unknown): RunErrorCategory {
+  return getParticipantFailure(error).errorCategory;
 }
 
 async function executeAdapterWithTimeout(
@@ -484,7 +497,7 @@ async function executeAdapterWithTimeout(
     }))
     .catch((error) => ({
       kind: "failed" as const,
-      errorCategory: getParticipantErrorCategory(error)
+      ...getParticipantFailure(error)
     }));
 
   if (timeoutMs === undefined) {
@@ -524,6 +537,30 @@ function getSafeAdapterErrorCategory(error: unknown): RunErrorCategory | undefin
 
   const parsed = RunErrorCategorySchema.safeParse(safeCategory);
   return parsed.success ? parsed.data : undefined;
+}
+
+function getSafeAdapterDiagnostics(error: unknown): RunSafeDiagnostics | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const diagnostics = (error as { safeDiagnostics?: unknown }).safeDiagnostics;
+  if (typeof diagnostics !== "object" || diagnostics === null || Array.isArray(diagnostics)) {
+    return undefined;
+  }
+
+  const httpStatus = (diagnostics as { httpStatus?: unknown }).httpStatus;
+  if (
+    typeof httpStatus !== "number" ||
+    !Number.isFinite(httpStatus) ||
+    !Number.isInteger(httpStatus) ||
+    httpStatus < 100 ||
+    httpStatus > 599
+  ) {
+    return undefined;
+  }
+
+  return { httpStatus };
 }
 
 function getRoundParticipantIds(run: DeliberationRunRecord): string[] {
@@ -642,6 +679,7 @@ function mergeParticipantResults(
       status: result.status,
       contributionEventId: result.contributionEventId,
       errorCategory: result.status === "submitted" ? undefined : result.errorCategory,
+      safeDiagnostics: result.status === "submitted" ? undefined : result.safeDiagnostics,
       previousErrorCategories,
       completedAt
     };

@@ -1550,13 +1550,13 @@ describe("daemon API", () => {
     );
   });
 
-  it("surfaces safe OpenAI-compatible provider failure categories through run API", async () => {
+  it("surfaces safe OpenAI-compatible provider HTTP status through run API", async () => {
     const secret = "sk-openai-runtime-secret";
     const rawProviderBody =
       "raw provider body sk-openai-runtime-secret Authorization Bearer private prompt /Users/provider.log";
     const fetch = vi.fn(async () => ({
       ok: false,
-      status: 401,
+      status: 500,
       json: vi.fn(async () => ({
         error: {
           message: rawProviderBody
@@ -1589,6 +1589,9 @@ describe("daemon API", () => {
           participantResults?: Array<{
             status: string;
             errorCategory?: string;
+            safeDiagnostics?: {
+              httpStatus?: number;
+            };
           }>;
         };
       }>;
@@ -1615,7 +1618,10 @@ describe("daemon API", () => {
             participantResults: [
               expect.objectContaining({
                 status: "failed",
-                errorCategory: "provider_auth_failed"
+                errorCategory: "provider_http_error",
+                safeDiagnostics: {
+                  httpStatus: 500
+                }
               })
             ]
           }
@@ -1626,7 +1632,25 @@ describe("daemon API", () => {
       "topic_contract_published",
       "sealed_batch_opened"
     ]);
-    expect(serializedSafeState).toContain("provider_auth_failed");
+    expect(detailBody).toMatchObject({
+      run: {
+        rounds: {
+          sealedDivergence: {
+            participantDispatches: [
+              expect.objectContaining({
+                status: "failed",
+                errorCategory: "provider_http_error",
+                safeDiagnostics: {
+                  httpStatus: 500
+                }
+              })
+            ]
+          }
+        }
+      }
+    });
+    expect(serializedSafeState).toContain("provider_http_error");
+    expect(serializedSafeState).toContain("\"httpStatus\":500");
     expect(serializedSafeState).not.toContain(rawProviderBody);
     expect(serializedSafeState).not.toContain(secret);
     expect(serializedSafeState).not.toContain("Authorization");

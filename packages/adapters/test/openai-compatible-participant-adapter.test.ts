@@ -65,7 +65,15 @@ async function expectSafeOpenAIError(
 
   expect(adapterError.safeCategory).toBe(expectedCategory);
   if (expectedStatus !== undefined) {
+    expect(adapterError.httpStatus).toBe(expectedStatus);
     expect(adapterError.status).toBe(expectedStatus);
+    expect(adapterError.safeDiagnostics).toEqual({
+      httpStatus: expectedStatus
+    });
+  } else {
+    expect(adapterError.httpStatus).toBeUndefined();
+    expect(adapterError.status).toBeUndefined();
+    expect(adapterError.safeDiagnostics).toBeUndefined();
   }
   expect(serializedError).not.toContain("sk-test-secret");
   expect(serializedError).not.toContain("account-secret");
@@ -345,6 +353,7 @@ describe("OpenAICompatibleParticipantAdapter", () => {
   });
 
   it.each([
+    [400, "provider_http_error"],
     [401, "provider_auth_failed"],
     [403, "provider_auth_failed"],
     [404, "provider_not_found"],
@@ -388,6 +397,30 @@ describe("OpenAICompatibleParticipantAdapter", () => {
       );
     }
   );
+
+  it("does not attach unsafe or invalid HTTP status diagnostics", async () => {
+    const fetch = vi.fn(async () =>
+      createFetchResponse(
+        {
+          error: {
+            message: "raw provider body says sk-test-secret private prompt"
+          }
+        },
+        700
+      )
+    ) as unknown as ReturnType<typeof vi.fn> & FetchLike;
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      apiKey: "sk-test-secret",
+      model: "model-1",
+      fetch
+    });
+
+    await expectSafeOpenAIError(
+      adapter.prepareContribution({ instructions: "private prompt" }, context),
+      "provider_http_error"
+    );
+  });
 
   it("maps fetch rejection to provider_network_error without leaking raw errors", async () => {
     const fetch = vi.fn(async () =>

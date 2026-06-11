@@ -71,6 +71,10 @@ export type ParticipantAdapterSafeErrorCategory =
   | "provider_response_missing_content"
   | "provider_unknown_error";
 
+export type ParticipantAdapterSafeDiagnostics = {
+  httpStatus?: number;
+};
+
 export type ParticipantAdapterResult = {
   payload: JsonValue;
   adapterId: string;

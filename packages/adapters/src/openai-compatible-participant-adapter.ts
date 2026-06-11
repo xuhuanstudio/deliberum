@@ -7,6 +7,7 @@ import type {
   ParticipantAdapterInput,
   ParticipantAdapterProviderRuntimeConfig,
   ParticipantAdapterResult,
+  ParticipantAdapterSafeDiagnostics,
   ParticipantAdapterSafeErrorCategory
 } from "./types";
 import {
@@ -92,17 +93,23 @@ type EffectiveOpenAICompatibleConfig = {
 
 export class OpenAICompatibleAdapterError extends Error {
   readonly safeCategory: ParticipantAdapterSafeErrorCategory;
+  readonly safeDiagnostics?: ParticipantAdapterSafeDiagnostics;
+  readonly httpStatus?: number;
   readonly status?: number;
 
   constructor(
     message: string,
     safeCategory: ParticipantAdapterSafeErrorCategory = "provider_unknown_error",
-    status?: number
+    safeDiagnostics: ParticipantAdapterSafeDiagnostics = {}
   ) {
     super(message);
     this.name = "OpenAICompatibleAdapterError";
     this.safeCategory = safeCategory;
-    this.status = status;
+    this.safeDiagnostics = Object.keys(safeDiagnostics).length > 0
+      ? { ...safeDiagnostics }
+      : undefined;
+    this.httpStatus = safeDiagnostics.httpStatus;
+    this.status = safeDiagnostics.httpStatus;
   }
 }
 
@@ -197,10 +204,13 @@ export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
       });
 
       if (!response.ok) {
+        const httpStatus = normalizeHttpStatus(response.status);
         throw new OpenAICompatibleAdapterError(
-          `OpenAI-compatible provider request failed with status ${response.status}.`,
-          getHttpSafeCategory(response.status),
-          response.status
+          httpStatus === undefined
+            ? "OpenAI-compatible provider request failed with non-OK status."
+            : `OpenAI-compatible provider request failed with status ${httpStatus}.`,
+          getHttpSafeCategory(httpStatus),
+          httpStatus === undefined ? {} : { httpStatus }
         );
       }
 
@@ -446,7 +456,16 @@ function getDefaultFetch(): FetchLike {
     }));
 }
 
-function getHttpSafeCategory(status: number): ParticipantAdapterSafeErrorCategory {
+function normalizeHttpStatus(status: number): number | undefined {
+  return Number.isFinite(status) &&
+    Number.isInteger(status) &&
+    status >= 100 &&
+    status <= 599
+    ? status
+    : undefined;
+}
+
+function getHttpSafeCategory(status: number | undefined): ParticipantAdapterSafeErrorCategory {
   if (status === 401 || status === 403) {
     return "provider_auth_failed";
   }

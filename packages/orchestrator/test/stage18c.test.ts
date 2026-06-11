@@ -18,6 +18,7 @@ import {
   runSealedDivergenceRound
 } from "../src";
 import type { DeliberationRunRecord, RunErrorCategory } from "../src";
+import type { RunSafeDiagnostics } from "../src";
 
 function createRunPlan(
   options: {
@@ -138,6 +139,7 @@ function createAdapter(options: {
   fail?: boolean;
   failureMessage?: string;
   safeErrorCategory?: RunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
   onCall?: (
     input: ParticipantAdapterInput,
     context: ParticipantAdapterContext,
@@ -182,6 +184,12 @@ function createAdapter(options: {
         if (options.safeErrorCategory) {
           Object.defineProperty(error, "safeCategory", {
             value: options.safeErrorCategory,
+            enumerable: true
+          });
+        }
+        if (options.safeDiagnostics) {
+          Object.defineProperty(error, "safeDiagnostics", {
+            value: options.safeDiagnostics,
             enumerable: true
           });
         }
@@ -632,7 +640,10 @@ describe("runSealedDivergenceRound", () => {
             adapterId: "adapter-web",
             fail: true,
             failureMessage: rawProviderFailure,
-            safeErrorCategory: "provider_auth_failed"
+            safeErrorCategory: "provider_http_error",
+            safeDiagnostics: {
+              httpStatus: 500
+            }
           })
         ]),
         idGenerator: runIds()
@@ -645,21 +656,28 @@ describe("runSealedDivergenceRound", () => {
     });
 
     expect(result.run.status).toBe("waiting_for_participants");
-    expect(result.run.sealedDivergenceRound?.lastErrorCategory).toBe("provider_auth_failed");
+    expect(result.run.sealedDivergenceRound?.lastErrorCategory).toBe("provider_http_error");
     expect(result.participantResults).toContainEqual(
       expect.objectContaining({
         participantId: "participant-web",
         status: "failed",
-        errorCategory: "provider_auth_failed"
+        errorCategory: "provider_http_error",
+        safeDiagnostics: {
+          httpStatus: 500
+        }
       })
     );
     expect(result.run.sealedDivergenceRound?.participantDispatches).toContainEqual(
       expect.objectContaining({
         participantId: "participant-web",
         status: "failed",
-        errorCategory: "provider_auth_failed"
+        errorCategory: "provider_http_error",
+        safeDiagnostics: {
+          httpStatus: 500
+        }
       })
     );
+    expect(serializedSafeState).toContain("\"httpStatus\":500");
     expect(serializedSafeState).not.toContain(rawProviderFailure);
     expect(serializedSafeState).not.toContain("sk-test-secret");
     expect(serializedSafeState).not.toContain("Authorization");
