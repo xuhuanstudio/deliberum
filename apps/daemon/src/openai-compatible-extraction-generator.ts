@@ -1,5 +1,4 @@
 import {
-  completeOpenAICompatibleRequest,
   type FetchLike,
   type OpenAICompatibleChatMessage,
   type OpenAICompatibleRequestOptions
@@ -12,9 +11,9 @@ import {
   type ExtractionGeneratorResult,
   type ExtractionRunErrorCategory,
   type ProviderRuntimeConfig,
-  type RunSafeDiagnostics,
-  type RunSafeProviderResponseShape
+  type RunSafeDiagnostics
 } from "@deliberum/orchestrator";
+import { completeOpenAICompatibleStructuredJsonObject } from "./openai-compatible-structured-generator";
 
 export const OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID =
   "openai-compatible-extractor" as const;
@@ -80,31 +79,7 @@ export class OpenAICompatibleExtractionGenerator implements ExtractionGenerator 
     context: ExtractionContext,
     providerRuntimeConfig?: ProviderRuntimeConfig
   ): Promise<ExtractionGeneratorResult> {
-    const content = await this.completeExtractionRequest(context, providerRuntimeConfig);
-
-    try {
-      return parseExtractionOutput(content);
-    } catch (error) {
-      if (!isRetryableMalformedExtractionError(error)) {
-        throw error;
-      }
-    }
-
-    const retryContent = await this.completeExtractionRequest(
-      context,
-      providerRuntimeConfig,
-      true
-    );
-
-    return parseExtractionOutput(retryContent);
-  }
-
-  private async completeExtractionRequest(
-    context: ExtractionContext,
-    providerRuntimeConfig: ProviderRuntimeConfig | undefined,
-    isCorrectiveRetry = false
-  ): Promise<string> {
-    return completeOpenAICompatibleRequest({
+    const parsed = await completeOpenAICompatibleStructuredJsonObject<ExtractionRunErrorCategory>({
       config: {
         baseUrl: providerRuntimeConfig?.baseUrl ?? this.baseUrl,
         apiKey: providerRuntimeConfig?.apiKey ?? this.apiKey,
@@ -117,16 +92,19 @@ export class OpenAICompatibleExtractionGenerator implements ExtractionGenerator 
         },
         ...(this.fetch ? { fetch: this.fetch } : {})
       },
-      messages: createExtractionMessages(context, isCorrectiveRetry)
+      messages: createExtractionMessages(context),
+      malformedResponseCategory: "provider_malformed_response",
+      outputDescription: "extraction output",
+      createError: (message, safeCategory, safeDiagnostics) =>
+        new OpenAICompatibleExtractionGeneratorError(message, safeCategory, safeDiagnostics)
     });
+
+    return parseExtractionOutput(parsed);
   }
 }
 
-function createExtractionMessages(
-  context: ExtractionContext,
-  isCorrectiveRetry: boolean
-): OpenAICompatibleChatMessage[] {
-  const messages: OpenAICompatibleChatMessage[] = [
+function createExtractionMessages(context: ExtractionContext): OpenAICompatibleChatMessage[] {
+  return [
     {
       role: "system",
       content: createExtractionSystemPrompt()
@@ -136,15 +114,6 @@ function createExtractionMessages(
       content: createExtractionUserPrompt(context)
     }
   ];
-
-  if (isCorrectiveRetry) {
-    messages.push({
-      role: "user",
-      content: createExtractionCorrectiveRetryPrompt()
-    });
-  }
-
-  return messages;
 }
 
 function createExtractionSystemPrompt(): string {
@@ -265,17 +234,7 @@ function createExtractionUserPrompt(context: ExtractionContext): string {
   );
 }
 
-function createExtractionCorrectiveRetryPrompt(): string {
-  return [
-    "The previous response was rejected because it was not exactly one JSON object.",
-    "Do not include any prose, labels, Markdown, code fences, or explanation.",
-    "Return only the JSON object.",
-    "The complete assistant response must start with { and end with }."
-  ].join(" ");
-}
-
-function parseExtractionOutput(content: string): ExtractionGeneratorResult {
-  const parsed = parseExtractionJsonObject(content);
+function parseExtractionOutput(parsed: unknown): ExtractionGeneratorResult {
   const extraction = ExtractionGeneratorResultSchema.safeParse(parsed);
   if (!extraction.success) {
     throw new OpenAICompatibleExtractionGeneratorError(
@@ -285,125 +244,4 @@ function parseExtractionOutput(content: string): ExtractionGeneratorResult {
   }
 
   return extraction.data;
-}
-
-function isRetryableMalformedExtractionError(error: unknown): boolean {
-  return error instanceof OpenAICompatibleExtractionGeneratorError &&
-    error.safeCategory === "provider_malformed_response";
-}
-
-function parseExtractionJsonObject(content: string): unknown {
-  const trimmed = content.trim();
-  const rawJsonObjectSource = extractRawJsonObjectSource(trimmed);
-
-  if (rawJsonObjectSource) {
-    return parseJsonObjectSource(rawJsonObjectSource, "invalid_json_object");
-  }
-
-  const fencedSource = extractSingleFencedSource(trimmed);
-  if (fencedSource !== undefined) {
-    const inner = fencedSource.trim();
-
-    if (extractRawJsonObjectSource(inner)) {
-      return parseJsonObjectSource(inner, "single_fenced_invalid_json");
-    }
-
-    throwMalformedExtractionJson(classifyProviderResponseShape(inner, true));
-  }
-
-  throwMalformedExtractionJson(classifyProviderResponseShape(trimmed, false));
-}
-
-function parseJsonObjectSource(
-  jsonSource: string,
-  parseFailureShape: RunSafeProviderResponseShape
-): unknown {
-  try {
-    const parsed = JSON.parse(jsonSource);
-
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      throw new Error("not an object");
-    }
-
-    return parsed;
-  } catch {
-    throw new OpenAICompatibleExtractionGeneratorError(
-      "OpenAI-compatible extraction output was not valid JSON.",
-      "provider_malformed_response",
-      {
-        providerResponseShape: parseFailureShape
-      }
-    );
-  }
-}
-
-function throwMalformedExtractionJson(providerResponseShape: RunSafeProviderResponseShape): never {
-  throw new OpenAICompatibleExtractionGeneratorError(
-    "OpenAI-compatible extraction output was not a JSON object.",
-    "provider_malformed_response",
-    {
-      providerResponseShape
-    }
-  );
-}
-
-function extractRawJsonObjectSource(trimmedContent: string): string | undefined {
-  return trimmedContent.startsWith("{") && trimmedContent.endsWith("}")
-    ? trimmedContent
-    : undefined;
-}
-
-function extractSingleFencedSource(trimmedContent: string): string | undefined {
-  const match = /^```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```$/i.exec(trimmedContent);
-
-  return match?.[1];
-}
-
-function classifyProviderResponseShape(
-  trimmedContent: string,
-  isSingleFenced: boolean
-): RunSafeProviderResponseShape {
-  if (trimmedContent.length === 0) {
-    return "empty_text";
-  }
-
-  const parsedShape = classifyValidJsonNonObjectShape(trimmedContent, isSingleFenced);
-  if (parsedShape) {
-    return parsedShape;
-  }
-
-  if (!isSingleFenced && containsJsonObjectDelimiterPair(trimmedContent)) {
-    return "prose_with_json_object";
-  }
-
-  if (trimmedContent.startsWith("{") || trimmedContent.endsWith("}")) {
-    return isSingleFenced ? "single_fenced_invalid_json" : "invalid_json_object";
-  }
-
-  return isSingleFenced ? "single_fenced_other_text" : "other_text";
-}
-
-function classifyValidJsonNonObjectShape(
-  trimmedContent: string,
-  isSingleFenced: boolean
-): RunSafeProviderResponseShape | undefined {
-  try {
-    const parsed = JSON.parse(trimmedContent);
-
-    if (Array.isArray(parsed)) {
-      return isSingleFenced ? "single_fenced_json_array" : "json_array";
-    }
-
-    if (typeof parsed !== "object" || parsed === null) {
-      return isSingleFenced ? "single_fenced_json_non_object" : "json_non_object";
-    }
-  } catch {
-    return undefined;
-  }
-
-  return undefined;
-}
-
-function containsJsonObjectDelimiterPair(trimmedContent: string): boolean {
-  return trimmedContent.includes("{") && trimmedContent.includes("}");
 }
