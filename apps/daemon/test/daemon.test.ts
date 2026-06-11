@@ -1550,6 +1550,95 @@ describe("daemon API", () => {
     );
   });
 
+  it("surfaces safe OpenAI-compatible provider failure categories through run API", async () => {
+    const secret = "sk-openai-runtime-secret";
+    const rawProviderBody =
+      "raw provider body sk-openai-runtime-secret Authorization Bearer private prompt /Users/provider.log";
+    const fetch = vi.fn(async () => ({
+      ok: false,
+      status: 401,
+      json: vi.fn(async () => ({
+        error: {
+          message: rawProviderBody
+        }
+      }))
+    })) as unknown as MockedFetchLike;
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleProfile: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: secret,
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const body = (await response.json()) as {
+      stopped: boolean;
+      stopReason?: string;
+      stages: Array<{
+        status?: string;
+        result: {
+          participantResults?: Array<{
+            status: string;
+            errorCategory?: string;
+          }>;
+        };
+      }>;
+    };
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const listBody = await (await daemonApp.app.request("/runs")).json();
+    const serializedSafeState = JSON.stringify({
+      start: body,
+      detail: detailBody,
+      list: listBody,
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      events: daemonApp.eventStore.listEvents(created.run.sessionId)
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(body).toMatchObject({
+      stopped: true,
+      stopReason: "waiting_for_participants",
+      stages: [
+        {
+          status: "waiting_for_participants",
+          result: {
+            participantResults: [
+              expect.objectContaining({
+                status: "failed",
+                errorCategory: "provider_auth_failed"
+              })
+            ]
+          }
+        }
+      ]
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId).map((event) => event.type)).toEqual([
+      "topic_contract_published",
+      "sealed_batch_opened"
+    ]);
+    expect(serializedSafeState).toContain("provider_auth_failed");
+    expect(serializedSafeState).not.toContain(rawProviderBody);
+    expect(serializedSafeState).not.toContain(secret);
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("private prompt");
+    expect(serializedSafeState).not.toContain("/Users/");
+    expect(serializedSafeState).not.toContain("stack");
+    expectSafeRunApiPayload(body, secret);
+    expectSafeRunApiPayload(detailBody, secret);
+    expectSafeRunApiPayload(listBody, secret);
+  });
+
   it("returns safe provider_secret_missing when OpenAI-compatible env key is absent", async () => {
     const fetch = createOpenAICompatibleFetch();
     const daemonApp = createDaemonApp({

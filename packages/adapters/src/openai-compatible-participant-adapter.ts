@@ -6,7 +6,8 @@ import type {
   ParticipantAdapterContext,
   ParticipantAdapterInput,
   ParticipantAdapterProviderRuntimeConfig,
-  ParticipantAdapterResult
+  ParticipantAdapterResult,
+  ParticipantAdapterSafeErrorCategory
 } from "./types";
 import {
   AdapterInputError,
@@ -90,9 +91,18 @@ type EffectiveOpenAICompatibleConfig = {
 };
 
 export class OpenAICompatibleAdapterError extends Error {
-  constructor(message: string) {
+  readonly safeCategory: ParticipantAdapterSafeErrorCategory;
+  readonly status?: number;
+
+  constructor(
+    message: string,
+    safeCategory: ParticipantAdapterSafeErrorCategory = "provider_unknown_error",
+    status?: number
+  ) {
     super(message);
     this.name = "OpenAICompatibleAdapterError";
+    this.safeCategory = safeCategory;
+    this.status = status;
   }
 }
 
@@ -188,22 +198,35 @@ export class OpenAICompatibleParticipantAdapter implements ParticipantAdapter {
 
       if (!response.ok) {
         throw new OpenAICompatibleAdapterError(
-          `OpenAI-compatible provider request failed with status ${response.status}.`
+          `OpenAI-compatible provider request failed with status ${response.status}.`,
+          getHttpSafeCategory(response.status),
+          response.status
         );
       }
 
-      return await response.json();
+      try {
+        return await response.json();
+      } catch {
+        throw new OpenAICompatibleAdapterError(
+          "OpenAI-compatible provider response was malformed.",
+          "provider_malformed_response"
+        );
+      }
     } catch (error) {
       if (error instanceof OpenAICompatibleAdapterError) {
         throw error;
       }
 
       if (controller?.signal.aborted) {
-        throw new OpenAICompatibleAdapterError("OpenAI-compatible provider request timed out.");
+        throw new OpenAICompatibleAdapterError(
+          "OpenAI-compatible provider request timed out.",
+          "provider_timeout"
+        );
       }
 
       throw new OpenAICompatibleAdapterError(
-        redactSecrets("OpenAI-compatible provider request failed before response.", sensitiveValues)
+        redactSecrets("OpenAI-compatible provider request failed before response.", sensitiveValues),
+        "provider_network_error"
       );
     } finally {
       if (timeout !== undefined) {
@@ -226,18 +249,27 @@ function resolveEffectiveConfig(input: {
   const model = input.providerRuntimeConfig?.modelId ?? input.model;
 
   if (!baseUrl) {
-    throw new OpenAICompatibleAdapterError("OpenAI-compatible adapter baseUrl is required.");
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible adapter baseUrl is required.",
+      "provider_config_invalid"
+    );
   }
 
   if (!model) {
-    throw new OpenAICompatibleAdapterError("OpenAI-compatible adapter model is required.");
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible adapter model is required.",
+      "provider_config_invalid"
+    );
   }
+
+  const endpointPath = input.providerRuntimeConfig?.endpointPath ?? input.endpointPath;
+  assertEffectiveRequestUrl(baseUrl, endpointPath);
 
   return {
     baseUrl,
     apiKey: input.providerRuntimeConfig?.apiKey ?? input.apiKey,
     model,
-    endpointPath: input.providerRuntimeConfig?.endpointPath ?? input.endpointPath,
+    endpointPath,
     headers: input.headers,
     timeoutMs: input.providerRuntimeConfig?.timeoutMs ?? input.timeoutMs
   };
@@ -299,6 +331,17 @@ function createRequestUrl(baseUrl: string, endpointPath: string): string {
   return new URL(normalizedEndpointPath, normalizedBaseUrl).toString();
 }
 
+function assertEffectiveRequestUrl(baseUrl: string, endpointPath: string): void {
+  try {
+    createRequestUrl(baseUrl, endpointPath);
+  } catch {
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible adapter provider URL is invalid.",
+      "provider_config_invalid"
+    );
+  }
+}
+
 function createRequestHeaders(
   customHeaders: Record<string, string>,
   apiKey: string | undefined
@@ -322,34 +365,66 @@ function assertNoCustomAuthorizationHeader(headers: Record<string, string> | und
 
   for (const headerName of Object.keys(headers)) {
     if (headerName.toLowerCase() === "authorization") {
-      throw new OpenAICompatibleAdapterError("Custom Authorization headers are not allowed.");
+      throw new OpenAICompatibleAdapterError(
+        "Custom Authorization headers are not allowed.",
+        "provider_config_invalid"
+      );
     }
   }
 }
 
 function extractMessageContent(response: unknown): string {
   if (typeof response !== "object" || response === null) {
-    throw new OpenAICompatibleAdapterError("Malformed OpenAI-compatible provider response.");
+    throw new OpenAICompatibleAdapterError(
+      "Malformed OpenAI-compatible provider response.",
+      "provider_malformed_response"
+    );
   }
 
   const choices = (response as { choices?: unknown }).choices;
-  if (!Array.isArray(choices) || choices.length === 0) {
-    throw new OpenAICompatibleAdapterError("Malformed OpenAI-compatible provider response.");
+  if (!Array.isArray(choices)) {
+    throw new OpenAICompatibleAdapterError(
+      "Malformed OpenAI-compatible provider response.",
+      "provider_malformed_response"
+    );
+  }
+
+  if (choices.length === 0) {
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible provider response was empty.",
+      "provider_response_empty"
+    );
   }
 
   const firstChoice = choices[0];
   if (typeof firstChoice !== "object" || firstChoice === null) {
-    throw new OpenAICompatibleAdapterError("Malformed OpenAI-compatible provider response.");
+    throw new OpenAICompatibleAdapterError(
+      "Malformed OpenAI-compatible provider response.",
+      "provider_malformed_response"
+    );
   }
 
   const message = (firstChoice as { message?: unknown }).message;
   if (typeof message !== "object" || message === null) {
-    throw new OpenAICompatibleAdapterError("Malformed OpenAI-compatible provider response.");
+    throw new OpenAICompatibleAdapterError(
+      "Malformed OpenAI-compatible provider response.",
+      "provider_malformed_response"
+    );
   }
 
   const content = (message as { content?: unknown }).content;
   if (typeof content !== "string") {
-    throw new OpenAICompatibleAdapterError("Malformed OpenAI-compatible provider response.");
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible provider response did not include message content.",
+      "provider_response_missing_content"
+    );
+  }
+
+  if (content.trim().length === 0) {
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible provider response was empty.",
+      "provider_response_empty"
+    );
   }
 
   return content;
@@ -358,7 +433,8 @@ function extractMessageContent(response: unknown): string {
 function getDefaultFetch(): FetchLike {
   if (typeof globalThis.fetch !== "function") {
     throw new OpenAICompatibleAdapterError(
-      "OpenAI-compatible adapter requires a fetch implementation."
+      "OpenAI-compatible adapter requires a fetch implementation.",
+      "provider_config_invalid"
     );
   }
 
@@ -368,6 +444,22 @@ function getDefaultFetch(): FetchLike {
       status: response.status,
       json: () => response.json() as Promise<unknown>
     }));
+}
+
+function getHttpSafeCategory(status: number): ParticipantAdapterSafeErrorCategory {
+  if (status === 401 || status === 403) {
+    return "provider_auth_failed";
+  }
+
+  if (status === 404) {
+    return "provider_not_found";
+  }
+
+  if (status === 429) {
+    return "provider_rate_limited";
+  }
+
+  return "provider_http_error";
 }
 
 function collectSensitiveValues(input: {

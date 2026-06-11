@@ -17,7 +17,7 @@ import {
   createDeliberationRun,
   runSealedDivergenceRound
 } from "../src";
-import type { DeliberationRunRecord } from "../src";
+import type { DeliberationRunRecord, RunErrorCategory } from "../src";
 
 function createRunPlan(
   options: {
@@ -136,6 +136,8 @@ function createAdapter(options: {
   adapterId: string;
   payload?: JsonValue;
   fail?: boolean;
+  failureMessage?: string;
+  safeErrorCategory?: RunErrorCategory;
   onCall?: (
     input: ParticipantAdapterInput,
     context: ParticipantAdapterContext,
@@ -176,7 +178,14 @@ function createAdapter(options: {
       options.onCall?.(input, context, providerRuntimeConfig);
 
       if (options.fail) {
-        throw new Error("raw adapter failure must not be stored");
+        const error = new Error(options.failureMessage ?? "raw adapter failure must not be stored");
+        if (options.safeErrorCategory) {
+          Object.defineProperty(error, "safeCategory", {
+            value: options.safeErrorCategory,
+            enumerable: true
+          });
+        }
+        throw error;
       }
 
       const payload = options.deferredPayload
@@ -602,6 +611,61 @@ describe("runSealedDivergenceRound", () => {
     expect(JSON.stringify(runStore.getRun(run.id))).not.toContain(
       "raw adapter failure must not be stored"
     );
+  });
+
+  it("preserves safe provider adapter failure categories without storing raw errors", async () => {
+    const { eventStore, runStore, run } = createFixture();
+    const rawProviderFailure =
+      "raw provider error sk-test-secret Authorization Bearer private prompt /Users/provider.log";
+    const result = await runSealedDivergenceRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: createRegistry([
+          createAdapter({
+            adapterId: "adapter-cli"
+          }),
+          createAdapter({
+            adapterId: "adapter-web",
+            fail: true,
+            failureMessage: rawProviderFailure,
+            safeErrorCategory: "provider_auth_failed"
+          })
+        ]),
+        idGenerator: runIds()
+      }
+    );
+    const serializedSafeState = JSON.stringify({
+      result,
+      storedRun: runStore.getRun(run.id),
+      events: eventStore.listEvents(run.sessionId)
+    });
+
+    expect(result.run.status).toBe("waiting_for_participants");
+    expect(result.run.sealedDivergenceRound?.lastErrorCategory).toBe("provider_auth_failed");
+    expect(result.participantResults).toContainEqual(
+      expect.objectContaining({
+        participantId: "participant-web",
+        status: "failed",
+        errorCategory: "provider_auth_failed"
+      })
+    );
+    expect(result.run.sealedDivergenceRound?.participantDispatches).toContainEqual(
+      expect.objectContaining({
+        participantId: "participant-web",
+        status: "failed",
+        errorCategory: "provider_auth_failed"
+      })
+    );
+    expect(serializedSafeState).not.toContain(rawProviderFailure);
+    expect(serializedSafeState).not.toContain("sk-test-secret");
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("private prompt");
+    expect(serializedSafeState).not.toContain("/Users/");
   });
 
   it("does not reveal manual auto-close with failed participants", async () => {

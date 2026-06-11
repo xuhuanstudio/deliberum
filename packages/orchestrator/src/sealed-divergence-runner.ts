@@ -8,6 +8,7 @@ import { RunStoreNotFoundError, RunSealedDivergenceRoundError } from "./errors";
 import { buildParticipantDispatchInput } from "./dispatch-input";
 import { ParticipantRegistry } from "./participant-registry";
 import { ProviderSecretResolutionError } from "./errors";
+import { RunErrorCategorySchema } from "./types";
 import type {
   DeliberationRunRecord,
   ParticipantDispatchState,
@@ -463,6 +464,11 @@ function getParticipantErrorCategory(error: unknown): RunErrorCategory {
     return error.category as RunErrorCategory;
   }
 
+  const safeAdapterCategory = getSafeAdapterErrorCategory(error);
+  if (safeAdapterCategory) {
+    return safeAdapterCategory;
+  }
+
   return "adapter_failed";
 }
 
@@ -476,9 +482,9 @@ async function executeAdapterWithTimeout(
       kind: "completed" as const,
       payload: (result as { payload: JsonValue }).payload
     }))
-    .catch(() => ({
+    .catch((error) => ({
       kind: "failed" as const,
-      errorCategory: "adapter_failed" as const
+      errorCategory: getParticipantErrorCategory(error)
     }));
 
   if (timeoutMs === undefined) {
@@ -504,6 +510,20 @@ async function executeAdapterWithTimeout(
   }
 
   return outcome;
+}
+
+function getSafeAdapterErrorCategory(error: unknown): RunErrorCategory | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const safeCategory = (error as { safeCategory?: unknown }).safeCategory;
+  if (typeof safeCategory !== "string") {
+    return undefined;
+  }
+
+  const parsed = RunErrorCategorySchema.safeParse(safeCategory);
+  return parsed.success ? parsed.data : undefined;
 }
 
 function getRoundParticipantIds(run: DeliberationRunRecord): string[] {

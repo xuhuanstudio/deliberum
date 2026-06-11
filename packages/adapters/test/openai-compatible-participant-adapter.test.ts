@@ -3,7 +3,8 @@ import {
   OpenAICompatibleAdapterError,
   OpenAICompatibleParticipantAdapter,
   type FetchLike,
-  type OpenAICompatibleFetchInit
+  type OpenAICompatibleFetchInit,
+  type ParticipantAdapterSafeErrorCategory
 } from "../src";
 
 const context = {
@@ -43,6 +44,40 @@ function getFetchCall(fetch: ReturnType<typeof vi.fn> & FetchLike) {
   }
 
   return call;
+}
+
+async function expectSafeOpenAIError(
+  promise: Promise<unknown>,
+  expectedCategory: ParticipantAdapterSafeErrorCategory,
+  expectedStatus?: number
+): Promise<OpenAICompatibleAdapterError> {
+  let thrown: unknown;
+
+  try {
+    await promise;
+  } catch (error) {
+    thrown = error;
+  }
+
+  expect(thrown).toBeInstanceOf(OpenAICompatibleAdapterError);
+  const adapterError = thrown as OpenAICompatibleAdapterError;
+  const serializedError = `${adapterError.message}\n${JSON.stringify(adapterError)}`;
+
+  expect(adapterError.safeCategory).toBe(expectedCategory);
+  if (expectedStatus !== undefined) {
+    expect(adapterError.status).toBe(expectedStatus);
+  }
+  expect(serializedError).not.toContain("sk-test-secret");
+  expect(serializedError).not.toContain("account-secret");
+  expect(serializedError).not.toContain("Authorization");
+  expect(serializedError).not.toContain("Bearer");
+  expect(serializedError).not.toContain("private prompt");
+  expect(serializedError).not.toContain("privateContext");
+  expect(serializedError).not.toContain("raw provider body");
+  expect(serializedError).not.toContain("/Users/");
+  expect(serializedError).not.toContain("stack");
+
+  return adapterError;
 }
 
 describe("OpenAICompatibleParticipantAdapter", () => {
@@ -172,14 +207,34 @@ describe("OpenAICompatibleParticipantAdapter", () => {
       fetch
     });
 
-    await expect(adapter.prepareContribution({ payload: "missing config" }, context)).rejects.toThrow(
-      "OpenAI-compatible adapter baseUrl is required."
+    const missingBaseUrlError = await expectSafeOpenAIError(
+      adapter.prepareContribution({ payload: "missing config" }, context),
+      "provider_config_invalid"
     );
-    await expect(
+    const missingModelError = await expectSafeOpenAIError(
       adapter.prepareContribution({ payload: "missing model" }, context, {
         baseUrl: "https://runtime.example"
-      })
-    ).rejects.toThrow("OpenAI-compatible adapter model is required.");
+      }),
+      "provider_config_invalid"
+    );
+
+    expect(missingBaseUrlError.message).toBe("OpenAI-compatible adapter baseUrl is required.");
+    expect(missingModelError.message).toBe("OpenAI-compatible adapter model is required.");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("maps invalid provider URL config to provider_config_invalid", async () => {
+    const fetch = createSuccessfulFetch();
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "not a valid url",
+      model: "model-1",
+      fetch
+    });
+
+    await expectSafeOpenAIError(
+      adapter.prepareContribution({ payload: "invalid provider config" }, context),
+      "provider_config_invalid"
+    );
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -198,28 +253,42 @@ describe("OpenAICompatibleParticipantAdapter", () => {
   });
 
   it("rejects custom Authorization headers", () => {
-    expect(
-      () =>
-        new OpenAICompatibleParticipantAdapter({
-          baseUrl: "https://provider.example",
-          model: "model-1",
-          headers: {
-            Authorization: "Bearer custom-secret"
-          },
-          fetch: createSuccessfulFetch()
-        })
-    ).toThrow(OpenAICompatibleAdapterError);
-    expect(
-      () =>
-        new OpenAICompatibleParticipantAdapter({
-          baseUrl: "https://provider.example",
-          model: "model-1",
-          headers: {
-            authorization: "Bearer custom-secret"
-          },
-          fetch: createSuccessfulFetch()
-        })
-    ).toThrow(OpenAICompatibleAdapterError);
+    const createWithAuthorization = () =>
+      new OpenAICompatibleParticipantAdapter({
+        baseUrl: "https://provider.example",
+        model: "model-1",
+        headers: {
+          Authorization: "Bearer custom-secret"
+        },
+        fetch: createSuccessfulFetch()
+      });
+    const createWithLowercaseAuthorization = () =>
+      new OpenAICompatibleParticipantAdapter({
+        baseUrl: "https://provider.example",
+        model: "model-1",
+        headers: {
+          authorization: "Bearer custom-secret"
+        },
+        fetch: createSuccessfulFetch()
+      });
+
+    for (const createAdapter of [createWithAuthorization, createWithLowercaseAuthorization]) {
+      let thrown: unknown;
+
+      try {
+        createAdapter();
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toBeInstanceOf(OpenAICompatibleAdapterError);
+      expect((thrown as OpenAICompatibleAdapterError).safeCategory).toBe(
+        "provider_config_invalid"
+      );
+      expect(`${(thrown as Error).message}\n${JSON.stringify(thrown)}`).not.toContain(
+        "custom-secret"
+      );
+    }
   });
 
   it("does not return apiKey, Authorization, request body, or provider headers in metadata", async () => {
@@ -275,15 +344,57 @@ describe("OpenAICompatibleParticipantAdapter", () => {
     expect(result.payload).toContain("[REDACTED]");
   });
 
-  it("throws a redacted error for failed HTTP responses", async () => {
-    const fetch = vi.fn(async () =>
-      createFetchResponse(
-        {
-          error: {
-            message: "provider says sk-test-secret account-secret private prompt"
-          }
+  it.each([
+    [401, "provider_auth_failed"],
+    [403, "provider_auth_failed"],
+    [404, "provider_not_found"],
+    [429, "provider_rate_limited"],
+    [500, "provider_http_error"]
+  ] satisfies Array<[number, ParticipantAdapterSafeErrorCategory]>)(
+    "maps HTTP status %i to %s without leaking provider body",
+    async (status, expectedCategory) => {
+      const fetch = vi.fn(async () =>
+        createFetchResponse(
+          {
+            error: {
+              message: "raw provider body says sk-test-secret account-secret private prompt"
+            }
+          },
+          status
+        )
+      ) as unknown as ReturnType<typeof vi.fn> & FetchLike;
+      const adapter = new OpenAICompatibleParticipantAdapter({
+        baseUrl: "https://provider.example",
+        apiKey: "sk-test-secret",
+        model: "model-1",
+        headers: {
+          "X-Provider-Account": "account-secret"
         },
-        401
+        fetch
+      });
+
+      await expectSafeOpenAIError(
+        adapter.prepareContribution(
+          {
+            instructions: "private prompt",
+            payload: {
+              privateContext: "hidden"
+            }
+          },
+          context
+        ),
+        expectedCategory,
+        status
+      );
+    }
+  );
+
+  it("maps fetch rejection to provider_network_error without leaking raw errors", async () => {
+    const fetch = vi.fn(async () =>
+      Promise.reject(
+        new Error(
+          "network failed with sk-test-secret account-secret private prompt /Users/provider.log"
+        )
       )
     ) as unknown as ReturnType<typeof vi.fn> & FetchLike;
     const adapter = new OpenAICompatibleParticipantAdapter({
@@ -296,26 +407,49 @@ describe("OpenAICompatibleParticipantAdapter", () => {
       fetch
     });
 
-    await expect(
-      adapter.prepareContribution(
-        {
-          instructions: "private prompt",
-          payload: {
-            privateContext: "hidden"
-          }
-        },
-        context
-      )
-    ).rejects.toThrow(OpenAICompatibleAdapterError);
-    await expect(
-      adapter.prepareContribution({ instructions: "private prompt" }, context)
-    ).rejects.not.toThrow(/sk-test-secret|account-secret|private prompt|privateContext/);
+    await expectSafeOpenAIError(
+      adapter.prepareContribution({ instructions: "private prompt" }, context),
+      "provider_network_error"
+    );
   });
 
-  it("throws a redacted error for fetch failures", async () => {
-    const fetch = vi.fn(async () => {
-      throw new Error("network failed with sk-test-secret account-secret private prompt");
+  it("maps request timeout to provider_timeout without leaking raw errors", async () => {
+    const fetch = vi.fn((_url: string, init: OpenAICompatibleFetchInit) => {
+      return new Promise<Awaited<ReturnType<FetchLike>>>((_, reject) => {
+        init.signal?.addEventListener("abort", () => {
+          reject(
+            new Error(
+              "timeout failed with sk-test-secret account-secret private prompt /Users/provider.log"
+            )
+          );
+        });
+      });
     }) as unknown as ReturnType<typeof vi.fn> & FetchLike;
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      apiKey: "sk-test-secret",
+      model: "model-1",
+      headers: {
+        "X-Provider-Account": "account-secret"
+      },
+      timeoutMs: 1,
+      fetch
+    });
+
+    await expectSafeOpenAIError(
+      adapter.prepareContribution({ instructions: "private prompt" }, context),
+      "provider_timeout"
+    );
+  });
+
+  it("maps malformed response JSON to provider_malformed_response", async () => {
+    const fetch = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => {
+        throw new Error("raw provider body with sk-test-secret private prompt");
+      })
+    })) as unknown as ReturnType<typeof vi.fn> & FetchLike;
     const adapter = new OpenAICompatibleParticipantAdapter({
       baseUrl: "https://provider.example",
       apiKey: "sk-test-secret",
@@ -326,12 +460,13 @@ describe("OpenAICompatibleParticipantAdapter", () => {
       fetch
     });
 
-    await expect(
-      adapter.prepareContribution({ instructions: "private prompt" }, context)
-    ).rejects.not.toThrow(/sk-test-secret|account-secret|private prompt/);
+    await expectSafeOpenAIError(
+      adapter.prepareContribution({ instructions: "private prompt" }, context),
+      "provider_malformed_response"
+    );
   });
 
-  it("handles malformed provider responses safely", async () => {
+  it("maps valid JSON missing message content to provider_response_missing_content", async () => {
     const fetch = vi.fn(async () =>
       createFetchResponse({
         choices: [
@@ -349,12 +484,56 @@ describe("OpenAICompatibleParticipantAdapter", () => {
       fetch
     });
 
-    await expect(
-      adapter.prepareContribution({ instructions: "private prompt" }, context)
-    ).rejects.toThrow(OpenAICompatibleAdapterError);
-    await expect(
-      adapter.prepareContribution({ instructions: "private prompt" }, context)
-    ).rejects.not.toThrow(/sk-test-secret|private prompt|echoed/);
+    await expectSafeOpenAIError(
+      adapter.prepareContribution({ instructions: "private prompt" }, context),
+      "provider_response_missing_content"
+    );
+  });
+
+  it("maps empty provider choices to provider_response_empty", async () => {
+    const fetch = vi.fn(async () =>
+      createFetchResponse({
+        choices: [],
+        echoed: "raw provider body with sk-test-secret private prompt"
+      })
+    ) as unknown as ReturnType<typeof vi.fn> & FetchLike;
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      apiKey: "sk-test-secret",
+      model: "model-1",
+      fetch
+    });
+
+    await expectSafeOpenAIError(
+      adapter.prepareContribution({ instructions: "private prompt" }, context),
+      "provider_response_empty"
+    );
+  });
+
+  it("maps blank message content to provider_response_empty", async () => {
+    const fetch = vi.fn(async () =>
+      createFetchResponse({
+        choices: [
+          {
+            message: {
+              content: "   "
+            }
+          }
+        ],
+        echoed: "raw provider body with sk-test-secret private prompt"
+      })
+    ) as unknown as ReturnType<typeof vi.fn> & FetchLike;
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      apiKey: "sk-test-secret",
+      model: "model-1",
+      fetch
+    });
+
+    await expectSafeOpenAIError(
+      adapter.prepareContribution({ instructions: "private prompt" }, context),
+      "provider_response_empty"
+    );
   });
 
   it("does not expose EventStore, core lifecycle, or semantic-authority behavior", async () => {

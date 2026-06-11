@@ -139,7 +139,18 @@ export const RunErrorCategorySchema = z.enum([
   "adapter_timed_out",
   "budget_exceeded",
   "core_lifecycle_failed",
+  "provider_auth_failed",
+  "provider_not_found",
+  "provider_rate_limited",
+  "provider_timeout",
+  "provider_network_error",
+  "provider_http_error",
+  "provider_malformed_response",
+  "provider_config_invalid",
+  "provider_response_empty",
+  "provider_response_missing_content",
   "provider_secret_missing",
+  "provider_unknown_error",
   "round_conflict",
   "unsupported_reveal_policy"
 ]);
