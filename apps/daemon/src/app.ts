@@ -23,7 +23,12 @@ import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
-import { AdapterRegistry, type RegisteredParticipantAdapter } from "@deliberum/orchestrator";
+import {
+  AdapterRegistry,
+  ExtractionGeneratorRegistry,
+  type ExtractionGenerator,
+  type RegisteredParticipantAdapter
+} from "@deliberum/orchestrator";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { DaemonEventBus } from "./event-stream";
 import { createLocalPresetRunRegistries } from "./local-preset";
@@ -63,6 +68,7 @@ export type DaemonAppOptions = {
   runExecutionClaimOwnerIdGenerator?: DaemonRunOrchestrationOptions["executionClaimOwnerIdGenerator"];
   enableLocalPreset?: boolean;
   enableOpenAICompatibleProfile?: boolean;
+  enableOpenAICompatibleExtraction?: boolean;
   openAICompatibleEnv?: Record<string, string | undefined>;
   openAICompatibleFetch?: OpenAICompatibleProfileOptions["fetch"];
   idGenerator?: IdGenerator;
@@ -122,7 +128,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   const openAICompatibleRegistries = options.enableOpenAICompatibleProfile
     ? createOpenAICompatibleRunRegistries({
         env: options.openAICompatibleEnv,
-        fetch: options.openAICompatibleFetch
+        fetch: options.openAICompatibleFetch,
+        enableExtraction: options.enableOpenAICompatibleExtraction === true
       })
     : undefined;
   const webgetStore =
@@ -148,7 +155,10 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       ),
     extractionGeneratorRegistry:
       options.runExtractionGeneratorRegistry ??
-      localPresetRegistries?.extractionGeneratorRegistry,
+      mergeExtractionGeneratorRegistries(
+        localPresetRegistries?.extractionGeneratorRegistry,
+        openAICompatibleRegistries?.extractionGeneratorRegistry
+      ),
     proposalReviewGeneratorRegistry:
       options.runProposalReviewGeneratorRegistry ??
       localPresetRegistries?.proposalReviewGeneratorRegistry,
@@ -483,6 +493,36 @@ function isMergeableAdapterRegistry(
 ): value is {
   require(adapterId: string): RegisteredParticipantAdapter;
   list(): Array<{ adapterId: string }>;
+} {
+  const candidate = value as { require?: unknown; list?: unknown } | null;
+
+  return (
+    candidate !== null &&
+    typeof candidate === "object" &&
+    typeof candidate.require === "function" &&
+    typeof candidate.list === "function"
+  );
+}
+
+function mergeExtractionGeneratorRegistries(
+  ...registries: unknown[]
+): DaemonRunOrchestrationOptions["extractionGeneratorRegistry"] | undefined {
+  const generators = registries.flatMap((registry) => {
+    if (!isMergeableExtractionGeneratorRegistry(registry)) {
+      return [];
+    }
+
+    return registry.list().map((entry) => registry.require(entry.generatorId));
+  });
+
+  return generators.length > 0 ? new ExtractionGeneratorRegistry(generators) : undefined;
+}
+
+function isMergeableExtractionGeneratorRegistry(
+  value: unknown
+): value is {
+  require(generatorId: string): ExtractionGenerator;
+  list(): Array<{ generatorId: string }>;
 } {
   const candidate = value as { require?: unknown; list?: unknown } | null;
 

@@ -565,6 +565,32 @@ describe("OpenAICompatibleParticipantAdapter", () => {
     );
   });
 
+  it("does not read failed HTTP response bodies", async () => {
+    const json = vi.fn(async () => ({
+      error: {
+        message: "raw provider body sk-test-secret private prompt"
+      }
+    }));
+    const fetch = vi.fn(async () => ({
+      ok: false,
+      status: 500,
+      json
+    })) as unknown as ReturnType<typeof vi.fn> & FetchLike;
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      apiKey: "sk-test-secret",
+      model: "model-1",
+      fetch
+    });
+
+    await expectSafeOpenAIError(
+      adapter.prepareContribution({ instructions: "private prompt" }, context),
+      "provider_http_error",
+      500
+    );
+    expect(json).not.toHaveBeenCalled();
+  });
+
   it("maps fetch rejection to provider_network_error without leaking raw errors", async () => {
     const fetch = vi.fn(async () =>
       Promise.reject(

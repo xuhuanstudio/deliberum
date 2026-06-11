@@ -195,7 +195,20 @@ export type RunSafeDiagnostics = z.infer<typeof RunSafeDiagnosticsSchema>;
 export const ExtractionRunErrorCategorySchema = z.enum([
   "extraction_context_unavailable",
   "extraction_generator_failed",
+  "extraction_output_invalid",
   "extraction_validation_failed",
+  "provider_auth_failed",
+  "provider_not_found",
+  "provider_rate_limited",
+  "provider_timeout",
+  "provider_network_error",
+  "provider_http_error",
+  "provider_malformed_response",
+  "provider_config_invalid",
+  "provider_response_empty",
+  "provider_response_missing_content",
+  "provider_secret_missing",
+  "provider_unknown_error",
   "core_lifecycle_failed",
   "round_conflict"
 ]);
@@ -305,6 +318,7 @@ export const ExtractionGeneratorStateSchema = z
     status: ExtractionGeneratorRunStatusSchema,
     proposalEventId: IdSchema.optional(),
     errorCategory: ExtractionRunErrorCategorySchema.optional(),
+    safeDiagnostics: RunSafeDiagnosticsSchema.optional(),
     previousErrorCategories: z.array(ExtractionRunErrorCategorySchema).optional(),
     attempts: z.number().int().nonnegative(),
     startedAt: NonEmptyStringSchema.optional(),
@@ -736,9 +750,12 @@ export type ExtractionGeneratorInput = {
 
 export interface ExtractionGenerator {
   generatorId: string;
+  adapterId?: string;
+  providerConfigId?: string;
   generateExtractionProposal(
     input: ExtractionGeneratorInput,
-    context: ExtractionContext
+    context: ExtractionContext,
+    providerRuntimeConfig?: ProviderRuntimeConfig
   ): Promise<ExtractionGeneratorResult> | ExtractionGeneratorResult;
 }
 
@@ -817,6 +834,7 @@ export type RunExtractionProposalRoundOptions = {
   idGenerator: IdGenerator;
   clock?: Clock;
   schemaVersion?: string;
+  env?: Record<string, string | undefined>;
   executionClaimTtlMs?: number;
   executionClaimOwnerIdGenerator?: () => string;
 };
@@ -827,6 +845,7 @@ export type ExtractionGeneratorRoundResult = {
   proposalEventId?: string;
   appended?: boolean;
   errorCategory?: ExtractionRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
 };
 
 export type RunExtractionProposalRoundResult = {

@@ -28,12 +28,14 @@ import type {
   DeliberationRunRecord,
   ExtractionContext,
   ExtractionGenerator,
-  ExtractionGeneratorResult
+  ExtractionGeneratorResult,
+  ProviderRuntimeConfig
 } from "../src";
 
 function createRunPlan(
   options: {
     revealPolicy?: SealedBatchRevealPolicy;
+    providerConfigs?: unknown[];
   } = {}
 ) {
   return {
@@ -55,7 +57,7 @@ function createRunPlan(
         adapterId: "adapter-web"
       }
     ],
-    providerConfigs: [],
+    providerConfigs: options.providerConfigs ?? [],
     budget: {
       maxEvents: 30,
       maxProviderCalls: 20
@@ -154,14 +156,20 @@ function createAdapterRegistry() {
   ]);
 }
 
-function createFixture() {
+function createFixture(
+  options: {
+    providerConfigs?: unknown[];
+  } = {}
+) {
   const eventStore = new InMemoryEventStore({
     clock: () => "2026-06-10T00:00:01.000Z"
   });
   const runStore = new InMemoryRunStore();
   const created = createDeliberationRun(
     {
-      runPlan: createRunPlan()
+      runPlan: createRunPlan({
+        providerConfigs: options.providerConfigs
+      })
     },
     {
       eventStore,
@@ -178,8 +186,12 @@ function createFixture() {
   };
 }
 
-async function createRevealedRun() {
-  const fixture = createFixture();
+async function createRevealedRun(
+  options: {
+    providerConfigs?: unknown[];
+  } = {}
+) {
+  const fixture = createFixture(options);
   const sealedResult = await runSealedDivergenceRound(
     {
       runId: fixture.run.id
@@ -752,6 +764,248 @@ describe("Stage 19A extraction proposal orchestration", () => {
         candidates: []
       })
     );
+  });
+
+  it("passes provider runtime config only to extraction generators declaring provider config", async () => {
+    const secret = "sk-provider-extraction-secret";
+    const { eventStore, runStore, run } = await createRevealedRun({
+      providerConfigs: [
+        {
+          id: "openai-main",
+          adapterId: "openai-compatible",
+          apiKeyEnvVar: "DELIBERUM_TEST_API_KEY",
+          modelId: "model-1",
+          baseUrl: "https://provider.example",
+          endpointPath: "/v1/chat/completions",
+          timeoutMs: 30000,
+          maxCompletionTokens: 128
+        }
+      ]
+    });
+    let providerRuntimeConfig: ProviderRuntimeConfig | undefined;
+    let localRuntimeConfig: ProviderRuntimeConfig | undefined;
+    const providerGenerator: ExtractionGenerator = {
+      generatorId: "provider-extractor",
+      adapterId: "openai-compatible",
+      providerConfigId: "openai-main",
+      generateExtractionProposal(_input, context, runtimeConfig) {
+        providerRuntimeConfig = runtimeConfig;
+        return createValidExtractionResult(context);
+      }
+    };
+    const localGenerator: ExtractionGenerator = {
+      generatorId: "local-extractor",
+      generateExtractionProposal(_input, context, runtimeConfig) {
+        localRuntimeConfig = runtimeConfig;
+        return createValidExtractionResult(context);
+      }
+    };
+
+    const result = await runExtractionProposalRound(
+      {
+        runId: run.id,
+        generatorIds: ["provider-extractor", "local-extractor"]
+      },
+      {
+        eventStore,
+        runStore,
+        extractionGeneratorRegistry: new ExtractionGeneratorRegistry([
+          providerGenerator,
+          localGenerator
+        ]),
+        idGenerator: createIds([
+          "proposal-1",
+          "proposal-event-1",
+          "proposal-2",
+          "proposal-event-2"
+        ]),
+        env: {
+          DELIBERUM_TEST_API_KEY: secret
+        }
+      }
+    );
+    const serializedSafeState = JSON.stringify({
+      result,
+      storedRun: runStore.getRun(run.id),
+      events: eventStore.listEvents(run.sessionId)
+    });
+
+    expect(providerRuntimeConfig).toMatchObject({
+      id: "openai-main",
+      adapterId: "openai-compatible",
+      apiKey: secret,
+      modelId: "model-1",
+      baseUrl: "https://provider.example",
+      endpointPath: "/v1/chat/completions",
+      timeoutMs: 30000,
+      requestOptions: {
+        maxCompletionTokens: 128
+      }
+    });
+    expect(localRuntimeConfig).toBeUndefined();
+    expect(result.proposalResults).toHaveLength(2);
+    expect(serializedSafeState).not.toContain(secret);
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+  });
+
+  it("maps missing extraction provider secrets safely without calling the generator", async () => {
+    const { eventStore, runStore, run } = await createRevealedRun({
+      providerConfigs: [
+        {
+          id: "openai-main",
+          adapterId: "openai-compatible",
+          apiKeyEnvVar: "DELIBERUM_TEST_API_KEY",
+          modelId: "model-1",
+          baseUrl: "https://provider.example"
+        }
+      ]
+    });
+    let calls = 0;
+    const providerGenerator: ExtractionGenerator = {
+      generatorId: "provider-extractor",
+      adapterId: "openai-compatible",
+      providerConfigId: "openai-main",
+      generateExtractionProposal(_input, context) {
+        calls += 1;
+        return createValidExtractionResult(context);
+      }
+    };
+
+    const result = await runExtractionProposalRound(
+      {
+        runId: run.id,
+        generatorIds: ["provider-extractor"]
+      },
+      {
+        eventStore,
+        runStore,
+        extractionGeneratorRegistry: new ExtractionGeneratorRegistry([providerGenerator]),
+        idGenerator: createIds(["unused-proposal", "unused-event"])
+      }
+    );
+
+    expect(calls).toBe(0);
+    expect(result.proposalResults).toContainEqual(
+      expect.objectContaining({
+        generatorId: "provider-extractor",
+        status: "failed",
+        errorCategory: "provider_secret_missing"
+      })
+    );
+    expect(eventStore.listEvents(run.sessionId).map((event) => event.type)).not.toContain(
+      EXTRACTION_PROPOSED_EVENT_TYPE
+    );
+  });
+
+  it("preserves safe provider extraction diagnostics without storing raw errors", async () => {
+    const { eventStore, runStore, run } = await createRevealedRun();
+    const rawProviderFailure =
+      "raw provider error sk-provider-extraction-secret Authorization Bearer private prompt /Users/provider.log";
+    const providerGenerator: ExtractionGenerator = {
+      generatorId: "provider-extractor",
+      generateExtractionProposal() {
+        const error = new Error(rawProviderFailure);
+        Object.defineProperty(error, "safeCategory", {
+          value: "provider_http_error"
+        });
+        Object.defineProperty(error, "safeDiagnostics", {
+          value: {
+            httpStatus: 502
+          }
+        });
+        throw error;
+      }
+    };
+
+    const result = await runExtractionProposalRound(
+      {
+        runId: run.id,
+        generatorIds: ["provider-extractor"]
+      },
+      {
+        eventStore,
+        runStore,
+        extractionGeneratorRegistry: new ExtractionGeneratorRegistry([providerGenerator]),
+        idGenerator: createIds(["unused-proposal", "unused-event"])
+      }
+    );
+    const serializedSafeState = JSON.stringify({
+      result,
+      storedRun: runStore.getRun(run.id),
+      events: eventStore.listEvents(run.sessionId)
+    });
+
+    expect(result.proposalResults).toContainEqual(
+      expect.objectContaining({
+        generatorId: "provider-extractor",
+        status: "failed",
+        errorCategory: "provider_http_error",
+        safeDiagnostics: {
+          httpStatus: 502
+        }
+      })
+    );
+    expect(runStore.getRun(run.id)?.extractionRounds?.[0]?.generatorStates).toContainEqual(
+      expect.objectContaining({
+        generatorId: "provider-extractor",
+        errorCategory: "provider_http_error",
+        safeDiagnostics: {
+          httpStatus: 502
+        }
+      })
+    );
+    expect(serializedSafeState).toContain("\"httpStatus\":502");
+    expect(serializedSafeState).not.toContain(rawProviderFailure);
+    expect(serializedSafeState).not.toContain("sk-provider-extraction-secret");
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("private prompt");
+    expect(serializedSafeState).not.toContain("/Users/");
+  });
+
+  it("maps provider extraction schema failures before proposal lifecycle writes", async () => {
+    const { eventStore, runStore, run } = await createRevealedRun();
+    const providerGenerator: ExtractionGenerator = {
+      generatorId: "provider-extractor",
+      generateExtractionProposal() {
+        const error = new Error("raw invalid provider extraction output must not be stored");
+        Object.defineProperty(error, "safeCategory", {
+          value: "extraction_output_invalid"
+        });
+        throw error;
+      }
+    };
+
+    const result = await runExtractionProposalRound(
+      {
+        runId: run.id,
+        generatorIds: ["provider-extractor"]
+      },
+      {
+        eventStore,
+        runStore,
+        extractionGeneratorRegistry: new ExtractionGeneratorRegistry([providerGenerator]),
+        idGenerator: createIds(["unused-proposal", "unused-event"])
+      }
+    );
+    const serializedSafeState = JSON.stringify({
+      result,
+      storedRun: runStore.getRun(run.id),
+      events: eventStore.listEvents(run.sessionId)
+    });
+
+    expect(result.proposalResults).toContainEqual(
+      expect.objectContaining({
+        generatorId: "provider-extractor",
+        status: "failed",
+        errorCategory: "extraction_output_invalid"
+      })
+    );
+    expect(eventStore.listEvents(run.sessionId).map((event) => event.type)).not.toContain(
+      EXTRACTION_PROPOSED_EVENT_TYPE
+    );
+    expect(serializedSafeState).not.toContain("raw invalid provider extraction output");
   });
 
   it("does not expose forbidden semantic fields", async () => {

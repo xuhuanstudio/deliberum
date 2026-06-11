@@ -30,6 +30,9 @@ import {
   OPENAI_COMPATIBLE_ADAPTER_ID,
   OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
   OPENAI_COMPATIBLE_BASE_URL_ENV_VAR,
+  OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
+  OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR,
+  OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
   OPENAI_COMPATIBLE_FREQUENCY_PENALTY_ENV_VAR,
   OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR,
   OPENAI_COMPATIBLE_MODEL_ENV_VAR,
@@ -43,6 +46,7 @@ import {
   createDaemonApp,
   localPresetRunPlan,
   localPresetStartRequest,
+  resolveStartDaemonEnableOpenAICompatibleExtraction,
   resolveStartDaemonEnableOpenAICompatibleProfile,
   resolveStartDaemonEnableLocalPreset,
   type DaemonApp
@@ -533,6 +537,38 @@ function openAICompatibleRunPlan() {
   };
 }
 
+function openAICompatibleExtractionRunPlan() {
+  const plan = localPresetRunPlan();
+
+  return {
+    ...plan,
+    title: "OpenAI-compatible extraction run",
+    providerConfigs: [
+      {
+        id: OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
+        adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+        providerConfigId: OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
+        modelId: "runtime-model",
+        baseUrl: "https://runtime.example/api",
+        endpointPath: "/chat/completions",
+        apiKeyEnvVar: OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
+        timeoutMs: 1000
+      }
+    ]
+  };
+}
+
+function openAICompatibleExtractionStartRequest() {
+  const request = localPresetStartRequest();
+
+  return {
+    ...request,
+    extraction: {
+      generatorIds: [OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID]
+    }
+  };
+}
+
 function startFullRunRequest() {
   return {
     sealedDivergence: {
@@ -589,6 +625,80 @@ function createOpenAICompatibleFetch(output = "provider sealed contribution"): M
       ]
     }))
   })) as unknown as MockedFetchLike;
+}
+
+function createOpenAICompatibleExtractionFetch(options: {
+  content?: string;
+  ok?: boolean;
+  status?: number;
+} = {}): MockedFetchLike {
+  return vi.fn(async (_url, init) => {
+    const request = JSON.parse(init.body) as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    const userMessage = request.messages.at(-1);
+    const contextPayload = userMessage ? JSON.parse(userMessage.content) as {
+      allowedSourceEventIds: string[];
+    } : undefined;
+    const sourceEventId = contextPayload?.allowedSourceEventIds[0] ?? "missing-source";
+    const content = options.content ?? JSON.stringify({
+      candidates: [
+        {
+          id: "provider-extraction-candidate",
+          title: "Provider-backed extraction proposal",
+          description:
+            "Use provider-backed extraction as proposal material while preserving review and acceptance boundaries.",
+          sourceEventIds: [sourceEventId],
+          status: "active",
+          supportedBy: ["provider-extraction-claim"],
+          attackedBy: [],
+          qualityObligationIds: ["provider-extraction-quality"],
+          assumptions: ["Provider extraction is explicitly enabled."],
+          tradeoffs: ["Review and finalization remain deterministic local preset components."]
+        }
+      ],
+      claims: [
+        {
+          id: "provider-extraction-claim",
+          content:
+            "Provider-backed extraction can summarize revealed contributions into traceable proposal material.",
+          scope: "design",
+          sourceEventIds: [sourceEventId],
+          supports: ["provider-extraction-candidate"]
+        }
+      ],
+      objections: [],
+      evidenceNeeds: [],
+      qualityObligations: [
+        {
+          id: "provider-extraction-quality",
+          scope: "candidate",
+          targetCandidateId: "provider-extraction-candidate",
+          requirement: "Keep provider output as proposal material until reviewed and accepted.",
+          status: "unanswered",
+          sourceEventIds: [sourceEventId],
+          supportingRefIds: ["provider-extraction-claim"],
+          unresolvedObjectionIds: []
+        }
+      ],
+      rationale:
+        "Extract traceable provider proposal material from revealed local preset contributions."
+    });
+
+    return {
+      ok: options.ok ?? true,
+      status: options.status ?? 200,
+      json: vi.fn(async () => ({
+        choices: [
+          {
+            message: {
+              content
+            }
+          }
+        ]
+      }))
+    };
+  }) as unknown as MockedFetchLike;
 }
 
 function getOpenAICompatibleFetchCall(fetch: MockedFetchLike): [string, OpenAICompatibleFetchInit] {
@@ -1858,6 +1968,345 @@ describe("daemon API", () => {
     expect(fetch).not.toHaveBeenCalled();
     expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
     expectSafeRunApiPayload(body);
+  });
+
+  it("requires the separate exact OpenAI-compatible extraction flag", async () => {
+    expect(resolveStartDaemonEnableOpenAICompatibleExtraction(
+      { enableOpenAICompatibleExtraction: true },
+      {}
+    )).toBe(true);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleExtraction(
+        {},
+        { [OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR]: "true" }
+      )
+    ).toBe(true);
+    expect(resolveStartDaemonEnableOpenAICompatibleExtraction({}, {})).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleExtraction(
+        {},
+        { [OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR]: "false" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleExtraction(
+        {},
+        { [OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR]: "TRUE" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleExtraction(
+        {},
+        { [OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR]: "random" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableOpenAICompatibleExtraction(
+        { enableOpenAICompatibleExtraction: false },
+        { [OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR]: "true" }
+      )
+    ).toBe(false);
+  });
+
+  it("does not install provider extraction when extraction is enabled without the profile", async () => {
+    const fetch = createOpenAICompatibleExtractionFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleExtraction: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      extraction: {
+        generatorIds: [OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID]
+      }
+    });
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expectSafeRunApiPayload(body);
+  });
+
+  it("does not override an explicitly injected extraction registry with provider extraction", async () => {
+    const fetch = createOpenAICompatibleExtractionFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleExtraction: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret"
+      },
+      openAICompatibleFetch: fetch,
+      runExtractionGeneratorRegistry: new ExtractionGeneratorRegistry()
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      extraction: {}
+    });
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expectSafeRunApiPayload(body);
+  });
+
+  it("runs provider-backed extraction through daemon with mocked fetch and local preset review/finalization", async () => {
+    const secret = "sk-openai-runtime-secret";
+    const fetch = createOpenAICompatibleExtractionFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleExtraction: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: secret,
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleExtractionStartRequest()
+    );
+    const body = (await response.json()) as {
+      stopped: boolean;
+      stages: Array<{
+        stage: string;
+        status?: string;
+        result: {
+          proposalResults?: Array<{
+            generatorId: string;
+            status: string;
+            proposalEventId?: string;
+          }>;
+        };
+      }>;
+    };
+    const frontier = await (await daemonApp.app.request(
+      `/sessions/${created.run.sessionId}/frontier`
+    )).json();
+    const outcome = await (await daemonApp.app.request(
+      `/runs/${created.run.runId}/outcome`
+    )).json();
+    const [url, init] = getOpenAICompatibleFetchCall(fetch);
+    const requestBody = JSON.parse(init.body) as {
+      model: string;
+      messages: Array<{ role: string; content: string }>;
+    };
+    const serializedSafeState = JSON.stringify({
+      start: body,
+      detail: await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json(),
+      frontier,
+      outcome,
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      events: daemonApp.eventStore.listEvents(created.run.sessionId)
+    });
+
+    expect(response.status).toBe(200);
+    expect(body.stopped).toBe(false);
+    expect(body.stages.map((stage) => stage.stage)).toEqual([
+      "sealed_divergence",
+      "extraction",
+      "proposal_review",
+      "finalization"
+    ]);
+    expect(body.stages.find((stage) => stage.stage === "extraction")).toMatchObject({
+      status: "completed",
+      result: {
+        proposalResults: [
+          expect.objectContaining({
+            generatorId: OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+            status: "proposed"
+          })
+        ]
+      }
+    });
+    expect(url).toBe("https://runtime.example/api/chat/completions");
+    expect(requestBody.model).toBe("runtime-model");
+    expect(requestBody.messages).toEqual([
+      expect.objectContaining({
+        role: "system"
+      }),
+      expect.objectContaining({
+        role: "user"
+      })
+    ]);
+    expect(frontier).toMatchObject({
+      candidates: [
+        expect.objectContaining({
+          object: expect.objectContaining({
+            id: "provider-extraction-candidate"
+          })
+        })
+      ]
+    });
+    expect(outcome).toMatchObject({
+      status: "compiled",
+      draftStatus: "provisional"
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expectSafeRunApiPayload(body, secret);
+    expectSafeRunApiPayload(frontier, secret);
+    expectSafeRunApiPayload(outcome, secret);
+    expect(serializedSafeState).not.toContain(secret);
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("raw provider");
+    expect(serializedSafeState).not.toContain("/Users/");
+    expect(serializedSafeState).not.toContain("stack");
+  });
+
+  it("returns safe provider_secret_missing for provider extraction without calling fetch", async () => {
+    const fetch = createOpenAICompatibleExtractionFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleExtraction: true,
+      openAICompatibleEnv: {},
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleExtractionStartRequest()
+    );
+    const body = (await response.json()) as {
+      stopped: boolean;
+      stopReason?: string;
+      stages: Array<{
+        stage: string;
+        status?: string;
+        result: {
+          proposalResults?: Array<{
+            status: string;
+            errorCategory?: string;
+          }>;
+        };
+      }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      stopped: true,
+      stopReason: "waiting_for_generators",
+      stages: [
+        expect.objectContaining({
+          stage: "sealed_divergence",
+          status: "revealed"
+        }),
+        expect.objectContaining({
+          stage: "extraction",
+          status: "waiting_for_generators",
+          result: {
+            proposalResults: [
+              expect.objectContaining({
+                status: "failed",
+                errorCategory: "provider_secret_missing"
+              })
+            ]
+          }
+        })
+      ]
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expectSafeRunApiPayload(body);
+  });
+
+  it("surfaces safe provider extraction parse and schema failures", async () => {
+    const cases = [
+      {
+        content: "{",
+        errorCategory: "provider_malformed_response"
+      },
+      {
+        content: "{}",
+        errorCategory: "extraction_output_invalid"
+      }
+    ] as const;
+
+    for (const testCase of cases) {
+      const fetch = createOpenAICompatibleExtractionFetch({
+        content: testCase.content
+      });
+      const daemonApp = createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        enableLocalPreset: true,
+        enableOpenAICompatibleProfile: true,
+        enableOpenAICompatibleExtraction: true,
+        openAICompatibleEnv: {
+          [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
+          [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+          [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model"
+        },
+        openAICompatibleFetch: fetch
+      });
+      const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+      const response = await postJson(
+        daemonApp.app,
+        `/runs/${created.run.runId}/start`,
+        openAICompatibleExtractionStartRequest()
+      );
+      const body = (await response.json()) as {
+        stages: Array<{
+          stage: string;
+          result: {
+            proposalResults?: Array<{
+              errorCategory?: string;
+            }>;
+          };
+        }>;
+      };
+      const serializedSafeState = JSON.stringify({
+        body,
+        storedRun: daemonApp.runStore.getRun(created.run.runId),
+        events: daemonApp.eventStore.listEvents(created.run.sessionId)
+      });
+
+      expect(response.status).toBe(200);
+      expect(body.stages.find((stage) => stage.stage === "extraction")).toMatchObject({
+        result: {
+          proposalResults: [
+            expect.objectContaining({
+              errorCategory: testCase.errorCategory
+            })
+          ]
+        }
+      });
+      expect(daemonApp.eventStore.listEvents(created.run.sessionId).map((event) => event.type)).not.toContain(
+        "extraction_proposed"
+      );
+      expect(serializedSafeState).not.toContain("sk-openai-runtime-secret");
+      expect(serializedSafeState).not.toContain("Authorization");
+      expect(serializedSafeState).not.toContain("Bearer");
+      expect(serializedSafeState).not.toContain("/Users/");
+      expect(serializedSafeState).not.toContain("stack");
+    }
   });
 
   it("does not override explicitly injected adapter registries with the OpenAI-compatible profile", async () => {
@@ -3321,8 +3770,12 @@ describe("daemon API", () => {
       "OPENAI_COMPATIBLE_ADAPTER_ID",
       "OPENAI_COMPATIBLE_API_KEY_ENV_VAR",
       "OPENAI_COMPATIBLE_BASE_URL_ENV_VAR",
+      "OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID",
       "OPENAI_COMPATIBLE_DEFAULT_ENDPOINT_PATH",
       "OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR",
+      "OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR",
+      "OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID",
+      "OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR",
       "OPENAI_COMPATIBLE_FREQUENCY_PENALTY_ENV_VAR",
       "OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR",
       "OPENAI_COMPATIBLE_MODEL_ENV_VAR",
@@ -3336,7 +3789,11 @@ describe("daemon API", () => {
       "OPENAI_COMPATIBLE_TOP_P_ENV_VAR",
       "createOpenAICompatibleRunRegistries",
       "createOpenAICompatibleRuntimeEnv",
+      "isOpenAICompatibleExtractionEnabledFromEnv",
       "isOpenAICompatibleProfileEnabledFromEnv",
+      "OpenAICompatibleExtractionGenerator",
+      "OpenAICompatibleExtractionGeneratorError",
+      "resolveStartDaemonEnableOpenAICompatibleExtraction",
       "resolveStartDaemonEnableOpenAICompatibleProfile"
     ]);
     const forbiddenTerms = [

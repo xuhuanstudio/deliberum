@@ -2,11 +2,14 @@ import { proposeExtraction } from "@deliberum/core";
 import {
   ExtractionContextError,
   ExtractionGeneratorValidationError,
+  ProviderSecretResolutionError,
   RunStoreNotFoundError,
   RunExtractionProposalRoundError
 } from "./errors";
 import { buildExtractionContext } from "./extraction-context";
 import { validateExtractionGeneratorResult } from "./extraction-validation";
+import { resolveProviderRuntimeConfig } from "./provider-secret-resolver";
+import { ExtractionRunErrorCategorySchema } from "./types";
 import type {
   DeliberationRunRecord,
   ExtractionContext,
@@ -17,7 +20,8 @@ import type {
   RunExtractionProposalRoundInput,
   RunExtractionProposalRoundOptions,
   RunExtractionProposalRoundResult,
-  ExtractionRunErrorCategory
+  ExtractionRunErrorCategory,
+  RunSafeDiagnostics
 } from "./types";
 
 const DEFAULT_EXTRACTION_ROUND_ID = "initial" as const;
@@ -176,7 +180,8 @@ async function executeClaimedExtractionRound(
           generatorId,
           status: "skipped",
           proposalEventId: state?.proposalEventId,
-          errorCategory: state?.errorCategory
+          errorCategory: state?.errorCategory,
+          safeDiagnostics: state?.safeDiagnostics
         };
       }
 
@@ -247,23 +252,22 @@ async function executeExtractionGenerator(input: {
     );
 
     const generator = input.options.extractionGeneratorRegistry.require(input.generatorId);
-    const generatorResult = await Promise.resolve()
-      .then(() =>
-        generator.generateExtractionProposal(
-          {
-            instructions:
-              "Prepare a traceable extraction proposal draft from the revealed deliberation contributions. Return proposal material only.",
-            context: structuredClone(input.context)
-          },
-          structuredClone(input.context)
-        )
+    const providerRuntimeConfig = resolveExtractionGeneratorRuntimeConfig(
+      input.run,
+      generator,
+      input.options.env
+    );
+    const generatorResult = await Promise.resolve().then(() =>
+      generator.generateExtractionProposal(
+        {
+          instructions:
+            "Prepare a traceable extraction proposal draft from the revealed deliberation contributions. Return proposal material only.",
+          context: structuredClone(input.context)
+        },
+        structuredClone(input.context),
+        providerRuntimeConfig
       )
-      .catch(() => {
-        throw new RunExtractionProposalRoundError(
-          "extraction_generator_failed",
-          "Extraction generator failed to produce proposal material."
-        );
-      });
+    );
     const draft = validateExtractionGeneratorResult(generatorResult, input.context);
 
     assertExtractionRoundExecutionClaimOwned(
@@ -299,10 +303,13 @@ async function executeExtractionGenerator(input: {
       appended: proposed.appended
     };
   } catch (error) {
+    const failure = getExtractionGeneratorFailure(error);
+
     return {
       generatorId: input.generatorId,
       status: "failed",
-      errorCategory: getExtractionGeneratorErrorCategory(error)
+      errorCategory: failure.errorCategory,
+      safeDiagnostics: failure.safeDiagnostics
     };
   }
 }
@@ -445,6 +452,7 @@ function mergeGeneratorResults(
       status: result.status,
       proposalEventId: result.proposalEventId,
       errorCategory: result.status === "proposed" ? undefined : result.errorCategory,
+      safeDiagnostics: result.status === "proposed" ? undefined : result.safeDiagnostics,
       previousErrorCategories,
       completedAt
     };
@@ -755,14 +763,65 @@ function createResultFromExtractionRound(
       generatorId: generatorState.generatorId,
       status: "skipped",
       proposalEventId: generatorState.proposalEventId,
-      errorCategory: generatorState.errorCategory
+      errorCategory: generatorState.errorCategory,
+      safeDiagnostics: generatorState.safeDiagnostics
     }))
+  };
+}
+
+function resolveExtractionGeneratorRuntimeConfig(
+  run: DeliberationRunRecord,
+  generator: {
+    adapterId?: string;
+    providerConfigId?: string;
+  },
+  env: Record<string, string | undefined> | undefined
+) {
+  if (!generator.providerConfigId) {
+    return undefined;
+  }
+
+  const providerConfig = run.plan.providerConfigs.find(
+    (candidate) => candidate.id === generator.providerConfigId
+  );
+
+  if (!providerConfig) {
+    throw new RunExtractionProposalRoundError(
+      "provider_config_invalid",
+      "Extraction generator provider config was not found."
+    );
+  }
+
+  if (generator.adapterId && providerConfig.adapterId !== generator.adapterId) {
+    throw new RunExtractionProposalRoundError(
+      "provider_config_invalid",
+      "Extraction generator provider config adapter is invalid."
+    );
+  }
+
+  return resolveProviderRuntimeConfig({
+    providerConfig,
+    env
+  });
+}
+
+function getExtractionGeneratorFailure(error: unknown): {
+  errorCategory: ExtractionRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
+} {
+  return {
+    errorCategory: getExtractionGeneratorErrorCategory(error),
+    safeDiagnostics: getSafeExtractionDiagnostics(error)
   };
 }
 
 function getExtractionGeneratorErrorCategory(error: unknown): ExtractionRunErrorCategory {
   if (error instanceof ExtractionContextError) {
     return "extraction_context_unavailable";
+  }
+
+  if (error instanceof ProviderSecretResolutionError) {
+    return "provider_secret_missing";
   }
 
   if (
@@ -783,9 +842,52 @@ function getExtractionGeneratorErrorCategory(error: unknown): ExtractionRunError
     return "extraction_validation_failed";
   }
 
+  const safeCategory = getSafeExtractionErrorCategory(error);
+  if (safeCategory) {
+    return safeCategory;
+  }
+
   return error instanceof RunExtractionProposalRoundError
     ? (error.category as ExtractionRunErrorCategory)
-    : "core_lifecycle_failed";
+    : "extraction_generator_failed";
+}
+
+function getSafeExtractionErrorCategory(error: unknown): ExtractionRunErrorCategory | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const safeCategory = (error as { safeCategory?: unknown }).safeCategory;
+  if (typeof safeCategory !== "string") {
+    return undefined;
+  }
+
+  const parsed = ExtractionRunErrorCategorySchema.safeParse(safeCategory);
+  return parsed.success ? parsed.data : undefined;
+}
+
+function getSafeExtractionDiagnostics(error: unknown): RunSafeDiagnostics | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const diagnostics = (error as { safeDiagnostics?: unknown }).safeDiagnostics;
+  if (typeof diagnostics !== "object" || diagnostics === null || Array.isArray(diagnostics)) {
+    return undefined;
+  }
+
+  const httpStatus = (diagnostics as { httpStatus?: unknown }).httpStatus;
+  if (
+    typeof httpStatus !== "number" ||
+    !Number.isFinite(httpStatus) ||
+    !Number.isInteger(httpStatus) ||
+    httpStatus < 100 ||
+    httpStatus > 599
+  ) {
+    return undefined;
+  }
+
+  return { httpStatus };
 }
 
 function createExtractionExecutionClaimOwnerId(

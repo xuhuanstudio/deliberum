@@ -3,7 +3,10 @@ import type { ServerType } from "@hono/node-server";
 import { createDaemonApp, type DaemonApp, type DaemonAppOptions } from "./app";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { isLocalPresetEnabledFromEnv } from "./local-preset";
-import { isOpenAICompatibleProfileEnabledFromEnv } from "./openai-compatible-profile";
+import {
+  isOpenAICompatibleExtractionEnabledFromEnv,
+  isOpenAICompatibleProfileEnabledFromEnv
+} from "./openai-compatible-profile";
 
 export { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT };
 
@@ -29,16 +32,28 @@ export function resolveStartDaemonEnableOpenAICompatibleProfile(
   return options.enableOpenAICompatibleProfile ?? isOpenAICompatibleProfileEnabledFromEnv(env);
 }
 
+export function resolveStartDaemonEnableOpenAICompatibleExtraction(
+  options: Pick<StartDaemonOptions, "enableOpenAICompatibleExtraction"> = {},
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  return options.enableOpenAICompatibleExtraction ??
+    isOpenAICompatibleExtractionEnabledFromEnv(env);
+}
+
 export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const host = options.host ?? DEFAULT_DAEMON_HOST;
   const port = options.port ?? DEFAULT_DAEMON_PORT;
   const enableLocalPreset = resolveStartDaemonEnableLocalPreset(options);
   const enableOpenAICompatibleProfile =
     resolveStartDaemonEnableOpenAICompatibleProfile(options);
+  const enableOpenAICompatibleExtraction =
+    enableOpenAICompatibleProfile &&
+    resolveStartDaemonEnableOpenAICompatibleExtraction(options);
   const daemon = createDaemonApp({
     ...options,
     enableLocalPreset,
     enableOpenAICompatibleProfile,
+    enableOpenAICompatibleExtraction,
     openAICompatibleEnv:
       options.openAICompatibleEnv ??
       (enableOpenAICompatibleProfile ? process.env : undefined),

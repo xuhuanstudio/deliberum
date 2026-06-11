@@ -85,13 +85,23 @@ DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js
 
 That opt-in profile registers deterministic local preset participant adapters and generators so the Web run workspace can exercise the full run pipeline without real provider calls. This profile is not production behavior, does not add provider setup UX, does not persist daemon state, and does not make preset output authoritative.
 
-Stage 22A also adds an opt-in OpenAI-compatible daemon profile for local/pre-production sealed divergence participant execution only:
+Stage 22A also adds an opt-in OpenAI-compatible daemon profile for local/pre-production sealed divergence participant execution:
 
 ```bash
 DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE=true node apps/daemon/dist/index.js
 ```
 
-When this profile is enabled, the daemon registers the OpenAI-compatible participant adapter. Run plans may reference provider configuration such as `baseUrl`, `modelId`, `endpointPath`, `timeoutMs`, and `apiKeyEnvVar`; the actual key must remain in the daemon environment, for example `DELIBERUM_OPENAI_API_KEY`. Provider secrets are not accepted through Web forms, CLI flags, daemon request bodies, run-plan inline values, events, run records, or API responses. This profile does not install extraction generators, proposal reviewers, final candidate generators, or final auditors, and provider output enters Deliberum only as sealed contribution material.
+When this profile is enabled, the daemon registers the OpenAI-compatible participant adapter. Run plans may reference provider configuration such as `baseUrl`, `modelId`, `endpointPath`, `timeoutMs`, and `apiKeyEnvVar`; the actual key must remain in the daemon environment, for example `DELIBERUM_OPENAI_API_KEY`. Provider secrets are not accepted through Web forms, CLI flags, daemon request bodies, run-plan inline values, events, run records, or API responses. This profile alone does not install extraction generators, proposal reviewers, final candidate generators, or final auditors.
+
+Stage 22B adds a separate opt-in OpenAI-compatible extraction generator for local/pre-production proposal extraction:
+
+```bash
+DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE=true \
+DELIBERUM_ENABLE_OPENAI_COMPATIBLE_EXTRACTION=true \
+node apps/daemon/dist/index.js
+```
+
+With both flags enabled, the daemon registers `openai-compatible-extractor`. It reads only the revealed extraction context, calls the configured OpenAI-compatible provider, parses strict JSON extraction proposal material, and then still uses the existing orchestrator/core proposal lifecycle. Provider extraction output is proposal material only; Candidate Frontier changes only through later accepted proposal projection. Provider-backed proposal review, final candidate generation, final audit, and outcome compilation remain deferred. The optional non-secret `DELIBERUM_OPENAI_EXTRACTION_PROVIDER_CONFIG_ID` can select the run-plan provider config id for the extractor and defaults to `openai-main`.
 
 For local provider smoke only, the profile also supports optional non-secret request compatibility settings. If these are omitted, the OpenAI-compatible adapter still sends only `model` and `messages`. For MiMo-compatible local smoke, a conservative example is:
 
@@ -119,7 +129,7 @@ GET /webget/:token/submit
 GET /webget/:token/commit
 ```
 
-Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, provider-backed extraction/review/finalization components, real provider setup UX, interactive setup, run event follow, production authentication, and remote/multi-user deployment.
+Deferred daemon work includes persistent SQLite storage, resource delivery endpoints outside WebGET, provider-backed review/finalization components, real provider setup UX, interactive setup, run event follow, production authentication, and remote/multi-user deployment.
 
 ## Web UI
 

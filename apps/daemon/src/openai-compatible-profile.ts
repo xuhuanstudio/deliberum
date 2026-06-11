@@ -5,12 +5,21 @@ import {
   type FetchLike,
   type OpenAICompatibleRequestOptions
 } from "@deliberum/adapters";
-import { AdapterRegistry } from "@deliberum/orchestrator";
+import { AdapterRegistry, ExtractionGeneratorRegistry } from "@deliberum/orchestrator";
+import {
+  OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+  OpenAICompatibleExtractionGenerator
+} from "./openai-compatible-extraction-generator";
 import type { DaemonRunOrchestrationOptions } from "./run-orchestration";
 
 export const OPENAI_COMPATIBLE_PROFILE_ENV_VAR =
   "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE" as const;
+export const OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR =
+  "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_EXTRACTION" as const;
 export const OPENAI_COMPATIBLE_ADAPTER_ID = "openai-compatible" as const;
+export const OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR =
+  "DELIBERUM_OPENAI_EXTRACTION_PROVIDER_CONFIG_ID" as const;
+export const OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID = "openai-main" as const;
 export const OPENAI_COMPATIBLE_API_KEY_ENV_VAR = "DELIBERUM_OPENAI_API_KEY" as const;
 export const OPENAI_COMPATIBLE_BASE_URL_ENV_VAR = "DELIBERUM_OPENAI_BASE_URL" as const;
 export const OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR =
@@ -34,12 +43,13 @@ export const OPENAI_COMPATIBLE_THINKING_ENV_VAR = "DELIBERUM_OPENAI_THINKING" as
 
 export type OpenAICompatibleProfileRegistries = Pick<
   DaemonRunOrchestrationOptions,
-  "adapterRegistry"
+  "adapterRegistry" | "extractionGeneratorRegistry"
 >;
 
 export type OpenAICompatibleProfileOptions = {
   env?: Record<string, string | undefined>;
   fetch?: FetchLike;
+  enableExtraction?: boolean;
 };
 
 export function isOpenAICompatibleProfileEnabledFromEnv(
@@ -48,9 +58,17 @@ export function isOpenAICompatibleProfileEnabledFromEnv(
   return env[OPENAI_COMPATIBLE_PROFILE_ENV_VAR] === "true";
 }
 
+export function isOpenAICompatibleExtractionEnabledFromEnv(
+  env: Record<string, string | undefined>
+): boolean {
+  return env[OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR] === "true";
+}
+
 export function createOpenAICompatibleRunRegistries(
   options: OpenAICompatibleProfileOptions = {}
-): Required<OpenAICompatibleProfileRegistries> {
+): OpenAICompatibleProfileRegistries {
+  const requestOptions = createOpenAICompatibleRequestOptionsFromEnv(options.env);
+
   return {
     adapterRegistry: new AdapterRegistry([
       new OpenAICompatibleParticipantAdapter({
@@ -63,10 +81,35 @@ export function createOpenAICompatibleRunRegistries(
         timeoutMs: parseOptionalPositiveInteger(
           readOptionalEnv(options.env, OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR)
         ),
-        requestOptions: createOpenAICompatibleRequestOptionsFromEnv(options.env),
+        requestOptions,
         fetch: options.fetch
       })
-    ])
+    ]),
+    ...(options.enableExtraction
+      ? {
+          extractionGeneratorRegistry: new ExtractionGeneratorRegistry([
+            new OpenAICompatibleExtractionGenerator({
+              generatorId: OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+              adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+              providerConfigId:
+                readOptionalEnv(
+                  options.env,
+                  OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR
+                ) ?? OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
+              baseUrl: readOptionalEnv(options.env, OPENAI_COMPATIBLE_BASE_URL_ENV_VAR),
+              endpointPath:
+                readOptionalEnv(options.env, OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR) ??
+                OPENAI_COMPATIBLE_DEFAULT_ENDPOINT_PATH,
+              model: readOptionalEnv(options.env, OPENAI_COMPATIBLE_MODEL_ENV_VAR),
+              timeoutMs: parseOptionalPositiveInteger(
+                readOptionalEnv(options.env, OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR)
+              ),
+              requestOptions,
+              fetch: options.fetch
+            })
+          ])
+        }
+      : {})
   };
 }
 

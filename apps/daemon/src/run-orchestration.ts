@@ -328,6 +328,7 @@ export class DaemonRunOrchestrationService {
             extractionGeneratorRegistry: this.requireExtractionGeneratorRegistry(),
             idGenerator: this.idGenerator,
             clock: this.clock,
+            env: this.env,
             executionClaimTtlMs: this.executionClaimTtlMs,
             executionClaimOwnerIdGenerator: this.executionClaimOwnerIdGenerator
           }
