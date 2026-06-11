@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   OpenAICompatibleAdapterError,
   type FetchLike,
   type OpenAICompatibleFetchInit
 } from "@deliberum/adapters";
 import { InMemoryResourceBroker } from "@deliberum/resources";
+import { InMemoryEventStore } from "@deliberum/storage";
 import {
   AdapterRegistry,
   ExtractionGeneratorRegistry,
@@ -28,6 +32,7 @@ import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
   DAEMON_CORS_ORIGINS_ENV_VAR,
+  DAEMON_EVENT_STORE_PATH_ENV_VAR,
   DEFAULT_DAEMON_CORS_ORIGINS,
   OPENAI_COMPATIBLE_ADAPTER_ID,
   OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
@@ -57,11 +62,13 @@ import {
   OPENAI_COMPATIBLE_THINKING_ENV_VAR,
   OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
+  createStartDaemonEventStore,
   createDaemonApp,
   createOpenAICompatibleRunRegistries,
   localPresetRunPlan,
   localPresetStartRequest,
   parseDaemonCorsOriginsFromEnv,
+  resolveStartDaemonEventStorePath,
   resolveStartDaemonEnableOpenAICompatibleExtraction,
   resolveStartDaemonEnableOpenAICompatibleFinalization,
   resolveStartDaemonEnableOpenAICompatibleProfile,
@@ -2094,6 +2101,80 @@ describe("daemon API", () => {
         { DELIBERUM_ENABLE_LOCAL_PRESET: "true" }
       )
     ).toBe(false);
+  });
+
+  it("resolves optional daemon JSON event store path from env without overriding explicit stores", () => {
+    const injectedStore = new InMemoryEventStore();
+
+    expect(
+      resolveStartDaemonEventStorePath({
+        [DAEMON_EVENT_STORE_PATH_ENV_VAR]: " /tmp/deliberum-daemon-events.json "
+      })
+    ).toBe("/tmp/deliberum-daemon-events.json");
+    expect(resolveStartDaemonEventStorePath({})).toBeUndefined();
+    expect(
+      resolveStartDaemonEventStorePath({
+        [DAEMON_EVENT_STORE_PATH_ENV_VAR]: "   "
+      })
+    ).toBeUndefined();
+    expect(
+      createStartDaemonEventStore(
+        { eventStore: injectedStore },
+        {
+          [DAEMON_EVENT_STORE_PATH_ENV_VAR]: "/tmp/ignored-events.json"
+        }
+      )
+    ).toBe(injectedStore);
+  });
+
+  it("can opt into JSON event ledger persistence while keeping run metadata in memory", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-events-"));
+    const filePath = join(dir, "events.json");
+
+    try {
+      const firstEventStore = createStartDaemonEventStore(
+        { clock },
+        {
+          [DAEMON_EVENT_STORE_PATH_ENV_VAR]: filePath
+        }
+      );
+      const firstDaemon = createDaemonApp({
+        eventStore: firstEventStore,
+        idGenerator: createIds(),
+        clock
+      });
+      const created = await createSession(firstDaemon);
+
+      expect(firstDaemon.eventStore.listEvents(created.sessionId)).toHaveLength(1);
+
+      const secondEventStore = createStartDaemonEventStore(
+        { clock },
+        {
+          [DAEMON_EVENT_STORE_PATH_ENV_VAR]: filePath
+        }
+      );
+      const secondDaemon = createDaemonApp({
+        eventStore: secondEventStore,
+        idGenerator: createIds(),
+        clock
+      });
+      const eventsResponse = await secondDaemon.app.request(
+        `/sessions/${created.sessionId}/events`
+      );
+      const eventsBody = (await eventsResponse.json()) as {
+        events: Array<{ type: string; payload: unknown }>;
+      };
+
+      expect(eventsResponse.status).toBe(200);
+      expect(eventsBody.events).toHaveLength(1);
+      expect(eventsBody.events[0]).toMatchObject({
+        type: created.event.type,
+        payload: expect.any(Object)
+      });
+      expect(secondDaemon.runStore.listRuns()).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("runs the deterministic local preset pipeline only when explicitly enabled", async () => {

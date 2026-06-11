@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import * as realFs from "node:fs";
 import { join } from "node:path";
-import type { AppendEventInput } from "@deliberum/storage";
 import type { EventEnvelope } from "@deliberum/protocol";
 import {
+  type AppendEventInput,
   JsonFileEventStore,
   JsonFileEventStoreError,
   type JsonFileEventStoreFileSystem
@@ -13,7 +13,7 @@ import {
 function createTempDir() {
   const baseDir = join(process.cwd(), ".deliberum", "test-runs");
   mkdirSync(baseDir, { recursive: true });
-  return mkdtempSync(join(baseDir, "cli-store-"));
+  return mkdtempSync(join(baseDir, "storage-store-"));
 }
 
 function createInput(overrides: Partial<AppendEventInput> = {}): AppendEventInput {

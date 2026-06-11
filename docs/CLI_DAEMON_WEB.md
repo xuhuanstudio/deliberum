@@ -7,7 +7,7 @@ Deliberum is terminal-first and local-first, but not CLI-only. CLI, daemon, and 
 ```text
 CLI / Web UI
   ↓
-local daemon or CLI-local EventStore
+local daemon or CLI local JSON ledger
   ↓
 append-only event ledger + core lifecycle/projection APIs
   ↓
@@ -18,7 +18,7 @@ The event ledger and derived projections remain the source of truth. The CLI, da
 
 ## CLI
 
-The current CLI uses a local JSON EventStore at `.deliberum/events.json` by default. It supports `--store <path>` and `DELIBERUM_STORE` for explicit local storage. The JSON store is CLI-local, validates persisted ledgers on load, and is not daemon storage. It is local-first and single-writer oriented; concurrent CLI writes are not guaranteed yet. Future persistent daemon storage may address multi-writer and concurrent use.
+The current CLI uses the shared JSON EventStore at `.deliberum/events.json` by default. It supports `--store <path>` and `DELIBERUM_STORE` for explicit local storage. The JSON store validates persisted ledgers on load and is local-first and single-writer oriented; concurrent writes are not guaranteed yet.
 
 Implemented commands:
 
@@ -44,13 +44,13 @@ deliberum runs outcome <runId> [--daemon-url <local-url>]
 
 CLI view commands return structured JSON. `frontier`, `objections`, and `obligations` are projection-derived and include projection metadata.
 
-CLI run commands are local daemon control commands. They require a running local daemon, call daemon run endpoints through `@deliberum/client`, and do not use the CLI-local JSON EventStore for run orchestration.
+CLI run commands are local daemon control commands. They require a running local daemon, call daemon run endpoints through `@deliberum/client`, and do not use the CLI local JSON ledger for run orchestration.
 
 `deliberum runs events <runId>` reads the daemon-redacted run event timeline from the local daemon. With `--follow`, it opens the daemon-redacted run event stream and writes each new named SSE `event` frame as a compact JSON line. Follow mode does not replay history; use the non-follow command first when the historical timeline is required. The CLI does not compute projections from either event view.
 
 ## Daemon
 
-The current daemon is a local Hono API. It binds to `127.0.0.1` by default, does not enable wildcard CORS by default, and uses a process-local `InMemoryEventStore`. State resets when the daemon process restarts.
+The current daemon is a local Hono API. It binds to `127.0.0.1` by default, does not enable wildcard CORS by default, and uses a process-local `InMemoryEventStore` by default. For local development, `DELIBERUM_DAEMON_EVENT_STORE_PATH=<path>` opts into the shared JSON EventStore for event ledger persistence. This persists session ledger events for daemon session endpoints, but it does not persist run metadata, WebGET sessions, resource broker state, authentication state, or multi-user coordination.
 
 By default, browser CORS is limited to the local Web development origins `http://127.0.0.1:5173` and `http://localhost:5173`. If the Web dev server must run on another local port, set `DELIBERUM_DAEMON_CORS_ORIGINS` to a comma-separated local-origin allow-list, for example `http://127.0.0.1:5180,http://localhost:5180`. The daemon rejects non-local origins for this configuration and never uses wildcard CORS.
 
@@ -149,13 +149,13 @@ GET /webget/:token/submit
 GET /webget/:token/commit
 ```
 
-Deferred daemon work includes persistent SQLite storage, resource delivery or hosting endpoints outside WebGET, real provider setup UX, interactive setup, production authentication, and remote/multi-user deployment.
+Deferred daemon work includes durable run metadata storage, persistent SQLite storage, resource delivery or hosting endpoints outside WebGET, real provider setup UX, interactive setup, production authentication, and remote/multi-user deployment.
 
 ## Web UI
 
 The current Web UI is a React/Vite shell that reads from `@deliberum/client` and the local daemon. It has pages for session overview, Candidate Frontier, objections, quality obligations, events, a daemon-backed compiled outcome projection, a session resources/evidence projection, and local daemon run workspace views.
 
-The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, persistent daemon storage, or provider setup UX yet. It can list runs, create a run from JSON or a deterministic local preset template, inspect daemon run state, start requested run stages from JSON or the local preset start request, read safe projection endpoints by run session id, display daemon-redacted run ledger events, manually follow the daemon-redacted run event stream, and display compiled output only as a provisional outcome. The session Final page reads `GET /sessions/:sessionId/final` and renders the compiled outcome projection with provenance and unresolved material. The run detail page reads `GET /runs/:runId/events` for the current safe ledger timeline and opens `GET /runs/:runId/events/stream` only when the user starts live follow; it still does not compute projections from streamed events.
+The Web run workspace is a local daemon control/view surface. Run workspace actions require the local daemon to be running; the Web UI does not provide public hosting, authentication, durable run storage, or provider setup UX yet. It can list runs, create a run from JSON or a deterministic local preset template, inspect daemon run state, start requested run stages from JSON or the local preset start request, read safe projection endpoints by run session id, display daemon-redacted run ledger events, manually follow the daemon-redacted run event stream, and display compiled output only as a provisional outcome. The session Final page reads `GET /sessions/:sessionId/final` and renders the compiled outcome projection with provenance and unresolved material. The run detail page reads `GET /runs/:runId/events` for the current safe ledger timeline and opens `GET /runs/:runId/events/stream` only when the user starts live follow; it still does not compute projections from streamed events.
 
 The Web local preset controls require the daemon to be started with `DELIBERUM_ENABLE_LOCAL_PRESET=true`. Without that opt-in daemon profile, created runs remain valid but starting a preset pipeline reports missing local components.
 
