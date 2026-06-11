@@ -91,6 +91,17 @@ export type ParticipantAdapterSafeErrorCategory =
 
 export type ParticipantAdapterSafeDiagnostics = {
   httpStatus?: number;
+  providerResponseShape?:
+    | "empty_text"
+    | "invalid_json_object"
+    | "json_array"
+    | "json_non_object"
+    | "prose_with_json_object"
+    | "single_fenced_invalid_json"
+    | "single_fenced_json_array"
+    | "single_fenced_json_non_object"
+    | "single_fenced_other_text"
+    | "other_text";
 };
 
 export type ParticipantAdapterResult = {

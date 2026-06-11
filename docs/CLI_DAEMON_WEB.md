@@ -111,10 +111,11 @@ DELIBERUM_OPENAI_ENDPOINT_PATH=/v1/chat/completions
 DELIBERUM_OPENAI_MODEL=mimo-v2.5-pro
 DELIBERUM_OPENAI_TOKEN_PARAMETER=max_completion_tokens
 DELIBERUM_OPENAI_MAX_COMPLETION_TOKENS=1024
+DELIBERUM_OPENAI_TEMPERATURE=0
 DELIBERUM_OPENAI_THINKING=disabled
 ```
 
-Additional non-secret request options are available for local compatibility testing: `DELIBERUM_OPENAI_TEMPERATURE`, `DELIBERUM_OPENAI_TOP_P`, `DELIBERUM_OPENAI_STREAM=false`, `DELIBERUM_OPENAI_FREQUENCY_PENALTY`, and `DELIBERUM_OPENAI_PRESENCE_PENALTY`. Streaming output is not implemented, so `DELIBERUM_OPENAI_STREAM=true` is rejected as invalid provider configuration.
+The extraction prompt requests exactly one JSON object with no surrounding prose or Markdown, and the parser remains strict: it accepts only a raw JSON object or a single full fenced JSON object. If a provider response fails only this strict JSON shape check, the extractor may make one corrective retry without including the rejected response text. Additional non-secret request options are available for local compatibility testing: `DELIBERUM_OPENAI_TOP_P`, `DELIBERUM_OPENAI_STREAM=false`, `DELIBERUM_OPENAI_FREQUENCY_PENALTY`, and `DELIBERUM_OPENAI_PRESENCE_PENALTY`. Streaming output is not implemented, so `DELIBERUM_OPENAI_STREAM=true` is rejected as invalid provider configuration.
 
 CLI and Web run commands do not include provider setup UX, API key flags or fields, interactive setup, or run event follow.
 

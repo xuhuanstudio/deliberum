@@ -911,7 +911,8 @@ describe("Stage 19A extraction proposal orchestration", () => {
         });
         Object.defineProperty(error, "safeDiagnostics", {
           value: {
-            httpStatus: 502
+            httpStatus: 502,
+            providerResponseShape: "prose_with_json_object"
           }
         });
         throw error;
@@ -942,7 +943,8 @@ describe("Stage 19A extraction proposal orchestration", () => {
         status: "failed",
         errorCategory: "provider_http_error",
         safeDiagnostics: {
-          httpStatus: 502
+          httpStatus: 502,
+          providerResponseShape: "prose_with_json_object"
         }
       })
     );
@@ -951,11 +953,15 @@ describe("Stage 19A extraction proposal orchestration", () => {
         generatorId: "provider-extractor",
         errorCategory: "provider_http_error",
         safeDiagnostics: {
-          httpStatus: 502
+          httpStatus: 502,
+          providerResponseShape: "prose_with_json_object"
         }
       })
     );
     expect(serializedSafeState).toContain("\"httpStatus\":502");
+    expect(serializedSafeState).toContain(
+      "\"providerResponseShape\":\"prose_with_json_object\""
+    );
     expect(serializedSafeState).not.toContain(rawProviderFailure);
     expect(serializedSafeState).not.toContain("sk-provider-extraction-secret");
     expect(serializedSafeState).not.toContain("Authorization");

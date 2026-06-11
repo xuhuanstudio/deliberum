@@ -649,7 +649,8 @@ describe("runSealedDivergenceRound", () => {
             failureMessage: rawProviderFailure,
             safeErrorCategory: "provider_http_error",
             safeDiagnostics: {
-              httpStatus: 500
+              httpStatus: 500,
+              providerResponseShape: "other_text"
             }
           })
         ]),
@@ -670,7 +671,8 @@ describe("runSealedDivergenceRound", () => {
         status: "failed",
         errorCategory: "provider_http_error",
         safeDiagnostics: {
-          httpStatus: 500
+          httpStatus: 500,
+          providerResponseShape: "other_text"
         }
       })
     );
@@ -680,11 +682,13 @@ describe("runSealedDivergenceRound", () => {
         status: "failed",
         errorCategory: "provider_http_error",
         safeDiagnostics: {
-          httpStatus: 500
+          httpStatus: 500,
+          providerResponseShape: "other_text"
         }
       })
     );
     expect(serializedSafeState).toContain("\"httpStatus\":500");
+    expect(serializedSafeState).toContain("\"providerResponseShape\":\"other_text\"");
     expect(serializedSafeState).not.toContain(rawProviderFailure);
     expect(serializedSafeState).not.toContain("sk-test-secret");
     expect(serializedSafeState).not.toContain("Authorization");

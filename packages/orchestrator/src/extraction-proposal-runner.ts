@@ -9,7 +9,10 @@ import {
 import { buildExtractionContext } from "./extraction-context";
 import { validateExtractionGeneratorResult } from "./extraction-validation";
 import { resolveProviderRuntimeConfig } from "./provider-secret-resolver";
-import { ExtractionRunErrorCategorySchema } from "./types";
+import {
+  ExtractionRunErrorCategorySchema,
+  RunSafeProviderResponseShapeSchema
+} from "./types";
 import type {
   DeliberationRunRecord,
   ExtractionContext,
@@ -876,18 +879,28 @@ function getSafeExtractionDiagnostics(error: unknown): RunSafeDiagnostics | unde
     return undefined;
   }
 
+  const safeDiagnostics: RunSafeDiagnostics = {};
   const httpStatus = (diagnostics as { httpStatus?: unknown }).httpStatus;
   if (
-    typeof httpStatus !== "number" ||
-    !Number.isFinite(httpStatus) ||
-    !Number.isInteger(httpStatus) ||
-    httpStatus < 100 ||
-    httpStatus > 599
+    typeof httpStatus === "number" &&
+    Number.isFinite(httpStatus) &&
+    Number.isInteger(httpStatus) &&
+    httpStatus >= 100 &&
+    httpStatus <= 599
   ) {
-    return undefined;
+    safeDiagnostics.httpStatus = httpStatus;
   }
 
-  return { httpStatus };
+  const providerResponseShape = (diagnostics as {
+    providerResponseShape?: unknown;
+  }).providerResponseShape;
+  const parsedProviderResponseShape =
+    RunSafeProviderResponseShapeSchema.safeParse(providerResponseShape);
+  if (parsedProviderResponseShape.success) {
+    safeDiagnostics.providerResponseShape = parsedProviderResponseShape.data;
+  }
+
+  return Object.keys(safeDiagnostics).length > 0 ? safeDiagnostics : undefined;
 }
 
 function createExtractionExecutionClaimOwnerId(

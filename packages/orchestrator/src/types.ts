@@ -187,9 +187,26 @@ export const RunErrorCategorySchema = z.enum([
 ]);
 export type RunErrorCategory = z.infer<typeof RunErrorCategorySchema>;
 
+export const RunSafeProviderResponseShapeSchema = z.enum([
+  "empty_text",
+  "invalid_json_object",
+  "json_array",
+  "json_non_object",
+  "prose_with_json_object",
+  "single_fenced_invalid_json",
+  "single_fenced_json_array",
+  "single_fenced_json_non_object",
+  "single_fenced_other_text",
+  "other_text"
+]);
+export type RunSafeProviderResponseShape = z.infer<
+  typeof RunSafeProviderResponseShapeSchema
+>;
+
 export const RunSafeDiagnosticsSchema = z
   .object({
-    httpStatus: z.number().int().min(100).max(599).optional()
+    httpStatus: z.number().int().min(100).max(599).optional(),
+    providerResponseShape: RunSafeProviderResponseShapeSchema.optional()
   })
   .strict();
 export type RunSafeDiagnostics = z.infer<typeof RunSafeDiagnosticsSchema>;
