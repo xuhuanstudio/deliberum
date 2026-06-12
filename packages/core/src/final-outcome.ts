@@ -9,6 +9,8 @@ import {
 } from "@deliberum/protocol";
 import type { EventStore, StoredEvent } from "@deliberum/storage";
 import {
+  EvidenceNeedNotFoundError,
+  InvalidEvidenceResultInputError,
   FinalCandidateProposalNotFoundError,
   InvalidFinalAuditInputError,
   InvalidFinalCandidateProposalInputError,
@@ -59,6 +61,18 @@ export type AuditFinalCandidateInput = {
   idempotencyKey?: string;
 };
 
+export type RecordEvidenceResultInput = {
+  sessionId: string;
+  evidenceNeedId: string;
+  authorId: string;
+  source: string;
+  summary: string;
+  resourceIds?: readonly string[];
+  limitations?: readonly string[];
+  challengedBy?: readonly string[];
+  idempotencyKey?: string;
+};
+
 export type FinalOutcomeOptions = {
   eventStore: EventStore;
   idGenerator: IdGenerator;
@@ -74,6 +88,11 @@ export type ProposeFinalCandidateResult = {
 
 export type AuditFinalCandidateResult = {
   auditEvent: StoredEvent<FinalAudit>;
+  appended: boolean;
+};
+
+export type RecordEvidenceResultResult = {
+  evidenceResultEvent: StoredEvent<EvidenceResult>;
   appended: boolean;
 };
 
@@ -250,6 +269,53 @@ export function auditFinalCandidate(
   };
 }
 
+export function recordEvidenceResult(
+  input: RecordEvidenceResultInput,
+  options: FinalOutcomeOptions
+): RecordEvidenceResultResult {
+  assertFinalOutcomeOptions(options);
+
+  const acceptedObjects = projectAcceptedDeliberationObjects({
+    eventStore: options.eventStore,
+    sessionId: input.sessionId
+  });
+  const targetEvidenceNeed = acceptedObjects.evidenceNeeds.find(
+    (evidenceNeed) => evidenceNeed.object.id === input.evidenceNeedId
+  );
+
+  if (!targetEvidenceNeed) {
+    throw new EvidenceNeedNotFoundError(input.evidenceNeedId);
+  }
+
+  const evidenceResult = parseEvidenceResult({
+    id: options.idGenerator(),
+    evidenceNeedId: targetEvidenceNeed.object.id,
+    source: input.source,
+    summary: input.summary,
+    resourceIds: [...(input.resourceIds ?? [])],
+    limitations: [...(input.limitations ?? [])],
+    challengedBy: [...(input.challengedBy ?? [])]
+  });
+  const appendResult = options.eventStore.appendEventResult<EvidenceResult>({
+    id: options.idGenerator(),
+    sessionId: input.sessionId,
+    schemaVersion: getSchemaVersion(options),
+    type: EVIDENCE_RESULT_RECORDED_EVENT_TYPE,
+    authorId: input.authorId,
+    createdAt: getClock(options)(),
+    basedOnEventIds: collectEvidenceNeedBasisEventIds(targetEvidenceNeed),
+    visibility: "public",
+    idempotencyKey: input.idempotencyKey,
+    trace: {},
+    payload: evidenceResult
+  });
+
+  return {
+    evidenceResultEvent: appendResult.event,
+    appended: appendResult.appended
+  };
+}
+
 export function compileOutcome(input: CompileOutcomeInput): OutcomeCompilationResult {
   const { events, sessionId } = resolveOutcomeEvents(input);
   const projectionInput = sessionId ? { events, sessionId } : { events };
@@ -343,6 +409,10 @@ export class OutcomeCompilerService {
     return auditFinalCandidate(input, this.options);
   }
 
+  recordEvidenceResult(input: RecordEvidenceResultInput): RecordEvidenceResultResult {
+    return recordEvidenceResult(input, this.options);
+  }
+
   compileOutcome(input: {
     sessionId: string;
     finalCandidateProposalEventId?: string;
@@ -366,6 +436,7 @@ export class OutcomeCompilerService {
 
 export type FinalCandidateProposedEvent = EventEnvelope<FinalCandidateProposal>;
 export type FinalAuditRecordedEvent = EventEnvelope<FinalAudit>;
+export type EvidenceResultRecordedEvent = EventEnvelope<EvidenceResult>;
 
 type ResolvedOutcomeEvents = {
   events: StoredEvent[];
@@ -411,6 +482,16 @@ function parseFinalAudit(input: unknown): FinalAudit {
 
   if (!parsed.success) {
     throw new InvalidFinalAuditInputError(parsed.error.message);
+  }
+
+  return parsed.data;
+}
+
+function parseEvidenceResult(input: unknown): EvidenceResult {
+  const parsed = EvidenceResultSchema.safeParse(input);
+
+  if (!parsed.success) {
+    throw new InvalidEvidenceResultInputError(parsed.error.message);
   }
 
   return parsed.data;
@@ -582,6 +663,14 @@ function collectCandidateSourceEventIds(candidates: readonly DerivedCandidate[])
   }
 
   return [...sourceEventIds];
+}
+
+function collectEvidenceNeedBasisEventIds(evidenceNeed: DerivedEvidenceNeed): string[] {
+  return unique([
+    evidenceNeed.proposalEventId,
+    ...evidenceNeed.acceptedByEventIds,
+    ...evidenceNeed.sourceEventIds
+  ]);
 }
 
 function buildEvidenceStatus(

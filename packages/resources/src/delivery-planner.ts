@@ -119,6 +119,16 @@ function validatePolicy(policy: ResourceDeliveryPolicyOverrides): void {
     throw new InvalidResourcePolicyError("maxBase64SizeBytes must be a nonnegative integer.");
   }
 
+  if (
+    policy.maxHostedContentSizeBytes !== undefined &&
+    (!Number.isInteger(policy.maxHostedContentSizeBytes) ||
+      policy.maxHostedContentSizeBytes < 0)
+  ) {
+    throw new InvalidResourcePolicyError(
+      "maxHostedContentSizeBytes must be a nonnegative integer."
+    );
+  }
+
   for (const mode of policy.preferredModes ?? []) {
     if (!isResourceDeliveryMode(mode)) {
       throw new InvalidResourcePolicyError("preferredModes contains an unsupported mode.");

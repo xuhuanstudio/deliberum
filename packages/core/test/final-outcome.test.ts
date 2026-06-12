@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { InMemoryEventStore, type EventStore, type StoredEvent } from "@deliberum/storage";
 import {
   EVIDENCE_RESULT_RECORDED_EVENT_TYPE,
+  EvidenceNeedNotFoundError,
   FINAL_AUDIT_RECORDED_EVENT_TYPE,
   FINAL_CANDIDATE_PROPOSED_EVENT_TYPE,
   FinalCandidateProposalNotFoundError,
@@ -13,7 +14,8 @@ import {
   auditFinalCandidate,
   compileOutcome,
   proposeExtraction,
-  proposeFinalCandidate
+  proposeFinalCandidate,
+  recordEvidenceResult
 } from "../src";
 import * as core from "../src";
 import type { FinalCandidateProposal } from "@deliberum/protocol";
@@ -558,22 +560,40 @@ describe("outcome compilation", () => {
     expect(result.evidenceStatus.evidenceNeeds[0]?.status).toBe("unchecked");
     expect(JSON.stringify(result.evidenceStatus)).not.toContain("verified");
 
-    eventStore.appendEvent({
-      id: "evidence-result-event-1",
-      sessionId: "session-1",
-      schemaVersion: "1",
-      type: EVIDENCE_RESULT_RECORDED_EVENT_TYPE,
-      authorId: "participant-8",
-      createdAt: "2026-06-10T00:00:00.000Z",
-      basedOnEventIds: ["evidence-need-1"],
-      visibility: "public",
-      trace: {},
-      payload: {
-        id: "evidence-result-1",
+    const recorded = recordEvidenceResult(
+      {
+        sessionId: "session-1",
         evidenceNeedId: "evidence-need-1",
+        authorId: "participant-8",
         source: "Controlled test source",
         summary: "Reported evidence result",
-        limitations: ["Not independently checked by Stage 14"]
+        limitations: ["Not independently checked by Stage 14"],
+        idempotencyKey: "evidence-result-recorded-1"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["evidence-result-1", "evidence-result-event-1"]),
+        clock: () => "2026-06-10T00:00:00.000Z"
+      }
+    );
+
+    expect(recorded).toMatchObject({
+      appended: true,
+      evidenceResultEvent: {
+        id: "evidence-result-event-1",
+        type: EVIDENCE_RESULT_RECORDED_EVENT_TYPE,
+        basedOnEventIds: [
+          "proposal-event-1",
+          "acceptance-event-1",
+          "source-event-1"
+        ],
+        payload: {
+          id: "evidence-result-1",
+          evidenceNeedId: "evidence-need-1",
+          source: "Controlled test source",
+          summary: "Reported evidence result",
+          limitations: ["Not independently checked by Stage 14"]
+        }
       }
     });
 
@@ -587,6 +607,27 @@ describe("outcome compilation", () => {
       "evidence-result-event-1"
     ]);
     expect(JSON.stringify(result.evidenceStatus)).not.toContain("verified");
+  });
+
+  it("rejects evidence results for evidence needs that are not accepted", () => {
+    const eventStore = createStore();
+    appendSourceEvent(eventStore, { id: "source-event-1" });
+
+    expect(() =>
+      recordEvidenceResult(
+        {
+          sessionId: "session-1",
+          evidenceNeedId: "evidence-need-1",
+          authorId: "participant-8",
+          source: "Controlled test source",
+          summary: "Reported evidence result"
+        },
+        {
+          eventStore,
+          idGenerator: createDeterministicIds(["evidence-result-1", "evidence-result-event-1"])
+        }
+      )
+    ).toThrow(EvidenceNeedNotFoundError);
   });
 
   it("supports the service wrapper without adding semantic-authority APIs", () => {

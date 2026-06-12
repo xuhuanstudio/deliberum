@@ -596,6 +596,16 @@ describe("DeliveryPlanner", () => {
         }
       })
     ).toThrow(InvalidResourcePolicyError);
+    expect(() =>
+      planner.planDelivery({
+        resourceId: "resource-1",
+        participantId: "participant-1",
+        policy: {
+          allowHostedContentUrl: true,
+          maxHostedContentSizeBytes: -1
+        }
+      })
+    ).toThrow(InvalidResourcePolicyError);
   });
 
   it("exports no semantic authority, adapter execution, or transport surfaces", () => {

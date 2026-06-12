@@ -40,6 +40,39 @@ export const ProcessProposalSchema = z
   .strict();
 export type ProcessProposal = z.infer<typeof ProcessProposalSchema>;
 
+export const ProcessProposalChallengePayloadSchema = z
+  .object({
+    id: IdSchema,
+    targetProcessProposalEventId: IdSchema,
+    reason: NonEmptyStringSchema,
+    status: z.literal("challenged")
+  })
+  .strict();
+export type ProcessProposalChallengePayload = z.infer<
+  typeof ProcessProposalChallengePayloadSchema
+>;
+
+export const ProcessProposalDecisionStatusSchema = z.enum([
+  "accepted",
+  "deferred",
+  "rejected"
+]);
+export type ProcessProposalDecisionStatus = z.infer<
+  typeof ProcessProposalDecisionStatusSchema
+>;
+
+export const ProcessProposalDecisionPayloadSchema = z
+  .object({
+    id: IdSchema,
+    targetProcessProposalEventId: IdSchema,
+    rationale: NonEmptyStringSchema,
+    status: ProcessProposalDecisionStatusSchema
+  })
+  .strict();
+export type ProcessProposalDecisionPayload = z.infer<
+  typeof ProcessProposalDecisionPayloadSchema
+>;
+
 export const SummaryProposalSchema = z
   .object({
     id: IdSchema,

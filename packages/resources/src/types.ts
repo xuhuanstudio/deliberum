@@ -35,6 +35,8 @@ export type ResourceDeliveryPolicyOverrides = {
   allowPublicUrl?: boolean;
   allowBase64?: boolean;
   maxBase64SizeBytes?: number;
+  allowHostedContentUrl?: boolean;
+  maxHostedContentSizeBytes?: number;
 };
 
 export type ResourceDeliveryPolicy = ResourceDeliveryPolicyOverrides & {

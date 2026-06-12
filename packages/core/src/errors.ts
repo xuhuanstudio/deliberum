@@ -103,6 +103,34 @@ export class InvalidProjectionInputError extends CoreError {
   }
 }
 
+export class InvalidProcessProposalInputError extends CoreError {
+  constructor(message = "Invalid process proposal input.") {
+    super(message);
+    this.name = "InvalidProcessProposalInputError";
+  }
+}
+
+export class ProcessProposalEventNotFoundError extends CoreError {
+  constructor(eventId: string) {
+    super(`Process proposal event not found: ${eventId}`);
+    this.name = "ProcessProposalEventNotFoundError";
+  }
+}
+
+export class InvalidProcessProposalTargetError extends CoreError {
+  constructor(message = "Invalid process proposal target.") {
+    super(message);
+    this.name = "InvalidProcessProposalTargetError";
+  }
+}
+
+export class ProcessProposalBasisEventNotFoundError extends CoreError {
+  constructor(eventId: string) {
+    super(`Process proposal basis event not found in session: ${eventId}`);
+    this.name = "ProcessProposalBasisEventNotFoundError";
+  }
+}
+
 export class InvalidFinalCandidateProposalInputError extends CoreError {
   constructor(message = "Invalid final candidate proposal input.") {
     super(message);
@@ -124,9 +152,37 @@ export class InvalidFinalAuditInputError extends CoreError {
   }
 }
 
+export class EvidenceNeedNotFoundError extends CoreError {
+  constructor(evidenceNeedId: string) {
+    super(`Accepted evidence need not found: ${evidenceNeedId}`);
+    this.name = "EvidenceNeedNotFoundError";
+  }
+}
+
+export class InvalidEvidenceResultInputError extends CoreError {
+  constructor(message = "Invalid evidence result input.") {
+    super(message);
+    this.name = "InvalidEvidenceResultInputError";
+  }
+}
+
 export class InvalidOutcomeCompilationInputError extends CoreError {
   constructor(message = "Invalid outcome compilation input.") {
     super(message);
     this.name = "InvalidOutcomeCompilationInputError";
+  }
+}
+
+export class InvalidResourceDeliveryAuditInputError extends CoreError {
+  constructor(message = "Invalid resource delivery audit input.") {
+    super(message);
+    this.name = "InvalidResourceDeliveryAuditInputError";
+  }
+}
+
+export class InvalidResourceAccessAuditInputError extends CoreError {
+  constructor(message = "Invalid resource access audit input.") {
+    super(message);
+    this.name = "InvalidResourceAccessAuditInputError";
   }
 }
