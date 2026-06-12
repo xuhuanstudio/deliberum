@@ -35,7 +35,11 @@ import {
 
 const DEFAULT_RUN_PLAN_TEXT = formatPresetJson(LOCAL_PRESET_RUN_PLAN);
 const DEFAULT_START_REQUEST_TEXT = formatPresetJson(LOCAL_PRESET_START_REQUEST);
+const DEFAULT_PROCESS_AUTHOR_ID = "system";
+const DEFAULT_PROCESS_REVIEWER_ID = "process-reviewer";
+const DEFAULT_PROCESS_COORDINATOR_ID = "process-coordinator";
 type RunFollowStatus = "idle" | "connecting" | "connected" | "error" | "unsupported";
+type ProcessDecisionStatus = "accepted" | "deferred" | "rejected";
 
 export function RunsListPage() {
   const { client } = useDaemonRuntime();
@@ -211,6 +215,8 @@ export function RunDetailPage() {
           <RunSummary run={run} />
           <RunDetailGuide />
           <RunStageStatus run={run} />
+          <RunProcessProposals runId={runId} sessionId={sessionId} />
+          {sessionId ? <RunProcessGovernance runId={runId} sessionId={sessionId} /> : null}
           <RunEventTimeline runId={runId} />
           <StartRunForm runId={runId} sessionId={sessionId} />
           <DataPanel title="Run plan view">
@@ -232,11 +238,44 @@ export function RunDetailPage() {
 export function RunOutcomePage() {
   const { runId } = useRunParams();
   const { client } = useDaemonRuntime();
+  const [projectionProposalEventId, setProjectionProposalEventId] = useState("");
+  const [appliedProjectionProposalEventId, setAppliedProjectionProposalEventId] = useState<
+    string | undefined
+  >();
   const outcomeQuery = useQuery({
-    queryKey: ["run-outcome", runId],
-    queryFn: () => client.getRunOutcome(runId)
+    queryKey: ["run-outcome", runId, appliedProjectionProposalEventId ?? "latest"],
+    queryFn: () =>
+      appliedProjectionProposalEventId
+        ? client.getRunOutcome(runId, {
+            finalCandidateProposalEventId: appliedProjectionProposalEventId
+          })
+        : client.getRunOutcome(runId)
   });
   const outcome = outcomeQuery.data;
+  const compiledOutcome = outcome?.status === "compiled" ? outcome.outcome : undefined;
+  const provenance = getRecordValue(compiledOutcome, "provenance");
+  const finalCandidateProposalEventId = getStringRecordValue(
+    provenance,
+    "finalCandidateProposalEventId"
+  );
+  const canClearProjectionOverride =
+    appliedProjectionProposalEventId !== undefined ||
+    projectionProposalEventId.trim().length > 0;
+
+  function submitProjectionOverride(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const proposalEventId = projectionProposalEventId.trim();
+
+    setAppliedProjectionProposalEventId(
+      proposalEventId.length > 0 ? proposalEventId : undefined
+    );
+  }
+
+  function clearProjectionOverride() {
+    setProjectionProposalEventId("");
+    setAppliedProjectionProposalEventId(undefined);
+  }
 
   return (
     <RunWorkspaceShell runId={runId}>
@@ -250,6 +289,35 @@ export function RunOutcomePage() {
           </Link>
         }
       >
+        <form className="du-inline-form" onSubmit={submitProjectionOverride}>
+          <label htmlFor="du-run-outcome-projection-event">
+            Candidate proposal event override
+          </label>
+          <div className="du-inline-form-row">
+            <input
+              id="du-run-outcome-projection-event"
+              value={projectionProposalEventId}
+              placeholder="final-candidate-event-1"
+              onChange={(event) => setProjectionProposalEventId(event.target.value)}
+            />
+            <button type="submit">Compile projection</button>
+            <button
+              className="du-secondary-button"
+              type="button"
+              disabled={!canClearProjectionOverride}
+              onClick={clearProjectionOverride}
+            >
+              Use latest proposal
+            </button>
+          </div>
+          {appliedProjectionProposalEventId ? (
+            <StatusBanner
+              tone="neutral"
+              title="Specific final proposal selected"
+              detail={appliedProjectionProposalEventId}
+            />
+          ) : null}
+        </form>
         <QueryState query={outcomeQuery}>
           {outcome?.status === "compiled" ? (
             <>
@@ -266,6 +334,10 @@ export function RunOutcomePage() {
                   {
                     label: "Draft status",
                     value: outcome.draftStatus
+                  },
+                  {
+                    label: "Candidate proposal event",
+                    value: finalCandidateProposalEventId ?? "None"
                   }
                 ]}
               />
@@ -447,6 +519,8 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
         stages={[
           ["Sealed divergence", getRecordValue(run, "sealedDivergenceStatus")],
           ["Extraction", getRecordValue(run, "latestExtractionStatus")],
+          ["Candidate repair", getRecordValue(run, "latestCandidateRepairStatus")],
+          ["Evidence check", getRecordValue(run, "latestEvidenceCheckStatus")],
           ["Proposal review", getRecordValue(run, "latestProposalReviewStatus")],
           ["Finalization", getRecordValue(run, "latestFinalizationStatus")]
         ]}
@@ -508,6 +582,8 @@ function RunStageStatus({ run }: { run: unknown }) {
         stages={[
           ["Sealed divergence", getRecordValue(run, "sealedDivergenceStatus")],
           ["Extraction", getRecordValue(run, "latestExtractionStatus")],
+          ["Candidate repair", getRecordValue(run, "latestCandidateRepairStatus")],
+          ["Evidence check", getRecordValue(run, "latestEvidenceCheckStatus")],
           ["Proposal review", getRecordValue(run, "latestProposalReviewStatus")],
           ["Finalization", getRecordValue(run, "latestFinalizationStatus")]
         ]}
@@ -779,11 +855,13 @@ async function invalidateRunWorkspaceQueries(
     queryClient.invalidateQueries({ queryKey: ["runs"] }),
     queryClient.invalidateQueries({ queryKey: ["run", runId] }),
     queryClient.invalidateQueries({ queryKey: ["run-events", runId] }),
-    queryClient.invalidateQueries({ queryKey: ["run-outcome", runId] })
+    queryClient.invalidateQueries({ queryKey: ["run-outcome", runId] }),
+    queryClient.invalidateQueries({ queryKey: ["run-process-proposals", runId] })
   ];
 
   if (sessionId) {
     invalidations.push(
+      queryClient.invalidateQueries({ queryKey: ["run-process-proposal-states", sessionId] }),
       queryClient.invalidateQueries({ queryKey: ["run-frontier", sessionId] }),
       queryClient.invalidateQueries({ queryKey: ["run-objections", sessionId] }),
       queryClient.invalidateQueries({ queryKey: ["run-obligations", sessionId] }),
@@ -881,6 +959,547 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
         </QueryState>
       </DataPanel>
     </section>
+  );
+}
+
+function RunProcessProposals({ runId, sessionId }: { runId: string; sessionId?: string }) {
+  const { client } = useDaemonRuntime();
+  const processProposalQuery = useQuery({
+    queryKey: ["run-process-proposals", runId],
+    queryFn: () => client.getRunProcessProposals(runId)
+  });
+  const processStateQuery = useQuery({
+    queryKey: ["run-process-proposal-states", sessionId],
+    queryFn: () => client.getProcessProposalStates(sessionId ?? ""),
+    enabled: Boolean(sessionId)
+  });
+  const proposals = asArray(processProposalQuery.data?.proposals);
+  const recordedProposalIds = getRecordedProcessProposalIds(
+    asArray(processStateQuery.data?.proposalStates)
+  );
+  const suggestionBasisEventIds = getStringArray(
+    getRecordValue(getRecordValue(processProposalQuery.data, "metadata"), "eventIds")
+  );
+
+  return (
+    <DataPanel
+      title="Process proposals"
+      description="Adaptive primitive suggestions from daemon run state and ledger events. Recording a suggestion appends proposal material only."
+    >
+      <QueryState query={processProposalQuery}>
+        <KeyValueGrid
+          items={[
+            {
+              label: "Run id",
+              value: processProposalQuery.data?.runId ?? runId
+            },
+            {
+              label: "Session id",
+              value: processProposalQuery.data?.sessionId ?? "None"
+            },
+            {
+              label: "Suggested primitives",
+              value: proposals.length
+            },
+            {
+              label: "Suggestion event range",
+              value: formatEventRange(
+                getRecordValue(getRecordValue(processProposalQuery.data, "metadata"), "eventRange")
+              )
+            }
+          ]}
+        />
+        <ProcessProposalList
+          proposals={proposals}
+          renderActions={(proposal) =>
+            sessionId ? (
+              <RecordProcessSuggestionAction
+                runId={runId}
+                sessionId={sessionId}
+                proposal={proposal}
+                basedOnEventIds={suggestionBasisEventIds}
+                recorded={recordedProposalIds.has(getProcessProposalKey(proposal, 0))}
+              />
+            ) : null
+          }
+        />
+        <ProcessProposalObservations
+          observations={asArray(processProposalQuery.data?.observations)}
+        />
+      </QueryState>
+    </DataPanel>
+  );
+}
+
+function RunProcessGovernance({
+  runId,
+  sessionId
+}: {
+  runId: string;
+  sessionId: string;
+}) {
+  const { client } = useDaemonRuntime();
+  const processStateQuery = useQuery({
+    queryKey: ["run-process-proposal-states", sessionId],
+    queryFn: () => client.getProcessProposalStates(sessionId)
+  });
+  const states = asArray(processStateQuery.data?.proposalStates);
+
+  return (
+    <DataPanel
+      title="Process governance ledger"
+      description="Projected lifecycle state for recorded process proposals. Lifecycle events do not auto-execute primitives."
+    >
+      <QueryState query={processStateQuery}>
+        <KeyValueGrid
+          items={[
+            {
+              label: "Session id",
+              value: sessionId
+            },
+            {
+              label: "Ledger proposals",
+              value: states.length
+            },
+            {
+              label: "Projection event range",
+              value: formatEventRange(
+                getRecordValue(getRecordValue(processStateQuery.data, "projection"), "eventRange")
+              )
+            }
+          ]}
+        />
+        <ProcessProposalStateList runId={runId} sessionId={sessionId} states={states} />
+        <ProjectionMetadata projection={processStateQuery.data?.projection} />
+      </QueryState>
+    </DataPanel>
+  );
+}
+
+function ProcessProposalList({
+  proposals,
+  renderActions
+}: {
+  proposals: unknown[];
+  renderActions?: (proposal: unknown) => ReactNode;
+}) {
+  if (proposals.length === 0) {
+    return (
+      <EmptyState
+        title="No process proposals"
+        description="The daemon did not detect a next primitive suggestion for this run state."
+      />
+    );
+  }
+
+  return (
+    <div className="du-readable-list">
+      {proposals.map((proposal, index) => (
+        <ProcessProposalRecord
+          key={getProcessProposalKey(proposal, index)}
+          proposal={proposal}
+          actions={renderActions?.(proposal)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ProcessProposalRecord({
+  proposal,
+  actions
+}: {
+  proposal: unknown;
+  actions?: ReactNode;
+}) {
+  const primitive = getStringRecordValue(proposal, "primitive") ?? "Unknown primitive";
+  const targetIds = asArray(getRecordValue(proposal, "targetIds"));
+  const requestedBudget = getRecordValue(proposal, "requestedBudget");
+
+  return (
+    <article className="du-readable-item">
+      <p className="du-kicker">Process proposal</p>
+      <h4>{primitive}</h4>
+      <KeyValueGrid
+        items={[
+          {
+            label: "Proposal id",
+            value: formatRecordValue(getRecordValue(proposal, "id"))
+          },
+          {
+            label: "Status",
+            value: formatRecordValue(getRecordValue(proposal, "status"))
+          },
+          {
+            label: "Targets",
+            value: formatEventIds(targetIds)
+          }
+        ]}
+      />
+      <KeyValueGrid
+        items={[
+          {
+            label: "Expected gain",
+            value: formatRecordValue(getRecordValue(proposal, "expectedQualityGain"))
+          },
+          {
+            label: "Risk if skipped",
+            value: formatRecordValue(getRecordValue(proposal, "riskIfSkipped"))
+          }
+        ]}
+      />
+      <JsonBlock value={sanitizeForDisplay(requestedBudget ?? {})} />
+      {actions ? <div className="du-process-actions">{actions}</div> : null}
+    </article>
+  );
+}
+
+function RecordProcessSuggestionAction({
+  runId,
+  sessionId,
+  proposal,
+  basedOnEventIds,
+  recorded
+}: {
+  runId: string;
+  sessionId: string;
+  proposal: unknown;
+  basedOnEventIds: string[];
+  recorded: boolean;
+}) {
+  const { client } = useDaemonRuntime();
+  const queryClient = useQueryClient();
+  const recordMutation = useMutation({
+    mutationFn: () =>
+      client.proposeProcessProposal(sessionId, {
+        authorId: DEFAULT_PROCESS_AUTHOR_ID,
+        proposal: cloneJsonObject(proposal),
+        basedOnEventIds
+      }),
+    onSuccess: async () => {
+      await invalidateRunWorkspaceQueries(queryClient, runId, sessionId);
+    }
+  });
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => recordMutation.mutate()}
+        disabled={recorded || recordMutation.isPending}
+      >
+        {recorded
+          ? "Recorded in ledger"
+          : recordMutation.isPending
+            ? "Recording"
+            : "Record proposal in ledger"}
+      </button>
+      {recordMutation.data ? (
+        <StatusBanner
+          tone="ok"
+          title="Process proposal recorded"
+          detail="The daemon appended process proposal material only; no primitive was executed."
+        />
+      ) : null}
+      {recordMutation.isError ? (
+        <StatusBanner
+          tone="error"
+          title="Process proposal was not recorded"
+          detail={formatSafeErrorMessage(recordMutation.error)}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function ProcessProposalStateList({
+  runId,
+  sessionId,
+  states
+}: {
+  runId: string;
+  sessionId: string;
+  states: unknown[];
+}) {
+  if (states.length === 0) {
+    return (
+      <EmptyState
+        title="No recorded process proposals"
+        description="Record a run suggestion to create a challengeable process proposal event."
+      />
+    );
+  }
+
+  return (
+    <div className="du-readable-list">
+      {states.map((state, index) => (
+        <ProcessProposalStateRecord
+          key={getProcessProposalStateKey(state, index)}
+          runId={runId}
+          sessionId={sessionId}
+          state={state}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ProcessProposalStateRecord({
+  runId,
+  sessionId,
+  state
+}: {
+  runId: string;
+  sessionId: string;
+  state: unknown;
+}) {
+  const proposal = getRecordValue(state, "proposal") ?? {};
+  const primitive = getStringRecordValue(proposal, "primitive") ?? "Unknown primitive";
+  const proposalEventId = getStringRecordValue(state, "proposalEventId");
+  const latestStatus = getStringRecordValue(state, "latestStatus") ?? "unknown";
+  const challengeEventIds = asArray(getRecordValue(state, "challengeEventIds"));
+  const decisionEventIds = asArray(getRecordValue(state, "decisionEventIds"));
+
+  return (
+    <article className="du-readable-item">
+      <p className="du-kicker">Recorded process proposal</p>
+      <h4>{primitive}</h4>
+      <KeyValueGrid
+        items={[
+          {
+            label: "Proposal event",
+            value: formatRecordValue(proposalEventId)
+          },
+          {
+            label: "Proposal id",
+            value: formatRecordValue(getRecordValue(state, "proposalId"))
+          },
+          {
+            label: "Latest status",
+            value: latestStatus
+          },
+          {
+            label: "Challenges",
+            value: challengeEventIds.length
+          },
+          {
+            label: "Decisions",
+            value: decisionEventIds.length
+          },
+          {
+            label: "Targets",
+            value: formatEventIds(asArray(getRecordValue(proposal, "targetIds")))
+          }
+        ]}
+      />
+      {proposalEventId ? (
+        <ProcessProposalLifecycleControls
+          runId={runId}
+          sessionId={sessionId}
+          proposalEventId={proposalEventId}
+          latestStatus={latestStatus}
+        />
+      ) : (
+        <StatusBanner
+          tone="warning"
+          title="Lifecycle actions unavailable"
+          detail="The daemon projection did not include a proposal event id for this state."
+        />
+      )}
+    </article>
+  );
+}
+
+function ProcessProposalLifecycleControls({
+  runId,
+  sessionId,
+  proposalEventId,
+  latestStatus
+}: {
+  runId: string;
+  sessionId: string;
+  proposalEventId: string;
+  latestStatus: string;
+}) {
+  const { client } = useDaemonRuntime();
+  const queryClient = useQueryClient();
+  const [challengeReason, setChallengeReason] = useState("");
+  const [decisionStatus, setDecisionStatus] = useState<ProcessDecisionStatus>("accepted");
+  const [decisionRationale, setDecisionRationale] = useState("");
+  const challengeMutation = useMutation({
+    mutationFn: () =>
+      client.challengeProcessProposal(sessionId, proposalEventId, {
+        authorId: DEFAULT_PROCESS_REVIEWER_ID,
+        reason: challengeReason.trim()
+      }),
+    onSuccess: async () => {
+      setChallengeReason("");
+      await invalidateRunWorkspaceQueries(queryClient, runId, sessionId);
+    }
+  });
+  const decisionMutation = useMutation({
+    mutationFn: () =>
+      client.decideProcessProposal(sessionId, proposalEventId, {
+        authorId: DEFAULT_PROCESS_COORDINATOR_ID,
+        status: decisionStatus,
+        rationale: decisionRationale.trim()
+      }),
+    onSuccess: async () => {
+      setDecisionRationale("");
+      await invalidateRunWorkspaceQueries(queryClient, runId, sessionId);
+    }
+  });
+  const executionMutation = useMutation({
+    mutationFn: () => client.executeRunProcessProposal(runId, proposalEventId),
+    onSuccess: async () => {
+      await invalidateRunWorkspaceQueries(queryClient, runId, sessionId);
+    }
+  });
+  const canExecute = latestStatus === "accepted";
+
+  function submitChallenge(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (challengeReason.trim().length === 0) {
+      return;
+    }
+
+    challengeMutation.mutate();
+  }
+
+  function submitDecision(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (decisionRationale.trim().length === 0) {
+      return;
+    }
+
+    decisionMutation.mutate();
+  }
+
+  return (
+    <div className="du-lifecycle-grid">
+      <form className="du-lifecycle-form" onSubmit={submitChallenge}>
+        <label htmlFor={`challenge-${proposalEventId}`}>Challenge reason</label>
+        <input
+          id={`challenge-${proposalEventId}`}
+          value={challengeReason}
+          onChange={(event) => setChallengeReason(event.currentTarget.value)}
+        />
+        <button
+          type="submit"
+          disabled={challengeReason.trim().length === 0 || challengeMutation.isPending}
+        >
+          {challengeMutation.isPending ? "Recording challenge" : "Record challenge"}
+        </button>
+        {challengeMutation.data ? (
+          <StatusBanner
+            tone="ok"
+            title="Challenge recorded"
+            detail="The challenge was appended as process lifecycle material."
+          />
+        ) : null}
+        {challengeMutation.isError ? (
+          <StatusBanner
+            tone="error"
+            title="Challenge was not recorded"
+            detail={formatSafeErrorMessage(challengeMutation.error)}
+          />
+        ) : null}
+      </form>
+      <form className="du-lifecycle-form" onSubmit={submitDecision}>
+        <label htmlFor={`decision-status-${proposalEventId}`}>Decision status</label>
+        <select
+          id={`decision-status-${proposalEventId}`}
+          value={decisionStatus}
+          onChange={(event) => setDecisionStatus(event.currentTarget.value as ProcessDecisionStatus)}
+        >
+          <option value="accepted">accepted</option>
+          <option value="deferred">deferred</option>
+          <option value="rejected">rejected</option>
+        </select>
+        <label htmlFor={`decision-rationale-${proposalEventId}`}>Decision rationale</label>
+        <input
+          id={`decision-rationale-${proposalEventId}`}
+          value={decisionRationale}
+          onChange={(event) => setDecisionRationale(event.currentTarget.value)}
+        />
+        <button
+          type="submit"
+          disabled={decisionRationale.trim().length === 0 || decisionMutation.isPending}
+        >
+          {decisionMutation.isPending ? "Recording decision" : "Record decision"}
+        </button>
+        {decisionMutation.data ? (
+          <StatusBanner
+            tone="ok"
+            title="Decision recorded"
+            detail="The decision updated process state only; no primitive was executed."
+          />
+        ) : null}
+        {decisionMutation.isError ? (
+          <StatusBanner
+            tone="error"
+            title="Decision was not recorded"
+            detail={formatSafeErrorMessage(decisionMutation.error)}
+          />
+        ) : null}
+      </form>
+      <div className="du-lifecycle-form">
+        <p className="du-kicker">Execution</p>
+        <button
+          type="button"
+          onClick={() => executionMutation.mutate()}
+          disabled={!canExecute || executionMutation.isPending}
+        >
+          {executionMutation.isPending
+            ? "Executing accepted process proposal"
+            : "Execute accepted process proposal"}
+        </button>
+        {!canExecute ? (
+          <StatusBanner
+            tone="warning"
+            title="Execution unavailable"
+            detail={`Latest status is ${latestStatus}; the daemon only executes accepted process proposals.`}
+          />
+        ) : (
+          <StatusBanner
+            title="Explicit execution"
+            detail="Execution uses the daemon run start path for supported primitives; unsupported primitives return a safe error."
+          />
+        )}
+        {executionMutation.data ? <StartResult result={executionMutation.data} /> : null}
+        {executionMutation.isError ? (
+          <StatusBanner
+            tone="error"
+            title="Process proposal was not executed"
+            detail={formatSafeErrorMessage(executionMutation.error)}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ProcessProposalObservations({ observations }: { observations: unknown[] }) {
+  const readableObservations = observations.filter(
+    (observation): observation is string => typeof observation === "string"
+  );
+
+  if (readableObservations.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="du-readable-list">
+      <h4>Suggestion observations</h4>
+      {readableObservations.map((observation, index) => (
+        <article className="du-readable-item" key={`${index}:${observation}`}>
+          <p className="du-kicker">Observation {index + 1}</p>
+          <p>{observation}</p>
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -1288,6 +1907,10 @@ function formatEventIds(eventIds: unknown[]): string {
   return ids.length > 0 ? ids.join(", ") : "No event ids";
 }
 
+function getStringArray(value: unknown): string[] {
+  return asArray(value).filter((entry): entry is string => typeof entry === "string");
+}
+
 function formatEventRange(eventRange: unknown): string {
   const fromSequence = getRecordValue(eventRange, "fromSequence");
   const toSequence = getRecordValue(eventRange, "toSequence");
@@ -1303,11 +1926,40 @@ function cloneJsonObject(value: unknown): Record<string, unknown> {
   return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 }
 
+function getRecordedProcessProposalIds(states: unknown[]): Set<string> {
+  return new Set(
+    states
+      .map((state) => {
+        const proposal = getRecordValue(state, "proposal");
+
+        return (
+          getStringRecordValue(state, "proposalId") ??
+          getStringRecordValue(proposal, "id")
+        );
+      })
+      .filter((id): id is string => typeof id === "string" && id.length > 0)
+  );
+}
+
 function getProjectionRecordKey(record: unknown, fallback: number): string {
   const object = getRecordValue(record, "object") ?? record;
   const id = getRecordValue(object, "id");
 
   return typeof id === "string" && id.length > 0 ? id : `projection-record-${fallback}`;
+}
+
+function getProcessProposalKey(proposal: unknown, fallback: number): string {
+  const id = getRecordValue(proposal, "id");
+
+  return typeof id === "string" && id.length > 0 ? id : `process-proposal-${fallback}`;
+}
+
+function getProcessProposalStateKey(state: unknown, fallback: number): string {
+  return (
+    getStringRecordValue(state, "proposalEventId") ??
+    getStringRecordValue(state, "proposalId") ??
+    `process-proposal-state-${fallback}`
+  );
 }
 
 function getRunItemKey(run: unknown, fallback: number): string {

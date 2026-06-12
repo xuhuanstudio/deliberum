@@ -1,5 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
-import type { ResourceDeliveryPolicy, ResourceDeliveryPlan } from "@deliberum/resources";
+import type {
+  ResourceAccessReport,
+  ResourceDeliveryPolicy,
+  ResourceDeliveryPlan
+} from "@deliberum/resources";
 
 export const WEBGET_DEFAULT_TTL_MS = 10 * 60 * 1000;
 export const WEBGET_MAX_CHUNK_BYTES = 16 * 1024;
@@ -30,7 +34,7 @@ export type WebGETSession = {
   createdAt: number;
   expiresAt: number;
   committed: boolean;
-  resourceAccessReports: ResourceDeliveryPlan[];
+  resourceAccessReports: ResourceAccessReport[];
 };
 
 export type WebGETSessionPublicView = Omit<WebGETSession, "token"> & {
@@ -55,7 +59,7 @@ export type WebGETCommittedSubmission = {
   output: unknown;
   readReport: WebGETReadReport;
   contextCompleteness: WebGETContextCompleteness;
-  resourceAccessReports?: ResourceDeliveryPlan[];
+  resourceAccessReports?: ResourceAccessReport[];
 };
 
 export type WebGETSessionStoreOptions = {
@@ -140,16 +144,17 @@ export class WebGETSessionStore {
 
   recordResourceAccess(token: string, plan: ResourceDeliveryPlan): void {
     const session = this.getActiveSession(token);
+    const report = createResourceAccessReport(plan);
     const existingIndex = session.resourceAccessReports.findIndex(
-      (report) => report.resourceId === plan.resourceId
+      (existingReport) => existingReport.resourceId === report.resourceId
     );
 
     if (existingIndex >= 0) {
-      session.resourceAccessReports[existingIndex] = structuredClone(plan);
+      session.resourceAccessReports[existingIndex] = report;
       return;
     }
 
-    session.resourceAccessReports.push(structuredClone(plan));
+    session.resourceAccessReports.push(report);
   }
 
   submitChunk(
@@ -537,7 +542,7 @@ function parseContextCompleteness(input: unknown): WebGETContextCompleteness {
   };
 }
 
-function parseResourceAccessReports(input: unknown): ResourceDeliveryPlan[] {
+function parseResourceAccessReports(input: unknown): ResourceAccessReport[] {
   if (!Array.isArray(input)) {
     throw new Error("invalid resource access reports");
   }
@@ -574,6 +579,17 @@ function parseResourceAccessReports(input: unknown): ResourceDeliveryPlan[] {
       warnings: parseStringArray(record.warnings)
     };
   });
+}
+
+function createResourceAccessReport(plan: ResourceDeliveryPlan): ResourceAccessReport {
+  return {
+    resourceId: plan.resourceId,
+    participantId: plan.participantId,
+    selectedMode: plan.selectedMode,
+    allowed: plan.allowed,
+    reason: plan.reason,
+    warnings: [...plan.warnings]
+  };
 }
 
 function parsePlainRecord(input: unknown): Record<string, unknown> {

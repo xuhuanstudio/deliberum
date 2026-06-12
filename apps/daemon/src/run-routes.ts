@@ -63,7 +63,29 @@ export function registerRunRoutes(options: RunRouteOptions): void {
   });
 
   app.get("/runs/:runId/outcome", (context) =>
-    context.json(runService.getOutcome(context.req.param("runId")))
+    context.json(
+      runService.getOutcome(context.req.param("runId"), {
+        finalCandidateProposalEventId: normalizeOptionalQueryValue(
+          context.req.query("finalCandidateProposalEventId")
+        )
+      })
+    )
+  );
+
+  app.get("/runs/:runId/process-proposals", (context) =>
+    noStoreJson(context, runService.getProcessProposals(context.req.param("runId")))
+  );
+
+  app.post(
+    "/runs/:runId/process-proposals/:proposalEventId/execute",
+    async (context) => {
+      const result = await runService.executeAcceptedProcessProposal(
+        context.req.param("runId"),
+        context.req.param("proposalEventId")
+      );
+
+      return context.json(result);
+    }
   );
 
   app.get("/runs/:runId/events", (context) => {
@@ -160,6 +182,12 @@ function noStoreJson(context: Context, payload: unknown, status: 200 | 201 | 400
   response.headers.set("Pragma", "no-cache");
 
   return response;
+}
+
+function normalizeOptionalQueryValue(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
 }
 
 export function handleRunRouteError(context: Context, error: Error): Response | undefined {

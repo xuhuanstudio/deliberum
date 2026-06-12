@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App, createWebQueryClient } from "../src/App";
-import { resolveDaemonBaseUrl, type WebDaemonClient } from "../src/client";
+import {
+  resolveDaemonAuthToken,
+  resolveDaemonBaseUrl,
+  type WebDaemonClient
+} from "../src/client";
 
 const projection = {
   version: "1" as const,
@@ -58,6 +62,80 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       service: "deliberum-daemon",
       host: "127.0.0.1",
       port: 3877
+    })),
+    getRuntimeProfiles: vi.fn(async () => ({
+      profiles: [
+        {
+          id: "local-preset",
+          name: "Local preset",
+          enabled: true,
+          status: "ready",
+          components: [
+            {
+              id: "local-preset-alpha",
+              kind: "participant_adapter",
+              enabled: true
+            }
+          ],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+            envVars: [],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready_with_run_config",
+          components: [
+            {
+              id: "openai-compatible",
+              kind: "participant_adapter",
+              enabled: true
+            },
+            {
+              id: "openai-compatible-extractor",
+              kind: "extraction_generator",
+              enabled: false
+            }
+          ],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: [
+              "DELIBERUM_OPENAI_BASE_URL",
+              "DELIBERUM_OPENAI_MODEL"
+            ],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    })),
+    listSessions: vi.fn(async () => ({
+      sessions: [
+        {
+          sessionId: runDetail.sessionId,
+          topicContractEventId: "event-1",
+          title: "Stage 11 shell",
+          topic: "Evaluate the local daemon run workspace",
+          createdAt: "2026-06-10T00:00:00.000Z",
+          recordedAt: "2026-06-10T00:00:00.000Z",
+          latestEventRecordedAt: "2026-06-10T00:01:00.000Z",
+          eventCount: 7
+        }
+      ]
     })),
     listEvents: vi.fn(async () => ({
       events: [
@@ -153,6 +231,100 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         limitations: ["Needs further audit"]
       }
     })),
+    getRunProcessProposals: vi.fn(async () => ({
+      runId: runDetail.runId,
+      sessionId: runDetail.sessionId,
+      proposals: [
+        {
+          id: "adaptive:run-1:final_contest:abcd1234",
+          primitive: "final_contest",
+          status: "proposed",
+          targetIds: ["candidate-1"],
+          expectedQualityGain:
+            "Generate final candidate proposal material from the accepted active candidate frontier.",
+          riskIfSkipped:
+            "The run may stop before final candidate alternatives are explicitly proposed and auditable.",
+          requestedBudget: {
+            maxEvents: 2,
+            maxProviderCalls: 1
+          }
+        }
+      ],
+      observations: [
+        "Accepted active candidates are available without open evidence or repair targets."
+      ],
+      metadata: {
+        version: "1",
+        eventRange: {
+          fromSequence: 0,
+          toSequence: 6
+        },
+        eventIds: ["event-1", "proposal-event-1"]
+      }
+    })),
+    getProcessProposalStates: vi.fn(async () => ({
+      proposalStates: [],
+      projection
+    })),
+    proposeProcessProposal: vi.fn(async (_sessionId, input) => ({
+      proposalId:
+        typeof input.proposal === "object" &&
+        input.proposal !== null &&
+        "id" in input.proposal &&
+        typeof input.proposal.id === "string"
+          ? input.proposal.id
+          : "process-proposal-1",
+      event: {
+        id: "process-proposal-event-1",
+        type: "process_proposal_proposed",
+        payload: input.proposal,
+        basedOnEventIds: input.basedOnEventIds ?? []
+      }
+    })),
+    challengeProcessProposal: vi.fn(async (_sessionId, proposalEventId, input) => ({
+      event: {
+        id: "process-challenge-event-1",
+        type: "process_proposal_challenged",
+        basedOnEventIds: [proposalEventId],
+        payload: input
+      }
+    })),
+    decideProcessProposal: vi.fn(async (_sessionId, proposalEventId, input) => ({
+      event: {
+        id: "process-decision-event-1",
+        type: "process_proposal_decided",
+        basedOnEventIds: [proposalEventId],
+        payload: input
+      }
+    })),
+    executeRunProcessProposal: vi.fn(async () => ({
+      run: {
+        ...runDetail,
+        status: "running"
+      },
+      stages: [
+        {
+          stage: "sealed_divergence",
+          executionStatus: "executed",
+          roundId: "sealed-round-1",
+          status: "completed",
+          eventIds: ["event-8", "event-9"],
+          result: {}
+        }
+      ],
+      stopped: false,
+      processProposal: {
+        proposalEventId: "process-proposal-event-1",
+        proposalId: "process-proposal-1",
+        primitive: "sealed_divergence",
+        latestStatus: "accepted"
+      },
+      startRequest: {
+        sealedDivergence: {
+          autoCloseManual: true
+        }
+      }
+    })),
     getSessionFinal: vi.fn(async () => ({
       sessionId: runDetail.sessionId,
       status: "compiled",
@@ -173,6 +345,24 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           finalCandidateProposalEventId: "final-candidate-event-1",
           finalAuditEventIds: ["final-audit-event-1"]
         }
+      }
+    })),
+    proposeFinalCandidate: vi.fn(async (_sessionId, input) => ({
+      proposalId: "final-candidate-1",
+      appended: true,
+      event: {
+        id: "final-candidate-event-1",
+        type: "final_candidate_proposed",
+        payload: input
+      }
+    })),
+    auditFinalCandidate: vi.fn(async (_sessionId, proposalEventId, input) => ({
+      appended: true,
+      event: {
+        id: "final-audit-event-1",
+        type: "final_audit_recorded",
+        basedOnEventIds: [proposalEventId],
+        payload: input
       }
     })),
     getSessionResources: vi.fn(async () => ({
@@ -211,6 +401,62 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
             preferredDeliveryMode: "none"
           },
           registered: false
+        }
+      ],
+      deliveryAudits: [
+        {
+          eventId: "delivery-audit-event-1",
+          sequence: 8,
+          createdAt: "2026-06-10T00:02:00.000Z",
+          recordedAt: "2026-06-10T00:02:00.000Z",
+          basedOnEventIds: [],
+          resourceDeliveryId: "delivery-1",
+          resourceId: "resource-1",
+          participantId: "participant-1",
+          resource: {
+            kind: "text",
+            mime: "text/plain",
+            sizeBytes: 12,
+            hash: "hash-resource-1",
+            privacy: "public"
+          },
+          request: {
+            policy: {
+              requestedMode: "none"
+            }
+          },
+          result: {
+            selectedMode: "none",
+            allowed: false,
+            reason: "No resource delivery mode was selected.",
+            warnings: []
+          }
+        }
+      ],
+      accessAudits: [
+        {
+          eventId: "access-audit-event-1",
+          sequence: 9,
+          createdAt: "2026-06-10T00:02:05.000Z",
+          recordedAt: "2026-06-10T00:02:05.000Z",
+          basedOnEventIds: ["delivery-audit-event-1"],
+          action: "created" as const,
+          resourceAccessId: "resource-access-audit-1",
+          resourceId: "resource-1",
+          participantId: "participant-1",
+          resource: {
+            kind: "text",
+            mime: "text/plain",
+            sizeBytes: 12,
+            hash: "hash-resource-1",
+            privacy: "public"
+          },
+          grant: {
+            mode: "redirect",
+            exposure: "public",
+            tokenHash: "sha256:token-hash",
+            expiresAt: "2026-06-10T00:05:00.000Z"
+          }
         }
       ],
       evidenceNeeds: [
@@ -381,6 +627,12 @@ describe("@deliberum/web shell", () => {
         VITE_DELIBERUM_DAEMON_URL: " http://127.0.0.1:4888 "
       })
     ).toBe("http://127.0.0.1:4888");
+    expect(resolveDaemonAuthToken({})).toBeUndefined();
+    expect(
+      resolveDaemonAuthToken({
+        VITE_DELIBERUM_DAEMON_AUTH_TOKEN: " local-daemon-auth-token-123 "
+      })
+    ).toBe("local-daemon-auth-token-123");
   });
 
   it("opens sessions through explicit session-id navigation without stored session state", async () => {
@@ -399,6 +651,34 @@ describe("@deliberum/web shell", () => {
 
     await screen.findByText("Ledger position");
     await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
+  });
+
+  it("renders the daemon session catalog without owning session state", async () => {
+    const client = renderApp("/");
+
+    expect(await screen.findByText("Daemon sessions")).toBeTruthy();
+    await waitFor(() => expect(client.listSessions).toHaveBeenCalled());
+    expect(screen.getByText("Stage 11 shell")).toBeTruthy();
+    expect(screen.getByText("Evaluate the local daemon run workspace")).toBeTruthy();
+    expect(screen.getByText("event-1")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("link", { name: "Open session" }));
+
+    await screen.findByText("Ledger position");
+    await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
+  });
+
+  it("renders daemon runtime profile status without environment values", async () => {
+    const client = renderApp("/");
+
+    expect(await screen.findByText("Runtime profiles")).toBeTruthy();
+    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
+    expect(screen.getByText("Local preset")).toBeTruthy();
+    expect(screen.getByText("OpenAI-compatible")).toBeTruthy();
+    expect(screen.getByText("Ready")).toBeTruthy();
+    expect(screen.getByText("Ready with run config")).toBeTruthy();
+    expect(screen.getByText("DELIBERUM_OPENAI_BASE_URL, DELIBERUM_OPENAI_MODEL")).toBeTruthy();
+    expect(screen.queryByText("sk-openai-runtime-secret")).toBeNull();
   });
 
   it("renders the session overview from daemon ledger events", async () => {
@@ -564,6 +844,8 @@ describe("@deliberum/web shell", () => {
     await screen.findByText("Run detail");
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
+    await waitFor(() => expect(client.getRunProcessProposals).toHaveBeenCalledWith("run-1"));
+    await waitFor(() => expect(client.getProcessProposalStates).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
@@ -577,6 +859,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText(/sealed_until_reveal/)).toBeTruthy();
     expect(screen.getByText("Current run meaning")).toBeTruthy();
     expect(screen.getByText("Stage status")).toBeTruthy();
+    expect(screen.getByText("Process proposals")).toBeTruthy();
+    expect(screen.getByText("final_contest")).toBeTruthy();
+    expect(screen.getByText("Suggested primitives")).toBeTruthy();
+    expect(screen.getByText("Suggestion observations")).toBeTruthy();
+    expect(screen.getByText("Process governance ledger")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Record proposal in ledger" })).toBeTruthy();
+    expect(screen.getByText("No recorded process proposals")).toBeTruthy();
     expect(screen.getByText("Candidate Frontier projection")).toBeTruthy();
     expect(screen.getByText("Candidate A")).toBeTruthy();
     expect(screen.getByText("Objections projection")).toBeTruthy();
@@ -585,6 +874,232 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText(/quality-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Projection events").length).toBeGreaterThan(0);
     expect(client.listEvents).not.toHaveBeenCalled();
+  });
+
+  it("records a suggested process proposal into the session ledger", async () => {
+    let recorded = false;
+    const getProcessProposalStates = vi.fn(async () =>
+      recorded
+        ? {
+            proposalStates: [
+              {
+                proposalEventId: "process-proposal-event-1",
+                proposalId: "adaptive:run-1:final_contest:abcd1234",
+                latestStatus: "proposed",
+                proposal: {
+                  id: "adaptive:run-1:final_contest:abcd1234",
+                  primitive: "final_contest",
+                  status: "proposed",
+                  targetIds: ["candidate-1"]
+                },
+                challengeEventIds: [],
+                decisionEventIds: []
+              }
+            ],
+            projection
+          }
+        : {
+            proposalStates: [],
+            projection
+          }
+    );
+    const proposeProcessProposal = vi.fn(async (_sessionId: string, input: unknown) => {
+      recorded = true;
+
+      return {
+        proposalId: "adaptive:run-1:final_contest:abcd1234",
+        event: {
+          id: "process-proposal-event-1",
+          type: "process_proposal_proposed",
+          payload: input
+        }
+      };
+    });
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getProcessProposalStates,
+        proposeProcessProposal
+      })
+    );
+
+    await screen.findByText("Process proposals");
+    fireEvent.click(await screen.findByRole("button", { name: "Record proposal in ledger" }));
+
+    await waitFor(() =>
+      expect(proposeProcessProposal).toHaveBeenCalledWith("session-1", {
+        authorId: "system",
+        proposal: expect.objectContaining({
+          id: "adaptive:run-1:final_contest:abcd1234",
+          primitive: "final_contest",
+          status: "proposed"
+        }),
+        basedOnEventIds: ["event-1", "proposal-event-1"]
+      })
+    );
+    expect(await screen.findByText("Process proposal recorded")).toBeTruthy();
+    await waitFor(() => expect(getProcessProposalStates).toHaveBeenCalledTimes(2));
+    expect(client.startRun).not.toHaveBeenCalled();
+  });
+
+  it("records process proposal challenges and decisions without starting the run", async () => {
+    const challengeProcessProposal = vi.fn(async () => ({
+      event: {
+        id: "process-challenge-event-1",
+        type: "process_proposal_challenged"
+      }
+    }));
+    const decideProcessProposal = vi.fn(async () => ({
+      event: {
+        id: "process-decision-event-1",
+        type: "process_proposal_decided"
+      }
+    }));
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getProcessProposalStates: vi.fn(async () => ({
+          proposalStates: [
+            {
+              proposalEventId: "process-proposal-event-1",
+              proposalId: "process-proposal-1",
+              latestStatus: "proposed",
+              proposal: {
+                id: "process-proposal-1",
+                primitive: "evidence_check",
+                status: "proposed",
+                targetIds: ["candidate-1"]
+              },
+              challengeEventIds: [],
+              decisionEventIds: []
+            }
+          ],
+          projection
+        })),
+        challengeProcessProposal,
+        decideProcessProposal
+      })
+    );
+
+    await screen.findByText("Recorded process proposal");
+    fireEvent.change(screen.getByLabelText("Challenge reason"), {
+      target: {
+        value: "Evidence check should wait for one repair pass."
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Record challenge" }));
+
+    await waitFor(() =>
+      expect(challengeProcessProposal).toHaveBeenCalledWith(
+        "session-1",
+        "process-proposal-event-1",
+        {
+          authorId: "process-reviewer",
+          reason: "Evidence check should wait for one repair pass."
+        }
+      )
+    );
+    expect(await screen.findByText("Challenge recorded")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Decision status"), {
+      target: {
+        value: "deferred"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Decision rationale"), {
+      target: {
+        value: "Defer until the repair pass is visible in the ledger."
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Record decision" }));
+
+    await waitFor(() =>
+      expect(decideProcessProposal).toHaveBeenCalledWith(
+        "session-1",
+        "process-proposal-event-1",
+        {
+          authorId: "process-coordinator",
+          status: "deferred",
+          rationale: "Defer until the repair pass is visible in the ledger."
+        }
+      )
+    );
+    expect(await screen.findByText("Decision recorded")).toBeTruthy();
+    expect(client.startRun).not.toHaveBeenCalled();
+    expect(client.executeRunProcessProposal).not.toHaveBeenCalled();
+    expect(
+      (screen.getByRole("button", {
+        name: "Execute accepted process proposal"
+      }) as HTMLButtonElement).disabled
+    ).toBe(true);
+  });
+
+  it("executes accepted process proposals through the explicit daemon run path", async () => {
+    const executeRunProcessProposal = vi.fn(async () => ({
+      run: {
+        ...runDetail,
+        status: "revealed"
+      },
+      stages: [
+        {
+          stage: "sealed_divergence",
+          executionStatus: "executed",
+          roundId: "sealed-round-1",
+          status: "completed",
+          eventIds: ["sealed-opened-event-1", "sealed-revealed-event-1"],
+          result: {}
+        }
+      ],
+      stopped: false,
+      processProposal: {
+        proposalEventId: "process-proposal-event-1",
+        proposalId: "process-proposal-1",
+        primitive: "sealed_divergence",
+        latestStatus: "accepted"
+      },
+      startRequest: {
+        sealedDivergence: {
+          autoCloseManual: true
+        }
+      }
+    }));
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getProcessProposalStates: vi.fn(async () => ({
+          proposalStates: [
+            {
+              proposalEventId: "process-proposal-event-1",
+              proposalId: "process-proposal-1",
+              latestStatus: "accepted",
+              proposal: {
+                id: "process-proposal-1",
+                primitive: "sealed_divergence",
+                status: "proposed",
+                targetIds: ["participant-1", "participant-2"]
+              },
+              challengeEventIds: [],
+              decisionEventIds: ["process-decision-event-1"]
+            }
+          ],
+          projection
+        })),
+        executeRunProcessProposal
+      })
+    );
+
+    await screen.findByText("Recorded process proposal");
+    fireEvent.click(screen.getByRole("button", { name: "Execute accepted process proposal" }));
+
+    await waitFor(() =>
+      expect(executeRunProcessProposal).toHaveBeenCalledWith(
+        "run-1",
+        "process-proposal-event-1"
+      )
+    );
+    expect(await screen.findByText("Run request completed")).toBeTruthy();
+    expect(screen.getByText("Stage results")).toBeTruthy();
+    expect(client.startRun).not.toHaveBeenCalled();
   });
 
   it("follows daemon-redacted run events only after the user starts live follow", async () => {
@@ -863,6 +1378,35 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText(/Provisional compiled material/)).toBeTruthy();
   });
 
+  it("compiles run output for a selected proposal event", async () => {
+    const client = renderApp("/runs/run-1/outcome");
+    const getRunOutcome = vi.mocked(client.getRunOutcome);
+
+    await screen.findByText("Provisional outcome");
+    await waitFor(() => expect(getRunOutcome).toHaveBeenCalledWith("run-1"));
+
+    fireEvent.change(screen.getByLabelText("Candidate proposal event override"), {
+      target: {
+        value: " final-candidate-event-2 "
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Compile projection" }));
+
+    await waitFor(() =>
+      expect(getRunOutcome).toHaveBeenCalledWith("run-1", {
+        finalCandidateProposalEventId: "final-candidate-event-2"
+      })
+    );
+    expect(await screen.findByText("Specific final proposal selected")).toBeTruthy();
+    expect(screen.getByText("final-candidate-event-2")).toBeTruthy();
+
+    const callCountBeforeClear = getRunOutcome.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Use latest proposal" }));
+
+    await waitFor(() => expect(getRunOutcome.mock.calls.length).toBeGreaterThan(callCountBeforeClear));
+    expect(getRunOutcome.mock.calls.at(-1)).toEqual(["run-1"]);
+  });
+
   it("renders unavailable provisional outcome reasons safely", async () => {
     const client = createClient({
       getRunOutcome: vi.fn(async () => ({
@@ -899,6 +1443,131 @@ describe("@deliberum/web shell", () => {
     ).toEqual(["Final"]);
   });
 
+  it("compiles session final projection for a selected proposal event", async () => {
+    const client = renderApp("/sessions/session-1/final");
+    const getSessionFinal = vi.mocked(client.getSessionFinal);
+
+    await screen.findByText("Compiled outcome projection");
+    await waitFor(() => expect(getSessionFinal).toHaveBeenCalledWith("session-1"));
+
+    fireEvent.change(screen.getByLabelText("Candidate proposal event override"), {
+      target: {
+        value: " final-candidate-event-2 "
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Compile projection" }));
+
+    await waitFor(() =>
+      expect(getSessionFinal).toHaveBeenCalledWith("session-1", {
+        finalCandidateProposalEventId: "final-candidate-event-2"
+      })
+    );
+    expect(await screen.findByText("Specific final proposal selected")).toBeTruthy();
+    expect(screen.getByText("final-candidate-event-2")).toBeTruthy();
+
+    const callCountBeforeClear = getSessionFinal.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Use latest proposal" }));
+
+    await waitFor(() => expect(getSessionFinal.mock.calls.length).toBeGreaterThan(callCountBeforeClear));
+    expect(getSessionFinal.mock.calls.at(-1)).toEqual(["session-1"]);
+  });
+
+  it("submits session final lifecycle controls through daemon client methods", async () => {
+    const client = renderApp("/sessions/session-1/final");
+
+    await screen.findByText("Final lifecycle controls");
+    await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Final candidate proposal JSON") as HTMLTextAreaElement).value
+      ).toContain('"candidate-1"')
+    );
+    expect((screen.getByLabelText("Final audit JSON") as HTMLTextAreaElement).value).toContain(
+      '"final-candidate-event-1"'
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Propose final candidate" }));
+
+    await waitFor(() =>
+      expect(client.proposeFinalCandidate).toHaveBeenCalledWith(
+        "session-1",
+        expect.objectContaining({
+          authorId: "final-coordinator",
+          candidateIds: ["candidate-1"],
+          recommendation:
+            "Record a provisional final candidate from accepted candidate material."
+        })
+      )
+    );
+    expect(await screen.findByText(/final_candidate_proposed/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Record final audit" }));
+
+    await waitFor(() =>
+      expect(client.auditFinalCandidate).toHaveBeenCalledWith(
+        "session-1",
+        "final-candidate-event-1",
+        expect.objectContaining({
+          authorId: "final-auditor",
+          findings: ["The final candidate remains provisional."]
+        })
+      )
+    );
+    expect(await screen.findByText(/final_audit_recorded/)).toBeTruthy();
+    expect(client.getRunOutcome).not.toHaveBeenCalled();
+  });
+
+  it("disables final lifecycle controls until required daemon projections are available", async () => {
+    const client = createClient({
+      getFrontier: vi.fn(async () => ({
+        basis: "accepted_active_candidates",
+        candidates: [],
+        projection
+      })),
+      getSessionFinal: vi.fn(async () => ({
+        sessionId: runDetail.sessionId,
+        status: "compiled",
+        draftStatus: "provisional",
+        outcome: {
+          recommendation: "",
+          unresolvedQuestions: [],
+          continuationSuggestions: [],
+          limitations: [],
+          provenance: {
+            projectionBasis: "event_ledger_and_projections",
+            projectionVersion: "1",
+            eventRange: {
+              fromSequence: 0,
+              toSequence: 1
+            },
+            eventIds: ["event-1"],
+            finalAuditEventIds: []
+          }
+        }
+      }))
+    });
+
+    renderApp("/sessions/session-1/final", client);
+
+    await screen.findByText("Final lifecycle controls");
+    await screen.findByText("No accepted active candidates");
+    expect(screen.getByText("No final proposal event selected")).toBeTruthy();
+
+    const proposeButton = screen.getByRole("button", {
+      name: "Propose final candidate"
+    }) as HTMLButtonElement;
+    const auditButton = screen.getByRole("button", {
+      name: "Record final audit"
+    }) as HTMLButtonElement;
+
+    expect(proposeButton.disabled).toBe(true);
+    expect(auditButton.disabled).toBe(true);
+    fireEvent.click(proposeButton);
+    fireEvent.click(auditButton);
+    expect(client.proposeFinalCandidate).not.toHaveBeenCalled();
+    expect(client.auditFinalCandidate).not.toHaveBeenCalled();
+  });
+
   it("redacts daemon and generic errors on run pages", async () => {
     const client = createClient({
       getRun: vi.fn(async () => {
@@ -926,6 +1595,14 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Run-plan resources projected")).toBeTruthy();
     expect(screen.getByText("Registered resources")).toBeTruthy();
     expect(screen.getByText("1 of 2")).toBeTruthy();
+    expect(screen.getByText("Delivery audits")).toBeTruthy();
+    expect(screen.getByText("Resource delivery audits")).toBeTruthy();
+    expect(screen.getByText("Access audits")).toBeTruthy();
+    expect(screen.getByText("Resource access audits")).toBeTruthy();
+    expect(screen.getAllByText(/delivery-audit-event-1/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/delivery-1/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/access-audit-event-1/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/resource-access-audit-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/resource-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/resource-missing/).length).toBeGreaterThan(0);
     expect(screen.getByText("Accepted evidence needs")).toBeTruthy();

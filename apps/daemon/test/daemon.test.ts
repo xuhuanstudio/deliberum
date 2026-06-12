@@ -4,19 +4,34 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  HttpTemplateAdapterError,
   OpenAICompatibleAdapterError,
   type FetchLike,
+  type HttpTemplateFetchInit,
+  type HttpTemplateFetchLike,
   type OpenAICompatibleFetchInit
 } from "@deliberum/adapters";
+import {
+  RESOURCE_ACCESS_GRANT_CREATED_EVENT_TYPE,
+  RESOURCE_ACCESS_GRANT_REVOKED_EVENT_TYPE,
+  RESOURCE_DELIVERY_PLANNED_EVENT_TYPE
+} from "@deliberum/core";
 import { InMemoryResourceBroker } from "@deliberum/resources";
-import { InMemoryEventStore } from "@deliberum/storage";
+import { InMemoryEventStore, SQLiteEventStore } from "@deliberum/storage";
 import {
   AdapterRegistry,
+  CandidateRepairGeneratorRegistry,
+  EvidenceCheckGeneratorRegistry,
   ExtractionGeneratorRegistry,
   FinalAuditGeneratorRegistry,
   FinalCandidateGeneratorRegistry,
   InMemoryRunStore,
   ProposalReviewGeneratorRegistry,
+  type CandidateRepairContext,
+  type CandidateRepairGenerator,
+  type EvidenceCheckContext,
+  type EvidenceCheckGenerator,
+  type EvidenceCheckGeneratorResult,
   type ExtractionContext,
   type ExtractionGenerator,
   type ExtractionGeneratorResult,
@@ -32,14 +47,31 @@ import {
 import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
+  DAEMON_AUTH_TOKEN_ENV_VAR,
   DAEMON_CORS_ORIGINS_ENV_VAR,
   DAEMON_EVENT_STORE_PATH_ENV_VAR,
   DAEMON_RUN_STORE_PATH_ENV_VAR,
+  DAEMON_SQLITE_PATH_ENV_VAR,
   DEFAULT_DAEMON_CORS_ORIGINS,
+  HTTP_TEMPLATE_ADAPTER_ID,
+  HTTP_TEMPLATE_API_KEY_ENV_VAR,
+  HTTP_TEMPLATE_BASE_URL_ENV_VAR,
+  HTTP_TEMPLATE_BODY_ENV_VAR,
+  HTTP_TEMPLATE_ENDPOINT_PATH_ENV_VAR,
+  HTTP_TEMPLATE_HEADERS_JSON_ENV_VAR,
+  HTTP_TEMPLATE_METHOD_ENV_VAR,
+  HTTP_TEMPLATE_PROFILE_ENV_VAR,
+  HTTP_TEMPLATE_RESPONSE_FORMAT_ENV_VAR,
+  HTTP_TEMPLATE_RESPONSE_MODEL_ID_PATH_ENV_VAR,
+  HTTP_TEMPLATE_RESPONSE_PAYLOAD_PATH_ENV_VAR,
+  HTTP_TEMPLATE_TIMEOUT_MS_ENV_VAR,
+  HTTP_TEMPLATE_URL_ENV_VAR,
+  LOCAL_PRESET_ENV_VAR,
   OPENAI_COMPATIBLE_ADAPTER_ID,
   OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
   OPENAI_COMPATIBLE_BASE_URL_ENV_VAR,
   OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
+  OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR,
   OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR,
   OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
   OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR,
@@ -62,9 +94,14 @@ import {
   OPENAI_COMPATIBLE_STREAM_ENV_VAR,
   OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR,
   OPENAI_COMPATIBLE_THINKING_ENV_VAR,
+  OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR,
   OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
+  RESOURCE_ACCESS_BASE_URL_ENV_VAR,
+  RESOURCE_ACCESS_TTL_MS_ENV_VAR,
   createStartDaemonEventStore,
+  createStartDaemonResourceAccessStore,
+  createStartDaemonResourceStore,
   createStartDaemonRunStore,
   createDaemonApp,
   createOpenAICompatibleRunRegistries,
@@ -73,13 +110,22 @@ import {
   parseDaemonCorsOriginsFromEnv,
   resolveStartDaemonEventStorePath,
   resolveStartDaemonRunStorePath,
+  resolveStartDaemonAuthToken,
+  resolveStartDaemonResourceAccessBaseUrl,
+  resolveStartDaemonResourceAccessTtlMs,
+  resolveStartDaemonSQLitePath,
   resolveStartDaemonEnableOpenAICompatibleExtraction,
   resolveStartDaemonEnableOpenAICompatibleFinalization,
   resolveStartDaemonEnableOpenAICompatibleProfile,
   resolveStartDaemonEnableOpenAICompatibleReview,
+  resolveStartDaemonEnableHttpTemplateProfile,
   resolveStartDaemonEnableLocalPreset,
+  ResourceAccessGrantStore,
+  SQLiteResourceAccessGrantStore,
+  SQLiteRunStore,
   type DaemonApp
 } from "../src";
+import { SQLiteResourceBroker } from "../src/sqlite-resource-broker";
 import * as daemon from "../src";
 import type { Resource } from "@deliberum/resources";
 
@@ -296,13 +342,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-async function createSession(daemonApp: DaemonApp): Promise<{ sessionId: string; event: { type: string } }> {
+async function createSession(
+  daemonApp: DaemonApp
+): Promise<{ sessionId: string; event: { id: string; type: string } }> {
   const response = await postJson(daemonApp.app, "/sessions", {
     topicContract: topicContract()
   });
 
   expect(response.status).toBe(201);
-  return (await response.json()) as { sessionId: string; event: { type: string } };
+  return (await response.json()) as { sessionId: string; event: { id: string; type: string } };
 }
 
 async function openBatch(
@@ -566,6 +614,59 @@ function openAICompatibleRunPlan() {
   };
 }
 
+function httpTemplateRunPlan() {
+  return {
+    title: "HTTP-template sealed divergence",
+    topic: "Should Stage 22B expose opt-in HTTP-template provider-backed sealed participants?",
+    goals: ["Exercise provider-backed sealed divergence through daemon and orchestrator."],
+    constraints: ["Resolve provider keys from daemon env only."],
+    participants: [
+      {
+        id: "provider-alpha",
+        kind: "model",
+        displayName: "Provider alpha",
+        adapterId: HTTP_TEMPLATE_ADAPTER_ID,
+        providerConfigId: "provider-http-template"
+      }
+    ],
+    providerConfigs: [
+      {
+        id: "provider-http-template",
+        adapterId: HTTP_TEMPLATE_ADAPTER_ID,
+        providerConfigId: "provider-http-template",
+        modelId: "runtime-http-model",
+        baseUrl: "https://runtime.example/api",
+        endpointPath: "/contribute",
+        apiKeyEnvVar: HTTP_TEMPLATE_API_KEY_ENV_VAR,
+        timeoutMs: 1000,
+        httpTemplate: {
+          variables: {
+            mode: "sealed-divergence"
+          }
+        }
+      }
+    ],
+    budget: {
+      maxEvents: 20,
+      maxProviderCalls: 4
+    },
+    timeouts: {
+      participantMs: 1000,
+      overallMs: 30000
+    },
+    output: {
+      language: "en",
+      style: "concise",
+      expectations: ["Return contribution material only."]
+    },
+    sealedDivergence: {
+      purpose: "initial_divergence",
+      revealPolicy: "all_completed",
+      participantIds: ["provider-alpha"]
+    }
+  };
+}
+
 function openAICompatibleExtractionRunPlan() {
   const plan = localPresetRunPlan();
 
@@ -700,6 +801,7 @@ async function createRun(
 }
 
 type MockedFetchLike = ReturnType<typeof vi.fn> & FetchLike;
+type MockedHttpTemplateFetchLike = ReturnType<typeof vi.fn> & HttpTemplateFetchLike;
 
 function createOpenAICompatibleFetch(output = "provider sealed contribution"): MockedFetchLike {
   return vi.fn(async () => ({
@@ -715,6 +817,21 @@ function createOpenAICompatibleFetch(output = "provider sealed contribution"): M
       ]
     }))
   })) as unknown as MockedFetchLike;
+}
+
+function createHttpTemplateFetch(
+  output: Record<string, unknown> = {
+    model: "provider-http-model",
+    output: {
+      contribution: "HTTP-template provider sealed contribution"
+    }
+  }
+): MockedHttpTemplateFetchLike {
+  return vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    text: vi.fn(async () => JSON.stringify(output))
+  })) as unknown as MockedHttpTemplateFetchLike;
 }
 
 function createOpenAICompatibleExtractionFetch(options: {
@@ -1054,9 +1171,25 @@ function getOpenAICompatibleFetchCall(
   return call;
 }
 
+function getHttpTemplateFetchCall(
+  fetch: MockedHttpTemplateFetchLike,
+  index = 0
+): [string, HttpTemplateFetchInit] {
+  const call = fetch.mock.calls[index] as [string, HttpTemplateFetchInit] | undefined;
+
+  if (!call) {
+    throw new Error("Expected mocked HTTP-template fetch to be called.");
+  }
+
+  return call;
+}
+
 function createRunDaemon(options: {
   providerSecret?: string;
   resourceBroker?: InMemoryResourceBroker;
+  resourceAccessBaseUrl?: string;
+  resourceAccessTokenGenerator?: () => string;
+  resourceAccessTtlMs?: number;
   slowAdapter?: {
     adapterId: "fake-cli" | "fake-web";
     resolve: (resolvePayload: () => void) => void;
@@ -1067,6 +1200,9 @@ function createRunDaemon(options: {
     idGenerator: createIds(),
     clock,
     resourceBroker: options.resourceBroker,
+    resourceAccessBaseUrl: options.resourceAccessBaseUrl,
+    resourceAccessTokenGenerator: options.resourceAccessTokenGenerator,
+    resourceAccessTtlMs: options.resourceAccessTtlMs,
     runEnv: options.providerSecret
       ? {
           DELIBERUM_TEST_API_KEY: options.providerSecret
@@ -1084,6 +1220,12 @@ function createRunDaemon(options: {
     ]),
     runExtractionGeneratorRegistry: new ExtractionGeneratorRegistry([
       createExtractionGenerator()
+    ]),
+    runCandidateRepairGeneratorRegistry: new CandidateRepairGeneratorRegistry([
+      createCandidateRepairGenerator()
+    ]),
+    runEvidenceCheckGeneratorRegistry: new EvidenceCheckGeneratorRegistry([
+      createEvidenceCheckGenerator()
     ]),
     runProposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([
       createProposalReviewer()
@@ -1220,6 +1362,84 @@ function createExtractionResult(context: ExtractionContext): ExtractionGenerator
   };
 }
 
+function createCandidateRepairGenerator(): CandidateRepairGenerator {
+  return {
+    generatorId: "fake-repairer",
+    repairCandidate(_input, context) {
+      return createCandidateRepairResult(context);
+    }
+  };
+}
+
+function createCandidateRepairResult(context: CandidateRepairContext): ExtractionGeneratorResult {
+  const sourceEventIds = [context.metadata.allowedSourceEventIds[0]!];
+
+  return {
+    candidates: [
+      {
+        id: "candidate-daemon-run-api-repair",
+        title: "Repair local daemon run orchestration API",
+        description:
+          "Propose a repaired daemon API candidate that keeps authority boundaries explicit.",
+        sourceEventIds,
+        status: "active",
+        supportedBy: ["claim-daemon-repair-safe-view"],
+        attackedBy: [],
+        qualityObligationIds: ["quality-daemon-repair-reviewable"],
+        assumptions: ["Repair proposal material still requires explicit review."],
+        tradeoffs: ["The original accepted candidate remains active until a review accepts changes."]
+      }
+    ],
+    claims: [
+      {
+        id: "claim-daemon-repair-safe-view",
+        content:
+          "The repaired candidate answers authority risk by exposing only safe operational state.",
+        scope: "design",
+        sourceEventIds,
+        supports: ["candidate-daemon-run-api-repair"]
+      }
+    ],
+    objections: [],
+    evidenceNeeds: [],
+    qualityObligations: [
+      {
+        id: "quality-daemon-repair-reviewable",
+        scope: "candidate",
+        targetCandidateId: "candidate-daemon-run-api-repair",
+        requirement: "Keep repaired candidate material subject to proposal review.",
+        status: "answered",
+        sourceEventIds,
+        supportingRefIds: ["claim-daemon-repair-safe-view"],
+        unresolvedObjectionIds: []
+      }
+    ],
+    rationale:
+      "Generate candidate repair proposal material without accepting or finalizing it."
+  };
+}
+
+function createEvidenceCheckGenerator(): EvidenceCheckGenerator {
+  return {
+    generatorId: "fake-evidence-checker",
+    checkEvidence(_input, context) {
+      return createEvidenceCheckResult(context);
+    }
+  };
+}
+
+function createEvidenceCheckResult(context: EvidenceCheckContext): EvidenceCheckGeneratorResult {
+  return {
+    results: context.targetEvidenceNeeds.map((evidenceNeed) => ({
+      evidenceNeedId: evidenceNeed.object.id,
+      source: "Deterministic daemon evidence source",
+      summary: "Reported daemon evidence result for the target evidence need.",
+      limitations: ["Deterministic daemon evidence is not independent verification."]
+    })),
+    rationale: "Record reported evidence without claiming verification."
+  };
+}
+
 function createProposalReviewer(): ProposalReviewGenerator {
   return {
     reviewerId: "fake-reviewer",
@@ -1284,6 +1504,7 @@ function expectSafeRunApiPayload(value: unknown, secret = "sk-runtime-secret"): 
   expect(text).not.toContain("\"apiKey\"");
   expect(text).not.toContain("DELIBERUM_TEST_API_KEY");
   expect(text).not.toContain(OPENAI_COMPATIBLE_API_KEY_ENV_VAR);
+  expect(text).not.toContain(HTTP_TEMPLATE_API_KEY_ENV_VAR);
 
   for (const forbiddenTerm of [
     "winner",
@@ -1438,6 +1659,281 @@ describe("daemon API", () => {
     });
   });
 
+  it("can opt into daemon bearer authentication without blocking health or bearer resource routes", async () => {
+    const authToken = "local-daemon-auth-token-123";
+    const accessId = "Y".repeat(32);
+    const resourceAccessStore = new ResourceAccessGrantStore({
+      clock: () => Date.parse(clock()),
+      tokenGenerator: () => accessId
+    });
+    resourceAccessStore.createGrant({
+      resourceAccessId: "resource-access-auth-test",
+      sessionId: "session-auth-test",
+      resourceId: "resource-auth-test",
+      participantId: "participant-auth-test",
+      mode: "redirect",
+      exposure: "public",
+      targetUrl: "https://example.com/resource.txt",
+      ttlMs: 120000
+    });
+    const daemonApp = createDaemonApp({
+      daemonAuthToken: authToken,
+      resourceAccessStore,
+      idGenerator: createIds(),
+      clock
+    });
+    const healthResponse = await daemonApp.app.request("/health");
+    const unauthenticatedResponse = await daemonApp.app.request("/runtime/profiles");
+    const badAuthResponse = await daemonApp.app.request("/runtime/profiles", {
+      headers: {
+        Authorization: "Bearer wrong-token"
+      }
+    });
+    const authorizedResponse = await daemonApp.app.request("/runtime/profiles", {
+      headers: {
+        Authorization: `Bearer ${authToken}`
+      }
+    });
+    const preflightResponse = await daemonApp.app.request("/runtime/profiles", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://127.0.0.1:5173",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "authorization"
+      }
+    });
+    const resourceAccessResponse = await daemonApp.app.request(
+      `/resource-access/${accessId}`
+    );
+    const webgetTokenResponse = await daemonApp.app.request(
+      "/webget/missing-token/context/topic"
+    );
+    const unauthenticatedBody = (await unauthenticatedResponse.json()) as {
+      error: { code: string; message: string };
+    };
+    const badAuthBody = (await badAuthResponse.json()) as {
+      error: { code: string; message: string };
+    };
+    const unauthorizedText = JSON.stringify({
+      unauthenticatedBody,
+      badAuthBody
+    });
+
+    expect(healthResponse.status).toBe(200);
+    expect(unauthenticatedResponse.status).toBe(401);
+    expect(unauthenticatedResponse.headers.get("www-authenticate")).toBe(
+      'Bearer realm="deliberum-daemon"'
+    );
+    expectNoStore(unauthenticatedResponse);
+    expect(unauthenticatedBody.error).toEqual({
+      code: "daemon_auth_required",
+      message: "Daemon authentication is required."
+    });
+    expect(badAuthResponse.status).toBe(401);
+    expectNoStore(badAuthResponse);
+    expect(badAuthBody.error.code).toBe("daemon_auth_required");
+    expect(authorizedResponse.status).toBe(200);
+    expectNoStore(authorizedResponse);
+    expect(preflightResponse.status).toBe(204);
+    expect(preflightResponse.headers.get("access-control-allow-headers")).toContain(
+      "Authorization"
+    );
+    expect(resourceAccessResponse.status).toBe(302);
+    expect(resourceAccessResponse.headers.get("location")).toBe(
+      "https://example.com/resource.txt"
+    );
+    expectNoStore(resourceAccessResponse);
+    expect(webgetTokenResponse.status).toBe(400);
+    expect(unauthorizedText).not.toContain(authToken);
+    expect(daemonApp.eventStore.listEvents("session-auth-test")).toEqual([]);
+  });
+
+  it("returns safe runtime profile setup status without environment values", async () => {
+    const openAISecret = "sk-openai-runtime-secret";
+    const httpSecret = "http-template-runtime-secret";
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleExtraction: true,
+      enableOpenAICompatibleReview: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: openAISecret,
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://openai.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "runtime-openai-model",
+        [OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR]: "5000"
+      },
+      enableHttpTemplateProfile: true,
+      httpTemplateEnv: {
+        [HTTP_TEMPLATE_API_KEY_ENV_VAR]: httpSecret,
+        [HTTP_TEMPLATE_URL_ENV_VAR]: "https://http-template.example/invoke",
+        [HTTP_TEMPLATE_METHOD_ENV_VAR]: "POST",
+        [HTTP_TEMPLATE_BODY_ENV_VAR]: "{{runtime.apiKey}} {{input.payloadJson}}"
+      }
+    });
+
+    const response = await daemonApp.app.request("/runtime/profiles");
+    const body = (await response.json()) as {
+      profiles: Array<{
+        id: string;
+        enabled: boolean;
+        status: string;
+        components: Array<{ id: string; enabled: boolean }>;
+        setup: {
+          enableEnvVar: string;
+          envVars: Array<{
+            name: string;
+            configured: boolean;
+            secret: boolean;
+          }>;
+          missingRecommendedEnvVars: string[];
+        };
+      }>;
+    };
+    const text = JSON.stringify(body);
+    const localPreset = body.profiles.find((profile) => profile.id === "local-preset");
+    const openAI = body.profiles.find((profile) => profile.id === "openai-compatible");
+    const httpTemplate = body.profiles.find((profile) => profile.id === "http-template");
+
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(localPreset).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        status: "ready",
+        setup: expect.objectContaining({
+          enableEnvVar: LOCAL_PRESET_ENV_VAR
+        })
+      })
+    );
+    expect(openAI).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        status: "ready",
+        setup: expect.objectContaining({
+          enableEnvVar: OPENAI_COMPATIBLE_PROFILE_ENV_VAR,
+          missingRecommendedEnvVars: []
+        })
+      })
+    );
+    expect(openAI?.components).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: OPENAI_COMPATIBLE_ADAPTER_ID,
+          enabled: true
+        }),
+        expect.objectContaining({
+          id: OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+          enabled: true
+        }),
+        expect.objectContaining({
+          id: OPENAI_COMPATIBLE_REVIEWER_ID,
+          enabled: true
+        })
+      ])
+    );
+    expect(openAI?.setup.envVars).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
+          configured: true,
+          secret: true
+        }),
+        expect.objectContaining({
+          name: OPENAI_COMPATIBLE_BASE_URL_ENV_VAR,
+          configured: true,
+          secret: false
+        }),
+        expect.objectContaining({
+          name: OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR,
+          configured: false,
+          secret: false
+        })
+      ])
+    );
+    expect(httpTemplate).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        status: "ready",
+        setup: expect.objectContaining({
+          enableEnvVar: HTTP_TEMPLATE_PROFILE_ENV_VAR,
+          missingRecommendedEnvVars: []
+        })
+      })
+    );
+    expect(httpTemplate?.setup.envVars).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: HTTP_TEMPLATE_API_KEY_ENV_VAR,
+          configured: true,
+          secret: true
+        }),
+        expect.objectContaining({
+          name: HTTP_TEMPLATE_URL_ENV_VAR,
+          configured: true,
+          secret: false
+        }),
+        expect.objectContaining({
+          name: HTTP_TEMPLATE_BASE_URL_ENV_VAR,
+          configured: false,
+          secret: false
+        }),
+        expect.objectContaining({
+          name: HTTP_TEMPLATE_ENDPOINT_PATH_ENV_VAR,
+          configured: false,
+          secret: false
+        })
+      ])
+    );
+    expect(text).not.toContain(openAISecret);
+    expect(text).not.toContain(httpSecret);
+    expect(text).not.toContain("https://openai.example/api");
+    expect(text).not.toContain("runtime-openai-model");
+    expect(text).not.toContain("https://http-template.example/invoke");
+    expect(text).not.toContain("{{runtime.apiKey}}");
+
+    const runConfigBackedDaemon = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleProfile: true,
+      enableHttpTemplateProfile: true
+    });
+    const runConfigBackedBody = (await (
+      await runConfigBackedDaemon.app.request("/runtime/profiles")
+    ).json()) as typeof body;
+
+    expect(
+      runConfigBackedBody.profiles.find((profile) => profile.id === "openai-compatible")
+    ).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        status: "ready_with_run_config",
+        setup: expect.objectContaining({
+          missingRecommendedEnvVars: [
+            OPENAI_COMPATIBLE_BASE_URL_ENV_VAR,
+            OPENAI_COMPATIBLE_MODEL_ENV_VAR
+          ]
+        })
+      })
+    );
+    expect(
+      runConfigBackedBody.profiles.find((profile) => profile.id === "http-template")
+    ).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        status: "ready_with_run_config",
+        setup: expect.objectContaining({
+          missingRecommendedEnvVars: [
+            HTTP_TEMPLATE_URL_ENV_VAR,
+            HTTP_TEMPLATE_BASE_URL_ENV_VAR,
+            HTTP_TEMPLATE_ENDPOINT_PATH_ENV_VAR
+          ]
+        })
+      })
+    );
+  });
+
   it("allows only explicit local Web dev origins for CORS", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
     const loopbackResponse = await daemonApp.app.request("/runs", {
@@ -1525,7 +2021,9 @@ describe("daemon API", () => {
     );
     expect(response.headers.get("access-control-allow-origin")).not.toBe("*");
     expect(response.headers.get("access-control-allow-methods")).toBe("GET,POST,OPTIONS");
-    expect(response.headers.get("access-control-allow-headers")).toBe("Content-Type");
+    expect(response.headers.get("access-control-allow-headers")).toBe(
+      "Content-Type,Authorization"
+    );
   });
 
   it("returns structured safe errors without stack traces or internals", async () => {
@@ -1557,6 +2055,51 @@ describe("daemon API", () => {
     expect(bodyText).not.toContain("Authorization");
     expect(bodyText).not.toContain("SyntaxError");
     expect(bodyText).not.toContain("stack");
+  });
+
+  it("lists sessions as a safe ledger-derived catalog", async () => {
+    const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
+    const first = await createSession(daemonApp);
+    const second = await createSession(daemonApp);
+
+    await openBatch(daemonApp, first.sessionId);
+
+    const response = await daemonApp.app.request("/sessions");
+    const body = (await response.json()) as {
+      sessions: Array<Record<string, unknown>>;
+    };
+    const firstCatalog = body.sessions.find(
+      (session) => session.sessionId === first.sessionId
+    );
+    const secondCatalog = body.sessions.find(
+      (session) => session.sessionId === second.sessionId
+    );
+
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(body.sessions).toHaveLength(2);
+    expect(firstCatalog).toEqual({
+      sessionId: first.sessionId,
+      topicContractEventId: first.event.id,
+      title: "Daemon API skeleton",
+      topic: "Implement local daemon API skeleton",
+      createdAt: clock(),
+      recordedAt: clock(),
+      latestEventRecordedAt: clock(),
+      eventCount: 2
+    });
+    expect(secondCatalog).toEqual(
+      expect.objectContaining({
+        sessionId: second.sessionId,
+        topicContractEventId: second.event.id,
+        title: "Daemon API skeleton",
+        topic: "Implement local daemon API skeleton",
+        eventCount: 1
+      })
+    );
+    expect(JSON.stringify(body)).not.toContain("allowedAdapters");
+    expect(JSON.stringify(body)).not.toContain("governanceRules");
+    expect(JSON.stringify(body)).not.toContain("participantIds");
   });
 
   it("creates run records through orchestrator and returns safe run views only", async () => {
@@ -1731,6 +2274,159 @@ describe("daemon API", () => {
     expectSafeRunApiPayload(body);
   });
 
+  it("records daemon-backed session final candidate and audit lifecycle events", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const startResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    const frontierResponse = await daemonApp.app.request(
+      `/sessions/${created.run.sessionId}/frontier`
+    );
+    const frontier = (await frontierResponse.json()) as {
+      candidates: Array<{ object: { id: string } }>;
+    };
+    const candidateId = frontier.candidates[0]?.object.id;
+    const received: Array<{ id: string; type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(created.run.sessionId, (event) => {
+      received.push({
+        id: event.id,
+        type: event.type
+      });
+    });
+
+    expect(startResponse.status).toBe(200);
+    expect(frontierResponse.status).toBe(200);
+    expect(candidateId).toBeDefined();
+
+    try {
+      const proposalInput = {
+        authorId: "final-coordinator",
+        candidateIds: [candidateId],
+        recommendation: "Use the daemon lifecycle endpoint as final proposal material.",
+        applicabilityConditions: ["Only for accepted active candidates."],
+        rationale: "Record final proposal material through daemon control surfaces.",
+        limitations: ["Still requires final audit."],
+        idempotencyKey: "daemon-final-candidate-1"
+      };
+      const proposalResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/final-candidates`,
+        proposalInput
+      );
+      const proposalBody = (await proposalResponse.json()) as {
+        proposalId: string;
+        appended: boolean;
+        event: {
+          id: string;
+          type: string;
+          payload: {
+            candidateIds: string[];
+            status: string;
+          };
+        };
+      };
+      const retryResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/final-candidates`,
+        proposalInput
+      );
+      const retryBody = (await retryResponse.json()) as {
+        appended: boolean;
+        event: { id: string };
+      };
+      const auditResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/final-candidates/${proposalBody.event.id}/audits`,
+        {
+          authorId: "final-auditor",
+          findings: ["The final candidate is still provisional."],
+          risks: ["Evidence may remain incomplete."],
+          unresolvedObjectionIds: [],
+          qualityObligationIds: [],
+          evidenceNeedIds: [],
+          omissions: ["No external validation is recorded."],
+          compressionProblems: [],
+          limitations: ["Audit records boundaries only."],
+          continuationSuggestions: ["Resolve open evidence before external reliance."],
+          idempotencyKey: "daemon-final-audit-1"
+        }
+      );
+      const auditBody = (await auditResponse.json()) as {
+        appended: boolean;
+        event: {
+          id: string;
+          type: string;
+          basedOnEventIds: string[];
+          payload: {
+            targetFinalCandidateProposalEventId: string;
+            status: string;
+          };
+        };
+      };
+      const finalResponse = await daemonApp.app.request(
+        `/sessions/${created.run.sessionId}/final?finalCandidateProposalEventId=${encodeURIComponent(proposalBody.event.id)}`
+      );
+      const finalBody = (await finalResponse.json()) as {
+        outcome: {
+          recommendation: string;
+          provenance: {
+            finalCandidateProposalEventId?: string;
+            finalAuditEventIds: string[];
+          };
+        };
+      };
+
+      expect(proposalResponse.status).toBe(201);
+      expect(proposalBody.appended).toBe(true);
+      expect(proposalBody.event.type).toBe("final_candidate_proposed");
+      expect(proposalBody.event.payload).toMatchObject({
+        candidateIds: [candidateId],
+        status: "proposed"
+      });
+      expect(retryResponse.status).toBe(201);
+      expect(retryBody).toMatchObject({
+        appended: false,
+        event: {
+          id: proposalBody.event.id
+        }
+      });
+      expect(auditResponse.status).toBe(201);
+      expect(auditBody.appended).toBe(true);
+      expect(auditBody.event.type).toBe("final_audit_recorded");
+      expect(auditBody.event.basedOnEventIds).toEqual([proposalBody.event.id]);
+      expect(auditBody.event.payload).toMatchObject({
+        targetFinalCandidateProposalEventId: proposalBody.event.id,
+        status: "recorded"
+      });
+      expect(finalResponse.status).toBe(200);
+      expect(finalBody.outcome).toMatchObject({
+        recommendation: "Use the daemon lifecycle endpoint as final proposal material.",
+        provenance: {
+          finalCandidateProposalEventId: proposalBody.event.id,
+          finalAuditEventIds: [auditBody.event.id]
+        }
+      });
+      expect(received).toEqual([
+        {
+          id: proposalBody.event.id,
+          type: "final_candidate_proposed"
+        },
+        {
+          id: auditBody.event.id,
+          type: "final_audit_recorded"
+        }
+      ]);
+      expectSafeRunApiPayload(proposalBody);
+      expectSafeRunApiPayload(auditBody);
+      expectSafeRunApiPayload(finalBody);
+    } finally {
+      unsubscribe();
+    }
+  });
+
   it("projects session resources from the run plan with safe broker metadata and evidence needs", async () => {
     const resourceBroker = new InMemoryResourceBroker();
     const registeredUrlResource = resourceBroker.registerResource({
@@ -1833,6 +2529,16 @@ describe("daemon API", () => {
         rationale: "Accept resource projection fixture material for this local test."
       }
     );
+    const deliveryResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${registeredUrlResource.id}/deliveries`,
+      {
+        participantId: "participant-1",
+        policy: {
+          requestedMode: "none"
+        }
+      }
+    );
 
     const response = await daemonApp.app.request(
       `/sessions/${created.run.sessionId}/resources`
@@ -1845,9 +2551,19 @@ describe("daemon API", () => {
         reference: { resourceId: string; required?: boolean; preferredDeliveryMode?: string };
         resource?: { variants: Array<Record<string, unknown>> };
       }>;
+      deliveryAudits: Array<{
+        eventId: string;
+        resourceDeliveryId: string;
+        resourceId: string;
+        participantId: string;
+        resource: { kind: string; mime: string; sizeBytes: number; hash: string; privacy: string };
+        request: { policy?: { requestedMode?: string } };
+        result: { selectedMode: string; allowed: boolean; reason: string };
+      }>;
       evidenceNeeds: Array<{ object: { id: string; targetClaimId: string } }>;
     };
 
+    expect(deliveryResponse.status).toBe(200);
     expect(response.status).toBe(200);
     expectNoStore(response);
     expect(body.source).toEqual({
@@ -1913,6 +2629,31 @@ describe("daemon API", () => {
         }
       }
     ]);
+    expect(body.deliveryAudits).toMatchObject([
+      {
+        resourceId: registeredUrlResource.id,
+        participantId: "participant-1",
+        resource: {
+          kind: "text",
+          mime: "text/plain",
+          sizeBytes: 12,
+          hash: "hash-resource-url",
+          privacy: "public"
+        },
+        request: {
+          policy: {
+            requestedMode: "none"
+          }
+        },
+        result: {
+          selectedMode: "none",
+          allowed: false,
+          reason: "No resource delivery mode was selected."
+        }
+      }
+    ]);
+    expect(body.deliveryAudits[0]?.eventId).toBeDefined();
+    expect(body.deliveryAudits[0]?.resourceDeliveryId).toBeDefined();
     expect(body.evidenceNeeds).toEqual([
       expect.objectContaining({
         object: expect.objectContaining({
@@ -1929,6 +2670,780 @@ describe("daemon API", () => {
     expectSafeRunApiPayload(body);
   });
 
+  it("delivers session-scoped resources through the daemon planner without default content leaks", async () => {
+    const resourceBroker = new InMemoryResourceBroker();
+    const publicResource = resourceBroker.registerResource({
+      resource: publicUrlResource("daemon-delivery-url")
+    });
+    const b64Resource = resourceBroker.registerResource({
+      resource: base64Resource("daemon-delivery-base64"),
+      contents: [
+        {
+          dataRef: "base64-ref",
+          base64: Buffer.from("hello world").toString("base64")
+        }
+      ]
+    });
+    const sensitiveResource = resourceBroker.registerResource({
+      resource: sensitiveUrlResource("daemon-delivery-sensitive")
+    });
+    const daemonApp = createRunDaemon({
+      resourceBroker
+    });
+    const created = await createRun(daemonApp, {
+      ...orchestratedRunPlan(),
+      resources: [
+        {
+          resourceId: publicResource.id,
+          required: true,
+          preferredDeliveryMode: "url"
+        },
+        {
+          resourceId: b64Resource.id,
+          required: false,
+          preferredDeliveryMode: "base64"
+        },
+        {
+          resourceId: sensitiveResource.id,
+          required: false,
+          preferredDeliveryMode: "url"
+        }
+      ]
+    });
+
+    const deniedUrlResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${publicResource.id}/deliveries`,
+      {
+        participantId: "participant-1"
+      }
+    );
+    const deniedUrlText = await deniedUrlResponse.text();
+    const deniedUrl = JSON.parse(deniedUrlText) as {
+      delivery: { selectedMode: string; allowed: boolean };
+      auditEvent: { id: string; type: string; appended: boolean };
+    };
+
+    expect(deniedUrlResponse.status).toBe(200);
+    expectNoStore(deniedUrlResponse);
+    expect(deniedUrl.delivery).toMatchObject({
+      selectedMode: "none",
+      allowed: false
+    });
+    expect(deniedUrl.auditEvent).toMatchObject({
+      type: RESOURCE_DELIVERY_PLANNED_EVENT_TYPE,
+      appended: true
+    });
+    expect(deniedUrlText).not.toContain("https://example.com/resource.txt");
+
+    const allowedBase64Response = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${b64Resource.id}/deliveries`,
+      {
+        participantId: "participant-1",
+        policy: {
+          requestedMode: "base64",
+          allowBase64: true,
+          maxBase64SizeBytes: 64
+        }
+      }
+    );
+    const allowedBase64 = (await allowedBase64Response.json()) as {
+      sessionId: string;
+      resource: { variants: Array<Record<string, unknown>> };
+      delivery: {
+        selectedMode: string;
+        allowed: boolean;
+        delivery?: { data?: string };
+      };
+      auditEvent: { id: string; type: string; appended: boolean };
+    };
+
+    expect(allowedBase64Response.status).toBe(200);
+    expectNoStore(allowedBase64Response);
+    expect(allowedBase64.sessionId).toBe(created.run.sessionId);
+    expect(allowedBase64.resource.variants).toEqual([
+      {
+        mode: "base64",
+        mime: "text/plain",
+        sizeBytes: 11
+      }
+    ]);
+    expect(allowedBase64.delivery).toMatchObject({
+      selectedMode: "base64",
+      allowed: true,
+      delivery: {
+        data: Buffer.from("hello world").toString("base64")
+      }
+    });
+    expect(allowedBase64.auditEvent).toMatchObject({
+      type: RESOURCE_DELIVERY_PLANNED_EVENT_TYPE,
+      appended: true
+    });
+
+    const sensitiveResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${sensitiveResource.id}/deliveries`,
+      {
+        participantId: "participant-1",
+        policy: {
+          requestedMode: "url",
+          allowPublicUrl: true
+        }
+      }
+    );
+    const sensitiveText = await sensitiveResponse.text();
+    const sensitive = JSON.parse(sensitiveText) as {
+      delivery: { selectedMode: string; allowed: boolean };
+      auditEvent: { id: string; type: string; appended: boolean };
+    };
+
+    expect(sensitiveResponse.status).toBe(200);
+    expectNoStore(sensitiveResponse);
+    expect(sensitive.delivery).toMatchObject({
+      selectedMode: "none",
+      allowed: false
+    });
+    expect(sensitive.auditEvent).toMatchObject({
+      type: RESOURCE_DELIVERY_PLANNED_EVENT_TYPE,
+      appended: true
+    });
+    expect(sensitiveText).not.toContain("api_key");
+    expect(sensitiveText).not.toContain("secret-value");
+    const auditEvents = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .filter((event) => event.type === RESOURCE_DELIVERY_PLANNED_EVENT_TYPE);
+    const serializedAuditEvents = JSON.stringify(auditEvents);
+
+    expect(auditEvents).toHaveLength(3);
+    expect(auditEvents[0]).toMatchObject({
+      authorId: "system",
+      visibility: "public",
+      trace: {
+        participantId: "participant-1"
+      },
+      payload: {
+        resourceId: publicResource.id,
+        participantId: "participant-1",
+        result: {
+          selectedMode: "none",
+          allowed: false
+        }
+      }
+    });
+    expect(auditEvents[1]).toMatchObject({
+      payload: {
+        resourceId: b64Resource.id,
+        result: {
+          selectedMode: "base64",
+          allowed: true,
+          materialKind: "base64"
+        },
+        request: {
+          policy: {
+            requestedMode: "base64",
+            allowBase64: true,
+            maxBase64SizeBytes: 64
+          }
+        }
+      }
+    });
+    expect(serializedAuditEvents).not.toContain("https://example.com/resource.txt");
+    expect(serializedAuditEvents).not.toContain(Buffer.from("hello world").toString("base64"));
+    expect(serializedAuditEvents).not.toContain("base64-ref");
+    expect(serializedAuditEvents).not.toContain("api_key");
+    expect(serializedAuditEvents).not.toContain("secret-value");
+
+    const unscopedResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/resource-not-in-run-plan/deliveries`,
+      {
+        participantId: "participant-1"
+      }
+    );
+    const unscoped = (await unscopedResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(unscopedResponse.status).toBe(400);
+    expectNoStore(unscopedResponse);
+    expect(unscoped.error).toEqual({
+      code: "resource_not_scoped",
+      message: "Resource is not scoped to this session."
+    });
+    expect(
+      daemonApp.eventStore
+        .listEvents(created.run.sessionId)
+        .filter((event) => event.type === RESOURCE_DELIVERY_PLANNED_EVENT_TYPE)
+    ).toHaveLength(3);
+  });
+
+  it("wraps allowed URL deliveries in revocable daemon resource access grants", async () => {
+    const accessId = "R".repeat(32);
+    const resourceBroker = new InMemoryResourceBroker();
+    const publicResource = resourceBroker.registerResource({
+      resource: publicUrlResource("daemon-delivery-signed-url")
+    });
+    const daemonApp = createRunDaemon({
+      resourceBroker,
+      resourceAccessBaseUrl: "https://access.example",
+      resourceAccessTokenGenerator: createTokenGenerator([accessId]),
+      resourceAccessTtlMs: 120000
+    });
+    const created = await createRun(daemonApp, {
+      ...orchestratedRunPlan(),
+      resources: [
+        {
+          resourceId: publicResource.id,
+          required: true,
+          preferredDeliveryMode: "url"
+        }
+      ]
+    });
+    const response = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${publicResource.id}/deliveries`,
+      {
+        participantId: "participant-1",
+        policy: {
+          requestedMode: "url",
+          allowPublicUrl: true
+        }
+      }
+    );
+    const text = await response.text();
+    const body = JSON.parse(text) as {
+      delivery: {
+        selectedMode: string;
+        allowed: boolean;
+        warnings: string[];
+        delivery?: {
+          mode: string;
+          url: string;
+          exposure: string;
+          expiresAt: string;
+        };
+      };
+      auditEvent: { id: string; type: string; appended: boolean };
+    };
+    const accessUrl = body.delivery.delivery?.url;
+
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(body.delivery).toMatchObject({
+      selectedMode: "url",
+      allowed: true,
+      delivery: {
+        mode: "url",
+        url: `https://access.example/resource-access/${accessId}`,
+        exposure: "public",
+        expiresAt: "2026-06-10T00:02:00.000Z"
+      }
+    });
+    expect(body.delivery.warnings).toContain(
+      "URL delivery uses a revocable daemon resource access grant."
+    );
+    expect(text).not.toContain("https://example.com/resource.txt");
+    expect(body.auditEvent).toMatchObject({
+      type: RESOURCE_DELIVERY_PLANNED_EVENT_TYPE,
+      appended: true
+    });
+
+    if (!accessUrl) {
+      throw new Error("Expected signed resource access URL.");
+    }
+
+    const accessPath = new URL(accessUrl).pathname;
+    const accessResponse = await daemonApp.app.request(accessPath);
+
+    expect(accessResponse.status).toBe(302);
+    expectNoStore(accessResponse);
+    expect(accessResponse.headers.get("location")).toBe(
+      "https://example.com/resource.txt"
+    );
+
+    const revokeResponse = await postJson(
+      daemonApp.app,
+      `${accessPath}/revoke`,
+      {}
+    );
+    const revoked = (await revokeResponse.json()) as {
+      revoked: boolean;
+      grant: {
+        resourceAccessId: string;
+        resourceId: string;
+        accessCount: number;
+        revokedAt: string;
+      };
+    };
+
+    expect(revokeResponse.status).toBe(200);
+    expectNoStore(revokeResponse);
+    expect(revoked).toMatchObject({
+      revoked: true,
+      grant: {
+        resourceId: publicResource.id,
+        accessCount: 1,
+        revokedAt: "2026-06-10T00:00:00.000Z"
+      }
+    });
+
+    const revokedAccessResponse = await daemonApp.app.request(accessPath);
+    const revokedAccess = (await revokedAccessResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(revokedAccessResponse.status).toBe(400);
+    expectNoStore(revokedAccessResponse);
+    expect(revokedAccess.error.code).toBe("resource_access_revoked");
+
+    const accessAuditEvents = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .filter(
+        (event) =>
+          event.type === RESOURCE_ACCESS_GRANT_CREATED_EVENT_TYPE ||
+          event.type === RESOURCE_ACCESS_GRANT_REVOKED_EVENT_TYPE
+      );
+    const serializedAccessAuditEvents = JSON.stringify(accessAuditEvents);
+
+    expect(accessAuditEvents).toHaveLength(2);
+    expect(accessAuditEvents[0]).toMatchObject({
+      type: RESOURCE_ACCESS_GRANT_CREATED_EVENT_TYPE,
+      payload: {
+        resourceAccessId: revoked.grant.resourceAccessId,
+        resourceId: publicResource.id,
+        participantId: "participant-1",
+        resource: {
+          kind: "text",
+          mime: "text/plain",
+          sizeBytes: 12,
+          hash: "hash-daemon-delivery-signed-url",
+          privacy: "public"
+        },
+        grant: {
+          mode: "redirect",
+          exposure: "public",
+          expiresAt: "2026-06-10T00:02:00.000Z",
+          tokenHash: expect.any(String)
+        }
+      }
+    });
+    expect(accessAuditEvents[1]).toMatchObject({
+      type: RESOURCE_ACCESS_GRANT_REVOKED_EVENT_TYPE,
+      payload: {
+        resourceAccessId: revoked.grant.resourceAccessId,
+        resourceId: publicResource.id,
+        participantId: "participant-1",
+        revokedAt: "2026-06-10T00:00:00.000Z",
+        grant: {
+          mode: "redirect",
+          exposure: "public",
+          expiresAt: "2026-06-10T00:02:00.000Z",
+          tokenHash: expect.any(String)
+        }
+      }
+    });
+    expect(serializedAccessAuditEvents).not.toContain("https://example.com/resource.txt");
+    expect(serializedAccessAuditEvents).not.toContain(accessId);
+    expect(serializedAccessAuditEvents).not.toContain("access.example");
+
+    const resourcesResponse = await daemonApp.app.request(
+      `/sessions/${created.run.sessionId}/resources`
+    );
+    const resourcesText = await resourcesResponse.text();
+    const resourcesBody = JSON.parse(resourcesText) as {
+      accessAudits: Array<{
+        action: string;
+        resourceAccessId: string;
+        resourceId: string;
+        grant: { mode: string; tokenHash: string };
+        revokedAt?: string;
+      }>;
+    };
+
+    expect(resourcesResponse.status).toBe(200);
+    expectNoStore(resourcesResponse);
+    expect(resourcesBody.accessAudits).toEqual([
+      expect.objectContaining({
+        action: "created",
+        resourceAccessId: revoked.grant.resourceAccessId,
+        resourceId: publicResource.id,
+        grant: expect.objectContaining({
+          mode: "redirect",
+          tokenHash: expect.any(String)
+        })
+      }),
+      expect.objectContaining({
+        action: "revoked",
+        resourceAccessId: revoked.grant.resourceAccessId,
+        resourceId: publicResource.id,
+        revokedAt: "2026-06-10T00:00:00.000Z",
+        grant: expect.objectContaining({
+          mode: "redirect",
+          tokenHash: expect.any(String)
+        })
+      })
+    ]);
+    expect(resourcesText).not.toContain("https://example.com/resource.txt");
+    expect(resourcesText).not.toContain(accessId);
+    expect(resourcesText).not.toContain("access.example");
+
+    const auditEvents = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .filter((event) => event.type === RESOURCE_DELIVERY_PLANNED_EVENT_TYPE);
+    const serializedAuditEvents = JSON.stringify(auditEvents);
+
+    expect(auditEvents).toHaveLength(1);
+    expect(auditEvents[0]).toMatchObject({
+      payload: {
+        resourceId: publicResource.id,
+        result: {
+          selectedMode: "url",
+          allowed: true,
+          materialKind: "url"
+        }
+      }
+    });
+    expect(serializedAuditEvents).not.toContain("https://example.com/resource.txt");
+    expect(serializedAuditEvents).not.toContain(accessId);
+    expect(serializedAuditEvents).not.toContain("access.example");
+    expectSafeRunApiPayload(body);
+    expectSafeRunApiPayload(revoked);
+    expectSafeRunApiPayload(revokedAccess);
+  });
+
+  it("hosts registered in-memory base64 content through revocable resource access grants", async () => {
+    const accessId = "H".repeat(32);
+    const contentBase64 = Buffer.from("hello world").toString("base64");
+    const resourceBroker = new InMemoryResourceBroker();
+    const hostedResource = resourceBroker.registerResource({
+      resource: base64Resource("daemon-delivery-hosted-content", "hosted-content-ref"),
+      contents: [
+        {
+          dataRef: "hosted-content-ref",
+          base64: contentBase64
+        }
+      ]
+    });
+    const daemonApp = createRunDaemon({
+      resourceBroker,
+      resourceAccessTokenGenerator: createTokenGenerator([accessId]),
+      resourceAccessTtlMs: 120000
+    });
+    const created = await createRun(daemonApp, {
+      ...orchestratedRunPlan(),
+      resources: [
+        {
+          resourceId: hostedResource.id,
+          required: true,
+          preferredDeliveryMode: "url"
+        }
+      ]
+    });
+    const response = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${hostedResource.id}/deliveries`,
+      {
+        participantId: "participant-1",
+        policy: {
+          requestedMode: "url",
+          allowLocalhostUrl: true,
+          allowHostedContentUrl: true,
+          maxHostedContentSizeBytes: 64
+        }
+      }
+    );
+    const text = await response.text();
+    const body = JSON.parse(text) as {
+      delivery: {
+        selectedMode: string;
+        allowed: boolean;
+        reason: string;
+        delivery?: {
+          mode: string;
+          url: string;
+          exposure: string;
+          expiresAt: string;
+        };
+      };
+    };
+    const accessUrl = body.delivery.delivery?.url;
+
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(body.delivery).toMatchObject({
+      selectedMode: "url",
+      allowed: true,
+      reason: "Hosted content URL delivery is explicitly allowed by policy.",
+      delivery: {
+        mode: "url",
+        url: `http://127.0.0.1:3877/resource-access/${accessId}`,
+        exposure: "localhost",
+        expiresAt: "2026-06-10T00:02:00.000Z"
+      }
+    });
+    expect(text).not.toContain(contentBase64);
+    expect(text).not.toContain("hosted-content-ref");
+
+    if (!accessUrl) {
+      throw new Error("Expected hosted content access URL.");
+    }
+
+    const accessResponse = await daemonApp.app.request(new URL(accessUrl).pathname);
+    const accessText = await accessResponse.text();
+
+    expect(accessResponse.status).toBe(200);
+    expectNoStore(accessResponse);
+    expect(accessResponse.headers.get("content-type")).toBe("text/plain");
+    expect(accessResponse.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(accessText).toBe("hello world");
+
+    const accessAuditEvents = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .filter((event) => event.type === RESOURCE_ACCESS_GRANT_CREATED_EVENT_TYPE);
+    const serializedAccessAuditEvents = JSON.stringify(accessAuditEvents);
+
+    expect(accessAuditEvents).toHaveLength(1);
+    expect(accessAuditEvents[0]).toMatchObject({
+      type: RESOURCE_ACCESS_GRANT_CREATED_EVENT_TYPE,
+      payload: {
+        resourceId: hostedResource.id,
+        participantId: "participant-1",
+        resource: {
+          kind: "text",
+          mime: "text/plain",
+          sizeBytes: 11,
+          hash: "hash-daemon-delivery-hosted-content",
+          privacy: "public"
+        },
+        grant: {
+          mode: "content",
+          exposure: "localhost",
+          expiresAt: "2026-06-10T00:02:00.000Z",
+          tokenHash: expect.any(String),
+          content: {
+            mime: "text/plain",
+            sizeBytes: 11,
+            hash: "hash-daemon-delivery-hosted-content"
+          }
+        }
+      }
+    });
+    expect(serializedAccessAuditEvents).not.toContain(contentBase64);
+    expect(serializedAccessAuditEvents).not.toContain("hosted-content-ref");
+    expect(serializedAccessAuditEvents).not.toContain(accessId);
+
+    const resourcesResponse = await daemonApp.app.request(
+      `/sessions/${created.run.sessionId}/resources`
+    );
+    const resourcesText = await resourcesResponse.text();
+    const resourcesBody = JSON.parse(resourcesText) as {
+      accessAudits: Array<{
+        action: string;
+        resourceId: string;
+        grant: { mode: string; content?: { hash: string } };
+      }>;
+    };
+
+    expect(resourcesResponse.status).toBe(200);
+    expectNoStore(resourcesResponse);
+    expect(resourcesBody.accessAudits).toEqual([
+      expect.objectContaining({
+        action: "created",
+        resourceId: hostedResource.id,
+        grant: expect.objectContaining({
+          mode: "content",
+          content: {
+            mime: "text/plain",
+            sizeBytes: 11,
+            hash: "hash-daemon-delivery-hosted-content"
+          }
+        })
+      })
+    ]);
+    expect(resourcesText).not.toContain(contentBase64);
+    expect(resourcesText).not.toContain("hosted-content-ref");
+    expect(resourcesText).not.toContain(accessId);
+
+    const auditEvents = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .filter((event) => event.type === RESOURCE_DELIVERY_PLANNED_EVENT_TYPE);
+    const serializedAuditEvents = JSON.stringify(auditEvents);
+
+    expect(auditEvents).toHaveLength(1);
+    expect(auditEvents[0]).toMatchObject({
+      payload: {
+        resourceId: hostedResource.id,
+        request: {
+          policy: {
+            requestedMode: "url",
+            allowLocalhostUrl: true,
+            allowHostedContentUrl: true,
+            maxHostedContentSizeBytes: 64
+          }
+        },
+        result: {
+          selectedMode: "url",
+          allowed: true,
+          materialKind: "url"
+        }
+      }
+    });
+    expect(serializedAuditEvents).not.toContain(contentBase64);
+    expect(serializedAuditEvents).not.toContain("hosted-content-ref");
+    expect(serializedAuditEvents).not.toContain(accessId);
+    expect(serializedAuditEvents).not.toContain("resource-access");
+    expectSafeRunApiPayload(body);
+  });
+
+  it("deduplicates resource delivery audit events with idempotency keys", async () => {
+    const resourceBroker = new InMemoryResourceBroker();
+    const b64Resource = resourceBroker.registerResource({
+      resource: base64Resource(
+        "daemon-delivery-idempotent-base64",
+        "idempotent-base64-ref"
+      ),
+      contents: [
+        {
+          dataRef: "idempotent-base64-ref",
+          base64: Buffer.from("repeatable content").toString("base64")
+        }
+      ]
+    });
+    const daemonApp = createRunDaemon({
+      resourceBroker
+    });
+    const created = await createRun(daemonApp, {
+      ...orchestratedRunPlan(),
+      resources: [
+        {
+          resourceId: b64Resource.id,
+          required: false,
+          preferredDeliveryMode: "base64"
+        }
+      ]
+    });
+    const request = {
+      participantId: "participant-1",
+      idempotencyKey: "same-resource-delivery",
+      policy: {
+        requestedMode: "base64",
+        allowBase64: true,
+        maxBase64SizeBytes: 64
+      }
+    };
+    const first = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${b64Resource.id}/deliveries`,
+      request
+    );
+    const retry = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${b64Resource.id}/deliveries`,
+      request
+    );
+    const firstBody = (await first.json()) as {
+      auditEvent: { id: string; appended: boolean };
+    };
+    const retryBody = (await retry.json()) as {
+      auditEvent: { id: string; appended: boolean };
+    };
+
+    expect(first.status).toBe(200);
+    expect(retry.status).toBe(200);
+    expect(firstBody.auditEvent.appended).toBe(true);
+    expect(retryBody.auditEvent).toEqual({
+      id: firstBody.auditEvent.id,
+      type: RESOURCE_DELIVERY_PLANNED_EVENT_TYPE,
+      appended: false
+    });
+    expect(
+      daemonApp.eventStore
+        .listEvents(created.run.sessionId)
+        .filter((event) => event.type === RESOURCE_DELIVERY_PLANNED_EVENT_TYPE)
+    ).toHaveLength(1);
+  });
+
+  it("returns safe errors for invalid daemon resource delivery requests", async () => {
+    const resourceBroker = new InMemoryResourceBroker();
+    const publicResource = resourceBroker.registerResource({
+      resource: publicUrlResource("daemon-delivery-error-url")
+    });
+    const daemonApp = createRunDaemon({
+      resourceBroker
+    });
+    const created = await createRun(daemonApp, {
+      ...orchestratedRunPlan(),
+      resources: [
+        {
+          resourceId: publicResource.id,
+          preferredDeliveryMode: "url"
+        },
+        {
+          resourceId: "missing-run-plan-resource",
+          preferredDeliveryMode: "url"
+        }
+      ]
+    });
+
+    const invalidParticipantResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${publicResource.id}/deliveries`,
+      {
+        participantId: " "
+      }
+    );
+    const invalidParticipant = (await invalidParticipantResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(invalidParticipantResponse.status).toBe(400);
+    expectNoStore(invalidParticipantResponse);
+    expect(invalidParticipant.error).toEqual({
+      code: "invalid_participant_id",
+      message: "participantId must be a non-empty string."
+    });
+
+    const invalidPolicyResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${publicResource.id}/deliveries`,
+      {
+        participantId: "participant-1",
+        policy: "url"
+      }
+    );
+    const invalidPolicy = (await invalidPolicyResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(invalidPolicyResponse.status).toBe(400);
+    expectNoStore(invalidPolicyResponse);
+    expect(invalidPolicy.error).toEqual({
+      code: "invalid_resource_policy",
+      message: "Resource delivery policy must be a JSON object."
+    });
+
+    const missingResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/missing-run-plan-resource/deliveries`,
+      {
+        participantId: "participant-1"
+      }
+    );
+    const missingText = await missingResponse.text();
+    const missing = JSON.parse(missingText) as {
+      error: { code: string; message: string };
+    };
+
+    expect(missingResponse.status).toBe(400);
+    expectNoStore(missingResponse);
+    expect(missing.error).toEqual({
+      code: "resource_not_found",
+      message: "Resource was not found."
+    });
+    expect(missingText).not.toContain("missing-run-plan-resource");
+  });
+
   it("returns a safe not_available outcome before final candidate proposal exists", async () => {
     const daemonApp = createRunDaemon();
     const created = await createRun(daemonApp);
@@ -1943,6 +3458,873 @@ describe("daemon API", () => {
       reason: "final_candidate_proposal_unavailable"
     });
     expectSafeRunApiPayload(body);
+  });
+
+  it("compiles run outcomes for a requested final candidate proposal event", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, startFullRunRequest());
+
+    const latestResponse = await daemonApp.app.request(`/runs/${created.run.runId}/outcome`);
+    const latest = (await latestResponse.json()) as {
+      status: string;
+      outcome?: {
+        provenance?: {
+          finalCandidateProposalEventId?: string;
+        };
+      };
+    };
+    const invalidResponse = await daemonApp.app.request(
+      `/runs/${created.run.runId}/outcome?finalCandidateProposalEventId=missing-final-proposal-event`
+    );
+    const invalid = (await invalidResponse.json()) as {
+      status: string;
+      reason?: string;
+    };
+
+    expect(latestResponse.status).toBe(200);
+    expect(latest.status).toBe("compiled");
+    expect(latest.outcome?.provenance?.finalCandidateProposalEventId).toBeDefined();
+    expect(invalidResponse.status).toBe(200);
+    expect(invalid).toEqual({
+      runId: created.run.runId,
+      sessionId: created.run.sessionId,
+      status: "not_available",
+      reason: "outcome_compilation_unavailable"
+    });
+    expectSafeRunApiPayload(invalid);
+  });
+
+  it("suggests adaptive process proposals for a run without mutating the ledger", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const eventCountBeforeRead =
+      daemonApp.eventStore.listEvents(created.run.sessionId).length;
+    const topicContractEvent = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .find((event) => event.type === "topic_contract_published");
+    const response = await daemonApp.app.request(
+      `/runs/${created.run.runId}/process-proposals`
+    );
+    const text = await response.text();
+    const body = JSON.parse(text) as {
+      runId: string;
+      sessionId: string;
+      proposals: Array<{
+        id: string;
+        primitive: string;
+        status: string;
+        targetIds: string[];
+      }>;
+      observations: string[];
+      metadata: { version: string; eventRange: { fromSequence: number; toSequence: number } };
+    };
+
+    expect(topicContractEvent).toBeDefined();
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(body.runId).toBe(created.run.runId);
+    expect(body.sessionId).toBe(created.run.sessionId);
+    expect(body.proposals).toEqual([
+      expect.objectContaining({
+        primitive: "sealed_divergence",
+        status: "proposed",
+        targetIds: [topicContractEvent!.id]
+      })
+    ]);
+    expect(body.proposals[0]?.id).toMatch(
+      new RegExp(`^adaptive:${created.run.runId}:sealed_divergence:`)
+    );
+    expect(body.observations).toContain("No sealed divergence round is recorded for this run.");
+    expect(body.metadata).toMatchObject({
+      version: "1",
+      eventRange: {
+        fromSequence: topicContractEvent!.sequence,
+        toSequence: topicContractEvent!.sequence
+      }
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(
+      eventCountBeforeRead
+    );
+    expect(text).not.toContain("currentBest");
+    expect(text).not.toContain("ranking");
+    expect(text).not.toContain("finalAnswer");
+    expect(text).not.toContain("truthSummary");
+    expectSafeRunApiPayload(body);
+  });
+
+  it("records session process proposal lifecycle events without executing primitives", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const topicContractEvent = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .find((event) => event.type === "topic_contract_published");
+    const received: Array<{ id: string; type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(created.run.sessionId, (event) => {
+      received.push({
+        id: event.id,
+        type: event.type
+      });
+    });
+
+    expect(topicContractEvent).toBeDefined();
+
+    try {
+      const proposeResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals`,
+        {
+          authorId: "system",
+          proposal: {
+            id: "process-proposal-1",
+            primitive: "evidence_check",
+            targetIds: ["candidate-object-1"],
+            expectedQualityGain: "Close a missing evidence gap before finalization.",
+            riskIfSkipped: "The run may compile an outcome with unsupported claims.",
+            requestedBudget: {
+              maxEvents: 3
+            },
+            status: "proposed"
+          },
+          basedOnEventIds: [topicContractEvent!.id]
+        }
+      );
+      const proposeBody = (await proposeResponse.json()) as {
+        proposalId: string;
+        event: { id: string; type: string; basedOnEventIds: string[]; payload: { status: string } };
+      };
+      const proposalEventId = proposeBody.event.id;
+      const challengeResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals/${proposalEventId}/challenges`,
+        {
+          authorId: "reviewer-1",
+          reason: "Check whether a repair pass should happen before evidence check."
+        }
+      );
+      const challengeBody = (await challengeResponse.json()) as {
+        event: { id: string; type: string; basedOnEventIds: string[] };
+      };
+      const decisionResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals/${proposalEventId}/decisions`,
+        {
+          authorId: "coordinator-1",
+          status: "accepted",
+          rationale: "Record the process decision for the next operator-controlled step."
+        }
+      );
+      const decisionBody = (await decisionResponse.json()) as {
+        event: { id: string; type: string; basedOnEventIds: string[]; payload: { status: string } };
+      };
+      const projectionResponse = await daemonApp.app.request(
+        `/sessions/${created.run.sessionId}/process-proposals`
+      );
+      const projectionBody = (await projectionResponse.json()) as {
+        proposalStates: Array<{
+          proposalEventId: string;
+          latestStatus: string;
+          challengeEventIds: string[];
+          decisionEventIds: string[];
+          proposal: { status: string; targetIds: string[] };
+        }>;
+      };
+      const ledgerEventTypes = daemonApp.eventStore
+        .listEvents(created.run.sessionId)
+        .map((event) => event.type);
+
+      expect(proposeResponse.status).toBe(201);
+      expect(challengeResponse.status).toBe(201);
+      expect(decisionResponse.status).toBe(201);
+      expect(projectionResponse.status).toBe(200);
+      expectNoStore(projectionResponse);
+      expect(proposeBody).toMatchObject({
+        proposalId: "process-proposal-1",
+        event: {
+          type: "process_proposal_proposed",
+          basedOnEventIds: [topicContractEvent!.id],
+          payload: {
+            status: "proposed"
+          }
+        }
+      });
+      expect(challengeBody.event).toMatchObject({
+        type: "process_proposal_challenged",
+        basedOnEventIds: [proposalEventId]
+      });
+      expect(decisionBody.event).toMatchObject({
+        type: "process_proposal_decided",
+        basedOnEventIds: [proposalEventId],
+        payload: {
+          status: "accepted"
+        }
+      });
+      expect(projectionBody.proposalStates).toEqual([
+        expect.objectContaining({
+          proposalEventId,
+          latestStatus: "accepted",
+          challengeEventIds: [challengeBody.event.id],
+          decisionEventIds: [decisionBody.event.id],
+          proposal: expect.objectContaining({
+            status: "proposed",
+            targetIds: ["candidate-object-1"]
+          })
+        })
+      ]);
+      expect(received.map((event) => event.type)).toEqual([
+        "process_proposal_proposed",
+        "process_proposal_challenged",
+        "process_proposal_decided"
+      ]);
+      expect(ledgerEventTypes).toEqual([
+        "topic_contract_published",
+        "process_proposal_proposed",
+        "process_proposal_challenged",
+        "process_proposal_decided"
+      ]);
+      expectSafeRunApiPayload(proposeBody);
+      expectSafeRunApiPayload(projectionBody);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it("executes only accepted process proposals through the existing run start path", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const topicContractEvent = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .find((event) => event.type === "topic_contract_published");
+    const received: Array<{ id: string; type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(created.run.sessionId, (event) => {
+      received.push({
+        id: event.id,
+        type: event.type
+      });
+    });
+
+    expect(topicContractEvent).toBeDefined();
+
+    try {
+      const proposeResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals`,
+        {
+          authorId: "system",
+          proposal: {
+            id: "process-proposal-1",
+            primitive: "sealed_divergence",
+            targetIds: [topicContractEvent!.id],
+            expectedQualityGain: "Collect independent starting positions.",
+            riskIfSkipped: "The run may converge before alternatives are visible.",
+            requestedBudget: {
+              maxEvents: 4,
+              maxProviderCalls: 2
+            },
+            status: "proposed"
+          },
+          basedOnEventIds: [topicContractEvent!.id]
+        }
+      );
+      const proposeBody = (await proposeResponse.json()) as {
+        event: { id: string };
+      };
+      const prematureResponse = await postJson(
+        daemonApp.app,
+        `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+        {}
+      );
+      const prematureBody = (await prematureResponse.json()) as {
+        error: { code: string; message: string };
+      };
+
+      expect(prematureResponse.status).toBe(409);
+      expect(prematureBody.error).toEqual({
+        code: "process_proposal_not_accepted",
+        message: "Process proposal must be accepted before execution."
+      });
+      expect(
+        daemonApp.eventStore
+          .listEvents(created.run.sessionId)
+          .some((event) => event.type === "sealed_batch_opened")
+      ).toBe(false);
+
+      await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+        {
+          authorId: "coordinator-1",
+          status: "accepted",
+          rationale: "Run the accepted operator-controlled primitive."
+        }
+      );
+
+      const executeResponse = await postJson(
+        daemonApp.app,
+        `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+        {}
+      );
+      const executeBody = (await executeResponse.json()) as {
+        processProposal: { primitive: string; latestStatus: string };
+        startRequest: { sealedDivergence?: { autoCloseManual?: boolean } };
+        stages: Array<{ stage: string; eventIds: string[] }>;
+        run: { sealedDivergenceStatus?: string };
+      };
+      const ledgerEventTypes = daemonApp.eventStore
+        .listEvents(created.run.sessionId)
+        .map((event) => event.type);
+
+      expect(executeResponse.status).toBe(200);
+      expect(executeBody.processProposal).toMatchObject({
+        primitive: "sealed_divergence",
+        latestStatus: "accepted"
+      });
+      expect(executeBody.startRequest).toEqual({
+        sealedDivergence: {
+          autoCloseManual: true
+        }
+      });
+      expect(executeBody.stages).toEqual([
+        expect.objectContaining({
+          stage: "sealed_divergence",
+          eventIds: expect.arrayContaining([
+            expect.any(String),
+            expect.any(String),
+            expect.any(String),
+            expect.any(String)
+          ])
+        })
+      ]);
+      expect(executeBody.run.sealedDivergenceStatus).toBe("revealed");
+      expect(ledgerEventTypes).toContain("process_proposal_proposed");
+      expect(ledgerEventTypes).toContain("process_proposal_decided");
+      expect(ledgerEventTypes).toContain("sealed_batch_opened");
+      expect(ledgerEventTypes).toContain("sealed_batch_revealed");
+      expect(received.map((event) => event.type)).toContain("sealed_batch_opened");
+      expectSafeRunApiPayload(executeBody);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it("executes accepted final audit process proposals against an existing final candidate", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const initialRunResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    expect(initialRunResponse.status).toBe(200);
+
+    const finalCandidateEventsBefore = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "final_candidate_proposed"
+    );
+    const finalAuditEventsBefore = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "final_audit_recorded"
+    );
+    const finalCandidateEvent = finalCandidateEventsBefore[0];
+    const received: Array<{ id: string; type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(created.run.sessionId, (event) => {
+      received.push({
+        id: event.id,
+        type: event.type
+      });
+    });
+
+    expect(finalCandidateEvent).toBeDefined();
+    expect(finalCandidateEventsBefore).toHaveLength(1);
+    expect(finalAuditEventsBefore).toHaveLength(1);
+
+    try {
+      const proposeResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals`,
+        {
+          authorId: "system",
+          proposal: {
+            id: "process-proposal-final-audit",
+            primitive: "final_audit",
+            targetIds: [finalCandidateEvent!.id],
+            expectedQualityGain: "Audit recorded final candidate material without rerunning final contest.",
+            riskIfSkipped: "Outcome compilation may miss unresolved final audit boundaries.",
+            requestedBudget: {
+              maxEvents: 1,
+              maxProviderCalls: 1
+            },
+            status: "proposed"
+          },
+          basedOnEventIds: [finalCandidateEvent!.id]
+        }
+      );
+      const proposeBody = (await proposeResponse.json()) as {
+        event: { id: string };
+      };
+
+      await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+        {
+          authorId: "coordinator-1",
+          status: "accepted",
+          rationale: "Run the final audit against the recorded final candidate."
+        }
+      );
+
+      const executeResponse = await postJson(
+        daemonApp.app,
+        `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+        {}
+      );
+      const executeBody = (await executeResponse.json()) as {
+        processProposal: { primitive: string; latestStatus: string };
+        startRequest: {
+          finalization?: {
+            roundId?: string;
+            finalCandidateProposalEventId?: string;
+            retryFailedAuditors?: boolean;
+          };
+        };
+        stages: Array<{
+          stage: string;
+          status?: string;
+          eventIds: string[];
+          result: {
+            finalCandidateResult?: { status: string; proposalEventId?: string };
+            auditResults?: Array<{ status: string; auditEventId?: string }>;
+            outcomeCompilation?: { status: string };
+          };
+        }>;
+      };
+      const finalCandidateEventsAfter = daemonApp.eventStore.listEventsByType(
+        created.run.sessionId,
+        "final_candidate_proposed"
+      );
+      const finalAuditEventsAfter = daemonApp.eventStore.listEventsByType(
+        created.run.sessionId,
+        "final_audit_recorded"
+      );
+
+      expect(executeResponse.status).toBe(200);
+      expect(executeBody.processProposal).toEqual({
+        proposalEventId: proposeBody.event.id,
+        proposalId: "process-proposal-final-audit",
+        primitive: "final_audit",
+        latestStatus: "accepted"
+      });
+      expect(executeBody.startRequest).toEqual({
+        finalization: {
+          roundId: `process-proposal:${proposeBody.event.id}:final_audit`,
+          finalCandidateProposalEventId: finalCandidateEvent!.id,
+          retryFailedAuditors: true
+        }
+      });
+      expect(executeBody.stages).toEqual([
+        expect.objectContaining({
+          stage: "finalization",
+          status: "completed",
+          eventIds: [expect.any(String)],
+          result: expect.objectContaining({
+            finalCandidateResult: expect.objectContaining({
+              status: "skipped",
+              proposalEventId: finalCandidateEvent!.id
+            }),
+            auditResults: [
+              expect.objectContaining({
+                status: "recorded",
+                auditEventId: expect.any(String)
+              })
+            ],
+            outcomeCompilation: {
+              status: "not_requested"
+            }
+          })
+        })
+      ]);
+      expect(finalCandidateEventsAfter).toHaveLength(1);
+      expect(finalAuditEventsAfter).toHaveLength(2);
+      expect(received.map((event) => event.type)).toContain("final_audit_recorded");
+      expectSafeRunApiPayload(executeBody);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it("executes accepted candidate repair process proposals as proposal material only", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const initialRunResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    expect(initialRunResponse.status).toBe(200);
+
+    const extractionEventsBefore = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "extraction_proposed"
+    );
+    const acceptanceEventsBefore = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "proposal_accepted"
+    );
+    const received: Array<{ id: string; type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(created.run.sessionId, (event) => {
+      received.push({
+        id: event.id,
+        type: event.type
+      });
+    });
+
+    expect(extractionEventsBefore).toHaveLength(1);
+    expect(acceptanceEventsBefore).toHaveLength(1);
+
+    try {
+      const proposeResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals`,
+        {
+          authorId: "system",
+          proposal: {
+            id: "process-proposal-candidate-repair",
+            primitive: "candidate_repair",
+            targetIds: ["candidate-daemon-run-api"],
+            expectedQualityGain: "Repair accepted candidate material without accepting it.",
+            riskIfSkipped: "Known candidate objections may remain unaddressed.",
+            requestedBudget: {
+              maxEvents: 1,
+              maxProviderCalls: 1
+            },
+            status: "proposed"
+          },
+          basedOnEventIds: [extractionEventsBefore[0]!.id]
+        }
+      );
+      const proposeBody = (await proposeResponse.json()) as {
+        event: { id: string };
+      };
+
+      await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+        {
+          authorId: "coordinator-1",
+          status: "accepted",
+          rationale: "Run the candidate repair proposal as reviewable material."
+        }
+      );
+
+      const executeResponse = await postJson(
+        daemonApp.app,
+        `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+        {}
+      );
+      const executeBody = (await executeResponse.json()) as {
+        processProposal: { primitive: string; latestStatus: string };
+        startRequest: {
+          candidateRepair?: {
+            roundId?: string;
+            targetCandidateIds?: string[];
+            retryFailedGenerators?: boolean;
+          };
+        };
+        stages: Array<{
+          stage: string;
+          status?: string;
+          eventIds: string[];
+          result: {
+            proposalResults?: Array<{ status: string; proposalEventId?: string }>;
+          };
+        }>;
+        run: {
+          latestCandidateRepairStatus?: string;
+          rounds: { candidateRepair: unknown[] };
+        };
+      };
+      const extractionEventsAfter = daemonApp.eventStore.listEventsByType(
+        created.run.sessionId,
+        "extraction_proposed"
+      );
+      const acceptanceEventsAfter = daemonApp.eventStore.listEventsByType(
+        created.run.sessionId,
+        "proposal_accepted"
+      );
+
+      expect(executeResponse.status).toBe(200);
+      expect(executeBody.processProposal).toEqual({
+        proposalEventId: proposeBody.event.id,
+        proposalId: "process-proposal-candidate-repair",
+        primitive: "candidate_repair",
+        latestStatus: "accepted"
+      });
+      expect(executeBody.startRequest).toEqual({
+        candidateRepair: {
+          roundId: `process-proposal:${proposeBody.event.id}:candidate_repair`,
+          targetCandidateIds: ["candidate-daemon-run-api"],
+          retryFailedGenerators: true
+        }
+      });
+      expect(executeBody.stages).toEqual([
+        expect.objectContaining({
+          stage: "candidate_repair",
+          status: "completed",
+          eventIds: [expect.any(String)],
+          result: {
+            proposalResults: [
+              expect.objectContaining({
+                status: "proposed",
+                proposalEventId: expect.any(String)
+              })
+            ]
+          }
+        })
+      ]);
+      expect(executeBody.run.latestCandidateRepairStatus).toBe("completed");
+      expect(executeBody.run.rounds.candidateRepair).toHaveLength(1);
+      expect(extractionEventsAfter).toHaveLength(2);
+      expect(acceptanceEventsAfter).toHaveLength(1);
+      expect(received.map((event) => event.type)).toContain("extraction_proposed");
+      expectSafeRunApiPayload(executeBody);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it("executes accepted evidence check process proposals as reported evidence only", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const topicContractEvent = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .find((event) => event.type === "topic_contract_published");
+    const received: Array<{ id: string; type: string }> = [];
+    const unsubscribe = daemonApp.eventBus.subscribe(created.run.sessionId, (event) => {
+      received.push({
+        id: event.id,
+        type: event.type
+      });
+    });
+
+    expect(topicContractEvent).toBeDefined();
+
+    try {
+      const extractionResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/extractions`,
+        {
+          authorId: "extractor-1",
+          claims: [
+            {
+              id: "claim-daemon-evidence",
+              content: "The daemon can record evidence check material without claiming verification.",
+              scope: "design",
+              sourceEventIds: [topicContractEvent!.id],
+              supports: []
+            }
+          ],
+          evidenceNeeds: [
+            {
+              id: "evidence-need-daemon",
+              targetClaimId: "claim-daemon-evidence",
+              requiredKind: "tool",
+              reason: "Record supporting material before outcome compilation.",
+              priority: "medium",
+              status: "open",
+              sourceEventIds: [topicContractEvent!.id]
+            }
+          ],
+          rationale: "Propose an accepted evidence need for evidence check execution."
+        }
+      );
+      const extractionBody = (await extractionResponse.json()) as {
+        event: { id: string };
+      };
+
+      await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/proposals/${extractionBody.event.id}/acceptance`,
+        {
+          authorId: "coordinator-1",
+          rationale: "Accept evidence need material for the process proposal execution test."
+        }
+      );
+
+      const proposeResponse = await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals`,
+        {
+          authorId: "system",
+          proposal: {
+            id: "process-proposal-evidence",
+            primitive: "evidence_check",
+            targetIds: ["evidence-need-daemon"],
+            expectedQualityGain: "Record evidence material for an accepted evidence need.",
+            riskIfSkipped: "The accepted evidence need may remain unchecked.",
+            requestedBudget: {
+              maxEvents: 1,
+              maxProviderCalls: 1
+            },
+            status: "proposed"
+          },
+          basedOnEventIds: [extractionBody.event.id]
+        }
+      );
+      const proposeBody = (await proposeResponse.json()) as {
+        event: { id: string };
+      };
+
+      await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+        {
+          authorId: "coordinator-1",
+          status: "accepted",
+          rationale: "Run the evidence check as reported evidence material."
+        }
+      );
+
+      const executeResponse = await postJson(
+        daemonApp.app,
+        `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+        {}
+      );
+      const executeBody = (await executeResponse.json()) as {
+        processProposal: { primitive: string; latestStatus: string };
+        startRequest: {
+          evidenceCheck?: {
+            roundId?: string;
+            targetEvidenceNeedIds?: string[];
+            retryFailedGenerators?: boolean;
+          };
+        };
+        stages: Array<{
+          stage: string;
+          status?: string;
+          eventIds: string[];
+          result: {
+            evidenceResults?: Array<{ status: string; evidenceResultEventIds?: string[] }>;
+          };
+        }>;
+        run: {
+          latestEvidenceCheckStatus?: string;
+          rounds: { evidenceCheck: unknown[] };
+        };
+      };
+      const evidenceResultEvents = daemonApp.eventStore.listEventsByType(
+        created.run.sessionId,
+        "evidence_result_recorded"
+      );
+      const executeText = JSON.stringify(executeBody);
+
+      expect(extractionResponse.status).toBe(201);
+      expect(proposeResponse.status).toBe(201);
+      expect(executeResponse.status).toBe(200);
+      expect(executeBody.processProposal).toEqual({
+        proposalEventId: proposeBody.event.id,
+        proposalId: "process-proposal-evidence",
+        primitive: "evidence_check",
+        latestStatus: "accepted"
+      });
+      expect(executeBody.startRequest).toEqual({
+        evidenceCheck: {
+          roundId: `process-proposal:${proposeBody.event.id}:evidence_check`,
+          targetEvidenceNeedIds: ["evidence-need-daemon"],
+          retryFailedGenerators: true
+        }
+      });
+      expect(executeBody.stages).toEqual([
+        expect.objectContaining({
+          stage: "evidence_check",
+          status: "completed",
+          eventIds: [expect.any(String)],
+          result: {
+            evidenceResults: [
+              expect.objectContaining({
+                status: "recorded",
+                evidenceResultEventIds: [expect.any(String)]
+              })
+            ]
+          }
+        })
+      ]);
+      expect(executeBody.run.latestEvidenceCheckStatus).toBe("completed");
+      expect(executeBody.run.rounds.evidenceCheck).toHaveLength(1);
+      expect(evidenceResultEvents).toHaveLength(1);
+      expect(evidenceResultEvents[0]?.payload).toMatchObject({
+        evidenceNeedId: "evidence-need-daemon",
+        source: "Deterministic daemon evidence source",
+        summary: "Reported daemon evidence result for the target evidence need."
+      });
+      expect(received.map((event) => event.type)).toContain("evidence_result_recorded");
+      expect(executeText).not.toContain("verified");
+      expectSafeRunApiPayload(executeBody);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it("rejects accepted process proposals for unsupported daemon primitives", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const topicContractEvent = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .find((event) => event.type === "topic_contract_published");
+
+    expect(topicContractEvent).toBeDefined();
+
+    const proposeResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals`,
+      {
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-omission-audit",
+          primitive: "omission_audit",
+          targetIds: [topicContractEvent!.id],
+          expectedQualityGain: "Inspect possible missing context before continuing.",
+          riskIfSkipped: "Important omissions may remain unresolved.",
+          requestedBudget: {
+            maxEvents: 1
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: [topicContractEvent!.id]
+      }
+    );
+    const proposeBody = (await proposeResponse.json()) as {
+      event: { id: string };
+    };
+
+    await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+      {
+        authorId: "coordinator-1",
+        status: "accepted",
+        rationale: "Accept the need without pretending a runner exists."
+      }
+    );
+
+    const executeResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+      {}
+    );
+    const executeBody = (await executeResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(executeResponse.status).toBe(409);
+    expect(executeBody.error).toEqual({
+      code: "process_proposal_primitive_unsupported",
+      message: "Process proposal primitive is not executable by the daemon yet."
+    });
+    expect(
+      daemonApp.eventStore
+        .listEvents(created.run.sessionId)
+        .some((event) => event.type === "sealed_batch_opened")
+    ).toBe(false);
   });
 
   it("does not duplicate ledger events or SSE publications on run start retry", async () => {
@@ -2155,6 +4537,173 @@ describe("daemon API", () => {
     ).toBe(injectedStore);
   });
 
+  it("resolves resource access base URL and TTL from explicit options or env", () => {
+    expect(
+      resolveStartDaemonResourceAccessBaseUrl(
+        {},
+        {
+          [RESOURCE_ACCESS_BASE_URL_ENV_VAR]: " https://resources.example/deliberum "
+        }
+      )
+    ).toBe("https://resources.example/deliberum");
+    expect(resolveStartDaemonResourceAccessBaseUrl({}, {})).toBeUndefined();
+    expect(
+      resolveStartDaemonResourceAccessBaseUrl(
+        { resourceAccessBaseUrl: "http://127.0.0.1:9999/local" },
+        {
+          [RESOURCE_ACCESS_BASE_URL_ENV_VAR]: "https://ignored.example"
+        }
+      )
+    ).toBe("http://127.0.0.1:9999/local");
+    expect(
+      resolveStartDaemonResourceAccessTtlMs(
+        {},
+        {
+          [RESOURCE_ACCESS_TTL_MS_ENV_VAR]: "60000"
+        }
+      )
+    ).toBe(60000);
+    expect(resolveStartDaemonResourceAccessTtlMs({}, {})).toBeUndefined();
+    expect(
+      resolveStartDaemonResourceAccessTtlMs(
+        { resourceAccessTtlMs: 45000 },
+        {
+          [RESOURCE_ACCESS_TTL_MS_ENV_VAR]: "60000"
+        }
+      )
+    ).toBe(45000);
+    expect(() =>
+      resolveStartDaemonResourceAccessTtlMs(
+        {},
+        {
+          [RESOURCE_ACCESS_TTL_MS_ENV_VAR]: "not-a-number"
+        }
+      )
+    ).toThrow(`${RESOURCE_ACCESS_TTL_MS_ENV_VAR} must be a positive integer.`);
+  });
+
+  it("resolves optional daemon auth token from explicit options or env", () => {
+    expect(
+      resolveStartDaemonAuthToken(
+        {},
+        {
+          [DAEMON_AUTH_TOKEN_ENV_VAR]: " local-daemon-auth-token-123 "
+        }
+      )
+    ).toBe("local-daemon-auth-token-123");
+    expect(resolveStartDaemonAuthToken({}, {})).toBeUndefined();
+    expect(
+      resolveStartDaemonAuthToken(
+        { daemonAuthToken: "explicit-daemon-auth-token-123" },
+        {
+          [DAEMON_AUTH_TOKEN_ENV_VAR]: "ignored-daemon-auth-token-123"
+        }
+      )
+    ).toBe("explicit-daemon-auth-token-123");
+    expect(() =>
+      resolveStartDaemonAuthToken(
+        {},
+        {
+          [DAEMON_AUTH_TOKEN_ENV_VAR]: "too-short"
+        }
+      )
+    ).toThrow(`${DAEMON_AUTH_TOKEN_ENV_VAR} must be at least 16 non-whitespace characters.`);
+  });
+
+  it("resolves optional daemon SQLite path without overriding explicit stores", () => {
+    const injectedEventStore = new InMemoryEventStore();
+    const injectedRunStore = new InMemoryRunStore();
+    const injectedResourceAccessStore = new ResourceAccessGrantStore();
+    const injectedResourceBroker = new InMemoryResourceBroker();
+    const sqlitePath = "/tmp/deliberum-daemon.sqlite";
+
+    expect(
+      resolveStartDaemonSQLitePath({
+        [DAEMON_SQLITE_PATH_ENV_VAR]: " /tmp/deliberum-daemon.sqlite "
+      })
+    ).toBe(sqlitePath);
+    expect(resolveStartDaemonSQLitePath({})).toBeUndefined();
+    expect(
+      resolveStartDaemonSQLitePath({
+        [DAEMON_SQLITE_PATH_ENV_VAR]: "   "
+      })
+    ).toBeUndefined();
+    expect(
+      createStartDaemonEventStore(
+        { eventStore: injectedEventStore },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      )
+    ).toBe(injectedEventStore);
+    expect(
+      createStartDaemonRunStore(
+        { runStore: injectedRunStore },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      )
+    ).toBe(injectedRunStore);
+    expect(
+      createStartDaemonResourceAccessStore(
+        { resourceAccessStore: injectedResourceAccessStore },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      )
+    ).toBe(injectedResourceAccessStore);
+    expect(
+      createStartDaemonResourceStore(
+        { resourceBroker: injectedResourceBroker },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      )
+    ).toBe(injectedResourceBroker);
+
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-sqlite-resolve-"));
+    const filePath = join(dir, "daemon.sqlite");
+
+    try {
+      const eventStore = createStartDaemonEventStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: filePath
+        }
+      );
+      const runStore = createStartDaemonRunStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: filePath
+        }
+      );
+      const resourceAccessStore = createStartDaemonResourceAccessStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: filePath
+        }
+      );
+      const resourceBroker = createStartDaemonResourceStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: filePath
+        }
+      );
+
+      expect(eventStore).toBeInstanceOf(SQLiteEventStore);
+      expect(runStore).toBeInstanceOf(SQLiteRunStore);
+      expect(resourceAccessStore).toBeInstanceOf(SQLiteResourceAccessGrantStore);
+      expect(resourceBroker).toBeInstanceOf(SQLiteResourceBroker);
+
+      (eventStore as SQLiteEventStore).close();
+      (runStore as SQLiteRunStore).close();
+      (resourceAccessStore as SQLiteResourceAccessGrantStore).close();
+      (resourceBroker as SQLiteResourceBroker).close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("can opt into JSON event ledger persistence while keeping run metadata in memory", async () => {
     const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-events-"));
     const filePath = join(dir, "events.json");
@@ -2200,6 +4749,446 @@ describe("daemon API", () => {
         payload: expect.any(Object)
       });
       expect(secondDaemon.runStore.listRuns()).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("can opt into SQLite run metadata and event ledger continuity together", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-sqlite-workspace-"));
+    const sqlitePath = join(dir, "daemon.sqlite");
+
+    try {
+      const firstEventStore = createStartDaemonEventStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const firstRunStore = createStartDaemonRunStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const firstDaemon = createDaemonApp({
+        eventStore: firstEventStore,
+        runStore: firstRunStore,
+        idGenerator: createIds(),
+        clock
+      });
+      const created = await createRun(firstDaemon);
+
+      expect(firstDaemon.runStore.listRuns()).toHaveLength(1);
+      expect(firstDaemon.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
+
+      (firstEventStore as SQLiteEventStore).close();
+      (firstRunStore as SQLiteRunStore).close();
+
+      const secondEventStore = createStartDaemonEventStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const secondRunStore = createStartDaemonRunStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const secondDaemon = createDaemonApp({
+        eventStore: secondEventStore,
+        runStore: secondRunStore,
+        idGenerator: createIds(),
+        clock
+      });
+      const runResponse = await secondDaemon.app.request(`/runs/${created.run.runId}`);
+      const runBody = (await runResponse.json()) as {
+        run: {
+          runId: string;
+          sessionId: string;
+        };
+      };
+      const eventsResponse = await secondDaemon.app.request(
+        `/runs/${created.run.runId}/events`
+      );
+      const eventsBody = (await eventsResponse.json()) as {
+        runId: string;
+        sessionId: string;
+        events: Array<{ type: string }>;
+      };
+
+      expect(runResponse.status).toBe(200);
+      expect(runBody.run).toMatchObject({
+        runId: created.run.runId,
+        sessionId: created.run.sessionId
+      });
+      expect(eventsResponse.status).toBe(200);
+      expect(eventsBody).toMatchObject({
+        runId: created.run.runId,
+        sessionId: created.run.sessionId
+      });
+      expect(eventsBody.events).toEqual([
+        expect.objectContaining({
+          type: "topic_contract_published"
+        })
+      ]);
+
+      (secondEventStore as SQLiteEventStore).close();
+      (secondRunStore as SQLiteRunStore).close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("can opt into SQLite resource access grant continuity across daemon restarts", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-sqlite-resource-access-"));
+    const sqlitePath = join(dir, "daemon.sqlite");
+    const accessId = "Q".repeat(32);
+    const resourceBroker = new InMemoryResourceBroker();
+    const publicResource = resourceBroker.registerResource({
+      resource: publicUrlResource("sqlite-restart-resource")
+    });
+
+    try {
+      const firstEventStore = createStartDaemonEventStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const firstRunStore = createStartDaemonRunStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const firstResourceAccessStore = createStartDaemonResourceAccessStore(
+        {
+          clock,
+          resourceAccessTokenGenerator: () => accessId,
+          resourceAccessTtlMs: 120000
+        },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const firstDaemon = createDaemonApp({
+        eventStore: firstEventStore,
+        runStore: firstRunStore,
+        resourceAccessStore: firstResourceAccessStore,
+        resourceBroker,
+        resourceAccessBaseUrl: "https://access.example",
+        idGenerator: createIds(),
+        clock
+      });
+      const created = await createRun(firstDaemon, {
+        ...orchestratedRunPlan(),
+        resources: [
+          {
+            resourceId: publicResource.id,
+            required: true,
+            preferredDeliveryMode: "url"
+          }
+        ]
+      });
+      const deliveryResponse = await postJson(
+        firstDaemon.app,
+        `/sessions/${created.run.sessionId}/resources/${publicResource.id}/deliveries`,
+        {
+          participantId: "participant-1",
+          policy: {
+            requestedMode: "url",
+            allowPublicUrl: true
+          }
+        }
+      );
+      const deliveryBody = (await deliveryResponse.json()) as {
+        delivery: { delivery?: { url?: string } };
+      };
+      const accessUrl = deliveryBody.delivery.delivery?.url;
+
+      expect(deliveryResponse.status).toBe(200);
+      expect(accessUrl).toBe(`https://access.example/resource-access/${accessId}`);
+
+      (firstEventStore as SQLiteEventStore).close();
+      (firstRunStore as SQLiteRunStore).close();
+      (firstResourceAccessStore as SQLiteResourceAccessGrantStore).close();
+
+      const secondEventStore = createStartDaemonEventStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const secondRunStore = createStartDaemonRunStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const secondResourceAccessStore = createStartDaemonResourceAccessStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const secondDaemon = createDaemonApp({
+        eventStore: secondEventStore,
+        runStore: secondRunStore,
+        resourceAccessStore: secondResourceAccessStore,
+        idGenerator: createIds(),
+        clock
+      });
+      const accessPath = new URL(accessUrl ?? "").pathname;
+      const accessResponse = await secondDaemon.app.request(accessPath);
+
+      expect(accessResponse.status).toBe(302);
+      expect(accessResponse.headers.get("location")).toBe(
+        "https://example.com/resource.txt"
+      );
+
+      const revokeResponse = await postJson(secondDaemon.app, `${accessPath}/revoke`, {});
+      const revokeBody = (await revokeResponse.json()) as {
+        grant: { revokedAt: string };
+      };
+      const projectionResponse = await secondDaemon.app.request(
+        `/sessions/${created.run.sessionId}/resources`
+      );
+      const projectionText = await projectionResponse.text();
+      const projectionBody = JSON.parse(projectionText) as {
+        accessAudits: Array<{ action: string }>;
+      };
+
+      expect(revokeResponse.status).toBe(200);
+      expect(revokeBody.grant).toMatchObject({
+        revokedAt: "2026-06-10T00:00:00.000Z"
+      });
+      expect(projectionResponse.status).toBe(200);
+      expect(projectionBody.accessAudits.map((audit) => audit.action)).toEqual([
+        "created",
+        "revoked"
+      ]);
+      expect(projectionText).not.toContain(accessId);
+      expect(projectionText).not.toContain("https://example.com/resource.txt");
+
+      (secondEventStore as SQLiteEventStore).close();
+      (secondRunStore as SQLiteRunStore).close();
+      (secondResourceAccessStore as SQLiteResourceAccessGrantStore).close();
+
+      const thirdResourceAccessStore = createStartDaemonResourceAccessStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const thirdDaemon = createDaemonApp({
+        resourceAccessStore: thirdResourceAccessStore,
+        idGenerator: createIds(),
+        clock
+      });
+      const revokedAccessResponse = await thirdDaemon.app.request(accessPath);
+      const revokedAccessBody = (await revokedAccessResponse.json()) as {
+        error: { code: string };
+      };
+
+      expect(revokedAccessResponse.status).toBe(400);
+      expect(revokedAccessBody.error.code).toBe("resource_access_revoked");
+
+      (thirdResourceAccessStore as SQLiteResourceAccessGrantStore).close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("can opt into SQLite hosted content resource access across daemon restarts", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-sqlite-hosted-content-"));
+    const sqlitePath = join(dir, "daemon.sqlite");
+    const accessId = "R".repeat(32);
+    const contentBase64 = Buffer.from("hello world").toString("base64");
+    const dataRef = "sqlite-hosted-content-ref";
+
+    try {
+      const firstEventStore = createStartDaemonEventStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const firstRunStore = createStartDaemonRunStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const firstResourceAccessStore = createStartDaemonResourceAccessStore(
+        {
+          clock,
+          resourceAccessTokenGenerator: () => accessId,
+          resourceAccessTtlMs: 120000
+        },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const firstResourceBroker = createStartDaemonResourceStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const hostedResource = firstResourceBroker?.registerResource({
+        resource: base64Resource("sqlite-hosted-restart-resource", dataRef),
+        contents: [
+          {
+            dataRef,
+            base64: contentBase64
+          }
+        ]
+      });
+
+      if (!hostedResource) {
+        throw new Error("Expected SQLite resource broker to register hosted resource.");
+      }
+
+      const firstDaemon = createDaemonApp({
+        eventStore: firstEventStore,
+        runStore: firstRunStore,
+        resourceAccessStore: firstResourceAccessStore,
+        resourceBroker: firstResourceBroker,
+        resourceAccessBaseUrl: "https://access.example",
+        idGenerator: createIds(),
+        clock
+      });
+      const created = await createRun(firstDaemon, {
+        ...orchestratedRunPlan(),
+        resources: [
+          {
+            resourceId: hostedResource.id,
+            required: true,
+            preferredDeliveryMode: "url"
+          }
+        ]
+      });
+      const deliveryResponse = await postJson(
+        firstDaemon.app,
+        `/sessions/${created.run.sessionId}/resources/${hostedResource.id}/deliveries`,
+        {
+          participantId: "participant-1",
+          policy: {
+            requestedMode: "url",
+            allowLocalhostUrl: true,
+            allowPublicUrl: true,
+            allowHostedContentUrl: true,
+            maxHostedContentSizeBytes: 64
+          }
+        }
+      );
+      const deliveryBody = (await deliveryResponse.json()) as {
+        delivery: { delivery?: { url?: string } };
+      };
+      const accessUrl = deliveryBody.delivery.delivery?.url;
+
+      expect(deliveryResponse.status).toBe(200);
+      expect(accessUrl).toBe(`https://access.example/resource-access/${accessId}`);
+
+      (firstEventStore as SQLiteEventStore).close();
+      (firstRunStore as SQLiteRunStore).close();
+      (firstResourceAccessStore as SQLiteResourceAccessGrantStore).close();
+      (firstResourceBroker as SQLiteResourceBroker).close();
+
+      const secondEventStore = createStartDaemonEventStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const secondRunStore = createStartDaemonRunStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const secondResourceAccessStore = createStartDaemonResourceAccessStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const secondResourceBroker = createStartDaemonResourceStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const secondDaemon = createDaemonApp({
+        eventStore: secondEventStore,
+        runStore: secondRunStore,
+        resourceAccessStore: secondResourceAccessStore,
+        resourceBroker: secondResourceBroker,
+        idGenerator: createIds(),
+        clock
+      });
+      const accessPath = new URL(accessUrl ?? "").pathname;
+      const accessResponse = await secondDaemon.app.request(accessPath);
+
+      expect(accessResponse.status).toBe(200);
+      expect(await accessResponse.text()).toBe("hello world");
+
+      const revokeResponse = await postJson(secondDaemon.app, `${accessPath}/revoke`, {});
+      const projectionResponse = await secondDaemon.app.request(
+        `/sessions/${created.run.sessionId}/resources`
+      );
+      const projectionText = await projectionResponse.text();
+      const projectionBody = JSON.parse(projectionText) as {
+        accessAudits: Array<{ action: string }>;
+      };
+
+      expect(revokeResponse.status).toBe(200);
+      expect(projectionResponse.status).toBe(200);
+      expect(projectionBody.accessAudits.map((audit) => audit.action)).toEqual([
+        "created",
+        "revoked"
+      ]);
+      expect(projectionText).not.toContain(accessId);
+      expect(projectionText).not.toContain(contentBase64);
+      expect(projectionText).not.toContain(dataRef);
+      expect(projectionText).not.toContain("hello world");
+
+      (secondEventStore as SQLiteEventStore).close();
+      (secondRunStore as SQLiteRunStore).close();
+      (secondResourceAccessStore as SQLiteResourceAccessGrantStore).close();
+      (secondResourceBroker as SQLiteResourceBroker).close();
+
+      const thirdResourceAccessStore = createStartDaemonResourceAccessStore(
+        { clock },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const thirdResourceBroker = createStartDaemonResourceStore(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      );
+      const thirdDaemon = createDaemonApp({
+        resourceAccessStore: thirdResourceAccessStore,
+        resourceBroker: thirdResourceBroker,
+        idGenerator: createIds(),
+        clock
+      });
+      const revokedAccessResponse = await thirdDaemon.app.request(accessPath);
+      const revokedAccessBody = (await revokedAccessResponse.json()) as {
+        error: { code: string };
+      };
+
+      expect(revokedAccessResponse.status).toBe(400);
+      expect(revokedAccessBody.error.code).toBe("resource_access_revoked");
+
+      (thirdResourceAccessStore as SQLiteResourceAccessGrantStore).close();
+      (thirdResourceBroker as SQLiteResourceBroker).close();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -2753,6 +5742,333 @@ describe("daemon API", () => {
       "topic_contract_published",
       "sealed_batch_opened"
     ]);
+    expectSafeRunApiPayload(body);
+  });
+
+  it("keeps the HTTP-template provider profile disabled by default", async () => {
+    const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
+    const created = await createRun(daemonApp, httpTemplateRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
+    expectSafeRunApiPayload(body);
+  });
+
+  it("resolves the HTTP-template provider profile only from explicit option or exact env flag", () => {
+    expect(resolveStartDaemonEnableHttpTemplateProfile(
+      { enableHttpTemplateProfile: true },
+      {}
+    )).toBe(true);
+    expect(
+      resolveStartDaemonEnableHttpTemplateProfile(
+        {},
+        { [HTTP_TEMPLATE_PROFILE_ENV_VAR]: "true" }
+      )
+    ).toBe(true);
+    expect(resolveStartDaemonEnableHttpTemplateProfile({}, {})).toBe(false);
+    expect(
+      resolveStartDaemonEnableHttpTemplateProfile(
+        {},
+        { [HTTP_TEMPLATE_PROFILE_ENV_VAR]: "false" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableHttpTemplateProfile(
+        {},
+        { [HTTP_TEMPLATE_PROFILE_ENV_VAR]: "TRUE" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableHttpTemplateProfile(
+        {},
+        { [HTTP_TEMPLATE_PROFILE_ENV_VAR]: "random" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableHttpTemplateProfile(
+        { enableHttpTemplateProfile: false },
+        { [HTTP_TEMPLATE_PROFILE_ENV_VAR]: "true" }
+      )
+    ).toBe(false);
+  });
+
+  it("installs only an HTTP-template participant adapter through the profile", () => {
+    const registries = daemon.createHttpTemplateRunRegistries({
+      env: {
+        [HTTP_TEMPLATE_HEADERS_JSON_ENV_VAR]: "{\"Authorization\":\"Bearer {{runtime.apiKey}}\"}"
+      }
+    });
+
+    expect(registries.adapterRegistry?.list()).toEqual([
+      expect.objectContaining({
+        adapterId: HTTP_TEMPLATE_ADAPTER_ID
+      })
+    ]);
+    expect(registries).not.toHaveProperty("extractionGeneratorRegistry");
+    expect(registries).not.toHaveProperty("proposalReviewGeneratorRegistry");
+    expect(registries).not.toHaveProperty("finalCandidateGeneratorRegistry");
+    expect(registries).not.toHaveProperty("finalAuditGeneratorRegistry");
+  });
+
+  it("runs HTTP-template sealed divergence through daemon with mocked fetch", async () => {
+    const secret = "http-template-runtime-secret";
+    const fetch = createHttpTemplateFetch({
+      model: "provider-http-model",
+      output: {
+        contribution: "HTTP-template provider sealed contribution",
+        echoedSecret: `Bearer ${secret}`
+      }
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableHttpTemplateProfile: true,
+      httpTemplateEnv: {
+        [HTTP_TEMPLATE_API_KEY_ENV_VAR]: secret,
+        [HTTP_TEMPLATE_HEADERS_JSON_ENV_VAR]:
+          "{\"Authorization\":\"Bearer {{runtime.apiKey}}\",\"X-Participant\":\"{{context.participantId}}\",\"X-Mode\":\"{{var.mode}}\"}",
+        [HTTP_TEMPLATE_BODY_ENV_VAR]:
+          "{\"model\":\"{{runtime.modelId}}\",\"mode\":\"{{var.mode}}\",\"payload\":{{input.payloadJson}}}",
+        [HTTP_TEMPLATE_RESPONSE_FORMAT_ENV_VAR]: "json",
+        [HTTP_TEMPLATE_RESPONSE_PAYLOAD_PATH_ENV_VAR]: "output",
+        [HTTP_TEMPLATE_RESPONSE_MODEL_ID_PATH_ENV_VAR]: "model"
+      },
+      httpTemplateFetch: fetch
+    });
+    const created = await createRun(daemonApp, httpTemplateRunPlan());
+    const startResponse = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const startBody = (await startResponse.json()) as {
+      stopped: boolean;
+      stages: Array<{
+        stage: string;
+        executionStatus: string;
+        result: { participantResults?: Array<{ status: string; modelId?: string }> };
+      }>;
+    };
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const listBody = await (await daemonApp.app.request("/runs")).json();
+    const [url, init] = getHttpTemplateFetchCall(fetch);
+    const requestBody = JSON.parse(init.body ?? "{}") as {
+      model: string;
+      mode: string;
+      payload: {
+        runId: string;
+        sessionId: string;
+        participant: { id: string };
+        topic: string;
+        metadata: { eventIds: string[] };
+      };
+    };
+    const events = daemonApp.eventStore.listEvents(created.run.sessionId);
+    const safePayloads = [
+      startBody,
+      detailBody,
+      listBody,
+      {
+        events
+      }
+    ];
+
+    expect(startResponse.status).toBe(200);
+    expect(startBody.stopped).toBe(false);
+    expect(startBody.stages).toHaveLength(1);
+    expect(startBody.stages[0]).toMatchObject({
+      stage: "sealed_divergence",
+      executionStatus: "executed",
+      result: {
+        participantResults: [
+          expect.objectContaining({
+            status: "submitted"
+          })
+        ]
+      }
+    });
+    expect(url).toBe("https://runtime.example/api/contribute");
+    expect(init.method).toBe("POST");
+    expect(init.headers).toMatchObject({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secret}`,
+      "X-Participant": "provider-alpha",
+      "X-Mode": "sealed-divergence"
+    });
+    expect(requestBody).toMatchObject({
+      model: "runtime-http-model",
+      mode: "sealed-divergence",
+      payload: {
+        runId: created.run.runId,
+        sessionId: created.run.sessionId,
+        participant: {
+          id: "provider-alpha"
+        },
+        topic: "Should Stage 22B expose opt-in HTTP-template provider-backed sealed participants?"
+      }
+    });
+    expect(requestBody.payload.metadata.eventIds).toEqual(
+      events.slice(0, 2).map((event) => event.id)
+    );
+    expect(detailBody).toMatchObject({
+      run: {
+        plan: {
+          providerConfigs: [
+            expect.objectContaining({
+              adapterId: HTTP_TEMPLATE_ADAPTER_ID,
+              httpTemplate: {
+                variables: {
+                  mode: "sealed-divergence"
+                }
+              },
+              hasApiKeyEnvVar: true
+            })
+          ]
+        }
+      }
+    });
+    expect(events.map((event) => event.type)).toEqual([
+      "topic_contract_published",
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "sealed_batch_revealed"
+    ]);
+
+    for (const payload of safePayloads) {
+      expectSafeRunApiPayload(payload, secret);
+    }
+    expect(JSON.stringify(daemonApp.runStore.getRun(created.run.runId))).not.toContain(secret);
+    expect(JSON.stringify(daemonApp.runStore.getRun(created.run.runId))).not.toContain(
+      "Authorization"
+    );
+  });
+
+  it("rejects invalid HTTP-template profile env values before fetch", () => {
+    const fetch = createHttpTemplateFetch();
+    let thrown: unknown;
+
+    try {
+      createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        enableHttpTemplateProfile: true,
+        httpTemplateEnv: {
+          [HTTP_TEMPLATE_API_KEY_ENV_VAR]: "http-template-runtime-secret",
+          [HTTP_TEMPLATE_TIMEOUT_MS_ENV_VAR]: "not-a-positive-integer"
+        },
+        httpTemplateFetch: fetch
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(HttpTemplateAdapterError);
+    expect((thrown as HttpTemplateAdapterError).safeCategory).toBe(
+      "provider_config_invalid"
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("returns safe provider_secret_missing when HTTP-template env key is absent", async () => {
+    const fetch = createHttpTemplateFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableHttpTemplateProfile: true,
+      httpTemplateEnv: {
+        [HTTP_TEMPLATE_HEADERS_JSON_ENV_VAR]:
+          "{\"Authorization\":\"Bearer {{runtime.apiKey}}\"}",
+        [HTTP_TEMPLATE_BODY_ENV_VAR]:
+          "{\"model\":\"{{runtime.modelId}}\",\"payload\":{{input.payloadJson}}}"
+      },
+      httpTemplateFetch: fetch
+    });
+    const created = await createRun(daemonApp, httpTemplateRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const body = (await response.json()) as {
+      stopped: boolean;
+      stopReason?: string;
+      stages: Array<{
+        status?: string;
+        result: {
+          participantResults?: Array<{
+            status: string;
+            errorCategory?: string;
+          }>;
+        };
+      }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(body).toMatchObject({
+      stopped: true,
+      stopReason: "waiting_for_participants",
+      stages: [
+        {
+          status: "waiting_for_participants",
+          result: {
+            participantResults: [
+              expect.objectContaining({
+                status: "failed",
+                errorCategory: "provider_secret_missing"
+              })
+            ]
+          }
+        }
+      ]
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId).map((event) => event.type)).toEqual([
+      "topic_contract_published",
+      "sealed_batch_opened"
+    ]);
+    expectSafeRunApiPayload(body);
+  });
+
+  it("does not override explicitly injected adapter registries with the HTTP-template profile", async () => {
+    const fetch = createHttpTemplateFetch();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableHttpTemplateProfile: true,
+      httpTemplateEnv: {
+        [HTTP_TEMPLATE_API_KEY_ENV_VAR]: "http-template-runtime-secret"
+      },
+      httpTemplateFetch: fetch,
+      runAdapterRegistry: new AdapterRegistry()
+    });
+    const created = await createRun(daemonApp, httpTemplateRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: {
+        code: "orchestration_component_unavailable",
+        message: "Required orchestration component is unavailable."
+      }
+    });
+    expect(fetch).not.toHaveBeenCalled();
     expectSafeRunApiPayload(body);
   });
 
@@ -5425,7 +8741,11 @@ describe("daemon API", () => {
       idGenerator: createIds(),
       clock,
       resourceBroker,
-      webgetTokenGenerator: createTokenGenerator()
+      webgetTokenGenerator: createTokenGenerator(),
+      resourceAccessTokenGenerator: createTokenGenerator([
+        "W".repeat(32),
+        "X".repeat(32)
+      ])
     });
     const noUrl = await createWebGETBatch(daemonApp, {
       resourceIds: [publicResource.id]
@@ -5443,6 +8763,15 @@ describe("daemon API", () => {
         requestedMode: "base64",
         allowBase64: true,
         maxBase64SizeBytes: 64
+      }
+    });
+    const hostedContent = await createWebGETBatch(daemonApp, {
+      resourceIds: [b64Resource.id],
+      resourcePolicy: {
+        requestedMode: "url",
+        allowLocalhostUrl: true,
+        allowHostedContentUrl: true,
+        maxHostedContentSizeBytes: 64
       }
     });
     const sensitive = await createWebGETBatch(daemonApp, {
@@ -5468,17 +8797,49 @@ describe("daemon API", () => {
     });
     expect(deniedUrlText).not.toContain("https://example.com/resource.txt");
 
-    const allowedUrlBody = (await (
-      await daemonApp.app.request(webgetPath(allowedUrl.webget.startUrl, `/resources/${publicResource.id}`))
-    ).json()) as { delivery: { selectedMode: string; allowed: boolean; delivery?: { url?: string } } };
+    const allowedUrlResponse = await daemonApp.app.request(
+      webgetPath(allowedUrl.webget.startUrl, `/resources/${publicResource.id}`)
+    );
+    const allowedUrlText = await allowedUrlResponse.text();
+    const allowedUrlBody = JSON.parse(allowedUrlText) as {
+      delivery: {
+        selectedMode: string;
+        allowed: boolean;
+        delivery?: { url?: string; exposure?: string; expiresAt?: string };
+      };
+    };
 
+    expectNoStore(allowedUrlResponse);
     expect(allowedUrlBody.delivery).toMatchObject({
       selectedMode: "url",
       allowed: true,
       delivery: {
-        url: "https://example.com/resource.txt"
+        url: `http://127.0.0.1:3877/resource-access/${"W".repeat(32)}`,
+        exposure: "localhost",
+        expiresAt: "2026-06-10T00:05:00.000Z"
       }
     });
+    expect(allowedUrlText).not.toContain("https://example.com/resource.txt");
+
+    const accessUrl = allowedUrlBody.delivery.delivery?.url;
+    if (!accessUrl) {
+      throw new Error("Expected WebGET resource access URL.");
+    }
+    const accessResponse = await daemonApp.app.request(new URL(accessUrl).pathname);
+
+    expect(accessResponse.status).toBe(302);
+    expect(accessResponse.headers.get("location")).toBe(
+      "https://example.com/resource.txt"
+    );
+
+    const resourceContextText = await (
+      await daemonApp.app.request(webgetPath(allowedUrl.webget.startUrl, "/context/resources"))
+    ).text();
+
+    expect(resourceContextText).toContain("URL delivery uses a revocable daemon resource access grant.");
+    expect(resourceContextText).not.toContain("https://example.com/resource.txt");
+    expect(resourceContextText).not.toContain("resource-access");
+    expect(resourceContextText).not.toContain("W".repeat(32));
 
     const allowedBase64Body = (await (
       await daemonApp.app.request(webgetPath(allowedBase64.webget.startUrl, `/resources/${b64Resource.id}`))
@@ -5491,6 +8852,55 @@ describe("daemon API", () => {
         data: Buffer.from("hello world").toString("base64")
       }
     });
+
+    const hostedContentResponse = await daemonApp.app.request(
+      webgetPath(hostedContent.webget.startUrl, `/resources/${b64Resource.id}`)
+    );
+    const hostedContentText = await hostedContentResponse.text();
+    const hostedContentBody = JSON.parse(hostedContentText) as {
+      delivery: {
+        selectedMode: string;
+        allowed: boolean;
+        delivery?: { url?: string; exposure?: string };
+      };
+    };
+
+    expectNoStore(hostedContentResponse);
+    expect(hostedContentBody.delivery).toMatchObject({
+      selectedMode: "url",
+      allowed: true,
+      delivery: {
+        url: `http://127.0.0.1:3877/resource-access/${"X".repeat(32)}`,
+        exposure: "localhost"
+      }
+    });
+    expect(hostedContentText).not.toContain(Buffer.from("hello world").toString("base64"));
+    expect(hostedContentText).not.toContain("base64-ref");
+
+    const hostedAccessUrl = hostedContentBody.delivery.delivery?.url;
+    if (!hostedAccessUrl) {
+      throw new Error("Expected hosted WebGET resource access URL.");
+    }
+    const hostedAccessResponse = await daemonApp.app.request(
+      new URL(hostedAccessUrl).pathname
+    );
+
+    expect(hostedAccessResponse.status).toBe(200);
+    expect(await hostedAccessResponse.text()).toBe("hello world");
+
+    const hostedResourceContextText = await (
+      await daemonApp.app.request(
+        webgetPath(hostedContent.webget.startUrl, "/context/resources")
+      )
+    ).text();
+
+    expect(hostedResourceContextText).toContain(
+      "Hosted content URL delivery serves resource content through a revocable daemon grant."
+    );
+    expect(hostedResourceContextText).not.toContain(Buffer.from("hello world").toString("base64"));
+    expect(hostedResourceContextText).not.toContain("base64-ref");
+    expect(hostedResourceContextText).not.toContain("resource-access");
+    expect(hostedResourceContextText).not.toContain("X".repeat(32));
 
     const sensitiveResponse = await daemonApp.app.request(
       webgetPath(sensitive.webget.startUrl, `/resources/${sensitiveResource.id}`)

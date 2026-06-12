@@ -9,7 +9,7 @@ import {
   useParams,
   type RouterHistory
 } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DataPanel,
   EmptyState,
@@ -19,8 +19,12 @@ import {
   StatusBanner,
   WorkspaceShell
 } from "@deliberum/ui";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
+import type {
+  AuditFinalCandidateRequest,
+  ProposeFinalCandidateRequest
+} from "@deliberum/client";
 import {
   RunDetailPage,
   RunNewPage,
@@ -33,6 +37,7 @@ import {
   RecordCollection,
   ViewFrame,
   asArray,
+  formatSafeErrorMessage,
   formatRecordValue,
   getRecordValue,
   getStringRecordValue,
@@ -138,6 +143,47 @@ const routeTree = rootRoute.addChildren([
   ])
 ]);
 
+const DEFAULT_FINAL_CANDIDATE_INPUT = formatFinalCandidateInput([]);
+
+const DEFAULT_FINAL_AUDIT_INPUT = formatFinalAuditInput(undefined);
+
+function formatFinalCandidateInput(candidateIds: readonly string[]): string {
+  return JSON.stringify(
+    {
+      authorId: "final-coordinator",
+      candidateIds,
+      recommendation: "Record a provisional final candidate from accepted candidate material.",
+      applicabilityConditions: ["Only applies to the accepted active candidate frontier."],
+      rationale: "The recommendation is stored as reviewable proposal material.",
+      limitations: ["Requires independent final audit before relying on the compiled outcome."],
+      idempotencyKey: "web-final-candidate-1"
+    },
+    null,
+    2
+  );
+}
+
+function formatFinalAuditInput(proposalEventId: string | undefined): string {
+  return JSON.stringify(
+    {
+      proposalEventId: proposalEventId ?? "",
+      authorId: "final-auditor",
+      findings: ["The final candidate remains provisional."],
+      risks: ["Evidence coverage may still be incomplete."],
+      unresolvedObjectionIds: [],
+      qualityObligationIds: [],
+      evidenceNeedIds: [],
+      omissions: [],
+      compressionProblems: [],
+      limitations: ["The audit records boundaries only."],
+      continuationSuggestions: ["Resolve open evidence needs before external reliance."],
+      idempotencyKey: "web-final-audit-1"
+    },
+    null,
+    2
+  );
+}
+
 export type CreateAppRouterOptions = {
   initialPath?: string;
   history?: RouterHistory;
@@ -169,10 +215,30 @@ function RootRoute() {
 }
 
 function LandingPage() {
-  const { daemonBaseUrl } = useDaemonRuntime();
+  const { daemonBaseUrl, client } = useDaemonRuntime();
   const [sessionId, setSessionId] = useState("");
   const navigate = useNavigate({ from: "/" });
   const trimmedSessionId = sessionId.trim();
+  const sessionsQuery = useQuery({
+    queryKey: ["sessions"],
+    queryFn: () => client.listSessions()
+  });
+  const runtimeProfilesQuery = useQuery({
+    queryKey: ["runtime-profiles"],
+    queryFn: () => client.getRuntimeProfiles()
+  });
+  const sessions = asArray(sessionsQuery.data?.sessions);
+  const runtimeProfiles = asArray(runtimeProfilesQuery.data?.profiles);
+  const sessionEntries = sessions.flatMap((session, index) => {
+    const catalogSessionId = getStringRecordValue(session, "sessionId");
+
+    return catalogSessionId ? [{ session, index, sessionId: catalogSessionId }] : [];
+  });
+  const runtimeProfileEntries = runtimeProfiles.map((profile, index) => ({
+    profile,
+    index,
+    id: getStringRecordValue(profile, "id") ?? `runtime-profile-${index + 1}`
+  }));
 
   function submitSession(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -200,7 +266,7 @@ function LandingPage() {
         <PageHeader
           eyebrow="Projection workspace"
           title="Open a deliberation session"
-          description="Enter a session id from the local daemon. Session discovery is future daemon behavior."
+          description="Open a session from the local daemon catalog or enter a session id directly."
           actions={
             <Link className="du-action-link" to="/runs">
               Open runs
@@ -221,9 +287,145 @@ function LandingPage() {
             </button>
           </div>
         </form>
+        <DataPanel
+          title="Runtime profiles"
+          description="Safe daemon profile setup status without environment values."
+        >
+          <QueryState query={runtimeProfilesQuery}>
+            {runtimeProfileEntries.length === 0 ? (
+              <EmptyState
+                title="No runtime profiles"
+                description="The daemon did not return profile setup metadata."
+              />
+            ) : (
+              <div className="du-run-list">
+                {runtimeProfileEntries.map(({ profile, index, id }) => {
+                  const setup = getRecordValue(profile, "setup");
+                  const components = asArray(getRecordValue(profile, "components"));
+                  const enabledComponents = components.filter(
+                    (componentEntry) => getRecordValue(componentEntry, "enabled") === true
+                  ).length;
+                  const missingEnvVars = asArray(
+                    getRecordValue(setup, "missingRecommendedEnvVars")
+                  )
+                    .map((value) => formatRecordValue(value))
+                    .filter((value) => value !== "None");
+
+                  return (
+                    <article className="du-run-list-item" key={`${id}-${index}`}>
+                      <p className="du-kicker">{id}</p>
+                      <h3>{formatRecordValue(getRecordValue(profile, "name") ?? id)}</h3>
+                      <p>{formatRuntimeProfileStatus(getRecordValue(profile, "status"))}</p>
+                      <KeyValueGrid
+                        items={[
+                          {
+                            label: "Enabled",
+                            value:
+                              getRecordValue(profile, "enabled") === true ? "Yes" : "No"
+                          },
+                          {
+                            label: "Components",
+                            value: `${enabledComponents}/${components.length}`
+                          },
+                          {
+                            label: "Enable env var",
+                            value: formatRecordValue(getRecordValue(setup, "enableEnvVar"))
+                          },
+                          {
+                            label: "Recommended setup",
+                            value:
+                              missingEnvVars.length > 0
+                                ? missingEnvVars.join(", ")
+                                : "Complete"
+                          }
+                        ]}
+                      />
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </QueryState>
+        </DataPanel>
+        <DataPanel
+          title="Daemon sessions"
+          description="Read-only session catalog derived from daemon ledger events."
+        >
+          <QueryState query={sessionsQuery}>
+            {sessionEntries.length === 0 ? (
+              <EmptyState
+                title="No daemon sessions"
+                description="Create a run or post a session to the local daemon."
+              />
+            ) : (
+              <div className="du-run-list">
+                {sessionEntries.map(({ session, index, sessionId: catalogSessionId }) => (
+                  <article className="du-run-list-item" key={`${catalogSessionId}-${index}`}>
+                    <p className="du-kicker">{catalogSessionId}</p>
+                    <h3>
+                      {formatRecordValue(
+                        getRecordValue(session, "title") ?? "Untitled session"
+                      )}
+                    </h3>
+                    <p>
+                      {formatRecordValue(
+                        getRecordValue(session, "topic") ?? "No topic summary"
+                      )}
+                    </p>
+                    <KeyValueGrid
+                      items={[
+                        {
+                          label: "Events",
+                          value: formatRecordValue(getRecordValue(session, "eventCount"))
+                        },
+                        {
+                          label: "Latest event",
+                          value: formatRecordValue(
+                            getRecordValue(session, "latestEventRecordedAt")
+                          )
+                        },
+                        {
+                          label: "Topic contract event",
+                          value: formatRecordValue(
+                            getRecordValue(session, "topicContractEventId")
+                          )
+                        }
+                      ]}
+                    />
+                    <div className="du-action-row">
+                      <Link
+                        className="du-action-link"
+                        to="/sessions/$sessionId"
+                        params={{ sessionId: catalogSessionId }}
+                      >
+                        Open session
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </QueryState>
+        </DataPanel>
       </section>
     </WorkspaceShell>
   );
+}
+
+function formatRuntimeProfileStatus(value: unknown): string {
+  if (value === "ready") {
+    return "Ready";
+  }
+
+  if (value === "ready_with_run_config") {
+    return "Ready with run config";
+  }
+
+  if (value === "disabled") {
+    return "Disabled";
+  }
+
+  return formatRecordValue(value);
 }
 
 function SessionRoute() {
@@ -465,9 +667,70 @@ function EventsPage() {
 function FinalPage() {
   const { sessionId } = useSessionParams();
   const { client } = useDaemonRuntime();
+  const queryClient = useQueryClient();
+  const [candidateInput, setCandidateInput] = useState(DEFAULT_FINAL_CANDIDATE_INPUT);
+  const [auditInput, setAuditInput] = useState(DEFAULT_FINAL_AUDIT_INPUT);
+  const [candidateInputTouched, setCandidateInputTouched] = useState(false);
+  const [auditInputTouched, setAuditInputTouched] = useState(false);
+  const [candidateInputError, setCandidateInputError] = useState<string | null>(null);
+  const [auditInputError, setAuditInputError] = useState<string | null>(null);
+  const [candidateResult, setCandidateResult] = useState<unknown>(null);
+  const [auditResult, setAuditResult] = useState<unknown>(null);
+  const [projectionProposalEventId, setProjectionProposalEventId] = useState("");
+  const [appliedProjectionProposalEventId, setAppliedProjectionProposalEventId] = useState<
+    string | undefined
+  >();
   const finalQuery = useQuery({
-    queryKey: ["session-final", sessionId],
-    queryFn: () => client.getSessionFinal(sessionId)
+    queryKey: ["session-final", sessionId, appliedProjectionProposalEventId ?? "latest"],
+    queryFn: () =>
+      appliedProjectionProposalEventId
+        ? client.getSessionFinal(sessionId, {
+            finalCandidateProposalEventId: appliedProjectionProposalEventId
+          })
+        : client.getSessionFinal(sessionId)
+  });
+  const frontierQuery = useQuery({
+    queryKey: ["frontier", sessionId],
+    queryFn: () => client.getFrontier(sessionId)
+  });
+  const finalCandidateMutation = useMutation({
+    mutationFn: () =>
+      client.proposeFinalCandidate(
+        sessionId,
+        parseJsonObject(candidateInput) as ProposeFinalCandidateRequest
+      ),
+    onSuccess: async (result) => {
+      setCandidateInputError(null);
+      setCandidateResult(result);
+      const proposalEventId = getStringRecordValue(
+        getRecordValue(result, "event"),
+        "id"
+      );
+
+      if (!auditInputTouched && proposalEventId) {
+        setAuditInput(formatFinalAuditInput(proposalEventId));
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["session-final", sessionId] }),
+        queryClient.invalidateQueries({ queryKey: ["events", sessionId] })
+      ]);
+    }
+  });
+  const finalAuditMutation = useMutation({
+    mutationFn: () => {
+      const submission = parseFinalAuditJson(auditInput);
+
+      return client.auditFinalCandidate(sessionId, submission.proposalEventId, submission.input);
+    },
+    onSuccess: async (result) => {
+      setAuditInputError(null);
+      setAuditResult(result);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["session-final", sessionId] }),
+        queryClient.invalidateQueries({ queryKey: ["events", sessionId] })
+      ]);
+    }
   });
   const outcome = finalQuery.data?.outcome;
   const provenance = getRecordValue(outcome, "provenance");
@@ -479,6 +742,90 @@ function FinalPage() {
     "finalCandidateProposalEventId"
   );
   const recommendation = getRecordValue(outcome, "recommendation");
+  const acceptedCandidateIds = extractCandidateIdsFromFrontier(frontierQuery.data);
+  const acceptedCandidateInput = formatFinalCandidateInput(acceptedCandidateIds);
+  const auditProposalEventId = getFinalAuditProposalEventId(auditInput);
+  const canSubmitFinalCandidate =
+    !frontierQuery.isLoading &&
+    !frontierQuery.isError &&
+    acceptedCandidateIds.length > 0 &&
+    !finalCandidateMutation.isPending;
+  const canSubmitFinalAudit =
+    auditProposalEventId !== undefined &&
+    auditProposalEventId.length > 0 &&
+    !finalAuditMutation.isPending;
+  const finalCandidateReadiness = describeFinalCandidateReadiness({
+    frontierLoading: frontierQuery.isLoading,
+    frontierError: frontierQuery.isError,
+    candidateCount: acceptedCandidateIds.length
+  });
+  const finalAuditReadiness = describeFinalAuditReadiness(auditProposalEventId);
+  const canClearProjectionOverride =
+    appliedProjectionProposalEventId !== undefined ||
+    projectionProposalEventId.trim().length > 0;
+
+  useEffect(() => {
+    if (candidateInputTouched || acceptedCandidateIds.length === 0) {
+      return;
+    }
+
+    setCandidateInput(acceptedCandidateInput);
+  }, [acceptedCandidateIds.length, acceptedCandidateInput, candidateInputTouched]);
+
+  useEffect(() => {
+    if (auditInputTouched || !finalCandidateProposalEventId) {
+      return;
+    }
+
+    setAuditInput(formatFinalAuditInput(finalCandidateProposalEventId));
+  }, [auditInputTouched, finalCandidateProposalEventId]);
+
+  function submitFinalCandidate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!canSubmitFinalCandidate) {
+      return;
+    }
+
+    try {
+      parseJsonObject(candidateInput);
+      setCandidateInputError(null);
+      finalCandidateMutation.mutate();
+    } catch (error) {
+      setCandidateInputError(error instanceof Error ? error.message : "Invalid JSON input.");
+    }
+  }
+
+  function submitFinalAudit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!canSubmitFinalAudit) {
+      return;
+    }
+
+    try {
+      parseFinalAuditJson(auditInput);
+      setAuditInputError(null);
+      finalAuditMutation.mutate();
+    } catch (error) {
+      setAuditInputError(error instanceof Error ? error.message : "Invalid JSON input.");
+    }
+  }
+
+  function submitProjectionOverride(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const proposalEventId = projectionProposalEventId.trim();
+
+    setAppliedProjectionProposalEventId(
+      proposalEventId.length > 0 ? proposalEventId : undefined
+    );
+  }
+
+  function clearProjectionOverride() {
+    setProjectionProposalEventId("");
+    setAppliedProjectionProposalEventId(undefined);
+  }
 
   return (
     <ViewFrame
@@ -486,6 +833,35 @@ function FinalPage() {
       title="Compiled outcome projection"
       description="A daemon-backed projection from accepted proposal material and ledger provenance. It remains reviewable deliberation material, not authority."
     >
+      <form className="du-inline-form" onSubmit={submitProjectionOverride}>
+        <label htmlFor="du-final-projection-event">
+          Candidate proposal event override
+        </label>
+        <div className="du-inline-form-row">
+          <input
+            id="du-final-projection-event"
+            value={projectionProposalEventId}
+            placeholder="final-candidate-event-1"
+            onChange={(event) => setProjectionProposalEventId(event.target.value)}
+          />
+          <button type="submit">Compile projection</button>
+          <button
+            className="du-secondary-button"
+            type="button"
+            disabled={!canClearProjectionOverride}
+            onClick={clearProjectionOverride}
+          >
+            Use latest proposal
+          </button>
+        </div>
+        {appliedProjectionProposalEventId ? (
+          <StatusBanner
+            tone="neutral"
+            title="Specific final proposal selected"
+            detail={appliedProjectionProposalEventId}
+          />
+        ) : null}
+      </form>
       <QueryState query={finalQuery}>
         <StatusBanner
           tone={finalQuery.data?.draftStatus === "draft" ? "ok" : "warning"}
@@ -557,6 +933,77 @@ function FinalPage() {
         >
           <JsonBlock value={sanitizeForDisplay(outcome ?? {})} />
         </DataPanel>
+        <DataPanel
+          title="Final lifecycle controls"
+          description="Submits final candidate proposals and final audits to daemon lifecycle endpoints."
+        >
+          <div className="du-final-lifecycle-grid">
+            <form className="du-json-form" onSubmit={submitFinalCandidate}>
+              <label htmlFor="du-final-candidate-input">Final candidate proposal JSON</label>
+              <textarea
+                id="du-final-candidate-input"
+                value={candidateInput}
+                onChange={(event) => {
+                  setCandidateInputTouched(true);
+                  setCandidateInput(event.target.value);
+                }}
+              />
+              <button type="submit" disabled={!canSubmitFinalCandidate}>
+                {finalCandidateMutation.isPending ? "Submitting" : "Propose final candidate"}
+              </button>
+              {finalCandidateReadiness ? (
+                <StatusBanner
+                  tone={finalCandidateReadiness.tone}
+                  title={finalCandidateReadiness.title}
+                  detail={finalCandidateReadiness.detail}
+                />
+              ) : null}
+              {candidateInputError ? (
+                <StatusBanner tone="error" title={candidateInputError} />
+              ) : null}
+              {finalCandidateMutation.isError ? (
+                <StatusBanner
+                  tone="error"
+                  title="Final candidate proposal failed"
+                  detail={formatSafeErrorMessage(finalCandidateMutation.error)}
+                />
+              ) : null}
+              {candidateResult ? (
+                <JsonBlock value={sanitizeForDisplay(candidateResult)} />
+              ) : null}
+            </form>
+            <form className="du-json-form" onSubmit={submitFinalAudit}>
+              <label htmlFor="du-final-audit-input">Final audit JSON</label>
+              <textarea
+                id="du-final-audit-input"
+                value={auditInput}
+                onChange={(event) => {
+                  setAuditInputTouched(true);
+                  setAuditInput(event.target.value);
+                }}
+              />
+              <button type="submit" disabled={!canSubmitFinalAudit}>
+                {finalAuditMutation.isPending ? "Submitting" : "Record final audit"}
+              </button>
+              {finalAuditReadiness ? (
+                <StatusBanner
+                  tone={finalAuditReadiness.tone}
+                  title={finalAuditReadiness.title}
+                  detail={finalAuditReadiness.detail}
+                />
+              ) : null}
+              {auditInputError ? <StatusBanner tone="error" title={auditInputError} /> : null}
+              {finalAuditMutation.isError ? (
+                <StatusBanner
+                  tone="error"
+                  title="Final audit failed"
+                  detail={formatSafeErrorMessage(finalAuditMutation.error)}
+                />
+              ) : null}
+              {auditResult ? <JsonBlock value={sanitizeForDisplay(auditResult)} /> : null}
+            </form>
+          </div>
+        </DataPanel>
       </QueryState>
     </ViewFrame>
   );
@@ -570,6 +1017,8 @@ function ResourcesPage() {
     queryFn: () => client.getSessionResources(sessionId)
   });
   const plannedResources = asArray(resourcesQuery.data?.plannedResources);
+  const deliveryAudits = asArray(resourcesQuery.data?.deliveryAudits);
+  const accessAudits = asArray(resourcesQuery.data?.accessAudits);
   const evidenceNeeds = asArray(resourcesQuery.data?.evidenceNeeds);
   const registeredResourceCount = plannedResources.filter(
     (resource) => getRecordValue(resource, "registered") === true
@@ -590,7 +1039,7 @@ function ResourcesPage() {
               ? "Run-plan resources projected"
               : "No run-plan resources"
           }
-          detail="This page does not host resources, generate public URLs, or treat evidence needs as satisfied."
+          detail="This page shows projection and audit state only; signed access grants are created only by explicit daemon delivery requests."
         />
         <KeyValueGrid
           items={[
@@ -610,6 +1059,14 @@ function ResourcesPage() {
               value: `${registeredResourceCount} of ${plannedResources.length}`
             },
             {
+              label: "Delivery audits",
+              value: deliveryAudits.length
+            },
+            {
+              label: "Access audits",
+              value: accessAudits.length
+            },
+            {
               label: "Evidence needs",
               value: evidenceNeeds.length
             }
@@ -620,6 +1077,18 @@ function ResourcesPage() {
           records={plannedResources}
           emptyTitle="No resource references"
           emptyDescription="No run plan is linked to this session, or the linked run plan does not reference resources."
+        />
+        <RecordCollection
+          title="Resource delivery audits"
+          records={deliveryAudits}
+          emptyTitle="No delivery audit events"
+          emptyDescription="No daemon resource delivery planning decisions have been recorded for this session."
+        />
+        <RecordCollection
+          title="Resource access audits"
+          records={accessAudits}
+          emptyTitle="No access audit events"
+          emptyDescription="No daemon resource access grants or revocations have been recorded for this session."
         />
         <RecordCollection
           title="Accepted evidence needs"
@@ -645,6 +1114,122 @@ function useSessionEventsQuery(sessionId: string) {
     queryKey: ["events", sessionId],
     queryFn: () => client.listEvents(sessionId)
   });
+}
+
+function parseJsonObject(input: string): Record<string, unknown> {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(input);
+  } catch {
+    throw new Error("Input must be valid JSON.");
+  }
+
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("Input must be a JSON object.");
+  }
+
+  return parsed as Record<string, unknown>;
+}
+
+function parseFinalAuditJson(input: string): {
+  proposalEventId: string;
+  input: AuditFinalCandidateRequest;
+} {
+  const parsed = parseJsonObject(input);
+  const proposalEventId =
+    getStringRecordValue(parsed, "proposalEventId") ??
+    getStringRecordValue(parsed, "targetFinalCandidateProposalEventId");
+
+  if (!proposalEventId) {
+    throw new Error("Final audit JSON must include proposalEventId.");
+  }
+
+  const {
+    proposalEventId: _proposalEventId,
+    targetFinalCandidateProposalEventId: _targetFinalCandidateProposalEventId,
+    ...auditInput
+  } = parsed;
+
+  return {
+    proposalEventId,
+    input: auditInput as AuditFinalCandidateRequest
+  };
+}
+
+type LifecycleReadiness = {
+  tone: "neutral" | "warning" | "error";
+  title: string;
+  detail: string;
+};
+
+function getFinalAuditProposalEventId(input: string): string | undefined {
+  try {
+    const parsed = parseJsonObject(input);
+
+    return (
+      getStringRecordValue(parsed, "proposalEventId") ??
+      getStringRecordValue(parsed, "targetFinalCandidateProposalEventId")
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+function describeFinalCandidateReadiness(input: {
+  frontierLoading: boolean;
+  frontierError: boolean;
+  candidateCount: number;
+}): LifecycleReadiness | null {
+  if (input.frontierLoading) {
+    return {
+      tone: "neutral",
+      title: "Loading accepted candidates",
+      detail: "The candidate proposal control enables after the daemon frontier projection loads."
+    };
+  }
+
+  if (input.frontierError) {
+    return {
+      tone: "error",
+      title: "Candidate frontier unavailable",
+      detail: "The candidate proposal control requires the daemon frontier projection."
+    };
+  }
+
+  if (input.candidateCount === 0) {
+    return {
+      tone: "warning",
+      title: "No accepted active candidates",
+      detail: "Record or accept candidate material before proposing a final candidate."
+    };
+  }
+
+  return null;
+}
+
+function describeFinalAuditReadiness(
+  proposalEventId: string | undefined
+): LifecycleReadiness | null {
+  if (proposalEventId) {
+    return null;
+  }
+
+  return {
+    tone: "warning",
+    title: "No final proposal event selected",
+    detail: "The audit control requires a final candidate proposal event id."
+  };
+}
+
+function extractCandidateIdsFromFrontier(frontier: unknown): string[] {
+  return asArray(getRecordValue(frontier, "candidates"))
+    .map((candidateRecord) => {
+      const object = getRecordValue(candidateRecord, "object");
+
+      return getStringRecordValue(object, "id");
+    })
+    .filter((candidateId): candidateId is string => candidateId !== undefined);
 }
 
 function useSessionParams(): { sessionId: string } {

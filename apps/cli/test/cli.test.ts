@@ -91,6 +91,32 @@ function createFakeRunDaemonClient(
   overrides: Partial<CliRunDaemonClient> = {}
 ): CliRunDaemonClient & Record<string, ReturnType<typeof vi.fn>> {
   return {
+    getRuntimeProfiles: vi.fn(async () => ({
+      profiles: [
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready_with_run_config",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: ["DELIBERUM_OPENAI_BASE_URL"],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    })),
     createRun: vi.fn(async (input: unknown) => ({
       run: {
         runId: "run-1"
@@ -112,7 +138,8 @@ function createFakeRunDaemonClient(
     })),
     getRun: vi.fn(async (runId: string) => ({
       run: {
-        runId
+        runId,
+        sessionId: "session-1"
       }
     })),
     getRunEvents: vi.fn(async (runId: string) => ({
@@ -141,6 +168,120 @@ function createFakeRunDaemonClient(
       sessionId: "session-1",
       status: "not_available",
       reason: "final_candidate_proposal_unavailable"
+    })),
+    getSessionResources: vi.fn(async (sessionId: string) => ({
+      sessionId,
+      source: {
+        kind: "run_plan",
+        runId: "run-1"
+      },
+      plannedResources: [
+        {
+          reference: {
+            resourceId: "resource-1",
+            required: true,
+            preferredDeliveryMode: "none"
+          },
+          registered: true
+        }
+      ],
+      deliveryAudits: [
+        {
+          eventId: "resource-delivery-event-1",
+          resourceDeliveryId: "resource-delivery-1",
+          resourceId: "resource-1",
+          participantId: "participant-1",
+          result: {
+            selectedMode: "none",
+            allowed: false
+          }
+        }
+      ],
+      evidenceNeeds: [],
+      projection: {
+        version: "1",
+        eventRange: null,
+        eventIds: []
+      }
+    })),
+    getRunProcessProposals: vi.fn(async (runId: string) => ({
+      runId,
+      sessionId: "session-1",
+      proposals: [
+        {
+          id: "adaptive-run-1-sealed-divergence",
+          primitive: "sealed_divergence",
+          status: "proposed",
+          targetIds: ["topic-contract-event-1"]
+        }
+      ],
+      observations: ["No sealed divergence round is recorded for this run."],
+      metadata: {
+        version: "1",
+        eventRange: {
+          fromSequence: 0,
+          toSequence: 0
+        },
+        eventIds: ["topic-contract-event-1"]
+      }
+    })),
+    executeRunProcessProposal: vi.fn(async (runId: string, proposalEventId: string) => ({
+      run: {
+        runId
+      },
+      processProposal: {
+        proposalEventId,
+        proposalId: "process-proposal-1",
+        primitive: "sealed_divergence",
+        latestStatus: "accepted"
+      },
+      startRequest: {
+        sealedDivergence: {
+          autoCloseManual: true
+        }
+      },
+      stages: [
+        {
+          stage: "sealed_divergence",
+          eventIds: ["sealed-event-1"]
+        }
+      ],
+      stopped: false
+    })),
+    revokeResourceAccess: vi.fn(async (accessId: string) => ({
+      revoked: true,
+      grant: {
+        resourceAccessId: "resource-access-audit-1",
+        sessionId: "session-1",
+        resourceId: "resource-1",
+        participantId: "participant-1",
+        mode: "redirect",
+        exposure: "public",
+        createdAt: "2026-06-10T00:00:00.000Z",
+        expiresAt: "2026-06-10T00:05:00.000Z",
+        revokedAt: "2026-06-10T00:01:00.000Z",
+        accessCount: 1
+      }
+    })),
+    proposeFinalCandidate: vi.fn(async (sessionId: string, input: unknown) => ({
+      proposalId: "final-candidate-1",
+      appended: true,
+      event: {
+        id: "final-candidate-event-1",
+        sessionId,
+        type: "final_candidate_proposed",
+        payload: input
+      }
+    })),
+    auditFinalCandidate: vi.fn(async (sessionId: string, proposalEventId: string, input: unknown) => ({
+      appended: true,
+      event: {
+        id: "final-audit-event-1",
+        sessionId,
+        type: "final_audit_recorded",
+        basedOnEventIds: [proposalEventId],
+        payload: input
+      }
     })),
     ...overrides
   } as CliRunDaemonClient & Record<string, ReturnType<typeof vi.fn>>;
@@ -278,6 +419,36 @@ describe("CLI command routing", () => {
       acceptProposal: vi.fn(() => ({
         acceptanceEvent: createFakeEvent({ type: "proposal_accepted" })
       })),
+      projectProcessProposalStates: vi.fn(() => ({
+        proposalStates: [],
+        projection: createFakeProjectionMetadata()
+      })),
+      proposeProcessProposal: vi.fn(() => ({
+        proposalId: "process-proposal-1",
+        proposalEvent: createFakeEvent({ type: "process_proposal_proposed" })
+      })),
+      challengeProcessProposal: vi.fn(() => ({
+        challengeEvent: createFakeEvent({ type: "process_proposal_challenged" })
+      })),
+      decideProcessProposal: vi.fn(() => ({
+        decisionEvent: createFakeEvent({ type: "process_proposal_decided" })
+      })),
+      proposeFinalCandidate: vi.fn(() => ({
+        proposalId: "final-proposal-1",
+        proposalEvent: createFakeEvent({ type: "final_candidate_proposed" }),
+        appended: true
+      })),
+      auditFinalCandidate: vi.fn(() => ({
+        auditEvent: createFakeEvent({ type: "final_audit_recorded" }),
+        appended: true
+      })),
+      compileOutcome: vi.fn(() => ({
+        recommendation: "Provisional recommendation",
+        draftStatus: "provisional",
+        provenance: {
+          projectionBasis: "event_ledger_and_projections"
+        }
+      })),
       projectCandidateFrontier: vi.fn(() => ({
         basis: "accepted_active_candidates",
         candidates: [],
@@ -301,7 +472,33 @@ describe("CLI command routing", () => {
       createEventStore,
       idGenerator: createIds(Array.from({ length: 40 }, (_, index) => `id-${index}`)),
       clock: () => "2026-06-10T00:00:00.000Z",
-      readJsonFile: () => ({})
+      readJsonFile: (filePath: string) => {
+        if (filePath === "final-candidate.json") {
+          return {
+            candidateIds: ["candidate-1"],
+            recommendation: "Provisionally use candidate 1.",
+            applicabilityConditions: ["Condition remains true."],
+            rationale: "Candidate 1 preserves the accepted frontier.",
+            limitations: ["Still provisional."]
+          };
+        }
+
+        if (filePath === "final-audit.json") {
+          return {
+            findings: ["The draft preserves alternatives."],
+            risks: ["Evidence remains open."],
+            unresolvedObjectionIds: ["objection-1"],
+            qualityObligationIds: ["quality-1"],
+            evidenceNeedIds: ["evidence-need-1"],
+            omissions: ["Repair details are absent."],
+            compressionProblems: ["Risk was shortened."],
+            limitations: ["Audit did not verify evidence."],
+            continuationSuggestions: ["Run evidence check."]
+          };
+        }
+
+        return {};
+      }
     };
 
     await runCli(["new", "Topic"], commonDependencies);
@@ -367,6 +564,97 @@ describe("CLI command routing", () => {
       ],
       commonDependencies
     );
+    await runCli(["process", "proposals", "--session", "session-1"], commonDependencies);
+    await runCli(
+      [
+        "process",
+        "propose",
+        "--session",
+        "session-1",
+        "--author",
+        "system",
+        "--input",
+        "process-proposal.json",
+        "--based-on-event",
+        "topic-event-1"
+      ],
+      commonDependencies
+    );
+    await runCli(
+      [
+        "process",
+        "challenge",
+        "--session",
+        "session-1",
+        "--proposal-event",
+        "process-proposal-event-1",
+        "--author",
+        "participant-2",
+        "--reason",
+        "Needs process scrutiny"
+      ],
+      commonDependencies
+    );
+    await runCli(
+      [
+        "process",
+        "decide",
+        "--session",
+        "session-1",
+        "--proposal-event",
+        "process-proposal-event-1",
+        "--author",
+        "participant-2",
+        "--status",
+        "deferred",
+        "--rationale",
+        "Defer until the evidence check completes"
+      ],
+      commonDependencies
+    );
+    await runCli(
+      [
+        "final",
+        "propose",
+        "--session",
+        "session-1",
+        "--author",
+        "participant-6",
+        "--input",
+        "final-candidate.json",
+        "--idempotency-key",
+        "same-final-candidate"
+      ],
+      commonDependencies
+    );
+    await runCli(
+      [
+        "final",
+        "audit",
+        "--session",
+        "session-1",
+        "--proposal-event",
+        "final-proposal-event-1",
+        "--author",
+        "participant-7",
+        "--input",
+        "final-audit.json",
+        "--idempotency-key",
+        "same-final-audit"
+      ],
+      commonDependencies
+    );
+    await runCli(
+      [
+        "final",
+        "compile",
+        "--session",
+        "session-1",
+        "--proposal-event",
+        "final-proposal-event-1"
+      ],
+      commonDependencies
+    );
     await runCli(["frontier", "--session", "session-1"], commonDependencies);
     await runCli(["objections", "--session", "session-1"], commonDependencies);
     await runCli(["obligations", "--session", "session-1"], commonDependencies);
@@ -378,25 +666,223 @@ describe("CLI command routing", () => {
     expect(core.proposeExtraction).toHaveBeenCalledTimes(1);
     expect(core.challengeProposal).toHaveBeenCalledTimes(1);
     expect(core.acceptProposal).toHaveBeenCalledTimes(1);
+    expect(core.projectProcessProposalStates).toHaveBeenCalledTimes(1);
+    expect(core.proposeProcessProposal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: "session-1",
+        authorId: "system",
+        proposal: {},
+        basedOnEventIds: ["topic-event-1"]
+      }),
+      expect.any(Object)
+    );
+    expect(core.challengeProcessProposal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: "session-1",
+        targetProcessProposalEventId: "process-proposal-event-1",
+        authorId: "participant-2",
+        reason: "Needs process scrutiny"
+      }),
+      expect.any(Object)
+    );
+    expect(core.decideProcessProposal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: "session-1",
+        targetProcessProposalEventId: "process-proposal-event-1",
+        authorId: "participant-2",
+        status: "deferred",
+        rationale: "Defer until the evidence check completes"
+      }),
+      expect.any(Object)
+    );
+    expect(core.proposeFinalCandidate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: "session-1",
+        authorId: "participant-6",
+        candidateIds: ["candidate-1"],
+        recommendation: "Provisionally use candidate 1.",
+        applicabilityConditions: ["Condition remains true."],
+        rationale: "Candidate 1 preserves the accepted frontier.",
+        limitations: ["Still provisional."],
+        idempotencyKey: "same-final-candidate"
+      }),
+      expect.any(Object)
+    );
+    expect(core.auditFinalCandidate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: "session-1",
+        targetFinalCandidateProposalEventId: "final-proposal-event-1",
+        authorId: "participant-7",
+        findings: ["The draft preserves alternatives."],
+        risks: ["Evidence remains open."],
+        unresolvedObjectionIds: ["objection-1"],
+        qualityObligationIds: ["quality-1"],
+        evidenceNeedIds: ["evidence-need-1"],
+        omissions: ["Repair details are absent."],
+        compressionProblems: ["Risk was shortened."],
+        limitations: ["Audit did not verify evidence."],
+        continuationSuggestions: ["Run evidence check."],
+        idempotencyKey: "same-final-audit"
+      }),
+      expect.any(Object)
+    );
+    expect(core.compileOutcome).toHaveBeenCalledWith({
+      eventStore: fakeStore,
+      sessionId: "session-1",
+      finalCandidateProposalEventId: "final-proposal-event-1"
+    });
     expect(core.projectCandidateFrontier).toHaveBeenCalledTimes(1);
     expect(core.projectAcceptedDeliberationObjects).toHaveBeenCalledTimes(1);
     expect(core.projectQualityObligations).toHaveBeenCalledTimes(1);
     expect(createEventStore).toHaveBeenCalled();
   });
 
+  it("routes daemon profile commands through the daemon client without creating the local EventStore", async () => {
+    const { daemonClient, createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies();
+
+    const profiles = parseOutput<{
+      profiles: Array<{
+        id: string;
+        status: string;
+        setup: {
+          missingRecommendedEnvVars: string[];
+        };
+      }>;
+    }>(
+      await runCli(
+        ["daemon", "profiles", "--daemon-url", "http://localhost:4999", "--json"],
+        dependencies
+      )
+    );
+    const rejected = await runCli(
+      ["daemon", "profiles", "--api-key", "sk-runtime-secret", "--json"],
+      dependencies
+    );
+
+    expect(profiles.profiles[0]).toEqual(
+      expect.objectContaining({
+        id: "openai-compatible",
+        status: "ready_with_run_config",
+        setup: expect.objectContaining({
+          missingRecommendedEnvVars: ["DELIBERUM_OPENAI_BASE_URL"]
+        })
+      })
+    );
+    expect(daemonClient.getRuntimeProfiles).toHaveBeenCalledTimes(1);
+    expect(createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://localhost:4999"
+    });
+    expect(createEventStore).not.toHaveBeenCalled();
+    expect(rejected.exitCode).toBe(1);
+    expect(rejected.stdout).not.toContain("sk-runtime-secret");
+    expect(daemonClient.getRuntimeProfiles).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes daemon resource access revocation through the daemon client", async () => {
+    const accessId = "A".repeat(32);
+    const { daemonClient, createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies();
+
+    const revoked = parseOutput<{
+      revoked: boolean;
+      grant: {
+        resourceId: string;
+        revokedAt: string;
+      };
+    }>(
+      await runCli(
+        [
+          "daemon",
+          "resource-access",
+          "revoke",
+          accessId,
+          "--daemon-url",
+          "http://127.0.0.1:4999",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const rejected = await runCli(
+      [
+        "daemon",
+        "resource-access",
+        "revoke",
+        accessId,
+        "--api-key",
+        "sk-runtime-secret",
+        "--json"
+      ],
+      dependencies
+    );
+
+    expect(revoked).toEqual({
+      revoked: true,
+      grant: {
+        resourceAccessId: "resource-access-audit-1",
+        sessionId: "session-1",
+        resourceId: "resource-1",
+        participantId: "participant-1",
+        mode: "redirect",
+        exposure: "public",
+        createdAt: "2026-06-10T00:00:00.000Z",
+        expiresAt: "2026-06-10T00:05:00.000Z",
+        revokedAt: "2026-06-10T00:01:00.000Z",
+        accessCount: 1
+      }
+    });
+    expect(daemonClient.revokeResourceAccess).toHaveBeenCalledWith(accessId);
+    expect(createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://127.0.0.1:4999"
+    });
+    expect(createEventStore).not.toHaveBeenCalled();
+    expect(JSON.stringify(revoked)).not.toContain(accessId);
+    expect(rejected.exitCode).toBe(1);
+    expect(rejected.stdout).not.toContain("sk-runtime-secret");
+    expect(daemonClient.revokeResourceAccess).toHaveBeenCalledTimes(1);
+  });
+
   it("routes run commands through the daemon client without creating the local EventStore", async () => {
     const { daemonClient, createDaemonClient, createEventStore, dependencies } =
       createRunCliDependencies({
-        readJsonFile: (filePath) =>
-          filePath === "start.json"
-            ? {
-                sealedDivergence: {
-                  autoCloseManual: true
-                }
+        readJsonFile: (filePath) => {
+          if (filePath === "start.json") {
+            return {
+              sealedDivergence: {
+                autoCloseManual: true
               }
-            : {
-                topic: "Run from CLI"
-              }
+            };
+          }
+
+          if (filePath === "final-candidate.json") {
+            return {
+              candidateIds: ["candidate-1"],
+              recommendation: "Record daemon final candidate material.",
+              applicabilityConditions: ["Only for this daemon run session."],
+              rationale: "Expose daemon final lifecycle through CLI run commands.",
+              limitations: ["Requires final audit."]
+            };
+          }
+
+          if (filePath === "final-audit.json") {
+            return {
+              findings: ["The daemon final candidate remains provisional."],
+              risks: ["Evidence may still be incomplete."],
+              unresolvedObjectionIds: ["objection-1"],
+              qualityObligationIds: ["quality-1"],
+              evidenceNeedIds: ["evidence-1"],
+              omissions: ["No external validation."],
+              compressionProblems: [],
+              limitations: ["Audit records boundaries only."],
+              continuationSuggestions: ["Resolve evidence before reliance."]
+            };
+          }
+
+          return {
+            topic: "Run from CLI"
+          };
+        }
       });
 
     const created = parseOutput<{ input: { runPlan: { topic: string } } }>(
@@ -417,6 +903,89 @@ describe("CLI command routing", () => {
     const outcome = parseOutput<{ status: string; reason: string }>(
       await runCli(["runs", "outcome", "run-1", "--json"], dependencies)
     );
+    const outcomeOverride = parseOutput<{ status: string; reason: string }>(
+      await runCli(
+        [
+          "runs",
+          "outcome",
+          "run-1",
+          "--proposal-event",
+          "final-candidate-event-2",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const resources = parseOutput<{
+      sessionId: string;
+      plannedResources: Array<{ reference: { resourceId: string } }>;
+      deliveryAudits: Array<{ eventId: string; resourceId: string }>;
+    }>(await runCli(["runs", "resources", "run-1", "--json"], dependencies));
+    const processProposals = parseOutput<{
+      proposals: Array<{ primitive: string; status: string }>;
+      observations: string[];
+    }>(
+      await runCli(["runs", "process-proposals", "run-1", "--json"], dependencies)
+    );
+    const finalProposal = parseOutput<{
+      proposalId: string;
+      appended: boolean;
+      event: { type: string; sessionId: string };
+    }>(
+      await runCli(
+        [
+          "runs",
+          "final-propose",
+          "run-1",
+          "--author",
+          "final-coordinator",
+          "--input",
+          "final-candidate.json",
+          "--idempotency-key",
+          "daemon-final-candidate-1",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const finalAudit = parseOutput<{
+      appended: boolean;
+      event: { type: string; sessionId: string; basedOnEventIds: string[] };
+    }>(
+      await runCli(
+        [
+          "runs",
+          "final-audit",
+          "run-1",
+          "--proposal-event",
+          "final-candidate-event-1",
+          "--author",
+          "final-auditor",
+          "--input",
+          "final-audit.json",
+          "--idempotency-key",
+          "daemon-final-audit-1",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const executedProcessProposal = parseOutput<{
+      processProposal: { proposalEventId: string; primitive: string; latestStatus: string };
+      startRequest: { sealedDivergence: { autoCloseManual: boolean } };
+    }>(
+      await runCli(
+        [
+          "runs",
+          "execute-process-proposal",
+          "run-1",
+          "--proposal-event",
+          "process-proposal-event-1",
+          "--json"
+        ],
+        dependencies
+      )
+    );
 
     expect(created.input.runPlan.topic).toBe("Run from CLI");
     expect(listed.runs).toEqual([{ runId: "run-1" }]);
@@ -435,6 +1004,63 @@ describe("CLI command routing", () => {
       status: "not_available",
       reason: "final_candidate_proposal_unavailable"
     });
+    expect(outcomeOverride).toMatchObject({
+      status: "not_available",
+      reason: "final_candidate_proposal_unavailable"
+    });
+    expect(resources).toMatchObject({
+      sessionId: "session-1",
+      plannedResources: [
+        {
+          reference: {
+            resourceId: "resource-1"
+          }
+        }
+      ],
+      deliveryAudits: [
+        {
+          eventId: "resource-delivery-event-1",
+          resourceId: "resource-1"
+        }
+      ]
+    });
+    expect(processProposals.proposals).toEqual([
+      expect.objectContaining({
+        primitive: "sealed_divergence",
+        status: "proposed"
+      })
+    ]);
+    expect(processProposals.observations).toContain(
+      "No sealed divergence round is recorded for this run."
+    );
+    expect(finalProposal).toMatchObject({
+      proposalId: "final-candidate-1",
+      appended: true,
+      event: {
+        sessionId: "session-1",
+        type: "final_candidate_proposed"
+      }
+    });
+    expect(finalAudit).toMatchObject({
+      appended: true,
+      event: {
+        sessionId: "session-1",
+        type: "final_audit_recorded",
+        basedOnEventIds: ["final-candidate-event-1"]
+      }
+    });
+    expect(executedProcessProposal).toMatchObject({
+      processProposal: {
+        proposalEventId: "process-proposal-event-1",
+        primitive: "sealed_divergence",
+        latestStatus: "accepted"
+      },
+      startRequest: {
+        sealedDivergence: {
+          autoCloseManual: true
+        }
+      }
+    });
     expect(daemonClient.createRun).toHaveBeenCalledWith({
       runPlan: {
         topic: "Run from CLI"
@@ -442,6 +1068,7 @@ describe("CLI command routing", () => {
     });
     expect(daemonClient.listRuns).toHaveBeenCalledTimes(1);
     expect(daemonClient.getRun).toHaveBeenCalledWith("run-1");
+    expect(daemonClient.getRun).toHaveBeenCalledTimes(4);
     expect(daemonClient.getRunEvents).toHaveBeenCalledWith("run-1");
     expect(daemonClient.startRun).toHaveBeenCalledWith("run-1", {
       sealedDivergence: {
@@ -449,7 +1076,68 @@ describe("CLI command routing", () => {
       }
     });
     expect(daemonClient.getRunOutcome).toHaveBeenCalledWith("run-1");
-    expect(createDaemonClient).toHaveBeenCalledTimes(6);
+    expect(daemonClient.getRunOutcome).toHaveBeenCalledWith("run-1", {
+      finalCandidateProposalEventId: "final-candidate-event-2"
+    });
+    expect(daemonClient.getSessionResources).toHaveBeenCalledWith("session-1");
+    expect(daemonClient.getRunProcessProposals).toHaveBeenCalledWith("run-1");
+    expect(daemonClient.proposeFinalCandidate).toHaveBeenCalledWith("session-1", {
+      authorId: "final-coordinator",
+      candidateIds: ["candidate-1"],
+      recommendation: "Record daemon final candidate material.",
+      applicabilityConditions: ["Only for this daemon run session."],
+      rationale: "Expose daemon final lifecycle through CLI run commands.",
+      limitations: ["Requires final audit."],
+      idempotencyKey: "daemon-final-candidate-1"
+    });
+    expect(daemonClient.auditFinalCandidate).toHaveBeenCalledWith(
+      "session-1",
+      "final-candidate-event-1",
+      {
+        authorId: "final-auditor",
+        findings: ["The daemon final candidate remains provisional."],
+        risks: ["Evidence may still be incomplete."],
+        unresolvedObjectionIds: ["objection-1"],
+        qualityObligationIds: ["quality-1"],
+        evidenceNeedIds: ["evidence-1"],
+        omissions: ["No external validation."],
+        compressionProblems: [],
+        limitations: ["Audit records boundaries only."],
+        continuationSuggestions: ["Resolve evidence before reliance."],
+        idempotencyKey: "daemon-final-audit-1"
+      }
+    );
+    expect(daemonClient.executeRunProcessProposal).toHaveBeenCalledWith(
+      "run-1",
+      "process-proposal-event-1"
+    );
+    expect(createDaemonClient).toHaveBeenCalledTimes(12);
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("requires daemon run responses to include a session id before reading resources", async () => {
+    const daemonClient = createFakeRunDaemonClient({
+      getRun: vi.fn(async (runId: string) => ({
+        run: {
+          runId
+        }
+      }))
+    });
+    const { createEventStore, dependencies } = createRunCliDependencies({
+      client: daemonClient
+    });
+
+    const result = await runCli(["runs", "resources", "run-1", "--json"], dependencies);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.output).toMatchObject({
+      error: {
+        name: "CliUsageError",
+        detail: "Daemon run response did not include a sessionId."
+      }
+    });
+    expect(daemonClient.getRun).toHaveBeenCalledWith("run-1");
+    expect(daemonClient.getSessionResources).not.toHaveBeenCalled();
     expect(createEventStore).not.toHaveBeenCalled();
   });
 
@@ -580,6 +1268,21 @@ describe("CLI command routing", () => {
     expect(defaulted.createEventStore).not.toHaveBeenCalled();
   });
 
+  it("passes optional daemon auth token from env to daemon commands", async () => {
+    const configured = createRunCliDependencies({
+      env: {
+        DELIBERUM_DAEMON_AUTH_TOKEN: " local-daemon-auth-token-123 "
+      }
+    });
+
+    await runCli(["daemon", "profiles", "--json"], configured.dependencies);
+
+    expect(configured.createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://127.0.0.1:3877",
+      authToken: "local-daemon-auth-token-123"
+    });
+  });
+
   it("rejects unsafe daemon URLs before creating daemon clients or stores", async () => {
     for (const unsafeUrl of [
       "ftp://localhost:3877",
@@ -705,6 +1408,124 @@ describe("CLI integration", () => {
     expect(readdirSync(dir, { recursive: true }).map(String)).not.toContain(
       "current-session.json"
     );
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("records local process proposal lifecycle commands in the ledger", async () => {
+    const dir = createTempDir();
+    const storePath = join(dir, "events.json");
+    const proposalPath = join(dir, "process-proposal.json");
+    writeFileSync(
+      proposalPath,
+      JSON.stringify({
+        id: "process-proposal-1",
+        primitive: "evidence_check",
+        targetIds: ["candidate-object-1"],
+        expectedQualityGain: "Close evidence gaps before finalization.",
+        riskIfSkipped: "The compiled outcome may rely on unsupported claims.",
+        status: "proposed"
+      })
+    );
+    await runWithStore(storePath, ["new", "Evaluate process lifecycle"], [
+      "topic-contract-1",
+      "session-1",
+      "topic-event-1"
+    ]);
+    const proposed = parseOutput<{
+      proposalId: string;
+      event: { id: string; type: string; basedOnEventIds: string[] };
+    }>(
+      await runWithStore(
+        storePath,
+        [
+          "process",
+          "propose",
+          "--session",
+          "session-1",
+          "--author",
+          "system",
+          "--input",
+          proposalPath,
+          "--based-on-event",
+          "topic-event-1"
+        ],
+        ["process-proposal-event-1"]
+      )
+    );
+    const challenged = parseOutput<{ event: { id: string; type: string } }>(
+      await runWithStore(
+        storePath,
+        [
+          "process",
+          "challenge",
+          "--session",
+          "session-1",
+          "--proposal-event",
+          proposed.event.id,
+          "--author",
+          "reviewer-1",
+          "--reason",
+          "Review evidence priority first"
+        ],
+        ["challenge-1", "challenge-event-1"]
+      )
+    );
+    const decided = parseOutput<{ event: { id: string; type: string } }>(
+      await runWithStore(
+        storePath,
+        [
+          "process",
+          "decide",
+          "--session",
+          "session-1",
+          "--proposal-event",
+          proposed.event.id,
+          "--author",
+          "coordinator-1",
+          "--status",
+          "accepted",
+          "--rationale",
+          "Proceed as an operator-controlled next step"
+        ],
+        ["decision-1", "decision-event-1"]
+      )
+    );
+    const projection = parseOutput<{
+      proposalStates: Array<{
+        proposalEventId: string;
+        latestStatus: string;
+        challengeEventIds: string[];
+        decisionEventIds: string[];
+      }>;
+    }>(await runWithStore(storePath, ["process", "proposals", "--session", "session-1"], []));
+    const storedEventTypes = new JsonFileEventStore({ filePath: storePath })
+      .listEvents("session-1")
+      .map((event) => event.type);
+
+    expect(proposed).toMatchObject({
+      proposalId: "process-proposal-1",
+      event: {
+        type: "process_proposal_proposed",
+        basedOnEventIds: ["topic-event-1"]
+      }
+    });
+    expect(challenged.event.type).toBe("process_proposal_challenged");
+    expect(decided.event.type).toBe("process_proposal_decided");
+    expect(projection.proposalStates).toEqual([
+      expect.objectContaining({
+        proposalEventId: proposed.event.id,
+        latestStatus: "accepted",
+        challengeEventIds: [challenged.event.id],
+        decisionEventIds: [decided.event.id]
+      })
+    ]);
+    expect(storedEventTypes).toEqual([
+      "topic_contract_published",
+      "process_proposal_proposed",
+      "process_proposal_challenged",
+      "process_proposal_decided"
+    ]);
 
     rmSync(dir, { recursive: true, force: true });
   });
@@ -914,6 +1735,270 @@ describe("CLI integration", () => {
       eventsOutput.events.find((event) => event.type === "sealed_contribution_submitted")
         ?.payload.message
     ).toBe("source content");
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("records final candidate and audit commands before compiling a provisional outcome", async () => {
+    const dir = createTempDir();
+    const storePath = join(dir, "events.json");
+    const extractionPath = join(dir, "extraction.json");
+    const finalCandidatePath = join(dir, "final-candidate.json");
+    const finalAuditPath = join(dir, "final-audit.json");
+
+    await runWithStore(storePath, ["new", "Evaluate final projection commands"], [
+      "topic-contract-1",
+      "session-1",
+      "topic-event-1"
+    ]);
+    const opened = parseOutput<{ batchId: string }>(
+      await runWithStore(
+        storePath,
+        [
+          "batch",
+          "open",
+          "--session",
+          "session-1",
+          "--purpose",
+          "initial_divergence",
+          "--reveal-policy",
+          "manual"
+        ],
+        ["batch-1", "batch-open-event-1"]
+      )
+    );
+    await runWithStore(
+      storePath,
+      [
+        "contribution",
+        "add",
+        "--session",
+        "session-1",
+        "--batch",
+        opened.batchId,
+        "--author",
+        "participant-1",
+        "--payload-json",
+        "{\"message\":\"source content\"}"
+      ],
+      ["source-event-1"]
+    );
+    writeFileSync(extractionPath, JSON.stringify(extractionInput("source-event-1")), "utf8");
+    const extracted = parseOutput<{ event: { id: string } }>(
+      await runWithStore(
+        storePath,
+        [
+          "extraction",
+          "propose",
+          "--session",
+          "session-1",
+          "--author",
+          "participant-2",
+          "--rationale",
+          "Extract working objects",
+          "--input",
+          extractionPath
+        ],
+        ["proposal-1", "proposal-event-1"]
+      )
+    );
+    await runWithStore(
+      storePath,
+      [
+        "proposal",
+        "accept",
+        "--session",
+        "session-1",
+        "--proposal-event",
+        extracted.event.id,
+        "--author",
+        "participant-3",
+        "--rationale",
+        "Accept for final projection fixture"
+      ],
+      ["acceptance-1", "acceptance-event-1"]
+    );
+    writeFileSync(
+      finalCandidatePath,
+      JSON.stringify({
+        candidateIds: ["candidate-1"],
+        recommendation: "Provisionally use candidate 1 under stated constraints.",
+        applicabilityConditions: ["The unresolved objection remains visible."],
+        rationale: "Candidate 1 is the accepted active candidate in this fixture.",
+        limitations: ["Evidence remains unchecked."]
+      }),
+      "utf8"
+    );
+    writeFileSync(
+      finalAuditPath,
+      JSON.stringify({
+        findings: ["The draft preserves unresolved material."],
+        risks: ["Evidence remains open."],
+        unresolvedObjectionIds: ["objection-1"],
+        qualityObligationIds: ["quality-1"],
+        evidenceNeedIds: ["evidence-need-1"],
+        omissions: ["No repair step has run."],
+        compressionProblems: ["The source objection is summarized."],
+        limitations: ["Audit did not verify evidence."],
+        continuationSuggestions: ["Run evidence check before relying on this outcome."]
+      }),
+      "utf8"
+    );
+
+    const finalProposal = parseOutput<{
+      proposalId: string;
+      appended: boolean;
+      event: {
+        id: string;
+        type: string;
+        payload: {
+          status: string;
+          candidateIds: string[];
+          recommendation: string;
+        };
+      };
+    }>(
+      await runWithStore(
+        storePath,
+        [
+          "final",
+          "propose",
+          "--session",
+          "session-1",
+          "--author",
+          "participant-4",
+          "--input",
+          finalCandidatePath,
+          "--idempotency-key",
+          "same-final-candidate"
+        ],
+        ["final-proposal-1", "final-proposal-event-1"]
+      )
+    );
+    const finalAudit = parseOutput<{
+      appended: boolean;
+      event: {
+        id: string;
+        type: string;
+        basedOnEventIds: string[];
+        payload: {
+          status: string;
+          findings: string[];
+          risks: string[];
+        };
+      };
+    }>(
+      await runWithStore(
+        storePath,
+        [
+          "final",
+          "audit",
+          "--session",
+          "session-1",
+          "--proposal-event",
+          finalProposal.event.id,
+          "--author",
+          "participant-5",
+          "--input",
+          finalAuditPath,
+          "--idempotency-key",
+          "same-final-audit"
+        ],
+        ["final-audit-1", "final-audit-event-1"]
+      )
+    );
+    const compiled = parseOutput<{
+      recommendation: string;
+      draftStatus: string;
+      unresolvedObjections: Array<{ object: { id: string } }>;
+      evidenceStatus: { evidenceNeeds: Array<{ status: string; evidenceNeed: { object: { id: string } } }> };
+      provenance: {
+        finalCandidateProposalEventId?: string;
+        finalAuditEventIds: string[];
+      };
+    }>(
+      await runWithStore(
+        storePath,
+        [
+          "final",
+          "compile",
+          "--session",
+          "session-1",
+          "--proposal-event",
+          finalProposal.event.id
+        ],
+        []
+      )
+    );
+    const storedEventTypes = new JsonFileEventStore({ filePath: storePath })
+      .listEvents("session-1")
+      .map((event) => event.type);
+    const serializedCompiled = JSON.stringify(compiled);
+
+    expect(finalProposal).toMatchObject({
+      proposalId: "final-proposal-1",
+      appended: true,
+      event: {
+        type: "final_candidate_proposed",
+        payload: {
+          status: "proposed",
+          candidateIds: ["candidate-1"],
+          recommendation: "Provisionally use candidate 1 under stated constraints."
+        }
+      }
+    });
+    expect(finalProposal.event.payload).not.toHaveProperty("winner");
+    expect(finalProposal.event.payload).not.toHaveProperty("finalAnswer");
+    expect(finalAudit).toMatchObject({
+      appended: true,
+      event: {
+        type: "final_audit_recorded",
+        basedOnEventIds: [finalProposal.event.id],
+        payload: {
+          status: "recorded",
+          findings: ["The draft preserves unresolved material."],
+          risks: ["Evidence remains open."]
+        }
+      }
+    });
+    expect(compiled).toMatchObject({
+      recommendation: "Provisionally use candidate 1 under stated constraints.",
+      draftStatus: "provisional",
+      provenance: {
+        finalCandidateProposalEventId: finalProposal.event.id,
+        finalAuditEventIds: [finalAudit.event.id]
+      }
+    });
+    expect(compiled.unresolvedObjections[0]?.object.id).toBe("objection-1");
+    expect(compiled.evidenceStatus.evidenceNeeds[0]).toMatchObject({
+      status: "unchecked",
+      evidenceNeed: {
+        object: {
+          id: "evidence-need-1"
+        }
+      }
+    });
+    for (const forbidden of [
+      "finalAnswer",
+      "currentBest",
+      "winner",
+      "rank",
+      "score",
+      "vote",
+      "truthSummary"
+    ]) {
+      expect(compiled).not.toHaveProperty(forbidden);
+      expect(serializedCompiled).not.toContain(`"${forbidden}"`);
+    }
+    expect(storedEventTypes).toEqual([
+      "topic_contract_published",
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "extraction_proposed",
+      "proposal_accepted",
+      "final_candidate_proposed",
+      "final_audit_recorded"
+    ]);
 
     rmSync(dir, { recursive: true, force: true });
   });

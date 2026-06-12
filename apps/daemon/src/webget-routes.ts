@@ -1,4 +1,5 @@
 import {
+  recordResourceAccessGrantCreated,
   projectAcceptedDeliberationObjects,
   projectCandidateFrontier,
   projectQualityObligations,
@@ -18,6 +19,11 @@ import type {
 import type { Hono, Context } from "hono";
 import type { DaemonEventBus } from "./event-stream";
 import {
+  createResourceAccessDeliveryPlan,
+  createResourceAccessGrantAuditSummary
+} from "./resource-access-routes";
+import type { ResourceAccessGrantStoreLike } from "./resource-access-store";
+import {
   WebGETSessionError,
   WebGETSessionStore,
   type WebGETSessionPublicView
@@ -30,6 +36,9 @@ export type WebGETRouteOptions = {
   webgetStore: WebGETSessionStore;
   resourceBroker: ResourceBroker;
   deliveryPlanner: DeliveryPlanner;
+  resourceAccessStore: ResourceAccessGrantStoreLike;
+  resourceAccessBaseUrl: string;
+  resourceAccessTtlMs?: number;
   idGenerator: IdGenerator;
   clock?: Clock;
 };
@@ -85,11 +94,58 @@ export function registerWebGETRoutes(options: WebGETRouteOptions): void {
       participantId: session.participantId,
       policy: session.resourcePolicy
     });
-    options.webgetStore.recordResourceAccess(token, plan);
+    const resource = options.resourceBroker.getResource(resourceId);
+
+    if (!resource) {
+      throw new WebGETSessionError("resource_not_found", "WebGET resource was not found.");
+    }
+
+    const safePlan = createResourceAccessDeliveryPlan({
+      resourceAccessStore: options.resourceAccessStore,
+      resourceAccessBaseUrl: options.resourceAccessBaseUrl,
+      resourceBroker: options.resourceBroker,
+      resource,
+      idGenerator: options.idGenerator,
+      sessionId: session.sessionId,
+      resourceId,
+      participantId: session.participantId,
+      delivery: plan,
+      policy: session.resourcePolicy,
+      ttlMs: options.resourceAccessTtlMs,
+      onAccessGrantCreated: (created) => {
+        const accessAudit = recordResourceAccessGrantCreated(
+          {
+            sessionId: session.sessionId,
+            resourceAccessId: created.grant.resourceAccessId,
+            resourceId,
+            participantId: session.participantId,
+            resource: {
+              kind: resource.kind,
+              mime: resource.mime,
+              sizeBytes: resource.sizeBytes,
+              hash: resource.hash,
+              privacy: resource.privacy
+            },
+            grant: createResourceAccessGrantAuditSummary(created.grant),
+            idempotencyKey: `resource-access-created:${created.grant.resourceAccessId}`
+          },
+          {
+            eventStore: options.eventStore,
+            idGenerator: options.idGenerator,
+            clock: options.clock
+          }
+        );
+
+        if (accessAudit.appended) {
+          options.eventBus.publish(accessAudit.accessEvent);
+        }
+      }
+    });
+    options.webgetStore.recordResourceAccess(token, safePlan);
 
     return noStoreJson(context, {
       resource: sanitizeResource(options.resourceBroker.getResource(resourceId)),
-      delivery: plan
+      delivery: safePlan
     });
   });
 

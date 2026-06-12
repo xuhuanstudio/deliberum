@@ -1,35 +1,51 @@
 import {
   acceptProposal,
+  auditFinalCandidate,
   challengeProposal,
   closeSealedBatch,
   compileOutcome,
   createSession,
+  challengeProcessProposal,
+  decideProcessProposal,
   openSealedBatch,
   projectAcceptedDeliberationObjects,
   projectCandidateFrontier,
+  projectProcessProposalStates,
   projectQualityObligations,
+  proposeFinalCandidate,
+  proposeProcessProposal,
   proposeExtraction,
   submitSealedContribution,
+  TOPIC_CONTRACT_PUBLISHED_EVENT_TYPE,
   type Clock,
   type IdGenerator
 } from "@deliberum/core";
-import type { JsonValue, SealedBatchPurpose, SealedBatchRevealPolicy } from "@deliberum/protocol";
+import type {
+  JsonValue,
+  ProcessProposalDecisionStatus,
+  SealedBatchPurpose,
+  SealedBatchRevealPolicy
+} from "@deliberum/protocol";
 import {
   DeliveryPlanner,
   InMemoryResourceBroker,
   type ResourceBroker
 } from "@deliberum/resources";
 import { InMemoryEventStore, type EventStore, type StoredEvent } from "@deliberum/storage";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import {
   AdapterRegistry,
+  CandidateRepairGeneratorRegistry,
+  EvidenceCheckGeneratorRegistry,
   ExtractionGeneratorRegistry,
   FinalAuditGeneratorRegistry,
   FinalCandidateGeneratorRegistry,
   ProposalReviewGeneratorRegistry,
+  type CandidateRepairGenerator,
+  type EvidenceCheckGenerator,
   type ExtractionGenerator,
   type FinalAuditGenerator,
   type FinalCandidateGenerator,
@@ -44,6 +60,27 @@ import {
   createOpenAICompatibleRuntimeEnv,
   type OpenAICompatibleProfileOptions
 } from "./openai-compatible-profile";
+import {
+  createHttpTemplateRunRegistries,
+  createHttpTemplateRuntimeEnv,
+  type HttpTemplateProfileOptions
+} from "./http-template-profile";
+import {
+  handleResourceDeliveryRouteError,
+  registerResourceDeliveryRoutes
+} from "./resource-delivery-routes";
+import {
+  handleResourceAccessRouteError,
+  registerResourceAccessRoutes
+} from "./resource-access-routes";
+import {
+  RESOURCE_ACCESS_DEFAULT_TTL_MS,
+  ResourceAccessGrantStore,
+  type ResourceAccessGrantStoreLike,
+  type ResourceAccessClock,
+  type ResourceAccessTokenGenerator
+} from "./resource-access-store";
+import { buildRuntimeProfilesProjection } from "./runtime-profiles";
 import { DaemonRunOrchestrationService, type DaemonRunOrchestrationOptions } from "./run-orchestration";
 import { handleRunRouteError, registerRunRoutes } from "./run-routes";
 import { buildSessionResourcesProjection } from "./session-resources";
@@ -63,11 +100,18 @@ export type DaemonAppOptions = {
   webgetClock?: WebGETClock;
   webgetTokenGenerator?: WebGETTokenGenerator;
   webgetBaseUrl?: string;
+  resourceAccessStore?: ResourceAccessGrantStoreLike;
+  resourceAccessClock?: ResourceAccessClock;
+  resourceAccessTokenGenerator?: ResourceAccessTokenGenerator;
+  resourceAccessBaseUrl?: string;
+  resourceAccessTtlMs?: number;
   resourceBroker?: ResourceBroker;
   deliveryPlanner?: DeliveryPlanner;
   runStore?: DaemonRunOrchestrationOptions["runStore"];
   runAdapterRegistry?: DaemonRunOrchestrationOptions["adapterRegistry"];
   runExtractionGeneratorRegistry?: DaemonRunOrchestrationOptions["extractionGeneratorRegistry"];
+  runCandidateRepairGeneratorRegistry?: DaemonRunOrchestrationOptions["candidateRepairGeneratorRegistry"];
+  runEvidenceCheckGeneratorRegistry?: DaemonRunOrchestrationOptions["evidenceCheckGeneratorRegistry"];
   runProposalReviewGeneratorRegistry?: DaemonRunOrchestrationOptions["proposalReviewGeneratorRegistry"];
   runFinalCandidateGeneratorRegistry?: DaemonRunOrchestrationOptions["finalCandidateGeneratorRegistry"];
   runFinalAuditGeneratorRegistry?: DaemonRunOrchestrationOptions["finalAuditGeneratorRegistry"];
@@ -81,6 +125,10 @@ export type DaemonAppOptions = {
   enableOpenAICompatibleFinalization?: boolean;
   openAICompatibleEnv?: Record<string, string | undefined>;
   openAICompatibleFetch?: OpenAICompatibleProfileOptions["fetch"];
+  enableHttpTemplateProfile?: boolean;
+  httpTemplateEnv?: Record<string, string | undefined>;
+  httpTemplateFetch?: HttpTemplateProfileOptions["fetch"];
+  daemonAuthToken?: string;
   corsOrigins?: readonly string[];
   idGenerator?: IdGenerator;
   clock?: Clock;
@@ -93,6 +141,7 @@ export type DaemonApp = {
   eventStore: EventStore;
   eventBus: DaemonEventBus;
   webgetStore: WebGETSessionStore;
+  resourceAccessStore: ResourceAccessGrantStoreLike;
   resourceBroker: ResourceBroker;
   deliveryPlanner: DeliveryPlanner;
   runStore: NonNullable<DaemonRunOrchestrationOptions["runStore"]>;
@@ -135,8 +184,23 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   const idGenerator = options.idGenerator ?? (() => randomUUID());
   const host = options.host ?? DEFAULT_DAEMON_HOST;
   const port = options.port ?? DEFAULT_DAEMON_PORT;
+  const daemonAuthToken = normalizeDaemonAuthToken(
+    options.daemonAuthToken,
+    "daemonAuthToken"
+  );
   const resourceBroker = options.resourceBroker ?? new InMemoryResourceBroker();
   const deliveryPlanner = options.deliveryPlanner ?? new DeliveryPlanner({ broker: resourceBroker });
+  const resourceAccessBaseUrl =
+    options.resourceAccessBaseUrl ?? `http://${host}:${port}`;
+  const resourceAccessStore =
+    options.resourceAccessStore ??
+    new ResourceAccessGrantStore({
+      clock:
+        options.resourceAccessClock ??
+        (() => (clock ? Date.parse(clock()) : Date.now())),
+      tokenGenerator: options.resourceAccessTokenGenerator,
+      defaultTtlMs: options.resourceAccessTtlMs ?? RESOURCE_ACCESS_DEFAULT_TTL_MS
+    });
   const corsOrigins = normalizeCorsOrigins(options.corsOrigins) ?? [
     ...DEFAULT_DAEMON_CORS_ORIGINS
   ];
@@ -150,6 +214,12 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         enableExtraction: options.enableOpenAICompatibleExtraction === true,
         enableReview: options.enableOpenAICompatibleReview === true,
         enableFinalization: options.enableOpenAICompatibleFinalization === true
+      })
+    : undefined;
+  const httpTemplateRegistries = options.enableHttpTemplateProfile
+    ? createHttpTemplateRunRegistries({
+        env: options.httpTemplateEnv,
+        fetch: options.httpTemplateFetch
       })
     : undefined;
   const webgetStore =
@@ -171,13 +241,24 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       options.runAdapterRegistry ??
       mergeAdapterRegistries(
         localPresetRegistries?.adapterRegistry,
-        openAICompatibleRegistries?.adapterRegistry
+        openAICompatibleRegistries?.adapterRegistry,
+        httpTemplateRegistries?.adapterRegistry
       ),
     extractionGeneratorRegistry:
       options.runExtractionGeneratorRegistry ??
       mergeExtractionGeneratorRegistries(
         localPresetRegistries?.extractionGeneratorRegistry,
         openAICompatibleRegistries?.extractionGeneratorRegistry
+      ),
+    candidateRepairGeneratorRegistry:
+      options.runCandidateRepairGeneratorRegistry ??
+      mergeCandidateRepairGeneratorRegistries(
+        localPresetRegistries?.candidateRepairGeneratorRegistry
+      ),
+    evidenceCheckGeneratorRegistry:
+      options.runEvidenceCheckGeneratorRegistry ??
+      mergeEvidenceCheckGeneratorRegistries(
+        localPresetRegistries?.evidenceCheckGeneratorRegistry
       ),
     proposalReviewGeneratorRegistry:
       options.runProposalReviewGeneratorRegistry ??
@@ -199,9 +280,14 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       ),
     env:
       options.runEnv ??
-      (options.enableOpenAICompatibleProfile
-        ? createOpenAICompatibleRuntimeEnv(options.openAICompatibleEnv)
-        : undefined),
+      mergeRuntimeEnvs(
+        options.enableOpenAICompatibleProfile
+          ? createOpenAICompatibleRuntimeEnv(options.openAICompatibleEnv)
+          : undefined,
+        options.enableHttpTemplateProfile
+          ? createHttpTemplateRuntimeEnv(options.httpTemplateEnv)
+          : undefined
+      ),
     executionClaimTtlMs: options.runExecutionClaimTtlMs,
     executionClaimOwnerIdGenerator: options.runExecutionClaimOwnerIdGenerator
   });
@@ -213,7 +299,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   };
 
   app.onError((error, context) =>
+    handleResourceAccessRouteError(context, error) ??
     handleWebGETRouteError(context, error) ??
+    handleResourceDeliveryRouteError(context, error) ??
     handleRunRouteError(context, error) ??
     safeError(context, error)
   );
@@ -223,9 +311,19 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     cors({
       origin: corsOrigins,
       allowMethods: ["GET", "POST", "OPTIONS"],
-      allowHeaders: ["Content-Type"]
+      allowHeaders: ["Content-Type", "Authorization"]
     })
   );
+
+  app.use("*", async (context, next) => {
+    const authError = authenticateDaemonRequest(context, daemonAuthToken);
+
+    if (authError) {
+      return authError;
+    }
+
+    await next();
+  });
 
   registerRunRoutes({
     app,
@@ -303,6 +401,16 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     )
   );
 
+  app.get("/sessions/:sessionId/process-proposals", (context) =>
+    noStoreJson(
+      context,
+      projectProcessProposalStates({
+        eventStore,
+        sessionId: context.req.param("sessionId")
+      })
+    )
+  );
+
   app.get("/sessions/:sessionId/final", (context) => {
     const sessionId = context.req.param("sessionId");
     const finalCandidateProposalEventId = normalizeOptionalQueryValue(
@@ -322,6 +430,73 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     });
   });
 
+  app.post("/sessions/:sessionId/final-candidates", async (context) => {
+    const body = await readJsonObject(context);
+    const result = proposeFinalCandidate(
+      {
+        sessionId: context.req.param("sessionId"),
+        authorId: body.authorId as string,
+        candidateIds: body.candidateIds as readonly string[],
+        recommendation: body.recommendation as string,
+        applicabilityConditions: body.applicabilityConditions as readonly string[] | undefined,
+        rationale: body.rationale as string,
+        limitations: body.limitations as readonly string[] | undefined,
+        idempotencyKey: body.idempotencyKey as string | undefined
+      },
+      coreOptions
+    );
+
+    if (result.appended) {
+      eventBus.publish(result.proposalEvent);
+    }
+
+    return context.json(
+      {
+        proposalId: result.proposalId,
+        event: result.proposalEvent,
+        appended: result.appended
+      },
+      201
+    );
+  });
+
+  app.post(
+    "/sessions/:sessionId/final-candidates/:proposalEventId/audits",
+    async (context) => {
+      const body = await readJsonObject(context);
+      const result = auditFinalCandidate(
+        {
+          sessionId: context.req.param("sessionId"),
+          targetFinalCandidateProposalEventId: context.req.param("proposalEventId"),
+          authorId: body.authorId as string,
+          findings: body.findings as readonly string[] | undefined,
+          risks: body.risks as readonly string[] | undefined,
+          unresolvedObjectionIds: body.unresolvedObjectionIds as readonly string[] | undefined,
+          qualityObligationIds: body.qualityObligationIds as readonly string[] | undefined,
+          evidenceNeedIds: body.evidenceNeedIds as readonly string[] | undefined,
+          omissions: body.omissions as readonly string[] | undefined,
+          compressionProblems: body.compressionProblems as readonly string[] | undefined,
+          limitations: body.limitations as readonly string[] | undefined,
+          continuationSuggestions: body.continuationSuggestions as readonly string[] | undefined,
+          idempotencyKey: body.idempotencyKey as string | undefined
+        },
+        coreOptions
+      );
+
+      if (result.appended) {
+        eventBus.publish(result.auditEvent);
+      }
+
+      return context.json(
+        {
+          event: result.auditEvent,
+          appended: result.appended
+        },
+        201
+      );
+    }
+  );
+
   app.get("/sessions/:sessionId/resources", (context) =>
     noStoreJson(
       context,
@@ -333,6 +508,40 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       })
     )
   );
+
+  registerResourceDeliveryRoutes({
+    app,
+    eventStore,
+    eventBus,
+    runStore: runService.runStore,
+    resourceBroker,
+    deliveryPlanner,
+    resourceAccessStore,
+    resourceAccessBaseUrl,
+    resourceAccessTtlMs: options.resourceAccessTtlMs,
+    idGenerator,
+    clock
+  });
+
+  app.get("/runtime/profiles", (context) =>
+    noStoreJson(
+      context,
+      buildRuntimeProfilesProjection({
+        enableLocalPreset: options.enableLocalPreset === true,
+        enableOpenAICompatibleProfile: options.enableOpenAICompatibleProfile === true,
+        enableOpenAICompatibleExtraction:
+          options.enableOpenAICompatibleExtraction === true,
+        enableOpenAICompatibleReview: options.enableOpenAICompatibleReview === true,
+        enableOpenAICompatibleFinalization:
+          options.enableOpenAICompatibleFinalization === true,
+        openAICompatibleEnv: options.openAICompatibleEnv,
+        enableHttpTemplateProfile: options.enableHttpTemplateProfile === true,
+        httpTemplateEnv: options.httpTemplateEnv
+      })
+    )
+  );
+
+  app.get("/sessions", (context) => noStoreJson(context, listSessionCatalog(eventStore)));
 
   app.post("/sessions", async (context) => {
     const body = await readJsonObject(context);
@@ -509,6 +718,89 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     );
   });
 
+  app.post("/sessions/:sessionId/process-proposals", async (context) => {
+    const body = await readJsonObject(context);
+    const result = proposeProcessProposal(
+      {
+        sessionId: context.req.param("sessionId"),
+        authorId: body.authorId as string,
+        proposal: body.proposal,
+        basedOnEventIds: body.basedOnEventIds as readonly string[] | undefined,
+        idempotencyKey: body.idempotencyKey as string | undefined
+      },
+      coreOptions
+    );
+
+    if (result.appended) {
+      eventBus.publish(result.proposalEvent);
+    }
+
+    return context.json(
+      {
+        proposalId: result.proposalId,
+        event: result.proposalEvent
+      },
+      201
+    );
+  });
+
+  app.post(
+    "/sessions/:sessionId/process-proposals/:proposalEventId/challenges",
+    async (context) => {
+      const body = await readJsonObject(context);
+      const result = challengeProcessProposal(
+        {
+          sessionId: context.req.param("sessionId"),
+          targetProcessProposalEventId: context.req.param("proposalEventId"),
+          authorId: body.authorId as string,
+          reason: body.reason as string,
+          idempotencyKey: body.idempotencyKey as string | undefined
+        },
+        coreOptions
+      );
+
+      if (result.appended) {
+        eventBus.publish(result.challengeEvent);
+      }
+
+      return context.json(
+        {
+          event: result.challengeEvent
+        },
+        201
+      );
+    }
+  );
+
+  app.post(
+    "/sessions/:sessionId/process-proposals/:proposalEventId/decisions",
+    async (context) => {
+      const body = await readJsonObject(context);
+      const result = decideProcessProposal(
+        {
+          sessionId: context.req.param("sessionId"),
+          targetProcessProposalEventId: context.req.param("proposalEventId"),
+          authorId: body.authorId as string,
+          status: body.status as ProcessProposalDecisionStatus,
+          rationale: body.rationale as string,
+          idempotencyKey: body.idempotencyKey as string | undefined
+        },
+        coreOptions
+      );
+
+      if (result.appended) {
+        eventBus.publish(result.decisionEvent);
+      }
+
+      return context.json(
+        {
+          event: result.decisionEvent
+        },
+        201
+      );
+    }
+  );
+
   registerWebGETRoutes({
     app,
     eventStore,
@@ -516,6 +808,19 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     webgetStore,
     resourceBroker,
     deliveryPlanner,
+    resourceAccessStore,
+    resourceAccessBaseUrl,
+    resourceAccessTtlMs: options.resourceAccessTtlMs,
+    idGenerator,
+    clock
+  });
+
+  registerResourceAccessRoutes({
+    app,
+    eventStore,
+    eventBus,
+    resourceAccessStore,
+    resourceBroker,
     idGenerator,
     clock
   });
@@ -525,6 +830,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     eventStore,
     eventBus,
     webgetStore,
+    resourceAccessStore,
     resourceBroker,
     deliveryPlanner,
     runStore: runService.runStore,
@@ -532,6 +838,26 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     port,
     createWebGETSession: (input) => webgetStore.createSession(input)
   };
+}
+
+export function normalizeDaemonAuthToken(
+  token: string | undefined,
+  name: string
+): string | undefined {
+  const trimmed = token?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (!/^\S{16,}$/.test(trimmed)) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name} must be at least 16 non-whitespace characters.`
+    );
+  }
+
+  return trimmed;
 }
 
 function mergeAdapterRegistries(
@@ -546,6 +872,14 @@ function mergeAdapterRegistries(
   });
 
   return adapters.length > 0 ? new AdapterRegistry(adapters) : undefined;
+}
+
+function mergeRuntimeEnvs(
+  ...envs: Array<Record<string, string | undefined> | undefined>
+): Record<string, string | undefined> | undefined {
+  const merged = Object.assign({}, ...envs.filter(Boolean));
+
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 function isMergeableAdapterRegistry(
@@ -582,6 +916,66 @@ function isMergeableExtractionGeneratorRegistry(
   value: unknown
 ): value is {
   require(generatorId: string): ExtractionGenerator;
+  list(): Array<{ generatorId: string }>;
+} {
+  const candidate = value as { require?: unknown; list?: unknown } | null;
+
+  return (
+    candidate !== null &&
+    typeof candidate === "object" &&
+    typeof candidate.require === "function" &&
+    typeof candidate.list === "function"
+  );
+}
+
+function mergeCandidateRepairGeneratorRegistries(
+  ...registries: unknown[]
+): DaemonRunOrchestrationOptions["candidateRepairGeneratorRegistry"] | undefined {
+  const generators = registries.flatMap((registry) => {
+    if (!isMergeableCandidateRepairGeneratorRegistry(registry)) {
+      return [];
+    }
+
+    return registry.list().map((entry) => registry.require(entry.generatorId));
+  });
+
+  return generators.length > 0 ? new CandidateRepairGeneratorRegistry(generators) : undefined;
+}
+
+function isMergeableCandidateRepairGeneratorRegistry(
+  value: unknown
+): value is {
+  require(generatorId: string): CandidateRepairGenerator;
+  list(): Array<{ generatorId: string }>;
+} {
+  const candidate = value as { require?: unknown; list?: unknown } | null;
+
+  return (
+    candidate !== null &&
+    typeof candidate === "object" &&
+    typeof candidate.require === "function" &&
+    typeof candidate.list === "function"
+  );
+}
+
+function mergeEvidenceCheckGeneratorRegistries(
+  ...registries: unknown[]
+): DaemonRunOrchestrationOptions["evidenceCheckGeneratorRegistry"] | undefined {
+  const generators = registries.flatMap((registry) => {
+    if (!isMergeableEvidenceCheckGeneratorRegistry(registry)) {
+      return [];
+    }
+
+    return registry.list().map((entry) => registry.require(entry.generatorId));
+  });
+
+  return generators.length > 0 ? new EvidenceCheckGeneratorRegistry(generators) : undefined;
+}
+
+function isMergeableEvidenceCheckGeneratorRegistry(
+  value: unknown
+): value is {
+  require(generatorId: string): EvidenceCheckGenerator;
   list(): Array<{ generatorId: string }>;
 } {
   const candidate = value as { require?: unknown; list?: unknown } | null;
@@ -764,12 +1158,138 @@ function normalizeOptionalQueryValue(value: string | undefined): string | undefi
   return trimmed && trimmed.length > 0 ? trimmed : undefined;
 }
 
+function listSessionCatalog(eventStore: EventStore): {
+  sessions: Array<{
+    sessionId: string;
+    topicContractEventId: string | null;
+    title: string | null;
+    topic: string | null;
+    createdAt: string | null;
+    recordedAt: string | null;
+    latestEventRecordedAt: string | null;
+    eventCount: number;
+  }>;
+} {
+  const sessions = eventStore.listSessionIds().map((sessionId) => {
+    const events = eventStore.listEvents(sessionId);
+    const topicContractEvent =
+      events.find((event) => event.type === TOPIC_CONTRACT_PUBLISHED_EVENT_TYPE) ?? null;
+    const topicContract =
+      typeof topicContractEvent?.payload === "object" &&
+      topicContractEvent.payload !== null &&
+      !Array.isArray(topicContractEvent.payload)
+        ? (topicContractEvent.payload as Record<string, unknown>)
+        : {};
+    const latestEvent = events.at(-1) ?? null;
+
+    return {
+      sessionId,
+      topicContractEventId: topicContractEvent?.id ?? null,
+      title: stringRecordValue(topicContract, "title"),
+      topic: stringRecordValue(topicContract, "topic"),
+      createdAt: topicContractEvent?.createdAt ?? null,
+      recordedAt: topicContractEvent?.recordedAt ?? null,
+      latestEventRecordedAt: latestEvent?.recordedAt ?? null,
+      eventCount: events.length
+    };
+  });
+
+  sessions.sort((left, right) => {
+    const byLatest = (right.latestEventRecordedAt ?? "").localeCompare(
+      left.latestEventRecordedAt ?? ""
+    );
+
+    return byLatest !== 0 ? byLatest : left.sessionId.localeCompare(right.sessionId);
+  });
+
+  return { sessions };
+}
+
+function stringRecordValue(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
 function noStoreJson(context: Context, payload: unknown, status: 200 | 201 | 400 = 200): Response {
   const response = context.json(payload, status);
   response.headers.set("Cache-Control", "no-store");
   response.headers.set("Pragma", "no-cache");
 
   return response;
+}
+
+function authenticateDaemonRequest(
+  context: Context,
+  expectedToken: string | undefined
+): Response | undefined {
+  if (!expectedToken || isDaemonAuthExemptRequest(context)) {
+    return undefined;
+  }
+
+  const token =
+    parseBearerAuthorizationHeader(context.req.header("Authorization")) ??
+    parseDaemonAuthStreamQueryToken(context);
+
+  if (token && compareDaemonAuthToken(token, expectedToken)) {
+    return undefined;
+  }
+
+  const response = context.json(createErrorResponse(
+    "daemon_auth_required",
+    "Daemon authentication is required."
+  ), 401);
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("WWW-Authenticate", 'Bearer realm="deliberum-daemon"');
+
+  return response;
+}
+
+function isDaemonAuthExemptRequest(context: Context): boolean {
+  const method = context.req.method.toUpperCase();
+  const path = context.req.path;
+
+  if (method === "OPTIONS" || path === "/health") {
+    return true;
+  }
+
+  if (path.startsWith("/webget/")) {
+    return true;
+  }
+
+  return method === "GET" && path.startsWith("/resource-access/");
+}
+
+function parseBearerAuthorizationHeader(value: string | undefined): string | undefined {
+  const match = value?.match(/^Bearer\s+(\S+)$/i);
+
+  return match?.[1];
+}
+
+function parseDaemonAuthStreamQueryToken(context: Context): string | undefined {
+  if (context.req.method.toUpperCase() !== "GET") {
+    return undefined;
+  }
+
+  const path = context.req.path;
+  if (
+    !/^\/runs\/[^/]+\/events\/stream$/.test(path) &&
+    !/^\/sessions\/[^/]+\/events\/stream$/.test(path)
+  ) {
+    return undefined;
+  }
+
+  const token = context.req.query("daemonAuthToken")?.trim();
+
+  return token && token.length > 0 ? token : undefined;
+}
+
+function compareDaemonAuthToken(candidate: string, expected: string): boolean {
+  const candidateHash = createHash("sha256").update(candidate).digest();
+  const expectedHash = createHash("sha256").update(expected).digest();
+
+  return timingSafeEqual(candidateHash, expectedHash);
 }
 
 function safeError(context: Context, error: Error): Response {

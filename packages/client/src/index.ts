@@ -20,6 +20,7 @@ export type DaemonFetch = (
 export type DaemonClientOptions = {
   baseUrl?: string;
   fetch?: DaemonFetch;
+  authToken?: string;
 };
 
 export type DaemonHealthResponse = {
@@ -27,6 +28,40 @@ export type DaemonHealthResponse = {
   service: string;
   host: string;
   port: number;
+};
+
+export type RuntimeProfilesResponse = {
+  profiles: Array<{
+    id: string;
+    name: string;
+    enabled: boolean;
+    status: "disabled" | "ready" | "ready_with_run_config";
+    components: Array<{
+      id: string;
+      kind:
+        | "participant_adapter"
+        | "extraction_generator"
+        | "candidate_repair_generator"
+        | "evidence_check_generator"
+        | "proposal_reviewer"
+        | "final_candidate_generator"
+        | "final_auditor";
+      enabled: boolean;
+    }>;
+    setup: {
+      enableEnvVar: string;
+      envVars: Array<{
+        name: string;
+        configured: boolean;
+        secret: boolean;
+        required: boolean;
+        purpose: string;
+      }>;
+      missingRecommendedEnvVars: string[];
+      notes: string[];
+    };
+    boundaries: string[];
+  }>;
 };
 
 export type CreateSessionRequest = {
@@ -75,9 +110,66 @@ export type AcceptProposalRequest = {
   idempotencyKey?: string;
 };
 
+export type ProposeProcessProposalRequest = {
+  authorId: string;
+  proposal: unknown;
+  basedOnEventIds?: string[];
+  idempotencyKey?: string;
+};
+
+export type ChallengeProcessProposalRequest = {
+  authorId: string;
+  reason: string;
+  idempotencyKey?: string;
+};
+
+export type DecideProcessProposalRequest = {
+  authorId: string;
+  status: "accepted" | "deferred" | "rejected";
+  rationale: string;
+  idempotencyKey?: string;
+};
+
+export type ProposeFinalCandidateRequest = {
+  authorId: string;
+  candidateIds: string[];
+  recommendation: string;
+  applicabilityConditions?: string[];
+  rationale: string;
+  limitations?: string[];
+  idempotencyKey?: string;
+};
+
+export type AuditFinalCandidateRequest = {
+  authorId: string;
+  findings?: string[];
+  risks?: string[];
+  unresolvedObjectionIds?: string[];
+  qualityObligationIds?: string[];
+  evidenceNeedIds?: string[];
+  omissions?: string[];
+  compressionProblems?: string[];
+  limitations?: string[];
+  continuationSuggestions?: string[];
+  idempotencyKey?: string;
+};
+
 export type CreateSessionResponse = {
   sessionId: string;
   event: unknown;
+};
+
+export type ListSessionsResponse = {
+  sessions: Array<{
+    sessionId: string;
+    topicContractEventId: string | null;
+    title: string | null;
+    topic: string | null;
+    createdAt: string | null;
+    recordedAt: string | null;
+    latestEventRecordedAt: string | null;
+    eventCount: number;
+  }>;
 };
 
 export type OpenBatchResponse = {
@@ -92,6 +184,22 @@ export type EventResponse = {
 export type ExtractionResponse = {
   proposalId: string;
   event: unknown;
+};
+
+export type ProcessProposalResponse = {
+  proposalId: string;
+  event: unknown;
+};
+
+export type FinalCandidateResponse = {
+  proposalId: string;
+  event: unknown;
+  appended: boolean;
+};
+
+export type FinalAuditResponse = {
+  event: unknown;
+  appended: boolean;
 };
 
 export type EventsResponse = {
@@ -123,12 +231,23 @@ export type ObligationsResponse = {
   projection: ProjectionMetadataResponse;
 };
 
+export type ProcessProposalStatesResponse = {
+  proposalStates: unknown[];
+  projection: ProjectionMetadataResponse;
+};
+
 export type SessionFinalResponse = {
   sessionId: string;
   status: "compiled";
   draftStatus: string;
   outcome: unknown;
 };
+
+export type GetOutcomeOptions = {
+  finalCandidateProposalEventId?: string;
+};
+
+export type GetSessionFinalOptions = GetOutcomeOptions;
 
 export type SessionResourcesResponse = {
   sessionId: string;
@@ -145,8 +264,74 @@ export type SessionResourcesResponse = {
     registered: boolean;
     resource?: unknown;
   }>;
+  deliveryAudits: Array<{
+    eventId: string;
+    sequence: number;
+    createdAt: string;
+    recordedAt: string;
+    basedOnEventIds: string[];
+    resourceDeliveryId: string;
+    resourceId: string;
+    participantId: string;
+    resource: unknown;
+    request: unknown;
+    result: unknown;
+  }>;
+  accessAudits: Array<{
+    eventId: string;
+    sequence: number;
+    createdAt: string;
+    recordedAt: string;
+    basedOnEventIds: string[];
+    action: "created" | "revoked";
+    resourceAccessId: string;
+    resourceId: string;
+    participantId: string;
+    grant: unknown;
+    resource?: unknown;
+    revokedAt?: string;
+  }>;
   evidenceNeeds: unknown[];
   projection: ProjectionMetadataResponse;
+};
+
+export type DeliverSessionResourceRequest = {
+  participantId: string;
+  policy?: unknown;
+  idempotencyKey?: string;
+};
+
+export type SessionResourceDeliveryResponse = {
+  sessionId: string;
+  resource: unknown;
+  delivery: unknown;
+  auditEvent: {
+    id: string;
+    type: string;
+    appended: boolean;
+  };
+};
+
+export type ResourceAccessRevokeResponse = {
+  revoked: boolean;
+  grant: {
+    resourceAccessId: string;
+    sessionId: string;
+    resourceId: string;
+    participantId: string;
+    mode: "redirect" | "content";
+    exposure: "localhost" | "lan" | "public";
+    createdAt: string;
+    expiresAt: string;
+    revokedAt?: string;
+    accessCount: number;
+    lastAccessedAt?: string;
+    content?: {
+      mime: string;
+      sizeBytes: number;
+      hash: string;
+    };
+  };
 };
 
 export type CreateRunResponse = {
@@ -178,6 +363,16 @@ export type StartRunResponse = {
   stopReason?: string;
 };
 
+export type RunProcessProposalExecutionResponse = StartRunResponse & {
+  processProposal: {
+    proposalEventId: string;
+    proposalId: string;
+    primitive: string;
+    latestStatus: string;
+  };
+  startRequest: unknown;
+};
+
 export type RunOutcomeResponse =
   | {
       runId: string;
@@ -192,6 +387,14 @@ export type RunOutcomeResponse =
       status: "not_available";
       reason: string;
     };
+
+export type RunProcessProposalsResponse = {
+  runId: string;
+  sessionId: string;
+  proposals: unknown[];
+  observations: string[];
+  metadata: unknown;
+};
 
 export type DaemonErrorPayload = {
   error?: {
@@ -215,18 +418,28 @@ export class DaemonClientError extends Error {
 export class DeliberumDaemonClient {
   private readonly baseUrl: string;
   private readonly fetchImplementation: DaemonFetch;
+  private readonly authToken: string | undefined;
 
   constructor(options: DaemonClientOptions = {}) {
     this.baseUrl = normalizeBaseUrl(options.baseUrl ?? DEFAULT_DAEMON_BASE_URL);
     this.fetchImplementation = options.fetch ?? getDefaultFetch();
+    this.authToken = normalizeOptionalAuthToken(options.authToken);
   }
 
   health(): Promise<DaemonHealthResponse> {
     return this.request("GET", "/health");
   }
 
+  getRuntimeProfiles(): Promise<RuntimeProfilesResponse> {
+    return this.request("GET", "/runtime/profiles");
+  }
+
   createSession(input: CreateSessionRequest): Promise<CreateSessionResponse> {
     return this.request("POST", "/sessions", input);
+  }
+
+  listSessions(): Promise<ListSessionsResponse> {
+    return this.request("GET", "/sessions");
   }
 
   createRun(input: CreateRunRequest): Promise<CreateRunResponse> {
@@ -246,15 +459,43 @@ export class DeliberumDaemonClient {
   }
 
   getRunEventsStreamUrl(runId: string): string {
-    return `${this.baseUrl}/runs/${encodeURIComponent(runId)}/events/stream`;
+    const path = `/runs/${encodeURIComponent(runId)}/events/stream`;
+    if (!this.authToken) {
+      return `${this.baseUrl}${path}`;
+    }
+
+    const url = new URL(`${this.baseUrl}${path}`);
+    url.searchParams.set("daemonAuthToken", this.authToken);
+
+    return url.toString();
   }
 
   startRun(runId: string, startRequest: StartRunRequest): Promise<StartRunResponse> {
     return this.request("POST", `/runs/${encodeURIComponent(runId)}/start`, startRequest);
   }
 
-  getRunOutcome(runId: string): Promise<RunOutcomeResponse> {
-    return this.request("GET", `/runs/${encodeURIComponent(runId)}/outcome`);
+  getRunOutcome(
+    runId: string,
+    options: GetOutcomeOptions = {}
+  ): Promise<RunOutcomeResponse> {
+    const query = formatFinalCandidateProposalEventQuery(options);
+
+    return this.request("GET", `/runs/${encodeURIComponent(runId)}/outcome${query}`);
+  }
+
+  getRunProcessProposals(runId: string): Promise<RunProcessProposalsResponse> {
+    return this.request("GET", `/runs/${encodeURIComponent(runId)}/process-proposals`);
+  }
+
+  executeRunProcessProposal(
+    runId: string,
+    proposalEventId: string
+  ): Promise<RunProcessProposalExecutionResponse> {
+    return this.request(
+      "POST",
+      `/runs/${encodeURIComponent(runId)}/process-proposals/${encodeURIComponent(proposalEventId)}/execute`,
+      {}
+    );
   }
 
   listEvents(sessionId: string): Promise<EventsResponse> {
@@ -273,12 +514,67 @@ export class DeliberumDaemonClient {
     return this.request("GET", `/sessions/${encodeURIComponent(sessionId)}/obligations`);
   }
 
-  getSessionFinal(sessionId: string): Promise<SessionFinalResponse> {
-    return this.request("GET", `/sessions/${encodeURIComponent(sessionId)}/final`);
+  getProcessProposalStates(sessionId: string): Promise<ProcessProposalStatesResponse> {
+    return this.request(
+      "GET",
+      `/sessions/${encodeURIComponent(sessionId)}/process-proposals`
+    );
+  }
+
+  getSessionFinal(
+    sessionId: string,
+    options: GetSessionFinalOptions = {}
+  ): Promise<SessionFinalResponse> {
+    const query = formatFinalCandidateProposalEventQuery(options);
+
+    return this.request("GET", `/sessions/${encodeURIComponent(sessionId)}/final${query}`);
+  }
+
+  proposeFinalCandidate(
+    sessionId: string,
+    input: ProposeFinalCandidateRequest
+  ): Promise<FinalCandidateResponse> {
+    return this.request(
+      "POST",
+      `/sessions/${encodeURIComponent(sessionId)}/final-candidates`,
+      input
+    );
+  }
+
+  auditFinalCandidate(
+    sessionId: string,
+    proposalEventId: string,
+    input: AuditFinalCandidateRequest
+  ): Promise<FinalAuditResponse> {
+    return this.request(
+      "POST",
+      `/sessions/${encodeURIComponent(sessionId)}/final-candidates/${encodeURIComponent(proposalEventId)}/audits`,
+      input
+    );
   }
 
   getSessionResources(sessionId: string): Promise<SessionResourcesResponse> {
     return this.request("GET", `/sessions/${encodeURIComponent(sessionId)}/resources`);
+  }
+
+  deliverSessionResource(
+    sessionId: string,
+    resourceId: string,
+    input: DeliverSessionResourceRequest
+  ): Promise<SessionResourceDeliveryResponse> {
+    return this.request(
+      "POST",
+      `/sessions/${encodeURIComponent(sessionId)}/resources/${encodeURIComponent(resourceId)}/deliveries`,
+      input
+    );
+  }
+
+  revokeResourceAccess(accessId: string): Promise<ResourceAccessRevokeResponse> {
+    return this.request(
+      "POST",
+      `/resource-access/${encodeURIComponent(accessId)}/revoke`,
+      {}
+    );
   }
 
   openBatch(sessionId: string, input: OpenBatchRequest): Promise<OpenBatchResponse> {
@@ -336,6 +632,41 @@ export class DeliberumDaemonClient {
     );
   }
 
+  proposeProcessProposal(
+    sessionId: string,
+    input: ProposeProcessProposalRequest
+  ): Promise<ProcessProposalResponse> {
+    return this.request(
+      "POST",
+      `/sessions/${encodeURIComponent(sessionId)}/process-proposals`,
+      input
+    );
+  }
+
+  challengeProcessProposal(
+    sessionId: string,
+    proposalEventId: string,
+    input: ChallengeProcessProposalRequest
+  ): Promise<EventResponse> {
+    return this.request(
+      "POST",
+      `/sessions/${encodeURIComponent(sessionId)}/process-proposals/${encodeURIComponent(proposalEventId)}/challenges`,
+      input
+    );
+  }
+
+  decideProcessProposal(
+    sessionId: string,
+    proposalEventId: string,
+    input: DecideProcessProposalRequest
+  ): Promise<EventResponse> {
+    return this.request(
+      "POST",
+      `/sessions/${encodeURIComponent(sessionId)}/process-proposals/${encodeURIComponent(proposalEventId)}/decisions`,
+      input
+    );
+  }
+
   private async request<TResponse>(
     method: string,
     path: string,
@@ -345,8 +676,15 @@ export class DeliberumDaemonClient {
       method
     };
 
+    if (this.authToken) {
+      init.headers = {
+        Authorization: `Bearer ${this.authToken}`
+      };
+    }
+
     if (body !== undefined) {
       init.headers = {
+        ...(init.headers ?? {}),
         "Content-Type": "application/json"
       };
       init.body = JSON.stringify(body);
@@ -377,6 +715,20 @@ export class DeliberumDaemonClient {
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+}
+
+function normalizeOptionalAuthToken(token: string | undefined): string | undefined {
+  const trimmed = token?.trim();
+
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
+
+function formatFinalCandidateProposalEventQuery(options: GetOutcomeOptions): string {
+  const finalCandidateProposalEventId = options.finalCandidateProposalEventId?.trim();
+
+  return finalCandidateProposalEventId
+    ? `?finalCandidateProposalEventId=${encodeURIComponent(finalCandidateProposalEventId)}`
+    : "";
 }
 
 function getDefaultFetch(): DaemonFetch {

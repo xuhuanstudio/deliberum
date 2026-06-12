@@ -1,9 +1,16 @@
 import {
   AdapterRegistry,
+  CandidateRepairGeneratorRegistry,
+  EvidenceCheckGeneratorRegistry,
   ExtractionGeneratorRegistry,
   FinalAuditGeneratorRegistry,
   FinalCandidateGeneratorRegistry,
   ProposalReviewGeneratorRegistry,
+  type CandidateRepairContext,
+  type CandidateRepairGenerator,
+  type EvidenceCheckContext,
+  type EvidenceCheckGenerator,
+  type EvidenceCheckGeneratorResult,
   type ExtractionContext,
   type ExtractionGenerator,
   type ExtractionGeneratorResult,
@@ -24,6 +31,8 @@ export const LOCAL_PRESET_IDS = {
   alphaAdapter: "local-preset-alpha",
   betaAdapter: "local-preset-beta",
   extractor: "local-preset-extractor",
+  repairer: "local-preset-candidate-repairer",
+  evidenceChecker: "local-preset-evidence-checker",
   reviewer: "local-preset-reviewer",
   finalCandidate: "local-preset-final-candidate",
   auditor: "local-preset-final-auditor"
@@ -33,6 +42,8 @@ export type LocalPresetRunRegistries = Pick<
   DaemonRunOrchestrationOptions,
   | "adapterRegistry"
   | "extractionGeneratorRegistry"
+  | "candidateRepairGeneratorRegistry"
+  | "evidenceCheckGeneratorRegistry"
   | "proposalReviewGeneratorRegistry"
   | "finalCandidateGeneratorRegistry"
   | "finalAuditGeneratorRegistry"
@@ -62,6 +73,12 @@ export function createLocalPresetRunRegistries(): Required<LocalPresetRunRegistr
     ]),
     extractionGeneratorRegistry: new ExtractionGeneratorRegistry([
       createLocalPresetExtractionGenerator()
+    ]),
+    candidateRepairGeneratorRegistry: new CandidateRepairGeneratorRegistry([
+      createLocalPresetCandidateRepairGenerator()
+    ]),
+    evidenceCheckGeneratorRegistry: new EvidenceCheckGeneratorRegistry([
+      createLocalPresetEvidenceCheckGenerator()
     ]),
     proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([
       createLocalPresetProposalReviewer()
@@ -267,6 +284,104 @@ function createLocalPresetExtractionResult(
     ],
     rationale:
       "Extract traceable local preset proposal material from revealed deterministic contributions."
+  };
+}
+
+function createLocalPresetCandidateRepairGenerator(): CandidateRepairGenerator {
+  return {
+    generatorId: LOCAL_PRESET_IDS.repairer,
+    repairCandidate(_input, context) {
+      return createLocalPresetCandidateRepairResult(context);
+    }
+  };
+}
+
+function createLocalPresetCandidateRepairResult(
+  context: CandidateRepairContext
+): ExtractionGeneratorResult {
+  const targetCandidate = context.targetCandidates[0];
+
+  if (!targetCandidate) {
+    throw new Error("Expected target candidate in local preset repair context.");
+  }
+
+  const sourceEventIds = [context.metadata.allowedSourceEventIds[0]!];
+  const repairedCandidateId = `${targetCandidate.object.id}-repair`;
+  const repairClaimId = `${repairedCandidateId}-claim`;
+  const answeredQualityId = `${repairedCandidateId}-quality`;
+
+  return {
+    candidates: [
+      {
+        id: repairedCandidateId,
+        title: `${targetCandidate.object.title} repair`,
+        description:
+          "A deterministic local preset repair alternative that keeps preset scope and limitations explicit.",
+        sourceEventIds,
+        status: "active",
+        supportedBy: [repairClaimId],
+        attackedBy: [],
+        qualityObligationIds: [answeredQualityId],
+        assumptions: [
+          "The repair remains deterministic development material.",
+          "Acceptance still requires explicit proposal review."
+        ],
+        tradeoffs: [
+          "The repaired alternative improves traceable labeling but does not represent real provider judgment."
+        ]
+      }
+    ],
+    claims: [
+      {
+        id: repairClaimId,
+        content:
+          "The repaired local preset candidate explicitly answers preset-scope objections by preserving development-only labeling.",
+        scope: "design",
+        sourceEventIds,
+        supports: [repairedCandidateId]
+      }
+    ],
+    objections: [],
+    evidenceNeeds: [],
+    qualityObligations: [
+      {
+        id: answeredQualityId,
+        scope: "candidate",
+        targetCandidateId: repairedCandidateId,
+        requirement:
+          "State that the repaired local preset candidate remains provisional development material.",
+        status: "answered",
+        sourceEventIds,
+        supportingRefIds: [repairClaimId],
+        unresolvedObjectionIds: []
+      }
+    ],
+    rationale:
+      "Generate challengeable candidate repair proposal material without accepting or finalizing it."
+  };
+}
+
+function createLocalPresetEvidenceCheckGenerator(): EvidenceCheckGenerator {
+  return {
+    generatorId: LOCAL_PRESET_IDS.evidenceChecker,
+    checkEvidence(_input, context) {
+      return createLocalPresetEvidenceCheckResult(context);
+    }
+  };
+}
+
+function createLocalPresetEvidenceCheckResult(
+  context: EvidenceCheckContext
+): EvidenceCheckGeneratorResult {
+  return {
+    results: context.targetEvidenceNeeds.map((evidenceNeed) => ({
+      evidenceNeedId: evidenceNeed.object.id,
+      source: "Deterministic local preset evidence source",
+      summary: `Reported local preset evidence result for ${evidenceNeed.object.id}; this is development material, not independent verification.`,
+      limitations: ["Deterministic local preset evidence is not independent verification."]
+    })),
+    rationale:
+      "Record reported evidence check material for local development without claiming verification."
   };
 }
 

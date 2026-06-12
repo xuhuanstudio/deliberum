@@ -81,6 +81,82 @@ describe("DeliberumDaemonClient", () => {
     });
   });
 
+  it("adds optional daemon bearer auth headers and stream URL token only when configured", async () => {
+    const fetch = createFetch({
+      sessions: []
+    });
+    const daemonClient = new DeliberumDaemonClient({
+      baseUrl: "http://127.0.0.1:4000/",
+      authToken: " local-daemon-auth-token-123 ",
+      fetch
+    });
+
+    await daemonClient.listSessions();
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:4000/sessions");
+    expect(init).toEqual({
+      method: "GET",
+      headers: {
+        Authorization: "Bearer local-daemon-auth-token-123"
+      }
+    });
+    expect(daemonClient.getRunEventsStreamUrl("run/1")).toBe(
+      "http://127.0.0.1:4000/runs/run%2F1/events/stream?daemonAuthToken=local-daemon-auth-token-123"
+    );
+    expect(new DeliberumDaemonClient().getRunEventsStreamUrl("run/1")).toBe(
+      "http://127.0.0.1:3877/runs/run%2F1/events/stream"
+    );
+  });
+
+  it("reads safe daemon runtime profile status", async () => {
+    const fetch = createFetch({
+      profiles: [
+        {
+          id: "openai-compatible",
+          enabled: true,
+          status: "ready"
+        }
+      ]
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    const result = await daemonClient.getRuntimeProfiles();
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:3877/runtime/profiles");
+    expect(init).toEqual({
+      method: "GET"
+    });
+    expect(result).toEqual({
+      profiles: [
+        {
+          id: "openai-compatible",
+          enabled: true,
+          status: "ready"
+        }
+      ]
+    });
+  });
+
+  it("lists daemon sessions through the catalog endpoint", async () => {
+    const fetch = createFetch({
+      sessions: []
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    const result = await daemonClient.listSessions();
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:3877/sessions");
+    expect(init).toEqual({
+      method: "GET"
+    });
+    expect(result).toEqual({
+      sessions: []
+    });
+  });
+
   it("calls lifecycle and projection endpoints directly", async () => {
     const fetch = createFetch({
       basis: "accepted_active_candidates",
@@ -116,8 +192,61 @@ describe("DeliberumDaemonClient", () => {
     await daemonClient.getFrontier("session/1");
     await daemonClient.getObjections("session/1");
     await daemonClient.getObligations("session/1");
+    await daemonClient.getProcessProposalStates("session/1");
+    await daemonClient.proposeProcessProposal("session/1", {
+      authorId: "system",
+      proposal: {
+        id: "process-proposal-1",
+        primitive: "sealed_divergence",
+        targetIds: ["event/1"],
+        expectedQualityGain: "Improve coverage.",
+        riskIfSkipped: "The run may converge too early.",
+        status: "proposed"
+      },
+      basedOnEventIds: ["event/1"]
+    });
+    await daemonClient.challengeProcessProposal("session/1", "process/proposal/1", {
+      authorId: "participant-4",
+      reason: "Challenge process proposal"
+    });
+    await daemonClient.decideProcessProposal("session/1", "process/proposal/1", {
+      authorId: "participant-5",
+      status: "deferred",
+      rationale: "Defer until evidence is available"
+    });
+    await daemonClient.proposeFinalCandidate("session/1", {
+      authorId: "participant-6",
+      candidateIds: ["candidate/1"],
+      recommendation: "Record final candidate proposal material.",
+      applicabilityConditions: ["Use only for the current accepted frontier."],
+      rationale: "Make the final proposal auditable.",
+      limitations: ["Requires audit."],
+      idempotencyKey: "final-candidate-1"
+    });
+    await daemonClient.auditFinalCandidate("session/1", "final/proposal/1", {
+      authorId: "participant-7",
+      findings: ["The proposal remains provisional."],
+      risks: ["Evidence may be incomplete."],
+      unresolvedObjectionIds: ["objection/1"],
+      qualityObligationIds: ["quality/1"],
+      evidenceNeedIds: ["evidence/1"],
+      omissions: ["No external validation."],
+      compressionProblems: [],
+      limitations: ["Audit records boundaries only."],
+      continuationSuggestions: ["Resolve evidence need."],
+      idempotencyKey: "final-audit-1"
+    });
     await daemonClient.getSessionFinal("session/1");
     await daemonClient.getSessionResources("session/1");
+    await daemonClient.deliverSessionResource("session/1", "resource/1", {
+      participantId: "participant-1",
+      idempotencyKey: "resource-delivery-1",
+      policy: {
+        requestedMode: "base64",
+        allowBase64: true,
+        maxBase64SizeBytes: 64
+      }
+    });
 
     const urls = fetch.mock.calls.map((call) => call[0]);
     expect(urls).toEqual([
@@ -131,9 +260,64 @@ describe("DeliberumDaemonClient", () => {
       "http://127.0.0.1:3877/sessions/session%2F1/frontier",
       "http://127.0.0.1:3877/sessions/session%2F1/objections",
       "http://127.0.0.1:3877/sessions/session%2F1/obligations",
+      "http://127.0.0.1:3877/sessions/session%2F1/process-proposals",
+      "http://127.0.0.1:3877/sessions/session%2F1/process-proposals",
+      "http://127.0.0.1:3877/sessions/session%2F1/process-proposals/process%2Fproposal%2F1/challenges",
+      "http://127.0.0.1:3877/sessions/session%2F1/process-proposals/process%2Fproposal%2F1/decisions",
+      "http://127.0.0.1:3877/sessions/session%2F1/final-candidates",
+      "http://127.0.0.1:3877/sessions/session%2F1/final-candidates/final%2Fproposal%2F1/audits",
       "http://127.0.0.1:3877/sessions/session%2F1/final",
-      "http://127.0.0.1:3877/sessions/session%2F1/resources"
+      "http://127.0.0.1:3877/sessions/session%2F1/resources",
+      "http://127.0.0.1:3877/sessions/session%2F1/resources/resource%2F1/deliveries"
     ]);
+    expect(JSON.parse(fetch.mock.calls[11]?.[1]?.body ?? "{}")).toEqual({
+      authorId: "system",
+      proposal: {
+        id: "process-proposal-1",
+        primitive: "sealed_divergence",
+        targetIds: ["event/1"],
+        expectedQualityGain: "Improve coverage.",
+        riskIfSkipped: "The run may converge too early.",
+        status: "proposed"
+      },
+      basedOnEventIds: ["event/1"]
+    });
+    expect(JSON.parse(fetch.mock.calls[13]?.[1]?.body ?? "{}")).toEqual({
+      authorId: "participant-5",
+      status: "deferred",
+      rationale: "Defer until evidence is available"
+    });
+    expect(JSON.parse(fetch.mock.calls[14]?.[1]?.body ?? "{}")).toEqual({
+      authorId: "participant-6",
+      candidateIds: ["candidate/1"],
+      recommendation: "Record final candidate proposal material.",
+      applicabilityConditions: ["Use only for the current accepted frontier."],
+      rationale: "Make the final proposal auditable.",
+      limitations: ["Requires audit."],
+      idempotencyKey: "final-candidate-1"
+    });
+    expect(JSON.parse(fetch.mock.calls[15]?.[1]?.body ?? "{}")).toEqual({
+      authorId: "participant-7",
+      findings: ["The proposal remains provisional."],
+      risks: ["Evidence may be incomplete."],
+      unresolvedObjectionIds: ["objection/1"],
+      qualityObligationIds: ["quality/1"],
+      evidenceNeedIds: ["evidence/1"],
+      omissions: ["No external validation."],
+      compressionProblems: [],
+      limitations: ["Audit records boundaries only."],
+      continuationSuggestions: ["Resolve evidence need."],
+      idempotencyKey: "final-audit-1"
+    });
+    expect(JSON.parse(fetch.mock.calls.at(-1)?.[1]?.body ?? "{}")).toEqual({
+      participantId: "participant-1",
+      idempotencyKey: "resource-delivery-1",
+      policy: {
+        requestedMode: "base64",
+        allowBase64: true,
+        maxBase64SizeBytes: 64
+      }
+    });
   });
 
   it("calls run orchestration endpoints directly", async () => {
@@ -161,6 +345,8 @@ describe("DeliberumDaemonClient", () => {
     );
     await daemonClient.startRun("run/1", startRequest);
     await daemonClient.getRunOutcome("run/1");
+    await daemonClient.getRunProcessProposals("run/1");
+    await daemonClient.executeRunProcessProposal("run/1", "process/proposal/1");
 
     expect(fetch.mock.calls.map((call) => call[0])).toEqual([
       "http://127.0.0.1:3877/runs",
@@ -168,7 +354,9 @@ describe("DeliberumDaemonClient", () => {
       "http://127.0.0.1:3877/runs/run%2F1",
       "http://127.0.0.1:3877/runs/run%2F1/events",
       "http://127.0.0.1:3877/runs/run%2F1/start",
-      "http://127.0.0.1:3877/runs/run%2F1/outcome"
+      "http://127.0.0.1:3877/runs/run%2F1/outcome",
+      "http://127.0.0.1:3877/runs/run%2F1/process-proposals",
+      "http://127.0.0.1:3877/runs/run%2F1/process-proposals/process%2Fproposal%2F1/execute"
     ]);
     expect(fetch.mock.calls[0]?.[1]).toMatchObject({
       method: "POST",
@@ -196,6 +384,88 @@ describe("DeliberumDaemonClient", () => {
     expect(fetch.mock.calls[5]?.[1]).toEqual({
       method: "GET"
     });
+    expect(fetch.mock.calls[6]?.[1]).toEqual({
+      method: "GET"
+    });
+    expect(fetch.mock.calls[7]?.[1]).toMatchObject({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    expect(JSON.parse(fetch.mock.calls[7]?.[1]?.body ?? "{}")).toEqual({});
+  });
+
+  it("revokes daemon resource access grants through the explicit revoke endpoint", async () => {
+    const fetch = createFetch({
+      revoked: true,
+      grant: {
+        resourceAccessId: "resource-access-audit-1",
+        sessionId: "session-1",
+        resourceId: "resource-1",
+        participantId: "participant-1",
+        mode: "redirect",
+        exposure: "public",
+        createdAt: "2026-06-10T00:00:00.000Z",
+        expiresAt: "2026-06-10T00:05:00.000Z",
+        revokedAt: "2026-06-10T00:01:00.000Z",
+        accessCount: 1
+      }
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    const result = await daemonClient.revokeResourceAccess("A".repeat(32));
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe(`http://127.0.0.1:3877/resource-access/${"A".repeat(32)}/revoke`);
+    expect(init).toMatchObject({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    expect(JSON.parse(init.body ?? "{}")).toEqual({});
+    expect(result).toEqual({
+      revoked: true,
+      grant: {
+        resourceAccessId: "resource-access-audit-1",
+        sessionId: "session-1",
+        resourceId: "resource-1",
+        participantId: "participant-1",
+        mode: "redirect",
+        exposure: "public",
+        createdAt: "2026-06-10T00:00:00.000Z",
+        expiresAt: "2026-06-10T00:05:00.000Z",
+        revokedAt: "2026-06-10T00:01:00.000Z",
+        accessCount: 1
+      }
+    });
+  });
+
+  it("passes optional final candidate proposal event overrides", async () => {
+    const fetch = createFetch({
+      sessionId: "session/1",
+      status: "compiled",
+      draftStatus: "provisional",
+      outcome: {}
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    await daemonClient.getRunOutcome("run/1", {
+      finalCandidateProposalEventId: " final/proposal 1 "
+    });
+    await daemonClient.getSessionFinal("session/1", {
+      finalCandidateProposalEventId: " final/proposal 2 "
+    });
+    await daemonClient.getSessionFinal("session/1", {
+      finalCandidateProposalEventId: "   "
+    });
+
+    expect(fetch.mock.calls.map((call) => call[0])).toEqual([
+      "http://127.0.0.1:3877/runs/run%2F1/outcome?finalCandidateProposalEventId=final%2Fproposal%201",
+      "http://127.0.0.1:3877/sessions/session%2F1/final?finalCandidateProposalEventId=final%2Fproposal%202",
+      "http://127.0.0.1:3877/sessions/session%2F1/final"
+    ]);
   });
 
   it("throws structured daemon client errors from daemon error payloads", async () => {

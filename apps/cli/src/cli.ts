@@ -5,17 +5,29 @@ import {
 } from "@deliberum/client";
 import {
   acceptProposal,
+  challengeProcessProposal,
   challengeProposal,
   closeSealedBatch,
+  compileOutcome,
   createSession,
+  decideProcessProposal,
   openSealedBatch,
   projectAcceptedDeliberationObjects,
   projectCandidateFrontier,
+  projectProcessProposalStates,
   projectQualityObligations,
+  proposeProcessProposal,
   proposeExtraction,
+  proposeFinalCandidate,
+  auditFinalCandidate,
   submitSealedContribution
 } from "@deliberum/core";
-import type { JsonValue, SealedBatchPurpose, SealedBatchRevealPolicy } from "@deliberum/protocol";
+import type {
+  JsonValue,
+  ProcessProposalDecisionStatus,
+  SealedBatchPurpose,
+  SealedBatchRevealPolicy
+} from "@deliberum/protocol";
 import type { EventStore } from "@deliberum/storage";
 import { randomUUID } from "node:crypto";
 import { JsonFileEventStore, defaultStorePath } from "./json-file-event-store";
@@ -30,16 +42,30 @@ export const CLI_COMMANDS = [
   "extraction propose",
   "proposal challenge",
   "proposal accept",
+  "process proposals",
+  "process propose",
+  "process challenge",
+  "process decide",
+  "final propose",
+  "final audit",
+  "final compile",
   "frontier",
   "objections",
   "obligations",
   "events",
+  "daemon profiles",
+  "daemon resource-access revoke",
   "runs create",
   "runs list",
   "runs show",
   "runs events",
   "runs start",
-  "runs outcome"
+  "runs outcome",
+  "runs resources",
+  "runs process-proposals",
+  "runs execute-process-proposal",
+  "runs final-propose",
+  "runs final-audit"
 ] as const;
 
 export type CliCoreApi = {
@@ -50,6 +76,13 @@ export type CliCoreApi = {
   proposeExtraction: typeof proposeExtraction;
   challengeProposal: typeof challengeProposal;
   acceptProposal: typeof acceptProposal;
+  projectProcessProposalStates: typeof projectProcessProposalStates;
+  proposeProcessProposal: typeof proposeProcessProposal;
+  challengeProcessProposal: typeof challengeProcessProposal;
+  decideProcessProposal: typeof decideProcessProposal;
+  proposeFinalCandidate: typeof proposeFinalCandidate;
+  auditFinalCandidate: typeof auditFinalCandidate;
+  compileOutcome: typeof compileOutcome;
   projectAcceptedDeliberationObjects: typeof projectAcceptedDeliberationObjects;
   projectCandidateFrontier: typeof projectCandidateFrontier;
   projectQualityObligations: typeof projectQualityObligations;
@@ -58,7 +91,10 @@ export type CliCoreApi = {
 export type CliDependencies = {
   core?: Partial<CliCoreApi>;
   createEventStore?: (options: { filePath: string; clock?: () => string }) => EventStore;
-  createDaemonClient?: (options: { baseUrl: string }) => CliRunDaemonClient;
+  createDaemonClient?: (options: {
+    baseUrl: string;
+    authToken?: string;
+  }) => CliRunDaemonClient;
   runEventStreamFetch?: CliRunEventStreamFetch;
   writeStdout?: (chunk: string) => void | Promise<void>;
   idGenerator?: () => string;
@@ -88,8 +124,29 @@ type ExtractionInputFile = {
   qualityObligations?: readonly unknown[];
 };
 
+type FinalCandidateInputFile = {
+  candidateIds?: readonly string[];
+  recommendation?: string;
+  applicabilityConditions?: readonly string[];
+  rationale?: string;
+  limitations?: readonly string[];
+};
+
+type FinalAuditInputFile = {
+  findings?: readonly string[];
+  risks?: readonly string[];
+  unresolvedObjectionIds?: readonly string[];
+  qualityObligationIds?: readonly string[];
+  evidenceNeedIds?: readonly string[];
+  omissions?: readonly string[];
+  compressionProblems?: readonly string[];
+  limitations?: readonly string[];
+  continuationSuggestions?: readonly string[];
+};
+
 export type CliRunDaemonClient = Pick<
   DeliberumDaemonClient,
+  | "getRuntimeProfiles"
   | "createRun"
   | "listRuns"
   | "getRun"
@@ -97,6 +154,12 @@ export type CliRunDaemonClient = Pick<
   | "getRunEventsStreamUrl"
   | "startRun"
   | "getRunOutcome"
+  | "getSessionResources"
+  | "getRunProcessProposals"
+  | "executeRunProcessProposal"
+  | "revokeResourceAccess"
+  | "proposeFinalCandidate"
+  | "auditFinalCandidate"
 >;
 
 type CliRunEventStreamReader = {
@@ -141,6 +204,13 @@ const defaultCoreApi: CliCoreApi = {
   proposeExtraction,
   challengeProposal,
   acceptProposal,
+  projectProcessProposalStates,
+  proposeProcessProposal,
+  challengeProcessProposal,
+  decideProcessProposal,
+  proposeFinalCandidate,
+  auditFinalCandidate,
+  compileOutcome,
   projectAcceptedDeliberationObjects,
   projectCandidateFrontier,
   projectQualityObligations
@@ -174,7 +244,8 @@ export async function runCli(args: string[], dependencies: CliDependencies = {})
         dependencies.createDaemonClient ??
         ((options) =>
           new DeliberumDaemonClient({
-            baseUrl: options.baseUrl
+            baseUrl: options.baseUrl,
+            authToken: options.authToken
           })),
       runEventStreamFetch:
         dependencies.runEventStreamFetch ??
@@ -216,7 +287,7 @@ export async function runCli(args: string[], dependencies: CliDependencies = {})
 type ExecuteDependencies = {
   core: CliCoreApi;
   createEventStore: (options: { filePath: string; clock?: () => string }) => EventStore;
-  createDaemonClient: (options: { baseUrl: string }) => CliRunDaemonClient;
+  createDaemonClient: (options: { baseUrl: string; authToken?: string }) => CliRunDaemonClient;
   runEventStreamFetch: CliRunEventStreamFetch;
   writeStdout: (chunk: string) => void | Promise<void>;
   idGenerator: () => string;
@@ -227,6 +298,10 @@ type ExecuteDependencies = {
 
 async function executeCommand(parsedArgs: ParsedArgs, dependencies: ExecuteDependencies): Promise<unknown> {
   const [command, subcommand, ...restPositionals] = parsedArgs.positionals;
+
+  if (command === "daemon") {
+    return executeDaemonCommand(subcommand, restPositionals, parsedArgs, dependencies);
+  }
 
   if (command === "runs") {
     return executeRunCommand(subcommand, restPositionals, parsedArgs, dependencies);
@@ -371,6 +446,133 @@ async function executeCommand(parsedArgs: ParsedArgs, dependencies: ExecuteDepen
     };
   }
 
+  if (command === "process" && subcommand === "proposals") {
+    return dependencies.core.projectProcessProposalStates({
+      eventStore: store,
+      sessionId: requireOption(parsedArgs, "session")
+    });
+  }
+
+  if (command === "process" && subcommand === "propose") {
+    const proposal = readJsonObjectInput(
+      dependencies,
+      requireOption(parsedArgs, "input"),
+      "Process proposal input"
+    );
+    const result = dependencies.core.proposeProcessProposal(
+      {
+        sessionId: requireOption(parsedArgs, "session"),
+        authorId: requireOption(parsedArgs, "author"),
+        proposal,
+        basedOnEventIds: getManyOptions(parsedArgs, "based-on-event"),
+        idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+      },
+      coreOptions
+    );
+
+    return {
+      proposalId: result.proposalId,
+      event: result.proposalEvent
+    };
+  }
+
+  if (command === "process" && subcommand === "challenge") {
+    const result = dependencies.core.challengeProcessProposal(
+      {
+        sessionId: requireOption(parsedArgs, "session"),
+        targetProcessProposalEventId: requireOption(parsedArgs, "proposal-event"),
+        authorId: requireOption(parsedArgs, "author"),
+        reason: requireOption(parsedArgs, "reason"),
+        idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+      },
+      coreOptions
+    );
+
+    return {
+      event: result.challengeEvent
+    };
+  }
+
+  if (command === "process" && subcommand === "decide") {
+    const result = dependencies.core.decideProcessProposal(
+      {
+        sessionId: requireOption(parsedArgs, "session"),
+        targetProcessProposalEventId: requireOption(parsedArgs, "proposal-event"),
+        authorId: requireOption(parsedArgs, "author"),
+        status: requireOption(parsedArgs, "status") as ProcessProposalDecisionStatus,
+        rationale: requireOption(parsedArgs, "rationale"),
+        idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+      },
+      coreOptions
+    );
+
+    return {
+      event: result.decisionEvent
+    };
+  }
+
+  if (command === "final" && subcommand === "propose") {
+    const input = parseFinalCandidateInput(
+      dependencies.readJsonFile(requireOption(parsedArgs, "input"))
+    );
+    const result = dependencies.core.proposeFinalCandidate(
+      {
+        sessionId: requireOption(parsedArgs, "session"),
+        authorId: requireOption(parsedArgs, "author"),
+        candidateIds: input.candidateIds ?? [],
+        recommendation: input.recommendation ?? "",
+        applicabilityConditions: input.applicabilityConditions ?? [],
+        rationale: input.rationale ?? "",
+        limitations: input.limitations ?? [],
+        idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+      },
+      coreOptions
+    );
+
+    return {
+      proposalId: result.proposalId,
+      event: result.proposalEvent,
+      appended: result.appended
+    };
+  }
+
+  if (command === "final" && subcommand === "audit") {
+    const input = parseFinalAuditInput(
+      dependencies.readJsonFile(requireOption(parsedArgs, "input"))
+    );
+    const result = dependencies.core.auditFinalCandidate(
+      {
+        sessionId: requireOption(parsedArgs, "session"),
+        targetFinalCandidateProposalEventId: requireOption(parsedArgs, "proposal-event"),
+        authorId: requireOption(parsedArgs, "author"),
+        findings: input.findings,
+        risks: input.risks,
+        unresolvedObjectionIds: input.unresolvedObjectionIds,
+        qualityObligationIds: input.qualityObligationIds,
+        evidenceNeedIds: input.evidenceNeedIds,
+        omissions: input.omissions,
+        compressionProblems: input.compressionProblems,
+        limitations: input.limitations,
+        continuationSuggestions: input.continuationSuggestions,
+        idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+      },
+      coreOptions
+    );
+
+    return {
+      event: result.auditEvent,
+      appended: result.appended
+    };
+  }
+
+  if (command === "final" && subcommand === "compile") {
+    return dependencies.core.compileOutcome({
+      eventStore: store,
+      sessionId: requireOption(parsedArgs, "session"),
+      finalCandidateProposalEventId: getLastOption(parsedArgs, "proposal-event")
+    });
+  }
+
   if (command === "frontier") {
     return dependencies.core.projectCandidateFrontier({
       eventStore: store,
@@ -424,6 +626,81 @@ export class CliUsageError extends Error {
   }
 }
 
+async function executeDaemonCommand(
+  subcommand: string | undefined,
+  restPositionals: string[],
+  parsedArgs: ParsedArgs,
+  dependencies: ExecuteDependencies
+): Promise<unknown> {
+  const action = subcommand ?? "";
+  assertKnownDaemonCommand(action);
+  assertDaemonCommandOptions(action, parsedArgs);
+
+  const daemonClient = dependencies.createDaemonClient({
+    ...resolveDaemonClientOptions(parsedArgs, dependencies.env)
+  });
+
+  if (action === "profiles") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon profiles [--daemon-url <local-url>]"
+    );
+
+    return daemonClient.getRuntimeProfiles();
+  }
+
+  if (action === "resource-access") {
+    const [resourceAccessAction, ...resourceAccessPositionals] = restPositionals;
+
+    if (resourceAccessAction !== "revoke") {
+      throw new CliUsageError(
+        "Usage: deliberum daemon resource-access revoke <access-id> [--daemon-url <local-url>]"
+      );
+    }
+
+    const accessId = requireSinglePositional(
+      resourceAccessPositionals,
+      "Usage: deliberum daemon resource-access revoke <access-id> [--daemon-url <local-url>]"
+    );
+
+    return daemonClient.revokeResourceAccess(accessId);
+  }
+
+  throw new CliUsageError(`Unknown command: daemon ${action || "(empty)"}`);
+}
+
+function assertKnownDaemonCommand(action: string): void {
+  if (["profiles", "resource-access"].includes(action)) {
+    return;
+  }
+
+  throw new CliUsageError(`Unknown command: daemon ${action || "(empty)"}`);
+}
+
+function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): void {
+  const allowedOptions = new Set(["daemon-url"]);
+
+  for (const optionName of parsedArgs.options.keys()) {
+    if (isSecretLikeKey(optionName)) {
+      throw new CliUsageError("Daemon commands do not accept provider secrets or credentials.");
+    }
+
+    if (!allowedOptions.has(optionName)) {
+      throw new CliUsageError(`Unknown option for daemon ${action}: --${optionName}`);
+    }
+  }
+
+  for (const flagName of parsedArgs.flags) {
+    if (flagName !== "json") {
+      if (isSecretLikeKey(flagName)) {
+        throw new CliUsageError("Daemon commands do not accept provider secrets or credentials.");
+      }
+
+      throw new CliUsageError(`Unknown flag for daemon ${action}: --${flagName}`);
+    }
+  }
+}
+
 async function executeRunCommand(
   subcommand: string | undefined,
   restPositionals: string[],
@@ -435,7 +712,7 @@ async function executeRunCommand(
   assertRunCommandOptions(action, parsedArgs);
 
   const daemonClient = dependencies.createDaemonClient({
-    baseUrl: resolveDaemonUrl(parsedArgs, dependencies.env)
+    ...resolveDaemonClientOptions(parsedArgs, dependencies.env)
   });
 
   if (action === "create") {
@@ -486,19 +763,141 @@ async function executeRunCommand(
   }
 
   if (action === "outcome") {
-    const runId = requireRunId(restPositionals, "Usage: deliberum runs outcome <runId>");
-    return daemonClient.getRunOutcome(runId);
+    const runId = requireRunId(
+      restPositionals,
+      "Usage: deliberum runs outcome <runId> [--proposal-event <event-id>]"
+    );
+    const proposalEventId = getLastOption(parsedArgs, "proposal-event");
+
+    return proposalEventId
+      ? daemonClient.getRunOutcome(runId, {
+          finalCandidateProposalEventId: proposalEventId
+        })
+      : daemonClient.getRunOutcome(runId);
+  }
+
+  if (action === "resources") {
+    const runId = requireRunId(restPositionals, "Usage: deliberum runs resources <runId>");
+    const run = await daemonClient.getRun(runId);
+    const sessionId = extractSessionIdFromRunResponse(run);
+
+    return daemonClient.getSessionResources(sessionId);
+  }
+
+  if (action === "process-proposals") {
+    const runId = requireRunId(
+      restPositionals,
+      "Usage: deliberum runs process-proposals <runId>"
+    );
+    return daemonClient.getRunProcessProposals(runId);
+  }
+
+  if (action === "final-propose") {
+    const runId = requireRunId(
+      restPositionals,
+      "Usage: deliberum runs final-propose <runId> --author <id> --input <json-file>"
+    );
+    const run = await daemonClient.getRun(runId);
+    const sessionId = extractSessionIdFromRunResponse(run);
+    const input = parseFinalCandidateInput(
+      dependencies.readJsonFile(requireOption(parsedArgs, "input"))
+    );
+
+    return daemonClient.proposeFinalCandidate(sessionId, {
+      authorId: requireOption(parsedArgs, "author"),
+      candidateIds: copyStringArray(input.candidateIds),
+      recommendation: input.recommendation ?? "",
+      applicabilityConditions: copyStringArray(input.applicabilityConditions),
+      rationale: input.rationale ?? "",
+      limitations: copyStringArray(input.limitations),
+      idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+    });
+  }
+
+  if (action === "final-audit") {
+    const runId = requireRunId(
+      restPositionals,
+      "Usage: deliberum runs final-audit <runId> --proposal-event <eventId> --author <id> --input <json-file>"
+    );
+    const run = await daemonClient.getRun(runId);
+    const sessionId = extractSessionIdFromRunResponse(run);
+    const input = parseFinalAuditInput(
+      dependencies.readJsonFile(requireOption(parsedArgs, "input"))
+    );
+
+    return daemonClient.auditFinalCandidate(
+      sessionId,
+      requireOption(parsedArgs, "proposal-event"),
+      {
+        authorId: requireOption(parsedArgs, "author"),
+        findings: copyOptionalStringArray(input.findings),
+        risks: copyOptionalStringArray(input.risks),
+        unresolvedObjectionIds: copyOptionalStringArray(input.unresolvedObjectionIds),
+        qualityObligationIds: copyOptionalStringArray(input.qualityObligationIds),
+        evidenceNeedIds: copyOptionalStringArray(input.evidenceNeedIds),
+        omissions: copyOptionalStringArray(input.omissions),
+        compressionProblems: copyOptionalStringArray(input.compressionProblems),
+        limitations: copyOptionalStringArray(input.limitations),
+        continuationSuggestions: copyOptionalStringArray(input.continuationSuggestions),
+        idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+      }
+    );
+  }
+
+  if (action === "execute-process-proposal") {
+    const runId = requireRunId(
+      restPositionals,
+      "Usage: deliberum runs execute-process-proposal <runId> --proposal-event <eventId>"
+    );
+    return daemonClient.executeRunProcessProposal(
+      runId,
+      requireOption(parsedArgs, "proposal-event")
+    );
   }
 
   throw new CliUsageError(`Unknown command: runs ${action || "(empty)"}`);
 }
 
 function assertKnownRunCommand(action: string): void {
-  if (["create", "list", "show", "events", "start", "outcome"].includes(action)) {
+  if (
+    [
+      "create",
+      "list",
+      "show",
+      "events",
+      "start",
+      "outcome",
+      "resources",
+      "process-proposals",
+      "execute-process-proposal",
+      "final-propose",
+      "final-audit"
+    ].includes(action)
+  ) {
     return;
   }
 
   throw new CliUsageError(`Unknown command: runs ${action || "(empty)"}`);
+}
+
+function extractSessionIdFromRunResponse(response: unknown): string {
+  if (typeof response !== "object" || response === null) {
+    throw new CliUsageError("Daemon run response did not include a sessionId.");
+  }
+
+  const run = (response as { run?: unknown }).run;
+
+  if (typeof run !== "object" || run === null) {
+    throw new CliUsageError("Daemon run response did not include a sessionId.");
+  }
+
+  const sessionId = (run as { sessionId?: unknown }).sessionId;
+
+  if (typeof sessionId !== "string" || sessionId.trim().length === 0) {
+    throw new CliUsageError("Daemon run response did not include a sessionId.");
+  }
+
+  return sessionId.trim();
 }
 
 function assertRunCommandOptions(action: string, parsedArgs: ParsedArgs): void {
@@ -506,6 +905,20 @@ function assertRunCommandOptions(action: string, parsedArgs: ParsedArgs): void {
 
   if (action === "create" || action === "start") {
     allowedOptions.add("input");
+  }
+
+  if (action === "outcome" || action === "execute-process-proposal") {
+    allowedOptions.add("proposal-event");
+  }
+
+  if (action === "final-propose" || action === "final-audit") {
+    allowedOptions.add("author");
+    allowedOptions.add("input");
+    allowedOptions.add("idempotency-key");
+  }
+
+  if (action === "final-audit") {
+    allowedOptions.add("proposal-event");
   }
 
   for (const optionName of parsedArgs.options.keys()) {
@@ -547,6 +960,14 @@ function requireNoPositionals(positionals: string[], usage: string): void {
   }
 }
 
+function requireSinglePositional(positionals: string[], usage: string): string {
+  if (positionals.length !== 1 || !positionals[0]) {
+    throw new CliUsageError(usage);
+  }
+
+  return positionals[0];
+}
+
 function readJsonObjectInput(
   dependencies: ExecuteDependencies,
   filePath: string,
@@ -567,6 +988,14 @@ function readJsonObjectInput(
   return input as Record<string, unknown>;
 }
 
+function copyStringArray(values: readonly string[] | undefined): string[] {
+  return [...(values ?? [])];
+}
+
+function copyOptionalStringArray(values: readonly string[] | undefined): string[] | undefined {
+  return values ? [...values] : undefined;
+}
+
 function resolveDaemonUrl(
   parsedArgs: ParsedArgs,
   env: Record<string, string | undefined>
@@ -578,6 +1007,18 @@ function resolveDaemonUrl(
     DEFAULT_DAEMON_BASE_URL;
 
   return validateLocalDaemonUrl(configuredUrl);
+}
+
+function resolveDaemonClientOptions(
+  parsedArgs: ParsedArgs,
+  env: Record<string, string | undefined>
+): { baseUrl: string; authToken?: string } {
+  const authToken = env.DELIBERUM_DAEMON_AUTH_TOKEN?.trim();
+
+  return {
+    baseUrl: resolveDaemonUrl(parsedArgs, env),
+    ...(authToken && authToken.length > 0 ? { authToken } : {})
+  };
 }
 
 function validateLocalDaemonUrl(input: string): string {
@@ -685,6 +1126,22 @@ function parseExtractionInput(input: unknown): ExtractionInputFile {
   }
 
   return input as ExtractionInputFile;
+}
+
+function parseFinalCandidateInput(input: unknown): FinalCandidateInputFile {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    throw new CliUsageError("Final candidate input file must contain a JSON object.");
+  }
+
+  return input as FinalCandidateInputFile;
+}
+
+function parseFinalAuditInput(input: unknown): FinalAuditInputFile {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    throw new CliUsageError("Final audit input file must contain a JSON object.");
+  }
+
+  return input as FinalAuditInputFile;
 }
 
 function createErrorOutput(error: unknown): {
