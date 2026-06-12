@@ -85,12 +85,67 @@ export class ExtractionGeneratorValidationError extends Error {
   }
 }
 
+export class CandidateRepairGeneratorRegistryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CandidateRepairGeneratorRegistryError";
+  }
+}
+
+export class CandidateRepairContextError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CandidateRepairContextError";
+  }
+}
+
 export class RunExtractionProposalRoundError extends Error {
   readonly category: string;
 
   constructor(category: string, message: string) {
     super(message);
     this.name = "RunExtractionProposalRoundError";
+    this.category = category;
+  }
+}
+
+export class RunCandidateRepairRoundError extends Error {
+  readonly category: string;
+
+  constructor(category: string, message: string) {
+    super(message);
+    this.name = "RunCandidateRepairRoundError";
+    this.category = category;
+  }
+}
+
+export class EvidenceCheckGeneratorRegistryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EvidenceCheckGeneratorRegistryError";
+  }
+}
+
+export class EvidenceCheckContextError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EvidenceCheckContextError";
+  }
+}
+
+export class EvidenceCheckValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EvidenceCheckValidationError";
+  }
+}
+
+export class RunEvidenceCheckRoundError extends Error {
+  readonly category: string;
+
+  constructor(category: string, message: string) {
+    super(message);
+    this.name = "RunEvidenceCheckRoundError";
     this.category = category;
   }
 }

@@ -31,6 +31,11 @@ import type {
   CandidateFrontierProjection,
   Clock,
   CreateSessionOptions,
+  DerivedCandidate,
+  DerivedClaim,
+  DerivedEvidenceNeed,
+  DerivedObjection,
+  DerivedQualityObligation,
   IdGenerator,
   ExtractionProposalState,
   OutcomeCompilationResult,
@@ -67,6 +72,12 @@ export const OpenAICompatibleRequestOptionsSchema = z
 export type OpenAICompatibleRequestOptions = z.infer<
   typeof OpenAICompatibleRequestOptionsSchema
 >;
+export const HttpTemplateRuntimeConfigSchema = z
+  .object({
+    variables: JsonRecordSchema.optional()
+  })
+  .strict();
+export type HttpTemplateRuntimeConfig = z.infer<typeof HttpTemplateRuntimeConfigSchema>;
 
 export const RunParticipantSchema = z
   .object({
@@ -98,7 +109,8 @@ export const ProviderModelConfigRefSchema = z
     stream: z.literal(false).optional(),
     frequencyPenalty: z.number().finite().min(-2).max(2).optional(),
     presencePenalty: z.number().finite().min(-2).max(2).optional(),
-    thinking: OpenAICompatibleThinkingSchema.optional()
+    thinking: OpenAICompatibleThinkingSchema.optional(),
+    httpTemplate: HttpTemplateRuntimeConfigSchema.optional()
   })
   .strict();
 export type ProviderModelConfigRef = z.infer<typeof ProviderModelConfigRefSchema>;
@@ -232,6 +244,52 @@ export const ExtractionRunErrorCategorySchema = z.enum([
   "round_conflict"
 ]);
 export type ExtractionRunErrorCategory = z.infer<typeof ExtractionRunErrorCategorySchema>;
+
+export const CandidateRepairRunErrorCategorySchema = z.enum([
+  "candidate_repair_context_unavailable",
+  "candidate_repair_generator_failed",
+  "candidate_repair_validation_failed",
+  "provider_auth_failed",
+  "provider_not_found",
+  "provider_rate_limited",
+  "provider_timeout",
+  "provider_network_error",
+  "provider_http_error",
+  "provider_malformed_response",
+  "provider_config_invalid",
+  "provider_response_empty",
+  "provider_response_missing_content",
+  "provider_secret_missing",
+  "provider_unknown_error",
+  "core_lifecycle_failed",
+  "round_conflict"
+]);
+export type CandidateRepairRunErrorCategory = z.infer<
+  typeof CandidateRepairRunErrorCategorySchema
+>;
+
+export const EvidenceCheckRunErrorCategorySchema = z.enum([
+  "evidence_check_context_unavailable",
+  "evidence_check_generator_failed",
+  "evidence_check_validation_failed",
+  "provider_auth_failed",
+  "provider_not_found",
+  "provider_rate_limited",
+  "provider_timeout",
+  "provider_network_error",
+  "provider_http_error",
+  "provider_malformed_response",
+  "provider_config_invalid",
+  "provider_response_empty",
+  "provider_response_missing_content",
+  "provider_secret_missing",
+  "provider_unknown_error",
+  "core_lifecycle_failed",
+  "round_conflict"
+]);
+export type EvidenceCheckRunErrorCategory = z.infer<
+  typeof EvidenceCheckRunErrorCategorySchema
+>;
 
 export const ProposalReviewRunErrorCategorySchema = z.enum([
   "proposal_review_context_unavailable",
@@ -393,6 +451,108 @@ export const ExtractionRoundStateSchema = z
   .strict();
 export type ExtractionRoundState = z.infer<typeof ExtractionRoundStateSchema>;
 
+export const CandidateRepairGeneratorRunStatusSchema = z.enum([
+  "pending",
+  "running",
+  "proposed",
+  "failed",
+  "skipped"
+]);
+export type CandidateRepairGeneratorRunStatus = z.infer<
+  typeof CandidateRepairGeneratorRunStatusSchema
+>;
+
+export const CandidateRepairGeneratorStateSchema = z
+  .object({
+    generatorId: IdSchema,
+    status: CandidateRepairGeneratorRunStatusSchema,
+    proposalEventId: IdSchema.optional(),
+    errorCategory: CandidateRepairRunErrorCategorySchema.optional(),
+    safeDiagnostics: RunSafeDiagnosticsSchema.optional(),
+    previousErrorCategories: z.array(CandidateRepairRunErrorCategorySchema).optional(),
+    attempts: z.number().int().nonnegative(),
+    startedAt: NonEmptyStringSchema.optional(),
+    completedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type CandidateRepairGeneratorState = z.infer<
+  typeof CandidateRepairGeneratorStateSchema
+>;
+
+export const CandidateRepairRoundStatusSchema = z.enum([
+  "running",
+  "waiting_for_generators",
+  "completed",
+  "failed"
+]);
+export type CandidateRepairRoundStatus = z.infer<
+  typeof CandidateRepairRoundStatusSchema
+>;
+
+export const CandidateRepairRoundStateSchema = z
+  .object({
+    roundId: IdSchema,
+    targetCandidateIds: z.array(IdSchema),
+    status: CandidateRepairRoundStatusSchema,
+    generatorStates: z.array(CandidateRepairGeneratorStateSchema),
+    proposalEventIds: z.array(IdSchema),
+    lastErrorCategory: CandidateRepairRunErrorCategorySchema.optional(),
+    executionClaim: RoundExecutionClaimSchema.optional(),
+    startedAt: NonEmptyStringSchema.optional(),
+    updatedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type CandidateRepairRoundState = z.infer<typeof CandidateRepairRoundStateSchema>;
+
+export const EvidenceCheckGeneratorRunStatusSchema = z.enum([
+  "pending",
+  "running",
+  "recorded",
+  "failed",
+  "skipped"
+]);
+export type EvidenceCheckGeneratorRunStatus = z.infer<
+  typeof EvidenceCheckGeneratorRunStatusSchema
+>;
+
+export const EvidenceCheckGeneratorStateSchema = z
+  .object({
+    generatorId: IdSchema,
+    status: EvidenceCheckGeneratorRunStatusSchema,
+    evidenceResultEventIds: z.array(IdSchema).optional(),
+    errorCategory: EvidenceCheckRunErrorCategorySchema.optional(),
+    safeDiagnostics: RunSafeDiagnosticsSchema.optional(),
+    previousErrorCategories: z.array(EvidenceCheckRunErrorCategorySchema).optional(),
+    attempts: z.number().int().nonnegative(),
+    startedAt: NonEmptyStringSchema.optional(),
+    completedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type EvidenceCheckGeneratorState = z.infer<typeof EvidenceCheckGeneratorStateSchema>;
+
+export const EvidenceCheckRoundStatusSchema = z.enum([
+  "running",
+  "waiting_for_generators",
+  "completed",
+  "failed"
+]);
+export type EvidenceCheckRoundStatus = z.infer<typeof EvidenceCheckRoundStatusSchema>;
+
+export const EvidenceCheckRoundStateSchema = z
+  .object({
+    roundId: IdSchema,
+    targetEvidenceNeedIds: z.array(IdSchema),
+    status: EvidenceCheckRoundStatusSchema,
+    generatorStates: z.array(EvidenceCheckGeneratorStateSchema),
+    evidenceResultEventIds: z.array(IdSchema),
+    lastErrorCategory: EvidenceCheckRunErrorCategorySchema.optional(),
+    executionClaim: RoundExecutionClaimSchema.optional(),
+    startedAt: NonEmptyStringSchema.optional(),
+    updatedAt: NonEmptyStringSchema.optional()
+  })
+  .strict();
+export type EvidenceCheckRoundState = z.infer<typeof EvidenceCheckRoundStateSchema>;
+
 export const ProposalReviewerRunStatusSchema = z.enum([
   "pending",
   "running",
@@ -457,7 +617,7 @@ export type FinalCandidateGenerationStatus = z.infer<
 export const FinalCandidateGenerationStateSchema = z
   .object({
     sourceId: IdSchema,
-    sourceType: z.enum(["explicit", "generator"]),
+    sourceType: z.enum(["explicit", "generator", "existing_proposal"]),
     status: FinalCandidateGenerationStatusSchema,
     proposalEventId: IdSchema.optional(),
     errorCategory: FinalizationRunErrorCategorySchema.optional(),
@@ -566,6 +726,8 @@ export const DeliberationRunRecordSchema = z
     currentBatchId: IdSchema.optional(),
     sealedDivergenceRound: SealedDivergenceRoundStateSchema.optional(),
     extractionRounds: z.array(ExtractionRoundStateSchema).optional(),
+    candidateRepairRounds: z.array(CandidateRepairRoundStateSchema).optional(),
+    evidenceCheckRounds: z.array(EvidenceCheckRoundStateSchema).optional(),
     proposalReviewRounds: z.array(ProposalReviewRoundStateSchema).optional(),
     finalizationRounds: z.array(FinalizationRoundStateSchema).optional(),
     createdAt: NonEmptyStringSchema,
@@ -722,6 +884,67 @@ export type BuildExtractionContextInput = {
   sealedDivergenceRoundId?: string;
 };
 
+export type CandidateRepairContextMetadata = {
+  version: "1";
+  targetCandidateIds: string[];
+  allowedSourceEventIds: string[];
+  eventRange: {
+    fromSequence: number;
+    toSequence: number;
+  } | null;
+  eventIds: string[];
+};
+
+export type CandidateRepairContext = {
+  runId: string;
+  sessionId: string;
+  topic: string;
+  goals: string[];
+  constraints: string[];
+  output: RunOutputPreferences;
+  targetCandidates: DerivedCandidate[];
+  unresolvedObjections: DerivedObjection[];
+  qualityObligations: DerivedQualityObligation[];
+  acceptedObjects: AcceptedDeliberationObjectsProjection;
+  frontier: CandidateFrontierProjection;
+  metadata: CandidateRepairContextMetadata;
+};
+
+export type BuildCandidateRepairContextInput = {
+  run: DeliberationRunRecord;
+  eventStore: EventStore;
+  targetCandidateIds?: readonly string[];
+};
+
+export type EvidenceCheckContextMetadata = {
+  version: "1";
+  targetEvidenceNeedIds: string[];
+  eventRange: {
+    fromSequence: number;
+    toSequence: number;
+  } | null;
+  eventIds: string[];
+};
+
+export type EvidenceCheckContext = {
+  runId: string;
+  sessionId: string;
+  topic: string;
+  goals: string[];
+  constraints: string[];
+  output: RunOutputPreferences;
+  targetEvidenceNeeds: DerivedEvidenceNeed[];
+  targetClaims: DerivedClaim[];
+  acceptedObjects: AcceptedDeliberationObjectsProjection;
+  metadata: EvidenceCheckContextMetadata;
+};
+
+export type BuildEvidenceCheckContextInput = {
+  run: DeliberationRunRecord;
+  eventStore: EventStore;
+  targetEvidenceNeedIds?: readonly string[];
+};
+
 export type BuildParticipantContextInput = {
   run: DeliberationRunRecord;
   eventStore: EventStore;
@@ -746,6 +969,7 @@ export type ProviderRuntimeConfig = {
   apiKeyEnvVar?: string;
   apiKey?: string;
   requestOptions?: OpenAICompatibleRequestOptions;
+  httpTemplate?: HttpTemplateRuntimeConfig;
 };
 
 export type ProviderConfigSafeView = {
@@ -758,6 +982,7 @@ export type ProviderConfigSafeView = {
   timeoutMs?: number;
   apiKeyEnvVar?: string;
   requestOptions?: OpenAICompatibleRequestOptions;
+  httpTemplate?: HttpTemplateRuntimeConfig;
   hasApiKey: boolean;
 };
 
@@ -806,6 +1031,70 @@ export interface ExtractionGenerator {
 }
 
 export type ExtractionGeneratorRegistryEntry = {
+  generatorId: string;
+};
+
+export type CandidateRepairGeneratorResult = ExtractionGeneratorResult;
+
+export type CandidateRepairGeneratorInput = {
+  instructions: string;
+  context: CandidateRepairContext;
+};
+
+export interface CandidateRepairGenerator {
+  generatorId: string;
+  adapterId?: string;
+  providerConfigId?: string;
+  repairCandidate(
+    input: CandidateRepairGeneratorInput,
+    context: CandidateRepairContext,
+    providerRuntimeConfig?: ProviderRuntimeConfig
+  ): Promise<CandidateRepairGeneratorResult> | CandidateRepairGeneratorResult;
+}
+
+export type CandidateRepairGeneratorRegistryEntry = {
+  generatorId: string;
+};
+
+export const EvidenceCheckResultDraftSchema = z
+  .object({
+    evidenceNeedId: IdSchema,
+    source: NonEmptyStringSchema,
+    summary: NonEmptyStringSchema,
+    resourceIds: z.array(IdSchema).optional(),
+    limitations: z.array(NonEmptyStringSchema).optional(),
+    challengedBy: z.array(IdSchema).optional()
+  })
+  .strict();
+export type EvidenceCheckResultDraft = z.infer<typeof EvidenceCheckResultDraftSchema>;
+
+export const EvidenceCheckGeneratorResultSchema = z
+  .object({
+    results: z.array(EvidenceCheckResultDraftSchema),
+    rationale: NonEmptyStringSchema
+  })
+  .strict();
+export type EvidenceCheckGeneratorResult = z.infer<
+  typeof EvidenceCheckGeneratorResultSchema
+>;
+
+export type EvidenceCheckGeneratorInput = {
+  instructions: string;
+  context: EvidenceCheckContext;
+};
+
+export interface EvidenceCheckGenerator {
+  generatorId: string;
+  adapterId?: string;
+  providerConfigId?: string;
+  checkEvidence(
+    input: EvidenceCheckGeneratorInput,
+    context: EvidenceCheckContext,
+    providerRuntimeConfig?: ProviderRuntimeConfig
+  ): Promise<EvidenceCheckGeneratorResult> | EvidenceCheckGeneratorResult;
+}
+
+export type EvidenceCheckGeneratorRegistryEntry = {
   generatorId: string;
 };
 
@@ -899,6 +1188,84 @@ export type RunExtractionProposalRoundResult = {
   roundId: string;
   executionStatus: "executed" | "already_running" | "already_completed";
   proposalResults: ExtractionGeneratorRoundResult[];
+};
+
+export type RunCandidateRepairRoundInput = {
+  runId: string;
+  roundId?: string;
+  targetCandidateIds?: readonly string[];
+  generatorIds?: readonly string[];
+  retryFailedGenerators?: boolean;
+};
+
+export type RunCandidateRepairRoundOptions = {
+  eventStore: EventStore;
+  runStore: RunStore;
+  candidateRepairGeneratorRegistry: {
+    require(generatorId: string): CandidateRepairGenerator;
+    list(): CandidateRepairGeneratorRegistryEntry[];
+  };
+  idGenerator: IdGenerator;
+  clock?: Clock;
+  schemaVersion?: string;
+  env?: Record<string, string | undefined>;
+  executionClaimTtlMs?: number;
+  executionClaimOwnerIdGenerator?: () => string;
+};
+
+export type CandidateRepairGeneratorRoundResult = {
+  generatorId: string;
+  status: CandidateRepairGeneratorRunStatus;
+  proposalEventId?: string;
+  appended?: boolean;
+  errorCategory?: CandidateRepairRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
+};
+
+export type RunCandidateRepairRoundResult = {
+  run: DeliberationRunRecord;
+  roundId: string;
+  executionStatus: "executed" | "already_running" | "already_completed";
+  proposalResults: CandidateRepairGeneratorRoundResult[];
+};
+
+export type RunEvidenceCheckRoundInput = {
+  runId: string;
+  roundId?: string;
+  targetEvidenceNeedIds?: readonly string[];
+  generatorIds?: readonly string[];
+  retryFailedGenerators?: boolean;
+};
+
+export type RunEvidenceCheckRoundOptions = {
+  eventStore: EventStore;
+  runStore: RunStore;
+  evidenceCheckGeneratorRegistry: {
+    require(generatorId: string): EvidenceCheckGenerator;
+    list(): EvidenceCheckGeneratorRegistryEntry[];
+  };
+  idGenerator: IdGenerator;
+  clock?: Clock;
+  schemaVersion?: string;
+  env?: Record<string, string | undefined>;
+  executionClaimTtlMs?: number;
+  executionClaimOwnerIdGenerator?: () => string;
+};
+
+export type EvidenceCheckGeneratorRoundResult = {
+  generatorId: string;
+  status: EvidenceCheckGeneratorRunStatus;
+  evidenceResultEventIds?: string[];
+  appended?: boolean;
+  errorCategory?: EvidenceCheckRunErrorCategory;
+  safeDiagnostics?: RunSafeDiagnostics;
+};
+
+export type RunEvidenceCheckRoundResult = {
+  run: DeliberationRunRecord;
+  roundId: string;
+  executionStatus: "executed" | "already_running" | "already_completed";
+  evidenceResults: EvidenceCheckGeneratorRoundResult[];
 };
 
 export const ProposalReviewChallengeDraftSchema = z
@@ -1163,6 +1530,7 @@ export type RunFinalizationRoundInput = {
   roundId?: string;
   proposalReviewRoundId?: string;
   finalCandidateDraft?: ExplicitFinalCandidateDraft;
+  finalCandidateProposalEventId?: string;
   finalCandidateGeneratorId?: string;
   auditGeneratorIds?: readonly string[];
   retryFailedFinalCandidate?: boolean;
@@ -1173,7 +1541,7 @@ export type RunFinalizationRoundInput = {
 export type RunFinalizationRoundOptions = {
   eventStore: EventStore;
   runStore: RunStore;
-  finalCandidateGeneratorRegistry: {
+  finalCandidateGeneratorRegistry?: {
     require(generatorId: string): FinalCandidateGenerator;
     list(): FinalCandidateGeneratorRegistryEntry[];
   };
@@ -1191,7 +1559,7 @@ export type RunFinalizationRoundOptions = {
 
 export type FinalCandidateRoundResult = {
   sourceId: string;
-  sourceType: "explicit" | "generator";
+  sourceType: "explicit" | "generator" | "existing_proposal";
   status: FinalCandidateGenerationStatus;
   proposalEventId?: string;
   appended?: boolean;

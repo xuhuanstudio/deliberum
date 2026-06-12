@@ -18,6 +18,9 @@ export function resolveProviderRuntimeConfig(
     endpointPath: input.providerConfig.endpointPath,
     timeoutMs: input.providerConfig.timeoutMs,
     requestOptions: createProviderRequestOptions(input.providerConfig),
+    ...(input.providerConfig.httpTemplate
+      ? { httpTemplate: structuredClone(input.providerConfig.httpTemplate) }
+      : {}),
     apiKeyEnvVar: input.providerConfig.apiKeyEnvVar
   };
 
@@ -53,6 +56,9 @@ export function createProviderConfigSafeView(
     endpointPath: providerConfig.endpointPath,
     timeoutMs: providerConfig.timeoutMs,
     ...(requestOptions ? { requestOptions } : {}),
+    ...(providerConfig.httpTemplate
+      ? { httpTemplate: structuredClone(providerConfig.httpTemplate) }
+      : {}),
     apiKeyEnvVar: providerConfig.apiKeyEnvVar,
     hasApiKey: Boolean(providerConfig.apiKeyEnvVar)
   };

@@ -15,6 +15,16 @@ export function validateExtractionGeneratorResult(
   result: unknown,
   context: ExtractionContext
 ): ExtractionGeneratorDraft {
+  return validateExtractionGeneratorResultForAllowedSourceEventIds(
+    result,
+    context.metadata.allowedSourceEventIds
+  );
+}
+
+export function validateExtractionGeneratorResultForAllowedSourceEventIds(
+  result: unknown,
+  allowedSourceEventIds: readonly string[]
+): ExtractionGeneratorDraft {
   const parsed = ExtractionGeneratorResultSchema.safeParse(result);
 
   if (!parsed.success) {
@@ -42,7 +52,7 @@ export function validateExtractionGeneratorResult(
     ...draft.evidenceNeeds,
     ...draft.qualityObligations
   ]);
-  assertSourceTraceability(draft, context);
+  assertSourceTraceability(draft, allowedSourceEventIds);
   assertDraftReferences(draft);
 
   return draft;
@@ -75,9 +85,9 @@ function assertUniqueObjectIds(objects: readonly DraftObject[]): void {
 
 function assertSourceTraceability(
   draft: ExtractionGeneratorDraft,
-  context: ExtractionContext
+  allowedSourceEventIds: readonly string[]
 ): void {
-  const allowedSourceEventIds = new Set(context.metadata.allowedSourceEventIds);
+  const allowedSourceEventIdSet = new Set(allowedSourceEventIds);
   const objects: DraftObject[] = [
     ...draft.candidates,
     ...draft.claims,
@@ -88,7 +98,7 @@ function assertSourceTraceability(
 
   for (const object of objects) {
     for (const sourceEventId of object.sourceEventIds) {
-      if (!allowedSourceEventIds.has(sourceEventId)) {
+      if (!allowedSourceEventIdSet.has(sourceEventId)) {
         throw new ExtractionGeneratorValidationError(
           "Extraction generator result references a disallowed source event."
         );

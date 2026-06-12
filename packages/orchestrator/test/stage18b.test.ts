@@ -403,6 +403,44 @@ describe("provider secret resolver", () => {
     );
   });
 
+  it("passes non-secret HTTP-template variables through runtime and safe views", () => {
+    const providerConfig = {
+      ...createRunPlan().providerConfigs[0],
+      adapterId: "http-template",
+      httpTemplate: {
+        variables: {
+          route: "sealed-divergence",
+          maxItems: 3
+        }
+      }
+    } as ProviderModelConfigRef;
+
+    const runtimeConfig = resolveProviderRuntimeConfig({
+      providerConfig,
+      env: {
+        DELIBERUM_OPENAI_API_KEY: "sk-runtime-secret"
+      }
+    });
+    const safeView = createProviderConfigSafeView(runtimeConfig);
+
+    expect(runtimeConfig.httpTemplate).toEqual({
+      variables: {
+        route: "sealed-divergence",
+        maxItems: 3
+      }
+    });
+    expect(safeView).toMatchObject({
+      httpTemplate: {
+        variables: {
+          route: "sealed-divergence",
+          maxItems: 3
+        }
+      }
+    });
+    expect(JSON.stringify(safeView)).not.toContain("sk-runtime-secret");
+    expect(safeView).not.toHaveProperty("apiKey");
+  });
+
   it("rejects missing env vars with safe errors", () => {
     const providerConfig = createRunPlan().providerConfigs[0] as ProviderModelConfigRef;
     const unrelatedSecret = "sk-unrelated-secret";

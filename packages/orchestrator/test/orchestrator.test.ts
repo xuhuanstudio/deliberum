@@ -144,6 +144,47 @@ describe("createDeliberationRun", () => {
     expect(JSON.stringify(result.topicContractEvent)).not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
+  it("preserves non-secret HTTP-template runtime variables in provider config", () => {
+    const runPlan = createValidRunPlan() as ReturnType<typeof createValidRunPlan> & {
+      providerConfigs: Array<ReturnType<typeof createValidRunPlan>["providerConfigs"][number] & {
+        httpTemplate?: {
+          variables: Record<string, unknown>;
+        };
+      }>;
+    };
+    runPlan.providerConfigs[0] = {
+      ...runPlan.providerConfigs[0],
+      adapterId: "http-template",
+      httpTemplate: {
+        variables: {
+          route: "sealed-divergence",
+          maxItems: 3
+        }
+      }
+    };
+    const result = createDeliberationRun(
+      {
+        runPlan
+      },
+      {
+        eventStore: createEventStore(),
+        runStore: new InMemoryRunStore(),
+        idGenerator: createIds(["run-1", "topic-contract-1", "session-1", "event-1"]),
+        clock: () => "2026-06-10T00:00:00.000Z"
+      }
+    );
+
+    expect(result.run.plan.providerConfigs[0]).toMatchObject({
+      adapterId: "http-template",
+      httpTemplate: {
+        variables: {
+          route: "sealed-divergence",
+          maxItems: 3
+        }
+      }
+    });
+  });
+
   it("does not execute adapters or create later lifecycle artifacts", () => {
     const eventStore = createEventStore();
 
@@ -254,6 +295,30 @@ describe("createDeliberationRun", () => {
 
     expect(eventStore.listEvents("session-1")).toHaveLength(0);
     expect(runStore.listRuns()).toHaveLength(0);
+  });
+
+  it("rejects HTTP-template runtime variables that look like inline credentials", () => {
+    const unsafeSecret = "sk-this-secret-must-not-leak";
+    const runPlan = createValidRunPlan() as ReturnType<typeof createValidRunPlan> & {
+      providerConfigs: Array<ReturnType<typeof createValidRunPlan>["providerConfigs"][number] & {
+        httpTemplate?: {
+          variables: Record<string, unknown>;
+        };
+      }>;
+    };
+    runPlan.providerConfigs[0].httpTemplate = {
+      variables: {
+        apiKey: unsafeSecret
+      }
+    };
+
+    try {
+      validateDeliberationRunPlan(runPlan);
+      throw new Error("Expected unsafe HTTP-template variables to be rejected.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(RunPlanValidationError);
+      expect(error instanceof Error ? error.message : String(error)).not.toContain(unsafeSecret);
+    }
   });
 
   it("rejects inline secret-like values with safe error messages", () => {

@@ -1,4 +1,5 @@
 import {
+  FINAL_CANDIDATE_PROPOSED_EVENT_TYPE,
   auditFinalCandidate,
   compileOutcome as compileCoreOutcome,
   proposeFinalCandidate
@@ -50,6 +51,11 @@ type FinalCandidateSource =
       draft: ExplicitFinalCandidateDraft;
     }
   | {
+      sourceType: "existing_proposal";
+      sourceId: string;
+      proposalEventId: string;
+    }
+  | {
       sourceType: "generator";
       sourceId: string;
     };
@@ -82,7 +88,7 @@ export async function runFinalizationRound(
 
   const roundId = input.roundId ?? DEFAULT_FINALIZATION_ROUND_ID;
   const sourceProposalReviewRoundId = resolveSourceProposalReviewRoundId(input, existingRun);
-  const finalCandidateSource = resolveFinalCandidateSource(input, options);
+  const finalCandidateSource = resolveFinalCandidateSource(input, options, existingRun);
   const auditorIds = resolveAuditorIds(input, options);
   const acquisition = acquireFinalizationRoundExecutionClaim(
     input.runId,
@@ -376,7 +382,7 @@ async function executeFinalCandidateSource(input: {
     const generatorResult = input.finalCandidateSource.sourceType === "explicit"
       ? input.finalCandidateSource.draft
       : await (async () => {
-          const generator = input.options.finalCandidateGeneratorRegistry.require(
+          const generator = requireFinalCandidateGeneratorRegistry(input.options).require(
             input.finalCandidateSource.sourceId
           );
           const providerRuntimeConfig = resolveFinalCandidateRuntimeConfig(
@@ -602,13 +608,34 @@ function compileOutcomeForRound(input: {
 
 function resolveFinalCandidateSource(
   input: RunFinalizationRoundInput,
-  options: RunFinalizationRoundOptions
+  options: RunFinalizationRoundOptions,
+  run: DeliberationRunRecord
 ): FinalCandidateSource {
-  if (input.finalCandidateDraft && input.finalCandidateGeneratorId) {
+  const requestedSourceCount = [
+    input.finalCandidateDraft,
+    input.finalCandidateGeneratorId,
+    input.finalCandidateProposalEventId
+  ].filter(Boolean).length;
+
+  if (requestedSourceCount > 1) {
     throw new RunFinalizationRoundError(
       "final_candidate_validation_failed",
-      "Finalization must use either an explicit final candidate draft or one generator."
+      "Finalization must use only one final candidate source."
     );
+  }
+
+  if (input.finalCandidateProposalEventId) {
+    assertExistingFinalCandidateProposalEvent(
+      input.finalCandidateProposalEventId,
+      run,
+      options
+    );
+
+    return {
+      sourceType: "existing_proposal",
+      sourceId: input.finalCandidateProposalEventId,
+      proposalEventId: input.finalCandidateProposalEventId
+    };
   }
 
   if (input.finalCandidateDraft) {
@@ -620,7 +647,7 @@ function resolveFinalCandidateSource(
   }
 
   if (input.finalCandidateGeneratorId) {
-    options.finalCandidateGeneratorRegistry.require(input.finalCandidateGeneratorId);
+    requireFinalCandidateGeneratorRegistry(options).require(input.finalCandidateGeneratorId);
 
     return {
       sourceType: "generator",
@@ -628,7 +655,8 @@ function resolveFinalCandidateSource(
     };
   }
 
-  const generatorIds = options.finalCandidateGeneratorRegistry
+  const generatorRegistry = requireFinalCandidateGeneratorRegistry(options);
+  const generatorIds = generatorRegistry
     .list()
     .map((entry) => entry.generatorId);
 
@@ -639,12 +667,45 @@ function resolveFinalCandidateSource(
     );
   }
 
-  options.finalCandidateGeneratorRegistry.require(generatorIds[0]!);
+  generatorRegistry.require(generatorIds[0]!);
 
   return {
     sourceType: "generator",
     sourceId: generatorIds[0]!
   };
+}
+
+function assertExistingFinalCandidateProposalEvent(
+  finalCandidateProposalEventId: string,
+  run: DeliberationRunRecord,
+  options: RunFinalizationRoundOptions
+): void {
+  const event = options.eventStore.getEvent(finalCandidateProposalEventId);
+
+  if (
+    !event ||
+    event.sessionId !== run.sessionId ||
+    event.type !== FINAL_CANDIDATE_PROPOSED_EVENT_TYPE ||
+    event.visibility !== "public"
+  ) {
+    throw new RunFinalizationRoundError(
+      "final_candidate_validation_failed",
+      "Finalization target final candidate proposal event was not found."
+    );
+  }
+}
+
+function requireFinalCandidateGeneratorRegistry(
+  options: RunFinalizationRoundOptions
+): NonNullable<RunFinalizationRoundOptions["finalCandidateGeneratorRegistry"]> {
+  if (!options.finalCandidateGeneratorRegistry) {
+    throw new RunFinalizationRoundError(
+      "final_candidate_validation_failed",
+      "Finalization requires a final candidate generator registry."
+    );
+  }
+
+  return options.finalCandidateGeneratorRegistry;
 }
 
 function resolveAuditorIds(
@@ -877,6 +938,16 @@ function createFinalCandidateState(
   if (existing) {
     assertSameFinalCandidateSource(existing, source);
     return structuredClone(existing);
+  }
+
+  if (source.sourceType === "existing_proposal") {
+    return {
+      sourceId: source.sourceId,
+      sourceType: source.sourceType,
+      status: "proposed",
+      proposalEventId: source.proposalEventId,
+      attempts: 0
+    };
   }
 
   return {

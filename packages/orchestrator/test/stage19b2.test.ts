@@ -866,6 +866,67 @@ describe("Stage 19B-2 finalization orchestration", () => {
     expect(eventStore.listEventsByType(run.sessionId, FINAL_AUDIT_RECORDED_EVENT_TYPE)).toHaveLength(1);
   });
 
+  it("audits an existing final candidate proposal without requiring a final candidate generator", async () => {
+    const { eventStore, runStore, run } = await createAcceptedRun();
+    const first = await runFinalizationRound(
+      {
+        runId: run.id,
+        finalCandidateDraft: createFinalCandidateDraft(),
+        auditGeneratorIds: ["final-auditor"]
+      },
+      {
+        eventStore,
+        runStore,
+        finalCandidateGeneratorRegistry: new FinalCandidateGeneratorRegistry(),
+        finalAuditGeneratorRegistry: new FinalAuditGeneratorRegistry([
+          createFinalAuditGenerator()
+        ]),
+        idGenerator: createIds([
+          "final-proposal-1",
+          "final-proposal-event-1",
+          "final-audit-1",
+          "final-audit-event-1"
+        ]),
+        clock: () => "2026-06-10T00:00:10.000Z",
+        executionClaimOwnerIdGenerator: createIds(["finalization-claim-1"])
+      }
+    );
+    const second = await runFinalizationRound(
+      {
+        runId: run.id,
+        roundId: "audit-existing-final-candidate",
+        finalCandidateProposalEventId: first.finalCandidateResult?.proposalEventId,
+        auditGeneratorIds: ["final-auditor"]
+      },
+      {
+        eventStore,
+        runStore,
+        finalAuditGeneratorRegistry: new FinalAuditGeneratorRegistry([
+          createFinalAuditGenerator()
+        ]),
+        idGenerator: createIds(["final-audit-2", "final-audit-event-2"]),
+        clock: () => "2026-06-10T00:00:11.000Z",
+        executionClaimOwnerIdGenerator: createIds(["finalization-claim-2"])
+      }
+    );
+
+    expect(first.finalCandidateResult?.proposalEventId).toBe("final-proposal-event-1");
+    expect(second.finalCandidateResult).toMatchObject({
+      status: "skipped",
+      proposalEventId: "final-proposal-event-1",
+      sourceType: "existing_proposal"
+    });
+    expect(second.auditResults).toEqual([
+      expect.objectContaining({
+        auditorId: "final-auditor",
+        status: "recorded",
+        auditEventId: "final-audit-event-2"
+      })
+    ]);
+    expect(eventStore.listEventsByType(run.sessionId, FINAL_CANDIDATE_PROPOSED_EVENT_TYPE)).toHaveLength(1);
+    expect(eventStore.listEventsByType(run.sessionId, FINAL_AUDIT_RECORDED_EVENT_TYPE)).toHaveLength(2);
+  });
+
   it("does not execute a second final candidate generator while a round is already running", async () => {
     const { eventStore, runStore, run } = await createAcceptedRun();
     let resolveGenerator!: (value: FinalCandidateGeneratorResult) => void;
