@@ -10,6 +10,7 @@ Implemented today:
 
 - TypeScript monorepo with protocol, core, storage, adapters, resources, client, UI, CLI, daemon, and Web packages.
 - Runtime-validated protocol schemas for events, Topic Contracts, participants, sealed batches, deliberation objects, proposals, references, resources, final audit, and outcome compilation.
+- Runtime-validated evaluation schemas and a baseline comparison report harness for externally supplied findings.
 - Append-only event storage with store-assigned `sequence` and `recordedAt`; in-memory storage for package/core tests, shared JSON file persistence for the local CLI, optional JSON daemon event ledger persistence, and optional SQLite daemon event ledger, run metadata, resource broker, and resource access grant persistence with local connection-level writer serialization.
 - Core lifecycle APIs for Topic Contract session creation, Sealed Divergence, Extraction Proposals, proposal challenge/acceptance, Process Proposals, Evidence Result recording, Final Audit, and Outcome Compilation.
 - Derived projections for extraction proposal states, accepted deliberation objects, Candidate Frontier, objections, and quality obligations, with projection metadata.
@@ -39,6 +40,6 @@ This is still a pre-production local-first implementation, not a production serv
 
 ## Later Evaluation And Release Work
 
-- Baseline comparison harness.
+- Larger baseline benchmark datasets.
 - Operational audit logs.
 - Public alpha packaging once naming, domain, package scope, and trademark checks are complete.

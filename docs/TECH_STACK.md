@@ -17,6 +17,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - TypeScript for all apps and packages;
 - zod for runtime protocol validation;
 - Vitest for package and app tests;
+- package-level baseline comparison report harness in `@deliberum/evaluation`;
 - Hono and `@hono/node-server` for the local daemon API;
 - opt-in daemon control-plane bearer auth for local/pre-production hardening;
 - process-local `InMemoryEventStore` for daemon defaults;
@@ -42,6 +43,7 @@ apps/
 packages/
   protocol/
   core/
+  evaluation/
   storage/
   adapters/
   resources/

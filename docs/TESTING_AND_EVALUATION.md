@@ -13,6 +13,18 @@ Compare against:
 - central judge workflow;
 - voting aggregation.
 
+The package-level `@deliberum/evaluation` harness now provides a typed baseline
+comparison report builder for these comparisons. It accepts benchmark cases,
+baseline run records, Deliberum run records, and externally supplied comparative
+findings. The harness validates that each case contains exactly one Deliberum
+run plus at least one baseline run, checks finding references, aggregates
+dimension counts, reports missing findings, and preserves provenance source
+refs.
+
+The harness does not evaluate quality by itself, rank systems, vote, or select
+an authoritative outcome. It is an evidence organization layer for human or
+external evaluator findings.
+
 ## Evaluation dimensions
 
 - final answer quality;
@@ -24,6 +36,21 @@ Compare against:
 - traceability;
 - cost and latency;
 - user comprehension.
+
+The implemented dimension ids are:
+
+```text
+final_answer_quality
+critical_risk_discovery
+objection_handling
+minority_insight_preservation
+factual_correctness
+executability
+traceability
+cost
+latency
+user_comprehension
+```
 
 ## Required tests
 
@@ -37,3 +64,7 @@ Compare against:
 - resource delivery policy;
 - WebGET token behavior;
 - adapter capability handling.
+
+The evaluation package test suite covers report aggregation, missing finding
+detection, invalid run references, unsupported dimension findings, and guardrails
+against authority-like report fields.

@@ -16,6 +16,7 @@ Deliberum is a quality-centered peer deliberation runtime.
 9. Adapter and Resource Layer
 10. Outcome Compiler Layer
 11. CLI / Daemon / Web Presentation Layer
+12. Evaluation Support Layer
 ```
 
 ## Topic Contract Layer
@@ -67,3 +68,9 @@ Adapters connect API models, local models, OpenAI-compatible endpoints, HTTP-tem
 ## Outcome Compiler Layer
 
 The final result is compiled from candidates, obligations, objections, evidence, audits, and final candidate proposals. It is not a free-form central Judge summary.
+
+## Evaluation Support Layer
+
+Evaluation packages organize benchmark cases, baseline runs, externally supplied
+comparative findings, and provenance. They do not participate in live runtime
+decision-making and do not choose an authoritative outcome.
