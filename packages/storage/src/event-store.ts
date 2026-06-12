@@ -21,6 +21,7 @@ export interface EventStore {
   ): AppendEventResult<TPayload>;
   appendEvents<TPayload = unknown>(inputs: AppendEventInput<TPayload>[]): StoredEvent<TPayload>[];
   getEvent<TPayload = unknown>(eventId: string): StoredEvent<TPayload> | undefined;
+  listSessionIds(): string[];
   listEvents(sessionId: string): StoredEvent[];
   listEventsByRange(sessionId: string, fromSequence: number, toSequence: number): StoredEvent[];
   listEventsByType(sessionId: string, type: string): StoredEvent[];

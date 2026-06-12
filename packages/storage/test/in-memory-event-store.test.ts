@@ -171,6 +171,58 @@ describe("InMemoryEventStore append behavior", () => {
     expect(store.listEvents("session-1")).toHaveLength(1);
   });
 
+  it("ignores generated resource access audit fields for idempotent retries", () => {
+    const store = createStore();
+    const payload = {
+      resourceAccessId: "resource-access-1",
+      resourceId: "resource-1",
+      participantId: "participant-1",
+      grant: {
+        mode: "redirect",
+        exposure: "public",
+        tokenHash: "sha256:token-hash",
+        expiresAt: "2026-06-10T00:05:00.000Z"
+      },
+      revokedAt: "2026-06-10T00:01:00.000Z"
+    };
+
+    const first = store.appendEventResult(
+      createInput({
+        id: "event-1",
+        type: "resource_access_grant_revoked",
+        trace: {
+          participantId: "participant-1",
+          resourceDeliveryIds: ["resource-access-1"]
+        },
+        payload: {
+          id: "access-audit-1",
+          ...payload
+        } as unknown as TestPayload,
+        idempotencyKey: "same-resource-access-revocation"
+      })
+    );
+    const retry = store.appendEventResult(
+      createInput({
+        id: "event-2",
+        type: "resource_access_grant_revoked",
+        trace: {
+          participantId: "participant-1",
+          resourceDeliveryIds: ["generated-resource-access-id"]
+        },
+        payload: {
+          id: "access-audit-2",
+          ...payload
+        } as unknown as TestPayload,
+        idempotencyKey: "same-resource-access-revocation"
+      })
+    );
+
+    expect(first.appended).toBe(true);
+    expect(retry.appended).toBe(false);
+    expect(retry.event).toEqual(first.event);
+    expect(store.listEvents("session-1")).toHaveLength(1);
+  });
+
   it("rejects reused session-scoped idempotency keys for different event inputs", () => {
     const store = createStore();
 
@@ -225,6 +277,7 @@ describe("InMemoryEventStore append behavior", () => {
 
     expect(first.sequence).toBe(0);
     expect(second.sequence).toBe(0);
+    expect(store.listSessionIds()).toEqual(["session-a", "session-b"]);
     expect(store.listEvents("session-a")).toHaveLength(1);
     expect(store.listEvents("session-b")).toHaveLength(1);
   });

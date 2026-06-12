@@ -140,6 +140,10 @@ export class JsonFileEventStore implements EventStore {
     return event ? cloneAndFreezeEvent(event as EventEnvelope<TPayload>) : undefined;
   }
 
+  listSessionIds(): string[] {
+    return Array.from(this.eventsBySession.keys()).sort();
+  }
+
   listEvents(sessionId: string): StoredEvent[] {
     return this.cloneEvents(this.getSessionEvents(sessionId));
   }

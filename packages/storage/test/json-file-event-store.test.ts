@@ -174,9 +174,16 @@ describe("JsonFileEventStore", () => {
         visibility: "sealed"
       })
     );
+    store.appendEvent(
+      createInput({
+        id: "event-3",
+        sessionId: "session-2"
+      })
+    );
     const reloaded = new JsonFileEventStore({ filePath });
 
     expect(reloaded.getEvent("event-1")).toEqual(first);
+    expect(reloaded.listSessionIds()).toEqual(["session-1", "session-2"]);
     expect(reloaded.listEvents("session-1")).toEqual([first, second]);
     expect(reloaded.listEventsByRange("session-1", 1, 1)).toEqual([second]);
     expect(reloaded.listEventsByType("session-1", "beta")).toEqual([second]);
