@@ -44,8 +44,11 @@ import {
 } from "./openai-compatible-profile";
 import {
   MCP_TOOL_ADAPTER_ID,
+  MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR,
   MCP_TOOL_ALLOW_REMOTE_ENV_VAR,
   MCP_TOOL_AUTH_TOKEN_ENV_VAR,
+  MCP_TOOL_INCLUDE_CONTEXT_ENV_VAR,
+  MCP_TOOL_MAX_ARGUMENT_BYTES_ENV_VAR,
   MCP_TOOL_NAME_ENV_VAR,
   MCP_TOOL_PROFILE_ENV_VAR,
   MCP_TOOL_TIMEOUT_MS_ENV_VAR,
@@ -555,6 +558,27 @@ function buildMcpToolProfile(
       false,
       false,
       "Optional tools/list verification toggle; defaults to true."
+    ),
+    envVar(
+      MCP_TOOL_MAX_ARGUMENT_BYTES_ENV_VAR,
+      env,
+      false,
+      false,
+      "Optional maximum serialized MCP tool argument size in bytes."
+    ),
+    envVar(
+      MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR,
+      env,
+      false,
+      false,
+      "Optional comma-separated allow-list for top-level MCP tool argument keys."
+    ),
+    envVar(
+      MCP_TOOL_INCLUDE_CONTEXT_ENV_VAR,
+      env,
+      false,
+      false,
+      "Optional context-forwarding toggle for default MCP tool arguments; defaults to true."
     )
   ];
 
@@ -577,12 +601,14 @@ function buildMcpToolProfile(
         : [],
       notes: [
         "The daemon calls one configured MCP-compatible tool endpoint and does not start or manage MCP servers.",
-        "Non-local endpoints are rejected unless remote HTTPS access is explicitly enabled."
+        "Non-local endpoints are rejected unless remote HTTPS access is explicitly enabled.",
+        "Optional execution policy can bound serialized argument size, allow top-level argument keys, and omit default context forwarding."
       ]
     },
     boundaries: [
       "Only the participant adapter is installed by this profile.",
       "Tool endpoint URL, tool name, auth token, and request payloads are not returned by this endpoint.",
+      "Execution policy limits the daemon-constructed tool request but is not a production sandbox or MCP server lifecycle manager.",
       "This profile does not add extraction generators, proposal reviewers, final generators, or semantic authority."
     ]
   };

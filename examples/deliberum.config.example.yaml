@@ -82,11 +82,15 @@ adapters:
       timeoutMs: DELIBERUM_MCP_TOOL_TIMEOUT_MS
       allowRemote: DELIBERUM_MCP_TOOL_ALLOW_REMOTE
       verifyList: DELIBERUM_MCP_TOOL_VERIFY_LIST
+      maxArgumentBytes: DELIBERUM_MCP_TOOL_MAX_ARGUMENT_BYTES
+      allowedArgumentKeys: DELIBERUM_MCP_TOOL_ALLOWED_ARGUMENT_KEYS
+      includeContext: DELIBERUM_MCP_TOOL_INCLUDE_CONTEXT
     defaultNetworkPolicy: local_loopback_only
     remoteNetworkPolicy: explicit_https_only
+    executionPolicy: optional_argument_size_key_allowlist_and_context_forwarding_controls
     serverLifecycle: external
     secretMode: daemon_runtime_only
-    note: Use the opt-in daemon env profile for one configured MCP-compatible tool endpoint. The daemon does not start MCP servers or expose arbitrary tools.
+    note: Use the opt-in daemon env profile for one configured MCP-compatible tool endpoint. The daemon does not start MCP servers, expose arbitrary tools, or provide a production sandbox.
   webget:
     enabled: true
     experimental: true

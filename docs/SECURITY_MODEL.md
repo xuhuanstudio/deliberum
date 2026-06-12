@@ -52,6 +52,8 @@ Tools that write files, run shell commands, access private resources, or make ne
 
 Tool outputs are evidence objects or contribution objects; they are not unquestionable truth.
 
+The opt-in daemon MCP tool participant profile can restrict one configured `tools/call` request by serialized argument size, top-level argument keys, and default context forwarding. These controls reduce accidental over-sharing to the configured tool but do not replace production sandboxing, authorization, or server lifecycle management.
+
 ## Context capsules
 
 Context capsules must record:

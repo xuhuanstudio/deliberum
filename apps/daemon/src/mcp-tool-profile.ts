@@ -4,7 +4,8 @@ import {
   type McpToolCallRequest,
   type McpToolCallResult,
   type McpToolClient,
-  type McpToolDefinition
+  type McpToolDefinition,
+  type McpToolExecutionPolicy
 } from "@deliberum/adapters";
 import { AdapterRegistry } from "@deliberum/orchestrator";
 import type { DaemonRunOrchestrationOptions } from "./run-orchestration";
@@ -19,6 +20,12 @@ export const MCP_TOOL_ALLOW_REMOTE_ENV_VAR =
   "DELIBERUM_MCP_TOOL_ALLOW_REMOTE" as const;
 export const MCP_TOOL_VERIFY_LIST_ENV_VAR =
   "DELIBERUM_MCP_TOOL_VERIFY_LIST" as const;
+export const MCP_TOOL_MAX_ARGUMENT_BYTES_ENV_VAR =
+  "DELIBERUM_MCP_TOOL_MAX_ARGUMENT_BYTES" as const;
+export const MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR =
+  "DELIBERUM_MCP_TOOL_ALLOWED_ARGUMENT_KEYS" as const;
+export const MCP_TOOL_INCLUDE_CONTEXT_ENV_VAR =
+  "DELIBERUM_MCP_TOOL_INCLUDE_CONTEXT" as const;
 
 export type McpToolFetchInit = {
   method: "POST";
@@ -54,6 +61,7 @@ type McpToolProfileConfig = {
   authToken?: string;
   timeoutMs?: number;
   verifyList: boolean;
+  executionPolicy: McpToolExecutionPolicy;
 };
 
 type JsonRpcResponse = {
@@ -85,6 +93,7 @@ export function createMcpToolRunRegistries(
         adapterId: MCP_TOOL_ADAPTER_ID,
         toolName: config.toolName,
         timeoutMs: config.timeoutMs,
+        executionPolicy: config.executionPolicy,
         client: createMcpToolHttpClient({
           endpointUrl: config.endpointUrl,
           authToken: config.authToken,
@@ -108,8 +117,19 @@ function readMcpToolProfileConfig(
   const timeoutMs = parseOptionalPositiveInteger(
     readOptionalEnv(env, MCP_TOOL_TIMEOUT_MS_ENV_VAR)
   );
+  const maxArgumentBytes = parseOptionalPositiveInteger(
+    readOptionalEnv(env, MCP_TOOL_MAX_ARGUMENT_BYTES_ENV_VAR)
+  );
   const endpointValue = readOptionalEnv(env, MCP_TOOL_URL_ENV_VAR);
   const toolName = readOptionalEnv(env, MCP_TOOL_NAME_ENV_VAR);
+  const allowedArgumentKeys = parseOptionalSafeKeyList(
+    readOptionalEnv(env, MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR)
+  );
+  const includeContext = readOptionalBooleanEnv(
+    env,
+    MCP_TOOL_INCLUDE_CONTEXT_ENV_VAR,
+    true
+  );
 
   if (!endpointValue || !toolName) {
     return undefined;
@@ -120,7 +140,12 @@ function readMcpToolProfileConfig(
     toolName,
     authToken: readOptionalEnv(env, MCP_TOOL_AUTH_TOKEN_ENV_VAR),
     timeoutMs,
-    verifyList
+    verifyList,
+    executionPolicy: {
+      ...(maxArgumentBytes !== undefined ? { maxArgumentBytes } : {}),
+      ...(allowedArgumentKeys !== undefined ? { allowedArgumentKeys } : {}),
+      includeContext
+    }
   };
 }
 
@@ -348,11 +373,33 @@ function parseOptionalPositiveInteger(value: string | undefined): number | undef
 
   const parsed = Number(value);
 
-  if (!Number.isInteger(parsed) || parsed <= 0) {
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     throwInvalidMcpToolProfileConfig();
   }
 
   return parsed;
+}
+
+function parseOptionalSafeKeyList(value: string | undefined): string[] | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const keys = value
+    .split(",")
+    .map((key) => key.trim())
+    .filter((key) => key.length > 0);
+  const uniqueKeys = new Set(keys);
+
+  if (
+    keys.length === 0 ||
+    uniqueKeys.size !== keys.length ||
+    keys.some((key) => !/^[A-Za-z0-9_.:-]{1,128}$/.test(key))
+  ) {
+    throwInvalidMcpToolProfileConfig();
+  }
+
+  return keys;
 }
 
 function isLocalHost(hostname: string): boolean {

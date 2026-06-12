@@ -142,6 +142,118 @@ describe("McpToolParticipantAdapter", () => {
     expect(toolArguments.constraints[0]).toBe("Do not decide the outcome");
   });
 
+  it("can omit default context when execution policy disables context forwarding", async () => {
+    const client: McpToolClient = {
+      callTool: vi.fn(async () => ({
+        content: [{ type: "text", text: "context omitted" }]
+      }))
+    };
+    const adapter = new McpToolParticipantAdapter({
+      toolName: "minimal.tool",
+      client,
+      executionPolicy: {
+        includeContext: false
+      }
+    });
+
+    await adapter.prepareContribution(
+      {
+        instructions: "Return a minimal contribution.",
+        payload: {
+          topic: "Context forwarding should be optional."
+        }
+      },
+      context
+    );
+
+    expect(client.callTool).toHaveBeenCalledWith({
+      name: "minimal.tool",
+      arguments: {
+        instructions: "Return a minimal contribution.",
+        payload: {
+          topic: "Context forwarding should be optional."
+        }
+      }
+    });
+  });
+
+  it("rejects arguments that violate configured execution policy before calling tools", async () => {
+    const client: McpToolClient = {
+      listTools: vi.fn(async () => [{ name: "bounded.tool" }]),
+      callTool: vi.fn(async () => ({
+        content: [{ type: "text", text: "unused" }]
+      }))
+    };
+    const allowListAdapter = new McpToolParticipantAdapter({
+      toolName: "bounded.tool",
+      client,
+      executionPolicy: {
+        allowedArgumentKeys: ["query"]
+      }
+    });
+    const sizeLimitAdapter = new McpToolParticipantAdapter({
+      toolName: "bounded.tool",
+      client,
+      executionPolicy: {
+        maxArgumentBytes: 16
+      }
+    });
+
+    await expect(
+      allowListAdapter.prepareContribution(
+        {
+          toolArguments: {
+            query: "find evidence",
+            privatePrompt: "do not leak this"
+          }
+        },
+        context
+      )
+    ).rejects.toThrow(AdapterInputError);
+    await expect(
+      sizeLimitAdapter.prepareContribution(
+        {
+          toolArguments: {
+            query: "this argument is intentionally too large"
+          }
+        },
+        context
+      )
+    ).rejects.toThrow(AdapterInputError);
+    expect(client.listTools).not.toHaveBeenCalled();
+    expect(client.callTool).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid execution policy configuration with safe categories", () => {
+    const client: McpToolClient = {
+      callTool: vi.fn(async () => ({
+        content: [{ type: "text", text: "unused" }]
+      }))
+    };
+
+    for (const executionPolicy of [
+      { maxArgumentBytes: 0 },
+      { maxArgumentBytes: Number.NaN },
+      { allowedArgumentKeys: [] },
+      { allowedArgumentKeys: ["query", "query"] },
+      { allowedArgumentKeys: ["unsafe key"] }
+    ]) {
+      try {
+        new McpToolParticipantAdapter({
+          toolName: "bounded.tool",
+          client,
+          executionPolicy
+        });
+        throw new Error("Expected invalid MCP execution policy to fail.");
+      } catch (error) {
+        expect(error).toBeInstanceOf(McpToolAdapterError);
+        expect((error as McpToolAdapterError).safeCategory).toBe(
+          "provider_config_invalid"
+        );
+      }
+    }
+  });
+
   it("rejects missing input, unsafe tool names, and unavailable tools with safe errors", async () => {
     const client: McpToolClient = {
       listTools: vi.fn(async () => [{ name: "available.tool" }]),

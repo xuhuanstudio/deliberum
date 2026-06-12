@@ -72,8 +72,11 @@ import {
   HTTP_TEMPLATE_URL_ENV_VAR,
   LOCAL_PRESET_ENV_VAR,
   MCP_TOOL_ADAPTER_ID,
+  MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR,
   MCP_TOOL_ALLOW_REMOTE_ENV_VAR,
   MCP_TOOL_AUTH_TOKEN_ENV_VAR,
+  MCP_TOOL_INCLUDE_CONTEXT_ENV_VAR,
+  MCP_TOOL_MAX_ARGUMENT_BYTES_ENV_VAR,
   MCP_TOOL_NAME_ENV_VAR,
   MCP_TOOL_PROFILE_ENV_VAR,
   MCP_TOOL_TIMEOUT_MS_ENV_VAR,
@@ -1933,7 +1936,10 @@ describe("daemon API", () => {
         [MCP_TOOL_AUTH_TOKEN_ENV_VAR]: mcpSecret,
         [MCP_TOOL_URL_ENV_VAR]: "http://127.0.0.1:8787/mcp",
         [MCP_TOOL_NAME_ENV_VAR]: "deliberum.reflect",
-        [MCP_TOOL_TIMEOUT_MS_ENV_VAR]: "5000"
+        [MCP_TOOL_TIMEOUT_MS_ENV_VAR]: "5000",
+        [MCP_TOOL_MAX_ARGUMENT_BYTES_ENV_VAR]: "4096",
+        [MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR]: "instructions,payload",
+        [MCP_TOOL_INCLUDE_CONTEXT_ENV_VAR]: "false"
       }
     });
 
@@ -2088,6 +2094,21 @@ describe("daemon API", () => {
           name: MCP_TOOL_ALLOW_REMOTE_ENV_VAR,
           configured: false,
           secret: false
+        }),
+        expect.objectContaining({
+          name: MCP_TOOL_MAX_ARGUMENT_BYTES_ENV_VAR,
+          configured: true,
+          secret: false
+        }),
+        expect.objectContaining({
+          name: MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR,
+          configured: true,
+          secret: false
+        }),
+        expect.objectContaining({
+          name: MCP_TOOL_INCLUDE_CONTEXT_ENV_VAR,
+          configured: true,
+          secret: false
         })
       ])
     );
@@ -2100,6 +2121,8 @@ describe("daemon API", () => {
     expect(text).not.toContain("{{runtime.apiKey}}");
     expect(text).not.toContain("http://127.0.0.1:8787/mcp");
     expect(text).not.toContain("deliberum.reflect");
+    expect(text).not.toContain("instructions,payload");
+    expect(text).not.toContain("4096");
 
     const runConfigBackedDaemon = createDaemonApp({
       idGenerator: createIds(),
@@ -6492,6 +6515,33 @@ describe("daemon API", () => {
     ).not.toThrow();
   });
 
+  it("rejects invalid MCP tool execution policy env values before fetch", () => {
+    const fetch = createMcpToolFetch();
+    let thrown: unknown;
+
+    try {
+      createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        enableMcpToolProfile: true,
+        mcpToolEnv: {
+          [MCP_TOOL_URL_ENV_VAR]: "http://127.0.0.1:8787/mcp",
+          [MCP_TOOL_NAME_ENV_VAR]: "deliberum.reflect",
+          [MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR]: "instructions,unsafe key"
+        },
+        mcpToolFetch: fetch
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(McpToolAdapterError);
+    expect((thrown as McpToolAdapterError).safeCategory).toBe(
+      "provider_config_invalid"
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("runs HTTP-template sealed divergence through daemon with mocked fetch", async () => {
     const secret = "http-template-runtime-secret";
     const fetch = createHttpTemplateFetch({
@@ -6755,6 +6805,58 @@ describe("daemon API", () => {
     for (const payload of safePayloads) {
       expectSafeRunApiPayload(payload, secret);
     }
+  });
+
+  it("applies MCP tool execution policy to daemon JSON-RPC tool calls", async () => {
+    const toolName = "deliberum.reflect";
+    const fetch = createMcpToolFetch({
+      toolName
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableMcpToolProfile: true,
+      mcpToolEnv: {
+        [MCP_TOOL_URL_ENV_VAR]: "http://127.0.0.1:8787/mcp",
+        [MCP_TOOL_NAME_ENV_VAR]: toolName,
+        [MCP_TOOL_MAX_ARGUMENT_BYTES_ENV_VAR]: "8192",
+        [MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR]: "instructions,payload",
+        [MCP_TOOL_INCLUDE_CONTEXT_ENV_VAR]: "false"
+      },
+      mcpToolFetch: fetch
+    });
+    const created = await createRun(daemonApp, mcpToolRunPlan());
+    const response = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const fetchCalls = fetch.mock.calls as Array<[string, McpToolFetchInit]>;
+    const callRequest = JSON.parse(fetchCalls[1]?.[1].body ?? "{}") as {
+      method: string;
+      params: {
+        name: string;
+        arguments: Record<string, unknown>;
+      };
+    };
+
+    expect(response.status).toBe(200);
+    expect(fetchCalls).toHaveLength(2);
+    expect(callRequest).toMatchObject({
+      method: "tools/call",
+      params: {
+        name: toolName,
+        arguments: {
+          instructions: expect.any(String),
+          payload: expect.any(Object)
+        }
+      }
+    });
+    expect(Object.keys(callRequest.params.arguments).sort()).toEqual([
+      "instructions",
+      "payload"
+    ]);
+    expect(callRequest.params.arguments).not.toHaveProperty("context");
   });
 
   it("rejects invalid HTTP-template profile env values before fetch", () => {
@@ -10269,8 +10371,11 @@ describe("daemon API", () => {
     ]);
     const allowedMcpToolProfileExports = new Set([
       "MCP_TOOL_ADAPTER_ID",
+      "MCP_TOOL_ALLOWED_ARGUMENT_KEYS_ENV_VAR",
       "MCP_TOOL_ALLOW_REMOTE_ENV_VAR",
       "MCP_TOOL_AUTH_TOKEN_ENV_VAR",
+      "MCP_TOOL_INCLUDE_CONTEXT_ENV_VAR",
+      "MCP_TOOL_MAX_ARGUMENT_BYTES_ENV_VAR",
       "MCP_TOOL_NAME_ENV_VAR",
       "MCP_TOOL_PROFILE_ENV_VAR",
       "MCP_TOOL_TIMEOUT_MS_ENV_VAR",

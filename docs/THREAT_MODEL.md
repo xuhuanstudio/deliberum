@@ -87,6 +87,7 @@ Mitigations:
 
 - adapter capability declarations;
 - explicit resource delivery policies;
+- per-tool execution policies for configured MCP tool participants where available;
 - sandbox or subprocess isolation where possible;
 - per-adapter audit logs.
 

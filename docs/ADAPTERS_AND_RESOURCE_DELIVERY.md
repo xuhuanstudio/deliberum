@@ -9,11 +9,11 @@ Adapters allow heterogeneous participant sources to join the same deliberation. 
 - implemented: OpenAI-compatible base URL adapter;
 - implemented: HTTP template participant adapter as a package-level integration surface;
 - implemented: opt-in HTTP template daemon participant profile for sealed divergence;
-- implemented: package-level MCP-compatible tool participant adapter;
-- implemented: opt-in daemon MCP tool participant profile for sealed divergence;
+- implemented: package-level MCP-compatible tool participant adapter with execution policy controls;
+- implemented: opt-in daemon MCP tool participant profile for sealed divergence with execution policy env controls;
 - implemented: experimental WebGET adapter for web-only models;
 - deferred: local model adapters;
-- deferred: MCP server lifecycle management, broader tool execution policy, and adapter sandboxing.
+- deferred: MCP server lifecycle management, broader external tool execution policy, and adapter sandboxing.
 
 ## Adapter capability profile
 
@@ -86,17 +86,21 @@ returns a normal `ParticipantAdapterResult` payload shaped as
 `mcp_tool_result`.
 
 The adapter validates tool names, optionally confirms that the configured tool
-is listed, enforces an optional timeout, accepts only text and JSON tool content,
-and redacts obvious bearer/API-key/local-path material from tool output. It does
-not expose EventStore methods, daemon routes, tool policy, ranking, voting,
-final-answer, or semantic authority behavior.
+is listed, enforces an optional timeout, can apply an execution policy for
+serialized argument size, allowed top-level argument keys, and default context
+forwarding, accepts only text and JSON tool content, and redacts obvious
+bearer/API-key/local-path material from tool output. It does not expose
+EventStore methods, daemon routes, ranking, voting, final-answer, or semantic
+authority behavior. The execution policy bounds the request sent to one
+configured tool; it is not a production sandbox for arbitrary tool execution.
 
 Current scope: the adapter is available from `@deliberum/adapters` for package
 consumers and through an opt-in daemon MCP tool participant profile. The daemon
 profile calls one configured MCP-compatible JSON-RPC tool endpoint, verifies the
 tool list by default, applies a single-tool allow-list, rejects non-local
-endpoints unless remote HTTPS access is explicitly enabled, and keeps endpoint
-URLs, tool names, bearer tokens, and request payloads out of runtime profile
+endpoints unless remote HTTPS access is explicitly enabled, can bound generated
+tool arguments through env-configured execution policy, and keeps endpoint URLs,
+tool names, bearer tokens, and request payloads out of runtime profile
 responses. There is still no daemon MCP server lifecycle manager, no arbitrary
 tool router, and no production sandbox or authorization policy for arbitrary
 tool execution.

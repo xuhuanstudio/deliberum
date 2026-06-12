@@ -92,11 +92,18 @@ export type McpToolParticipantAdapterInput = ParticipantAdapterInput & {
   toolArguments?: Record<string, JsonValue>;
 };
 
+export type McpToolExecutionPolicy = {
+  maxArgumentBytes?: number;
+  allowedArgumentKeys?: readonly string[];
+  includeContext?: boolean;
+};
+
 export type McpToolParticipantAdapterConfig = {
   adapterId?: string;
   toolName: string;
   client: McpToolClient;
   timeoutMs?: number;
+  executionPolicy?: McpToolExecutionPolicy;
   capabilities?: AdapterCapabilities;
   contextCompleteness?: ContextCompleteness;
   warnings?: string[];
@@ -157,6 +164,7 @@ export class McpToolParticipantAdapter
   private readonly toolName: string;
   private readonly client: McpToolClient;
   private readonly timeoutMs?: number;
+  private readonly executionPolicy: NormalizedMcpToolExecutionPolicy;
   private readonly contextCompleteness: ContextCompleteness;
   private readonly warnings: string[];
 
@@ -164,6 +172,7 @@ export class McpToolParticipantAdapter
     this.toolName = normalizeToolName(config.toolName);
     this.client = config.client;
     this.timeoutMs = config.timeoutMs;
+    this.executionPolicy = normalizeExecutionPolicy(config.executionPolicy);
     this.adapterId = config.adapterId ?? "mcp-tool";
     this.capabilities = cloneCapabilities(
       config.capabilities ?? McpToolParticipantAdapterCapabilities
@@ -185,9 +194,12 @@ export class McpToolParticipantAdapter
     input: McpToolParticipantAdapterInput,
     context: ParticipantAdapterContext
   ): Promise<ParticipantAdapterResult> {
+    const toolArguments = createToolArguments(input, context, this.executionPolicy);
+    enforceExecutionPolicy(toolArguments, this.executionPolicy);
+
     const request = {
       name: this.toolName,
-      arguments: createToolArguments(input, context)
+      arguments: toolArguments
     };
 
     await assertToolAvailable(this.client, this.toolName);
@@ -211,6 +223,12 @@ export class McpToolParticipantAdapter
   }
 }
 
+type NormalizedMcpToolExecutionPolicy = {
+  maxArgumentBytes?: number;
+  allowedArgumentKeys?: ReadonlySet<string>;
+  includeContext: boolean;
+};
+
 function normalizeToolName(toolName: string): string {
   const normalized = toolName.trim();
 
@@ -222,6 +240,61 @@ function normalizeToolName(toolName: string): string {
   }
 
   return normalized;
+}
+
+function normalizeExecutionPolicy(
+  policy: McpToolExecutionPolicy | undefined
+): NormalizedMcpToolExecutionPolicy {
+  if (!policy) {
+    return {
+      includeContext: true
+    };
+  }
+
+  const normalized: NormalizedMcpToolExecutionPolicy = {
+    includeContext: policy.includeContext ?? true
+  };
+
+  if (
+    policy.maxArgumentBytes !== undefined &&
+    (
+      !Number.isSafeInteger(policy.maxArgumentBytes) ||
+      policy.maxArgumentBytes <= 0
+    )
+  ) {
+    throw new McpToolAdapterError(
+      "MCP tool adapter execution policy is invalid.",
+      "provider_config_invalid"
+    );
+  }
+
+  if (policy.maxArgumentBytes !== undefined) {
+    normalized.maxArgumentBytes = policy.maxArgumentBytes;
+  }
+
+  if (policy.allowedArgumentKeys !== undefined) {
+    const keys = policy.allowedArgumentKeys.map((key) => key.trim());
+    const uniqueKeys = new Set(keys);
+
+    if (
+      keys.length === 0 ||
+      uniqueKeys.size !== keys.length ||
+      keys.some((key) => !isSafeArgumentKey(key))
+    ) {
+      throw new McpToolAdapterError(
+        "MCP tool adapter execution policy is invalid.",
+        "provider_config_invalid"
+      );
+    }
+
+    normalized.allowedArgumentKeys = uniqueKeys;
+  }
+
+  return normalized;
+}
+
+function isSafeArgumentKey(value: string): boolean {
+  return /^[A-Za-z0-9_.:-]{1,128}$/.test(value);
 }
 
 async function assertToolAvailable(client: McpToolClient, toolName: string): Promise<void> {
@@ -264,7 +337,8 @@ async function assertToolAvailable(client: McpToolClient, toolName: string): Pro
 
 function createToolArguments(
   input: McpToolParticipantAdapterInput,
-  context: ParticipantAdapterContext
+  context: ParticipantAdapterContext,
+  executionPolicy: NormalizedMcpToolExecutionPolicy
 ): Record<string, JsonValue> {
   if (input.toolArguments !== undefined) {
     return cloneJsonRecord(input.toolArguments);
@@ -276,17 +350,22 @@ function createToolArguments(
     );
   }
 
-  return {
+  const argumentsRecord: Record<string, JsonValue> = {
     instructions: input.instructions ?? "",
-    payload: input.payload === undefined ? null : validateJsonValue(input.payload),
-    context: {
+    payload: input.payload === undefined ? null : validateJsonValue(input.payload)
+  };
+
+  if (executionPolicy.includeContext) {
+    argumentsRecord.context = {
       sessionId: context.sessionId,
       participantId: context.participantId,
       contextCapsuleId: context.contextCapsuleId ?? null,
       sourceEventIds: context.sourceEventIds ?? [],
       instructions: context.instructions ?? ""
-    }
-  };
+    };
+  }
+
+  return argumentsRecord;
 }
 
 function cloneJsonRecord(value: Record<string, JsonValue>): Record<string, JsonValue> {
@@ -297,6 +376,32 @@ function cloneJsonRecord(value: Record<string, JsonValue>): Record<string, JsonV
   }
 
   return structuredClone(parsed.data);
+}
+
+function enforceExecutionPolicy(
+  toolArguments: Record<string, JsonValue>,
+  executionPolicy: NormalizedMcpToolExecutionPolicy
+): void {
+  if (
+    executionPolicy.allowedArgumentKeys &&
+    Object.keys(toolArguments).some((key) => !executionPolicy.allowedArgumentKeys?.has(key))
+  ) {
+    throw new AdapterInputError(
+      "MCP tool adapter arguments violate configured execution policy."
+    );
+  }
+
+  if (executionPolicy.maxArgumentBytes === undefined) {
+    return;
+  }
+
+  const encoded = new TextEncoder().encode(JSON.stringify(toolArguments));
+
+  if (encoded.byteLength > executionPolicy.maxArgumentBytes) {
+    throw new AdapterInputError(
+      "MCP tool adapter arguments exceed configured execution policy."
+    );
+  }
 }
 
 async function callToolWithTimeout(input: {
