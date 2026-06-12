@@ -57,6 +57,11 @@ export type ParticipantAdapterProviderRuntimeConfig = {
   endpointPath?: string;
   timeoutMs?: number;
   requestOptions?: OpenAICompatibleRequestOptions;
+  httpTemplate?: HttpTemplateRuntimeConfig;
+};
+
+export type HttpTemplateRuntimeConfig = {
+  variables?: Record<string, JsonValue>;
 };
 
 export type OpenAICompatibleTokenParameter =

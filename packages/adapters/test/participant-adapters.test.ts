@@ -38,6 +38,7 @@ describe("Participant adapters", () => {
     expect(exportedNames).toEqual(
       expect.arrayContaining([
         "FakeParticipantAdapter",
+        "HttpTemplateParticipantAdapter",
         "ManualParticipantAdapter",
         "OpenAICompatibleParticipantAdapter",
         "WebGETParticipantAdapter"
