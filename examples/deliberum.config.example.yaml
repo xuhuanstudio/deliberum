@@ -10,15 +10,35 @@ local:
     host: 127.0.0.1
     port: 3877
     storage:
-      default: in_memory
-      # Set both path env vars for local run workspace continuity across daemon restarts.
+      default: sqlite
+      sqlitePathEnv: DELIBERUM_DAEMON_SQLITE_PATH
+      # JSON fallback persists event/run state only; resource access grants need SQLite.
       optionalEventLedgerPathEnv: DELIBERUM_DAEMON_EVENT_STORE_PATH
       optionalRunMetadataPathEnv: DELIBERUM_DAEMON_RUN_STORE_PATH
-      productionGradeStorage: deferred
+      resourceBrokerState: explicit_registered_resources
+      inMemoryFallback: true
+      localSQLiteWriterSerialization: enabled
+      productionMultiWriterCoordination: deferred
+    auth:
+      tokenEnv: DELIBERUM_DAEMON_AUTH_TOKEN
+      healthEndpoint: public
+      tokenScopedEndpoints:
+        - webget
+        - resourceAccessGet
+      productionAuthorization: deferred
   cli:
     store: .deliberum/events.json
   web:
     daemonUrl: http://127.0.0.1:3877
+    daemonAuthTokenEnv: VITE_DELIBERUM_DAEMON_AUTH_TOKEN
+  adaptiveProcess:
+    suggestionEndpoint: read_only
+    persistentProposalLifecycle: implemented
+    acceptedProposalExecution: explicit_operator_control
+    automatedPrimitiveExecutionPolicy: deferred
+  resourceDelivery:
+    planningEndpoint: session_scoped
+    safeLedgerAuditEvents: implemented
 
 adapters:
   manual:
@@ -34,6 +54,20 @@ adapters:
       finalization: DELIBERUM_ENABLE_OPENAI_COMPATIBLE_FINALIZATION
       apiKeyEnvVar: DELIBERUM_OPENAI_API_KEY
     note: Use the daemon env profile for local/pre-production provider-backed runs. Do not commit API keys.
+  httpTemplate:
+    enabled: false
+    daemonEnvProfile:
+      profile: DELIBERUM_ENABLE_HTTP_TEMPLATE_PROFILE
+      apiKeyEnvVar: DELIBERUM_HTTP_TEMPLATE_API_KEY
+      headersJson: DELIBERUM_HTTP_TEMPLATE_HEADERS_JSON
+      bodyTemplate: DELIBERUM_HTTP_TEMPLATE_BODY
+      responseFormat: DELIBERUM_HTTP_TEMPLATE_RESPONSE_FORMAT
+      responsePayloadPath: DELIBERUM_HTTP_TEMPLATE_RESPONSE_PAYLOAD_PATH
+    runPlanProviderConfig:
+      runtimeVariables: httpTemplate.variables
+      runtimeVariablesSecretPolicy: non_secret_only
+    secretMode: runtime_placeholders
+    note: Use the opt-in daemon env profile for sealed participant execution. Use template placeholders such as "{{runtime.apiKey}}"; do not commit inline provider secrets.
   webget:
     enabled: true
     experimental: true
@@ -46,14 +80,15 @@ resources:
   signedUrls: deferred
   notes:
     - Resource Broker and Delivery Planner exist as support packages.
-    - The current runtime does not host resources or generate public URLs.
+    - The current runtime has daemon-local session-scoped resource delivery planning with safe ledger audit events.
+    - The current runtime does not host public resources or generate public URLs.
     - Sensitive resources must not be exposed by default.
 
 deferred:
-  productionDaemonStorage: sqlite_or_equivalent
-  multiWriterCoordination: true
-  resourceDeliveryOutsideWebGET: true
-  publicResourceHosting: true
+  productionMultiWriterCoordination: true
+  productionResourceHostingPosture: true
+  productionAuthorization: true
   signedUrlServer: true
+  automatedPrimitiveExecutionPolicy: true
   providerSetupUx: true
   productionAuth: true

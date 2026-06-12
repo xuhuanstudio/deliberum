@@ -182,6 +182,10 @@ type EvidenceResult = {
 }
 ```
 
+`evidence_result_recorded` records a reported result for an accepted
+EvidenceNeed. The outcome compiler treats matching evidence needs as
+`reported`, not verified; limitations and later challenges remain visible.
+
 ## Proposal types
 
 ```ts
@@ -211,7 +215,36 @@ type MergeProposal = {
   reason: string
   status: 'proposed' | 'challenged' | 'accepted_for_now' | 'rejected'
 }
+
+type FinalCandidateProposal = {
+  id: string
+  candidateIds: string[]
+  alternativeCandidateIds: string[]
+  sourceEventIds: string[]
+  recommendation: string
+  applicabilityConditions: string[]
+  rationale: string
+  limitations: string[]
+  status: 'proposed' | 'challenged' | 'accepted_for_now' | 'rejected'
+}
+
+type FinalAudit = {
+  id: string
+  targetFinalCandidateProposalEventId: string
+  findings: string[]
+  risks: string[]
+  unresolvedObjectionIds: string[]
+  qualityObligationIds: string[]
+  evidenceNeedIds: string[]
+  omissions: string[]
+  compressionProblems: string[]
+  limitations: string[]
+  continuationSuggestions: string[]
+  status: 'recorded'
+}
 ```
+
+Final candidate proposals and final audits are ledger material, not final truth. Outcome compilation is a derived projection over the ledger and accepted-object projections. It preserves alternatives, unresolved objections, evidence status, audit records, limitations, continuation suggestions, and provenance; it must not add winner, score, vote, current-best, or final-answer fields.
 
 ## Reference
 
@@ -265,6 +298,120 @@ type ResourceVariant =
   | { mode: 'caption'; text: string }
 ```
 
+Resource delivery planning records safe audit events:
+
+```ts
+type ResourceDeliveryPlannedPayload = {
+  id: string
+  resourceId: string
+  participantId: string
+  resource: {
+    kind: Resource['kind']
+    mime: string
+    sizeBytes: number
+    hash: string
+    privacy: Resource['privacy']
+  }
+  request: {
+    policy?: {
+      requestedMode?: 'url' | 'base64' | 'none'
+      preferredModes?: Array<'url' | 'base64' | 'none'>
+      allowLocalhostUrl?: boolean
+      allowLanUrl?: boolean
+      allowPublicUrl?: boolean
+      allowBase64?: boolean
+      maxBase64SizeBytes?: number
+      allowHostedContentUrl?: boolean
+      maxHostedContentSizeBytes?: number
+    }
+  }
+  result: {
+    selectedMode: 'url' | 'base64' | 'none'
+    allowed: boolean
+    reason: string
+    warnings: string[]
+    materialKind?: 'url' | 'base64'
+  }
+}
+```
+
+The audit payload records the delivery decision and material kind only. It does not store delivered URLs, bearer access ids, base64 bytes, data refs, or resource text.
+
+Resource access grant lifecycle audit events are separate from delivery planning events:
+
+```ts
+type ResourceAccessGrantSummary = {
+  mode: 'redirect' | 'content'
+  exposure: 'localhost' | 'lan' | 'public'
+  tokenHash: string
+  expiresAt: string
+  content?: {
+    mime: string
+    sizeBytes: number
+    hash: string
+  }
+}
+
+type ResourceAccessGrantCreatedPayload = {
+  id: string
+  resourceAccessId: string
+  resourceId: string
+  participantId: string
+  resource: ResourceDeliveryPlannedPayload['resource']
+  grant: ResourceAccessGrantSummary
+}
+
+type ResourceAccessGrantRevokedPayload = {
+  id: string
+  resourceAccessId: string
+  resourceId: string
+  participantId: string
+  grant: ResourceAccessGrantSummary
+  revokedAt: string
+}
+```
+
+`resourceAccessId` is a non-bearer audit identifier. Bearer access ids, source URLs, base64 bytes, data refs, and resource text are response-only or access-layer material and are not stored in these events.
+
+The daemon resources projection exposes these events as safe delivery audit views:
+
+```ts
+type SessionResourceDeliveryAuditView = {
+  eventId: string
+  sequence: number
+  createdAt: string
+  recordedAt: string
+  basedOnEventIds: string[]
+  resourceDeliveryId: string
+  resourceId: string
+  participantId: string
+  resource: ResourceDeliveryPlannedPayload['resource']
+  request: ResourceDeliveryPlannedPayload['request']
+  result: ResourceDeliveryPlannedPayload['result']
+}
+```
+
+The same projection exposes grant lifecycle events as safe access audit views:
+
+```ts
+type SessionResourceAccessAuditView = {
+  eventId: string
+  sequence: number
+  createdAt: string
+  recordedAt: string
+  basedOnEventIds: string[]
+  action: 'created' | 'revoked'
+  resourceAccessId: string
+  resourceId: string
+  participantId: string
+  grant: ResourceAccessGrantSummary
+  resource?: ResourceDeliveryPlannedPayload['resource']
+  revokedAt?: string
+}
+```
+
+This projection is audit history only. It does not expose delivery material or mark an evidence need as satisfied.
+
 ## Projection metadata
 
 Projection result objects include traceability metadata:
@@ -282,7 +429,8 @@ Current core projections return:
 - `projectExtractionProposalStates`: `{ proposalStates, projection }`;
 - `projectAcceptedDeliberationObjects`: `{ candidates, claims, objections, evidenceNeeds, qualityObligations, projection }`;
 - `projectCandidateFrontier`: `{ basis: 'accepted_active_candidates', candidates, projection }`;
-- `projectQualityObligations`: `{ qualityObligations, projection }`.
+- `projectQualityObligations`: `{ qualityObligations, projection }`;
+- `compileOutcome`: derived outcome projection with recommendation, alternatives, unresolved material, evidence status, final audit records, and provenance.
 
 ## Board objects
 

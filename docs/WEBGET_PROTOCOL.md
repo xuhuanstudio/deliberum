@@ -24,7 +24,7 @@ GET /webget/{token}/submit?seq=1&total=3&encoding=base64url&data=...
 GET /webget/{token}/commit?total=3&sha256=...&length=...
 ```
 
-The current daemon-local WebGET surface does not replay historical events over WebGET endpoints, does not create public URLs, and does not include a status endpoint.
+The current daemon-local WebGET surface does not replay historical events over WebGET endpoints and does not include a status endpoint. When resource policy explicitly allows URL delivery, WebGET resource delivery uses the daemon's short-lived resource access grants instead of exposing registered source URLs, base64 bytes, or bearer access ids in WebGET reports.
 
 ## Required web-model prompt rules
 

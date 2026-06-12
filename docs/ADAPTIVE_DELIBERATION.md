@@ -28,4 +28,70 @@ Participants and system components may propose a next primitive, but the proposa
 - required budget;
 - termination condition.
 
-A process proposal is not a command. It can be accepted, challenged, deferred, or replaced.
+A process proposal is not a command. It can be accepted, challenged, deferred, or replaced through explicit lifecycle events.
+
+## Current Runtime Surface
+
+The orchestrator exposes `suggestAdaptivePrimitiveProposals(...)` as a read-only
+proposal suggester over the current run record and event ledger. The daemon
+surfaces the same material at:
+
+```text
+GET /runs/:runId/process-proposals
+```
+
+This endpoint returns proposed `ProcessProposal` objects, observations, and the
+event range used for the suggestion. It does not append events, start stages,
+accept proposals, mutate Candidate Frontier, or compile outcomes. The suggested
+primitive remains challengeable process material; it is not a hidden scheduler or
+semantic authority.
+
+The ledger-backed process proposal lifecycle is exposed separately:
+
+```text
+GET  /sessions/:sessionId/process-proposals
+POST /sessions/:sessionId/process-proposals
+POST /sessions/:sessionId/process-proposals/:proposalEventId/challenges
+POST /sessions/:sessionId/process-proposals/:proposalEventId/decisions
+```
+
+These endpoints append or project only `process_proposal_proposed`,
+`process_proposal_challenged`, and `process_proposal_decided` events. A decision
+status of `accepted`, `deferred`, or `rejected` records process state for
+operators and later orchestration policy; it does not execute the primitive,
+open a sealed batch, call an adapter, choose a winner, or mutate semantic
+deliberation objects. `ProcessProposal.targetIds` may identify deliberation
+objects, so ledger provenance is supplied explicitly with `basedOnEventIds`.
+
+Accepted process proposals can be executed only through an explicit daemon run
+control endpoint:
+
+```text
+POST /runs/:runId/process-proposals/:proposalEventId/execute
+```
+
+This endpoint validates that the proposal belongs to the run session and that
+the latest projected lifecycle status is `accepted`, then maps supported
+primitives onto the existing daemon run start path. It is not a background
+scheduler and it does not execute decisions automatically. The current supported
+mappings are:
+
+- `sealed_divergence` -> sealed divergence start request with manual batches auto-closed;
+- `relation_mapping` -> extraction start request;
+- `red_team` -> proposal review start request;
+- `candidate_repair` -> candidate repair request for accepted active candidate
+  targets, recording repair extraction proposal material only;
+- `evidence_check` -> evidence check request for accepted evidence need
+  targets, recording reported evidence result material only;
+- `final_contest` -> finalization start request with outcome compilation;
+- `final_audit` -> finalization audit request for exactly one existing final
+  candidate proposal event, without regenerating final candidate material or
+  compiling an outcome.
+
+Candidate repair execution does not accept repair proposals or mutate the
+Candidate Frontier by itself; review and acceptance remain separate lifecycle
+steps. Evidence check execution does not verify claims or satisfy evidence
+needs by itself; the outcome compiler treats recorded evidence results as
+reported material with limitations and challenges still visible. Other
+primitives return a safe unsupported-primitive error until dedicated daemon
+runners exist for those semantics.

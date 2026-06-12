@@ -18,10 +18,16 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - zod for runtime protocol validation;
 - Vitest for package and app tests;
 - Hono and `@hono/node-server` for the local daemon API;
+- opt-in daemon control-plane bearer auth for local/pre-production hardening;
 - process-local `InMemoryEventStore` for daemon defaults;
+- `better-sqlite3` for optional local/pre-production daemon SQLite event ledger, run metadata, resource broker, and resource access grant persistence with local connection-level writer serialization;
 - shared Node `JsonFileEventStore` for CLI persistence and optional local daemon event ledger persistence;
 - daemon-local `JsonFileRunStore` for optional local run metadata persistence;
 - Server-Sent Events for daemon event streaming;
+- daemon-local session-scoped resource delivery planning through the Resource Broker and Delivery Planner, with safe ledger audit events for delivery decisions and short-lived access grants for allowed URL and hosted in-memory content deliveries;
+- package-level HTTP-template participant adapter and opt-in daemon participant profile for non-OpenAI HTTP providers;
+- read-only adaptive primitive suggestion in `@deliberum/orchestrator`, surfaced by the daemon as process proposal material;
+- explicit accepted process proposal execution through the daemon run start path for supported primitives, including candidate repair proposal execution and evidence check result recording;
 - React + Vite + TypeScript for the Web shell;
 - TanStack Router and TanStack Query for Web routing and daemon reads.
 
@@ -46,17 +52,17 @@ packages/
 
 The following are planned or possible future additions, not current implementation dependencies:
 
-- SQLite or another production-grade daemon store;
-- multi-writer coordination for durable daemon stores;
+- production multi-writer coordination for durable daemon stores;
+- broader automated policy around accepted process proposals;
 - Postgres for future team/server deployments;
 - WebSocket streaming if SSE becomes insufficient;
 - Zustand or another local UI-state helper if Web UI complexity requires it;
 - shadcn/ui, Radix primitives, or another component system;
 - React Flow / xyflow for structured graph projections;
 - tldraw for free-form canvas projections, never as semantic truth;
-- signed/public resource hosting and revocation;
-- MCP adapter;
-- HTTP-template adapter.
+- production resource hosting posture;
+- production multi-user authorization;
+- MCP adapter.
 
 ## Why not Next.js first?
 

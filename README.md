@@ -30,7 +30,7 @@ Deliberum treats deliberation as a quality-centered process. It starts with a sy
 - **Adaptive Deliberation**: the runtime chooses primitives such as red-team, repair, evidence check, blind reframe, fork, omission audit, and final audit based on quality gaps.
 - **No uncontested semantic center**: summaries, rankings, board views, process decisions, and final drafts are proposals that can be challenged.
 - **Workspace and references as support layers**: whiteboards, references, and addressable objects exist to improve discussion quality, not to become the system’s goal.
-- **Multiple participant adapters**: the adapter architecture supports manual participants, OpenAI-compatible models, web-only models, and future local, HTTP-template, tool, and MCP-compatible integrations.
+- **Multiple participant adapters**: the adapter architecture supports manual participants, OpenAI-compatible models, HTTP-template providers, web-only models, and future local, tool, and MCP-compatible integrations.
 
 ## Architecture at a glance
 
@@ -89,25 +89,26 @@ examples/
 
 ## Status
 
-Deliberum is a pre-production local-first codebase with the core deliberation ledger, local daemon, CLI, Web projection workspace, local deterministic run profile, and opt-in OpenAI-compatible provider profile implemented. It is not a production deployment or public hosted service.
+Deliberum is a pre-production local-first codebase with the core deliberation ledger, local daemon, CLI, Web projection workspace, local deterministic run profile, opt-in OpenAI-compatible provider profile, and opt-in HTTP-template participant profile implemented. It is not a production deployment or public hosted service.
 
 Implemented today:
 
 - TypeScript + zod protocol schemas;
-- append-only event store with in-memory storage and shared JSON file persistence for local CLI and optional daemon event ledgers;
+- append-only event store with in-memory storage, shared JSON file persistence for local CLI and optional daemon event ledgers, and optional SQLite daemon event ledger, run metadata, resource broker, and resource access grant persistence with local connection-level writer serialization;
 - Topic Contract session lifecycle;
 - Sealed Divergence batch lifecycle;
 - Extraction Proposals and challenge/accept lifecycle events;
 - Candidate Frontier, objection, quality obligation, and accepted-object projections with projection metadata;
-- Final Audit and Outcome Compiler in core as proposal/derived output, not final truth;
-- local CLI commands for sessions, batches, contributions, extraction proposals, projections, events, and daemon run orchestration;
-- local Hono daemon API with in-memory defaults, optional JSON event ledger and run metadata persistence, projection endpoints, mutation endpoints, session final and resources projection endpoints, run orchestration endpoints, SSE, and WebGET endpoints;
-- React/Vite Web UI shell with session projections, daemon run workspace, run outcome view, session final projection page, and session resources/evidence projection page;
-- participant adapter interface, fake/manual adapters, OpenAI-compatible adapter, OpenAI-compatible extraction/review/finalization components, and experimental WebGET adapter;
-- Resource Broker and Delivery Planner support package;
-- hardening for persisted ledger loading, optional daemon event ledger and run metadata persistence, WebGET submission safety, projection traceability metadata, idempotency result consistency, SSE idempotent publish guards, WebGET context visibility, and resource delivery safety.
+- Evidence Result recording plus Final Audit and Outcome Compiler in core as proposal/derived output, not final truth;
+- local CLI commands for sessions, batches, contributions, extraction proposals, process proposal lifecycle, final candidate/audit/outcome projection, projections, events, daemon runtime profile status, optional daemon control-plane bearer auth, daemon resource access revocation, daemon run orchestration, daemon resources/evidence projection reads with safe delivery and access audit history, daemon-backed final lifecycle submissions, and explicit accepted process proposal execution;
+- local Hono daemon API with in-memory defaults, optional control-plane bearer auth, optional SQLite event ledger, run metadata, resource broker, and resource access grant persistence, optional JSON event ledger and run metadata persistence, safe runtime profile status, projection endpoints, mutation endpoints, session final lifecycle and projection endpoints, session resources projection endpoint, session-scoped resource delivery planning endpoint with safe ledger audit events, revocable daemon resource access grants for allowed URL and hosted in-memory content deliveries, session process proposal lifecycle endpoints, run orchestration endpoints, explicit accepted process proposal execution, SSE, and WebGET endpoints;
+- React/Vite Web UI shell with safe daemon runtime profile status, daemon-backed session catalog, session projections, daemon run workspace, run process proposal lifecycle and accepted-proposal execution controls, run outcome view, session final lifecycle/projection page, and session resources/evidence projection page with safe resource delivery and access audit history;
+- participant adapter interface, fake/manual adapters, OpenAI-compatible adapter/profile, HTTP-template participant adapter/profile for sealed participant execution, OpenAI-compatible extraction/review/finalization components, and experimental WebGET adapter;
+- Resource Broker and Delivery Planner support package integrated with daemon-local resource delivery planning and short-lived access grants for URL and hosted in-memory content delivery;
+- read-only adaptive process proposal suggestions for daemon runs, explicit ledger-backed process proposal lifecycle events exposed as challengeable `ProcessProposal` material, and operator-triggered execution of accepted proposals for supported daemon stages, including candidate repair proposal execution, evidence check execution that records reported evidence results, and final audit execution against existing final candidate proposal events;
+- hardening for persisted ledger loading, optional daemon event ledger, run metadata, resource broker, and resource access grant persistence, optional daemon control-plane auth, WebGET submission safety, projection traceability metadata, idempotency result consistency, SSE idempotent publish guards, WebGET context visibility, and resource delivery safety.
 
-Deferred work includes SQLite or other production-grade daemon storage, multi-writer coordination, resource delivery or hosting endpoints outside WebGET, the full adaptive primitive scheduler, signed/public resource hosting, MCP and HTTP-template adapters, provider setup UX, and production authentication or multi-user deployment.
+Deferred work includes production multi-writer coordination for durable daemon stores, broader primitive runner coverage and automated policy around accepted process proposals, production resource hosting posture, MCP adapters, full interactive provider setup, and production authorization or multi-user deployment.
 
 The public name **Deliberum** should be treated as the current project name. Before a formal public launch, maintainers should complete the name, domain, package-scope, and trademark checks described in the private launch checklist.
 

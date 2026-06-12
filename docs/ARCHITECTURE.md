@@ -62,7 +62,7 @@ Whiteboards, references, text spans, board nodes, candidate links, and context c
 
 ## Adapter and Resource Layer
 
-Adapters connect API models, local models, OpenAI-compatible endpoints, HTTP-template endpoints, MCP-compatible tool adapters, manual participants, and WebGET web-only models. The Resource Broker manages URL/base64/none delivery per participant and resource type.
+Adapters connect API models, local models, OpenAI-compatible endpoints, HTTP-template endpoints, MCP-compatible tool adapters, manual participants, and WebGET web-only models. The Resource Broker manages URL/base64/none delivery per participant and resource type, while the local daemon can wrap allowed URL and hosted in-memory content deliveries in short-lived resource access grants without making resources or adapters semantic authorities.
 
 ## Outcome Compiler Layer
 
