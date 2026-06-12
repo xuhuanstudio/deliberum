@@ -40,6 +40,7 @@ describe("Participant adapters", () => {
         "FakeParticipantAdapter",
         "HttpTemplateParticipantAdapter",
         "ManualParticipantAdapter",
+        "McpToolParticipantAdapter",
         "OpenAICompatibleParticipantAdapter",
         "WebGETParticipantAdapter"
       ])

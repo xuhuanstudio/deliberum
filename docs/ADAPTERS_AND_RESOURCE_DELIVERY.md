@@ -9,10 +9,10 @@ Adapters allow heterogeneous participant sources to join the same deliberation. 
 - implemented: OpenAI-compatible base URL adapter;
 - implemented: HTTP template participant adapter as a package-level integration surface;
 - implemented: opt-in HTTP template daemon participant profile for sealed divergence;
+- implemented: package-level MCP-compatible tool participant adapter;
 - implemented: experimental WebGET adapter for web-only models;
 - deferred: local model adapters;
-- deferred: tool adapters;
-- deferred: MCP-compatible tool adapters as optional integrations, not as the project core.
+- deferred: daemon MCP profile, tool execution policy, and adapter sandboxing.
 
 ## Adapter capability profile
 
@@ -73,6 +73,26 @@ consumers and through an opt-in daemon participant profile. The daemon profile
 registers only the participant adapter for sealed divergence. It does not
 install extraction generators, proposal reviewers, final candidate generators,
 final auditors, provider setup UX, or an interactive configuration flow.
+
+## MCP-compatible tool participant adapter
+
+The package-level `McpToolParticipantAdapter` lets an embedding application wrap
+a configured MCP-compatible tool call as a participant contribution. It depends
+on an injected client with `listTools()` and `callTool()` methods rather than
+starting or managing an MCP server. The adapter calls one configured tool name,
+passes JSON arguments derived from adapter input and participant context, and
+returns a normal `ParticipantAdapterResult` payload shaped as
+`mcp_tool_result`.
+
+The adapter validates tool names, optionally confirms that the configured tool
+is listed, enforces an optional timeout, accepts only text and JSON tool content,
+and redacts obvious bearer/API-key/local-path material from tool output. It does
+not expose EventStore methods, daemon routes, tool policy, ranking, voting,
+final-answer, or semantic authority behavior.
+
+Current scope: the adapter is available from `@deliberum/adapters` for package
+consumers. There is no daemon MCP profile yet, no MCP server lifecycle manager,
+and no production sandbox or authorization policy for arbitrary tool execution.
 
 ## Resource delivery
 
