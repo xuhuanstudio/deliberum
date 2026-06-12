@@ -54,6 +54,7 @@ export const CLI_COMMANDS = [
   "obligations",
   "events",
   "daemon profiles",
+  "daemon operation-audit",
   "daemon resource-access revoke",
   "runs create",
   "runs list",
@@ -147,6 +148,7 @@ type FinalAuditInputFile = {
 export type CliRunDaemonClient = Pick<
   DeliberumDaemonClient,
   | "getRuntimeProfiles"
+  | "getOperationAudit"
   | "createRun"
   | "listRuns"
   | "getRun"
@@ -649,6 +651,17 @@ async function executeDaemonCommand(
     return daemonClient.getRuntimeProfiles();
   }
 
+  if (action === "operation-audit") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon operation-audit [--limit <n>] [--daemon-url <local-url>]"
+    );
+
+    return daemonClient.getOperationAudit({
+      limit: parseOptionalPositiveIntegerOption(parsedArgs.options.get("limit"), "--limit")
+    });
+  }
+
   if (action === "resource-access") {
     const [resourceAccessAction, ...resourceAccessPositionals] = restPositionals;
 
@@ -670,7 +683,7 @@ async function executeDaemonCommand(
 }
 
 function assertKnownDaemonCommand(action: string): void {
-  if (["profiles", "resource-access"].includes(action)) {
+  if (["profiles", "operation-audit", "resource-access"].includes(action)) {
     return;
   }
 
@@ -678,7 +691,10 @@ function assertKnownDaemonCommand(action: string): void {
 }
 
 function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): void {
-  const allowedOptions = new Set(["daemon-url"]);
+  const allowedOptions = new Set([
+    "daemon-url",
+    ...(action === "operation-audit" ? ["limit"] : [])
+  ]);
 
   for (const optionName of parsedArgs.options.keys()) {
     if (isSecretLikeKey(optionName)) {
@@ -966,6 +982,27 @@ function requireSinglePositional(positionals: string[], usage: string): string {
   }
 
   return positionals[0];
+}
+
+function parseOptionalPositiveIntegerOption(
+  values: string[] | undefined,
+  optionName: string
+): number | undefined {
+  const value = values?.at(-1)?.trim();
+  if (!value) {
+    return undefined;
+  }
+
+  if (!/^\d+$/.test(value)) {
+    throw new CliUsageError(`${optionName} must be a positive integer.`);
+  }
+
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new CliUsageError(`${optionName} must be a positive integer.`);
+  }
+
+  return parsed;
 }
 
 function readJsonObjectInput(

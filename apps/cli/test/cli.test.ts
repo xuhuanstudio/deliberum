@@ -117,6 +117,24 @@ function createFakeRunDaemonClient(
         }
       ]
     })),
+    getOperationAudit: vi.fn(async () => ({
+      events: [
+        {
+          id: "operation-audit-1",
+          recordedAt: "2026-06-10T00:00:00.000Z",
+          action: "runtime_profiles_read",
+          method: "GET",
+          route: "/runtime/profiles",
+          statusCode: 200,
+          outcome: "succeeded",
+          authorization: {
+            mode: "daemon_bearer",
+            present: true
+          },
+          target: {}
+        }
+      ]
+    })),
     createRun: vi.fn(async (input: unknown) => ({
       run: {
         runId: "run-1"
@@ -777,6 +795,65 @@ describe("CLI command routing", () => {
     expect(rejected.exitCode).toBe(1);
     expect(rejected.stdout).not.toContain("sk-runtime-secret");
     expect(daemonClient.getRuntimeProfiles).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes daemon operation audit commands through the daemon client", async () => {
+    const { daemonClient, createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies();
+
+    const audit = parseOutput<{
+      events: Array<{
+        id: string;
+        action: string;
+        authorization: {
+          mode: string;
+          present: boolean;
+        };
+      }>;
+    }>(
+      await runCli(
+        [
+          "daemon",
+          "operation-audit",
+          "--daemon-url",
+          "http://localhost:4999",
+          "--limit",
+          "25",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const badLimit = await runCli(
+      ["daemon", "operation-audit", "--limit", "not-a-number", "--json"],
+      dependencies
+    );
+    const rejected = await runCli(
+      ["daemon", "operation-audit", "--api-key", "sk-runtime-secret", "--json"],
+      dependencies
+    );
+
+    expect(audit.events).toEqual([
+      expect.objectContaining({
+        id: "operation-audit-1",
+        action: "runtime_profiles_read",
+        authorization: {
+          mode: "daemon_bearer",
+          present: true
+        }
+      })
+    ]);
+    expect(daemonClient.getOperationAudit).toHaveBeenCalledWith({ limit: 25 });
+    expect(createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://localhost:4999"
+    });
+    expect(createEventStore).not.toHaveBeenCalled();
+    expect(badLimit.exitCode).toBe(1);
+    expect(badLimit.stdout).toContain("--limit must be a positive integer.");
+    expect(badLimit.stdout).not.toContain("not-a-number");
+    expect(rejected.exitCode).toBe(1);
+    expect(rejected.stdout).not.toContain("sk-runtime-secret");
+    expect(daemonClient.getOperationAudit).toHaveBeenCalledTimes(1);
   });
 
   it("routes daemon resource access revocation through the daemon client", async () => {

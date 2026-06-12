@@ -39,6 +39,7 @@ Mitigations:
 - sensitive resources cannot be public by default;
 - sensitive resources default to `none` delivery in current resource planning;
 - return explicit delivery reports for local resource delivery, persist safe `resource_delivery_planned` audit events without URL/base64 delivery material, and persist safe resource access lifecycle audit events without bearer access ids, source URLs, base64 bytes, data refs, or resource text;
+- persist daemon operation audit records as normalized control-plane metadata only, without request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, or output payloads;
 - support `none` delivery with summaries.
 
 ### WebGET query leakage

@@ -70,6 +70,13 @@ import {
   type McpToolProfileOptions
 } from "./mcp-tool-profile";
 import {
+  createOperationAuditAuthorization,
+  createOperationAuditRecord,
+  InMemoryOperationAuditLog,
+  parseOperationAuditLimit,
+  type OperationAuditLog
+} from "./operation-audit-log";
+import {
   handleResourceDeliveryRouteError,
   registerResourceDeliveryRoutes
 } from "./resource-delivery-routes";
@@ -122,6 +129,9 @@ export type DaemonAppOptions = {
   runEnv?: DaemonRunOrchestrationOptions["env"];
   runExecutionClaimTtlMs?: DaemonRunOrchestrationOptions["executionClaimTtlMs"];
   runExecutionClaimOwnerIdGenerator?: DaemonRunOrchestrationOptions["executionClaimOwnerIdGenerator"];
+  operationAuditLog?: OperationAuditLog;
+  operationAuditClock?: Clock;
+  operationAuditIdGenerator?: IdGenerator;
   enableLocalPreset?: boolean;
   enableOpenAICompatibleProfile?: boolean;
   enableOpenAICompatibleExtraction?: boolean;
@@ -151,6 +161,7 @@ export type DaemonApp = {
   resourceAccessStore: ResourceAccessGrantStoreLike;
   resourceBroker: ResourceBroker;
   deliveryPlanner: DeliveryPlanner;
+  operationAuditLog: OperationAuditLog;
   runStore: NonNullable<DaemonRunOrchestrationOptions["runStore"]>;
   host: string;
   port: number;
@@ -211,6 +222,12 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   const corsOrigins = normalizeCorsOrigins(options.corsOrigins) ?? [
     ...DEFAULT_DAEMON_CORS_ORIGINS
   ];
+  const operationAuditLog =
+    options.operationAuditLog ??
+    new InMemoryOperationAuditLog({
+      idGenerator: options.operationAuditIdGenerator,
+      clock: options.operationAuditClock ?? clock
+    });
   const localPresetRegistries = options.enableLocalPreset
     ? createLocalPresetRunRegistries()
     : undefined;
@@ -328,6 +345,14 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       allowHeaders: ["Content-Type", "Authorization"]
     })
   );
+
+  app.use("*", async (context, next) => {
+    await auditDaemonOperation({
+      context,
+      operationAuditLog,
+      next
+    });
+  });
 
   app.use("*", async (context, next) => {
     const authError = authenticateDaemonRequest(context, daemonAuthToken);
@@ -556,6 +581,27 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       })
     )
   );
+
+  app.get("/runtime/operation-audit", (context) => {
+    let limit: number;
+
+    try {
+      limit = parseOperationAuditLimit(context.req.query("limit"));
+    } catch (error) {
+      return noStoreJson(
+        context,
+        createErrorResponse(
+          "operation_audit_request_invalid",
+          error instanceof Error ? error.message : "Operation audit request is invalid."
+        ),
+        400
+      );
+    }
+
+    return noStoreJson(context, {
+      events: operationAuditLog.list({ limit })
+    });
+  });
 
   app.get("/sessions", (context) => noStoreJson(context, listSessionCatalog(eventStore)));
 
@@ -849,6 +895,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     resourceAccessStore,
     resourceBroker,
     deliveryPlanner,
+    operationAuditLog,
     runStore: runService.runStore,
     host,
     port,
@@ -1306,6 +1353,73 @@ function compareDaemonAuthToken(candidate: string, expected: string): boolean {
   const expectedHash = createHash("sha256").update(expected).digest();
 
   return timingSafeEqual(candidateHash, expectedHash);
+}
+
+async function auditDaemonOperation(input: {
+  context: Context;
+  operationAuditLog: OperationAuditLog;
+  next: () => Promise<void>;
+}): Promise<void> {
+  const method = input.context.req.method.toUpperCase();
+  const path = input.context.req.path;
+  const authorization = createOperationAuditAuthorization({
+    method,
+    path,
+    authorizationHeader: input.context.req.header("Authorization"),
+    daemonAuthTokenQuery: input.context.req.query("daemonAuthToken")
+  });
+
+  try {
+    await input.next();
+  } catch (error) {
+    recordOperationAuditEvent(input.operationAuditLog, {
+      method,
+      path,
+      statusCode: classifyThrownOperationStatus(path, error),
+      authorization
+    });
+    throw error;
+  }
+
+  recordOperationAuditEvent(input.operationAuditLog, {
+    method,
+    path,
+    statusCode: input.context.res.status || 200,
+    authorization
+  });
+}
+
+function classifyThrownOperationStatus(path: string, error: unknown): number {
+  if (error instanceof DaemonHttpError) {
+    return error.status;
+  }
+
+  if (
+    path.startsWith("/resource-access/") ||
+    path.startsWith("/webget/") ||
+    isResourceDeliveryPath(path) ||
+    path === "/runs" ||
+    path.startsWith("/runs/")
+  ) {
+    return 400;
+  }
+
+  return 500;
+}
+
+function isResourceDeliveryPath(path: string): boolean {
+  return /^\/sessions\/[^/]+\/resources\/[^/]+\/deliveries$/.test(path);
+}
+
+function recordOperationAuditEvent(
+  operationAuditLog: OperationAuditLog,
+  input: Parameters<typeof createOperationAuditRecord>[0]
+): void {
+  const record = createOperationAuditRecord(input);
+
+  if (record) {
+    operationAuditLog.record(record);
+  }
 }
 
 function safeError(context: Context, error: Error): Response {

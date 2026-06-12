@@ -64,6 +64,34 @@ export type RuntimeProfilesResponse = {
   }>;
 };
 
+export type OperationAuditResponse = {
+  events: Array<{
+    id: string;
+    recordedAt: string;
+    action: string;
+    method: string;
+    route: string;
+    statusCode: number;
+    outcome: "succeeded" | "rejected" | "failed";
+    authorization: {
+      mode:
+        | "none"
+        | "daemon_bearer"
+        | "daemon_stream_query"
+        | "resource_access_token"
+        | "webget_token";
+      present: boolean;
+    };
+    target: {
+      runId?: string;
+      sessionId?: string;
+      batchId?: string;
+      proposalEventId?: string;
+      resourceId?: string;
+    };
+  }>;
+};
+
 export type CreateSessionRequest = {
   topicContract: unknown;
 };
@@ -432,6 +460,14 @@ export class DeliberumDaemonClient {
 
   getRuntimeProfiles(): Promise<RuntimeProfilesResponse> {
     return this.request("GET", "/runtime/profiles");
+  }
+
+  getOperationAudit(options: { limit?: number } = {}): Promise<OperationAuditResponse> {
+    const query = options.limit === undefined
+      ? ""
+      : `?limit=${encodeURIComponent(String(options.limit))}`;
+
+    return this.request("GET", `/runtime/operation-audit${query}`);
   }
 
   createSession(input: CreateSessionRequest): Promise<CreateSessionResponse> {

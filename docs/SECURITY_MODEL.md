@@ -14,6 +14,13 @@
 - Sensitive resources default to `none` delivery unless an explicit safe policy allows another mode.
 - WebGET is experimental and must record read/access limitations.
 - WebGET tokens are short-lived, daemon-local, and scoped to one WebGET session.
+- Daemon operation audit records must store normalized control-plane metadata only, never request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, or output payloads.
+
+## Operation audit security
+
+The daemon operation audit log is separate from the semantic event ledger. It records local control-plane action, method, normalized route, status code, outcome, auth mode/presence, and non-secret target ids for daemon requests. It does not make projections authoritative and does not become a source of deliberation truth.
+
+Operation audit persistence is optional. With `DELIBERUM_DAEMON_SQLITE_PATH`, audit records are stored in the local daemon SQLite database. Without SQLite, `DELIBERUM_DAEMON_OPERATION_AUDIT_PATH` can persist the same safe metadata to JSON for local development. If neither is configured, the audit log is process-local memory only.
 
 ## Resource security
 

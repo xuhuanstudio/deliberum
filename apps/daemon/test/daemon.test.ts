@@ -52,6 +52,7 @@ import {
   DAEMON_AUTH_TOKEN_ENV_VAR,
   DAEMON_CORS_ORIGINS_ENV_VAR,
   DAEMON_EVENT_STORE_PATH_ENV_VAR,
+  DAEMON_OPERATION_AUDIT_PATH_ENV_VAR,
   DAEMON_RUN_STORE_PATH_ENV_VAR,
   DAEMON_SQLITE_PATH_ENV_VAR,
   DEFAULT_DAEMON_CORS_ORIGINS,
@@ -109,6 +110,7 @@ import {
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
   RESOURCE_ACCESS_BASE_URL_ENV_VAR,
   RESOURCE_ACCESS_TTL_MS_ENV_VAR,
+  createStartDaemonOperationAuditLog,
   createStartDaemonEventStore,
   createStartDaemonResourceAccessStore,
   createStartDaemonResourceStore,
@@ -118,6 +120,7 @@ import {
   localPresetRunPlan,
   localPresetStartRequest,
   parseDaemonCorsOriginsFromEnv,
+  resolveStartDaemonOperationAuditPath,
   resolveStartDaemonEventStorePath,
   resolveStartDaemonRunStorePath,
   resolveStartDaemonAuthToken,
@@ -132,6 +135,8 @@ import {
   resolveStartDaemonEnableMcpToolProfile,
   resolveStartDaemonEnableLocalPreset,
   ResourceAccessGrantStore,
+  JsonFileOperationAuditLog,
+  SQLiteOperationAuditLog,
   SQLiteResourceAccessGrantStore,
   SQLiteRunStore,
   type DaemonApp,
@@ -4652,6 +4657,154 @@ describe("daemon API", () => {
     expectSafeRunApiPayload(body);
   });
 
+  it("records safe daemon operation audit metadata for control-plane requests", async () => {
+    const auditIds = createIds();
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      operationAuditIdGenerator: () => `operation-audit-${auditIds()}`,
+      clock
+    });
+    const created = await createRun(daemonApp);
+    const resourceAccessToken = "R".repeat(32);
+    const webgetToken = "W".repeat(32);
+
+    const health = await daemonApp.app.request("/health");
+    const profiles = await daemonApp.app.request("/runtime/profiles");
+    const resourceAccess = await daemonApp.app.request(
+      `/resource-access/${resourceAccessToken}`
+    );
+    const webget = await daemonApp.app.request(`/webget/${webgetToken}/context`);
+    const auditResponse = await daemonApp.app.request("/runtime/operation-audit?limit=10");
+    const auditBody = (await auditResponse.json()) as {
+      events: Array<{
+        action: string;
+        route: string;
+        statusCode: number;
+        outcome: string;
+        authorization: {
+          mode: string;
+          present: boolean;
+        };
+        target: Record<string, string>;
+      }>;
+    };
+    const serializedAudit = JSON.stringify(daemonApp.operationAuditLog.list({ limit: 20 }));
+
+    expect(health.status).toBe(200);
+    expect(profiles.status).toBe(200);
+    expect(resourceAccess.status).toBe(400);
+    expect(webget.status).toBe(400);
+    expect(auditResponse.status).toBe(200);
+    expectNoStore(auditResponse);
+    expect(auditBody.events).toEqual([
+      expect.objectContaining({
+        action: "run_create",
+        route: "/runs",
+        statusCode: 201,
+        outcome: "succeeded",
+        authorization: {
+          mode: "daemon_bearer",
+          present: false
+        },
+        target: {}
+      }),
+      expect.objectContaining({
+        action: "runtime_profiles_read",
+        route: "/runtime/profiles",
+        statusCode: 200,
+        outcome: "succeeded"
+      }),
+      expect.objectContaining({
+        action: "resource_access_get",
+        route: "/resource-access/:accessId",
+        statusCode: 400,
+        outcome: "rejected",
+        authorization: {
+          mode: "resource_access_token",
+          present: true
+        },
+        target: {}
+      }),
+      expect.objectContaining({
+        action: "webget_context",
+        route: "/webget/:token/context",
+        statusCode: 400,
+        outcome: "rejected",
+        authorization: {
+          mode: "webget_token",
+          present: true
+        },
+        target: {}
+      })
+    ]);
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(1);
+    expect(daemonApp.operationAuditLog.list({ limit: 20 })).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "operation_audit_read",
+          route: "/runtime/operation-audit"
+        })
+      ])
+    );
+    expect(serializedAudit).not.toContain(resourceAccessToken);
+    expect(serializedAudit).not.toContain(webgetToken);
+    expect(serializedAudit).not.toContain("Authorization");
+    expect(serializedAudit).not.toContain("Bearer ");
+    expect(serializedAudit).not.toContain("/Users/");
+  });
+
+  it("records daemon auth failures without storing bearer tokens", async () => {
+    const daemonAuthToken = "local-daemon-auth-token-123";
+    const bearerToken = "Bearer local-daemon-auth-token-123";
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      operationAuditIdGenerator: createIds(),
+      clock,
+      daemonAuthToken
+    });
+
+    const unauthenticatedResponse = await daemonApp.app.request("/runtime/profiles");
+    const authorizedResponse = await daemonApp.app.request("/runtime/operation-audit", {
+      headers: {
+        Authorization: bearerToken
+      }
+    });
+    const auditEvents = daemonApp.operationAuditLog.list({ limit: 10 });
+    const serializedAudit = JSON.stringify(auditEvents);
+
+    expect(unauthenticatedResponse.status).toBe(401);
+    expectNoStore(unauthenticatedResponse);
+    expect(authorizedResponse.status).toBe(200);
+    expectNoStore(authorizedResponse);
+    expect(auditEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "runtime_profiles_read",
+          route: "/runtime/profiles",
+          statusCode: 401,
+          outcome: "rejected",
+          authorization: {
+            mode: "daemon_bearer",
+            present: false
+          }
+        }),
+        expect.objectContaining({
+          action: "operation_audit_read",
+          route: "/runtime/operation-audit",
+          statusCode: 200,
+          outcome: "succeeded",
+          authorization: {
+            mode: "daemon_bearer",
+            present: true
+          }
+        })
+      ])
+    );
+    expect(serializedAudit).not.toContain(daemonAuthToken);
+    expect(serializedAudit).not.toContain(bearerToken);
+    expect(serializedAudit).not.toContain("Authorization");
+  });
+
   it("keeps the deterministic local preset disabled by default", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
     const created = await createRun(daemonApp, localPresetRunPlan());
@@ -4744,6 +4897,77 @@ describe("daemon API", () => {
     ).toBe(injectedStore);
   });
 
+  it("resolves optional daemon JSON operation audit log path from env", () => {
+    const injectedLog = new daemon.InMemoryOperationAuditLog();
+
+    expect(
+      resolveStartDaemonOperationAuditPath({
+        [DAEMON_OPERATION_AUDIT_PATH_ENV_VAR]: " /tmp/deliberum-daemon-operations.json "
+      })
+    ).toBe("/tmp/deliberum-daemon-operations.json");
+    expect(resolveStartDaemonOperationAuditPath({})).toBeUndefined();
+    expect(
+      resolveStartDaemonOperationAuditPath({
+        [DAEMON_OPERATION_AUDIT_PATH_ENV_VAR]: "   "
+      })
+    ).toBeUndefined();
+    expect(
+      createStartDaemonOperationAuditLog(
+        { operationAuditLog: injectedLog },
+        {
+          [DAEMON_OPERATION_AUDIT_PATH_ENV_VAR]: "/tmp/ignored-operations.json"
+        }
+      )
+    ).toBe(injectedLog);
+
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-operation-audit-"));
+    const filePath = join(dir, "operations.json");
+
+    try {
+      const firstLog = createStartDaemonOperationAuditLog(
+        {
+          operationAuditIdGenerator: createIds(),
+          operationAuditClock: clock
+        },
+        {
+          [DAEMON_OPERATION_AUDIT_PATH_ENV_VAR]: filePath
+        }
+      );
+
+      expect(firstLog).toBeInstanceOf(JsonFileOperationAuditLog);
+      firstLog?.record({
+        action: "runtime_profiles_read",
+        method: "GET",
+        route: "/runtime/profiles",
+        statusCode: 200,
+        outcome: "succeeded",
+        authorization: {
+          mode: "daemon_bearer",
+          present: true
+        },
+        target: {}
+      });
+
+      const secondLog = createStartDaemonOperationAuditLog(
+        {},
+        {
+          [DAEMON_OPERATION_AUDIT_PATH_ENV_VAR]: filePath
+        }
+      );
+
+      expect(secondLog?.list()).toEqual([
+        expect.objectContaining({
+          id: "id-1",
+          recordedAt: "2026-06-10T00:00:00.000Z",
+          action: "runtime_profiles_read",
+          route: "/runtime/profiles"
+        })
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("resolves resource access base URL and TTL from explicit options or env", () => {
     expect(
       resolveStartDaemonResourceAccessBaseUrl(
@@ -4822,6 +5046,7 @@ describe("daemon API", () => {
     const injectedRunStore = new InMemoryRunStore();
     const injectedResourceAccessStore = new ResourceAccessGrantStore();
     const injectedResourceBroker = new InMemoryResourceBroker();
+    const injectedOperationAuditLog = new daemon.InMemoryOperationAuditLog();
     const sqlitePath = "/tmp/deliberum-daemon.sqlite";
 
     expect(
@@ -4867,6 +5092,14 @@ describe("daemon API", () => {
         }
       )
     ).toBe(injectedResourceBroker);
+    expect(
+      createStartDaemonOperationAuditLog(
+        { operationAuditLog: injectedOperationAuditLog },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: sqlitePath
+        }
+      )
+    ).toBe(injectedOperationAuditLog);
 
     const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-sqlite-resolve-"));
     const filePath = join(dir, "daemon.sqlite");
@@ -4896,16 +5129,57 @@ describe("daemon API", () => {
           [DAEMON_SQLITE_PATH_ENV_VAR]: filePath
         }
       );
+      const operationAuditLog = createStartDaemonOperationAuditLog(
+        {
+          operationAuditIdGenerator: createIds(),
+          operationAuditClock: clock
+        },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: filePath
+        }
+      );
 
       expect(eventStore).toBeInstanceOf(SQLiteEventStore);
       expect(runStore).toBeInstanceOf(SQLiteRunStore);
       expect(resourceAccessStore).toBeInstanceOf(SQLiteResourceAccessGrantStore);
       expect(resourceBroker).toBeInstanceOf(SQLiteResourceBroker);
+      expect(operationAuditLog).toBeInstanceOf(SQLiteOperationAuditLog);
+
+      operationAuditLog?.record({
+        action: "operation_audit_read",
+        method: "GET",
+        route: "/runtime/operation-audit",
+        statusCode: 200,
+        outcome: "succeeded",
+        authorization: {
+          mode: "daemon_bearer",
+          present: true
+        },
+        target: {}
+      });
 
       (eventStore as SQLiteEventStore).close();
       (runStore as SQLiteRunStore).close();
       (resourceAccessStore as SQLiteResourceAccessGrantStore).close();
       (resourceBroker as SQLiteResourceBroker).close();
+      (operationAuditLog as SQLiteOperationAuditLog).close();
+
+      const reopenedOperationAuditLog = createStartDaemonOperationAuditLog(
+        {},
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: filePath
+        }
+      );
+
+      expect(reopenedOperationAuditLog?.list()).toEqual([
+        expect.objectContaining({
+          id: "id-1",
+          recordedAt: "2026-06-10T00:00:00.000Z",
+          action: "operation_audit_read",
+          route: "/runtime/operation-audit"
+        })
+      ]);
+      (reopenedOperationAuditLog as SQLiteOperationAuditLog).close();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

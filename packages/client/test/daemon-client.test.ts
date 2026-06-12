@@ -139,6 +139,52 @@ describe("DeliberumDaemonClient", () => {
     });
   });
 
+  it("reads safe daemon operation audit metadata with an optional limit", async () => {
+    const fetch = createFetch({
+      events: [
+        {
+          id: "operation-audit-1",
+          recordedAt: "2026-06-10T00:00:00.000Z",
+          action: "runtime_profiles_read",
+          method: "GET",
+          route: "/runtime/profiles",
+          statusCode: 200,
+          outcome: "succeeded",
+          authorization: {
+            mode: "daemon_bearer",
+            present: true
+          },
+          target: {}
+        }
+      ]
+    });
+    const daemonClient = new DeliberumDaemonClient({
+      authToken: "local-daemon-auth-token-123",
+      fetch
+    });
+
+    const result = await daemonClient.getOperationAudit({ limit: 25 });
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:3877/runtime/operation-audit?limit=25");
+    expect(init).toEqual({
+      method: "GET",
+      headers: {
+        Authorization: "Bearer local-daemon-auth-token-123"
+      }
+    });
+    expect(result.events[0]).toEqual(
+      expect.objectContaining({
+        id: "operation-audit-1",
+        action: "runtime_profiles_read",
+        authorization: {
+          mode: "daemon_bearer",
+          present: true
+        }
+      })
+    );
+  });
+
   it("lists daemon sessions through the catalog endpoint", async () => {
     const fetch = createFetch({
       sessions: []

@@ -10,6 +10,7 @@ import {
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { JsonFileEventStore, SQLiteEventStore, type EventStore } from "@deliberum/storage";
 import { JsonFileRunStore } from "./json-file-run-store";
+import { JsonFileOperationAuditLog } from "./operation-audit-log";
 import { isLocalPresetEnabledFromEnv } from "./local-preset";
 import {
   isOpenAICompatibleExtractionEnabledFromEnv,
@@ -22,12 +23,15 @@ import { isMcpToolProfileEnabledFromEnv } from "./mcp-tool-profile";
 import { SQLiteResourceAccessGrantStore } from "./sqlite-resource-access-store";
 import { SQLiteResourceBroker } from "./sqlite-resource-broker";
 import { SQLiteRunStore } from "./sqlite-run-store";
+import { SQLiteOperationAuditLog } from "./sqlite-operation-audit-log";
 
 export { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT };
 
 export const DAEMON_EVENT_STORE_PATH_ENV_VAR = "DELIBERUM_DAEMON_EVENT_STORE_PATH" as const;
 export const DAEMON_RUN_STORE_PATH_ENV_VAR = "DELIBERUM_DAEMON_RUN_STORE_PATH" as const;
 export const DAEMON_SQLITE_PATH_ENV_VAR = "DELIBERUM_DAEMON_SQLITE_PATH" as const;
+export const DAEMON_OPERATION_AUDIT_PATH_ENV_VAR =
+  "DELIBERUM_DAEMON_OPERATION_AUDIT_PATH" as const;
 export const DAEMON_AUTH_TOKEN_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
 export const RESOURCE_ACCESS_BASE_URL_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_BASE_URL" as const;
 export const RESOURCE_ACCESS_TTL_MS_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_TTL_MS" as const;
@@ -103,6 +107,45 @@ export function createStartDaemonRunStore(
 
   const filePath = resolveStartDaemonRunStorePath(env);
   return filePath ? new JsonFileRunStore({ filePath }) : undefined;
+}
+
+export function resolveStartDaemonOperationAuditPath(
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  const value = env[DAEMON_OPERATION_AUDIT_PATH_ENV_VAR]?.trim();
+  return value && value.length > 0 ? value : undefined;
+}
+
+export function createStartDaemonOperationAuditLog(
+  options: Pick<
+    StartDaemonOptions,
+    "operationAuditLog" | "operationAuditClock" | "operationAuditIdGenerator" | "clock"
+  > = {},
+  env: Record<string, string | undefined> = process.env
+): StartDaemonOptions["operationAuditLog"] | undefined {
+  if (options.operationAuditLog) {
+    return options.operationAuditLog;
+  }
+
+  const auditOptions = {
+    idGenerator: options.operationAuditIdGenerator,
+    clock: options.operationAuditClock ?? options.clock
+  };
+  const sqlitePath = resolveStartDaemonSQLitePath(env);
+  if (sqlitePath) {
+    return new SQLiteOperationAuditLog({
+      filePath: sqlitePath,
+      ...auditOptions
+    });
+  }
+
+  const filePath = resolveStartDaemonOperationAuditPath(env);
+  return filePath
+    ? new JsonFileOperationAuditLog({
+        filePath,
+        ...auditOptions
+      })
+    : undefined;
 }
 
 export function createStartDaemonResourceAccessStore(
@@ -238,6 +281,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const port = options.port ?? DEFAULT_DAEMON_PORT;
   const eventStore = createStartDaemonEventStore(options);
   const runStore = createStartDaemonRunStore(options);
+  const operationAuditLog = createStartDaemonOperationAuditLog(options);
   const enableLocalPreset = resolveStartDaemonEnableLocalPreset(options);
   const enableOpenAICompatibleProfile =
     resolveStartDaemonEnableOpenAICompatibleProfile(options);
@@ -267,6 +311,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
     ...options,
     eventStore,
     runStore,
+    operationAuditLog,
     resourceAccessStore,
     resourceBroker,
     enableLocalPreset,

@@ -21,9 +21,10 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - Hono and `@hono/node-server` for the local daemon API;
 - opt-in daemon control-plane bearer auth for local/pre-production hardening;
 - process-local `InMemoryEventStore` for daemon defaults;
-- `better-sqlite3` for optional local/pre-production daemon SQLite event ledger, run metadata, resource broker, and resource access grant persistence with local connection-level writer serialization;
+- `better-sqlite3` for optional local/pre-production daemon SQLite event ledger, run metadata, resource broker, resource access grant, and operation audit log persistence with local connection-level writer serialization;
 - shared Node `JsonFileEventStore` for CLI persistence and optional local daemon event ledger persistence;
 - daemon-local `JsonFileRunStore` for optional local run metadata persistence;
+- daemon-local operation audit log with in-memory defaults, optional JSON persistence, and optional SQLite persistence for safe control-plane operation metadata;
 - Server-Sent Events for daemon event streaming;
 - daemon-local session-scoped resource delivery planning through the Resource Broker and Delivery Planner, with safe ledger audit events for delivery decisions and short-lived access grants for allowed URL and hosted in-memory content deliveries;
 - package-level HTTP-template participant adapter and opt-in daemon participant profile for non-OpenAI HTTP providers;
