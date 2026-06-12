@@ -64,7 +64,7 @@ CLI final commands also use the local JSON EventStore. `final propose` appends a
 
 CLI daemon and run commands are local daemon control commands. They require a running local daemon, call daemon endpoints through `@deliberum/client`, and do not use the CLI local JSON ledger for daemon profile status or run orchestration.
 
-`deliberum daemon profiles` reads `GET /runtime/profiles` and returns only safe daemon runtime profile setup metadata: profile ids, component ids, enabled/status flags, env var names, and configured/missing booleans. It does not return environment values, provider secrets, header/body templates, URLs, model ids, or provider request bodies.
+`deliberum daemon profiles` reads `GET /runtime/profiles` and returns only safe daemon runtime profile setup metadata: profile ids, component ids, enabled/status flags, env var names, and configured/missing booleans. It does not return environment values, provider secrets, header/body templates, URLs, model ids, MCP tool names, or provider/tool request bodies.
 
 `deliberum daemon resource-access revoke <access-id>` calls `POST /resource-access/:accessId/revoke` on the local daemon and returns the safe revocation view. It is a local daemon control command and does not read the CLI local JSON ledger.
 
@@ -174,6 +174,17 @@ node apps/daemon/dist/index.js
 ```
 
 When this profile is enabled, the daemon registers only the `http-template` participant adapter. Run plans still provide non-secret provider routing such as `baseUrl`, `endpointPath`, `modelId`, `timeoutMs`, and `apiKeyEnvVar`; the real key stays in the daemon environment, for example `DELIBERUM_HTTP_TEMPLATE_API_KEY`. Header and body templates are daemon-side profile configuration and may reference runtime placeholders such as `{{runtime.apiKey}}`, `{{runtime.modelId}}`, `{{runtime.baseUrl}}`, `{{runtime.endpointPath}}`, `{{context.participantId}}`, `{{input.payloadJson}}`, and `{{var.name}}`. Run-plan provider configs may include `httpTemplate.variables` for non-secret JSON values used by `{{var.*}}` placeholders. These values are visible safe run configuration and must not contain API keys, bearer tokens, private local paths, or other inline credentials; unsafe values are rejected by run-plan validation. Optional profile settings include `DELIBERUM_HTTP_TEMPLATE_URL`, `DELIBERUM_HTTP_TEMPLATE_BASE_URL`, `DELIBERUM_HTTP_TEMPLATE_ENDPOINT_PATH`, `DELIBERUM_HTTP_TEMPLATE_METHOD`, `DELIBERUM_HTTP_TEMPLATE_TIMEOUT_MS`, `DELIBERUM_HTTP_TEMPLATE_RESPONSE_MODEL_ID_PATH`, and `DELIBERUM_HTTP_TEMPLATE_RESPONSE_FORMAT=text|json`. This profile does not install extraction generators, proposal reviewers, final candidate generators, final auditors, or interactive provider setup.
+
+The daemon also has a separate opt-in MCP tool participant profile for local/pre-production sealed divergence participant execution through one configured MCP-compatible JSON-RPC tool endpoint:
+
+```bash
+DELIBERUM_ENABLE_MCP_TOOL_PROFILE=true \
+DELIBERUM_MCP_TOOL_URL=http://127.0.0.1:8787/mcp \
+DELIBERUM_MCP_TOOL_NAME=deliberum.reflect \
+node apps/daemon/dist/index.js
+```
+
+When this profile is enabled and the required URL plus tool name are configured, the daemon registers only the `mcp-tool` participant adapter. It calls `tools/list` by default to verify that the configured tool exists, then calls `tools/call` with JSON arguments derived from the Deliberum participant context. `DELIBERUM_MCP_TOOL_AUTH_TOKEN` is an optional bearer secret for the configured endpoint and is kept in daemon runtime memory only. `DELIBERUM_MCP_TOOL_TIMEOUT_MS` controls the adapter call timeout. Non-local endpoints are rejected by default; `DELIBERUM_MCP_TOOL_ALLOW_REMOTE=true` permits only HTTPS remote endpoints. `DELIBERUM_MCP_TOOL_VERIFY_LIST=false` can skip the `tools/list` check for compatible bridges that do not expose listing. `GET /runtime/profiles` reports only configured/missing booleans and returns `needs_configuration` when the profile is enabled without the required URL or tool name. This profile does not start or manage MCP servers, expose arbitrary tools, install extraction generators, proposal reviewers, final candidate generators, final auditors, or make tool output authoritative.
 
 Stage 22B adds a separate opt-in OpenAI-compatible extraction generator for local/pre-production proposal extraction:
 

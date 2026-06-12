@@ -27,7 +27,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - Server-Sent Events for daemon event streaming;
 - daemon-local session-scoped resource delivery planning through the Resource Broker and Delivery Planner, with safe ledger audit events for delivery decisions and short-lived access grants for allowed URL and hosted in-memory content deliveries;
 - package-level HTTP-template participant adapter and opt-in daemon participant profile for non-OpenAI HTTP providers;
-- package-level MCP-compatible tool participant adapter with injected client lifecycle;
+- package-level MCP-compatible tool participant adapter with injected client lifecycle and an opt-in daemon MCP tool participant profile;
 - read-only adaptive primitive suggestion in `@deliberum/orchestrator`, surfaced by the daemon as process proposal material;
 - explicit accepted process proposal execution through the daemon run start path for supported primitives, including candidate repair proposal execution and evidence check result recording;
 - React + Vite + TypeScript for the Web shell;
@@ -63,7 +63,7 @@ The following are planned or possible future additions, not current implementati
 - shadcn/ui, Radix primitives, or another component system;
 - React Flow / xyflow for structured graph projections;
 - tldraw for free-form canvas projections, never as semantic truth;
-- daemon MCP profile, tool execution policy, and adapter sandboxing;
+- MCP server lifecycle management, broader tool execution policy, and adapter sandboxing;
 - production resource hosting posture;
 - production multi-user authorization.
 

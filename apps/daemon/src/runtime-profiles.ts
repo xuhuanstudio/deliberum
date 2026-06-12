@@ -42,6 +42,16 @@ import {
   OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR
 } from "./openai-compatible-profile";
+import {
+  MCP_TOOL_ADAPTER_ID,
+  MCP_TOOL_ALLOW_REMOTE_ENV_VAR,
+  MCP_TOOL_AUTH_TOKEN_ENV_VAR,
+  MCP_TOOL_NAME_ENV_VAR,
+  MCP_TOOL_PROFILE_ENV_VAR,
+  MCP_TOOL_TIMEOUT_MS_ENV_VAR,
+  MCP_TOOL_URL_ENV_VAR,
+  MCP_TOOL_VERIFY_LIST_ENV_VAR
+} from "./mcp-tool-profile";
 import { OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID } from "./openai-compatible-extraction-generator";
 import {
   OPENAI_COMPATIBLE_FINAL_AUDITOR_ID,
@@ -49,7 +59,11 @@ import {
 } from "./openai-compatible-finalization-generators";
 import { OPENAI_COMPATIBLE_REVIEWER_ID } from "./openai-compatible-review-generator";
 
-export type RuntimeProfileStatus = "disabled" | "ready" | "ready_with_run_config";
+export type RuntimeProfileStatus =
+  | "disabled"
+  | "needs_configuration"
+  | "ready"
+  | "ready_with_run_config";
 
 export type RuntimeProfileEnvVarView = {
   name: string;
@@ -100,6 +114,8 @@ export type RuntimeProfilesProjectionOptions = {
   openAICompatibleEnv?: Record<string, string | undefined>;
   enableHttpTemplateProfile: boolean;
   httpTemplateEnv?: Record<string, string | undefined>;
+  enableMcpToolProfile: boolean;
+  mcpToolEnv?: Record<string, string | undefined>;
 };
 
 export function buildRuntimeProfilesProjection(
@@ -109,7 +125,8 @@ export function buildRuntimeProfilesProjection(
     profiles: [
       buildLocalPresetProfile(options),
       buildOpenAICompatibleProfile(options),
-      buildHttpTemplateProfile(options)
+      buildHttpTemplateProfile(options),
+      buildMcpToolProfile(options)
     ]
   };
 }
@@ -479,6 +496,94 @@ function buildHttpTemplateProfile(
     boundaries: [
       "Only the participant adapter is installed by this profile.",
       "Secrets are reported only as configured or missing."
+    ]
+  };
+}
+
+function buildMcpToolProfile(
+  options: RuntimeProfilesProjectionOptions
+): RuntimeProfileView {
+  const enabled = options.enableMcpToolProfile;
+  const env = options.mcpToolEnv;
+  const hasEndpointUrl = isConfigured(env, MCP_TOOL_URL_ENV_VAR);
+  const hasToolName = isConfigured(env, MCP_TOOL_NAME_ENV_VAR);
+  const hasRequiredConfig = hasEndpointUrl && hasToolName;
+  const status = !enabled
+    ? "disabled"
+    : hasRequiredConfig
+      ? "ready"
+      : "needs_configuration";
+  const envVars = [
+    envVar(
+      MCP_TOOL_URL_ENV_VAR,
+      env,
+      false,
+      false,
+      "Required MCP-compatible JSON-RPC tool endpoint URL."
+    ),
+    envVar(
+      MCP_TOOL_NAME_ENV_VAR,
+      env,
+      false,
+      false,
+      "Required allowed tool name for this daemon profile."
+    ),
+    envVar(
+      MCP_TOOL_AUTH_TOKEN_ENV_VAR,
+      env,
+      true,
+      false,
+      "Optional bearer token for the MCP-compatible tool endpoint."
+    ),
+    envVar(
+      MCP_TOOL_TIMEOUT_MS_ENV_VAR,
+      env,
+      false,
+      false,
+      "Optional MCP tool call timeout."
+    ),
+    envVar(
+      MCP_TOOL_ALLOW_REMOTE_ENV_VAR,
+      env,
+      false,
+      false,
+      "Optional explicit opt-in for non-local HTTPS endpoints."
+    ),
+    envVar(
+      MCP_TOOL_VERIFY_LIST_ENV_VAR,
+      env,
+      false,
+      false,
+      "Optional tools/list verification toggle; defaults to true."
+    )
+  ];
+
+  return {
+    id: "mcp-tool",
+    name: "MCP tool",
+    enabled,
+    status,
+    components: [
+      component(MCP_TOOL_ADAPTER_ID, "participant_adapter", enabled && hasRequiredConfig)
+    ],
+    setup: {
+      enableEnvVar: MCP_TOOL_PROFILE_ENV_VAR,
+      envVars,
+      missingRecommendedEnvVars: enabled
+        ? missingRecommendedEnvVars(envVars, [
+            MCP_TOOL_URL_ENV_VAR,
+            MCP_TOOL_NAME_ENV_VAR
+          ])
+        : [],
+      notes: [
+        "The daemon calls one configured MCP-compatible tool endpoint and does not start or manage MCP servers.",
+        "Non-local endpoints are rejected unless remote HTTPS access is explicitly enabled."
+      ]
+    },
+    boundaries: [
+      "Only the participant adapter is installed by this profile.",
+      "Tool endpoint URL, tool name, auth token, and request payloads are not returned by this endpoint.",
+      "This profile does not add extraction generators, proposal reviewers, final generators, or semantic authority."
     ]
   };
 }

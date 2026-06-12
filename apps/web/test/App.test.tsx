@@ -120,6 +120,29 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
             notes: []
           },
           boundaries: []
+        },
+        {
+          id: "mcp-tool",
+          name: "MCP tool",
+          enabled: true,
+          status: "needs_configuration",
+          components: [
+            {
+              id: "mcp-tool",
+              kind: "participant_adapter",
+              enabled: false
+            }
+          ],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_MCP_TOOL_PROFILE",
+            envVars: [],
+            missingRecommendedEnvVars: [
+              "DELIBERUM_MCP_TOOL_URL",
+              "DELIBERUM_MCP_TOOL_NAME"
+            ],
+            notes: []
+          },
+          boundaries: []
         }
       ]
     })),
@@ -675,9 +698,12 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(screen.getByText("Local preset")).toBeTruthy();
     expect(screen.getByText("OpenAI-compatible")).toBeTruthy();
+    expect(screen.getByText("MCP tool")).toBeTruthy();
     expect(screen.getByText("Ready")).toBeTruthy();
     expect(screen.getByText("Ready with run config")).toBeTruthy();
+    expect(screen.getByText("Needs configuration")).toBeTruthy();
     expect(screen.getByText("DELIBERUM_OPENAI_BASE_URL, DELIBERUM_OPENAI_MODEL")).toBeTruthy();
+    expect(screen.getByText("DELIBERUM_MCP_TOOL_URL, DELIBERUM_MCP_TOOL_NAME")).toBeTruthy();
     expect(screen.queryByText("sk-openai-runtime-secret")).toBeNull();
   });
 

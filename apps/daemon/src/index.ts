@@ -6,6 +6,7 @@ export * from "./event-stream";
 export * from "./http-template-profile";
 export * from "./json-file-run-store";
 export * from "./local-preset";
+export * from "./mcp-tool-profile";
 export * from "./openai-compatible-extraction-generator";
 export * from "./openai-compatible-finalization-generators";
 export * from "./openai-compatible-profile";

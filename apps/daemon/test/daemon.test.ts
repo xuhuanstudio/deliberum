@@ -5,10 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   HttpTemplateAdapterError,
+  McpToolAdapterError,
   OpenAICompatibleAdapterError,
   type FetchLike,
   type HttpTemplateFetchInit,
   type HttpTemplateFetchLike,
+  type JsonValue,
   type OpenAICompatibleFetchInit
 } from "@deliberum/adapters";
 import {
@@ -67,6 +69,14 @@ import {
   HTTP_TEMPLATE_TIMEOUT_MS_ENV_VAR,
   HTTP_TEMPLATE_URL_ENV_VAR,
   LOCAL_PRESET_ENV_VAR,
+  MCP_TOOL_ADAPTER_ID,
+  MCP_TOOL_ALLOW_REMOTE_ENV_VAR,
+  MCP_TOOL_AUTH_TOKEN_ENV_VAR,
+  MCP_TOOL_NAME_ENV_VAR,
+  MCP_TOOL_PROFILE_ENV_VAR,
+  MCP_TOOL_TIMEOUT_MS_ENV_VAR,
+  MCP_TOOL_URL_ENV_VAR,
+  MCP_TOOL_VERIFY_LIST_ENV_VAR,
   OPENAI_COMPATIBLE_ADAPTER_ID,
   OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
   OPENAI_COMPATIBLE_BASE_URL_ENV_VAR,
@@ -119,11 +129,14 @@ import {
   resolveStartDaemonEnableOpenAICompatibleProfile,
   resolveStartDaemonEnableOpenAICompatibleReview,
   resolveStartDaemonEnableHttpTemplateProfile,
+  resolveStartDaemonEnableMcpToolProfile,
   resolveStartDaemonEnableLocalPreset,
   ResourceAccessGrantStore,
   SQLiteResourceAccessGrantStore,
   SQLiteRunStore,
-  type DaemonApp
+  type DaemonApp,
+  type McpToolFetchInit,
+  type McpToolFetchLike
 } from "../src";
 import { SQLiteResourceBroker } from "../src/sqlite-resource-broker";
 import * as daemon from "../src";
@@ -667,6 +680,42 @@ function httpTemplateRunPlan() {
   };
 }
 
+function mcpToolRunPlan() {
+  return {
+    title: "MCP tool sealed divergence",
+    topic: "Should Deliberum expose an opt-in MCP tool participant profile?",
+    goals: ["Exercise MCP-compatible tool contributions through daemon and orchestrator."],
+    constraints: ["Keep tool execution behind explicit daemon profile configuration."],
+    participants: [
+      {
+        id: "mcp-tool-alpha",
+        kind: "tool",
+        displayName: "MCP tool alpha",
+        adapterId: MCP_TOOL_ADAPTER_ID
+      }
+    ],
+    providerConfigs: [],
+    budget: {
+      maxEvents: 20,
+      maxProviderCalls: 4
+    },
+    timeouts: {
+      participantMs: 1000,
+      overallMs: 30000
+    },
+    output: {
+      language: "en",
+      style: "concise",
+      expectations: ["Return tool contribution material only."]
+    },
+    sealedDivergence: {
+      purpose: "initial_divergence",
+      revealPolicy: "all_completed",
+      participantIds: ["mcp-tool-alpha"]
+    }
+  };
+}
+
 function openAICompatibleExtractionRunPlan() {
   const plan = localPresetRunPlan();
 
@@ -802,6 +851,7 @@ async function createRun(
 
 type MockedFetchLike = ReturnType<typeof vi.fn> & FetchLike;
 type MockedHttpTemplateFetchLike = ReturnType<typeof vi.fn> & HttpTemplateFetchLike;
+type MockedMcpToolFetchLike = ReturnType<typeof vi.fn> & McpToolFetchLike;
 
 function createOpenAICompatibleFetch(output = "provider sealed contribution"): MockedFetchLike {
   return vi.fn(async () => ({
@@ -832,6 +882,89 @@ function createHttpTemplateFetch(
     status: 200,
     text: vi.fn(async () => JSON.stringify(output))
   })) as unknown as MockedHttpTemplateFetchLike;
+}
+
+function createMcpToolFetch(input: {
+  toolName?: string;
+  content?: string;
+  structuredContent?: JsonValue;
+  listTools?: boolean;
+} = {}): MockedMcpToolFetchLike {
+  const toolName = input.toolName ?? "deliberum.reflect";
+  const content = input.content ?? "MCP tool sealed contribution";
+
+  return vi.fn(async (_url: string, init: McpToolFetchInit) => {
+    const request = JSON.parse(init.body) as {
+      id: string;
+      method: string;
+      params?: {
+        name?: string;
+        arguments?: Record<string, unknown>;
+      };
+    };
+
+    if (request.method === "tools/list") {
+      return {
+        ok: true,
+        status: 200,
+        json: vi.fn(async () => ({
+          jsonrpc: "2.0",
+          id: request.id,
+          result: {
+            tools: input.listTools === false
+              ? []
+              : [
+                  {
+                    name: toolName,
+                    description: "Fixture MCP-compatible deliberation tool",
+                    inputSchema: {
+                      type: "object"
+                    }
+                  }
+                ]
+          }
+        }))
+      };
+    }
+
+    if (request.method === "tools/call") {
+      return {
+        ok: true,
+        status: 200,
+        json: vi.fn(async () => ({
+          jsonrpc: "2.0",
+          id: request.id,
+          result: {
+            content: [
+              {
+                type: "text",
+                text: content
+              }
+            ],
+            structuredContent: input.structuredContent ?? {
+              participantId: request.params?.arguments?.context &&
+                typeof request.params.arguments.context === "object"
+                ? (request.params.arguments.context as { participantId?: string }).participantId
+                : null
+            }
+          }
+        }))
+      };
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => ({
+        jsonrpc: "2.0",
+        id: request.id,
+        error: {
+          code: -32601,
+          message: "Method not found"
+        }
+      }))
+    };
+  }) as unknown as MockedMcpToolFetchLike;
 }
 
 function createOpenAICompatibleExtractionFetch(options: {
@@ -1505,6 +1638,7 @@ function expectSafeRunApiPayload(value: unknown, secret = "sk-runtime-secret"): 
   expect(text).not.toContain("DELIBERUM_TEST_API_KEY");
   expect(text).not.toContain(OPENAI_COMPATIBLE_API_KEY_ENV_VAR);
   expect(text).not.toContain(HTTP_TEMPLATE_API_KEY_ENV_VAR);
+  expect(text).not.toContain(MCP_TOOL_AUTH_TOKEN_ENV_VAR);
 
   for (const forbiddenTerm of [
     "winner",
@@ -1751,6 +1885,7 @@ describe("daemon API", () => {
   it("returns safe runtime profile setup status without environment values", async () => {
     const openAISecret = "sk-openai-runtime-secret";
     const httpSecret = "http-template-runtime-secret";
+    const mcpSecret = "mcp-tool-runtime-secret";
     const daemonApp = createDaemonApp({
       idGenerator: createIds(),
       clock,
@@ -1770,6 +1905,13 @@ describe("daemon API", () => {
         [HTTP_TEMPLATE_URL_ENV_VAR]: "https://http-template.example/invoke",
         [HTTP_TEMPLATE_METHOD_ENV_VAR]: "POST",
         [HTTP_TEMPLATE_BODY_ENV_VAR]: "{{runtime.apiKey}} {{input.payloadJson}}"
+      },
+      enableMcpToolProfile: true,
+      mcpToolEnv: {
+        [MCP_TOOL_AUTH_TOKEN_ENV_VAR]: mcpSecret,
+        [MCP_TOOL_URL_ENV_VAR]: "http://127.0.0.1:8787/mcp",
+        [MCP_TOOL_NAME_ENV_VAR]: "deliberum.reflect",
+        [MCP_TOOL_TIMEOUT_MS_ENV_VAR]: "5000"
       }
     });
 
@@ -1795,6 +1937,7 @@ describe("daemon API", () => {
     const localPreset = body.profiles.find((profile) => profile.id === "local-preset");
     const openAI = body.profiles.find((profile) => profile.id === "openai-compatible");
     const httpTemplate = body.profiles.find((profile) => profile.id === "http-template");
+    const mcpTool = body.profiles.find((profile) => profile.id === "mcp-tool");
 
     expect(response.status).toBe(200);
     expectNoStore(response);
@@ -1886,18 +2029,62 @@ describe("daemon API", () => {
         })
       ])
     );
+    expect(mcpTool).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        status: "ready",
+        setup: expect.objectContaining({
+          enableEnvVar: MCP_TOOL_PROFILE_ENV_VAR,
+          missingRecommendedEnvVars: []
+        })
+      })
+    );
+    expect(mcpTool?.components).toEqual([
+      expect.objectContaining({
+        id: MCP_TOOL_ADAPTER_ID,
+        enabled: true
+      })
+    ]);
+    expect(mcpTool?.setup.envVars).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: MCP_TOOL_AUTH_TOKEN_ENV_VAR,
+          configured: true,
+          secret: true
+        }),
+        expect.objectContaining({
+          name: MCP_TOOL_URL_ENV_VAR,
+          configured: true,
+          secret: false
+        }),
+        expect.objectContaining({
+          name: MCP_TOOL_NAME_ENV_VAR,
+          configured: true,
+          secret: false
+        }),
+        expect.objectContaining({
+          name: MCP_TOOL_ALLOW_REMOTE_ENV_VAR,
+          configured: false,
+          secret: false
+        })
+      ])
+    );
     expect(text).not.toContain(openAISecret);
     expect(text).not.toContain(httpSecret);
+    expect(text).not.toContain(mcpSecret);
     expect(text).not.toContain("https://openai.example/api");
     expect(text).not.toContain("runtime-openai-model");
     expect(text).not.toContain("https://http-template.example/invoke");
     expect(text).not.toContain("{{runtime.apiKey}}");
+    expect(text).not.toContain("http://127.0.0.1:8787/mcp");
+    expect(text).not.toContain("deliberum.reflect");
 
     const runConfigBackedDaemon = createDaemonApp({
       idGenerator: createIds(),
       clock,
       enableOpenAICompatibleProfile: true,
-      enableHttpTemplateProfile: true
+      enableHttpTemplateProfile: true,
+      enableMcpToolProfile: true
     });
     const runConfigBackedBody = (await (
       await runConfigBackedDaemon.app.request("/runtime/profiles")
@@ -1928,6 +2115,26 @@ describe("daemon API", () => {
             HTTP_TEMPLATE_URL_ENV_VAR,
             HTTP_TEMPLATE_BASE_URL_ENV_VAR,
             HTTP_TEMPLATE_ENDPOINT_PATH_ENV_VAR
+          ]
+        })
+      })
+    );
+    expect(
+      runConfigBackedBody.profiles.find((profile) => profile.id === "mcp-tool")
+    ).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        status: "needs_configuration",
+        components: [
+          expect.objectContaining({
+            id: MCP_TOOL_ADAPTER_ID,
+            enabled: false
+          })
+        ],
+        setup: expect.objectContaining({
+          missingRecommendedEnvVars: [
+            MCP_TOOL_URL_ENV_VAR,
+            MCP_TOOL_NAME_ENV_VAR
           ]
         })
       })
@@ -5822,6 +6029,94 @@ describe("daemon API", () => {
     expect(registries).not.toHaveProperty("finalAuditGeneratorRegistry");
   });
 
+  it("resolves the MCP tool profile only from explicit option or exact env flag", () => {
+    expect(resolveStartDaemonEnableMcpToolProfile(
+      { enableMcpToolProfile: true },
+      {}
+    )).toBe(true);
+    expect(
+      resolveStartDaemonEnableMcpToolProfile(
+        {},
+        { [MCP_TOOL_PROFILE_ENV_VAR]: "true" }
+      )
+    ).toBe(true);
+    expect(resolveStartDaemonEnableMcpToolProfile({}, {})).toBe(false);
+    expect(
+      resolveStartDaemonEnableMcpToolProfile(
+        {},
+        { [MCP_TOOL_PROFILE_ENV_VAR]: "false" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableMcpToolProfile(
+        {},
+        { [MCP_TOOL_PROFILE_ENV_VAR]: "TRUE" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableMcpToolProfile(
+        {},
+        { [MCP_TOOL_PROFILE_ENV_VAR]: "random" }
+      )
+    ).toBe(false);
+    expect(
+      resolveStartDaemonEnableMcpToolProfile(
+        { enableMcpToolProfile: false },
+        { [MCP_TOOL_PROFILE_ENV_VAR]: "true" }
+      )
+    ).toBe(false);
+  });
+
+  it("installs only an MCP tool participant adapter when required profile config is present", () => {
+    expect(daemon.createMcpToolRunRegistries({ env: {} })).toBeUndefined();
+
+    const registries = daemon.createMcpToolRunRegistries({
+      env: {
+        [MCP_TOOL_URL_ENV_VAR]: "http://127.0.0.1:8787/mcp",
+        [MCP_TOOL_NAME_ENV_VAR]: "deliberum.reflect"
+      }
+    });
+
+    expect(registries?.adapterRegistry?.list()).toEqual([
+      expect.objectContaining({
+        adapterId: MCP_TOOL_ADAPTER_ID
+      })
+    ]);
+    expect(registries).not.toHaveProperty("extractionGeneratorRegistry");
+    expect(registries).not.toHaveProperty("proposalReviewGeneratorRegistry");
+    expect(registries).not.toHaveProperty("finalCandidateGeneratorRegistry");
+    expect(registries).not.toHaveProperty("finalAuditGeneratorRegistry");
+  });
+
+  it("rejects remote MCP tool endpoints unless remote HTTPS access is explicit", () => {
+    expect(() =>
+      daemon.createMcpToolRunRegistries({
+        env: {
+          [MCP_TOOL_URL_ENV_VAR]: "https://mcp.example/rpc",
+          [MCP_TOOL_NAME_ENV_VAR]: "deliberum.reflect"
+        }
+      })
+    ).toThrow(McpToolAdapterError);
+    expect(() =>
+      daemon.createMcpToolRunRegistries({
+        env: {
+          [MCP_TOOL_URL_ENV_VAR]: "http://mcp.example/rpc",
+          [MCP_TOOL_NAME_ENV_VAR]: "deliberum.reflect",
+          [MCP_TOOL_ALLOW_REMOTE_ENV_VAR]: "true"
+        }
+      })
+    ).toThrow(McpToolAdapterError);
+    expect(() =>
+      daemon.createMcpToolRunRegistries({
+        env: {
+          [MCP_TOOL_URL_ENV_VAR]: "https://mcp.example/rpc",
+          [MCP_TOOL_NAME_ENV_VAR]: "deliberum.reflect",
+          [MCP_TOOL_ALLOW_REMOTE_ENV_VAR]: "true"
+        }
+      })
+    ).not.toThrow();
+  });
+
   it("runs HTTP-template sealed divergence through daemon with mocked fetch", async () => {
     const secret = "http-template-runtime-secret";
     const fetch = createHttpTemplateFetch({
@@ -5953,6 +6248,138 @@ describe("daemon API", () => {
     expect(JSON.stringify(daemonApp.runStore.getRun(created.run.runId))).not.toContain(
       "Authorization"
     );
+  });
+
+  it("runs MCP tool sealed divergence through daemon with mocked JSON-RPC fetch", async () => {
+    const secret = "mcp-tool-runtime-secret";
+    const toolName = "deliberum.reflect";
+    const fetch = createMcpToolFetch({
+      toolName,
+      content:
+        `MCP tool sealed contribution with Bearer ${secret} from /Users/wangqinghua/private.txt`,
+      structuredContent: {
+        summary: "MCP tool result",
+        echoedSecret: `api_key=${secret}`,
+        localPath: "/Users/wangqinghua/private.txt"
+      }
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableMcpToolProfile: true,
+      mcpToolEnv: {
+        [MCP_TOOL_AUTH_TOKEN_ENV_VAR]: secret,
+        [MCP_TOOL_URL_ENV_VAR]: "http://127.0.0.1:8787/mcp",
+        [MCP_TOOL_NAME_ENV_VAR]: toolName,
+        [MCP_TOOL_TIMEOUT_MS_ENV_VAR]: "5000"
+      },
+      mcpToolFetch: fetch
+    });
+    const created = await createRun(daemonApp, mcpToolRunPlan());
+    const startResponse = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const startBody = (await startResponse.json()) as {
+      stopped: boolean;
+      stages: Array<{
+        stage: string;
+        executionStatus: string;
+        result: { participantResults?: Array<{ status: string }> };
+      }>;
+    };
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const listBody = await (await daemonApp.app.request("/runs")).json();
+    const fetchCalls = fetch.mock.calls as Array<[string, McpToolFetchInit]>;
+    const listRequest = JSON.parse(fetchCalls[0]?.[1].body ?? "{}") as {
+      method: string;
+    };
+    const callRequest = JSON.parse(fetchCalls[1]?.[1].body ?? "{}") as {
+      method: string;
+      params: {
+        name: string;
+        arguments: {
+          context: {
+            participantId: string;
+          };
+        };
+      };
+    };
+    const events = daemonApp.eventStore.listEvents(created.run.sessionId);
+    const contributionPayload = events[2]?.payload;
+    const safePayloads = [
+      startBody,
+      detailBody,
+      listBody,
+      {
+        events
+      }
+    ];
+
+    expect(startResponse.status).toBe(200);
+    expect(startBody.stopped).toBe(false);
+    expect(startBody.stages).toEqual([
+      expect.objectContaining({
+        stage: "sealed_divergence",
+        executionStatus: "executed",
+        result: expect.objectContaining({
+          participantResults: [
+            expect.objectContaining({
+              status: "submitted"
+            })
+          ]
+        })
+      })
+    ]);
+    expect(fetchCalls).toHaveLength(2);
+    expect(fetchCalls[0]?.[0]).toBe("http://127.0.0.1:8787/mcp");
+    expect(fetchCalls[0]?.[1].headers).toMatchObject({
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${secret}`
+    });
+    expect(listRequest).toMatchObject({
+      method: "tools/list"
+    });
+    expect(callRequest).toMatchObject({
+      method: "tools/call",
+      params: {
+        name: toolName,
+        arguments: {
+          context: {
+            participantId: "mcp-tool-alpha"
+          }
+        }
+      }
+    });
+    expect(contributionPayload).toMatchObject({
+      kind: "mcp_tool_result",
+      toolName,
+      isError: false,
+      content: [
+        {
+          type: "text",
+          text:
+            "MCP tool sealed contribution with [redacted] from [redacted-path]"
+        }
+      ],
+      structuredContent: {
+        summary: "MCP tool result",
+        echoedSecret: "api_key=[redacted]",
+        localPath: "[redacted-path]"
+      }
+    });
+    expect(events.map((event) => event.type)).toEqual([
+      "topic_contract_published",
+      "sealed_batch_opened",
+      "sealed_contribution_submitted",
+      "sealed_batch_revealed"
+    ]);
+
+    for (const payload of safePayloads) {
+      expectSafeRunApiPayload(payload, secret);
+    }
   });
 
   it("rejects invalid HTTP-template profile env values before fetch", () => {
@@ -9465,6 +9892,16 @@ describe("daemon API", () => {
       "resolveStartDaemonEnableOpenAICompatibleProfile",
       "resolveStartDaemonEnableOpenAICompatibleReview"
     ]);
+    const allowedMcpToolProfileExports = new Set([
+      "MCP_TOOL_ADAPTER_ID",
+      "MCP_TOOL_ALLOW_REMOTE_ENV_VAR",
+      "MCP_TOOL_AUTH_TOKEN_ENV_VAR",
+      "MCP_TOOL_NAME_ENV_VAR",
+      "MCP_TOOL_PROFILE_ENV_VAR",
+      "MCP_TOOL_TIMEOUT_MS_ENV_VAR",
+      "MCP_TOOL_URL_ENV_VAR",
+      "MCP_TOOL_VERIFY_LIST_ENV_VAR"
+    ]);
     const forbiddenTerms = [
       "Adapter",
       "OpenAI",
@@ -9487,6 +9924,12 @@ describe("daemon API", () => {
         if (
           forbiddenTerm === "OpenAI" &&
           allowedOpenAICompatibleProfileExports.has(exportedName)
+        ) {
+          continue;
+        }
+        if (
+          forbiddenTerm === "MCP" &&
+          allowedMcpToolProfileExports.has(exportedName)
         ) {
           continue;
         }

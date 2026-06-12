@@ -172,6 +172,35 @@ describe("McpToolParticipantAdapter", () => {
     }
   });
 
+  it("preserves safe categories from failed tool listing", async () => {
+    const adapter = new McpToolParticipantAdapter({
+      toolName: "diagnostic.tool",
+      client: {
+        listTools: vi.fn(async () => {
+          throw new McpToolAdapterError(
+            "MCP bridge rejected tools/list.",
+            "provider_http_error",
+            { httpStatus: 403 }
+          );
+        }),
+        callTool: vi.fn(async () => ({
+          content: [{ type: "text", text: "unused" }]
+        }))
+      }
+    });
+
+    try {
+      await adapter.prepareContribution({ instructions: "Call the tool." }, context);
+      throw new Error("Expected MCP list failure.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(McpToolAdapterError);
+      expect((error as McpToolAdapterError).safeCategory).toBe("provider_http_error");
+      expect((error as McpToolAdapterError).safeDiagnostics).toEqual({
+        httpStatus: 403
+      });
+    }
+  });
+
   it("maps timeouts and malformed tool output to safe categories", async () => {
     const timeoutAdapter = new McpToolParticipantAdapter({
       toolName: "slow.tool",
@@ -230,11 +259,13 @@ describe("McpToolParticipantAdapter", () => {
     const serialized = JSON.stringify(result);
 
     expect(serialized).toContain("authorization=[redacted]");
-    expect(serialized).toContain("/Users/[redacted]");
+    expect(serialized).toContain("[redacted-path]");
     expect(serialized).toContain("api_key=[redacted]");
     expect(serialized).toContain("sk-[redacted]");
     expect(serialized).not.toContain("secret-token");
     expect(serialized).not.toContain("secret-value");
+    expect(serialized).not.toContain("Bearer ");
+    expect(serialized).not.toContain("/Users/");
     expect(serialized).not.toContain("/Users/alice");
   });
 

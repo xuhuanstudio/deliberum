@@ -233,7 +233,11 @@ async function assertToolAvailable(client: McpToolClient, toolName: string): Pro
 
   try {
     tools = await client.listTools();
-  } catch {
+  } catch (error) {
+    if (error instanceof McpToolAdapterError) {
+      throw error;
+    }
+
     throw new McpToolAdapterError(
       "MCP tool adapter could not list tools.",
       "provider_network_error"
@@ -415,9 +419,9 @@ function redactUnsafeString(value: string): string {
   return value
     .replace(/\b(api[_-]?key|secret|access[_-]?token|private[_-]?token|authorization)=Bearer\s+\S+/gi, "$1=[redacted]")
     .replace(/\b(api[_-]?key|secret|access[_-]?token|private[_-]?token|authorization)=\S+/gi, "$1=[redacted]")
-    .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
+    .replace(/\bBearer\s+\S+/gi, "[redacted]")
     .replace(/\bsk-[A-Za-z0-9_-]{8,}\b/g, "sk-[redacted]")
-    .replace(/\/Users\/[^\s"')]+/g, "/Users/[redacted]");
+    .replace(/\/Users\/[^\s"')]+/g, "[redacted-path]");
 }
 
 function isAbortError(error: unknown): boolean {

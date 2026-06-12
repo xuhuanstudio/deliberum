@@ -68,6 +68,21 @@ adapters:
       runtimeVariablesSecretPolicy: non_secret_only
     secretMode: runtime_placeholders
     note: Use the opt-in daemon env profile for sealed participant execution. Use template placeholders such as "{{runtime.apiKey}}"; do not commit inline provider secrets.
+  mcpTool:
+    enabled: false
+    daemonEnvProfile:
+      profile: DELIBERUM_ENABLE_MCP_TOOL_PROFILE
+      endpointUrl: DELIBERUM_MCP_TOOL_URL
+      toolName: DELIBERUM_MCP_TOOL_NAME
+      authTokenEnvVar: DELIBERUM_MCP_TOOL_AUTH_TOKEN
+      timeoutMs: DELIBERUM_MCP_TOOL_TIMEOUT_MS
+      allowRemote: DELIBERUM_MCP_TOOL_ALLOW_REMOTE
+      verifyList: DELIBERUM_MCP_TOOL_VERIFY_LIST
+    defaultNetworkPolicy: local_loopback_only
+    remoteNetworkPolicy: explicit_https_only
+    serverLifecycle: external
+    secretMode: daemon_runtime_only
+    note: Use the opt-in daemon env profile for one configured MCP-compatible tool endpoint. The daemon does not start MCP servers or expose arbitrary tools.
   webget:
     enabled: true
     experimental: true
@@ -91,4 +106,6 @@ deferred:
   signedUrlServer: true
   automatedPrimitiveExecutionPolicy: true
   providerSetupUx: true
+  mcpServerLifecycle: true
+  mcpToolSandboxing: true
   productionAuth: true

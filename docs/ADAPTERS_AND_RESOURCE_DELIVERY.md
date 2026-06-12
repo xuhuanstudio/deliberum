@@ -10,9 +10,10 @@ Adapters allow heterogeneous participant sources to join the same deliberation. 
 - implemented: HTTP template participant adapter as a package-level integration surface;
 - implemented: opt-in HTTP template daemon participant profile for sealed divergence;
 - implemented: package-level MCP-compatible tool participant adapter;
+- implemented: opt-in daemon MCP tool participant profile for sealed divergence;
 - implemented: experimental WebGET adapter for web-only models;
 - deferred: local model adapters;
-- deferred: daemon MCP profile, tool execution policy, and adapter sandboxing.
+- deferred: MCP server lifecycle management, broader tool execution policy, and adapter sandboxing.
 
 ## Adapter capability profile
 
@@ -91,8 +92,14 @@ not expose EventStore methods, daemon routes, tool policy, ranking, voting,
 final-answer, or semantic authority behavior.
 
 Current scope: the adapter is available from `@deliberum/adapters` for package
-consumers. There is no daemon MCP profile yet, no MCP server lifecycle manager,
-and no production sandbox or authorization policy for arbitrary tool execution.
+consumers and through an opt-in daemon MCP tool participant profile. The daemon
+profile calls one configured MCP-compatible JSON-RPC tool endpoint, verifies the
+tool list by default, applies a single-tool allow-list, rejects non-local
+endpoints unless remote HTTPS access is explicitly enabled, and keeps endpoint
+URLs, tool names, bearer tokens, and request payloads out of runtime profile
+responses. There is still no daemon MCP server lifecycle manager, no arbitrary
+tool router, and no production sandbox or authorization policy for arbitrary
+tool execution.
 
 ## Resource delivery
 

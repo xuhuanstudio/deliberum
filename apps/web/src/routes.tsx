@@ -421,6 +421,10 @@ function formatRuntimeProfileStatus(value: unknown): string {
     return "Ready with run config";
   }
 
+  if (value === "needs_configuration") {
+    return "Needs configuration";
+  }
+
   if (value === "disabled") {
     return "Disabled";
   }

@@ -35,7 +35,7 @@ export type RuntimeProfilesResponse = {
     id: string;
     name: string;
     enabled: boolean;
-    status: "disabled" | "ready" | "ready_with_run_config";
+    status: "disabled" | "needs_configuration" | "ready" | "ready_with_run_config";
     components: Array<{
       id: string;
       kind:

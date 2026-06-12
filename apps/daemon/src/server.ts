@@ -18,6 +18,7 @@ import {
   isOpenAICompatibleReviewEnabledFromEnv
 } from "./openai-compatible-profile";
 import { isHttpTemplateProfileEnabledFromEnv } from "./http-template-profile";
+import { isMcpToolProfileEnabledFromEnv } from "./mcp-tool-profile";
 import { SQLiteResourceAccessGrantStore } from "./sqlite-resource-access-store";
 import { SQLiteResourceBroker } from "./sqlite-resource-broker";
 import { SQLiteRunStore } from "./sqlite-run-store";
@@ -191,6 +192,13 @@ export function resolveStartDaemonEnableHttpTemplateProfile(
   return options.enableHttpTemplateProfile ?? isHttpTemplateProfileEnabledFromEnv(env);
 }
 
+export function resolveStartDaemonEnableMcpToolProfile(
+  options: Pick<StartDaemonOptions, "enableMcpToolProfile"> = {},
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  return options.enableMcpToolProfile ?? isMcpToolProfileEnabledFromEnv(env);
+}
+
 export function resolveStartDaemonResourceAccessBaseUrl(
   options: Pick<StartDaemonOptions, "resourceAccessBaseUrl"> = {},
   env: Record<string, string | undefined> = process.env
@@ -243,6 +251,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
     enableOpenAICompatibleProfile &&
     resolveStartDaemonEnableOpenAICompatibleFinalization(options);
   const enableHttpTemplateProfile = resolveStartDaemonEnableHttpTemplateProfile(options);
+  const enableMcpToolProfile = resolveStartDaemonEnableMcpToolProfile(options);
   const resourceAccessBaseUrl = resolveStartDaemonResourceAccessBaseUrl(options);
   const resourceAccessTtlMs = resolveStartDaemonResourceAccessTtlMs(options);
   const daemonAuthToken = resolveStartDaemonAuthToken(options);
@@ -271,6 +280,8 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
       (enableOpenAICompatibleProfile ? process.env : undefined),
     httpTemplateEnv:
       options.httpTemplateEnv ?? (enableHttpTemplateProfile ? process.env : undefined),
+    enableMcpToolProfile,
+    mcpToolEnv: options.mcpToolEnv ?? (enableMcpToolProfile ? process.env : undefined),
     resourceAccessBaseUrl,
     resourceAccessTtlMs,
     daemonAuthToken,

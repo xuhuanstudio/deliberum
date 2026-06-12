@@ -66,6 +66,10 @@ import {
   type HttpTemplateProfileOptions
 } from "./http-template-profile";
 import {
+  createMcpToolRunRegistries,
+  type McpToolProfileOptions
+} from "./mcp-tool-profile";
+import {
   handleResourceDeliveryRouteError,
   registerResourceDeliveryRoutes
 } from "./resource-delivery-routes";
@@ -128,6 +132,9 @@ export type DaemonAppOptions = {
   enableHttpTemplateProfile?: boolean;
   httpTemplateEnv?: Record<string, string | undefined>;
   httpTemplateFetch?: HttpTemplateProfileOptions["fetch"];
+  enableMcpToolProfile?: boolean;
+  mcpToolEnv?: Record<string, string | undefined>;
+  mcpToolFetch?: McpToolProfileOptions["fetch"];
   daemonAuthToken?: string;
   corsOrigins?: readonly string[];
   idGenerator?: IdGenerator;
@@ -222,6 +229,12 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         fetch: options.httpTemplateFetch
       })
     : undefined;
+  const mcpToolRegistries = options.enableMcpToolProfile
+    ? createMcpToolRunRegistries({
+        env: options.mcpToolEnv,
+        fetch: options.mcpToolFetch
+      })
+    : undefined;
   const webgetStore =
     options.webgetStore ??
     new WebGETSessionStore({
@@ -242,7 +255,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       mergeAdapterRegistries(
         localPresetRegistries?.adapterRegistry,
         openAICompatibleRegistries?.adapterRegistry,
-        httpTemplateRegistries?.adapterRegistry
+        httpTemplateRegistries?.adapterRegistry,
+        mcpToolRegistries?.adapterRegistry
       ),
     extractionGeneratorRegistry:
       options.runExtractionGeneratorRegistry ??
@@ -536,7 +550,9 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
           options.enableOpenAICompatibleFinalization === true,
         openAICompatibleEnv: options.openAICompatibleEnv,
         enableHttpTemplateProfile: options.enableHttpTemplateProfile === true,
-        httpTemplateEnv: options.httpTemplateEnv
+        httpTemplateEnv: options.httpTemplateEnv,
+        enableMcpToolProfile: options.enableMcpToolProfile === true,
+        mcpToolEnv: options.mcpToolEnv
       })
     )
   );
