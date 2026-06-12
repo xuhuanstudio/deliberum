@@ -99,6 +99,11 @@ adapters:
 resources:
   defaultDeliveryMode: none
   sensitiveDefault: none
+  accessBaseUrlEnv: DELIBERUM_RESOURCE_ACCESS_BASE_URL
+  accessAllowRemoteEnv: DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE
+  accessTtlMsEnv: DELIBERUM_RESOURCE_ACCESS_TTL_MS
+  remoteAccessBaseUrl: explicit_opt_in_only
+  publicAccessBaseUrl: https_only
   publicUrlHosting: deferred
   signedUrls: deferred
   notes:

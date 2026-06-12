@@ -112,6 +112,7 @@ import {
   OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR,
   OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
+  RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR,
   RESOURCE_ACCESS_BASE_URL_ENV_VAR,
   RESOURCE_ACCESS_TTL_MS_ENV_VAR,
   createStartDaemonOperationAuditLog,
@@ -130,6 +131,7 @@ import {
   resolveStartDaemonRunStorePath,
   resolveStartDaemonAuthToken,
   resolveStartDaemonResourceAccessBaseUrl,
+  resolveStartDaemonResourceAccessAllowRemote,
   resolveStartDaemonResourceAccessTtlMs,
   resolveStartDaemonSQLitePath,
   resolveStartDaemonEnableOpenAICompatibleExtraction,
@@ -5097,7 +5099,8 @@ describe("daemon API", () => {
       resolveStartDaemonResourceAccessBaseUrl(
         {},
         {
-          [RESOURCE_ACCESS_BASE_URL_ENV_VAR]: " https://resources.example/deliberum "
+          [RESOURCE_ACCESS_BASE_URL_ENV_VAR]: " https://resources.example/deliberum ",
+          [RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR]: "true"
         }
       )
     ).toBe("https://resources.example/deliberum");
@@ -5110,6 +5113,44 @@ describe("daemon API", () => {
         }
       )
     ).toBe("http://127.0.0.1:9999/local");
+    expect(
+      resolveStartDaemonResourceAccessBaseUrl(
+        {},
+        {
+          [RESOURCE_ACCESS_BASE_URL_ENV_VAR]: "http://127.0.0.1:9999/local"
+        }
+      )
+    ).toBe("http://127.0.0.1:9999/local");
+    expect(() =>
+      resolveStartDaemonResourceAccessBaseUrl(
+        {},
+        {
+          [RESOURCE_ACCESS_BASE_URL_ENV_VAR]: "https://resources.example/deliberum"
+        }
+      )
+    ).toThrow(
+      `${RESOURCE_ACCESS_BASE_URL_ENV_VAR} requires ${RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR}=true for non-local URLs.`
+    );
+    expect(() =>
+      resolveStartDaemonResourceAccessBaseUrl(
+        {},
+        {
+          [RESOURCE_ACCESS_BASE_URL_ENV_VAR]: "http://resources.example/deliberum",
+          [RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR]: "true"
+        }
+      )
+    ).toThrow(`${RESOURCE_ACCESS_BASE_URL_ENV_VAR} public URLs must use HTTPS.`);
+    expect(resolveStartDaemonResourceAccessAllowRemote({})).toBe(false);
+    expect(
+      resolveStartDaemonResourceAccessAllowRemote({
+        [RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR]: "true"
+      })
+    ).toBe(true);
+    expect(() =>
+      resolveStartDaemonResourceAccessAllowRemote({
+        [RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR]: "TRUE"
+      })
+    ).toThrow(`${RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR} must be true or false.`);
     expect(
       resolveStartDaemonResourceAccessTtlMs(
         {},

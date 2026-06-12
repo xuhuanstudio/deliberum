@@ -36,6 +36,8 @@ Daemon resource delivery outside WebGET is local and session-scoped. The endpoin
 
 Resource access grant ids are response-only bearer material. The daemon stores a hash of each access id with access-layer grant metadata, applies TTL checks on access, and supports explicit revocation through the local daemon route. With `DELIBERUM_DAEMON_SQLITE_PATH`, this access-layer grant state and explicitly registered resource broker metadata/content are durable across daemon restarts; without SQLite they remain process-local. Grant creation and revocation append public ledger audit events that contain a non-bearer `resourceAccessId`, resource and participant ids, token hash, TTL metadata, and safe hosted-content metadata when applicable. They do not store bearer access ids, source URLs, base64 bytes, data refs, or resource text. Hosted content grants store only a data reference and safe content metadata in the grant store; base64 bytes are resolved from the broker only at access time, and SQLite broker persistence can preserve explicitly registered broker content across local daemon restarts. WebGET resource access reports are reduced to mode, allowed flag, reason, and warnings before they can be included in committed contribution audit payloads.
 
+The daemon resource access base URL defaults to the local daemon host and port. When configured from environment variables, non-local base URLs require `DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE=true`; public base URLs must use HTTPS.
+
 Base64 avoids public URL exposure but still sends resource content to the target participant. It must not be treated as private once delivered.
 
 `none` mode may use summaries, OCR, captions, transcripts, or semantic board summaries.

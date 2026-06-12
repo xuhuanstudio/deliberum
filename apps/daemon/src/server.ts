@@ -27,6 +27,7 @@ import { SQLiteResourceAccessGrantStore } from "./sqlite-resource-access-store";
 import { SQLiteResourceBroker } from "./sqlite-resource-broker";
 import { SQLiteRunStore } from "./sqlite-run-store";
 import { SQLiteOperationAuditLog } from "./sqlite-operation-audit-log";
+import { classifyResourceAccessBaseUrl } from "./resource-access-store";
 
 export { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT };
 
@@ -40,6 +41,8 @@ export const DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR =
 export const DAEMON_AUTH_TOKEN_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
 export const RESOURCE_ACCESS_BASE_URL_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_BASE_URL" as const;
 export const RESOURCE_ACCESS_TTL_MS_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_TTL_MS" as const;
+export const RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR =
+  "DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE" as const;
 
 export type StartDaemonOptions = DaemonAppOptions & {
   onListening?: (address: { host: string; port: number }) => void;
@@ -269,9 +272,41 @@ export function resolveStartDaemonResourceAccessBaseUrl(
   options: Pick<StartDaemonOptions, "resourceAccessBaseUrl"> = {},
   env: Record<string, string | undefined> = process.env
 ): string | undefined {
+  if (options.resourceAccessBaseUrl !== undefined) {
+    return normalizeStartDaemonResourceAccessBaseUrl(
+      options.resourceAccessBaseUrl,
+      true
+    );
+  }
+
   const value = env[RESOURCE_ACCESS_BASE_URL_ENV_VAR]?.trim();
 
-  return options.resourceAccessBaseUrl ?? (value && value.length > 0 ? value : undefined);
+  return value && value.length > 0
+    ? normalizeStartDaemonResourceAccessBaseUrl(
+        value,
+        resolveStartDaemonResourceAccessAllowRemote(env)
+      )
+    : undefined;
+}
+
+export function resolveStartDaemonResourceAccessAllowRemote(
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  const value = env[RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR]?.trim();
+
+  if (!value) {
+    return false;
+  }
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  throw new Error(`${RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR} must be true or false.`);
 }
 
 export function resolveStartDaemonResourceAccessTtlMs(
@@ -297,6 +332,27 @@ export function resolveStartDaemonResourceAccessTtlMs(
   }
 
   return ttlMs;
+}
+
+function normalizeStartDaemonResourceAccessBaseUrl(
+  value: string,
+  allowRemote: boolean
+): string {
+  const normalized = value.trim();
+  const exposure = classifyResourceAccessBaseUrl(normalized);
+  const parsed = new URL(normalized);
+
+  if (exposure !== "localhost" && !allowRemote) {
+    throw new Error(
+      `${RESOURCE_ACCESS_BASE_URL_ENV_VAR} requires ${RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR}=true for non-local URLs.`
+    );
+  }
+
+  if (exposure === "public" && parsed.protocol !== "https:") {
+    throw new Error(`${RESOURCE_ACCESS_BASE_URL_ENV_VAR} public URLs must use HTTPS.`);
+  }
+
+  return parsed.href;
 }
 
 export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {

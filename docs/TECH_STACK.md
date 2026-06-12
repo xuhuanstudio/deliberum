@@ -27,6 +27,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - daemon-local operation audit log with in-memory defaults, optional JSON persistence, optional SQLite persistence, local retention caps, and CLI JSONL export for safe control-plane operation metadata;
 - Server-Sent Events for daemon event streaming;
 - daemon-local session-scoped resource delivery planning through the Resource Broker and Delivery Planner, with safe ledger audit events for delivery decisions and short-lived access grants for allowed URL and hosted in-memory content deliveries;
+- daemon resource access base URL validation with explicit opt-in for env-configured non-local access URLs and HTTPS-only public access URLs;
 - package-level HTTP-template participant adapter and opt-in daemon participant profile for non-OpenAI HTTP providers;
 - package-level MCP-compatible tool participant adapter with injected client lifecycle, execution policy controls, and an opt-in daemon MCP tool participant profile;
 - read-only adaptive primitive suggestion in `@deliberum/orchestrator`, surfaced by the daemon as process proposal material;
