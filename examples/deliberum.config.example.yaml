@@ -17,6 +17,7 @@ local:
       optionalEventLedgerPathEnv: DELIBERUM_DAEMON_EVENT_STORE_PATH
       optionalRunMetadataPathEnv: DELIBERUM_DAEMON_RUN_STORE_PATH
       optionalOperationAuditPathEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_PATH
+      operationAuditMaxEntriesEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES
       resourceBrokerState: explicit_registered_resources
       operationAuditMaterial: normalized_control_plane_metadata_only
       inMemoryFallback: true

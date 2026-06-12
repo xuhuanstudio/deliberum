@@ -132,6 +132,7 @@ export type DaemonAppOptions = {
   operationAuditLog?: OperationAuditLog;
   operationAuditClock?: Clock;
   operationAuditIdGenerator?: IdGenerator;
+  operationAuditMaxEntries?: number;
   enableLocalPreset?: boolean;
   enableOpenAICompatibleProfile?: boolean;
   enableOpenAICompatibleExtraction?: boolean;
@@ -226,7 +227,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     options.operationAuditLog ??
     new InMemoryOperationAuditLog({
       idGenerator: options.operationAuditIdGenerator,
-      clock: options.operationAuditClock ?? clock
+      clock: options.operationAuditClock ?? clock,
+      maxEntries: options.operationAuditMaxEntries
     });
   const localPresetRegistries = options.enableLocalPreset
     ? createLocalPresetRunRegistries()

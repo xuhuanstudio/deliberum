@@ -7,6 +7,7 @@ import {
   parseOperationAuditEntry,
   parseOperationAuditLimit,
   parseOperationAuditRecordInput,
+  normalizeOperationAuditMaxEntries,
   type OperationAuditEntry,
   type OperationAuditListOptions,
   type OperationAuditLog,
@@ -27,6 +28,7 @@ export type SQLiteOperationAuditLogOptions = {
   filePath: string;
   idGenerator?: IdGenerator;
   clock?: Clock;
+  maxEntries?: number;
   timeoutMs?: number;
 };
 
@@ -43,6 +45,7 @@ export class SQLiteOperationAuditLog implements OperationAuditLog {
   private readonly database: SQLiteDatabase;
   private readonly idGenerator: IdGenerator;
   private readonly clock: Clock;
+  private readonly maxEntries?: number;
 
   constructor(options: SQLiteOperationAuditLogOptions) {
     if (options.filePath !== ":memory:") {
@@ -54,6 +57,7 @@ export class SQLiteOperationAuditLog implements OperationAuditLog {
     });
     this.idGenerator = options.idGenerator ?? createDefaultAuditIdGenerator();
     this.clock = options.clock ?? (() => new Date().toISOString());
+    this.maxEntries = normalizeOperationAuditMaxEntries(options.maxEntries);
     configureSQLiteConnection(this.database, options.filePath, options.timeoutMs);
     this.initialize();
   }
@@ -82,6 +86,7 @@ export class SQLiteOperationAuditLog implements OperationAuditLog {
           parsed.statusCode,
           JSON.stringify(parsed)
         );
+      this.prune();
     } catch (error) {
       throw mapSQLiteOperationAuditLogError(error);
     }
@@ -172,6 +177,25 @@ export class SQLiteOperationAuditLog implements OperationAuditLog {
         "operation_audit_log_entry_schema_version",
         String(OPERATION_AUDIT_LOG_SCHEMA_VERSION)
       );
+  }
+
+  private prune(): void {
+    if (this.maxEntries === undefined) {
+      return;
+    }
+
+    this.database
+      .prepare<[number]>(
+        [
+          "DELETE FROM deliberum_operation_audit_events",
+          "WHERE id NOT IN (",
+          "SELECT id FROM deliberum_operation_audit_events",
+          "ORDER BY recorded_at DESC, id DESC",
+          "LIMIT ?",
+          ")"
+        ].join(" ")
+      )
+      .run(this.maxEntries);
   }
 }
 

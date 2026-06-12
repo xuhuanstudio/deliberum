@@ -52,6 +52,7 @@ import {
   DAEMON_AUTH_TOKEN_ENV_VAR,
   DAEMON_CORS_ORIGINS_ENV_VAR,
   DAEMON_EVENT_STORE_PATH_ENV_VAR,
+  DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR,
   DAEMON_OPERATION_AUDIT_PATH_ENV_VAR,
   DAEMON_RUN_STORE_PATH_ENV_VAR,
   DAEMON_SQLITE_PATH_ENV_VAR,
@@ -120,6 +121,7 @@ import {
   localPresetRunPlan,
   localPresetStartRequest,
   parseDaemonCorsOriginsFromEnv,
+  resolveStartDaemonOperationAuditMaxEntries,
   resolveStartDaemonOperationAuditPath,
   resolveStartDaemonEventStorePath,
   resolveStartDaemonRunStorePath,
@@ -154,6 +156,21 @@ function createIds(): () => string {
   return () => {
     index += 1;
     return `id-${index}`;
+  };
+}
+
+function operationAuditInput(action: string) {
+  return {
+    action,
+    method: "GET",
+    route: "/runtime/profiles",
+    statusCode: 200,
+    outcome: "succeeded" as const,
+    authorization: {
+      mode: "daemon_bearer" as const,
+      present: true
+    },
+    target: {}
   };
 }
 
@@ -4915,10 +4932,27 @@ describe("daemon API", () => {
       createStartDaemonOperationAuditLog(
         { operationAuditLog: injectedLog },
         {
-          [DAEMON_OPERATION_AUDIT_PATH_ENV_VAR]: "/tmp/ignored-operations.json"
+          [DAEMON_OPERATION_AUDIT_PATH_ENV_VAR]: "/tmp/ignored-operations.json",
+          [DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR]: "not-a-number"
         }
       )
     ).toBe(injectedLog);
+    expect(
+      resolveStartDaemonOperationAuditMaxEntries({
+        [DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR]: " 25 "
+      })
+    ).toBe(25);
+    expect(resolveStartDaemonOperationAuditMaxEntries({})).toBeUndefined();
+    expect(
+      resolveStartDaemonOperationAuditMaxEntries({
+        [DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR]: "   "
+      })
+    ).toBeUndefined();
+    expect(() =>
+      resolveStartDaemonOperationAuditMaxEntries({
+        [DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR]: "not-a-number"
+      })
+    ).toThrow(`${DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR} must be a positive integer.`);
 
     const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-operation-audit-"));
     const filePath = join(dir, "operations.json");
@@ -4963,6 +4997,73 @@ describe("daemon API", () => {
           route: "/runtime/profiles"
         })
       ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("applies operation audit retention across in-memory, JSON, and SQLite logs", () => {
+    const memoryLog = new daemon.InMemoryOperationAuditLog({
+      idGenerator: createIds(),
+      clock,
+      maxEntries: 2
+    });
+    memoryLog.record(operationAuditInput("memory_first"));
+    memoryLog.record(operationAuditInput("memory_second"));
+    memoryLog.record(operationAuditInput("memory_third"));
+
+    expect(memoryLog.list({ limit: 10 }).map((entry) => entry.action)).toEqual([
+      "memory_second",
+      "memory_third"
+    ]);
+
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-operation-retention-"));
+    const jsonPath = join(dir, "operations.json");
+    const sqlitePath = join(dir, "operations.sqlite");
+
+    try {
+      const jsonLog = createStartDaemonOperationAuditLog(
+        {
+          operationAuditIdGenerator: createIds(),
+          operationAuditClock: clock
+        },
+        {
+          [DAEMON_OPERATION_AUDIT_PATH_ENV_VAR]: jsonPath,
+          [DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR]: "2"
+        }
+      );
+      expect(jsonLog).toBeInstanceOf(JsonFileOperationAuditLog);
+      jsonLog?.record(operationAuditInput("json_first"));
+      jsonLog?.record(operationAuditInput("json_second"));
+      jsonLog?.record(operationAuditInput("json_third"));
+
+      expect(
+        new JsonFileOperationAuditLog({
+          filePath: jsonPath
+        })
+          .list({ limit: 10 })
+          .map((entry) => entry.action)
+      ).toEqual(["json_second", "json_third"]);
+
+      const sqliteLog = new SQLiteOperationAuditLog({
+        filePath: sqlitePath,
+        idGenerator: createIds(),
+        clock,
+        maxEntries: 2
+      });
+      sqliteLog.record(operationAuditInput("sqlite_first"));
+      sqliteLog.record(operationAuditInput("sqlite_second"));
+      sqliteLog.record(operationAuditInput("sqlite_third"));
+      sqliteLog.close();
+
+      const reopenedSQLiteLog = new SQLiteOperationAuditLog({
+        filePath: sqlitePath
+      });
+      expect(reopenedSQLiteLog.list({ limit: 10 }).map((entry) => entry.action)).toEqual([
+        "sqlite_second",
+        "sqlite_third"
+      ]);
+      reopenedSQLiteLog.close();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

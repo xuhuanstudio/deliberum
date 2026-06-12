@@ -828,6 +828,28 @@ describe("CLI command routing", () => {
       ["daemon", "operation-audit", "--limit", "not-a-number", "--json"],
       dependencies
     );
+    const writes: string[] = [];
+    const jsonl = await runCli(
+      [
+        "daemon",
+        "operation-audit",
+        "--limit",
+        "10",
+        "--format",
+        "jsonl",
+        "--json"
+      ],
+      {
+        ...dependencies,
+        writeStdout: (chunk) => {
+          writes.push(chunk);
+        }
+      }
+    );
+    const badFormat = await runCli(
+      ["daemon", "operation-audit", "--format", "secret-export-format", "--json"],
+      dependencies
+    );
     const rejected = await runCli(
       ["daemon", "operation-audit", "--api-key", "sk-runtime-secret", "--json"],
       dependencies
@@ -844,16 +866,29 @@ describe("CLI command routing", () => {
       })
     ]);
     expect(daemonClient.getOperationAudit).toHaveBeenCalledWith({ limit: 25 });
+    expect(daemonClient.getOperationAudit).toHaveBeenCalledWith({ limit: 10 });
     expect(createDaemonClient).toHaveBeenCalledWith({
       baseUrl: "http://localhost:4999"
     });
     expect(createEventStore).not.toHaveBeenCalled();
+    expect(jsonl).toMatchObject({
+      exitCode: 0,
+      stdout: "",
+      output: {
+        format: "jsonl",
+        events: 1
+      }
+    });
+    expect(writes.join("")).toBe(`${JSON.stringify(audit.events[0])}\n`);
     expect(badLimit.exitCode).toBe(1);
     expect(badLimit.stdout).toContain("--limit must be a positive integer.");
     expect(badLimit.stdout).not.toContain("not-a-number");
+    expect(badFormat.exitCode).toBe(1);
+    expect(badFormat.stdout).toContain("--format must be json or jsonl.");
+    expect(badFormat.stdout).not.toContain("secret-export-format");
     expect(rejected.exitCode).toBe(1);
     expect(rejected.stdout).not.toContain("sk-runtime-secret");
-    expect(daemonClient.getOperationAudit).toHaveBeenCalledTimes(1);
+    expect(daemonClient.getOperationAudit).toHaveBeenCalledTimes(2);
   });
 
   it("routes daemon resource access revocation through the daemon client", async () => {

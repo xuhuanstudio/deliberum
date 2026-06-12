@@ -42,7 +42,7 @@ deliberum objections --session <id>
 deliberum obligations --session <id>
 deliberum events --session <id>
 deliberum daemon profiles [--daemon-url <local-url>]
-deliberum daemon operation-audit [--limit <n>] [--daemon-url <local-url>]
+deliberum daemon operation-audit [--limit <n>] [--format <json|jsonl>] [--daemon-url <local-url>]
 deliberum daemon resource-access revoke <access-id> [--daemon-url <local-url>]
 deliberum runs create --input <run-plan.json> [--daemon-url <local-url>]
 deliberum runs list [--daemon-url <local-url>]
@@ -67,7 +67,7 @@ CLI daemon and run commands are local daemon control commands. They require a ru
 
 `deliberum daemon profiles` reads `GET /runtime/profiles` and returns only safe daemon runtime profile setup metadata: profile ids, component ids, enabled/status flags, env var names, and configured/missing booleans. It does not return environment values, provider secrets, header/body templates, URLs, model ids, MCP tool names, or provider/tool request bodies.
 
-`deliberum daemon operation-audit` reads `GET /runtime/operation-audit` and returns safe daemon control-plane operation metadata. The optional `--limit <n>` argument limits the returned entries. This command does not read the CLI local JSON ledger and does not expose request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, or output payloads.
+`deliberum daemon operation-audit` reads `GET /runtime/operation-audit` and returns safe daemon control-plane operation metadata. The optional `--limit <n>` argument limits the returned entries. The optional `--format jsonl` mode exports one safe audit record per line for local archival workflows; the default `json` mode keeps the normal structured response. This command does not read the CLI local JSON ledger and does not expose request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, or output payloads.
 
 `deliberum daemon resource-access revoke <access-id>` calls `POST /resource-access/:accessId/revoke` on the local daemon and returns the safe revocation view. It is a local daemon control command and does not read the CLI local JSON ledger.
 
@@ -85,7 +85,7 @@ DELIBERUM_DAEMON_SQLITE_PATH=.deliberum/deliberum.sqlite
 
 This creates SQLite-backed event ledger, run metadata, resource broker, resource access grant, and operation audit log stores in one local database. The SQLite stores configure WAL mode, a busy timeout, and local connection-level writer serialization. They persist session ledger events, run metadata, explicitly registered resource broker metadata/content, resource access grant enforcement state, and safe control-plane operation audit metadata; they do not persist bearer access ids, WebGET sessions, authentication state, provider secrets, request bodies, request headers, raw WebGET tokens, raw resource access ids, or production multi-user coordination.
 
-For development environments that should avoid SQLite, `DELIBERUM_DAEMON_EVENT_STORE_PATH=<path>` opts into the shared JSON EventStore for event ledger persistence, `DELIBERUM_DAEMON_RUN_STORE_PATH=<path>` opts into JSON run metadata persistence, and `DELIBERUM_DAEMON_OPERATION_AUDIT_PATH=<path>` opts into JSON operation audit log persistence. Use the event/run JSON paths together when run workspace state must survive daemon restarts without SQLite.
+For development environments that should avoid SQLite, `DELIBERUM_DAEMON_EVENT_STORE_PATH=<path>` opts into the shared JSON EventStore for event ledger persistence, `DELIBERUM_DAEMON_RUN_STORE_PATH=<path>` opts into JSON run metadata persistence, and `DELIBERUM_DAEMON_OPERATION_AUDIT_PATH=<path>` opts into JSON operation audit log persistence. Use the event/run JSON paths together when run workspace state must survive daemon restarts without SQLite. `DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES=<n>` applies a local retention cap to in-memory, JSON, and SQLite operation audit logs.
 
 `DELIBERUM_DAEMON_AUTH_TOKEN=<token>` opts into local/pre-production daemon control-plane bearer authentication. When set, daemon control endpoints require `Authorization: Bearer <token>` and return a no-store `401` safe error when the token is absent or invalid. `/health`, WebGET bearer-token endpoints, and `GET /resource-access/:accessId` keep their own health/token semantics so external participants can still use scoped WebGET sessions and short-lived resource grants. CLI commands read the token from `DELIBERUM_DAEMON_AUTH_TOKEN`. The local Web shell can forward `VITE_DELIBERUM_DAEMON_AUTH_TOKEN`, including for browser SSE follow URLs; this is for trusted local/pre-production shells only because browser-visible values are not production user authentication.
 
@@ -93,7 +93,7 @@ By default, browser CORS is limited to the local Web development origins `http:/
 
 The daemon run store remains operational metadata only. Whether in-memory, JSON-backed, or SQLite-backed, run endpoints expose safe operational views over orchestrator state; they do not expose provider secrets, own Candidate Frontier semantics, select a single answer, or turn compiled outcomes into authoritative truth.
 
-The daemon operation audit log is control-plane metadata only. It records safe action, method, normalized route, status code, outcome, auth mode/presence, and non-secret target ids. It does not write semantic ledger events, store request bodies, store headers, store bearer tokens, store raw WebGET/resource-access token path segments, store provider/tool secrets, or store run outputs. `/health` and CORS preflight requests are not logged. `GET /runtime/operation-audit` is a no-store local control endpoint and supports `?limit=<n>`.
+The daemon operation audit log is control-plane metadata only. It records safe action, method, normalized route, status code, outcome, auth mode/presence, and non-secret target ids. It does not write semantic ledger events, store request bodies, store headers, store bearer tokens, store raw WebGET/resource-access token path segments, store provider/tool secrets, or store run outputs. `/health` and CORS preflight requests are not logged. `GET /runtime/operation-audit` is a no-store local control endpoint and supports `?limit=<n>`. `DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES` limits retained records before query limits are applied.
 
 Implemented endpoints:
 

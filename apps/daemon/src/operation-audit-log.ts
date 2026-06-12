@@ -11,6 +11,7 @@ import type { Clock, IdGenerator } from "@deliberum/core";
 export const OPERATION_AUDIT_LOG_SCHEMA_VERSION = 1 as const;
 export const DEFAULT_OPERATION_AUDIT_LIMIT = 100 as const;
 export const MAX_OPERATION_AUDIT_LIMIT = 1000 as const;
+export const MAX_OPERATION_AUDIT_RETENTION_ENTRIES = 100_000 as const;
 
 export const OPERATION_AUDIT_OUTCOMES = [
   "succeeded",
@@ -90,7 +91,7 @@ export class InMemoryOperationAuditLog implements OperationAuditLog {
   constructor(options: InMemoryOperationAuditLogOptions = {}) {
     this.idGenerator = options.idGenerator ?? createDefaultAuditIdGenerator();
     this.clock = options.clock ?? (() => new Date().toISOString());
-    this.maxEntries = options.maxEntries;
+    this.maxEntries = normalizeOperationAuditMaxEntries(options.maxEntries);
   }
 
   record(input: OperationAuditRecordInput): OperationAuditEntry {
@@ -101,9 +102,7 @@ export class InMemoryOperationAuditLog implements OperationAuditLog {
 
     this.entries.push(entry);
 
-    if (this.maxEntries !== undefined && this.entries.length > this.maxEntries) {
-      this.entries.splice(0, this.entries.length - this.maxEntries);
-    }
+    pruneOperationAuditEntries(this.entries, this.maxEntries);
 
     return cloneEntry(entry);
   }
@@ -125,6 +124,7 @@ export type JsonFileOperationAuditLogOptions = {
   filePath: string;
   idGenerator?: IdGenerator;
   clock?: Clock;
+  maxEntries?: number;
   fileSystem?: Partial<JsonFileOperationAuditLogFileSystem>;
   tempFileName?: () => string;
 };
@@ -146,6 +146,7 @@ export class JsonFileOperationAuditLog implements OperationAuditLog {
   private readonly filePath: string;
   private readonly idGenerator: IdGenerator;
   private readonly clock: Clock;
+  private readonly maxEntries?: number;
   private readonly fileSystem: JsonFileOperationAuditLogFileSystem;
   private readonly tempFileName: () => string;
   private readonly entries: OperationAuditEntry[] = [];
@@ -154,6 +155,7 @@ export class JsonFileOperationAuditLog implements OperationAuditLog {
     this.filePath = options.filePath;
     this.idGenerator = options.idGenerator ?? createDefaultAuditIdGenerator();
     this.clock = options.clock ?? (() => new Date().toISOString());
+    this.maxEntries = normalizeOperationAuditMaxEntries(options.maxEntries);
     this.fileSystem = {
       ...defaultFileSystem,
       ...options.fileSystem
@@ -176,6 +178,7 @@ export class JsonFileOperationAuditLog implements OperationAuditLog {
     }
 
     this.entries.push(entry);
+    pruneOperationAuditEntries(this.entries, this.maxEntries);
     this.persist();
 
     return cloneEntry(entry);
@@ -210,6 +213,12 @@ export class JsonFileOperationAuditLog implements OperationAuditLog {
 
       ids.add(entry.id);
       this.entries.push(cloneEntry(entry));
+    }
+
+    const loadedEntryCount = this.entries.length;
+    pruneOperationAuditEntries(this.entries, this.maxEntries);
+    if (this.entries.length !== loadedEntryCount) {
+      this.persist();
     }
   }
 
@@ -252,6 +261,38 @@ export function normalizeOperationAuditLimit(value: number | undefined): number 
   }
 
   return Math.min(value, MAX_OPERATION_AUDIT_LIMIT);
+}
+
+export function parseOperationAuditMaxEntries(value: string | undefined): number | undefined {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    throw new OperationAuditLogError(
+      "Operation audit retention max entries must be a positive integer."
+    );
+  }
+
+  return normalizeOperationAuditMaxEntries(Number(trimmed));
+}
+
+export function normalizeOperationAuditMaxEntries(
+  value: number | undefined
+): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new OperationAuditLogError(
+      "Operation audit retention max entries must be a positive integer."
+    );
+  }
+
+  return Math.min(value, MAX_OPERATION_AUDIT_RETENTION_ENTRIES);
 }
 
 export function createOperationAuditRecord(input: {
@@ -395,6 +436,29 @@ function applyAuditLimit(
   const sorted = [...entries].sort(compareAuditEntries);
 
   return sorted.slice(Math.max(0, sorted.length - normalizedLimit));
+}
+
+function pruneOperationAuditEntries(
+  entries: OperationAuditEntry[],
+  maxEntries: number | undefined
+): void {
+  if (maxEntries === undefined || entries.length <= maxEntries) {
+    return;
+  }
+
+  const retainedIds = new Set(
+    [...entries]
+      .sort(compareAuditEntries)
+      .slice(Math.max(0, entries.length - maxEntries))
+      .map((entry) => entry.id)
+  );
+
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const entry = entries[index];
+    if (entry && !retainedIds.has(entry.id)) {
+      entries.splice(index, 1);
+    }
+  }
 }
 
 function normalizeOperationAuditRoute(path: string): string {

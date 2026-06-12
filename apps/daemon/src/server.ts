@@ -10,7 +10,10 @@ import {
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { JsonFileEventStore, SQLiteEventStore, type EventStore } from "@deliberum/storage";
 import { JsonFileRunStore } from "./json-file-run-store";
-import { JsonFileOperationAuditLog } from "./operation-audit-log";
+import {
+  JsonFileOperationAuditLog,
+  parseOperationAuditMaxEntries
+} from "./operation-audit-log";
 import { isLocalPresetEnabledFromEnv } from "./local-preset";
 import {
   isOpenAICompatibleExtractionEnabledFromEnv,
@@ -32,6 +35,8 @@ export const DAEMON_RUN_STORE_PATH_ENV_VAR = "DELIBERUM_DAEMON_RUN_STORE_PATH" a
 export const DAEMON_SQLITE_PATH_ENV_VAR = "DELIBERUM_DAEMON_SQLITE_PATH" as const;
 export const DAEMON_OPERATION_AUDIT_PATH_ENV_VAR =
   "DELIBERUM_DAEMON_OPERATION_AUDIT_PATH" as const;
+export const DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR =
+  "DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES" as const;
 export const DAEMON_AUTH_TOKEN_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
 export const RESOURCE_ACCESS_BASE_URL_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_BASE_URL" as const;
 export const RESOURCE_ACCESS_TTL_MS_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_TTL_MS" as const;
@@ -119,7 +124,11 @@ export function resolveStartDaemonOperationAuditPath(
 export function createStartDaemonOperationAuditLog(
   options: Pick<
     StartDaemonOptions,
-    "operationAuditLog" | "operationAuditClock" | "operationAuditIdGenerator" | "clock"
+    | "operationAuditLog"
+    | "operationAuditClock"
+    | "operationAuditIdGenerator"
+    | "operationAuditMaxEntries"
+    | "clock"
   > = {},
   env: Record<string, string | undefined> = process.env
 ): StartDaemonOptions["operationAuditLog"] | undefined {
@@ -129,7 +138,9 @@ export function createStartDaemonOperationAuditLog(
 
   const auditOptions = {
     idGenerator: options.operationAuditIdGenerator,
-    clock: options.operationAuditClock ?? options.clock
+    clock: options.operationAuditClock ?? options.clock,
+    maxEntries:
+      options.operationAuditMaxEntries ?? resolveStartDaemonOperationAuditMaxEntries(env)
   };
   const sqlitePath = resolveStartDaemonSQLitePath(env);
   if (sqlitePath) {
@@ -146,6 +157,18 @@ export function createStartDaemonOperationAuditLog(
         ...auditOptions
       })
     : undefined;
+}
+
+export function resolveStartDaemonOperationAuditMaxEntries(
+  env: Record<string, string | undefined> = process.env
+): number | undefined {
+  try {
+    return parseOperationAuditMaxEntries(env[DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR]);
+  } catch (error) {
+    throw new Error(
+      `${DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR} must be a positive integer.`
+    );
+  }
 }
 
 export function createStartDaemonResourceAccessStore(
@@ -282,6 +305,9 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const eventStore = createStartDaemonEventStore(options);
   const runStore = createStartDaemonRunStore(options);
   const operationAuditLog = createStartDaemonOperationAuditLog(options);
+  const operationAuditMaxEntries = options.operationAuditLog
+    ? options.operationAuditMaxEntries
+    : options.operationAuditMaxEntries ?? resolveStartDaemonOperationAuditMaxEntries();
   const enableLocalPreset = resolveStartDaemonEnableLocalPreset(options);
   const enableOpenAICompatibleProfile =
     resolveStartDaemonEnableOpenAICompatibleProfile(options);
@@ -312,6 +338,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
     eventStore,
     runStore,
     operationAuditLog,
+    operationAuditMaxEntries,
     resourceAccessStore,
     resourceBroker,
     enableLocalPreset,

@@ -1,7 +1,8 @@
 import {
   DEFAULT_DAEMON_BASE_URL,
   DaemonClientError,
-  DeliberumDaemonClient
+  DeliberumDaemonClient,
+  type OperationAuditResponse
 } from "@deliberum/client";
 import {
   acceptProposal,
@@ -654,12 +655,22 @@ async function executeDaemonCommand(
   if (action === "operation-audit") {
     requireNoPositionals(
       restPositionals,
-      "Usage: deliberum daemon operation-audit [--limit <n>] [--daemon-url <local-url>]"
+      "Usage: deliberum daemon operation-audit [--limit <n>] [--format <json|jsonl>] [--daemon-url <local-url>]"
     );
 
-    return daemonClient.getOperationAudit({
+    const format = parseOperationAuditFormat(parsedArgs.options.get("format"));
+    const audit = await daemonClient.getOperationAudit({
       limit: parseOptionalPositiveIntegerOption(parsedArgs.options.get("limit"), "--limit")
     });
+
+    if (format === "jsonl") {
+      return writeOperationAuditJsonl({
+        events: audit.events,
+        writeStdout: dependencies.writeStdout
+      });
+    }
+
+    return audit;
   }
 
   if (action === "resource-access") {
@@ -693,7 +704,7 @@ function assertKnownDaemonCommand(action: string): void {
 function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): void {
   const allowedOptions = new Set([
     "daemon-url",
-    ...(action === "operation-audit" ? ["limit"] : [])
+    ...(action === "operation-audit" ? ["limit", "format"] : [])
   ]);
 
   for (const optionName of parsedArgs.options.keys()) {
@@ -1005,6 +1016,16 @@ function parseOptionalPositiveIntegerOption(
   return parsed;
 }
 
+function parseOperationAuditFormat(values: string[] | undefined): "json" | "jsonl" {
+  const value = values?.at(-1)?.trim() || "json";
+
+  if (value === "json" || value === "jsonl") {
+    return value;
+  }
+
+  throw new CliUsageError("--format must be json or jsonl.");
+}
+
 function readJsonObjectInput(
   dependencies: ExecuteDependencies,
   filePath: string,
@@ -1281,6 +1302,23 @@ async function followRunEvents(options: {
       runId: options.runId,
       followed: true,
       events: eventCount
+    }
+  };
+}
+
+async function writeOperationAuditJsonl(options: {
+  events: OperationAuditResponse["events"];
+  writeStdout: (chunk: string) => void | Promise<void>;
+}): Promise<RawCliOutput> {
+  for (const event of options.events) {
+    await options.writeStdout(`${JSON.stringify(event)}\n`);
+  }
+
+  return {
+    kind: "raw",
+    output: {
+      format: "jsonl",
+      events: options.events.length
     }
   };
 }
