@@ -457,15 +457,60 @@ export function RunOutcomePage() {
               </AdvancedDetails>
             </>
           ) : (
-            <StatusBanner
-              tone="warning"
-              title="Current conclusion not available"
-              detail={describeOutcomeUnavailableReason(getRecordValue(outcome, "reason"))}
-            />
+            <>
+              <StatusBanner
+                tone="warning"
+                title="Current conclusion not available"
+                detail={describeOutcomeUnavailableReason(getRecordValue(outcome, "reason"))}
+              />
+              <AdvancedOutcomeUnavailableDetails
+                outcome={outcome}
+                fallbackRunId={runId}
+              />
+            </>
           )}
         </QueryState>
       </ViewFrame>
     </RunWorkspaceShell>
+  );
+}
+
+function AdvancedOutcomeUnavailableDetails({
+  outcome,
+  fallbackRunId
+}: {
+  outcome: unknown;
+  fallbackRunId: string;
+}) {
+  return (
+    <AdvancedDetails
+      summary="Advanced / Developer Mode: unavailable outcome"
+      description="Raw unavailable status, internal ids, reason code, and daemon response for developer inspection."
+    >
+      <KeyValueGrid
+        items={[
+          {
+            label: "Run id",
+            value: formatRecordValue(getRecordValue(outcome, "runId") ?? fallbackRunId)
+          },
+          {
+            label: "Session id",
+            value: formatRecordValue(getRecordValue(outcome, "sessionId"))
+          },
+          {
+            label: "Raw status",
+            value: formatRecordValue(getRecordValue(outcome, "status"))
+          },
+          {
+            label: "Raw reason",
+            value: formatRecordValue(getRecordValue(outcome, "reason"))
+          }
+        ]}
+      />
+      <DataPanel title="Raw unavailable outcome">
+        <JsonBlock value={sanitizeForDisplay(outcome ?? {})} />
+      </DataPanel>
+    </AdvancedDetails>
   );
 }
 
@@ -2825,18 +2870,18 @@ function describeStageStatus(status: unknown): { label: string; detail: string }
 
 function describeOutcomeUnavailableReason(reason: unknown): string {
   if (reason === "final_candidate_proposal_unavailable") {
-    return "No final candidate proposal exists yet. Start the local preset pipeline or run finalization before opening the provisional outcome.";
+    return "The discussion has not produced conclusion-ready material yet. Continue the guided discussion before opening the current conclusion.";
   }
 
   if (reason === "final_candidate_proposal_ambiguous") {
-    return "More than one final candidate proposal is available, so the daemon will not compile a provisional outcome for this view.";
+    return "More than one conclusion-ready draft is available, so Deliberum cannot choose one automatically.";
   }
 
   if (reason === "outcome_compilation_unavailable") {
-    return "The daemon could not compile the provisional outcome safely.";
+    return "Deliberum could not safely prepare the current conclusion from the available discussion material.";
   }
 
-  return formatRecordValue(reason);
+  return "Deliberum returned an unavailable conclusion state. Open Advanced details for the raw reason.";
 }
 
 function formatRunStartErrorMessage(error: Error | null | undefined): string {

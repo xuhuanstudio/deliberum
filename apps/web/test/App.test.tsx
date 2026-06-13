@@ -1913,7 +1913,17 @@ describe("@deliberum/web shell", () => {
     renderApp("/runs/run-1/outcome", client);
 
     expect(await screen.findByText("Current conclusion not available")).toBeTruthy();
-    expect(screen.getByText(/No final candidate proposal exists yet/)).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The discussion has not produced conclusion-ready material yet. Continue the guided discussion before opening the current conclusion."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Advanced / Developer Mode: unavailable outcome")).toBeTruthy();
+    expect(screen.getByText("Raw reason")).toBeTruthy();
+    expect(screen.getByText("final_candidate_proposal_unavailable")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain(
+      "No final candidate proposal exists yet"
+    );
   });
 
   it("renders session final projection from the daemon endpoint", async () => {
