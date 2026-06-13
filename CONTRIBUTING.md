@@ -4,7 +4,10 @@ Thanks for your interest in Deliberum.
 
 ## Language
 
-English is preferred for issues, pull requests, code comments, commit messages, and public documentation. Chinese is accepted for early design discussion or clarifying complex ideas; maintainers may summarize key points in English.
+Use English for issues, pull requests, code comments, commit messages, public
+documentation, examples, and repository metadata. Private clarification can
+happen outside the public repository, but any accepted requirement, rationale,
+or design decision should be summarized in English before it is committed.
 
 ## Project principles
 
