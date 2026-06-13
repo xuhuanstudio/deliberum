@@ -25,6 +25,13 @@ The harness does not evaluate quality by itself, rank systems, vote, or select
 an authoritative outcome. It is an evidence organization layer for human or
 external evaluator findings.
 
+The repository includes
+`examples/evaluation/baseline-comparison.sample.json` as a small public sample
+fixture. It covers resource access posture, provider setup, and final audit
+readiness across direct-answer, central-judge, multi-perspective, role-agent,
+independent-summary, and voting baselines. The sample is illustrative harness
+input, not a benchmark score, leaderboard, or system ranking.
+
 ## Evaluation dimensions
 
 - final answer quality;

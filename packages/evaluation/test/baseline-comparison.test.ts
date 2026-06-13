@@ -1,9 +1,19 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   BaselineComparisonInputError,
   createBaselineComparisonReport,
   type BaselineComparisonInput
 } from "../src";
+
+function sampleComparisonInput(): BaselineComparisonInput {
+  return JSON.parse(
+    readFileSync(
+      new URL("../../../examples/evaluation/baseline-comparison.sample.json", import.meta.url),
+      "utf8"
+    )
+  ) as BaselineComparisonInput;
+}
 
 function comparisonInput(): BaselineComparisonInput {
   return {
@@ -123,6 +133,35 @@ describe("baseline comparison report", () => {
       "baseline/judge.md",
       "fixture/case-1/prompt.md",
       "ledger/session-1/events.json"
+    ]);
+    expect(serialized).not.toContain("winner");
+    expect(serialized).not.toContain("currentBest");
+    expect(serialized).not.toContain("ranking");
+    expect(serialized).not.toContain("finalAnswer");
+    expect(serialized).not.toContain("truthSummary");
+  });
+
+  it("aggregates the public sample fixture", () => {
+    const report = createBaselineComparisonReport(sampleComparisonInput());
+    const serialized = JSON.stringify(report);
+
+    expect(report).toMatchObject({
+      schemaVersion: "1",
+      caseCount: 3,
+      runCount: 9,
+      findingCount: 18,
+      missingFindingCount: 0,
+      unsupportedFindingCount: 0
+    });
+    expect(report.provenance.caseIds).toEqual([
+      "case-local-daemon-resource-access",
+      "case-provider-setup",
+      "case-final-audit-readiness"
+    ]);
+    expect(report.caseSummaries.map((summary) => summary.baselineRunIds)).toEqual([
+      ["direct-resource-access", "judge-resource-access"],
+      ["multi-perspective-provider-setup", "role-agent-provider-setup"],
+      ["independent-summary-final-audit", "voting-final-audit"]
     ]);
     expect(serialized).not.toContain("winner");
     expect(serialized).not.toContain("currentBest");
