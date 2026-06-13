@@ -10,7 +10,7 @@ Deliberum is currently a local-first, pre-production implementation. The support
 
 The daemon binds to `127.0.0.1` by default and does not provide production authorization or multi-user deployment yet. The daemon entrypoint can read `DELIBERUM_HOST` and `DELIBERUM_PORT` for container or supervised process startup, but the library defaults remain localhost-first.
 
-Use `deliberum daemon deployment-posture` or `GET /runtime/deployment-posture` against a running daemon to inspect safe local/pre-production deployment posture. The diagnostic returns exposure classes, auth mode, token mode, principal count, persistence classes, resource access continuity, Web static asset mode, production-readiness blockers, and safety notes without exposing daemon tokens, CORS origin values, configured resource access URLs, configured file paths, provider secrets, request bodies, or payloads.
+Use `deliberum daemon deployment-posture` or `GET /runtime/deployment-posture` against a running daemon to inspect safe local/pre-production deployment posture. The diagnostic returns exposure classes, auth mode, token mode, principal count, persistence classes, SQLite process-lock status, resource access continuity, Web static asset mode, production-readiness blockers, and safety notes without exposing daemon tokens, CORS origin values, configured resource access URLs, configured file paths, provider secrets, request bodies, or payloads.
 
 ## Local CLI
 
