@@ -1,6 +1,6 @@
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -10,10 +10,12 @@ import { fileURLToPath } from "node:url";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const cliEntry = join(repoRoot, "apps", "cli", "dist", "index.js");
 const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
+const webDist = join(repoRoot, "apps", "web", "dist");
 const minimalEnv = buildMinimalEnv();
 
 assertFile(cliEntry);
 assertFile(daemonEntry);
+assertFile(join(webDist, "index.html"));
 
 await smokeBuiltCli();
 await smokeBuiltDaemon();
@@ -60,7 +62,8 @@ async function smokeBuiltDaemon() {
     env: {
       ...minimalEnv,
       DELIBERUM_HOST: "127.0.0.1",
-      DELIBERUM_PORT: String(port)
+      DELIBERUM_PORT: String(port),
+      DELIBERUM_DAEMON_WEB_ASSETS_PATH: webDist
     },
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -90,6 +93,8 @@ async function smokeBuiltDaemon() {
     if (health.status !== "ok" || health.service !== "deliberum-daemon") {
       throw new Error(`Built daemon health returned unexpected payload: ${JSON.stringify(health)}`);
     }
+
+    await smokeBuiltWebStaticAssets(port);
   } catch (error) {
     if (exited) {
       throw new Error(
@@ -103,6 +108,56 @@ async function smokeBuiltDaemon() {
     });
   } finally {
     await terminateChild(child, exitPromise);
+  }
+}
+
+async function smokeBuiltWebStaticAssets(port) {
+  const rootResponse = await fetch(`http://127.0.0.1:${port}/`, {
+    headers: {
+      Accept: "text/html"
+    }
+  });
+  const rootHtml = await rootResponse.text();
+
+  if (!rootResponse.ok) {
+    throw new Error(`Built Web shell returned HTTP ${rootResponse.status}.`);
+  }
+
+  if (!rootResponse.headers.get("content-type")?.includes("text/html")) {
+    throw new Error("Built Web shell did not return HTML content.");
+  }
+
+  if (!rootResponse.headers.get("cache-control")?.includes("no-store")) {
+    throw new Error("Built Web shell did not use no-store cache headers.");
+  }
+
+  if (!rootResponse.headers.get("vary")?.includes("Accept")) {
+    throw new Error("Built Web shell did not vary on Accept.");
+  }
+
+  if (!rootHtml.includes('<div id="root"></div>')) {
+    throw new Error("Built Web shell did not contain the React root element.");
+  }
+
+  const assetPath = findBuiltWebAssetPath();
+  const assetResponse = await fetch(`http://127.0.0.1:${port}/${assetPath}`);
+
+  if (!assetResponse.ok) {
+    throw new Error(`Built Web asset returned HTTP ${assetResponse.status}.`);
+  }
+
+  if (!assetResponse.headers.get("cache-control")?.includes("immutable")) {
+    throw new Error("Built Web asset did not use immutable cache headers.");
+  }
+
+  const apiResponse = await fetch(`http://127.0.0.1:${port}/health`, {
+    headers: {
+      Accept: "text/html"
+    }
+  });
+
+  if (!apiResponse.headers.get("content-type")?.includes("application/json")) {
+    throw new Error("Built daemon health API was shadowed by the Web shell.");
   }
 }
 
@@ -167,6 +222,19 @@ async function reserveLocalPort() {
   }
 
   return port;
+}
+
+function findBuiltWebAssetPath() {
+  const assetsDir = join(webDist, "assets");
+  const assetName = readdirSync(assetsDir).find(
+    (name) => name.endsWith(".js") || name.endsWith(".css")
+  );
+
+  if (!assetName) {
+    throw new Error(`Built Web assets are missing from: ${assetsDir}`);
+  }
+
+  return `assets/${assetName}`;
 }
 
 async function waitForDaemonHealth(port, hasExited) {
