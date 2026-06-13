@@ -1064,7 +1064,7 @@ describe("@deliberum/web shell", () => {
     };
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Guided local preset")).toBeTruthy();
+    expect(screen.getByText("Start from a question")).toBeTruthy();
     expect(screen.getByText("Complete discussion loop")).toBeTruthy();
     fireEvent.click(screen.getByText("Advanced / Developer Mode: JSON plan"));
     fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
@@ -1077,6 +1077,61 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.createRun).toHaveBeenCalledWith({ runPlan }));
     expect(await screen.findByText("Discussion created")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
+  });
+
+  it("creates a guided discussion from a plain-language brief", async () => {
+    const client = renderApp("/runs/new");
+
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByLabelText("Discussion question"), {
+      target: {
+        value: "Should we adopt a staged provider rollout?"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Goals"), {
+      target: {
+        value: "Compare staged rollout\nSurface migration risk"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Constraints"), {
+      target: {
+        value: "Keep the recommendation reversible"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Expected conclusion"), {
+      target: {
+        value: "Summarize the conclusion, disagreements, risks, and next steps."
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create discussion" }));
+
+    await waitFor(() =>
+      expect(client.createRun).toHaveBeenCalledWith({
+        runPlan: expect.objectContaining({
+          title: "Discussion: Should we adopt a staged provider rollout?",
+          topic: "Should we adopt a staged provider rollout?",
+          goals: ["Compare staged rollout", "Surface migration risk"],
+          constraints: expect.arrayContaining([
+            "Keep the recommendation reversible",
+            "Use deterministic local preset components only.",
+            "Keep all output provisional until reviewed."
+          ]),
+          participants: expect.arrayContaining([
+            expect.objectContaining({
+              adapterId: "local-preset-alpha"
+            })
+          ]),
+          output: expect.objectContaining({
+            language: "en",
+            style: "clear",
+            expectations: [
+              "Summarize the conclusion, disagreements, risks, and next steps."
+            ]
+          })
+        })
+      })
+    );
+    expect(await screen.findByText("Discussion created")).toBeTruthy();
   });
 
   it("rejects invalid run plan JSON without calling the daemon", async () => {
@@ -1121,7 +1176,7 @@ describe("@deliberum/web shell", () => {
       (screen.getByLabelText("Advanced JSON run plan") as HTMLTextAreaElement).value
     ).toContain("local-preset-alpha");
 
-    fireEvent.click(screen.getByRole("button", { name: "Create guided discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create run" }));
 
     await waitFor(() =>
       expect(client.createRun).toHaveBeenCalledWith({

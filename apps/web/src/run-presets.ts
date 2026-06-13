@@ -70,6 +70,71 @@ export const LOCAL_PRESET_START_REQUEST = {
   }
 };
 
+export type GuidedDiscussionRunPlanInput = {
+  question: string;
+  goalsText: string;
+  constraintsText: string;
+  expectedOutcomeText: string;
+};
+
+export function buildGuidedDiscussionRunPlan(
+  input: GuidedDiscussionRunPlanInput
+): Record<string, unknown> {
+  const topic = input.question.trim();
+  const userGoals = parseBriefLines(input.goalsText);
+  const userConstraints = parseBriefLines(input.constraintsText);
+  const expectedOutcomes = parseBriefLines(input.expectedOutcomeText);
+  const title = formatDiscussionTitle(topic);
+
+  return {
+    ...cloneJsonObject(LOCAL_PRESET_RUN_PLAN),
+    title,
+    topic,
+    goals:
+      userGoals.length > 0
+        ? userGoals
+        : [
+            "Compare the strongest current options.",
+            "Keep open disagreements and missing evidence visible."
+          ],
+    constraints: [
+      ...userConstraints,
+      "Use deterministic local preset components only.",
+      "Keep all output provisional until reviewed."
+    ],
+    output: {
+      language: "en",
+      style: "clear",
+      expectations:
+        expectedOutcomes.length > 0
+          ? expectedOutcomes
+          : [
+              "Show the current conclusion.",
+              "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions."
+            ]
+    }
+  };
+}
+
+export function parseBriefLines(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
 export function formatPresetJson(value: unknown): string {
   return JSON.stringify(value, null, 2);
+}
+
+function formatDiscussionTitle(topic: string): string {
+  const compactTopic = topic.replace(/\s+/g, " ").trim();
+  const visibleTopic =
+    compactTopic.length > 72 ? `${compactTopic.slice(0, 69).trim()}...` : compactTopic;
+
+  return visibleTopic.length > 0 ? `Discussion: ${visibleTopic}` : "Untitled discussion";
+}
+
+function cloneJsonObject(value: unknown): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 }

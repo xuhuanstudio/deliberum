@@ -30,6 +30,7 @@ import {
 import {
   LOCAL_PRESET_RUN_PLAN,
   LOCAL_PRESET_START_REQUEST,
+  buildGuidedDiscussionRunPlan,
   formatPresetJson
 } from "./run-presets";
 
@@ -86,11 +87,17 @@ export function RunsListPage() {
 export function RunNewPage() {
   const { client } = useDaemonRuntime();
   const [runPlanText, setRunPlanText] = useState(DEFAULT_RUN_PLAN_TEXT);
+  const [discussionQuestion, setDiscussionQuestion] = useState("");
+  const [discussionGoals, setDiscussionGoals] = useState("");
+  const [discussionConstraints, setDiscussionConstraints] = useState("");
+  const [discussionExpectedOutcome, setDiscussionExpectedOutcome] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
   const createMutation = useMutation({
     mutationFn: (runPlan: Record<string, unknown>) => client.createRun({ runPlan })
   });
   const createdRunId = getStringRecordValue(createMutation.data?.run, "runId");
+  const canCreateDiscussion =
+    discussionQuestion.trim().length > 0 && !createMutation.isPending;
 
   function submitRunPlan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,10 +117,32 @@ export function RunNewPage() {
     setRunPlanText(formatPresetJson(LOCAL_PRESET_RUN_PLAN));
   }
 
-  function createLocalPresetRun() {
+  function fillSampleDiscussionBrief() {
     setInputError(null);
-    setRunPlanText(formatPresetJson(LOCAL_PRESET_RUN_PLAN));
-    createMutation.mutate(cloneJsonObject(LOCAL_PRESET_RUN_PLAN));
+    setDiscussionQuestion(LOCAL_PRESET_RUN_PLAN.topic);
+    setDiscussionGoals(LOCAL_PRESET_RUN_PLAN.goals.join("\n"));
+    setDiscussionConstraints(LOCAL_PRESET_RUN_PLAN.constraints.join("\n"));
+    setDiscussionExpectedOutcome(LOCAL_PRESET_RUN_PLAN.output.expectations.join("\n"));
+  }
+
+  function submitGuidedDiscussion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (discussionQuestion.trim().length === 0) {
+      setInputError("Discussion question is required.");
+      return;
+    }
+
+    const runPlan = buildGuidedDiscussionRunPlan({
+      question: discussionQuestion,
+      goalsText: discussionGoals,
+      constraintsText: discussionConstraints,
+      expectedOutcomeText: discussionExpectedOutcome
+    });
+
+    setInputError(null);
+    setRunPlanText(formatPresetJson(runPlan));
+    createMutation.mutate(runPlan);
   }
 
   return (
@@ -124,32 +153,72 @@ export function RunNewPage() {
         description="Create a local deliberation that shows the discussion brief, independent first responses, strongest options, disagreements, requirements, evidence checks, risk review, and current conclusion."
       >
         <StatusBanner
-          title="Guided local discussion"
-          detail="The built-in preset does not require provider credentials. To execute the full preset pipeline, start the local daemon with DELIBERUM_ENABLE_LOCAL_PRESET=true."
+          title="Start from a question"
+          detail="Write a brief in plain language or use the sample brief to create a reviewable discussion without provider credentials."
         />
         <DataPanel
-          title="Guided local preset"
-          description="Use this path to see the core deliberation concepts mapped into user-facing language with deterministic local components."
+          title="Discussion brief"
+          description="Describe what you need to decide or clarify. Deliberum will structure the discussion so the conclusion, disagreements, risks, evidence gaps, and next actions stay visible."
         >
-          <div className="du-readable-list">
-            <ExplainerItem
-              title="No provider credentials"
-              detail="The preset does not call external models and is meant for product walkthroughs and local verification."
+          <form className="du-discussion-form" onSubmit={submitGuidedDiscussion}>
+            <label htmlFor="discussion-question">Discussion question</label>
+            <textarea
+              id="discussion-question"
+              value={discussionQuestion}
+              onChange={(event) => setDiscussionQuestion(event.currentTarget.value)}
+              placeholder="What should we decide, compare, or clarify?"
             />
-            <ExplainerItem
-              title="Complete discussion loop"
-              detail="It creates a discussion brief, independent first responses, strongest options, disagreements, requirements, evidence needs, risk review, and current conclusion."
+            <div className="du-discussion-form-grid">
+              <div>
+                <label htmlFor="discussion-goals">Goals</label>
+                <textarea
+                  id="discussion-goals"
+                  value={discussionGoals}
+                  onChange={(event) => setDiscussionGoals(event.currentTarget.value)}
+                  placeholder="One goal per line"
+                />
+              </div>
+              <div>
+                <label htmlFor="discussion-constraints">Constraints</label>
+                <textarea
+                  id="discussion-constraints"
+                  value={discussionConstraints}
+                  onChange={(event) => setDiscussionConstraints(event.currentTarget.value)}
+                  placeholder="One constraint per line"
+                />
+              </div>
+            </div>
+            <label htmlFor="discussion-expected-outcome">Expected conclusion</label>
+            <textarea
+              id="discussion-expected-outcome"
+              value={discussionExpectedOutcome}
+              onChange={(event) => setDiscussionExpectedOutcome(event.currentTarget.value)}
+              placeholder="What should the current conclusion include?"
             />
-          </div>
-          <div className="du-action-row">
-            <button
-              type="button"
-              onClick={createLocalPresetRun}
-              disabled={createMutation.isPending}
-            >
-              Create guided discussion
-            </button>
-          </div>
+            <div className="du-readable-list">
+              <ExplainerItem
+                title="No provider credentials"
+                detail="The sample workflow is deterministic and does not call external models."
+              />
+              <ExplainerItem
+                title="Complete discussion loop"
+                detail="It creates a discussion brief, independent first responses, strongest options, disagreements, requirements, evidence needs, risk review, and current conclusion."
+              />
+            </div>
+            <div className="du-action-row">
+              <button type="submit" disabled={!canCreateDiscussion}>
+                {createMutation.isPending ? "Creating discussion" : "Create discussion"}
+              </button>
+              <button
+                type="button"
+                className="du-secondary-button"
+                onClick={fillSampleDiscussionBrief}
+                disabled={createMutation.isPending}
+              >
+                Use sample brief
+              </button>
+            </div>
+          </form>
         </DataPanel>
         <AdvancedDetails
           summary="Advanced / Developer Mode: JSON plan"

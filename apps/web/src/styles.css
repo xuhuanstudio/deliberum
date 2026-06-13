@@ -624,6 +624,35 @@ textarea:focus-visible {
   padding: 16px;
 }
 
+.du-discussion-form {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.du-discussion-form label {
+  color: var(--du-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.du-discussion-form textarea {
+  min-height: 96px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.du-discussion-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.du-discussion-form-grid > div {
+  display: grid;
+  gap: 10px;
+}
+
 .du-advanced-panel {
   border: 1px solid var(--du-line);
   border-radius: 8px;
@@ -986,6 +1015,7 @@ textarea:focus-visible {
   .du-stage-grid,
   .du-follow-controls,
   .du-advanced-status-grid,
+  .du-discussion-form-grid,
   .du-final-lifecycle-grid,
   .du-lifecycle-grid {
     grid-template-columns: 1fr;
