@@ -2629,6 +2629,80 @@ describe("daemon API", () => {
     );
   });
 
+  it("reports safe daemon ledger integrity without exposing event payloads", async () => {
+    const eventStore = new InMemoryEventStore({ clock });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      eventStore
+    });
+    const created = await createSession(daemonApp);
+
+    const response = await daemonApp.app.request("/runtime/ledger-integrity");
+    const body = (await response.json()) as {
+      status: string;
+      eventStore: {
+        mode: string;
+        validation: string;
+      };
+      sessionCount: number;
+      eventCount: number;
+      hashedEventCount: number;
+      legacyEventCount: number;
+      sessions: Array<{
+        sessionId: string;
+        eventCount: number;
+        hashedEventCount: number;
+        legacyEventCount: number;
+        sequenceRange: { from: number; to: number } | null;
+      }>;
+      safety: string[];
+    };
+    const text = JSON.stringify(body);
+    const auditBody = (await (
+      await daemonApp.app.request("/runtime/operation-audit?limit=5")
+    ).json()) as {
+      events: Array<{
+        action: string;
+        route: string;
+      }>;
+    };
+
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(body).toMatchObject({
+      status: "valid",
+      eventStore: {
+        mode: "configured_store",
+        validation: "current_snapshot"
+      },
+      sessionCount: 1,
+      eventCount: 1,
+      hashedEventCount: 1,
+      legacyEventCount: 0,
+      sessions: [
+        {
+          sessionId: created.sessionId,
+          eventCount: 1,
+          hashedEventCount: 1,
+          legacyEventCount: 0,
+          sequenceRange: { from: 0, to: 0 }
+        }
+      ]
+    });
+    expect(body.safety.join(" ")).toContain("without returning event payloads or event ids");
+    expect(text).not.toContain(created.event.id);
+    expect(text).not.toContain("Implement local daemon API skeleton");
+    expect(auditBody.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "ledger_integrity_read",
+          route: "/runtime/ledger-integrity"
+        })
+      ])
+    );
+  });
+
   it("reports safe deployment posture without exposing deployment secrets", async () => {
     const daemonApp = createDaemonApp({
       idGenerator: createIds(),

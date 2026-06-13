@@ -842,6 +842,10 @@ function normalizeOperationAuditRoute(path: string): string {
     return "/runtime/deployment-posture";
   }
 
+  if (segments[0] === "runtime" && segments[1] === "ledger-integrity") {
+    return "/runtime/ledger-integrity";
+  }
+
   if (segments[0] === "runtime" && segments[1] === "profiles") {
     return "/runtime/profiles";
   }
@@ -1061,6 +1065,9 @@ function classifyOperationAuditAction(method: string, route: string): string {
   }
   if (method === "GET" && route === "/runtime/deployment-posture") {
     return "deployment_posture_read";
+  }
+  if (method === "GET" && route === "/runtime/ledger-integrity") {
+    return "ledger_integrity_read";
   }
   if (method === "GET" && route === "/runtime/operation-audit") {
     return "operation_audit_read";

@@ -21,6 +21,7 @@ import {
   type IdGenerator
 } from "@deliberum/core";
 import type {
+  EventEnvelope,
   JsonValue,
   ProcessProposalDecisionStatus,
   SealedBatchPurpose,
@@ -31,7 +32,12 @@ import {
   InMemoryResourceBroker,
   type ResourceBroker
 } from "@deliberum/resources";
-import { InMemoryEventStore, type EventStore, type StoredEvent } from "@deliberum/storage";
+import {
+  InMemoryEventStore,
+  validateEventIntegrityChain,
+  type EventStore,
+  type StoredEvent
+} from "@deliberum/storage";
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
@@ -272,6 +278,30 @@ export type DaemonDeploymentPostureResponse = {
     status: "local_only" | "preproduction_remote_hardened" | "not_production_ready";
     readyForProduction: false;
     blockers: string[];
+  };
+  safety: string[];
+};
+
+export type DaemonLedgerIntegrityResponse = {
+  status: "valid" | "invalid";
+  eventStore: {
+    mode: "process_memory" | "configured_store";
+    validation: "current_snapshot";
+  };
+  sessionCount: number;
+  eventCount: number;
+  hashedEventCount: number;
+  legacyEventCount: number;
+  sessions: Array<{
+    sessionId: string;
+    eventCount: number;
+    hashedEventCount: number;
+    legacyEventCount: number;
+    sequenceRange: { from: number; to: number } | null;
+  }>;
+  integrityError?: {
+    code: "integrity_chain_invalid";
+    message: string;
   };
   safety: string[];
 };
@@ -765,6 +795,16 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
           resourceAccessUrlSigningSecret !== undefined,
         sqliteProcessLockConfigured: options.sqliteProcessLockConfigured === true,
         webStaticAssetsConfigured: options.webStaticAssets !== undefined
+      })
+    )
+  );
+
+  app.get("/runtime/ledger-integrity", (context) =>
+    noStoreJson(
+      context,
+      buildLedgerIntegrityReport({
+        eventStore,
+        eventStoreConfigured: options.eventStore !== undefined
       })
     )
   );
@@ -1845,6 +1885,74 @@ function buildResourceAccessPosture(options: {
       "Resource access grants remain scoped, revocable, short-lived delivery-layer material and are not semantic ledger authority."
     ]
   };
+}
+
+function buildLedgerIntegrityReport(options: {
+  eventStore: EventStore;
+  eventStoreConfigured: boolean;
+}): DaemonLedgerIntegrityResponse {
+  const sessions = options.eventStore
+    .listSessionIds()
+    .sort()
+    .map((sessionId) => {
+      const events = options.eventStore.listEvents(sessionId);
+      const hashedEventCount = countHashedEvents(events);
+
+      return {
+        sessionId,
+        events,
+        report: {
+          sessionId,
+          eventCount: events.length,
+          hashedEventCount,
+          legacyEventCount: events.length - hashedEventCount,
+          sequenceRange:
+            events.length === 0
+              ? null
+              : {
+                  from: events[0]!.sequence,
+                  to: events[events.length - 1]!.sequence
+                }
+        }
+      };
+    });
+  const events = sessions.flatMap((session) => session.events);
+  const eventCount = events.length;
+  const hashedEventCount = countHashedEvents(events);
+  const integrityError = validateEventIntegrityChain(
+    events as readonly unknown[] as readonly EventEnvelope[]
+  );
+
+  return {
+    status: integrityError ? "invalid" : "valid",
+    eventStore: {
+      mode: configuredStore(options.eventStoreConfigured),
+      validation: "current_snapshot"
+    },
+    sessionCount: sessions.length,
+    eventCount,
+    hashedEventCount,
+    legacyEventCount: eventCount - hashedEventCount,
+    sessions: sessions.map((session) => session.report),
+    ...(integrityError
+      ? {
+          integrityError: {
+            code: "integrity_chain_invalid" as const,
+            message: integrityError
+          }
+        }
+      : {}),
+    safety: [
+      "This report is derived from the daemon event store current snapshot only.",
+      "It reports session ids, event counts, sequence ranges, and hash coverage counts without returning event payloads or event ids.",
+      "It does not expose configured file paths, provider secrets, request bodies, resource access ids, URLs, hosted content, or payloads.",
+      "Integrity hashes are local tamper-evidence metadata; they are not distributed consensus, production notarization, or multi-writer coordination."
+    ]
+  };
+}
+
+function countHashedEvents(events: readonly StoredEvent[]): number {
+  return events.filter((event) => Boolean(event.integrity?.eventHash)).length;
 }
 
 function buildDeploymentPosture(options: {

@@ -10,7 +10,7 @@ Deliberum is currently a local-first, pre-production implementation. The support
 
 The daemon binds to `127.0.0.1` by default and does not provide production authorization or multi-user deployment yet. The daemon entrypoint can read `DELIBERUM_HOST` and `DELIBERUM_PORT` for container or supervised process startup, but the library defaults remain localhost-first.
 
-Use `deliberum daemon deployment-posture` or `GET /runtime/deployment-posture` against a running daemon to inspect safe local/pre-production deployment posture. The diagnostic returns exposure classes, auth mode, token mode, principal count, persistence classes, SQLite process-lock status, resource access continuity, Web static asset mode, production-readiness blockers, and safety notes without exposing daemon tokens, CORS origin values, configured resource access URLs, configured file paths, provider secrets, request bodies, or payloads.
+Use `deliberum daemon deployment-posture` or `GET /runtime/deployment-posture` against a running daemon to inspect safe local/pre-production deployment posture. The diagnostic returns exposure classes, auth mode, token mode, principal count, persistence classes, SQLite process-lock status, resource access continuity, Web static asset mode, production-readiness blockers, and safety notes without exposing daemon tokens, CORS origin values, configured resource access URLs, configured file paths, provider secrets, request bodies, or payloads. Use `deliberum daemon ledger-integrity` or `GET /runtime/ledger-integrity` to inspect safe daemon event ledger integrity counts without returning event payloads or event ids.
 
 ## Local CLI
 
@@ -22,7 +22,7 @@ The CLI does not create hidden current-session state and does not bypass EventSt
 
 The daemon exposes the current local HTTP API, session-scoped resource delivery planning endpoint, short-lived resource access grant routes for allowed URL and hosted in-memory content deliveries, and WebGET endpoints. It uses in-memory state by default.
 
-The daemon also exposes `GET /runtime/deployment-posture` as a no-store safe diagnostic. It is useful for checking whether a local/pre-production daemon is still bound to localhost, whether control-plane bearer auth is enabled, whether auth is using a legacy single token or a scoped registry, which store classes are process-memory versus configured, whether the SQLite process lock is configured, whether resource access grants survive restarts, whether built Web static assets are enabled, and which production-readiness blockers still apply. It does not change daemon configuration and is not a production authorization, identity, or multi-user deployment system.
+The daemon also exposes `GET /runtime/deployment-posture` as a no-store safe diagnostic. It is useful for checking whether a local/pre-production daemon is still bound to localhost, whether control-plane bearer auth is enabled, whether auth is using a legacy single token or a scoped registry, which store classes are process-memory versus configured, whether the SQLite process lock is configured, whether resource access grants survive restarts, whether built Web static assets are enabled, and which production-readiness blockers still apply. It does not change daemon configuration and is not a production authorization, identity, or multi-user deployment system. `GET /runtime/ledger-integrity` is also no-store and reports the daemon event store's current snapshot validation status, session/event counts, hash coverage counts, and sequence ranges without exposing event contents. It does not replace backups, external notarization, distributed consensus, or production multi-writer coordination.
 
 For local/pre-production durable storage, set `DELIBERUM_DAEMON_SQLITE_PATH=<path>`. The daemon will use SQLite-backed stores for session ledger events, run metadata, explicitly registered resource broker metadata/content, resource access grant state, and safe operation audit metadata in that database, with WAL mode, a busy timeout, and local connection-level writer serialization. `DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK=true` adds a cooperative single-daemon process lock for that SQLite file, with `DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK_TTL_MS` and `DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK_HEARTBEAT_MS` controlling stale-lock recovery. This guard reduces accidental concurrent daemon ownership of one local database but is not production distributed multi-writer coordination.
 
@@ -129,6 +129,7 @@ Use this runbook for a single-operator or trusted-team pre-production daemon. It
    ```bash
    curl -fsS http://127.0.0.1:3877/health
    node apps/cli/dist/index.js daemon deployment-posture --json
+   node apps/cli/dist/index.js daemon ledger-integrity --json
    node apps/cli/dist/index.js daemon resource-access status --json
    node apps/cli/dist/index.js daemon operation-audit --limit 25 --json
    ```

@@ -443,6 +443,50 @@ describe("DeliberumDaemonClient", () => {
     });
   });
 
+  it("reads safe daemon ledger integrity metadata", async () => {
+    const fetch = createFetch({
+      status: "valid",
+      eventStore: {
+        mode: "configured_store",
+        validation: "current_snapshot"
+      },
+      sessionCount: 1,
+      eventCount: 2,
+      hashedEventCount: 2,
+      legacyEventCount: 0,
+      sessions: [
+        {
+          sessionId: "session-1",
+          eventCount: 2,
+          hashedEventCount: 2,
+          legacyEventCount: 0,
+          sequenceRange: { from: 0, to: 1 }
+        }
+      ],
+      safety: ["No event payloads are returned."]
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    const result = await daemonClient.getLedgerIntegrity();
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:3877/runtime/ledger-integrity");
+    expect(init).toEqual({
+      method: "GET"
+    });
+    expect(result).toMatchObject({
+      status: "valid",
+      eventStore: {
+        mode: "configured_store",
+        validation: "current_snapshot"
+      },
+      sessionCount: 1,
+      eventCount: 2,
+      hashedEventCount: 2,
+      legacyEventCount: 0
+    });
+  });
+
   it("reads safe daemon operation audit metadata with an optional limit", async () => {
     const fetch = createFetch({
       events: [

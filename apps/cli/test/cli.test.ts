@@ -202,6 +202,27 @@ function createFakeRunDaemonClient(
       },
       safety: ["No secrets are returned."]
     })),
+    getLedgerIntegrity: vi.fn(async () => ({
+      status: "valid",
+      eventStore: {
+        mode: "configured_store",
+        validation: "current_snapshot"
+      },
+      sessionCount: 1,
+      eventCount: 2,
+      hashedEventCount: 2,
+      legacyEventCount: 0,
+      sessions: [
+        {
+          sessionId: "session-1",
+          eventCount: 2,
+          hashedEventCount: 2,
+          legacyEventCount: 0,
+          sequenceRange: { from: 0, to: 1 }
+        }
+      ],
+      safety: ["No event payloads are returned."]
+    })),
     getOperationAudit: vi.fn(async () => ({
       events: [
         {
@@ -2104,6 +2125,66 @@ describe("CLI command routing", () => {
     expect(rejected.exitCode).toBe(1);
     expect(rejected.stdout).not.toContain("redacted-input-value");
     expect(daemonClient.getDeploymentPosture).toHaveBeenCalledTimes(1);
+    expect(createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://localhost:4999"
+    });
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("routes daemon ledger integrity through the daemon client", async () => {
+    const { daemonClient, createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies();
+
+    const report = parseOutput<{
+      status: string;
+      eventStore: { mode: string; validation: string };
+      sessionCount: number;
+      eventCount: number;
+      hashedEventCount: number;
+      legacyEventCount: number;
+      sessions: Array<{
+        sessionId: string;
+        eventCount: number;
+        hashedEventCount: number;
+        legacyEventCount: number;
+        sequenceRange: { from: number; to: number } | null;
+      }>;
+      safety: string[];
+    }>(
+      await runCli(
+        ["daemon", "ledger-integrity", "--daemon-url", "http://localhost:4999", "--json"],
+        dependencies
+      )
+    );
+    const rejected = await runCli(
+      ["daemon", "ledger-integrity", "--api-key", "sk-runtime-secret", "--json"],
+      dependencies
+    );
+
+    expect(report).toMatchObject({
+      status: "valid",
+      eventStore: {
+        mode: "configured_store",
+        validation: "current_snapshot"
+      },
+      sessionCount: 1,
+      eventCount: 2,
+      hashedEventCount: 2,
+      legacyEventCount: 0,
+      sessions: [
+        {
+          sessionId: "session-1",
+          eventCount: 2,
+          hashedEventCount: 2,
+          legacyEventCount: 0,
+          sequenceRange: { from: 0, to: 1 }
+        }
+      ]
+    });
+    expect(report.safety.join(" ")).toContain("No event payloads");
+    expect(rejected.exitCode).toBe(1);
+    expect(rejected.stdout).not.toContain("sk-runtime-secret");
+    expect(daemonClient.getLedgerIntegrity).toHaveBeenCalledTimes(1);
     expect(createDaemonClient).toHaveBeenCalledWith({
       baseUrl: "http://localhost:4999"
     });

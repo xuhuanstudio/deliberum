@@ -70,6 +70,7 @@ export const CLI_COMMANDS = [
   "daemon setup-plan",
   "daemon auth-entry",
   "daemon deployment-posture",
+  "daemon ledger-integrity",
   "daemon operation-audit",
   "daemon resource-access status",
   "daemon resource-access revoke",
@@ -183,6 +184,7 @@ export type CliRunDaemonClient = Pick<
   | "getRuntimeProfiles"
   | "getResourceAccessPosture"
   | "getDeploymentPosture"
+  | "getLedgerIntegrity"
   | "getOperationAudit"
   | "createRun"
   | "listRuns"
@@ -1019,6 +1021,15 @@ async function executeDaemonCommand(
     return daemonClient.getDeploymentPosture();
   }
 
+  if (action === "ledger-integrity") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon ledger-integrity [--daemon-url <local-url>]"
+    );
+
+    return daemonClient.getLedgerIntegrity();
+  }
+
   if (action === "operation-audit") {
     requireNoPositionals(
       restPositionals,
@@ -1080,6 +1091,7 @@ function assertKnownDaemonCommand(action: string): void {
       "setup-plan",
       "auth-entry",
       "deployment-posture",
+      "ledger-integrity",
       "operation-audit",
       "resource-access"
     ].includes(action)

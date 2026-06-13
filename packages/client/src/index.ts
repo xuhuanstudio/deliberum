@@ -387,6 +387,30 @@ export type DeploymentPostureResponse = {
   safety: string[];
 };
 
+export type LedgerIntegrityResponse = {
+  status: "valid" | "invalid";
+  eventStore: {
+    mode: "process_memory" | "configured_store";
+    validation: "current_snapshot";
+  };
+  sessionCount: number;
+  eventCount: number;
+  hashedEventCount: number;
+  legacyEventCount: number;
+  sessions: Array<{
+    sessionId: string;
+    eventCount: number;
+    hashedEventCount: number;
+    legacyEventCount: number;
+    sequenceRange: { from: number; to: number } | null;
+  }>;
+  integrityError?: {
+    code: "integrity_chain_invalid";
+    message: string;
+  };
+  safety: string[];
+};
+
 export type OperationAuditResponse = {
   events: Array<{
     id: string;
@@ -812,6 +836,10 @@ export class DeliberumDaemonClient {
 
   getDeploymentPosture(): Promise<DeploymentPostureResponse> {
     return this.request("GET", "/runtime/deployment-posture");
+  }
+
+  getLedgerIntegrity(): Promise<LedgerIntegrityResponse> {
+    return this.request("GET", "/runtime/ledger-integrity");
   }
 
   getOperationAudit(options: { limit?: number } = {}): Promise<OperationAuditResponse> {
