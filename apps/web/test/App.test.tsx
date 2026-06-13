@@ -1946,6 +1946,7 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
+    expect(screen.getByText("Current conclusion remains provisional")).toBeTruthy();
     expect(screen.getByText("Draft status")).toBeTruthy();
     expect(screen.getAllByText(/provisional/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);

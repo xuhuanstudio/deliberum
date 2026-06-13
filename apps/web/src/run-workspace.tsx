@@ -370,6 +370,9 @@ export function RunOutcomePage() {
   const outcomeSessionId = getStringRecordValue(outcome, "sessionId");
   const compiledOutcome = outcome?.status === "compiled" ? outcome.outcome : undefined;
   const provenance = getRecordValue(compiledOutcome, "provenance");
+  const conclusionStatus = describeRunOutcomeReviewStatus(
+    outcome?.status === "compiled" ? outcome.draftStatus : undefined
+  );
   const finalCandidateProposalEventId = getStringRecordValue(
     provenance,
     "finalCandidateProposalEventId"
@@ -409,6 +412,11 @@ export function RunOutcomePage() {
         <QueryState query={outcomeQuery}>
           {outcome?.status === "compiled" ? (
             <>
+              <StatusBanner
+                tone={conclusionStatus.tone}
+                title={conclusionStatus.title}
+                detail={conclusionStatus.detail}
+              />
               <DataPanel
                 title="Current conclusion"
                 description="A readable summary of the current result. Advanced details keep the underlying technical response for developers."
@@ -3032,6 +3040,37 @@ function describeOutcomeUnavailableReason(reason: unknown): string {
   }
 
   return "Deliberum returned an unavailable conclusion state. Open Advanced details for the raw reason.";
+}
+
+function describeRunOutcomeReviewStatus(draftStatus: unknown): {
+  tone: "neutral" | "ok" | "warning";
+  title: string;
+  detail: string;
+} {
+  if (draftStatus === "draft") {
+    return {
+      tone: "ok",
+      title: "Current conclusion ready to review",
+      detail:
+        "This is reviewable discussion material. Check disagreements, risks, missing evidence, and next actions before relying on it."
+    };
+  }
+
+  if (draftStatus === "provisional") {
+    return {
+      tone: "warning",
+      title: "Current conclusion remains provisional",
+      detail:
+        "Treat this as a working conclusion until the visible disagreements, risks, and evidence gaps have been reviewed."
+    };
+  }
+
+  return {
+    tone: "neutral",
+    title: "Current conclusion status unknown",
+    detail:
+      "Review the conclusion together with its disagreements, risks, missing evidence, and next actions."
+  };
 }
 
 function formatRunStartErrorMessage(error: Error | null | undefined): string {
