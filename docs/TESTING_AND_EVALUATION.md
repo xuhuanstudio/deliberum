@@ -46,6 +46,12 @@ dimension, coverage for every standard baseline kind, and no unsupported
 findings. It checks evidence-fixture completeness only; it does not judge model
 performance, produce numeric ratings, or replace external review.
 
+Fixture `sourceRefs` must be repository-relative file paths. Public sample
+source artifacts live under `examples/evaluation/sources/`, and the evaluation
+gate fails if a referenced source is missing, escapes the repository, or points
+to a directory. This keeps the sample evidence auditable instead of leaving
+provenance as unresolved labels.
+
 `corepack pnpm report:evaluation` builds the package and prints a Markdown
 summary for the public fixtures. The report is intended for review and release
 notes: it lists case coverage, run counts, finding matrix completeness,

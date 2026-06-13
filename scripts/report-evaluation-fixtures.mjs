@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -45,6 +45,15 @@ for (const fixturePath of fixturePaths) {
 
   try {
     const report = createBaselineComparisonReport(input);
+    const sourceRefFailures = collectSourceRefs(input)
+      .map((sourceRef) => validateSourceRef(sourceRef))
+      .filter((failure) => failure !== undefined);
+
+    if (sourceRefFailures.length > 0) {
+      failures.push(...sourceRefFailures.map((failure) => `${relativePath}: ${failure}`));
+      continue;
+    }
+
     renderedReports.push(
       formatBaselineComparisonMarkdownReport(report, {
         title: `Evaluation fixture: ${relativePath}`
@@ -67,4 +76,53 @@ if (failures.length > 0) {
 
 function resolveFixturePath(inputPath) {
   return isAbsolute(inputPath) ? inputPath : resolve(repoRoot, inputPath);
+}
+
+function collectSourceRefs(input) {
+  const sourceRefs = new Set();
+
+  for (const testCase of Array.isArray(input?.cases) ? input.cases : []) {
+    addSourceRefs(sourceRefs, testCase?.sourceRefs);
+
+    for (const run of Array.isArray(testCase?.runs) ? testCase.runs : []) {
+      addSourceRefs(sourceRefs, run?.sourceRefs);
+    }
+
+    for (const finding of Array.isArray(testCase?.findings) ? testCase.findings : []) {
+      addSourceRefs(sourceRefs, finding?.sourceRefs);
+    }
+  }
+
+  return [...sourceRefs].sort();
+}
+
+function addSourceRefs(sourceRefs, values) {
+  for (const value of Array.isArray(values) ? values : []) {
+    if (typeof value === "string") {
+      sourceRefs.add(value);
+    }
+  }
+}
+
+function validateSourceRef(sourceRef) {
+  if (isAbsolute(sourceRef)) {
+    return `sourceRef must be repository-relative: ${sourceRef}`;
+  }
+
+  const resolved = resolve(repoRoot, sourceRef);
+  const relativePath = relative(repoRoot, resolved);
+
+  if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+    return `sourceRef must stay inside the repository: ${sourceRef}`;
+  }
+
+  if (!existsSync(resolved)) {
+    return `sourceRef does not exist: ${sourceRef}`;
+  }
+
+  if (!statSync(resolved).isFile()) {
+    return `sourceRef must point to a file: ${sourceRef}`;
+  }
+
+  return undefined;
 }

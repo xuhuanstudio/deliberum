@@ -10,7 +10,7 @@
         "executability"
       ],
       "sourceRefs": [
-        "examples/evaluation/case-local-daemon-resource-access/prompt.md"
+        "examples/evaluation/sources/resource-access/prompt.md"
       ],
       "runs": [
         {
@@ -19,8 +19,8 @@
           "label": "Deliberum structured run",
           "outputSummary": "Preserve localhost defaults, require explicit non-local opt-in, and keep access tokens out of the semantic ledger.",
           "sourceRefs": [
-            "ledger/resource-access/events.json",
-            "daemon/runtime-profiles.json"
+            "examples/evaluation/sources/resource-access/deliberum-events.md",
+            "examples/evaluation/sources/resource-access/runtime-profiles.md"
           ],
           "metrics": {
             "providerCallCount": 4,
@@ -33,7 +33,7 @@
           "label": "Direct answer baseline",
           "outputSummary": "Recommend configurable resource URLs with a short note about HTTPS.",
           "sourceRefs": [
-            "baselines/resource-access/direct-answer.md"
+            "examples/evaluation/sources/resource-access/direct-answer-baseline.md"
           ],
           "metrics": {
             "providerCallCount": 1
@@ -45,7 +45,7 @@
           "label": "Central judge baseline",
           "outputSummary": "Collect two suggestions, then produce a single deployment recommendation.",
           "sourceRefs": [
-            "baselines/resource-access/judge-workflow.md"
+            "examples/evaluation/sources/resource-access/aggregated-review-baseline.md"
           ],
           "metrics": {
             "providerCallCount": 3
@@ -59,8 +59,8 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run preserved bearer access id leakage and non-local base URL opt-in as explicit risks; the direct baseline mentioned HTTPS but did not require non-local opt-in.",
           "sourceRefs": [
-            "ledger/resource-access/events.json",
-            "baselines/resource-access/direct-answer.md"
+            "examples/evaluation/sources/resource-access/deliberum-events.md",
+            "examples/evaluation/sources/resource-access/direct-answer-baseline.md"
           ]
         },
         {
@@ -69,7 +69,7 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum output references resource delivery and grant lifecycle events, while the direct baseline has no provenance trail.",
           "sourceRefs": [
-            "ledger/resource-access/events.json"
+            "examples/evaluation/sources/resource-access/deliberum-events.md"
           ]
         },
         {
@@ -78,8 +78,8 @@
           "status": "mixed",
           "evidence": "The direct baseline is shorter, but the Deliberum run includes concrete daemon env gates and testable deployment constraints.",
           "sourceRefs": [
-            "daemon/runtime-profiles.json",
-            "baselines/resource-access/direct-answer.md"
+            "examples/evaluation/sources/resource-access/runtime-profiles.md",
+            "examples/evaluation/sources/resource-access/direct-answer-baseline.md"
           ]
         },
         {
@@ -88,8 +88,8 @@
           "status": "mixed",
           "evidence": "Both runs identified remote access risk, but the judge baseline compressed token handling into a single deployment recommendation.",
           "sourceRefs": [
-            "ledger/resource-access/events.json",
-            "baselines/resource-access/judge-workflow.md"
+            "examples/evaluation/sources/resource-access/deliberum-events.md",
+            "examples/evaluation/sources/resource-access/aggregated-review-baseline.md"
           ]
         },
         {
@@ -98,7 +98,7 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run keeps objections, policy decisions, and implementation checks separately traceable.",
           "sourceRefs": [
-            "ledger/resource-access/events.json"
+            "examples/evaluation/sources/resource-access/deliberum-events.md"
           ]
         },
         {
@@ -107,8 +107,8 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run produced concrete env names and validation expectations; the judge baseline stayed at recommendation level.",
           "sourceRefs": [
-            "daemon/runtime-profiles.json",
-            "baselines/resource-access/judge-workflow.md"
+            "examples/evaluation/sources/resource-access/runtime-profiles.md",
+            "examples/evaluation/sources/resource-access/aggregated-review-baseline.md"
           ]
         }
       ]
@@ -123,7 +123,7 @@
         "user_comprehension"
       ],
       "sourceRefs": [
-        "examples/evaluation/case-provider-setup/prompt.md"
+        "examples/evaluation/sources/provider-setup/prompt.md"
       ],
       "runs": [
         {
@@ -132,8 +132,8 @@
           "label": "Deliberum structured run",
           "outputSummary": "Use safe runtime profile metadata and comment-only env templates; keep secrets in daemon runtime environment.",
           "sourceRefs": [
-            "ledger/provider-setup/events.json",
-            "cli/daemon-env-template.txt"
+            "examples/evaluation/sources/provider-setup/deliberum-events.md",
+            "examples/evaluation/sources/provider-setup/env-template.md"
           ],
           "metrics": {
             "providerCallCount": 5,
@@ -146,7 +146,7 @@
           "label": "Multi-perspective prompt baseline",
           "outputSummary": "Summarize developer, operator, and security perspectives in one response.",
           "sourceRefs": [
-            "baselines/provider-setup/multi-perspective.md"
+            "examples/evaluation/sources/provider-setup/multi-perspective-baseline.md"
           ],
           "metrics": {
             "providerCallCount": 1
@@ -158,7 +158,7 @@
           "label": "Role-agent workflow baseline",
           "outputSummary": "Ask security and operator agents for recommendations, then merge them.",
           "sourceRefs": [
-            "baselines/provider-setup/role-agent.md"
+            "examples/evaluation/sources/provider-setup/role-agent-baseline.md"
           ],
           "metrics": {
             "providerCallCount": 4
@@ -172,8 +172,8 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run kept secret leakage objections as unresolved guardrails instead of turning them into optional advice.",
           "sourceRefs": [
-            "ledger/provider-setup/events.json",
-            "baselines/provider-setup/multi-perspective.md"
+            "examples/evaluation/sources/provider-setup/deliberum-events.md",
+            "examples/evaluation/sources/provider-setup/multi-perspective-baseline.md"
           ]
         },
         {
@@ -182,8 +182,8 @@
           "status": "mixed",
           "evidence": "Both runs preserve a security perspective, but the multi-perspective prompt does not attach it to later implementation checks.",
           "sourceRefs": [
-            "ledger/provider-setup/events.json",
-            "baselines/provider-setup/multi-perspective.md"
+            "examples/evaluation/sources/provider-setup/deliberum-events.md",
+            "examples/evaluation/sources/provider-setup/multi-perspective-baseline.md"
           ]
         },
         {
@@ -192,8 +192,8 @@
           "status": "mixed",
           "evidence": "The multi-perspective baseline is easier to read, while the Deliberum run gives more explicit setup boundaries.",
           "sourceRefs": [
-            "cli/daemon-env-template.txt",
-            "baselines/provider-setup/multi-perspective.md"
+            "examples/evaluation/sources/provider-setup/env-template.md",
+            "examples/evaluation/sources/provider-setup/multi-perspective-baseline.md"
           ]
         },
         {
@@ -202,8 +202,8 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run records objections and decisions as public process material; the role-agent baseline merges them into a final recommendation.",
           "sourceRefs": [
-            "ledger/provider-setup/events.json",
-            "baselines/provider-setup/role-agent.md"
+            "examples/evaluation/sources/provider-setup/deliberum-events.md",
+            "examples/evaluation/sources/provider-setup/role-agent-baseline.md"
           ]
         },
         {
@@ -212,8 +212,8 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run preserves dissent around interactive setup scope, while the role-agent baseline collapses the operator path into one merged answer.",
           "sourceRefs": [
-            "ledger/provider-setup/events.json",
-            "baselines/provider-setup/role-agent.md"
+            "examples/evaluation/sources/provider-setup/deliberum-events.md",
+            "examples/evaluation/sources/provider-setup/role-agent-baseline.md"
           ]
         },
         {
@@ -222,8 +222,8 @@
           "status": "no_clear_difference",
           "evidence": "Both outputs are understandable but emphasize different tradeoffs.",
           "sourceRefs": [
-            "cli/daemon-env-template.txt",
-            "baselines/provider-setup/role-agent.md"
+            "examples/evaluation/sources/provider-setup/env-template.md",
+            "examples/evaluation/sources/provider-setup/role-agent-baseline.md"
           ]
         }
       ]
@@ -238,7 +238,7 @@
         "traceability"
       ],
       "sourceRefs": [
-        "examples/evaluation/case-final-audit-readiness/prompt.md"
+        "examples/evaluation/sources/final-audit/prompt.md"
       ],
       "runs": [
         {
@@ -247,8 +247,8 @@
           "label": "Deliberum structured run",
           "outputSummary": "Require final candidate proposal material, explicit audit findings, unresolved limits, and provenance before compilation.",
           "sourceRefs": [
-            "ledger/final-audit/events.json",
-            "projection/final-outcome.json"
+            "examples/evaluation/sources/final-audit/deliberum-events.md",
+            "examples/evaluation/sources/final-audit/outcome-projection.md"
           ],
           "metrics": {
             "providerCallCount": 6,
@@ -261,7 +261,7 @@
           "label": "Independent answers summary baseline",
           "outputSummary": "Collect independent answers and summarize the strongest common recommendation.",
           "sourceRefs": [
-            "baselines/final-audit/independent-summary.md"
+            "examples/evaluation/sources/final-audit/independent-summary-baseline.md"
           ],
           "metrics": {
             "providerCallCount": 4
@@ -273,7 +273,7 @@
           "label": "Voting aggregation baseline",
           "outputSummary": "Ask participants to vote on final readiness and summarize the majority position.",
           "sourceRefs": [
-            "baselines/final-audit/voting.md"
+            "examples/evaluation/sources/final-audit/aggregation-baseline.md"
           ],
           "metrics": {
             "providerCallCount": 5
@@ -287,8 +287,8 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run preserves unresolved conditions and audit findings in the compiled projection; the summary baseline smooths them into a single recommendation.",
           "sourceRefs": [
-            "projection/final-outcome.json",
-            "baselines/final-audit/independent-summary.md"
+            "examples/evaluation/sources/final-audit/outcome-projection.md",
+            "examples/evaluation/sources/final-audit/independent-summary-baseline.md"
           ]
         },
         {
@@ -297,8 +297,8 @@
           "status": "mixed",
           "evidence": "Both outputs avoid unsupported factual claims, but the Deliberum projection keeps evidence needs visible.",
           "sourceRefs": [
-            "ledger/final-audit/events.json",
-            "baselines/final-audit/independent-summary.md"
+            "examples/evaluation/sources/final-audit/deliberum-events.md",
+            "examples/evaluation/sources/final-audit/independent-summary-baseline.md"
           ]
         },
         {
@@ -307,7 +307,7 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run links audit material to final candidate proposal events, while the summary baseline cannot trace readiness decisions.",
           "sourceRefs": [
-            "ledger/final-audit/events.json"
+            "examples/evaluation/sources/final-audit/deliberum-events.md"
           ]
         },
         {
@@ -316,8 +316,8 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run treats readiness as audited conditions; the voting baseline treats majority agreement as sufficient.",
           "sourceRefs": [
-            "projection/final-outcome.json",
-            "baselines/final-audit/voting.md"
+            "examples/evaluation/sources/final-audit/outcome-projection.md",
+            "examples/evaluation/sources/final-audit/aggregation-baseline.md"
           ]
         },
         {
@@ -326,8 +326,8 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run keeps factual uncertainty and evidence needs explicit, while the voting baseline can pass unsupported majority claims forward.",
           "sourceRefs": [
-            "ledger/final-audit/events.json",
-            "baselines/final-audit/voting.md"
+            "examples/evaluation/sources/final-audit/deliberum-events.md",
+            "examples/evaluation/sources/final-audit/aggregation-baseline.md"
           ]
         },
         {
@@ -336,8 +336,8 @@
           "status": "deliberum_stronger",
           "evidence": "The Deliberum run has event-level provenance for final audit readiness; the voting baseline reports aggregate preference only.",
           "sourceRefs": [
-            "ledger/final-audit/events.json",
-            "baselines/final-audit/voting.md"
+            "examples/evaluation/sources/final-audit/deliberum-events.md",
+            "examples/evaluation/sources/final-audit/aggregation-baseline.md"
           ]
         }
       ]
@@ -351,7 +351,7 @@
         "latency"
       ],
       "sourceRefs": [
-        "examples/evaluation/case-cost-latency-transparency/prompt.md"
+        "examples/evaluation/sources/cost-latency/prompt.md"
       ],
       "runs": [
         {
@@ -360,8 +360,8 @@
           "label": "Deliberum structured run",
           "outputSummary": "Expose provider call count, event count, and unresolved quality tradeoffs instead of presenting extra deliberation as free.",
           "sourceRefs": [
-            "ledger/cost-latency/events.json",
-            "projection/cost-latency/outcome.json"
+            "examples/evaluation/sources/cost-latency/deliberum-events.md",
+            "examples/evaluation/sources/cost-latency/outcome-projection.md"
           ],
           "metrics": {
             "latencyMs": 184000,
@@ -375,7 +375,7 @@
           "label": "Direct answer baseline",
           "outputSummary": "Return a concise answer with one provider call and no explicit deliberation overhead.",
           "sourceRefs": [
-            "baselines/cost-latency/direct-answer.md"
+            "examples/evaluation/sources/cost-latency/direct-answer-baseline.md"
           ],
           "metrics": {
             "latencyMs": 18000,
@@ -388,7 +388,7 @@
           "label": "Multi-perspective prompt baseline",
           "outputSummary": "Ask one model to compare several perspectives in one request and summarize the tradeoff.",
           "sourceRefs": [
-            "baselines/cost-latency/multi-perspective.md"
+            "examples/evaluation/sources/cost-latency/multi-perspective-baseline.md"
           ],
           "metrics": {
             "latencyMs": 26000,
@@ -403,8 +403,8 @@
           "status": "baseline_stronger",
           "evidence": "The direct answer baseline used one provider call, while the Deliberum run used seven provider calls to preserve objections, audit material, and provenance.",
           "sourceRefs": [
-            "ledger/cost-latency/events.json",
-            "baselines/cost-latency/direct-answer.md"
+            "examples/evaluation/sources/cost-latency/deliberum-events.md",
+            "examples/evaluation/sources/cost-latency/direct-answer-baseline.md"
           ],
           "notes": [
             "Lower cost is a legitimate baseline advantage when the task does not need deliberation depth."
@@ -416,8 +416,8 @@
           "status": "baseline_stronger",
           "evidence": "The direct answer completed faster because it did not run sealed divergence, review, or final audit stages.",
           "sourceRefs": [
-            "ledger/cost-latency/events.json",
-            "baselines/cost-latency/direct-answer.md"
+            "examples/evaluation/sources/cost-latency/deliberum-events.md",
+            "examples/evaluation/sources/cost-latency/direct-answer-baseline.md"
           ]
         },
         {
@@ -426,8 +426,8 @@
           "status": "baseline_stronger",
           "evidence": "The multi-perspective baseline used one prompt to approximate several viewpoints, while the Deliberum run paid for separate proposal and audit material.",
           "sourceRefs": [
-            "ledger/cost-latency/events.json",
-            "baselines/cost-latency/multi-perspective.md"
+            "examples/evaluation/sources/cost-latency/deliberum-events.md",
+            "examples/evaluation/sources/cost-latency/multi-perspective-baseline.md"
           ]
         },
         {
@@ -436,9 +436,9 @@
           "status": "mixed",
           "evidence": "The multi-perspective prompt returned sooner, but the Deliberum run exposed where extra latency came from through event and provider-call metadata.",
           "sourceRefs": [
-            "ledger/cost-latency/events.json",
-            "projection/cost-latency/outcome.json",
-            "baselines/cost-latency/multi-perspective.md"
+            "examples/evaluation/sources/cost-latency/deliberum-events.md",
+            "examples/evaluation/sources/cost-latency/outcome-projection.md",
+            "examples/evaluation/sources/cost-latency/multi-perspective-baseline.md"
           ]
         }
       ]

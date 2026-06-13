@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { dirname, extname, join, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createBaselineComparisonReport
@@ -65,6 +65,14 @@ for (const fixtureFile of fixtureFiles) {
       `${relativePath}: has ${report.coverage.incompleteFindingMatrixCaseCount} incomplete case finding matrix/matrices.`
     );
   }
+
+  for (const sourceRef of collectSourceRefs(input)) {
+    const sourceRefFinding = validateSourceRef(sourceRef);
+
+    if (sourceRefFinding) {
+      findings.push(`${relativePath}: ${sourceRefFinding}`);
+    }
+  }
 }
 
 if (findings.length > 0) {
@@ -75,4 +83,53 @@ if (findings.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(`Evaluation fixture check passed for ${fixtureFiles.length} fixture(s).`);
+}
+
+function collectSourceRefs(input) {
+  const sourceRefs = new Set();
+
+  for (const testCase of Array.isArray(input?.cases) ? input.cases : []) {
+    addSourceRefs(sourceRefs, testCase?.sourceRefs);
+
+    for (const run of Array.isArray(testCase?.runs) ? testCase.runs : []) {
+      addSourceRefs(sourceRefs, run?.sourceRefs);
+    }
+
+    for (const finding of Array.isArray(testCase?.findings) ? testCase.findings : []) {
+      addSourceRefs(sourceRefs, finding?.sourceRefs);
+    }
+  }
+
+  return [...sourceRefs].sort();
+}
+
+function addSourceRefs(sourceRefs, values) {
+  for (const value of Array.isArray(values) ? values : []) {
+    if (typeof value === "string") {
+      sourceRefs.add(value);
+    }
+  }
+}
+
+function validateSourceRef(sourceRef) {
+  if (isAbsolute(sourceRef)) {
+    return `sourceRef must be repository-relative: ${sourceRef}`;
+  }
+
+  const resolved = resolve(repoRoot, sourceRef);
+  const relativePath = relative(repoRoot, resolved);
+
+  if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+    return `sourceRef must stay inside the repository: ${sourceRef}`;
+  }
+
+  if (!existsSync(resolved)) {
+    return `sourceRef does not exist: ${sourceRef}`;
+  }
+
+  if (!statSync(resolved).isFile()) {
+    return `sourceRef must point to a file: ${sourceRef}`;
+  }
+
+  return undefined;
 }
