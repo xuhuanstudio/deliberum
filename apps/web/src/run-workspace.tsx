@@ -106,6 +106,9 @@ export function RunNewPage() {
     mutationFn: (runPlan: Record<string, unknown>) => client.createRun({ runPlan })
   });
   const createdRunId = getStringRecordValue(createMutation.data?.run, "runId");
+  const createdSessionId =
+    getStringRecordValue(createMutation.data?.session, "sessionId") ??
+    getStringRecordValue(createMutation.data?.run, "sessionId");
   const canCreateDiscussion =
     discussionQuestion.trim().length > 0 && !createMutation.isPending;
 
@@ -268,21 +271,30 @@ export function RunNewPage() {
           <StatusBanner
             tone="ok"
             title="Discussion created"
-            detail="Open the discussion to continue the guided deliberation and review its conclusion when it is ready."
+            detail="Continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
           />
         ) : null}
         {createdRunId ? (
           <div className="du-action-row">
             <Link className="du-action-link" to="/runs/$runId" params={{ runId: createdRunId }}>
-              Open discussion
+              Continue guided discussion
             </Link>
             <Link
-              className="du-action-link"
+              className="du-action-link du-secondary-link"
               to="/runs/$runId/outcome"
               params={{ runId: createdRunId }}
             >
               View current conclusion
             </Link>
+            {createdSessionId ? (
+              <Link
+                className="du-action-link du-secondary-link"
+                to="/sessions/$sessionId"
+                params={{ sessionId: createdSessionId }}
+              >
+                Review discussion brief
+              </Link>
+            ) : null}
           </div>
         ) : null}
       </ViewFrame>

@@ -1209,11 +1209,12 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Discussion created")).toBeTruthy();
     expect(
       screen.getByText(
-        "Open the discussion to continue the guided deliberation and review its conclusion when it is ready."
+        "Continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("internal run id");
-    expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Continue guided discussion" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Review discussion brief" })).toBeTruthy();
   });
 
   it("creates a guided discussion from a plain-language brief", async () => {
@@ -1271,9 +1272,11 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Discussion created")).toBeTruthy();
     expect(
       screen.getByText(
-        "Open the discussion to continue the guided deliberation and review its conclusion when it is ready."
+        "Continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
       )
     ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Continue guided discussion" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Review discussion brief" })).toBeTruthy();
   });
 
   it("fills the sample brief with user-facing discussion text", async () => {
