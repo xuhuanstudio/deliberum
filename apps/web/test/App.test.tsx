@@ -1051,7 +1051,7 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
-    expect(screen.getByText("Advanced run details")).toBeTruthy();
+    expect(screen.getByText("Advanced / Developer Mode")).toBeTruthy();
     expect(screen.getByText("Run Alpha")).toBeTruthy();
     expect(screen.getByText("run-1")).toBeTruthy();
     expect(screen.getByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();

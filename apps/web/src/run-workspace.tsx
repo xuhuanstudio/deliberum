@@ -670,7 +670,7 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
           ["Current conclusion", getRecordValue(run, "latestFinalizationStatus")]
         ]}
       />
-      <AdvancedDetails summary="Advanced run details">
+      <AdvancedDetails summary="Advanced / Developer Mode">
         <KeyValueGrid
           items={[
             {
@@ -726,7 +726,7 @@ function RunSummary({ run }: { run: unknown }) {
           }
         ]}
       />
-      <AdvancedDetails summary="Advanced run identifiers">
+      <AdvancedDetails summary="Advanced / Developer Mode">
         <KeyValueGrid
           items={[
             {
@@ -2547,7 +2547,7 @@ function ProjectionRecord({
       <h4>{title}</h4>
       {description && description !== title ? <p>{description}</p> : null}
       <p className="du-readable-meta">Status: {formatRecordValue(status)}</p>
-      <AdvancedDetails summary="Advanced record details">
+      <AdvancedDetails summary="Advanced / Developer Mode: source details">
         <KeyValueGrid
           items={[
             {

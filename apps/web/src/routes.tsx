@@ -835,7 +835,7 @@ function ReadableSessionRecord({
       "rationale",
       "consequence",
       "requirement"
-    ]) ?? "Detailed material is available in Advanced record details.";
+    ]) ?? "Detailed material is available in Advanced details.";
   const status = formatRecordValue(getRecordValue(object, "status"));
   const proposalEventId = formatRecordValue(getRecordValue(record, "proposalEventId"));
   const sourceEventIds = formatRecordIdList(asArray(getRecordValue(object, "sourceEventIds")));
@@ -846,7 +846,7 @@ function ReadableSessionRecord({
       <h4>{title}</h4>
       {detail !== title ? <p>{detail}</p> : null}
       <p className="du-readable-meta">Status: {status}</p>
-      <AdvancedDetails summary="Advanced record details">
+      <AdvancedDetails summary="Advanced / Developer Mode: source details">
         <KeyValueGrid
           items={[
             {
@@ -1616,7 +1616,7 @@ function FinalPage() {
         />
         <DataPanel
           title="Current conclusion"
-          description="A readable summary of the current result. Advanced details keep provenance, raw JSON, and developer controls."
+          description="A readable summary of the current result. Advanced details keep technical provenance and developer controls."
         >
           <OutcomeBrief outcome={outcome} />
         </DataPanel>
@@ -1802,8 +1802,8 @@ function ResourcesPage() {
         >
           <ReadableSessionRecordList
             records={evidenceNeeds}
-            emptyTitle="No accepted missing evidence"
-            emptyDescription="No missing evidence items have been accepted into this discussion yet."
+            emptyTitle="No missing evidence yet"
+            emptyDescription="This discussion has not surfaced missing evidence items yet."
             kind="evidence"
           />
         </DataPanel>
