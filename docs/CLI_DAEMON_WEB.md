@@ -336,7 +336,7 @@ RUN_ID="$(
       "expectations": ["Return contribution material only."]
     },
     "sealedDivergence": {
-      "purpose": "provider_smoke_divergence",
+      "purpose": "initial_divergence",
       "revealPolicy": "all_completed",
       "participantIds": ["provider-alpha"]
     }
