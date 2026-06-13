@@ -86,6 +86,9 @@ mappings are:
 - `final_contest` -> finalization start request with outcome compilation;
 - `final_audit` -> finalization audit request for exactly one existing final
   candidate proposal event, without regenerating final candidate material or
+  compiling an outcome;
+- `omission_audit` -> finalization audit request for exactly one existing final
+  candidate proposal event, preserving omission-focused audit material without
   compiling an outcome.
 
 Candidate repair execution does not accept repair proposals or mutate the

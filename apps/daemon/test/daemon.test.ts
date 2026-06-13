@@ -4278,6 +4278,135 @@ describe("daemon API", () => {
     }
   });
 
+  it("executes accepted omission audit process proposals through final audit material", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const initialRunResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      startFullRunRequest()
+    );
+    expect(initialRunResponse.status).toBe(200);
+
+    const finalCandidateEventsBefore = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "final_candidate_proposed"
+    );
+    const finalAuditEventsBefore = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "final_audit_recorded"
+    );
+    const finalCandidateEvent = finalCandidateEventsBefore[0];
+
+    expect(finalCandidateEvent).toBeDefined();
+    expect(finalCandidateEventsBefore).toHaveLength(1);
+    expect(finalAuditEventsBefore).toHaveLength(1);
+
+    const proposeResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals`,
+      {
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-omission-audit",
+          primitive: "omission_audit",
+          targetIds: [finalCandidateEvent!.id],
+          expectedQualityGain: "Check whether final candidate material dropped important insights.",
+          riskIfSkipped: "Dropped insights may remain invisible during outcome compilation.",
+          requestedBudget: {
+            maxEvents: 1,
+            maxProviderCalls: 1
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: [finalCandidateEvent!.id]
+      }
+    );
+    const proposeBody = (await proposeResponse.json()) as {
+      event: { id: string };
+    };
+
+    await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+      {
+        authorId: "coordinator-1",
+        status: "accepted",
+        rationale: "Run the omission audit against the recorded final candidate."
+      }
+    );
+
+    const executeResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+      {}
+    );
+    const executeBody = (await executeResponse.json()) as {
+      processProposal: { primitive: string; latestStatus: string };
+      startRequest: {
+        finalization?: {
+          roundId?: string;
+          finalCandidateProposalEventId?: string;
+          retryFailedAuditors?: boolean;
+        };
+      };
+      stages: Array<{
+        stage: string;
+        result: {
+          finalCandidateResult?: { status: string; proposalEventId?: string };
+          auditResults?: Array<{ status: string; auditEventId?: string }>;
+          outcomeCompilation?: { status: string };
+        };
+      }>;
+    };
+    const finalCandidateEventsAfter = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "final_candidate_proposed"
+    );
+    const finalAuditEventsAfter = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "final_audit_recorded"
+    );
+
+    expect(executeResponse.status).toBe(200);
+    expect(executeBody.processProposal).toEqual({
+      proposalEventId: proposeBody.event.id,
+      proposalId: "process-proposal-omission-audit",
+      primitive: "omission_audit",
+      latestStatus: "accepted"
+    });
+    expect(executeBody.startRequest).toEqual({
+      finalization: {
+        roundId: `process-proposal:${proposeBody.event.id}:omission_audit`,
+        finalCandidateProposalEventId: finalCandidateEvent!.id,
+        retryFailedAuditors: true
+      }
+    });
+    expect(executeBody.stages).toEqual([
+      expect.objectContaining({
+        stage: "finalization",
+        result: expect.objectContaining({
+          finalCandidateResult: expect.objectContaining({
+            status: "skipped",
+            proposalEventId: finalCandidateEvent!.id
+          }),
+          auditResults: [
+            expect.objectContaining({
+              status: "recorded",
+              auditEventId: expect.any(String)
+            })
+          ],
+          outcomeCompilation: {
+            status: "not_requested"
+          }
+        })
+      })
+    ]);
+    expect(finalCandidateEventsAfter).toHaveLength(1);
+    expect(finalAuditEventsAfter).toHaveLength(2);
+    expectSafeRunApiPayload(executeBody);
+  });
+
   it("executes accepted candidate repair process proposals as proposal material only", async () => {
     const daemonApp = createRunDaemon();
     const created = await createRun(daemonApp);
@@ -4605,8 +4734,8 @@ describe("daemon API", () => {
       {
         authorId: "system",
         proposal: {
-          id: "process-proposal-omission-audit",
-          primitive: "omission_audit",
+          id: "process-proposal-blind-reframe",
+          primitive: "blind_reframe",
           targetIds: [topicContractEvent!.id],
           expectedQualityGain: "Inspect possible missing context before continuing.",
           riskIfSkipped: "Important omissions may remain unresolved.",

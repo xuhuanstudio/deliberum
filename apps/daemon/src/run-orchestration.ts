@@ -1137,7 +1137,7 @@ function createStartRequestForAcceptedProcessProposal(
     };
   }
 
-  if (primitive === "final_audit") {
+  if (primitive === "final_audit" || primitive === "omission_audit") {
     return {
       finalization: {
         roundId: createProcessProposalExecutionRoundId(
@@ -1147,7 +1147,8 @@ function createStartRequestForAcceptedProcessProposal(
         finalCandidateProposalEventId: resolveFinalAuditTargetEventId(
           proposalState,
           run,
-          eventStore
+          eventStore,
+          primitive
         ),
         retryFailedAuditors: true
       }
@@ -1234,12 +1235,15 @@ function resolveEvidenceCheckTargetIds(
 function resolveFinalAuditTargetEventId(
   proposalState: ProcessProposalExecutionState,
   run: DeliberationRunRecord,
-  eventStore: EventStore
+  eventStore: EventStore,
+  primitive: string
 ): string {
+  const label = primitive === "omission_audit" ? "Omission audit" : "Final audit";
+
   if (proposalState.proposal.targetIds.length !== 1) {
     throw new DaemonRunOrchestrationError(
       "process_proposal_target_invalid",
-      "Final audit process proposal must target exactly one final candidate proposal event.",
+      `${label} process proposal must target exactly one final candidate proposal event.`,
       409
     );
   }
@@ -1255,7 +1259,7 @@ function resolveFinalAuditTargetEventId(
   ) {
     throw new DaemonRunOrchestrationError(
       "process_proposal_target_invalid",
-      "Final audit process proposal must target a final candidate proposal event.",
+      `${label} process proposal must target a final candidate proposal event.`,
       409
     );
   }
