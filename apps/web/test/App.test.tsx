@@ -1202,7 +1202,8 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("Option repair");
     expect(document.body.textContent ?? "").not.toContain("Requirements review");
     expect(screen.getByText("Advanced / Developer Mode")).toBeTruthy();
-    expect(screen.getByText("Run Alpha")).toBeTruthy();
+    expect(screen.getByText("Evaluate the local daemon run workspace")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("Run Alpha");
     expect(document.body.textContent ?? "").not.toContain("run-1");
     fireEvent.click(screen.getByText("Advanced / Developer Mode"));
     expect(await screen.findByText("run-1")).toBeTruthy();
@@ -1427,7 +1428,8 @@ describe("@deliberum/web shell", () => {
   it("renders run detail, stage status, and discussion detail panels without raw event loading", async () => {
     const client = renderApp("/runs/run-1");
 
-    await screen.findByText("Run Alpha");
+    await screen.findByText("Evaluate the local daemon run workspace");
+    expect(document.body.textContent ?? "").not.toContain("Run Alpha");
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));

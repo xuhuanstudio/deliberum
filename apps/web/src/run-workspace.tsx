@@ -317,11 +317,7 @@ export function RunDetailPage() {
     <RunWorkspaceShell runId={runId}>
       <ViewFrame
         eyebrow="User Mode"
-        title={
-          getStringRecordValue(run, "title") ??
-          getStringRecordValue(run, "topic") ??
-          "Discussion"
-        }
+        title={formatRunDisplayTitle(run)}
         description="Review the discussion status, main perspectives, open disagreements, requirements, evidence gaps, and next recommended actions."
         actions={
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
@@ -627,7 +623,7 @@ function RunConceptPanel() {
   return (
     <DataPanel
       title="How discussions work"
-      description="The default mode explains the deliberation loop in user language before showing developer records."
+      description="The default mode explains the deliberation loop in user language."
     >
       <div className="du-explainer-grid">
         <ExplainerItem
@@ -681,16 +677,45 @@ function ExplainerItem({ title, detail }: { title: string; detail: string }) {
   );
 }
 
+function formatRunDisplayTitle(run: unknown, index?: number): string {
+  const topic = getStringRecordValue(run, "topic");
+  const title = getStringRecordValue(run, "title");
+
+  if (topic) {
+    return topic;
+  }
+
+  if (title && !isTechnicalRunTitle(title)) {
+    return title;
+  }
+
+  return typeof index === "number" ? `Discussion ${index + 1}` : "Discussion";
+}
+
+function formatRunDisplaySummary(run: unknown): string {
+  const topic = getStringRecordValue(run, "topic");
+  const title = getStringRecordValue(run, "title");
+
+  if (title && title !== topic && !isTechnicalRunTitle(title)) {
+    return title;
+  }
+
+  return "Review the status, perspectives, disagreements, evidence, conclusion, and next actions.";
+}
+
+function isTechnicalRunTitle(value: string): boolean {
+  return /^run\s+[a-z0-9_-]+$/i.test(value.trim());
+}
+
 function RunListItem({ run, index }: { run: unknown; index: number }) {
   const runId = getStringRecordValue(run, "runId");
-  const title = getStringRecordValue(run, "title") ?? getStringRecordValue(run, "topic");
 
   return (
     <article className="du-run-list-item">
       <div>
         <p className="du-kicker">Discussion {index + 1}</p>
-        <h3>{title ?? "Untitled discussion"}</h3>
-        <p>{formatRecordValue(getRecordValue(run, "topic") ?? "No topic summary")}</p>
+        <h3>{formatRunDisplayTitle(run, index)}</h3>
+        <p>{formatRunDisplaySummary(run)}</p>
       </div>
       <KeyValueGrid
         items={[
