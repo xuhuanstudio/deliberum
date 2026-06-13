@@ -15,11 +15,12 @@
     "test:workspace": "corepack pnpm -r test",
     "lint": "corepack pnpm build:packages && corepack pnpm lint:workspace",
     "lint:workspace": "corepack pnpm -r lint",
+    "lint:language": "node scripts/check-public-language.mjs",
     "typecheck": "corepack pnpm build:packages && corepack pnpm typecheck:workspace",
     "typecheck:workspace": "corepack pnpm -r typecheck",
     "format": "corepack pnpm -r --if-present format",
     "smoke:built": "node scripts/smoke-built-runtime.mjs",
-    "ci": "corepack pnpm clean:dist && corepack pnpm build:packages && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built"
+    "ci": "corepack pnpm clean:dist && corepack pnpm lint:language && corepack pnpm build:packages && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
