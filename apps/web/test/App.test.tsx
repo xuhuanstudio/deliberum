@@ -1378,12 +1378,12 @@ describe("@deliberum/web shell", () => {
 
     await screen.findByText("Run Alpha");
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
-    await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
-    await waitFor(() => expect(client.getRunProcessProposals).toHaveBeenCalledWith("run-1"));
-    await waitFor(() => expect(client.getProcessProposalStates).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
+    expect(client.getRunEvents).not.toHaveBeenCalled();
+    expect(client.getRunProcessProposals).not.toHaveBeenCalled();
+    expect(client.getProcessProposalStates).not.toHaveBeenCalled();
 
     expect(screen.getAllByText("Discussion status").length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion is ready to review")).toBeTruthy();
@@ -1393,18 +1393,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Discussion overview")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
     expect(screen.getByText("Strong options stay visible without collapsing into one hidden authority.")).toBeTruthy();
-    expect(screen.getByText("Run ledger timeline")).toBeTruthy();
-    expect(screen.getByText("Event entries")).toBeTruthy();
-    expect(screen.getByText(/topic_contract_published/)).toBeTruthy();
-    expect(screen.getByText(/sealed_until_reveal/)).toBeTruthy();
     expect(screen.getByText("What this discussion status means")).toBeTruthy();
     expect(screen.getByText("Discussion progress")).toBeTruthy();
-    expect(screen.getByText("Next recommended actions")).toBeTruthy();
-    const nextStepControls = screen.getByText("Next recommended actions").closest("details");
-    expect(nextStepControls?.querySelector("summary")?.textContent).toBe(
-      "Advanced / Developer Mode: next-step proposal controls"
-    );
+    const nextStepControls = screen
+      .getByText("Advanced / Developer Mode: next-step proposal controls")
+      .closest("details");
     expect((nextStepControls as HTMLDetailsElement | null)?.open).toBe(false);
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: next-step proposal controls"));
+    await waitFor(() => expect(client.getRunProcessProposals).toHaveBeenCalledWith("run-1"));
+    await waitFor(() => expect(client.getProcessProposalStates).toHaveBeenCalledWith("session-1"));
+    expect(await screen.findByText("Next recommended actions")).toBeTruthy();
     expect(screen.getByText("Prepare current conclusion")).toBeTruthy();
     expect(screen.getByText("Strong current options are ready to become a reviewable current conclusion.")).toBeTruthy();
     expect(screen.getByText("Recommended actions")).toBeTruthy();
@@ -1412,6 +1410,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Process governance ledger")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save next step" })).toBeTruthy();
     expect(screen.getByText("No saved next steps")).toBeTruthy();
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: run trace"));
+    await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
+    expect(await screen.findByText("Run ledger timeline")).toBeTruthy();
+    expect(screen.getByText("Event entries")).toBeTruthy();
+    expect(screen.getByText(/topic_contract_published/)).toBeTruthy();
+    expect(screen.getByText(/sealed_until_reveal/)).toBeTruthy();
     expect(screen.getAllByText("Main perspectives").length).toBeGreaterThan(0);
     expect(screen.getByText("Candidate A")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
@@ -1470,6 +1474,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
+    fireEvent.click(await screen.findByText("Advanced / Developer Mode: next-step proposal controls"));
     await screen.findByText("Next recommended actions");
     fireEvent.click(await screen.findByRole("button", { name: "Save next step" }));
 
@@ -1528,6 +1533,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
+    fireEvent.click(await screen.findByText("Advanced / Developer Mode: next-step proposal controls"));
     await screen.findByText("Recorded process proposal");
     fireEvent.change(screen.getByLabelText("Challenge reason"), {
       target: {
@@ -1635,6 +1641,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
+    fireEvent.click(await screen.findByText("Advanced / Developer Mode: next-step proposal controls"));
     await screen.findByText("Recorded process proposal");
     fireEvent.click(screen.getByRole("button", { name: "Execute accepted process proposal" }));
 
@@ -1707,6 +1714,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
+    fireEvent.click(await screen.findByText("Advanced / Developer Mode: next-step proposal controls"));
     await screen.findByText("Recorded process proposal");
     expect(screen.getByText("unsupported_primitive")).toBeTruthy();
     expect(screen.getByText("Process proposal primitive is not executable by the daemon yet.")).toBeTruthy();
@@ -1723,6 +1731,7 @@ describe("@deliberum/web shell", () => {
     const EventSourceMock = installMockEventSource();
     const client = renderApp("/runs/run-1");
 
+    fireEvent.click(await screen.findByText("Advanced / Developer Mode: run trace"));
     await screen.findByText("Run ledger timeline");
     expect(EventSourceMock.instances).toHaveLength(0);
 

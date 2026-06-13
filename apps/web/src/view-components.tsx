@@ -6,7 +6,7 @@ import {
   PageHeader,
   StatusBanner
 } from "@deliberum/ui";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
 
 export type ViewFrameProps = {
@@ -20,6 +20,7 @@ export type ViewFrameProps = {
 export type AdvancedDetailsProps = {
   summary?: string;
   description?: string;
+  lazy?: boolean;
   children: ReactNode;
 };
 
@@ -46,13 +47,24 @@ export function ViewFrame({
 export function AdvancedDetails({
   summary = "Advanced / Developer Mode",
   description,
+  lazy = false,
   children
 }: AdvancedDetailsProps) {
+  const [hasOpened, setHasOpened] = useState(false);
+  const shouldRenderChildren = !lazy || hasOpened;
+
   return (
-    <details className="du-advanced-panel">
+    <details
+      className="du-advanced-panel"
+      onToggle={(event) => {
+        if (event.currentTarget.open) {
+          setHasOpened(true);
+        }
+      }}
+    >
       <summary>{summary}</summary>
       {description ? <p className="du-advanced-description">{description}</p> : null}
-      <div className="du-advanced-stack">{children}</div>
+      {shouldRenderChildren ? <div className="du-advanced-stack">{children}</div> : null}
     </details>
   );
 }

@@ -338,12 +338,15 @@ export function RunDetailPage() {
           <AdvancedDetails
             summary="Advanced / Developer Mode: next-step proposal controls"
             description="Adaptive primitive suggestions, process proposal lifecycle, explicit execution readiness, and internal proposal ids for developer inspection."
+            lazy
           >
             <RunProcessProposals runId={runId} sessionId={sessionId} />
             {sessionId ? <RunProcessGovernance runId={runId} sessionId={sessionId} /> : null}
           </AdvancedDetails>
           <AdvancedDetails
+            summary="Advanced / Developer Mode: run trace"
             description="Ledger trace, run plan, round metadata, and internal ids for developer inspection."
+            lazy
           >
             <RunEventTimeline runId={runId} />
             <DataPanel title="Run plan view">
