@@ -3047,6 +3047,77 @@ describe("CLI integration", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("verifies the local JSON ledger integrity report", async () => {
+    const dir = createTempDir();
+    const storePath = join(dir, "events.json");
+    await runWithStore(storePath, ["new", "Evaluate ledger verification"], [
+      "topic-contract-1",
+      "session-1",
+      "topic-event-1"
+    ]);
+    const report = parseOutput<{
+      status: string;
+      storePath: string;
+      sessionCount: number;
+      eventCount: number;
+      hashedEventCount: number;
+      legacyEventCount: number;
+      sessions: Array<{
+        sessionId: string;
+        eventCount: number;
+        hashedEventCount: number;
+        legacyEventCount: number;
+        sequenceRange: { from: number; to: number } | null;
+      }>;
+    }>(await runWithStore(storePath, ["ledger", "verify"], []));
+
+    expect(report).toEqual({
+      status: "valid",
+      storePath,
+      sessionCount: 1,
+      eventCount: 1,
+      hashedEventCount: 1,
+      legacyEventCount: 0,
+      sessions: [
+        {
+          sessionId: "session-1",
+          eventCount: 1,
+          hashedEventCount: 1,
+          legacyEventCount: 0,
+          sequenceRange: { from: 0, to: 0 }
+        }
+      ]
+    });
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("fails local JSON ledger verification when hashed events are tampered", async () => {
+    const dir = createTempDir();
+    const storePath = join(dir, "events.json");
+    await runWithStore(storePath, ["new", "Evaluate ledger tampering"], [
+      "topic-contract-1",
+      "session-1",
+      "topic-event-1"
+    ]);
+    const ledger = JSON.parse(readFileSync(storePath, "utf8")) as {
+      events: Array<{ payload: Record<string, unknown> }>;
+    };
+    ledger.events[0]!.payload = {
+      ...ledger.events[0]!.payload,
+      topic: "tampered topic"
+    };
+    writeFileSync(storePath, `${JSON.stringify(ledger, null, 2)}\n`, "utf8");
+
+    const result = await runCli(["ledger", "verify", "--store", storePath, "--json"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toContain("JsonFileEventStoreError");
+    expect(result.stdout).toContain("Invalid eventHash");
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("records local process proposal lifecycle commands in the ledger", async () => {
     const dir = createTempDir();
     const storePath = join(dir, "events.json");

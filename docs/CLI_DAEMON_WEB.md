@@ -41,6 +41,7 @@ deliberum frontier --session <id>
 deliberum objections --session <id>
 deliberum obligations --session <id>
 deliberum events --session <id>
+deliberum ledger verify [--store <path>]
 deliberum daemon profiles [--daemon-url <local-url>]
 deliberum daemon env-template [--profile <id>] [--daemon-url <local-url>]
 deliberum daemon env-write --output <path> [--profile <id>] [--set <NAME=value>] [--overwrite] [--dry-run] [--daemon-url <local-url>]
@@ -69,6 +70,8 @@ deliberum runs final-audit <runId> --proposal-event <event-id> --author <id> --i
 ```
 
 CLI view commands return structured JSON. `frontier`, `objections`, and `obligations` are projection-derived and include projection metadata.
+
+`deliberum ledger verify` opens the configured local JSON EventStore, runs the same load-time structure and hash validation, and returns session/event counts plus hashed/legacy event counts. It does not read daemon SQLite stores or replace external backup, notarization, or multi-writer coordination.
 
 CLI process commands use the local JSON EventStore. They append or project process proposal lifecycle events only. Accepting a process proposal records a process decision; it does not start daemon stages, open batches, run adapters, choose winners, or compile outcomes.
 

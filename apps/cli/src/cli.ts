@@ -36,7 +36,7 @@ import {
   type SealedBatchPurpose,
   type SealedBatchRevealPolicy
 } from "@deliberum/protocol";
-import type { EventStore } from "@deliberum/storage";
+import type { EventStore, StoredEvent } from "@deliberum/storage";
 import { randomBytes, randomUUID } from "node:crypto";
 import { JsonFileEventStore, defaultStorePath } from "./json-file-event-store";
 import { parseJsonArgument, readJsonFile } from "./read-json";
@@ -61,6 +61,7 @@ export const CLI_COMMANDS = [
   "objections",
   "obligations",
   "events",
+  "ledger verify",
   "daemon profiles",
   "daemon env-template",
   "daemon env-write",
@@ -431,6 +432,10 @@ async function executeCommand(parsedArgs: ParsedArgs, dependencies: ExecuteDepen
     return executeRunCommand(subcommand, restPositionals, parsedArgs, dependencies);
   }
 
+  if (command === "ledger") {
+    return executeLedgerCommand(subcommand, restPositionals, parsedArgs, dependencies);
+  }
+
   const store = dependencies.createEventStore({
     filePath: getStorePath(parsedArgs, dependencies.env),
     clock: dependencies.clock
@@ -735,6 +740,84 @@ async function executeCommand(parsedArgs: ParsedArgs, dependencies: ExecuteDepen
   }
 
   throw new CliUsageError(`Unknown command: ${parsedArgs.positionals.join(" ") || "(empty)"}`);
+}
+
+function executeLedgerCommand(
+  action: string | undefined,
+  restPositionals: string[],
+  parsedArgs: ParsedArgs,
+  dependencies: ExecuteDependencies
+): unknown {
+  if (action === "verify") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum ledger verify [--store <path>]"
+    );
+
+    const storePath = getStorePath(parsedArgs, dependencies.env);
+    const store = dependencies.createEventStore({
+      filePath: storePath,
+      clock: dependencies.clock
+    });
+
+    return createLedgerVerificationReport(store, storePath);
+  }
+
+  throw new CliUsageError(`Unknown command: ledger ${action || "(empty)"}`);
+}
+
+function createLedgerVerificationReport(store: EventStore, storePath: string): {
+  status: "valid";
+  storePath: string;
+  sessionCount: number;
+  eventCount: number;
+  hashedEventCount: number;
+  legacyEventCount: number;
+  sessions: Array<{
+    sessionId: string;
+    eventCount: number;
+    hashedEventCount: number;
+    legacyEventCount: number;
+    sequenceRange: { from: number; to: number } | null;
+  }>;
+} {
+  const sessions = store.listSessionIds().map((sessionId) => {
+    const events = store.listEvents(sessionId);
+    const hashedEventCount = countHashedEvents(events);
+
+    return {
+      sessionId,
+      eventCount: events.length,
+      hashedEventCount,
+      legacyEventCount: events.length - hashedEventCount,
+      sequenceRange:
+        events.length === 0
+          ? null
+          : {
+              from: events[0]!.sequence,
+              to: events[events.length - 1]!.sequence
+            }
+    };
+  });
+  const eventCount = sessions.reduce((total, session) => total + session.eventCount, 0);
+  const hashedEventCount = sessions.reduce(
+    (total, session) => total + session.hashedEventCount,
+    0
+  );
+
+  return {
+    status: "valid",
+    storePath,
+    sessionCount: sessions.length,
+    eventCount,
+    hashedEventCount,
+    legacyEventCount: eventCount - hashedEventCount,
+    sessions
+  };
+}
+
+function countHashedEvents(events: readonly StoredEvent[]): number {
+  return events.filter((event) => Boolean(event.integrity?.eventHash)).length;
 }
 
 export async function main(args: string[]): Promise<number> {
