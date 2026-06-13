@@ -728,6 +728,19 @@ function renderApp(initialPath: string, client = createClient()) {
   return client;
 }
 
+async function ensureDetailsOpen(summaryText: string) {
+  const summary = await screen.findByText(summaryText);
+  const details = summary.closest("details") as HTMLDetailsElement | null;
+
+  expect(details).not.toBeNull();
+
+  if (details && !details.open) {
+    fireEvent.click(summary);
+  }
+
+  await waitFor(() => expect(details?.open).toBe(true));
+}
+
 class MockEventSource {
   static instances: MockEventSource[] = [];
 
@@ -840,7 +853,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("What you can do")).toBeTruthy();
     expect(screen.getByText("What the discussion keeps visible")).toBeTruthy();
     expect(screen.getByText("Advanced / Developer Mode: concept mapping")).toBeTruthy();
-    expect(screen.getByText("Core concept mapping")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("Topic Contract");
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: concept mapping"));
+    expect(await screen.findByText("Core concept mapping")).toBeTruthy();
     expect(screen.getByText("Topic Contract")).toBeTruthy();
     expect(screen.getAllByText("1. Start a discussion").length).toBeGreaterThan(0);
     expect(
@@ -1025,7 +1040,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("link", { name: "View current conclusion" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "View main perspectives" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review risks and evidence" })).toBeTruthy();
-    expect(screen.getByText("topic_contract_published")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("topic_contract_published");
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    expect(await screen.findByText("topic_contract_published")).toBeTruthy();
   });
 
   it("keeps empty session user-mode pages in reader-facing language", async () => {
@@ -1098,14 +1115,20 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Main perspectives")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
-    expect(screen.getByText(/accepted_active_candidates/)).toBeTruthy();
-    expect(screen.getAllByText(/candidate-1/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Candidate A")).toBeTruthy();
     expect(screen.getByText("Current state: Accepted and active")).toBeTruthy();
 
     const renderedText = document.body.textContent ?? "";
+    expect(renderedText).not.toContain("accepted_active_candidates");
+    expect(renderedText).not.toContain("candidate-1");
     for (const forbiddenField of ["currentBest", "winner", "rank", "score", "vote"]) {
       expect(renderedText).not.toContain(forbiddenField);
     }
+
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: source details"));
+    expect((await screen.findAllByText(/candidate-1/)).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    expect(await screen.findByText(/accepted_active_candidates/)).toBeTruthy();
   });
 
   it("renders objections and quality obligations from daemon projections", async () => {
@@ -1113,25 +1136,29 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Open disagreements")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
-    expect(screen.getAllByText(/objection-1/).length).toBeGreaterThan(0);
+    expect(document.body.textContent ?? "").not.toContain("objection-1");
     expect(
       screen.getByText(
         "This disagreement is tracked, but it does not have a plain-language summary yet."
       )
     ).toBeTruthy();
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: source details"));
+    expect((await screen.findAllByText(/objection-1/)).length).toBeGreaterThan(0);
 
     cleanup();
 
     const nextClient = renderApp("/sessions/session-1/obligations");
     expect((await screen.findAllByText("Requirements this answer must satisfy")).length).toBeGreaterThan(0);
     await waitFor(() => expect(nextClient.getObligations).toHaveBeenCalledWith("session-1"));
-    expect(screen.getAllByText(/quality-1/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/unanswered/).length).toBeGreaterThan(0);
+    expect(document.body.textContent ?? "").not.toContain("quality-1");
+    expect(screen.getAllByText(/Unanswered/).length).toBeGreaterThan(0);
     expect(
       screen.getByText(
         "This requirement is tracked, but it does not have a plain-language summary yet."
       )
     ).toBeTruthy();
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: source details"));
+    expect((await screen.findAllByText(/quality-1/)).length).toBeGreaterThan(0);
   });
 
   it("renders append-only ledger entries without stripping arbitrary payload keys", async () => {
@@ -1176,7 +1203,9 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("Requirements review");
     expect(screen.getByText("Advanced / Developer Mode")).toBeTruthy();
     expect(screen.getByText("Run Alpha")).toBeTruthy();
-    expect(screen.getByText("run-1")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("run-1");
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    expect(await screen.findByText("run-1")).toBeTruthy();
     expect(screen.getByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
     expect(screen.getAllByText("Completed").length).toBeGreaterThan(0);
   });
@@ -1215,7 +1244,7 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("provider credentials");
     expect(document.body.textContent ?? "").not.toContain("external models");
     fireEvent.click(screen.getByText("Advanced / Developer Mode: JSON plan"));
-    fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
+    fireEvent.change(await screen.findByLabelText("Advanced JSON run plan"), {
       target: {
         value: JSON.stringify(runPlan)
       }
@@ -1336,7 +1365,8 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByText("Advanced / Developer Mode: JSON plan"));
-    fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
+    const runPlanInput = await screen.findByLabelText("Advanced JSON run plan");
+    fireEvent.change(runPlanInput, {
       target: {
         value: "{"
       }
@@ -1346,7 +1376,7 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Run plan must be valid JSON.")).toBeTruthy();
     expect(client.createRun).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
+    fireEvent.change(runPlanInput, {
       target: {
         value: "[]"
       }
@@ -1362,7 +1392,8 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByText("Advanced / Developer Mode: JSON plan"));
-    fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
+    const runPlanInput = await screen.findByLabelText("Advanced JSON run plan");
+    fireEvent.change(runPlanInput, {
       target: {
         value: "{}"
       }
@@ -1370,7 +1401,7 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Fill local preset run plan" }));
 
     expect(
-      (screen.getByLabelText("Advanced JSON run plan") as HTMLTextAreaElement).value
+      (runPlanInput as HTMLTextAreaElement).value
     ).toContain("local-preset-alpha");
 
     fireEvent.click(screen.getByRole("button", { name: "Create run" }));
@@ -1405,13 +1436,18 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Discussion status").length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion is ready to review")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Run guided discussion again" })).toBeTruthy();
-    expect(screen.getByText("Ledger events")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("7 recorded lifecycle events");
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    expect(await screen.findByText("Ledger events")).toBeTruthy();
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
     expect(screen.getByText("Discussion overview")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
     expect(screen.getByText("Strong options stay visible without collapsing into one hidden authority.")).toBeTruthy();
     expect(screen.getByText("What this discussion status means")).toBeTruthy();
     expect(screen.getByText("Discussion progress")).toBeTruthy();
+    const defaultRunText = document.body.textContent ?? "";
+    expect(defaultRunText).not.toContain("objection-1");
+    expect(defaultRunText).not.toContain("quality-1");
     const nextStepControls = screen
       .getByText("Advanced / Developer Mode: next-step proposal controls")
       .closest("details");
@@ -1436,9 +1472,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Main perspectives").length).toBeGreaterThan(0);
     expect(screen.getByText("Candidate A")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/objection-1/).length).toBeGreaterThan(0);
+    for (const sourceDetails of screen.getAllByText("Advanced / Developer Mode: source details")) {
+      fireEvent.click(sourceDetails);
+    }
+    expect((await screen.findAllByText(/objection-1/)).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Requirements this answer must satisfy").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/quality-1/).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/quality-1/)).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Projection events").length).toBeGreaterThan(0);
     expect(client.listEvents).not.toHaveBeenCalled();
     expect(screen.getByText("Current state: Accepted and active")).toBeTruthy();
@@ -1812,7 +1851,8 @@ describe("@deliberum/web shell", () => {
     );
 
     expect(await screen.findByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
-    expect(screen.getByText("1 recorded lifecycle event")).toBeTruthy();
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    expect(await screen.findByText("1 recorded lifecycle event")).toBeTruthy();
     expect(screen.getAllByText("Not run yet").length).toBeGreaterThanOrEqual(4);
     expect(screen.getByText("No work has been recorded for that part of the discussion.")).toBeTruthy();
   });
@@ -1834,7 +1874,7 @@ describe("@deliberum/web shell", () => {
 
     await screen.findByText("Continue discussion");
     fireEvent.click(screen.getByText("Advanced / Developer Mode: start request"));
-    fireEvent.change(screen.getByLabelText("Advanced start request JSON"), {
+    fireEvent.change(await screen.findByLabelText("Advanced start request JSON"), {
       target: {
         value: JSON.stringify(startRequest)
       }
@@ -1847,7 +1887,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
     expect(screen.getAllByText("View current conclusion").length).toBeGreaterThan(0);
     expect(screen.getByText("Advanced / Developer Mode: stage metadata")).toBeTruthy();
-    expect(screen.getByText("Raw stage metadata")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("event-2");
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: stage metadata"));
+    expect(await screen.findByText("Raw stage metadata")).toBeTruthy();
     expect(screen.getByText(/sealed_divergence/)).toBeTruthy();
     expect(screen.getByText(/event-2/)).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("do not render this result payload");
@@ -1865,7 +1907,8 @@ describe("@deliberum/web shell", () => {
 
     await screen.findByText("Continue discussion");
     fireEvent.click(screen.getByText("Advanced / Developer Mode: start request"));
-    fireEvent.change(screen.getByLabelText("Advanced start request JSON"), {
+    const startRequestInput = await screen.findByLabelText("Advanced start request JSON");
+    fireEvent.change(startRequestInput, {
       target: {
         value: "{}"
       }
@@ -1873,7 +1916,7 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Fill local preset start request" }));
 
     expect(
-      (screen.getByLabelText("Advanced start request JSON") as HTMLTextAreaElement).value
+      (startRequestInput as HTMLTextAreaElement).value
     ).toContain("local-preset-extractor");
 
     fireEvent.click(screen.getByRole("button", { name: "Continue guided discussion" }));
@@ -2051,7 +2094,6 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
     expect(screen.getByText("Current conclusion remains provisional")).toBeTruthy();
-    expect(screen.getByText("Draft status")).toBeTruthy();
     expect(screen.getAllByText(/provisional/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: "Current conclusion snapshot" })).toBeTruthy();
@@ -2061,8 +2103,18 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Keep open disagreements visible in the current conclusion.")).toBeTruthy();
     expect(screen.getAllByText("Risks and boundaries").length).toBeGreaterThan(0);
     expect(screen.getByText("Requirements this answer must satisfy")).toBeTruthy();
-    expect(screen.getByText("Raw outcome material")).toBeTruthy();
     expect(screen.getAllByText(/Provisional compiled material/).length).toBeGreaterThan(0);
+    const defaultPageText = document.body.textContent ?? "";
+    expect(defaultPageText).not.toContain("Draft status");
+    expect(defaultPageText).not.toContain("Raw outcome material");
+    expect(defaultPageText).not.toContain("candidate-2");
+    expect(defaultPageText).not.toContain("objection-1");
+    expect(defaultPageText).not.toContain("obligation-1");
+    expect(defaultPageText).not.toContain("evidence-1");
+
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    expect(await screen.findByText("Draft status")).toBeTruthy();
+    expect(screen.getByText("Raw outcome material")).toBeTruthy();
 
     const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
     expect(readableConclusion).not.toContain("candidate-2");
@@ -2124,7 +2176,8 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(getRunOutcome).toHaveBeenCalledWith("run-1"));
 
-    fireEvent.change(screen.getByLabelText("Candidate proposal event override"), {
+    await ensureDetailsOpen("Advanced / Developer Mode");
+    fireEvent.change(await screen.findByLabelText("Candidate proposal event override"), {
       target: {
         value: " final-candidate-event-2 "
       }
@@ -2136,6 +2189,7 @@ describe("@deliberum/web shell", () => {
         finalCandidateProposalEventId: "final-candidate-event-2"
       })
     );
+    await ensureDetailsOpen("Advanced / Developer Mode");
     expect(await screen.findByText("Specific final proposal selected")).toBeTruthy();
     expect(screen.getByText("final-candidate-event-2")).toBeTruthy();
 
@@ -2165,7 +2219,11 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByText("Advanced / Developer Mode: unavailable outcome")).toBeTruthy();
-    expect(screen.getByText("Raw reason")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain(
+      "final_candidate_proposal_unavailable"
+    );
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: unavailable outcome"));
+    expect(await screen.findByText("Raw reason")).toBeTruthy();
     expect(screen.getByText("final_candidate_proposal_unavailable")).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain(
       "No final candidate proposal exists yet"
@@ -2182,11 +2240,17 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText("Current conclusion remains provisional")).toBeTruthy();
-    expect(screen.getByText("Candidate proposal event")).toBeTruthy();
-    expect(screen.getAllByText(/final-candidate-event-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Use the daemon-backed final projection/).length).toBeGreaterThan(0);
     expect(screen.getByText("Unresolved questions")).toBeTruthy();
     expect(screen.getAllByText(/Evidence coverage remains incomplete/).length).toBeGreaterThan(0);
+    const defaultPageText = document.body.textContent ?? "";
+    expect(defaultPageText).not.toContain("Candidate proposal event");
+    expect(defaultPageText).not.toContain("final-candidate-event-1");
+    expect(defaultPageText).not.toContain("Provenance");
+
+    await ensureDetailsOpen("Advanced / Developer Mode");
+    expect(await screen.findByText("Candidate proposal event")).toBeTruthy();
+    expect(screen.getAllByText(/final-candidate-event-1/).length).toBeGreaterThan(0);
     expect(screen.getByText("Provenance")).toBeTruthy();
     const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
     expect(readableConclusion).toContain("Candidate A");
@@ -2208,7 +2272,8 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(getSessionFinal).toHaveBeenCalledWith("session-1"));
 
-    fireEvent.change(screen.getByLabelText("Candidate proposal event override"), {
+    await ensureDetailsOpen("Advanced / Developer Mode");
+    fireEvent.change(await screen.findByLabelText("Candidate proposal event override"), {
       target: {
         value: " final-candidate-event-2 "
       }
@@ -2220,6 +2285,7 @@ describe("@deliberum/web shell", () => {
         finalCandidateProposalEventId: "final-candidate-event-2"
       })
     );
+    await ensureDetailsOpen("Advanced / Developer Mode");
     expect(await screen.findByText("Specific final proposal selected")).toBeTruthy();
     expect(screen.getByText("final-candidate-event-2")).toBeTruthy();
 
@@ -2233,6 +2299,9 @@ describe("@deliberum/web shell", () => {
   it("submits session final lifecycle controls through daemon client methods", async () => {
     const client = renderApp("/sessions/session-1/final");
 
+    expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
+    await screen.findByText("Current conclusion remains provisional");
+    await ensureDetailsOpen("Advanced / Developer Mode");
     await screen.findByText("Final lifecycle controls");
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     await waitFor(() =>
@@ -2307,6 +2376,9 @@ describe("@deliberum/web shell", () => {
 
     renderApp("/sessions/session-1/final", client);
 
+    expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
+    await screen.findByText("Current conclusion remains provisional");
+    await ensureDetailsOpen("Advanced / Developer Mode");
     await screen.findByText("Final lifecycle controls");
     await screen.findByText("No main perspectives ready");
     expect(screen.getByText("No final proposal event selected")).toBeTruthy();
@@ -2351,7 +2423,26 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Evidence and verification")).toBeTruthy();
     await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText("Evidence gaps visible")).toBeTruthy();
-    expect(screen.getByText("Registered resources")).toBeTruthy();
+    expect(screen.getByText("Risks and missing evidence")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "This evidence need is tracked, but it does not have a plain-language summary yet."
+      )
+    ).toBeTruthy();
+    const defaultPageText = document.body.textContent ?? "";
+    expect(defaultPageText).not.toContain("Registered resources");
+    expect(defaultPageText).not.toContain("delivery-audit-event-1");
+    expect(defaultPageText).not.toContain("delivery-1");
+    expect(defaultPageText).not.toContain("access-audit-event-1");
+    expect(defaultPageText).not.toContain("resource-access-audit-1");
+    expect(defaultPageText).not.toContain("resource-1");
+    expect(defaultPageText).not.toContain("resource-missing");
+    expect(defaultPageText).not.toContain("evidence-need-1");
+
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: source details"));
+    expect((await screen.findAllByText(/evidence-need-1/)).length).toBeGreaterThan(0);
+    await ensureDetailsOpen("Advanced / Developer Mode");
+    expect(await screen.findByText("Registered resources")).toBeTruthy();
     expect(screen.getByText("1 of 2")).toBeTruthy();
     expect(screen.getByText("Delivery audits")).toBeTruthy();
     expect(screen.getByText("Resource delivery audits")).toBeTruthy();
@@ -2363,13 +2454,6 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText(/resource-access-audit-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/resource-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/resource-missing/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Risks and missing evidence")).toBeTruthy();
-    expect(screen.getAllByText(/evidence-need-1/).length).toBeGreaterThan(0);
-    expect(
-      screen.getByText(
-        "This evidence need is tracked, but it does not have a plain-language summary yet."
-      )
-    ).toBeTruthy();
     expect(screen.getByText("Resource projection JSON")).toBeTruthy();
     expect(client.getRunOutcome).not.toHaveBeenCalled();
     expect(

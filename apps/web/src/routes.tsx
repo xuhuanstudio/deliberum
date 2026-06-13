@@ -361,6 +361,7 @@ function LandingPage() {
         <AdvancedDetails
           summary="Advanced / Developer Mode: concept mapping"
           description="Core Deliberum concept names are preserved here for implementers and documentation readers."
+          lazy
         >
           <DataPanel title="Core concept mapping">
             <div className="du-quality-map">
@@ -870,7 +871,7 @@ function ReadableSessionRecord({
       <h4>{title}</h4>
       {detail !== title ? <p>{detail}</p> : null}
       <p className="du-readable-meta">Current state: {status}</p>
-      <AdvancedDetails summary="Advanced / Developer Mode: source details">
+      <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
         <KeyValueGrid
           items={[
             {
@@ -1436,6 +1437,7 @@ function SessionOverviewPage() {
         </DataPanel>
         <AdvancedDetails
           description="Ledger position and raw latest entry are available for debugging without leading the user experience."
+          lazy
         >
           <KeyValueGrid
             items={[
@@ -1499,7 +1501,10 @@ function FrontierPage() {
             kind="perspective"
           />
         </DataPanel>
-        <AdvancedDetails description="Projection basis and raw candidate material for developer inspection.">
+        <AdvancedDetails
+          description="Projection basis and raw candidate material for developer inspection."
+          lazy
+        >
           <DataPanel title="Candidate Frontier projection">
             <JsonBlock
               value={sanitizeForDisplay({
@@ -1540,7 +1545,10 @@ function ObjectionsPage() {
             kind="disagreement"
           />
         </DataPanel>
-        <AdvancedDetails description="Raw objection projection material for developer inspection.">
+        <AdvancedDetails
+          description="Raw objection projection material for developer inspection."
+          lazy
+        >
           <RecordCollection
             title="Objection projection records"
             records={asArray(objectionsQuery.data?.objections)}
@@ -1579,7 +1587,10 @@ function ObligationsPage() {
             kind="requirement"
           />
         </DataPanel>
-        <AdvancedDetails description="Raw quality obligation projection material for developer inspection.">
+        <AdvancedDetails
+          description="Raw quality obligation projection material for developer inspection."
+          lazy
+        >
           <RecordCollection
             title="Quality obligation projection records"
             records={asArray(obligationsQuery.data?.qualityObligations)}
@@ -1818,6 +1829,7 @@ function FinalPage() {
         </DataPanel>
         <AdvancedDetails
           description="Projection overrides, provenance, raw JSON, internal ids, Final Audit controls, and proposal lifecycle controls for developers."
+          lazy
         >
           <form className="du-inline-form" onSubmit={submitProjectionOverride}>
             <label htmlFor="du-final-projection-event">
@@ -2003,7 +2015,10 @@ function ResourcesPage() {
             kind="evidence"
           />
         </DataPanel>
-        <AdvancedDetails description="Resource access posture, delivery/access audits, source ids, and raw projection JSON for developer inspection.">
+        <AdvancedDetails
+          description="Resource access posture, delivery/access audits, source ids, and raw projection JSON for developer inspection."
+          lazy
+        >
           <KeyValueGrid
             items={[
               {

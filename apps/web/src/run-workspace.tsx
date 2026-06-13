@@ -236,6 +236,7 @@ export function RunNewPage() {
         <AdvancedDetails
           summary="Advanced / Developer Mode: JSON plan"
           description="Create a run from a raw JSON plan when testing low-level runtime behavior."
+          lazy
         >
           <JsonInputForm
             id="run-plan-json"
@@ -440,6 +441,7 @@ export function RunOutcomePage() {
               </DataPanel>
               <AdvancedDetails
                 description="Projection override, internal ids, draft status, and raw outcome material for developer inspection."
+                lazy
               >
                 <form className="du-inline-form" onSubmit={submitProjectionOverride}>
                   <label htmlFor="du-run-outcome-projection-event">
@@ -525,6 +527,7 @@ function AdvancedOutcomeUnavailableDetails({
     <AdvancedDetails
       summary="Advanced / Developer Mode: unavailable outcome"
       description="Raw unavailable status, internal ids, reason code, and daemon response for developer inspection."
+      lazy
     >
       <KeyValueGrid
         items={[
@@ -700,7 +703,7 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
         ]}
       />
       <StageStatusList stages={getDiscussionStageStatuses(run)} />
-      <AdvancedDetails summary="Advanced / Developer Mode">
+      <AdvancedDetails summary="Advanced / Developer Mode" lazy>
         <KeyValueGrid
           items={[
             {
@@ -756,7 +759,7 @@ function RunSummary({ run }: { run: unknown }) {
           }
         ]}
       />
-      <AdvancedDetails summary="Advanced / Developer Mode">
+      <AdvancedDetails summary="Advanced / Developer Mode" lazy>
         <KeyValueGrid
           items={[
             {
@@ -1051,6 +1054,7 @@ function StartRunForm({
       <AdvancedDetails
         summary="Advanced / Developer Mode: start request"
         description="Submit a raw start request when testing low-level runtime behavior."
+        lazy
       >
         <JsonInputForm
           id="start-request-json"
@@ -1147,6 +1151,7 @@ function StartResult({ result, runId }: { result: unknown; runId: string }) {
       <AdvancedDetails
         summary="Advanced / Developer Mode: stage metadata"
         description="Raw execution stages, round ids, and event ids returned by the local runtime."
+        lazy
       >
         <RecordCollection
           title="Raw stage metadata"
@@ -1799,7 +1804,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No main perspectives have been accepted into this discussion yet."
             kind="candidate"
           />
-          <AdvancedDetails summary="Advanced / Developer Mode: source details">
+          <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
             <ProjectionMetadata projection={frontierQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
@@ -1815,7 +1820,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No open disagreements have been accepted into this discussion yet."
             kind="objection"
           />
-          <AdvancedDetails summary="Advanced / Developer Mode: source details">
+          <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
             <ProjectionMetadata projection={objectionsQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
@@ -1831,7 +1836,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No explicit requirements have been accepted into this discussion yet."
             kind="quality obligation"
           />
-          <AdvancedDetails summary="Advanced / Developer Mode: source details">
+          <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
             <ProjectionMetadata projection={obligationsQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
@@ -1901,7 +1906,7 @@ function RunProcessProposals({ runId, sessionId }: { runId: string; sessionId?: 
         <ProcessProposalObservations
           observations={asArray(processProposalQuery.data?.observations)}
         />
-        <AdvancedDetails summary="Advanced recommendation details">
+        <AdvancedDetails summary="Advanced recommendation details" lazy>
           <KeyValueGrid
             items={[
               {
@@ -2193,7 +2198,7 @@ function ProcessProposalRecord({
           }
         ]}
       />
-      <AdvancedDetails summary="Advanced proposal details">
+      <AdvancedDetails summary="Advanced proposal details" lazy>
         <KeyValueGrid
           items={[
             {
@@ -2678,7 +2683,7 @@ function ProjectionRecord({
       <h4>{title}</h4>
       {description && description !== title ? <p>{description}</p> : null}
       <p className="du-readable-meta">Current state: {status}</p>
-      <AdvancedDetails summary="Advanced / Developer Mode: source details">
+      <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
         <KeyValueGrid
           items={[
             {
