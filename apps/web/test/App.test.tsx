@@ -377,6 +377,37 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       draftStatus: "provisional",
       outcome: {
         summary: "Provisional compiled material",
+        alternatives: [
+          {
+            id: "candidate-2",
+            summary: "Use a narrower local-only rollout before provider-backed runs."
+          }
+        ],
+        unresolvedObjections: [
+          {
+            id: "objection-1",
+            summary: "The evidence fixture still needs broader external review.",
+            status: "open"
+          }
+        ],
+        qualityObligations: [
+          {
+            id: "obligation-1",
+            requirement: "Keep unresolved objections visible in the compiled projection.",
+            status: "open"
+          }
+        ],
+        evidenceStatus: {
+          evidenceNeeds: [
+            {
+              id: "evidence-1",
+              question: "Does the fixture cover all declared dimensions?",
+              status: "unchecked"
+            }
+          ]
+        },
+        unresolvedQuestions: ["Which external reviewer should inspect the fixture?"],
+        continuationSuggestions: ["Run the comparison fixture against a broader case set."],
         limitations: ["Needs further audit"]
       }
     })),
@@ -1716,6 +1747,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Draft status")).toBeTruthy();
     expect(screen.getAllByText(/provisional/i).length).toBeGreaterThan(0);
     expect(screen.getByText("Outcome brief")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Outcome snapshot" })).toBeTruthy();
+    expect(screen.getAllByText("Open objections").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Evidence needs").length).toBeGreaterThan(0);
+    expect(screen.getByText("Does the fixture cover all declared dimensions?")).toBeTruthy();
+    expect(screen.getByText("Keep unresolved objections visible in the compiled projection.")).toBeTruthy();
     expect(screen.getByText("Limitations")).toBeTruthy();
     expect(screen.getByText("Raw outcome material")).toBeTruthy();
     expect(screen.getAllByText(/Provisional compiled material/).length).toBeGreaterThan(0);

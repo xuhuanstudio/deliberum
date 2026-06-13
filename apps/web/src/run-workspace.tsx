@@ -1044,42 +1044,86 @@ function OutcomeBrief({ outcome }: { outcome: unknown }) {
 
   return (
     <div className="du-outcome-brief">
-      <article className="du-readable-item">
-        <p className="du-kicker">Recommendation</p>
-        <h4>{recommendation}</h4>
-      </article>
-      <KeyValueGrid
-        items={[
-          {
-            label: "Alternatives",
-            value: alternatives.length
-          },
-          {
-            label: "Unresolved objections",
-            value: unresolvedObjections.length
-          },
-          {
-            label: "Quality obligations",
-            value: qualityObligations.length
-          },
-          {
-            label: "Evidence needs",
-            value:
+      <section className="du-outcome-hero" aria-label="Outcome snapshot">
+        <article className="du-outcome-recommendation">
+          <p className="du-kicker">Recommendation</p>
+          <h4>{recommendation}</h4>
+        </article>
+        <div className="du-outcome-status-grid">
+          <OutcomeStatusItem
+            title="Alternatives"
+            value={String(alternatives.length)}
+            detail={describeOutcomeCount(alternatives.length, "explored option", "explored options")}
+          />
+          <OutcomeStatusItem
+            title="Open objections"
+            value={String(unresolvedObjections.length)}
+            detail={describeOutcomeCount(
+              unresolvedObjections.length,
+              "unresolved constraint",
+              "unresolved constraints"
+            )}
+            tone={unresolvedObjections.length > 0 ? "warning" : "ok"}
+          />
+          <OutcomeStatusItem
+            title="Evidence needs"
+            value={
               evidenceNeeds.length === 0
                 ? "0"
-                : `${uncheckedEvidenceNeeds}/${evidenceNeeds.length} unchecked`
-          }
-        ]}
+                : `${uncheckedEvidenceNeeds}/${evidenceNeeds.length}`
+            }
+            detail={
+              evidenceNeeds.length === 0
+                ? "No evidence need returned"
+                : `${uncheckedEvidenceNeeds} unchecked need${
+                    uncheckedEvidenceNeeds === 1 ? "" : "s"
+                  }`
+            }
+            tone={uncheckedEvidenceNeeds > 0 ? "warning" : "ok"}
+          />
+          <OutcomeStatusItem
+            title="Limits"
+            value={String(limitations.length)}
+            detail={describeOutcomeCount(limitations.length, "known boundary", "known boundaries")}
+            tone={limitations.length > 0 ? "warning" : "neutral"}
+          />
+        </div>
+      </section>
+      <div className="du-outcome-section-grid">
+        <ReadableStringList
+          title="Unresolved questions"
+          items={unresolvedQuestions}
+          emptyTitle="No unresolved questions returned"
+        />
+        <ReadableStringList
+          title="Limitations"
+          items={limitations}
+          emptyTitle="No limitations returned"
+        />
+      </div>
+      <ReadableRecordList
+        title="Alternatives"
+        items={alternatives}
+        emptyTitle="No alternatives returned"
+        summarizeItem={summarizeAlternative}
       />
-      <ReadableStringList
-        title="Unresolved questions"
-        items={unresolvedQuestions}
-        emptyTitle="No unresolved questions returned"
+      <ReadableRecordList
+        title="Open objections"
+        items={unresolvedObjections}
+        emptyTitle="No unresolved objections returned"
+        summarizeItem={summarizeOpenObjection}
       />
-      <ReadableStringList
-        title="Limitations"
-        items={limitations}
-        emptyTitle="No limitations returned"
+      <ReadableRecordList
+        title="Evidence needs"
+        items={evidenceNeeds}
+        emptyTitle="No evidence needs returned"
+        summarizeItem={summarizeEvidenceNeed}
+      />
+      <ReadableRecordList
+        title="Quality obligations"
+        items={qualityObligations}
+        emptyTitle="No quality obligations returned"
+        summarizeItem={summarizeQualityObligation}
       />
       <ReadableStringList
         title="Continuation suggestions"
@@ -1087,6 +1131,26 @@ function OutcomeBrief({ outcome }: { outcome: unknown }) {
         emptyTitle="No continuation suggestions returned"
       />
     </div>
+  );
+}
+
+function OutcomeStatusItem({
+  title,
+  value,
+  detail,
+  tone = "neutral"
+}: {
+  title: string;
+  value: string;
+  detail: string;
+  tone?: "neutral" | "ok" | "warning";
+}) {
+  return (
+    <article className={`du-outcome-status-item du-outcome-status-${tone}`}>
+      <span>{title}</span>
+      <strong>{value}</strong>
+      <p>{detail}</p>
+    </article>
   );
 }
 
@@ -1114,6 +1178,177 @@ function ReadableStringList({
       )}
     </div>
   );
+}
+
+type OutcomeRecordSummary = {
+  kicker: string;
+  title: string;
+  detail: string;
+  meta?: string;
+};
+
+function ReadableRecordList({
+  title,
+  items,
+  emptyTitle,
+  summarizeItem
+}: {
+  title: string;
+  items: unknown[];
+  emptyTitle: string;
+  summarizeItem: (item: unknown, index: number) => OutcomeRecordSummary;
+}) {
+  return (
+    <div className="du-readable-list">
+      <h4>{title}</h4>
+      {items.length === 0 ? (
+        <EmptyState
+          title={emptyTitle}
+          description="The compiled projection did not include records for this section."
+        />
+      ) : (
+        items.map((item, index) => {
+          const summary = summarizeItem(item, index);
+
+          return (
+            <article
+              className="du-readable-item"
+              key={`${title}:${index}:${summary.kicker}:${summary.title}`}
+            >
+              <p className="du-kicker">{summary.kicker}</p>
+              <h5>{summary.title}</h5>
+              <p>{summary.detail}</p>
+              {summary.meta ? <p className="du-readable-meta">{summary.meta}</p> : null}
+            </article>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+function summarizeAlternative(item: unknown, index: number): OutcomeRecordSummary {
+  return summarizeOutcomeRecord(item, index, {
+    fallbackTitle: `Alternative ${index + 1}`,
+    fallbackKicker: `Alternative ${index + 1}`,
+    titleKeys: ["title", "name", "id", "candidateId"],
+    detailKeys: ["summary", "rationale", "description", "text", "claim"],
+    metaKeys: ["status", "sourceEventId", "candidateId"]
+  });
+}
+
+function summarizeOpenObjection(item: unknown, index: number): OutcomeRecordSummary {
+  return summarizeOutcomeRecord(item, index, {
+    fallbackTitle: `Open objection ${index + 1}`,
+    fallbackKicker: `Objection ${index + 1}`,
+    titleKeys: ["title", "id", "objectionId", "status"],
+    detailKeys: ["summary", "reason", "description", "text", "claim"],
+    metaKeys: ["severity", "sourceEventId", "targetId"]
+  });
+}
+
+function summarizeEvidenceNeed(item: unknown, index: number): OutcomeRecordSummary {
+  return summarizeOutcomeRecord(item, index, {
+    fallbackTitle: `Evidence need ${index + 1}`,
+    fallbackKicker: `Evidence ${index + 1}`,
+    titleKeys: ["question", "title", "id", "needId", "status"],
+    detailKeys: ["description", "summary", "rationale", "text", "claim"],
+    metaKeys: ["status", "sourceEventId", "targetId"]
+  });
+}
+
+function summarizeQualityObligation(item: unknown, index: number): OutcomeRecordSummary {
+  return summarizeOutcomeRecord(item, index, {
+    fallbackTitle: `Quality obligation ${index + 1}`,
+    fallbackKicker: `Obligation ${index + 1}`,
+    titleKeys: ["title", "id", "obligationId", "status"],
+    detailKeys: ["description", "summary", "requirement", "text", "claim"],
+    metaKeys: ["status", "sourceEventId", "targetId"]
+  });
+}
+
+function summarizeOutcomeRecord(
+  item: unknown,
+  index: number,
+  options: {
+    fallbackTitle: string;
+    fallbackKicker: string;
+    titleKeys: readonly string[];
+    detailKeys: readonly string[];
+    metaKeys: readonly string[];
+  }
+): OutcomeRecordSummary {
+  if (typeof item === "string") {
+    return {
+      kicker: options.fallbackKicker,
+      title: options.fallbackTitle,
+      detail: item
+    };
+  }
+
+  const object = getRecordValue(item, "object") ?? item;
+  const status = getStringRecordValue(object, "status");
+
+  return {
+    kicker: status ? formatOutcomeLabel(status) : options.fallbackKicker,
+    title:
+      getFirstStringRecordValue(object, options.titleKeys) ??
+      getStringRecordValue(item, "id") ??
+      options.fallbackTitle,
+    detail:
+      getFirstStringRecordValue(object, options.detailKeys) ??
+      describeOpaqueOutcomeRecord(item, index),
+    meta: formatOutcomeRecordMeta(object, options.metaKeys)
+  };
+}
+
+function getFirstStringRecordValue(record: unknown, keys: readonly string[]): string | undefined {
+  for (const key of keys) {
+    const value = getStringRecordValue(record, key);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function formatOutcomeRecordMeta(record: unknown, keys: readonly string[]): string | undefined {
+  const parts = keys
+    .map((key) => {
+      const value = getStringRecordValue(record, key);
+
+      return value ? `${formatOutcomeLabel(key)}: ${value}` : undefined;
+    })
+    .filter((value): value is string => Boolean(value));
+
+  return parts.length > 0 ? parts.join(" | ") : undefined;
+}
+
+function formatOutcomeLabel(value: string): string {
+  return value
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (character) => character.toUpperCase());
+}
+
+function describeOpaqueOutcomeRecord(item: unknown, index: number): string {
+  if (typeof item === "number" || typeof item === "boolean") {
+    return String(item);
+  }
+
+  return `Record ${index + 1} is available in the raw outcome material.`;
+}
+
+function describeOutcomeCount(count: number, singular: string, plural: string): string {
+  if (count === 0) {
+    return `No ${plural} returned`;
+  }
+
+  return `${count} ${count === 1 ? singular : plural} returned`;
 }
 
 function RunProjectionPanels({ sessionId }: { sessionId: string }) {
