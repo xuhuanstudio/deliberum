@@ -2640,7 +2640,7 @@ function ProjectionRecord({
     getStringRecordValue(object, "requirement") ??
     getStringRecordValue(object, "failureMode") ??
     fallbackTitle;
-  const status = getRecordValue(object, "status");
+  const status = formatReadableRecordStatus(getRecordValue(object, "status"));
   const description =
     getStringRecordValue(object, "description") ??
     getStringRecordValue(object, "consequence") ??
@@ -2654,7 +2654,7 @@ function ProjectionRecord({
       <p className="du-kicker">{formatProjectionKind(kind)}</p>
       <h4>{title}</h4>
       {description && description !== title ? <p>{description}</p> : null}
-      <p className="du-readable-meta">Status: {formatRecordValue(status)}</p>
+      <p className="du-readable-meta">Current state: {status}</p>
       <AdvancedDetails summary="Advanced / Developer Mode: source details">
         <KeyValueGrid
           items={[
@@ -2687,6 +2687,18 @@ function formatProjectionKind(kind: "candidate" | "objection" | "quality obligat
   }
 
   return "Requirement";
+}
+
+function formatReadableRecordStatus(value: unknown): string {
+  if (value === "accepted_active") {
+    return "Accepted and active";
+  }
+
+  if (typeof value === "string" && value.length > 0) {
+    return formatOutcomeLabel(value);
+  }
+
+  return formatRecordValue(value);
 }
 
 function ProjectionMetadata({ projection }: { projection: unknown }) {

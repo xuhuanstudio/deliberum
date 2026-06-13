@@ -1339,6 +1339,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText(/quality-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Projection events").length).toBeGreaterThan(0);
     expect(client.listEvents).not.toHaveBeenCalled();
+    expect(screen.getByText("Current state: Accepted and active")).toBeTruthy();
   });
 
   it("records a suggested process proposal into the session ledger", async () => {
