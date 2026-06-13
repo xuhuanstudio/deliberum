@@ -1420,7 +1420,7 @@ export function OutcomeBrief({
   const recommendation =
     getStringRecordValue(outcome, "recommendation") ??
     getStringRecordValue(outcome, "summary") ??
-    "No readable current conclusion was returned.";
+    "No current conclusion is available yet.";
   const unresolvedQuestions = getStringArray(getRecordValue(outcome, "unresolvedQuestions"));
   const limitations = getStringArray(getRecordValue(outcome, "limitations"));
   const continuationSuggestions = getStringArray(
@@ -1505,42 +1505,42 @@ export function OutcomeBrief({
         <ReadableStringList
           title="Unresolved questions"
           items={unresolvedQuestions}
-          emptyTitle="No unresolved questions returned"
+          emptyTitle="No unresolved questions listed"
         />
         <ReadableStringList
           title="Risks and boundaries"
           items={limitations}
-          emptyTitle="No risks or boundaries returned"
+          emptyTitle="No risks or boundaries listed"
         />
       </div>
       <ReadableRecordList
         title="Main perspectives"
         items={mainPerspectives}
-        emptyTitle="No alternatives returned"
+        emptyTitle="No main perspectives listed"
         summarizeItem={summarizeAlternative}
       />
       <ReadableRecordList
         title="Open disagreements"
         items={openDisagreements}
-        emptyTitle="No open disagreements returned"
+        emptyTitle="No open disagreements listed"
         summarizeItem={summarizeOpenObjection}
       />
       <ReadableRecordList
         title="Missing evidence"
         items={visibleEvidenceNeeds}
-        emptyTitle="No missing evidence returned"
+        emptyTitle="No missing evidence listed"
         summarizeItem={summarizeEvidenceNeed}
       />
       <ReadableRecordList
         title="Requirements this answer must satisfy"
         items={visibleQualityObligations}
-        emptyTitle="No answer requirements returned"
+        emptyTitle="No answer requirements listed"
         summarizeItem={summarizeQualityObligation}
       />
       <ReadableStringList
         title="Next recommended actions"
         items={continuationSuggestions}
-        emptyTitle="No continuation suggestions returned"
+        emptyTitle="No next recommended actions listed"
       />
     </div>
   );
@@ -1592,7 +1592,7 @@ function ReadableStringList({
       {items.length === 0 ? (
         <EmptyState
           title={emptyTitle}
-          description="This discussion did not return items for this section."
+          description="Nothing is listed for this section yet."
         />
       ) : (
         items.map((item, index) => (
@@ -1630,7 +1630,7 @@ function ReadableRecordList({
       {items.length === 0 ? (
         <EmptyState
           title={emptyTitle}
-          description="This discussion did not return records for this section."
+          description="Nothing is listed for this section yet."
         />
       ) : (
         items.map((item, index) => {
@@ -1750,10 +1750,10 @@ function formatOutcomeLabel(value: string): string {
 
 function describeOutcomeCount(count: number, singular: string, plural: string): string {
   if (count === 0) {
-    return `No ${plural} returned`;
+    return `No ${plural} listed`;
   }
 
-  return `${count} ${count === 1 ? singular : plural} returned`;
+  return `${count} ${count === 1 ? singular : plural} listed`;
 }
 
 function RunProjectionPanels({ sessionId }: { sessionId: string }) {

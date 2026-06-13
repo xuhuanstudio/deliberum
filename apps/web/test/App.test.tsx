@@ -1965,6 +1965,7 @@ describe("@deliberum/web shell", () => {
     expect(readableConclusion).not.toContain("objection-1");
     expect(readableConclusion).not.toContain("obligation-1");
     expect(readableConclusion).not.toContain("evidence-1");
+    expect(readableConclusion).not.toContain("returned");
   });
 
   it("fills missing run conclusion sections from discussion context", async () => {
@@ -1994,14 +1995,18 @@ describe("@deliberum/web shell", () => {
 
     const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
     expect(readableConclusion).toContain("Candidate A");
-    expect(readableConclusion).toContain("1 visible perspective returned");
+    expect(readableConclusion).toContain("1 visible perspective listed");
     expect(readableConclusion).toContain("Open disagreement 1");
     expect(readableConclusion).toContain("Requirement 1");
     expect(readableConclusion).toContain("Missing evidence 1");
+    expect(readableConclusion).toContain("No unresolved questions listed");
+    expect(readableConclusion).toContain("No risks or boundaries listed");
+    expect(readableConclusion).toContain("No next recommended actions listed");
     expect(readableConclusion).not.toContain("candidate-1");
     expect(readableConclusion).not.toContain("objection-1");
     expect(readableConclusion).not.toContain("quality-1");
     expect(readableConclusion).not.toContain("evidence-need-1");
+    expect(readableConclusion).not.toContain("returned");
   });
 
   it("compiles run output for a selected proposal event", async () => {
@@ -2077,8 +2082,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Provenance")).toBeTruthy();
     const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
     expect(readableConclusion).toContain("Candidate A");
-    expect(readableConclusion).toContain("1 visible perspective returned");
+    expect(readableConclusion).toContain("1 visible perspective listed");
     expect(readableConclusion).not.toContain("candidate-1");
+    expect(readableConclusion).not.toContain("returned");
     expect(client.getRunOutcome).not.toHaveBeenCalled();
     expect(
       Array.from(document.querySelectorAll(".du-nav-link.is-active")).map(
