@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   BaselineComparisonInputError,
   createBaselineComparisonReport,
+  formatBaselineComparisonMarkdownReport,
   type BaselineComparisonInput
 } from "../src";
 
@@ -221,6 +222,21 @@ describe("baseline comparison report", () => {
     expect(serialized).not.toContain("ranking");
     expect(serialized).not.toContain("finalAnswer");
     expect(serialized).not.toContain("truthSummary");
+  });
+
+  it("formats a readable Markdown evidence report", () => {
+    const report = createBaselineComparisonReport(sampleComparisonInput());
+    const markdown = formatBaselineComparisonMarkdownReport(report, {
+      title: "Evaluation fixture: sample"
+    });
+
+    expect(markdown).toContain("# Evaluation fixture: sample");
+    expect(markdown).toContain("- Cases: 4");
+    expect(markdown).toContain("- Complete finding matrices: 4/4");
+    expect(markdown).toContain("## Coverage");
+    expect(markdown).toContain("### Local daemon resource access posture");
+    expect(markdown).toContain("| Dimension | Deliberum stronger | Baseline stronger |");
+    expect(markdown).toContain("## Limitations");
   });
 
   it("rejects cases without exactly one Deliberum run", () => {

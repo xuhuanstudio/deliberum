@@ -46,6 +46,13 @@ dimension, coverage for every standard baseline kind, and no unsupported
 findings. It checks evidence-fixture completeness only; it does not judge model
 performance, produce numeric ratings, or replace external review.
 
+`corepack pnpm report:evaluation` builds the package and prints a Markdown
+summary for the public fixtures. The report is intended for review and release
+notes: it lists case coverage, run counts, finding matrix completeness,
+dimension-level supplied finding counts, provenance refs, and the harness
+limitations. It reads the same fixture schema as the validation gate and does
+not reinterpret source evidence.
+
 ## Evaluation dimensions
 
 - final answer quality;

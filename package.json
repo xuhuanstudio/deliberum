@@ -19,6 +19,7 @@
     "lint:public-files": "node scripts/check-public-files.mjs",
     "lint:docs": "node scripts/check-markdown-links.mjs",
     "lint:evaluation": "node scripts/check-evaluation-fixtures.mjs",
+    "report:evaluation": "corepack pnpm build:packages && node scripts/report-evaluation-fixtures.mjs",
     "typecheck": "corepack pnpm build:packages && corepack pnpm typecheck:workspace",
     "typecheck:workspace": "corepack pnpm -r typecheck",
     "format": "corepack pnpm -r --if-present format",

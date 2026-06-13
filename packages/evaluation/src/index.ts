@@ -150,6 +150,10 @@ export type BaselineComparisonReport = {
   limitations: string[];
 };
 
+export type BaselineComparisonMarkdownReportOptions = {
+  title?: string;
+};
+
 export class BaselineComparisonInputError extends Error {
   constructor(message: string) {
     super(message);
@@ -214,6 +218,73 @@ export function createBaselineComparisonReport(
       "Finding quality depends on the external evaluator and source references supplied to the harness."
     ]
   };
+}
+
+export function formatBaselineComparisonMarkdownReport(
+  report: BaselineComparisonReport,
+  options: BaselineComparisonMarkdownReportOptions = {}
+): string {
+  const title = options.title ?? "Deliberum baseline comparison report";
+  const lines = [
+    `# ${title}`,
+    "",
+    "This report aggregates supplied comparative findings. It does not evaluate quality by itself or select an authoritative outcome.",
+    "",
+    "## Summary",
+    "",
+    `- Cases: ${report.caseCount}`,
+    `- Runs: ${report.runCount}`,
+    `- Findings: ${report.findingCount}`,
+    `- Complete finding matrices: ${report.coverage.fullyAssessedCaseCount}/${report.caseCount}`,
+    `- Missing findings: ${report.missingFindingCount}`,
+    `- Unsupported findings: ${report.unsupportedFindingCount}`,
+    "",
+    "## Coverage",
+    "",
+    `- Covered dimensions: ${formatList(report.coverage.coveredDimensions)}`,
+    `- Missing standard dimensions: ${formatList(report.coverage.missingStandardDimensions)}`,
+    `- Covered baseline kinds: ${formatList(report.coverage.coveredBaselineRunKinds)}`,
+    `- Missing standard baseline kinds: ${formatList(
+      report.coverage.missingStandardBaselineRunKinds
+    )}`,
+    "",
+    "## Cases",
+    ""
+  ];
+
+  for (const caseSummary of report.caseSummaries) {
+    lines.push(
+      `### ${caseSummary.title}`,
+      "",
+      `- Case id: \`${caseSummary.caseId}\``,
+      `- Deliberum run: \`${caseSummary.deliberumRunId}\``,
+      `- Baselines: ${caseSummary.baselineRunIds.map((runId) => `\`${runId}\``).join(", ")}`,
+      `- Finding matrix: ${
+        caseSummary.missingFindingCount === 0 && caseSummary.unsupportedFindingCount === 0
+          ? "complete"
+          : "incomplete"
+      }`,
+      `- Assessed findings: ${caseSummary.assessedFindingCount}`,
+      ""
+    );
+    lines.push(formatDimensionTable(caseSummary.dimensionSummaries), "");
+  }
+
+  lines.push(
+    "## Provenance",
+    "",
+    `- Case ids: ${formatList(report.provenance.caseIds)}`,
+    `- Source refs: ${formatList(report.provenance.sourceRefs)}`,
+    "",
+    "## Limitations",
+    ""
+  );
+
+  for (const limitation of report.limitations) {
+    lines.push(`- ${limitation}`);
+  }
+
+  return `${lines.join("\n")}\n`;
 }
 
 function createCoverageSummary(
@@ -343,4 +414,41 @@ function createFindingKey(dimension: EvaluationDimension, baselineRunId: string)
 
 function sortBySchemaOrder<T extends string>(values: ReadonlySet<T>, schemaOrder: readonly T[]): T[] {
   return schemaOrder.filter((value) => values.has(value));
+}
+
+function formatDimensionTable(
+  summaries: readonly BaselineComparisonDimensionSummary[]
+): string {
+  const lines = [
+    "| Dimension | Deliberum stronger | Baseline stronger | Mixed | No clear difference | Insufficient evidence | Not applicable |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"
+  ];
+
+  for (const summary of summaries) {
+    lines.push(
+      [
+        `| ${formatLabel(summary.dimension)}`,
+        summary.counts.deliberum_stronger,
+        summary.counts.baseline_stronger,
+        summary.counts.mixed,
+        summary.counts.no_clear_difference,
+        summary.counts.insufficient_evidence,
+        `${summary.counts.not_applicable} |`
+      ].join(" | ")
+    );
+  }
+
+  return lines.join("\n");
+}
+
+function formatList(values: readonly string[]): string {
+  return values.length > 0 ? values.map((value) => `\`${value}\``).join(", ") : "None";
+}
+
+function formatLabel(value: string): string {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (character) => character.toUpperCase());
 }
