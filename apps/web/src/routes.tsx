@@ -394,16 +394,8 @@ function LandingPage() {
                 {sessionEntries.map(({ session, index, sessionId: catalogSessionId }) => (
                   <article className="du-run-list-item" key={`${catalogSessionId}-${index}`}>
                     <p className="du-kicker">Discussion {index + 1}</p>
-                    <h3>
-                      {formatRecordValue(
-                        getRecordValue(session, "title") ?? "Untitled session"
-                      )}
-                    </h3>
-                    <p>
-                      {formatRecordValue(
-                        getRecordValue(session, "topic") ?? "No topic summary"
-                      )}
-                    </p>
+                    <h3>{formatSessionCatalogTitle(session, index)}</h3>
+                    <p>{formatSessionCatalogSummary(session)}</p>
                     <KeyValueGrid
                       items={[
                         {
@@ -787,6 +779,36 @@ function QualityMapItem({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function formatSessionCatalogTitle(session: unknown, index: number): string {
+  const topic = getStringRecordValue(session, "topic");
+  const title = getStringRecordValue(session, "title");
+
+  if (topic) {
+    return topic;
+  }
+
+  if (title && !isTechnicalSessionTitle(title)) {
+    return title;
+  }
+
+  return `Discussion ${index + 1}`;
+}
+
+function formatSessionCatalogSummary(session: unknown): string {
+  const title = getStringRecordValue(session, "title");
+  const topic = getStringRecordValue(session, "topic");
+
+  if (title && title !== topic && !isTechnicalSessionTitle(title)) {
+    return title;
+  }
+
+  return "Review the brief, perspectives, disagreements, evidence, conclusion, and next actions.";
+}
+
+function isTechnicalSessionTitle(value: string): boolean {
+  return /^stage\s+\d+\s+shell$/i.test(value.trim());
 }
 
 function formatOverviewCount(

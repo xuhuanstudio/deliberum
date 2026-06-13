@@ -887,8 +887,8 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Continue existing discussions")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listSessions).toHaveBeenCalled());
-    expect(screen.getByText("Stage 11 shell")).toBeTruthy();
     expect(screen.getByText("Evaluate the local daemon run workspace")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("Stage 11 shell");
     expect(screen.getByText("7 updates")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("link", { name: "Open discussion" }));
