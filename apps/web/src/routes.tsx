@@ -781,6 +781,23 @@ function QualityMapItem({ label, value }: { label: string; value: string }) {
   );
 }
 
+function formatOverviewCount(
+  query: { isLoading: boolean; isError: boolean },
+  records: unknown[],
+  singular: string,
+  plural: string
+): string {
+  if (query.isLoading) {
+    return "Loading";
+  }
+
+  if (query.isError) {
+    return "Unavailable";
+  }
+
+  return `${records.length} ${records.length === 1 ? singular : plural}`;
+}
+
 type SessionReadableKind = "perspective" | "disagreement" | "requirement" | "evidence";
 
 function ReadableSessionRecordList({
@@ -1222,8 +1239,29 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
 
 function SessionOverviewPage() {
   const { sessionId } = useSessionParams();
+  const { client } = useDaemonRuntime();
   const eventsQuery = useSessionEventsQuery(sessionId);
+  const frontierQuery = useQuery({
+    queryKey: ["frontier", sessionId],
+    queryFn: () => client.getFrontier(sessionId)
+  });
+  const objectionsQuery = useQuery({
+    queryKey: ["objections", sessionId],
+    queryFn: () => client.getObjections(sessionId)
+  });
+  const obligationsQuery = useQuery({
+    queryKey: ["obligations", sessionId],
+    queryFn: () => client.getObligations(sessionId)
+  });
+  const resourcesQuery = useQuery({
+    queryKey: ["session-resources", sessionId],
+    queryFn: () => client.getSessionResources(sessionId)
+  });
   const events = asArray(eventsQuery.data?.events);
+  const perspectives = asArray(frontierQuery.data?.candidates);
+  const openDisagreements = asArray(objectionsQuery.data?.objections);
+  const answerRequirements = asArray(obligationsQuery.data?.qualityObligations);
+  const missingEvidence = asArray(resourcesQuery.data?.evidenceNeeds);
   const latestEvent = events.at(-1);
   const topicContractEvent =
     events.find((event) => getRecordValue(event, "type") === "topic_contract_published") ??
@@ -1253,6 +1291,107 @@ function SessionOverviewPage() {
             <QualityPathItem
               title="Latest visible step"
               detail={formatSessionEventTypeForUser(getRecordValue(latestEvent, "type"))}
+            />
+          </div>
+        </DataPanel>
+        <DataPanel
+          title="Review this discussion"
+          description="A quick human-readable snapshot of what is ready to inspect next."
+        >
+          <div className="du-quality-map">
+            <QualityMapItem
+              label="Main perspectives"
+              value={formatOverviewCount(
+                frontierQuery,
+                perspectives,
+                "visible perspective",
+                "visible perspectives"
+              )}
+            />
+            <QualityMapItem
+              label="Open disagreements"
+              value={formatOverviewCount(
+                objectionsQuery,
+                openDisagreements,
+                "open disagreement",
+                "open disagreements"
+              )}
+            />
+            <QualityMapItem
+              label="Requirements"
+              value={formatOverviewCount(
+                obligationsQuery,
+                answerRequirements,
+                "requirement",
+                "requirements"
+              )}
+            />
+            <QualityMapItem
+              label="Risks and missing evidence"
+              value={formatOverviewCount(
+                resourcesQuery,
+                missingEvidence,
+                "missing evidence item",
+                "missing evidence items"
+              )}
+            />
+          </div>
+          <div className="du-action-row">
+            <Link
+              className="du-action-link"
+              to="/sessions/$sessionId/final"
+              params={{ sessionId }}
+            >
+              View current conclusion
+            </Link>
+            <Link
+              className="du-action-link du-secondary-link"
+              to="/sessions/$sessionId/frontier"
+              params={{ sessionId }}
+            >
+              View main perspectives
+            </Link>
+            <Link
+              className="du-action-link du-secondary-link"
+              to="/sessions/$sessionId/resources"
+              params={{ sessionId }}
+            >
+              Check evidence
+            </Link>
+          </div>
+        </DataPanel>
+        <DataPanel
+          title="Next recommended actions"
+          description="Start with the conclusion, then inspect the material that could change it."
+        >
+          <div className="du-readable-list">
+            {missingEvidence.length > 0 ? (
+              <QualityPathItem
+                title="Check missing evidence"
+                detail="Resolve evidence gaps before treating the conclusion as reliable."
+              />
+            ) : null}
+            {openDisagreements.length > 0 ? (
+              <QualityPathItem
+                title="Review open disagreements"
+                detail="Open disagreements show where the conclusion is still constrained."
+              />
+            ) : null}
+            {answerRequirements.length > 0 ? (
+              <QualityPathItem
+                title="Confirm answer requirements"
+                detail="Unanswered requirements should be satisfied or explicitly acknowledged."
+              />
+            ) : null}
+            {perspectives.length === 0 && !frontierQuery.isLoading ? (
+              <QualityPathItem
+                title="Continue the discussion"
+                detail="No main perspectives are visible yet. Continue the guided discussion before relying on the result."
+              />
+            ) : null}
+            <QualityPathItem
+              title="Review current conclusion"
+              detail="Open the current conclusion to see the result, caveats, and next steps together."
             />
           </div>
         </DataPanel>

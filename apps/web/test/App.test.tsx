@@ -991,8 +991,23 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Discussion brief")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText("Current activity")).toBeTruthy();
     expect(screen.getByText("Discussion brief published")).toBeTruthy();
+    expect(screen.getByText("Review this discussion")).toBeTruthy();
+    expect(screen.getByText("1 visible perspective")).toBeTruthy();
+    expect(screen.getByText("1 open disagreement")).toBeTruthy();
+    expect(screen.getByText("1 requirement")).toBeTruthy();
+    expect(screen.getByText("1 missing evidence item")).toBeTruthy();
+    expect(screen.getByText("Next recommended actions")).toBeTruthy();
+    expect(screen.getByText("Check missing evidence")).toBeTruthy();
+    expect(screen.getByText("Review open disagreements")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "View current conclusion" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "View main perspectives" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
     expect(screen.getByText("topic_contract_published")).toBeTruthy();
   });
 
