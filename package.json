@@ -18,11 +18,12 @@
     "lint:language": "node scripts/check-public-language.mjs",
     "lint:public-files": "node scripts/check-public-files.mjs",
     "lint:docs": "node scripts/check-markdown-links.mjs",
+    "lint:evaluation": "node scripts/check-evaluation-fixtures.mjs",
     "typecheck": "corepack pnpm build:packages && corepack pnpm typecheck:workspace",
     "typecheck:workspace": "corepack pnpm -r typecheck",
     "format": "corepack pnpm -r --if-present format",
     "smoke:built": "node scripts/smoke-built-runtime.mjs",
-    "ci": "corepack pnpm clean:dist && corepack pnpm lint:language && corepack pnpm lint:public-files && corepack pnpm lint:docs && corepack pnpm build:packages && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built"
+    "ci": "corepack pnpm clean:dist && corepack pnpm lint:language && corepack pnpm lint:public-files && corepack pnpm lint:docs && corepack pnpm build:packages && corepack pnpm lint:evaluation && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

@@ -39,6 +39,13 @@ sample covers every implemented evaluation dimension at least once. It is
 illustrative harness input, not a benchmark score, leaderboard, or system
 ranking.
 
+`corepack pnpm lint:evaluation` validates the public evaluation fixtures through
+the built `@deliberum/evaluation` package. The gate requires complete finding
+matrices for declared dimensions, coverage for every standard evaluation
+dimension, coverage for every standard baseline kind, and no unsupported
+findings. It checks evidence-fixture completeness only; it does not judge model
+performance, produce numeric ratings, or replace external review.
+
 ## Evaluation dimensions
 
 - final answer quality;
