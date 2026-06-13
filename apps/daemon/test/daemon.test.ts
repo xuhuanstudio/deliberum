@@ -2188,6 +2188,78 @@ describe("daemon API", () => {
     );
   });
 
+  it("reports safe resource access posture without exposing access material", async () => {
+    const resourceAccessStore = new ResourceAccessGrantStore({
+      clock: () => Date.parse(clock()),
+      tokenGenerator: () => "Z".repeat(32)
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      resourceAccessBaseUrl: "https://access.example/base/",
+      resourceAccessTtlMs: 120000,
+      resourceAccessStore
+    });
+
+    const response = await daemonApp.app.request("/runtime/resource-access");
+    const body = (await response.json()) as {
+      baseUrl: {
+        configured: boolean;
+        exposure: string;
+        routePattern: string;
+      };
+      ttl: {
+        configured: boolean;
+        defaultTtlMs: number;
+        maxTtlMs: number;
+      };
+      grantStore: {
+        mode: string;
+        restartContinuity: string;
+      };
+      safety: string[];
+    };
+    const text = JSON.stringify(body);
+    const auditBody = (await (
+      await daemonApp.app.request("/runtime/operation-audit?limit=5")
+    ).json()) as {
+      events: Array<{
+        action: string;
+        route: string;
+      }>;
+    };
+
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(body).toMatchObject({
+      baseUrl: {
+        configured: true,
+        exposure: "public",
+        routePattern: "/resource-access/:accessId"
+      },
+      ttl: {
+        configured: true,
+        defaultTtlMs: 120000,
+        maxTtlMs: 3600000
+      },
+      grantStore: {
+        mode: "configured_store",
+        restartContinuity: "depends_on_configured_store"
+      }
+    });
+    expect(body.safety.join(" ")).toContain("does not expose resource access ids");
+    expect(text).not.toContain("https://access.example");
+    expect(text).not.toContain("ZZZZ");
+    expect(auditBody.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "resource_access_posture_read",
+          route: "/runtime/resource-access"
+        })
+      ])
+    );
+  });
+
   it("allows only explicit local Web dev origins for CORS", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
     const loopbackResponse = await daemonApp.app.request("/runs", {

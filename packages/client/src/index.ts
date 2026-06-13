@@ -64,6 +64,24 @@ export type RuntimeProfilesResponse = {
   }>;
 };
 
+export type ResourceAccessPostureResponse = {
+  baseUrl: {
+    configured: boolean;
+    exposure: "localhost" | "lan" | "public";
+    routePattern: "/resource-access/:accessId";
+  };
+  ttl: {
+    configured: boolean;
+    defaultTtlMs: number;
+    maxTtlMs: number;
+  };
+  grantStore: {
+    mode: "process_memory" | "configured_store";
+    restartContinuity: "lost_on_restart" | "depends_on_configured_store";
+  };
+  safety: string[];
+};
+
 export type OperationAuditResponse = {
   events: Array<{
     id: string;
@@ -460,6 +478,10 @@ export class DeliberumDaemonClient {
 
   getRuntimeProfiles(): Promise<RuntimeProfilesResponse> {
     return this.request("GET", "/runtime/profiles");
+  }
+
+  getResourceAccessPosture(): Promise<ResourceAccessPostureResponse> {
+    return this.request("GET", "/runtime/resource-access");
   }
 
   getOperationAudit(options: { limit?: number } = {}): Promise<OperationAuditResponse> {

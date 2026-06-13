@@ -139,6 +139,44 @@ describe("DeliberumDaemonClient", () => {
     });
   });
 
+  it("reads safe daemon resource access posture", async () => {
+    const fetch = createFetch({
+      baseUrl: {
+        configured: false,
+        exposure: "localhost",
+        routePattern: "/resource-access/:accessId"
+      },
+      ttl: {
+        configured: false,
+        defaultTtlMs: 300000,
+        maxTtlMs: 3600000
+      },
+      grantStore: {
+        mode: "process_memory",
+        restartContinuity: "lost_on_restart"
+      },
+      safety: ["No access ids are returned."]
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    const result = await daemonClient.getResourceAccessPosture();
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:3877/runtime/resource-access");
+    expect(init).toEqual({
+      method: "GET"
+    });
+    expect(result).toMatchObject({
+      baseUrl: {
+        configured: false,
+        exposure: "localhost"
+      },
+      grantStore: {
+        mode: "process_memory"
+      }
+    });
+  });
+
   it("reads safe daemon operation audit metadata with an optional limit", async () => {
     const fetch = createFetch({
       events: [

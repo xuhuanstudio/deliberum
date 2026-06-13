@@ -86,7 +86,9 @@ import {
 } from "./resource-access-routes";
 import {
   RESOURCE_ACCESS_DEFAULT_TTL_MS,
+  RESOURCE_ACCESS_MAX_TTL_MS,
   ResourceAccessGrantStore,
+  classifyResourceAccessBaseUrl,
   type ResourceAccessGrantStoreLike,
   type ResourceAccessClock,
   type ResourceAccessTokenGenerator
@@ -174,6 +176,24 @@ export type SafeErrorResponse = {
     code: string;
     message: string;
   };
+};
+
+export type ResourceAccessPostureResponse = {
+  baseUrl: {
+    configured: boolean;
+    exposure: "localhost" | "lan" | "public";
+    routePattern: "/resource-access/:accessId";
+  };
+  ttl: {
+    configured: boolean;
+    defaultTtlMs: number;
+    maxTtlMs: number;
+  };
+  grantStore: {
+    mode: "process_memory" | "configured_store";
+    restartContinuity: "lost_on_restart" | "depends_on_configured_store";
+  };
+  safety: string[];
 };
 
 export const DAEMON_CORS_ORIGINS_ENV_VAR = "DELIBERUM_DAEMON_CORS_ORIGINS" as const;
@@ -580,6 +600,18 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         httpTemplateEnv: options.httpTemplateEnv,
         enableMcpToolProfile: options.enableMcpToolProfile === true,
         mcpToolEnv: options.mcpToolEnv
+      })
+    )
+  );
+
+  app.get("/runtime/resource-access", (context) =>
+    noStoreJson(
+      context,
+      buildResourceAccessPosture({
+        resourceAccessBaseUrl,
+        resourceAccessBaseUrlConfigured: options.resourceAccessBaseUrl !== undefined,
+        resourceAccessTtlMs: options.resourceAccessTtlMs,
+        resourceAccessStoreConfigured: options.resourceAccessStore !== undefined
       })
     )
   );
@@ -1282,6 +1314,40 @@ function noStoreJson(context: Context, payload: unknown, status: 200 | 201 | 400
   response.headers.set("Pragma", "no-cache");
 
   return response;
+}
+
+function buildResourceAccessPosture(options: {
+  resourceAccessBaseUrl: string;
+  resourceAccessBaseUrlConfigured: boolean;
+  resourceAccessTtlMs?: number;
+  resourceAccessStoreConfigured: boolean;
+}): ResourceAccessPostureResponse {
+  return {
+    baseUrl: {
+      configured: options.resourceAccessBaseUrlConfigured,
+      exposure: classifyResourceAccessBaseUrl(options.resourceAccessBaseUrl),
+      routePattern: "/resource-access/:accessId"
+    },
+    ttl: {
+      configured: options.resourceAccessTtlMs !== undefined,
+      defaultTtlMs: options.resourceAccessTtlMs ?? RESOURCE_ACCESS_DEFAULT_TTL_MS,
+      maxTtlMs: RESOURCE_ACCESS_MAX_TTL_MS
+    },
+    grantStore: options.resourceAccessStoreConfigured
+      ? {
+          mode: "configured_store",
+          restartContinuity: "depends_on_configured_store"
+        }
+      : {
+          mode: "process_memory",
+          restartContinuity: "lost_on_restart"
+        },
+    safety: [
+      "This posture is derived from daemon configuration only.",
+      "It does not expose resource access ids, bearer tokens, source URLs, redirected targets, hosted content, or resource payloads.",
+      "Resource access grants remain scoped, revocable, short-lived delivery-layer material and are not semantic ledger authority."
+    ]
+  };
 }
 
 function authenticateDaemonRequest(

@@ -45,6 +45,7 @@ deliberum daemon profiles [--daemon-url <local-url>]
 deliberum daemon env-template [--profile <id>] [--daemon-url <local-url>]
 deliberum daemon profile-doctor [--profile <id>] [--daemon-url <local-url>]
 deliberum daemon operation-audit [--limit <n>] [--format <json|jsonl>] [--daemon-url <local-url>]
+deliberum daemon resource-access status [--daemon-url <local-url>]
 deliberum daemon resource-access revoke <access-id> [--daemon-url <local-url>]
 deliberum runs create --input <run-plan.json> [--daemon-url <local-url>]
 deliberum runs list [--daemon-url <local-url>]
@@ -74,6 +75,8 @@ CLI daemon and run commands are local daemon control commands. They require a ru
 `deliberum daemon profile-doctor` reads the same safe runtime profile metadata and returns local setup diagnostics: enabled profile counts, ready and needs-configuration counts, missing recommended env var names, enabled component counts, and safe next actions such as enabling a profile or supplying daemon defaults/run config. It accepts `--profile <id>` to inspect one profile. It does not read environment values, prompt for secrets, write `.env`, start providers, execute adapters, or store provider/tool configuration.
 
 `deliberum daemon operation-audit` reads `GET /runtime/operation-audit` and returns safe daemon control-plane operation metadata. The optional `--limit <n>` argument limits the returned entries. The optional `--format jsonl` mode exports one safe audit record per line for local archival workflows; the default `json` mode keeps the normal structured response. This command does not read the CLI local JSON ledger and does not expose request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, or output payloads.
+
+`deliberum daemon resource-access status` reads `GET /runtime/resource-access` and returns safe resource access posture metadata: whether the base URL and TTL are explicitly configured, the exposure class, the route pattern, the effective TTL limit, grant-store continuity class, and safety notes. It does not return the actual configured base URL, resource access ids, bearer tokens, source URLs, redirect targets, hosted content, or resource payloads.
 
 `deliberum daemon resource-access revoke <access-id>` calls `POST /resource-access/:accessId/revoke` on the local daemon and returns the safe revocation view. It is a local daemon control command and does not read the CLI local JSON ledger.
 
@@ -106,6 +109,7 @@ Implemented endpoints:
 ```text
 GET  /health
 GET  /runtime/profiles
+GET  /runtime/resource-access
 GET  /runtime/operation-audit
 GET  /runs
 GET  /runs/:runId

@@ -59,6 +59,7 @@ export const CLI_COMMANDS = [
   "daemon env-template",
   "daemon profile-doctor",
   "daemon operation-audit",
+  "daemon resource-access status",
   "daemon resource-access revoke",
   "runs create",
   "runs list",
@@ -152,6 +153,7 @@ type FinalAuditInputFile = {
 export type CliRunDaemonClient = Pick<
   DeliberumDaemonClient,
   | "getRuntimeProfiles"
+  | "getResourceAccessPosture"
   | "getOperationAudit"
   | "createRun"
   | "listRuns"
@@ -757,9 +759,18 @@ async function executeDaemonCommand(
   if (action === "resource-access") {
     const [resourceAccessAction, ...resourceAccessPositionals] = restPositionals;
 
+    if (resourceAccessAction === "status") {
+      requireNoPositionals(
+        resourceAccessPositionals,
+        "Usage: deliberum daemon resource-access status [--daemon-url <local-url>]"
+      );
+
+      return daemonClient.getResourceAccessPosture();
+    }
+
     if (resourceAccessAction !== "revoke") {
       throw new CliUsageError(
-        "Usage: deliberum daemon resource-access revoke <access-id> [--daemon-url <local-url>]"
+        "Usage: deliberum daemon resource-access <status|revoke> [access-id] [--daemon-url <local-url>]"
       );
     }
 

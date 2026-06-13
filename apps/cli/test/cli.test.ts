@@ -117,6 +117,23 @@ function createFakeRunDaemonClient(
         }
       ]
     })),
+    getResourceAccessPosture: vi.fn(async () => ({
+      baseUrl: {
+        configured: false,
+        exposure: "localhost",
+        routePattern: "/resource-access/:accessId"
+      },
+      ttl: {
+        configured: false,
+        defaultTtlMs: 300000,
+        maxTtlMs: 3600000
+      },
+      grantStore: {
+        mode: "process_memory",
+        restartContinuity: "lost_on_restart"
+      },
+      safety: ["No access ids are returned."]
+    })),
     getOperationAudit: vi.fn(async () => ({
       events: [
         {
@@ -1148,6 +1165,63 @@ describe("CLI command routing", () => {
     expect(rejected.exitCode).toBe(1);
     expect(rejected.stdout).not.toContain("sk-runtime-secret");
     expect(daemonClient.getOperationAudit).toHaveBeenCalledTimes(2);
+  });
+
+  it("routes daemon resource access posture reads through the daemon client", async () => {
+    const { daemonClient, createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies();
+
+    const posture = parseOutput<{
+      baseUrl: {
+        configured: boolean;
+        exposure: string;
+      };
+      grantStore: {
+        mode: string;
+      };
+    }>(
+      await runCli(
+        [
+          "daemon",
+          "resource-access",
+          "status",
+          "--daemon-url",
+          "http://127.0.0.1:4999",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const rejected = await runCli(
+      [
+        "daemon",
+        "resource-access",
+        "status",
+        "--api-key",
+        "runtime-secret-value",
+        "--json"
+      ],
+      dependencies
+    );
+
+    expect(posture).toMatchObject({
+      baseUrl: {
+        configured: false,
+        exposure: "localhost"
+      },
+      grantStore: {
+        mode: "process_memory"
+      }
+    });
+    expect(JSON.stringify(posture)).not.toContain("http://");
+    expect(daemonClient.getResourceAccessPosture).toHaveBeenCalledTimes(1);
+    expect(createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://127.0.0.1:4999"
+    });
+    expect(createEventStore).not.toHaveBeenCalled();
+    expect(rejected.exitCode).toBe(1);
+    expect(rejected.stdout).not.toContain("runtime-secret-value");
+    expect(daemonClient.getResourceAccessPosture).toHaveBeenCalledTimes(1);
   });
 
   it("routes daemon resource access revocation through the daemon client", async () => {

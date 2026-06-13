@@ -38,6 +38,8 @@ Resource access grant ids are response-only bearer material. The daemon stores a
 
 The daemon resource access base URL defaults to the local daemon host and port. When configured from environment variables, non-local base URLs require `DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE=true`; public base URLs must use HTTPS.
 
+`GET /runtime/resource-access` exposes only safe posture metadata for local operators: whether the base URL and TTL were explicitly configured, the base URL exposure class, the route pattern, the TTL limit, grant-store continuity class, and safety notes. It does not return the actual configured base URL, bearer access ids, source URLs, redirect targets, hosted content, or resource payloads.
+
 Base64 avoids public URL exposure but still sends resource content to the target participant. It must not be treated as private once delivered.
 
 `none` mode may use summaries, OCR, captions, transcripts, or semantic board summaries.
