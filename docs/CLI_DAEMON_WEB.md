@@ -145,6 +145,7 @@ GET  /health
 GET  /runtime/profiles
 GET  /runtime/deployment-posture
 GET  /runtime/resource-access
+GET  /runtime/ledger-integrity
 GET  /runtime/operation-audit
 GET  /runs
 GET  /runs/:runId
