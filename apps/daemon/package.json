@@ -21,6 +21,6 @@
     "@deliberum/storage": "workspace:*",
     "@hono/node-server": "^2.0.2",
     "better-sqlite3": "^12.10.0",
-    "hono": "^4.12.24"
+    "hono": "^4.12.25"
   }
 }
