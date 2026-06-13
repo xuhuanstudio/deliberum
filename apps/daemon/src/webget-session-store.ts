@@ -42,6 +42,27 @@ export type WebGETSessionPublicView = Omit<WebGETSession, "token"> & {
   startUrl: string;
 };
 
+export type WebGETSessionStatusView = {
+  sessionId: string;
+  batchId: string;
+  participantId: string;
+  status: "open" | "committed";
+  createdAt: number;
+  expiresAt: number;
+  submission: {
+    committed: boolean;
+    acceptedChunkCount: number;
+    expectedChunkCount: number | null;
+    maxChunkCount: number;
+    maxChunkBytes: number;
+    maxTotalBytes: number;
+  };
+  resources: {
+    scopedCount: number;
+    accessedCount: number;
+  };
+};
+
 export type WebGETContextCompleteness = {
   status: "complete" | "partial" | "unknown";
   notes: string[];
@@ -140,6 +161,10 @@ export class WebGETSessionStore {
 
   getSession(token: string): WebGETSessionPublicView {
     return this.toPublicView(this.getActiveSession(token));
+  }
+
+  getSessionStatus(token: string): WebGETSessionStatusView {
+    return this.toStatusView(this.getActiveSession(token));
   }
 
   recordResourceAccess(token: string, plan: ResourceDeliveryPlan): void {
@@ -382,6 +407,29 @@ export class WebGETSessionStore {
       resourceAccessReports: structuredClone(session.resourceAccessReports),
       startPath,
       startUrl: `${this.baseUrl}${startPath}`
+    };
+  }
+
+  private toStatusView(session: StoredSession): WebGETSessionStatusView {
+    return {
+      sessionId: session.sessionId,
+      batchId: session.batchId,
+      participantId: session.participantId,
+      status: session.committed ? "committed" : "open",
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+      submission: {
+        committed: session.committed,
+        acceptedChunkCount: session.chunks.size,
+        expectedChunkCount: [...session.chunks.values()][0]?.total ?? null,
+        maxChunkCount: WEBGET_MAX_CHUNK_COUNT,
+        maxChunkBytes: WEBGET_MAX_CHUNK_BYTES,
+        maxTotalBytes: WEBGET_MAX_TOTAL_BYTES
+      },
+      resources: {
+        scopedCount: session.resourceIds.length,
+        accessedCount: session.resourceAccessReports.length
+      }
     };
   }
 }

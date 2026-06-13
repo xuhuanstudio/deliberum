@@ -11808,6 +11808,109 @@ describe("daemon API", () => {
     await expectWebGETError(expiredResponse, "expired_token");
   });
 
+  it("WebGET status reports lifecycle and chunk progress without exposing token material", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      webgetTokenGenerator: createTokenGenerator()
+    });
+    const { webget } = await createWebGETBatch(daemonApp);
+    const token = tokenFromStartUrl(webget.startUrl);
+    const encoded = encodeWebGETSubmission(webgetSubmission(), 32);
+    const initialStatus = await daemonApp.app.request(webgetPath(webget.startUrl, "/status"));
+    const firstSubmit = await daemonApp.app.request(
+      `${webgetPath(webget.startUrl, "/submit")}?seq=1&total=${encoded.chunks.length}&encoding=base64url&data=${encoded.chunks[0]}`
+    );
+    const partialStatus = await daemonApp.app.request(webgetPath(webget.startUrl, "/status"));
+
+    for (let index = 1; index < encoded.chunks.length; index += 1) {
+      const response = await daemonApp.app.request(
+        `${webgetPath(webget.startUrl, "/submit")}?seq=${index + 1}&total=${encoded.chunks.length}&encoding=base64url&data=${encoded.chunks[index]}`
+      );
+      expect(response.status).toBe(200);
+    }
+    const commitResponse = await commitWebGET(
+      daemonApp,
+      webget.startUrl,
+      encoded.chunks.length,
+      encoded.sha256,
+      encoded.length
+    );
+    const committedStatus = await daemonApp.app.request(webgetPath(webget.startUrl, "/status"));
+    const initialBody = (await initialStatus.json()) as {
+      status: string;
+      submission: {
+        committed: boolean;
+        acceptedChunkCount: number;
+        expectedChunkCount: number | null;
+      };
+      safety: string[];
+    };
+    const partialBody = (await partialStatus.json()) as {
+      status: string;
+      submission: {
+        acceptedChunkCount: number;
+        expectedChunkCount: number | null;
+      };
+    };
+    const committedText = await committedStatus.text();
+    const committedBody = JSON.parse(committedText) as {
+      status: string;
+      submission: {
+        committed: boolean;
+        acceptedChunkCount: number;
+        expectedChunkCount: number | null;
+      };
+    };
+    const auditBody = (await (
+      await daemonApp.app.request("/runtime/operation-audit?limit=20")
+    ).json()) as {
+      events: Array<{ action: string; route: string }>;
+    };
+    const auditText = JSON.stringify(auditBody);
+
+    expect(initialStatus.status).toBe(200);
+    expectNoStore(initialStatus);
+    expect(initialBody).toMatchObject({
+      status: "open",
+      submission: {
+        committed: false,
+        acceptedChunkCount: 0,
+        expectedChunkCount: null
+      }
+    });
+    expect(initialBody.safety.join(" ")).toContain("does not replay historical events");
+    expect(firstSubmit.status).toBe(200);
+    expect(partialBody).toMatchObject({
+      status: "open",
+      submission: {
+        acceptedChunkCount: 1,
+        expectedChunkCount: encoded.chunks.length
+      }
+    });
+    expect(commitResponse.status).toBe(201);
+    expectNoStore(committedStatus);
+    expect(committedBody).toMatchObject({
+      status: "committed",
+      submission: {
+        committed: true,
+        acceptedChunkCount: encoded.chunks.length,
+        expectedChunkCount: encoded.chunks.length
+      }
+    });
+    expect(committedText).not.toContain(token);
+    expect(committedText).not.toContain("webget output");
+    expect(auditBody.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "webget_status",
+          route: "/webget/:token/status"
+        })
+      ])
+    );
+    expect(auditText).not.toContain(token);
+  });
+
   it("WebGET context redacts unrevealed sealed contribution payloads", async () => {
     const daemonApp = createDaemonApp({
       idGenerator: createIds(),

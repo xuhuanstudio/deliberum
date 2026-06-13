@@ -1012,6 +1012,10 @@ function normalizeWebGETRoute(segments: string[]): string {
     return "/webget/:token/start";
   }
 
+  if (segments[2] === "status") {
+    return "/webget/:token/status";
+  }
+
   if (segments[2] === "context") {
     return "/webget/:token/context";
   }

@@ -26,7 +26,8 @@ import type { ResourceAccessGrantStoreLike } from "./resource-access-store";
 import {
   WebGETSessionError,
   WebGETSessionStore,
-  type WebGETSessionPublicView
+  type WebGETSessionPublicView,
+  type WebGETSessionStatusView
 } from "./webget-session-store";
 
 export type WebGETRouteOptions = {
@@ -53,6 +54,13 @@ export type WebGETSafeErrorResponse = {
 
 export function registerWebGETRoutes(options: WebGETRouteOptions): void {
   const { app } = options;
+
+  app.get("/webget/:token/status", (context) =>
+    noStoreJson(
+      context,
+      createStatusPayload(options.webgetStore.getSessionStatus(context.req.param("token")))
+    )
+  );
 
   app.get("/webget/:token/start", (context) =>
     noStoreJson(
@@ -245,6 +253,31 @@ function createStartPayload(session: WebGETSessionPublicView) {
       commitPath: "commit",
       requiredJsonFields: ["output", "readReport", "contextCompleteness"]
     }
+  };
+}
+
+function createStatusPayload(status: WebGETSessionStatusView) {
+  return {
+    experimental: true,
+    sessionId: status.sessionId,
+    batchId: status.batchId,
+    participantId: status.participantId,
+    status: status.status,
+    createdAt: new Date(status.createdAt).toISOString(),
+    expiresAt: new Date(status.expiresAt).toISOString(),
+    submission: status.submission,
+    resources: status.resources,
+    links: {
+      start: "start",
+      context: "context",
+      submit: "submit",
+      commit: "commit"
+    },
+    safety: [
+      "This status view is scoped to the WebGET token holder.",
+      "It reports lifecycle, chunk counts, resource counts, and relative endpoint names only.",
+      "It does not replay historical events or expose the token, start URL, event payloads, resource contents, delivery material, provider secrets, or bearer material."
+    ]
   };
 }
 

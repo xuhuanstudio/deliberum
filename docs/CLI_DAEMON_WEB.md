@@ -278,6 +278,7 @@ Experimental WebGET endpoints are local daemon endpoints:
 
 ```text
 GET /webget/:token/start
+GET /webget/:token/status
 GET /webget/:token/context
 GET /webget/:token/context/:page
 GET /webget/:token/resources/:resourceId
