@@ -9,6 +9,7 @@ This project follows a human-readable changelog. The initial public repository s
 - Added explicit process proposal lifecycle support, read-only adaptive process suggestions, daemon execution readiness, and operator-triggered accepted proposal execution for supported stages.
 - Added OpenAI-compatible, HTTP-template, MCP-compatible tool, manual, fake, and WebGET adapter surfaces with safe secret handling boundaries.
 - Added safe daemon setup-plan output derived from runtime profile metadata, including required and recommended local configuration steps without printing or storing secret values.
+- Added shared client-side setup-plan projection helpers and Web runtime profile setup summaries derived from safe daemon metadata.
 - Added public project hygiene files, CI, security/governance documentation, deployment notes, and baseline evaluation harnesses.
 
 ## 0.0.0

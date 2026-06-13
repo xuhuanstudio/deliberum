@@ -135,7 +135,22 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           ],
           setup: {
             enableEnvVar: "DELIBERUM_ENABLE_MCP_TOOL_PROFILE",
-            envVars: [],
+            envVars: [
+              {
+                name: "DELIBERUM_MCP_TOOL_URL",
+                configured: false,
+                secret: false,
+                required: true,
+                purpose: "Required MCP-compatible JSON-RPC tool endpoint URL."
+              },
+              {
+                name: "DELIBERUM_MCP_TOOL_NAME",
+                configured: false,
+                secret: false,
+                required: true,
+                purpose: "Required allowed tool name."
+              }
+            ],
             missingRecommendedEnvVars: [
               "DELIBERUM_MCP_TOOL_URL",
               "DELIBERUM_MCP_TOOL_NAME"
@@ -709,8 +724,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Ready")).toBeTruthy();
     expect(screen.getByText("Ready with run config")).toBeTruthy();
     expect(screen.getByText("Needs configuration")).toBeTruthy();
-    expect(screen.getByText("DELIBERUM_OPENAI_BASE_URL, DELIBERUM_OPENAI_MODEL")).toBeTruthy();
-    expect(screen.getByText("DELIBERUM_MCP_TOOL_URL, DELIBERUM_MCP_TOOL_NAME")).toBeTruthy();
+    expect(screen.getByText("Setup steps")).toBeTruthy();
+    expect(screen.getByText("Required env vars")).toBeTruthy();
+    expect(screen.getByText("Secret env names")).toBeTruthy();
+    expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
+    expect(
+      screen.getAllByText("DELIBERUM_OPENAI_BASE_URL, DELIBERUM_OPENAI_MODEL").length
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("DELIBERUM_MCP_TOOL_URL, DELIBERUM_MCP_TOOL_NAME").length
+    ).toBeGreaterThan(0);
     expect(screen.queryByText("sk-openai-runtime-secret")).toBeNull();
   });
 

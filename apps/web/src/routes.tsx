@@ -21,6 +21,7 @@ import {
 } from "@deliberum/ui";
 import { useEffect, useState, type FormEvent } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
+import { buildRuntimeSetupPlan } from "@deliberum/client";
 import type {
   AuditFinalCandidateRequest,
   ProposeFinalCandidateRequest
@@ -229,6 +230,12 @@ function LandingPage() {
   });
   const sessions = asArray(sessionsQuery.data?.sessions);
   const runtimeProfiles = asArray(runtimeProfilesQuery.data?.profiles);
+  const runtimeSetupPlan = runtimeProfilesQuery.data
+    ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
+    : undefined;
+  const runtimeSetupProfilesById = new Map(
+    (runtimeSetupPlan?.profiles ?? []).map((profile) => [profile.id, profile])
+  );
   const sessionEntries = sessions.flatMap((session, index) => {
     const catalogSessionId = getStringRecordValue(session, "sessionId");
 
@@ -298,52 +305,94 @@ function LandingPage() {
                 description="The daemon did not return profile setup metadata."
               />
             ) : (
-              <div className="du-run-list">
-                {runtimeProfileEntries.map(({ profile, index, id }) => {
-                  const setup = getRecordValue(profile, "setup");
-                  const components = asArray(getRecordValue(profile, "components"));
-                  const enabledComponents = components.filter(
-                    (componentEntry) => getRecordValue(componentEntry, "enabled") === true
-                  ).length;
-                  const missingEnvVars = asArray(
-                    getRecordValue(setup, "missingRecommendedEnvVars")
-                  )
-                    .map((value) => formatRecordValue(value))
-                    .filter((value) => value !== "None");
+              <>
+                {runtimeSetupPlan ? (
+                  <KeyValueGrid
+                    items={[
+                      {
+                        label: "Setup steps",
+                        value: String(runtimeSetupPlan.steps.length)
+                      },
+                      {
+                        label: "Required env vars",
+                        value: formatSetupEnvVarList(
+                          runtimeSetupPlan.summary.missingRequiredEnvVars
+                        )
+                      },
+                      {
+                        label: "Recommended env vars",
+                        value: formatSetupEnvVarList(
+                          runtimeSetupPlan.summary.missingRecommendedEnvVars
+                        )
+                      },
+                      {
+                        label: "Secret env names",
+                        value: formatSetupEnvVarList(
+                          runtimeSetupPlan.summary.secretEnvVarNames
+                        )
+                      }
+                    ]}
+                  />
+                ) : null}
+                <div className="du-run-list">
+                  {runtimeProfileEntries.map(({ profile, index, id }) => {
+                    const setup = getRecordValue(profile, "setup");
+                    const components = asArray(getRecordValue(profile, "components"));
+                    const enabledComponents = components.filter(
+                      (componentEntry) => getRecordValue(componentEntry, "enabled") === true
+                    ).length;
+                    const setupProfile = runtimeSetupProfilesById.get(id);
+                    const missingRecommendedEnvVars = setupProfile
+                      ? setupProfile.missingRecommendedEnvVars
+                      : formatUnknownArray(
+                          getRecordValue(setup, "missingRecommendedEnvVars")
+                        );
 
-                  return (
-                    <article className="du-run-list-item" key={`${id}-${index}`}>
-                      <p className="du-kicker">{id}</p>
-                      <h3>{formatRecordValue(getRecordValue(profile, "name") ?? id)}</h3>
-                      <p>{formatRuntimeProfileStatus(getRecordValue(profile, "status"))}</p>
-                      <KeyValueGrid
-                        items={[
-                          {
-                            label: "Enabled",
-                            value:
-                              getRecordValue(profile, "enabled") === true ? "Yes" : "No"
-                          },
-                          {
-                            label: "Components",
-                            value: `${enabledComponents}/${components.length}`
-                          },
-                          {
-                            label: "Enable env var",
-                            value: formatRecordValue(getRecordValue(setup, "enableEnvVar"))
-                          },
-                          {
-                            label: "Recommended setup",
-                            value:
-                              missingEnvVars.length > 0
-                                ? missingEnvVars.join(", ")
-                                : "Complete"
-                          }
-                        ]}
-                      />
-                    </article>
-                  );
-                })}
-              </div>
+                    return (
+                      <article className="du-run-list-item" key={`${id}-${index}`}>
+                        <p className="du-kicker">{id}</p>
+                        <h3>{formatRecordValue(getRecordValue(profile, "name") ?? id)}</h3>
+                        <p>
+                          {formatRuntimeProfileStatus(getRecordValue(profile, "status"))}
+                        </p>
+                        <KeyValueGrid
+                          items={[
+                            {
+                              label: "Enabled",
+                              value:
+                                getRecordValue(profile, "enabled") === true ? "Yes" : "No"
+                            },
+                            {
+                              label: "Components",
+                              value: `${enabledComponents}/${components.length}`
+                            },
+                            {
+                              label: "Enable env var",
+                              value: formatRecordValue(getRecordValue(setup, "enableEnvVar"))
+                            },
+                            {
+                              label: "Required setup",
+                              value: formatSetupEnvVarList(
+                                setupProfile?.missingRequiredEnvVars ?? []
+                              )
+                            },
+                            {
+                              label: "Recommended setup",
+                              value: formatSetupEnvVarList(missingRecommendedEnvVars)
+                            },
+                            {
+                              label: "Plan steps",
+                              value: setupProfile
+                                ? String(setupProfile.steps.length)
+                                : "Unavailable"
+                            }
+                          ]}
+                        />
+                      </article>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </QueryState>
         </DataPanel>
@@ -430,6 +479,16 @@ function formatRuntimeProfileStatus(value: unknown): string {
   }
 
   return formatRecordValue(value);
+}
+
+function formatSetupEnvVarList(values: readonly string[]): string {
+  return values.length > 0 ? values.join(", ") : "Complete";
+}
+
+function formatUnknownArray(value: unknown): string[] {
+  return asArray(value)
+    .map((entry) => formatRecordValue(entry))
+    .filter((entry) => entry !== "None");
 }
 
 function SessionRoute() {

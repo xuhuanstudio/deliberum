@@ -26,6 +26,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - daemon-local `JsonFileRunStore` for optional local run metadata persistence;
 - daemon-local operation audit log with in-memory defaults, optional JSON persistence, optional SQLite persistence, local retention caps, and CLI JSONL export for safe control-plane operation metadata;
 - CLI daemon runtime profile status, comment-only env-template output, safe profile-doctor diagnostics, safe setup-plan output, and resource access posture reads for local setup assistance;
+- shared `@deliberum/client` setup-plan projection helpers for CLI/Web local setup summaries derived from safe runtime profile metadata;
 - Server-Sent Events for daemon event streaming;
 - daemon-local session-scoped resource delivery planning through the Resource Broker and Delivery Planner, with safe ledger audit events for delivery decisions and short-lived access grants for allowed URL and hosted in-memory content deliveries;
 - daemon resource access base URL validation and safe posture reporting with explicit opt-in for env-configured non-local access URLs and HTTPS-only public access URLs;
