@@ -50,6 +50,7 @@ type DiscussionContinuationView = {
   primaryLabel: string;
   reviewReady: boolean;
 };
+type DiscussionStageStatus = [label: string, status: unknown];
 
 export function RunsListPage() {
   const { client } = useDaemonRuntime();
@@ -675,16 +676,7 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
           }
         ]}
       />
-      <StageStatusList
-        stages={[
-          ["Independent first responses", getRecordValue(run, "sealedDivergenceStatus")],
-          ["Strongest current options", getRecordValue(run, "latestExtractionStatus")],
-          ["Option repair", getRecordValue(run, "latestCandidateRepairStatus")],
-          ["Evidence and verification", getRecordValue(run, "latestEvidenceCheckStatus")],
-          ["Requirements review", getRecordValue(run, "latestProposalReviewStatus")],
-          ["Current conclusion", getRecordValue(run, "latestFinalizationStatus")]
-        ]}
-      />
+      <StageStatusList stages={getDiscussionStageStatuses(run)} />
       <AdvancedDetails summary="Advanced / Developer Mode">
         <KeyValueGrid
           items={[
@@ -771,18 +763,23 @@ function RunStageStatus({ run }: { run: unknown }) {
       title="Discussion progress"
       description="Each step corresponds to a core Deliberum concept, presented in user-facing language."
     >
-      <StageStatusList
-        stages={[
-          ["Independent first responses", getRecordValue(run, "sealedDivergenceStatus")],
-          ["Strongest current options", getRecordValue(run, "latestExtractionStatus")],
-          ["Option repair", getRecordValue(run, "latestCandidateRepairStatus")],
-          ["Evidence and verification", getRecordValue(run, "latestEvidenceCheckStatus")],
-          ["Requirements review", getRecordValue(run, "latestProposalReviewStatus")],
-          ["Current conclusion", getRecordValue(run, "latestFinalizationStatus")]
-        ]}
-      />
+      <StageStatusList stages={getDiscussionStageStatuses(run)} />
     </DataPanel>
   );
+}
+
+function getDiscussionStageStatuses(run: unknown): DiscussionStageStatus[] {
+  return [
+    ["Independent first responses", getRecordValue(run, "sealedDivergenceStatus")],
+    ["Strongest current options", getRecordValue(run, "latestExtractionStatus")],
+    ["Option quality", getRecordValue(run, "latestCandidateRepairStatus")],
+    ["Evidence and verification", getRecordValue(run, "latestEvidenceCheckStatus")],
+    [
+      "Requirements this answer must satisfy",
+      getRecordValue(run, "latestProposalReviewStatus")
+    ],
+    ["Current conclusion", getRecordValue(run, "latestFinalizationStatus")]
+  ];
 }
 
 function RunEventTimeline({ runId }: { runId: string }) {
@@ -1204,7 +1201,7 @@ function describeReadableStage(stageName: unknown): Pick<ReadableStageResult, "l
 
   if (stageName === "proposal_review") {
     return {
-      label: "Requirements review",
+      label: "Requirements this answer must satisfy",
       detail: "Candidate material was checked against open disagreements and answer requirements."
     };
   }
@@ -1218,8 +1215,8 @@ function describeReadableStage(stageName: unknown): Pick<ReadableStageResult, "l
 
   if (stageName === "candidate_repair") {
     return {
-      label: "Option repair",
-      detail: "Known weaknesses were used to improve current options before conclusion work."
+      label: "Option quality",
+      detail: "Known weaknesses were used to strengthen current options before conclusion work."
     };
   }
 

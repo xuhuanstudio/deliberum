@@ -1077,6 +1077,10 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
+    expect(screen.getByText("Option quality")).toBeTruthy();
+    expect(screen.getByText("Requirements this answer must satisfy")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("Option repair");
+    expect(document.body.textContent ?? "").not.toContain("Requirements review");
     expect(screen.getByText("Advanced / Developer Mode")).toBeTruthy();
     expect(screen.getByText("Run Alpha")).toBeTruthy();
     expect(screen.getByText("run-1")).toBeTruthy();
