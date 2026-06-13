@@ -32,7 +32,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - package-level HTTP-template participant adapter and opt-in daemon participant profile for non-OpenAI HTTP providers;
 - package-level MCP-compatible tool participant adapter with injected client lifecycle, execution policy controls, and an opt-in daemon MCP tool participant profile;
 - read-only adaptive primitive suggestion in `@deliberum/orchestrator`, surfaced by the daemon as process proposal material;
-- explicit accepted process proposal execution through the daemon run start path for supported primitives, including candidate repair proposal execution, evidence check result recording, and final/omission audit execution;
+- explicit accepted process proposal execution through the daemon run start path for supported primitives, with read-only daemon execution readiness for recorded process proposal lifecycle state;
 - React + Vite + TypeScript for the Web shell;
 - TanStack Router and TanStack Query for Web routing and daemon reads.
 
@@ -59,7 +59,7 @@ packages/
 The following are planned or possible future additions, not current implementation dependencies:
 
 - production multi-writer coordination for durable daemon stores;
-- broader automated policy around accepted process proposals;
+- broader automated policy beyond read-only accepted process proposal readiness;
 - Postgres for future team/server deployments;
 - WebSocket streaming if SSE becomes insufficient;
 - Zustand or another local UI-state helper if Web UI complexity requires it;

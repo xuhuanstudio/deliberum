@@ -440,6 +440,22 @@ export type RunProcessProposalsResponse = {
   proposals: unknown[];
   observations: string[];
   metadata: unknown;
+  executionPolicy?: {
+    automaticExecution: boolean;
+    explicitExecutionRequired: boolean;
+    supportedPrimitives: string[];
+    notes: string[];
+  };
+  executionReadiness?: Array<{
+    proposalEventId: string;
+    proposalId: string;
+    primitive: string;
+    latestStatus: string;
+    executable: boolean;
+    status: string;
+    reason: string;
+    startRequestPreview?: unknown;
+  }>;
 };
 
 export type DaemonErrorPayload = {

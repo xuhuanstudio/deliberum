@@ -3844,6 +3844,12 @@ describe("daemon API", () => {
       }>;
       observations: string[];
       metadata: { version: string; eventRange: { fromSequence: number; toSequence: number } };
+      executionPolicy: {
+        automaticExecution: boolean;
+        explicitExecutionRequired: boolean;
+        supportedPrimitives: string[];
+      };
+      executionReadiness: unknown[];
     };
 
     expect(topicContractEvent).toBeDefined();
@@ -3869,6 +3875,21 @@ describe("daemon API", () => {
         toSequence: topicContractEvent!.sequence
       }
     });
+    expect(body.executionPolicy).toEqual(
+      expect.objectContaining({
+        automaticExecution: false,
+        explicitExecutionRequired: true,
+        supportedPrimitives: expect.arrayContaining([
+          "sealed_divergence",
+          "candidate_repair",
+          "evidence_check",
+          "final_contest",
+          "final_audit",
+          "omission_audit"
+        ])
+      })
+    );
+    expect(body.executionReadiness).toEqual([]);
     expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(
       eventCountBeforeRead
     );
@@ -3876,6 +3897,161 @@ describe("daemon API", () => {
     expect(text).not.toContain("ranking");
     expect(text).not.toContain("finalAnswer");
     expect(text).not.toContain("truthSummary");
+    expectSafeRunApiPayload(body);
+  });
+
+  it("reports process proposal execution readiness without running primitives", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const topicContractEvent = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .find((event) => event.type === "topic_contract_published");
+
+    expect(topicContractEvent).toBeDefined();
+
+    const acceptedSupportedResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals`,
+      {
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-sealed",
+          primitive: "sealed_divergence",
+          targetIds: [topicContractEvent!.id],
+          expectedQualityGain: "Collect independent starting positions.",
+          riskIfSkipped: "The run may converge before alternatives are visible.",
+          requestedBudget: {
+            maxEvents: 4,
+            maxProviderCalls: 2
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: [topicContractEvent!.id]
+      }
+    );
+    const acceptedSupportedBody = (await acceptedSupportedResponse.json()) as {
+      event: { id: string };
+    };
+    const acceptedUnsupportedResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals`,
+      {
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-blind-reframe",
+          primitive: "blind_reframe",
+          targetIds: [topicContractEvent!.id],
+          expectedQualityGain: "Inspect possible missing context before continuing.",
+          riskIfSkipped: "Important omissions may remain unresolved.",
+          requestedBudget: {
+            maxEvents: 1
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: [topicContractEvent!.id]
+      }
+    );
+    const acceptedUnsupportedBody = (await acceptedUnsupportedResponse.json()) as {
+      event: { id: string };
+    };
+    const invalidTargetResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals`,
+      {
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-evidence-invalid",
+          primitive: "evidence_check",
+          targetIds: [topicContractEvent!.id],
+          expectedQualityGain: "Record evidence material for accepted evidence needs.",
+          riskIfSkipped: "The accepted evidence need may remain unchecked.",
+          requestedBudget: {
+            maxEvents: 1,
+            maxProviderCalls: 1
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: [topicContractEvent!.id]
+      }
+    );
+    const invalidTargetBody = (await invalidTargetResponse.json()) as {
+      event: { id: string };
+    };
+
+    for (const proposalEventId of [
+      acceptedSupportedBody.event.id,
+      acceptedUnsupportedBody.event.id,
+      invalidTargetBody.event.id
+    ]) {
+      await postJson(
+        daemonApp.app,
+        `/sessions/${created.run.sessionId}/process-proposals/${proposalEventId}/decisions`,
+        {
+          authorId: "coordinator-1",
+          status: "accepted",
+          rationale: "Expose readiness without executing this process proposal."
+        }
+      );
+    }
+
+    const eventCountBeforeRead =
+      daemonApp.eventStore.listEvents(created.run.sessionId).length;
+    const response = await daemonApp.app.request(
+      `/runs/${created.run.runId}/process-proposals`
+    );
+    const body = (await response.json()) as {
+      executionReadiness: Array<{
+        proposalEventId: string;
+        primitive: string;
+        executable: boolean;
+        status: string;
+        reason: string;
+        startRequestPreview?: {
+          sealedDivergence?: { autoCloseManual?: boolean };
+        };
+      }>;
+    };
+    const readinessByEventId = new Map(
+      body.executionReadiness.map((readiness) => [readiness.proposalEventId, readiness])
+    );
+
+    expect(response.status).toBe(200);
+    expect(readinessByEventId.get(acceptedSupportedBody.event.id)).toEqual(
+      expect.objectContaining({
+        primitive: "sealed_divergence",
+        executable: true,
+        status: "ready",
+        startRequestPreview: {
+          sealedDivergence: {
+            autoCloseManual: true
+          }
+        }
+      })
+    );
+    expect(readinessByEventId.get(acceptedUnsupportedBody.event.id)).toEqual(
+      expect.objectContaining({
+        primitive: "blind_reframe",
+        executable: false,
+        status: "unsupported_primitive",
+        reason: "Process proposal primitive is not executable by the daemon yet."
+      })
+    );
+    expect(readinessByEventId.get(invalidTargetBody.event.id)).toEqual(
+      expect.objectContaining({
+        primitive: "evidence_check",
+        executable: false,
+        status: "invalid_target",
+        reason: "Evidence check process proposal targets must be accepted evidence needs."
+      })
+    );
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId)).toHaveLength(
+      eventCountBeforeRead
+    );
+    expect(
+      daemonApp.eventStore
+        .listEvents(created.run.sessionId)
+        .some((event) => event.type === "sealed_batch_opened")
+    ).toBe(false);
     expectSafeRunApiPayload(body);
   });
 

@@ -283,7 +283,14 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           toSequence: 6
         },
         eventIds: ["event-1", "proposal-event-1"]
-      }
+      },
+      executionPolicy: {
+        automaticExecution: false,
+        explicitExecutionRequired: true,
+        supportedPrimitives: ["sealed_divergence", "final_contest"],
+        notes: ["Accepted process proposals require explicit operator execution."]
+      },
+      executionReadiness: []
     })),
     getProcessProposalStates: vi.fn(async () => ({
       proposalStates: [],
@@ -1125,6 +1132,76 @@ describe("@deliberum/web shell", () => {
     );
     expect(await screen.findByText("Run request completed")).toBeTruthy();
     expect(screen.getByText("Stage results")).toBeTruthy();
+    expect(client.startRun).not.toHaveBeenCalled();
+  });
+
+  it("uses daemon process proposal readiness to block unsupported execution", async () => {
+    const executeRunProcessProposal = vi.fn();
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRunProcessProposals: vi.fn(async () => ({
+          runId: "run-1",
+          sessionId: "session-1",
+          proposals: [],
+          observations: [],
+          metadata: {
+            version: "1",
+            eventRange: {
+              fromSequence: 0,
+              toSequence: 3
+            },
+            eventIds: ["event-1"]
+          },
+          executionPolicy: {
+            automaticExecution: false,
+            explicitExecutionRequired: true,
+            supportedPrimitives: ["sealed_divergence"],
+            notes: ["Accepted process proposals require explicit operator execution."]
+          },
+          executionReadiness: [
+            {
+              proposalEventId: "process-proposal-event-1",
+              proposalId: "process-proposal-1",
+              primitive: "blind_reframe",
+              latestStatus: "accepted",
+              executable: false,
+              status: "unsupported_primitive",
+              reason: "Process proposal primitive is not executable by the daemon yet."
+            }
+          ]
+        })),
+        getProcessProposalStates: vi.fn(async () => ({
+          proposalStates: [
+            {
+              proposalEventId: "process-proposal-event-1",
+              proposalId: "process-proposal-1",
+              latestStatus: "accepted",
+              proposal: {
+                id: "process-proposal-1",
+                primitive: "blind_reframe",
+                status: "proposed",
+                targetIds: ["event-1"]
+              },
+              challengeEventIds: [],
+              decisionEventIds: ["process-decision-event-1"]
+            }
+          ],
+          projection
+        })),
+        executeRunProcessProposal
+      })
+    );
+
+    await screen.findByText("Recorded process proposal");
+    expect(screen.getByText("unsupported_primitive")).toBeTruthy();
+    expect(screen.getByText("Process proposal primitive is not executable by the daemon yet.")).toBeTruthy();
+    expect(
+      (screen.getByRole("button", {
+        name: "Execute accepted process proposal"
+      }) as HTMLButtonElement).disabled
+    ).toBe(true);
+    expect(executeRunProcessProposal).not.toHaveBeenCalled();
     expect(client.startRun).not.toHaveBeenCalled();
   });
 

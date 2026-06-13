@@ -980,6 +980,13 @@ function RunProcessProposals({ runId, sessionId }: { runId: string; sessionId?: 
   const suggestionBasisEventIds = getStringArray(
     getRecordValue(getRecordValue(processProposalQuery.data, "metadata"), "eventIds")
   );
+  const executionPolicy = getRecordValue(processProposalQuery.data, "executionPolicy");
+  const executionReadiness = asArray(
+    getRecordValue(processProposalQuery.data, "executionReadiness")
+  );
+  const readyCount = executionReadiness.filter(
+    (readiness) => getStringRecordValue(readiness, "status") === "ready"
+  ).length;
 
   return (
     <DataPanel
@@ -1000,6 +1007,17 @@ function RunProcessProposals({ runId, sessionId }: { runId: string; sessionId?: 
             {
               label: "Suggested primitives",
               value: proposals.length
+            },
+            {
+              label: "Execution policy",
+              value:
+                getRecordValue(executionPolicy, "automaticExecution") === false
+                  ? "Explicit only"
+                  : "Not reported"
+            },
+            {
+              label: "Ready ledger proposals",
+              value: readyCount
             },
             {
               label: "Suggestion event range",
@@ -1043,12 +1061,22 @@ function RunProcessGovernance({
     queryKey: ["run-process-proposal-states", sessionId],
     queryFn: () => client.getProcessProposalStates(sessionId)
   });
+  const processProposalQuery = useQuery({
+    queryKey: ["run-process-proposals", runId],
+    queryFn: () => client.getRunProcessProposals(runId)
+  });
   const states = asArray(processStateQuery.data?.proposalStates);
+  const executionReadinessByEventId = getProcessProposalExecutionReadinessByEventId(
+    asArray(getRecordValue(processProposalQuery.data, "executionReadiness"))
+  );
+  const readyCount = [...executionReadinessByEventId.values()].filter(
+    (readiness) => getStringRecordValue(readiness, "status") === "ready"
+  ).length;
 
   return (
     <DataPanel
       title="Process governance ledger"
-      description="Projected lifecycle state for recorded process proposals. Lifecycle events do not auto-execute primitives."
+      description="Projected lifecycle state and daemon execution readiness for recorded process proposals. Lifecycle events do not auto-execute primitives."
     >
       <QueryState query={processStateQuery}>
         <KeyValueGrid
@@ -1062,6 +1090,10 @@ function RunProcessGovernance({
               value: states.length
             },
             {
+              label: "Ready for explicit execution",
+              value: readyCount
+            },
+            {
               label: "Projection event range",
               value: formatEventRange(
                 getRecordValue(getRecordValue(processStateQuery.data, "projection"), "eventRange")
@@ -1069,7 +1101,12 @@ function RunProcessGovernance({
             }
           ]}
         />
-        <ProcessProposalStateList runId={runId} sessionId={sessionId} states={states} />
+        <ProcessProposalStateList
+          runId={runId}
+          sessionId={sessionId}
+          states={states}
+          executionReadinessByEventId={executionReadinessByEventId}
+        />
         <ProjectionMetadata projection={processStateQuery.data?.projection} />
       </QueryState>
     </DataPanel>
@@ -1215,11 +1252,13 @@ function RecordProcessSuggestionAction({
 function ProcessProposalStateList({
   runId,
   sessionId,
-  states
+  states,
+  executionReadinessByEventId
 }: {
   runId: string;
   sessionId: string;
   states: unknown[];
+  executionReadinessByEventId: Map<string, unknown>;
 }) {
   if (states.length === 0) {
     return (
@@ -1238,6 +1277,7 @@ function ProcessProposalStateList({
           runId={runId}
           sessionId={sessionId}
           state={state}
+          executionReadinessByEventId={executionReadinessByEventId}
         />
       ))}
     </div>
@@ -1247,11 +1287,13 @@ function ProcessProposalStateList({
 function ProcessProposalStateRecord({
   runId,
   sessionId,
-  state
+  state,
+  executionReadinessByEventId
 }: {
   runId: string;
   sessionId: string;
   state: unknown;
+  executionReadinessByEventId: Map<string, unknown>;
 }) {
   const proposal = getRecordValue(state, "proposal") ?? {};
   const primitive = getStringRecordValue(proposal, "primitive") ?? "Unknown primitive";
@@ -1259,6 +1301,11 @@ function ProcessProposalStateRecord({
   const latestStatus = getStringRecordValue(state, "latestStatus") ?? "unknown";
   const challengeEventIds = asArray(getRecordValue(state, "challengeEventIds"));
   const decisionEventIds = asArray(getRecordValue(state, "decisionEventIds"));
+  const executionReadiness = proposalEventId
+    ? executionReadinessByEventId.get(proposalEventId)
+    : undefined;
+  const executionReadinessStatus =
+    getStringRecordValue(executionReadiness, "status") ?? "not reported";
 
   return (
     <article className="du-readable-item">
@@ -1277,6 +1324,10 @@ function ProcessProposalStateRecord({
           {
             label: "Latest status",
             value: latestStatus
+          },
+          {
+            label: "Execution readiness",
+            value: executionReadinessStatus
           },
           {
             label: "Challenges",
@@ -1298,6 +1349,7 @@ function ProcessProposalStateRecord({
           sessionId={sessionId}
           proposalEventId={proposalEventId}
           latestStatus={latestStatus}
+          executionReadiness={executionReadiness}
         />
       ) : (
         <StatusBanner
@@ -1314,12 +1366,14 @@ function ProcessProposalLifecycleControls({
   runId,
   sessionId,
   proposalEventId,
-  latestStatus
+  latestStatus,
+  executionReadiness
 }: {
   runId: string;
   sessionId: string;
   proposalEventId: string;
   latestStatus: string;
+  executionReadiness?: unknown;
 }) {
   const { client } = useDaemonRuntime();
   const queryClient = useQueryClient();
@@ -1355,7 +1409,11 @@ function ProcessProposalLifecycleControls({
       await invalidateRunWorkspaceQueries(queryClient, runId, sessionId);
     }
   });
-  const canExecute = latestStatus === "accepted";
+  const readinessStatus = getStringRecordValue(executionReadiness, "status");
+  const readinessReason = getStringRecordValue(executionReadiness, "reason");
+  const startRequestPreview = getRecordValue(executionReadiness, "startRequestPreview");
+  const canExecute =
+    latestStatus === "accepted" && (readinessStatus === undefined || readinessStatus === "ready");
 
   function submitChallenge(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1460,13 +1518,25 @@ function ProcessProposalLifecycleControls({
           <StatusBanner
             tone="warning"
             title="Execution unavailable"
-            detail={`Latest status is ${latestStatus}; the daemon only executes accepted process proposals.`}
+            detail={
+              latestStatus !== "accepted"
+                ? `Latest status is ${latestStatus}; the daemon only executes accepted process proposals.`
+                : readinessReason ?? "The daemon did not report this proposal as executable."
+            }
           />
         ) : (
-          <StatusBanner
-            title="Explicit execution"
-            detail="Execution uses the daemon run start path for supported primitives; unsupported primitives return a safe error."
-          />
+          <>
+            <StatusBanner
+              title="Explicit execution"
+              detail={
+                readinessReason ??
+                "Execution uses the daemon run start path for supported primitives; unsupported primitives return a safe error."
+              }
+            />
+            {startRequestPreview ? (
+              <JsonBlock value={sanitizeForDisplay(startRequestPreview)} />
+            ) : null}
+          </>
         )}
         {executionMutation.data ? <StartResult result={executionMutation.data} /> : null}
         {executionMutation.isError ? (
@@ -1939,6 +2009,22 @@ function getRecordedProcessProposalIds(states: unknown[]): Set<string> {
       })
       .filter((id): id is string => typeof id === "string" && id.length > 0)
   );
+}
+
+function getProcessProposalExecutionReadinessByEventId(
+  readinessRecords: unknown[]
+): Map<string, unknown> {
+  const readinessByEventId = new Map<string, unknown>();
+
+  for (const readiness of readinessRecords) {
+    const proposalEventId = getStringRecordValue(readiness, "proposalEventId");
+
+    if (proposalEventId) {
+      readinessByEventId.set(proposalEventId, readiness);
+    }
+  }
+
+  return readinessByEventId;
 }
 
 function getProjectionRecordKey(record: unknown, fallback: number): string {

@@ -41,10 +41,13 @@ GET /runs/:runId/process-proposals
 ```
 
 This endpoint returns proposed `ProcessProposal` objects, observations, and the
-event range used for the suggestion. It does not append events, start stages,
-accept proposals, mutate Candidate Frontier, or compile outcomes. The suggested
-primitive remains challengeable process material; it is not a hidden scheduler or
-semantic authority.
+event range used for the suggestion, plus a read-only execution policy and
+readiness projection for recorded process proposals in the run session. The
+readiness projection explains whether each recorded lifecycle state is accepted,
+daemon-executable, unsupported, or blocked by target validation. It does not
+append events, start stages, accept proposals, mutate Candidate Frontier, or
+compile outcomes. The suggested primitive remains challengeable process
+material; it is not a hidden scheduler or semantic authority.
 
 The ledger-backed process proposal lifecycle is exposed separately:
 
@@ -73,8 +76,10 @@ POST /runs/:runId/process-proposals/:proposalEventId/execute
 This endpoint validates that the proposal belongs to the run session and that
 the latest projected lifecycle status is `accepted`, then maps supported
 primitives onto the existing daemon run start path. It is not a background
-scheduler and it does not execute decisions automatically. The current supported
-mappings are:
+scheduler and it does not execute decisions automatically. The run process
+proposal read endpoint exposes the same supported primitive policy and start
+request preview for ready accepted proposals so operators can see execution
+readiness before using this control endpoint. The current supported mappings are:
 
 - `sealed_divergence` -> sealed divergence start request with manual batches auto-closed;
 - `relation_mapping` -> extraction start request;

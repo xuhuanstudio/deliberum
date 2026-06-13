@@ -197,6 +197,27 @@ export type DaemonRunProcessProposalExecutionResponse = DaemonRunStartResponse &
   startRequest: DaemonRunStartRequest;
 };
 
+export type DaemonProcessProposalExecutionReadiness = {
+  proposalEventId: string;
+  proposalId: string;
+  primitive: string;
+  latestStatus: string;
+  executable: boolean;
+  status: "ready" | "not_accepted" | "unsupported_primitive" | "invalid_target";
+  reason: string;
+  startRequestPreview?: DaemonRunStartRequest;
+};
+
+export type DaemonRunProcessProposalsResponse = AdaptivePrimitiveSchedulerResult & {
+  executionPolicy: {
+    automaticExecution: false;
+    explicitExecutionRequired: true;
+    supportedPrimitives: string[];
+    notes: string[];
+  };
+  executionReadiness: DaemonProcessProposalExecutionReadiness[];
+};
+
 export type DaemonRunOutcomeOptions = {
   finalCandidateProposalEventId?: string;
 };
@@ -656,11 +677,24 @@ export class DaemonRunOrchestrationService {
     }
   }
 
-  getProcessProposals(runId: string): AdaptivePrimitiveSchedulerResult {
-    return suggestAdaptivePrimitiveProposals({
-      run: this.requireRun(runId),
+  getProcessProposals(runId: string): DaemonRunProcessProposalsResponse {
+    const run = this.requireRun(runId);
+    const suggestionResult = suggestAdaptivePrimitiveProposals({
+      run,
       eventStore: this.eventStore
     });
+    const processProposalStates = projectProcessProposalStates({
+      eventStore: this.eventStore,
+      sessionId: run.sessionId
+    }).proposalStates;
+
+    return {
+      ...suggestionResult,
+      executionPolicy: createProcessProposalExecutionPolicy(),
+      executionReadiness: processProposalStates.map((proposalState) =>
+        createProcessProposalExecutionReadiness(proposalState, run, this.eventStore)
+      )
+    };
   }
 
   async executeAcceptedProcessProposal(
@@ -1160,6 +1194,82 @@ function createStartRequestForAcceptedProcessProposal(
     "Process proposal primitive is not executable by the daemon yet.",
     409
   );
+}
+
+const SUPPORTED_PROCESS_PROPOSAL_EXECUTION_PRIMITIVES = [
+  "sealed_divergence",
+  "relation_mapping",
+  "red_team",
+  "candidate_repair",
+  "evidence_check",
+  "final_contest",
+  "final_audit",
+  "omission_audit"
+];
+
+function createProcessProposalExecutionPolicy(): DaemonRunProcessProposalsResponse["executionPolicy"] {
+  return {
+    automaticExecution: false,
+    explicitExecutionRequired: true,
+    supportedPrimitives: [...SUPPORTED_PROCESS_PROPOSAL_EXECUTION_PRIMITIVES],
+    notes: [
+      "Accepted process proposals require explicit operator execution.",
+      "Readiness is a read-only projection and does not append ledger events.",
+      "Unsupported primitives remain challengeable process material but are not daemon-executable."
+    ]
+  };
+}
+
+function createProcessProposalExecutionReadiness(
+  proposalState: ProcessProposalExecutionState,
+  run: DeliberationRunRecord,
+  eventStore: EventStore
+): DaemonProcessProposalExecutionReadiness {
+  const base = {
+    proposalEventId: proposalState.proposalEventId,
+    proposalId: proposalState.proposalId,
+    primitive: proposalState.proposal.primitive,
+    latestStatus: proposalState.latestStatus
+  };
+
+  if (proposalState.latestStatus !== "accepted") {
+    return {
+      ...base,
+      executable: false,
+      status: "not_accepted",
+      reason: "Process proposal must be accepted before execution."
+    };
+  }
+
+  try {
+    const startRequestPreview = createStartRequestForAcceptedProcessProposal(
+      proposalState,
+      run,
+      eventStore
+    );
+
+    return {
+      ...base,
+      executable: true,
+      status: "ready",
+      reason: "Accepted process proposal can be explicitly executed through the daemon run start path.",
+      startRequestPreview
+    };
+  } catch (error) {
+    if (error instanceof DaemonRunOrchestrationError) {
+      return {
+        ...base,
+        executable: false,
+        status:
+          error.code === "process_proposal_primitive_unsupported"
+            ? "unsupported_primitive"
+            : "invalid_target",
+        reason: error.safeMessage
+      };
+    }
+
+    throw error;
+  }
 }
 
 function resolveCandidateRepairTargetIds(
