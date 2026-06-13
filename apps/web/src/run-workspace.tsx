@@ -635,8 +635,8 @@ function RunDetailGuide() {
           detail="No work has been recorded for that part of the discussion."
         />
         <ExplainerItem
-          title="Missing local components"
-          detail="The local sample discussion components are not available in this running workspace. Developers can inspect setup details in Advanced mode."
+          title="Setup needed"
+          detail="This discussion cannot continue until the required setup is available. Setup details stay in Advanced mode."
         />
       </div>
     </DataPanel>
@@ -3027,7 +3027,7 @@ function describeOutcomeUnavailableReason(reason: unknown): string {
 
 function formatRunStartErrorMessage(error: Error | null | undefined): string {
   if (getErrorCode(error) === "orchestration_component_unavailable") {
-    return "The local sample discussion components are not available in this running workspace. Developers can inspect setup details in Advanced mode before retrying.";
+    return "This discussion cannot continue because the required setup is unavailable. Open Advanced mode to inspect setup details before retrying.";
   }
 
   return formatSafeErrorMessage(error);

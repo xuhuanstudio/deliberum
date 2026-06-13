@@ -1925,7 +1925,7 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Discussion could not continue")).toBeTruthy();
     expect(
       screen.getAllByText(
-        "The local sample discussion components are not available in this running workspace. Developers can inspect setup details in Advanced mode before retrying."
+        "This discussion cannot continue because the required setup is unavailable. Open Advanced mode to inspect setup details before retrying."
       ).length
     ).toBeGreaterThan(0);
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_ENABLE_LOCAL_PRESET");

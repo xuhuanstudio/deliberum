@@ -381,7 +381,7 @@ function LandingPage() {
             {sessionEntries.length === 0 ? (
               <EmptyState
                 title="No discussions yet"
-                description="Start a discussion to create the first local deliberation workspace."
+                description="Start a discussion to create the first deliberation."
               />
             ) : (
               <div className="du-run-list">
