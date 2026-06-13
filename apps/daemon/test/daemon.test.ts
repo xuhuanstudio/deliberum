@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -56,6 +56,7 @@ import {
   DAEMON_OPERATION_AUDIT_PATH_ENV_VAR,
   DAEMON_RUN_STORE_PATH_ENV_VAR,
   DAEMON_SQLITE_PATH_ENV_VAR,
+  DAEMON_WEB_ASSETS_PATH_ENV_VAR,
   DEFAULT_DAEMON_CORS_ORIGINS,
   HTTP_TEMPLATE_ADAPTER_ID,
   HTTP_TEMPLATE_API_KEY_ENV_VAR,
@@ -120,6 +121,7 @@ import {
   createStartDaemonResourceAccessStore,
   createStartDaemonResourceStore,
   createStartDaemonRunStore,
+  createStartDaemonWebStaticAssets,
   createDaemonApp,
   createOpenAICompatibleRunRegistries,
   localPresetRunPlan,
@@ -127,6 +129,7 @@ import {
   parseDaemonCorsOriginsFromEnv,
   resolveStartDaemonOperationAuditMaxEntries,
   resolveStartDaemonOperationAuditPath,
+  resolveStartDaemonWebAssetsPath,
   resolveStartDaemonEventStorePath,
   resolveStartDaemonRunStorePath,
   resolveStartDaemonAuthToken,
@@ -1820,6 +1823,90 @@ describe("daemon API", () => {
     });
   });
 
+  it("serves configured Web assets for browser navigation without overriding JSON API routes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-web-assets-"));
+    const assetsDir = join(dir, "assets");
+    const secretOutsideRoot = join(tmpdir(), "deliberum-web-secret.txt");
+    const outsideRootSentinel = ["do-not-serve", "this-file"].join("-");
+
+    mkdirSync(assetsDir);
+    writeFileSync(
+      join(dir, "index.html"),
+      '<!doctype html><html><body><div id="root">Deliberum Web Shell</div><script type="module" src="/assets/app.js"></script></body></html>'
+    );
+    writeFileSync(join(assetsDir, "app.js"), "console.log('web shell');");
+    writeFileSync(secretOutsideRoot, outsideRootSentinel);
+
+    try {
+      const daemonApp = createDaemonApp({
+        webStaticAssets: {
+          rootDir: dir
+        },
+        idGenerator: createIds(),
+        clock
+      });
+      const rootResponse = await daemonApp.app.request("/", {
+        headers: {
+          Accept: "text/html"
+        }
+      });
+      const spaRouteResponse = await daemonApp.app.request("/runs/run-1/outcome", {
+        headers: {
+          Accept: "text/html,application/xhtml+xml"
+        }
+      });
+      const postureResponse = await daemonApp.app.request("/runtime/deployment-posture");
+      const apiResponse = await daemonApp.app.request("/runs");
+      const assetResponse = await daemonApp.app.request("/assets/app.js");
+      const traversalResponse = await daemonApp.app.request(
+        "/assets/%2E%2E/deliberum-web-secret.txt"
+      );
+      const posture = (await postureResponse.json()) as {
+        webAssets: {
+          configured: boolean;
+          routeMode: string;
+          shellCache: string;
+          assetCache: string;
+        };
+      };
+
+      expect(rootResponse.status).toBe(200);
+      expect(rootResponse.headers.get("content-type")).toContain("text/html");
+      expect(rootResponse.headers.get("cache-control")).toBe("no-store");
+      expect(rootResponse.headers.get("vary")).toContain("Accept");
+      await expect(rootResponse.text()).resolves.toContain("Deliberum Web Shell");
+
+      expect(spaRouteResponse.status).toBe(200);
+      expect(spaRouteResponse.headers.get("content-type")).toContain("text/html");
+      await expect(spaRouteResponse.text()).resolves.toContain("Deliberum Web Shell");
+
+      expect(postureResponse.status).toBe(200);
+      expect(posture.webAssets).toEqual({
+        configured: true,
+        routeMode: "html_accept_spa_shell_json_api_split",
+        shellCache: "no_store",
+        assetCache: "immutable"
+      });
+      expect(JSON.stringify(posture)).not.toContain(dir);
+
+      expect(apiResponse.status).toBe(200);
+      expect(apiResponse.headers.get("content-type")).toContain("application/json");
+      await expect(apiResponse.json()).resolves.toEqual({ runs: [] });
+
+      expect(assetResponse.status).toBe(200);
+      expect(assetResponse.headers.get("content-type")).toContain("text/javascript");
+      expect(assetResponse.headers.get("cache-control")).toContain("immutable");
+      expect(assetResponse.headers.get("x-content-type-options")).toBe("nosniff");
+      await expect(assetResponse.text()).resolves.toContain("web shell");
+
+      expect(traversalResponse.status).toBe(404);
+      await expect(traversalResponse.text()).resolves.not.toContain(outsideRootSentinel);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      rmSync(secretOutsideRoot, { force: true });
+    }
+  });
+
   it("can opt into daemon bearer authentication without blocking health or bearer resource routes", async () => {
     const authToken = "local-daemon-auth-token-123";
     const accessId = "Y".repeat(32);
@@ -2316,6 +2403,12 @@ describe("daemon API", () => {
         baseUrlExposure: string;
         grantStoreRestartContinuity: string;
       };
+      webAssets: {
+        configured: boolean;
+        routeMode: string;
+        shellCache: string;
+        assetCache: string;
+      };
       productionReadiness: {
         status: string;
         readyForProduction: boolean;
@@ -2363,6 +2456,12 @@ describe("daemon API", () => {
           baseUrlConfigured: false,
           baseUrlExposure: "localhost",
           grantStoreRestartContinuity: "lost_on_restart"
+        },
+        webAssets: {
+          configured: false,
+          routeMode: "disabled",
+          shellCache: "no_store",
+          assetCache: "immutable"
         },
         productionReadiness: expect.objectContaining({
           status: "local_only",
@@ -5531,6 +5630,57 @@ describe("daemon API", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it("resolves optional daemon Web asset path from env without overriding explicit assets", () => {
+    const explicitAssets = {
+      rootDir: "/tmp/explicit-deliberum-web-dist",
+      indexFile: "shell.html"
+    };
+
+    expect(
+      resolveStartDaemonWebAssetsPath(
+        {},
+        {
+          [DAEMON_WEB_ASSETS_PATH_ENV_VAR]: " /tmp/deliberum-web-dist "
+        }
+      )
+    ).toBe("/tmp/deliberum-web-dist");
+    expect(resolveStartDaemonWebAssetsPath({}, {})).toBeUndefined();
+    expect(
+      resolveStartDaemonWebAssetsPath(
+        {},
+        {
+          [DAEMON_WEB_ASSETS_PATH_ENV_VAR]: "   "
+        }
+      )
+    ).toBeUndefined();
+    expect(
+      resolveStartDaemonWebAssetsPath(
+        { webStaticAssets: explicitAssets },
+        {
+          [DAEMON_WEB_ASSETS_PATH_ENV_VAR]: "/tmp/ignored-web-dist"
+        }
+      )
+    ).toBe("/tmp/explicit-deliberum-web-dist");
+    expect(
+      createStartDaemonWebStaticAssets(
+        { webStaticAssets: explicitAssets },
+        {
+          [DAEMON_WEB_ASSETS_PATH_ENV_VAR]: "/tmp/ignored-web-dist"
+        }
+      )
+    ).toBe(explicitAssets);
+    expect(
+      createStartDaemonWebStaticAssets(
+        {},
+        {
+          [DAEMON_WEB_ASSETS_PATH_ENV_VAR]: "/tmp/deliberum-web-dist"
+        }
+      )
+    ).toEqual({
+      rootDir: "/tmp/deliberum-web-dist"
+    });
   });
 
   it("applies operation audit retention across in-memory, JSON, and SQLite logs", () => {

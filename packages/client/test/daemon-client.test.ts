@@ -369,6 +369,12 @@ describe("DeliberumDaemonClient", () => {
         baseUrlExposure: "localhost",
         grantStoreRestartContinuity: "lost_on_restart"
       },
+      webAssets: {
+        configured: false,
+        routeMode: "disabled",
+        shellCache: "no_store",
+        assetCache: "immutable"
+      },
       productionReadiness: {
         status: "local_only",
         readyForProduction: false,
@@ -396,6 +402,9 @@ describe("DeliberumDaemonClient", () => {
       },
       productionReadiness: {
         readyForProduction: false
+      },
+      webAssets: {
+        configured: false
       }
     });
   });

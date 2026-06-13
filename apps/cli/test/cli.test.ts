@@ -162,6 +162,12 @@ function createFakeRunDaemonClient(
         baseUrlExposure: "localhost",
         grantStoreRestartContinuity: "depends_on_configured_store"
       },
+      webAssets: {
+        configured: true,
+        routeMode: "html_accept_spa_shell_json_api_split",
+        shellCache: "no_store",
+        assetCache: "immutable"
+      },
       productionReadiness: {
         status: "local_only",
         readyForProduction: false,
@@ -1365,6 +1371,7 @@ describe("CLI command routing", () => {
       binding: { exposure: string; defaultLocalhost: boolean };
       controlPlane: { auth: string; protected: boolean };
       persistence: { productionMultiWriterCoordination: boolean };
+      webAssets: { configured: boolean; routeMode: string };
       productionReadiness: { readyForProduction: boolean; blockers: string[] };
       safety: string[];
     }>(
@@ -1390,6 +1397,10 @@ describe("CLI command routing", () => {
         },
         persistence: expect.objectContaining({
           productionMultiWriterCoordination: false
+        }),
+        webAssets: expect.objectContaining({
+          configured: true,
+          routeMode: "html_accept_spa_shell_json_api_split"
         }),
         productionReadiness: expect.objectContaining({
           readyForProduction: false,

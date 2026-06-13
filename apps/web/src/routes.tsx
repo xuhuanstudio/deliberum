@@ -330,6 +330,10 @@ function LandingPage() {
                       )
                     },
                     {
+                      label: "Web assets",
+                      value: formatDeploymentWebAssets(deploymentPosture.webAssets)
+                    },
+                    {
                       label: "Production ready",
                       value: deploymentPosture.productionReadiness.readyForProduction
                         ? "Yes"
@@ -604,6 +608,12 @@ function formatDeploymentResourceAccess(
       : "restart-lost";
 
   return `${exposure}, ${continuity}`;
+}
+
+function formatDeploymentWebAssets(
+  value: DeploymentPostureResponse["webAssets"]
+): string {
+  return value.configured ? "HTML shell split" : "Disabled";
 }
 
 function formatDeploymentReadinessStatus(

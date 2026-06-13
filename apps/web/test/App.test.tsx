@@ -189,6 +189,12 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         baseUrlExposure: "localhost",
         grantStoreRestartContinuity: "depends_on_configured_store"
       },
+      webAssets: {
+        configured: true,
+        routeMode: "html_accept_spa_shell_json_api_split",
+        shellCache: "no_store",
+        assetCache: "immutable"
+      },
       productionReadiness: {
         status: "local_only",
         readyForProduction: false,
@@ -785,6 +791,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("5/5")).toBeTruthy();
     expect(screen.getByText("Resource access")).toBeTruthy();
     expect(screen.getByText("Localhost, restart-aware")).toBeTruthy();
+    expect(screen.getByText("Web assets")).toBeTruthy();
+    expect(screen.getByText("HTML shell split")).toBeTruthy();
     expect(screen.getByText("Production ready")).toBeTruthy();
     expect(screen.getAllByText("No").length).toBeGreaterThan(0);
     expect(screen.getByText("Local-only posture")).toBeTruthy();

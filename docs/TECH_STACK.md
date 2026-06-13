@@ -31,6 +31,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - daemon-local session-scoped resource delivery planning through the Resource Broker and Delivery Planner, with safe ledger audit events for delivery decisions and short-lived access grants for allowed URL and hosted in-memory content deliveries;
 - daemon resource access base URL validation and safe posture reporting with explicit opt-in for env-configured non-local access URLs and HTTPS-only public access URLs;
 - daemon deployment posture reporting for bind exposure, control-plane auth mode, CORS origin count, persistence classes, resource access continuity, production-readiness blockers, and safety notes without exposing secrets, resource access URLs, or provider/tool endpoint values;
+- optional daemon-served built Web static assets for local/pre-production shells, with Accept-based SPA/API route separation, no-store shell responses, immutable asset caching, and configured-root path constraints;
 - package-level HTTP-template participant adapter and opt-in daemon participant profile for non-OpenAI HTTP providers;
 - package-level MCP-compatible tool participant adapter with injected client lifecycle, execution policy controls, and an opt-in daemon MCP tool participant profile;
 - read-only adaptive primitive suggestion in `@deliberum/orchestrator`, surfaced by the daemon as process proposal material;
@@ -74,7 +75,7 @@ The following are planned or possible future additions, not current implementati
 
 ## Why not Next.js first?
 
-The Web UI is a local daemon projection, not a public content site. A separate Vite SPA that reads the local daemon keeps responsibilities clearer while daemon-served Web assets remain deferred.
+The Web UI is a local daemon projection, not a public content site. A separate Vite SPA that reads the local daemon remains the development default, while optional daemon-served Web assets support local/pre-production single-process shells without turning the daemon into a production public host.
 
 ## Future native packaging
 

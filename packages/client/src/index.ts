@@ -341,6 +341,12 @@ export type DeploymentPostureResponse = {
     baseUrlExposure: "localhost" | "lan" | "public";
     grantStoreRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
   };
+  webAssets: {
+    configured: boolean;
+    routeMode: "disabled" | "html_accept_spa_shell_json_api_split";
+    shellCache: "no_store";
+    assetCache: "immutable";
+  };
   productionReadiness: {
     status: "local_only" | "preproduction_remote_hardened" | "not_production_ready";
     readyForProduction: false;

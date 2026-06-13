@@ -5,7 +5,8 @@ import {
   normalizeDaemonAuthToken,
   parseDaemonCorsOriginsFromEnv,
   type DaemonApp,
-  type DaemonAppOptions
+  type DaemonAppOptions,
+  type WebStaticAssetsOptions
 } from "./app";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { JsonFileEventStore, SQLiteEventStore, type EventStore } from "@deliberum/storage";
@@ -38,6 +39,7 @@ export const DAEMON_OPERATION_AUDIT_PATH_ENV_VAR =
   "DELIBERUM_DAEMON_OPERATION_AUDIT_PATH" as const;
 export const DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR =
   "DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES" as const;
+export const DAEMON_WEB_ASSETS_PATH_ENV_VAR = "DELIBERUM_DAEMON_WEB_ASSETS_PATH" as const;
 export const DAEMON_AUTH_TOKEN_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
 export const RESOURCE_ACCESS_BASE_URL_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_BASE_URL" as const;
 export const RESOURCE_ACCESS_TTL_MS_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_TTL_MS" as const;
@@ -172,6 +174,31 @@ export function resolveStartDaemonOperationAuditMaxEntries(
       `${DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR} must be a positive integer.`
     );
   }
+}
+
+export function resolveStartDaemonWebAssetsPath(
+  options: Pick<StartDaemonOptions, "webStaticAssets"> = {},
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  if (options.webStaticAssets) {
+    const value = options.webStaticAssets.rootDir.trim();
+    return value.length > 0 ? value : undefined;
+  }
+
+  const value = env[DAEMON_WEB_ASSETS_PATH_ENV_VAR]?.trim();
+  return value && value.length > 0 ? value : undefined;
+}
+
+export function createStartDaemonWebStaticAssets(
+  options: Pick<StartDaemonOptions, "webStaticAssets"> = {},
+  env: Record<string, string | undefined> = process.env
+): WebStaticAssetsOptions | undefined {
+  if (options.webStaticAssets) {
+    return options.webStaticAssets;
+  }
+
+  const rootDir = resolveStartDaemonWebAssetsPath({}, env);
+  return rootDir ? { rootDir } : undefined;
 }
 
 export function createStartDaemonResourceAccessStore(
@@ -381,6 +408,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const resourceAccessBaseUrl = resolveStartDaemonResourceAccessBaseUrl(options);
   const resourceAccessTtlMs = resolveStartDaemonResourceAccessTtlMs(options);
   const daemonAuthToken = resolveStartDaemonAuthToken(options);
+  const webStaticAssets = createStartDaemonWebStaticAssets(options, process.env);
   const resourceAccessStore = createStartDaemonResourceAccessStore(
     {
       ...options,
@@ -413,6 +441,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
     resourceAccessBaseUrl,
     resourceAccessTtlMs,
     daemonAuthToken,
+    webStaticAssets,
     corsOrigins: options.corsOrigins ?? parseDaemonCorsOriginsFromEnv(process.env),
     host,
     port

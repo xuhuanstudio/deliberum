@@ -105,6 +105,8 @@ import {
   type WebGETSessionPublicView,
   type WebGETTokenGenerator
 } from "./webget-session-store";
+import { readFile, stat } from "node:fs/promises";
+import { extname, relative, resolve, sep } from "node:path";
 
 export type DaemonAppOptions = {
   eventStore?: EventStore;
@@ -150,10 +152,17 @@ export type DaemonAppOptions = {
   mcpToolFetch?: McpToolProfileOptions["fetch"];
   daemonAuthToken?: string;
   corsOrigins?: readonly string[];
+  webStaticAssets?: WebStaticAssetsOptions;
   idGenerator?: IdGenerator;
   clock?: Clock;
   host?: string;
   port?: number;
+};
+
+export type WebStaticAssetsOptions = {
+  rootDir: string;
+  indexFile?: string;
+  assetCacheMaxAgeSeconds?: number;
 };
 
 export type DaemonApp = {
@@ -223,6 +232,12 @@ export type DaemonDeploymentPostureResponse = {
     baseUrlConfigured: boolean;
     baseUrlExposure: "localhost" | "lan" | "public";
     grantStoreRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
+  };
+  webAssets: {
+    configured: boolean;
+    routeMode: "disabled" | "html_accept_spa_shell_json_api_split";
+    shellCache: "no_store";
+    assetCache: "immutable";
   };
   productionReadiness: {
     status: "local_only" | "preproduction_remote_hardened" | "not_production_ready";
@@ -403,6 +418,16 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       allowHeaders: ["Content-Type", "Authorization"]
     })
   );
+
+  app.use("*", async (context, next) => {
+    const response = await serveWebStaticAssets(context, options.webStaticAssets);
+
+    if (response) {
+      return response;
+    }
+
+    await next();
+  });
 
   app.use("*", async (context, next) => {
     await auditDaemonOperation({
@@ -666,7 +691,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         resourceAccessStoreConfigured: options.resourceAccessStore !== undefined,
         operationAuditLogConfigured: options.operationAuditLog !== undefined,
         resourceAccessBaseUrl,
-        resourceAccessBaseUrlConfigured: options.resourceAccessBaseUrl !== undefined
+        resourceAccessBaseUrlConfigured: options.resourceAccessBaseUrl !== undefined,
+        webStaticAssetsConfigured: options.webStaticAssets !== undefined
       })
     )
   );
@@ -1417,6 +1443,7 @@ function buildDeploymentPosture(options: {
   operationAuditLogConfigured: boolean;
   resourceAccessBaseUrl: string;
   resourceAccessBaseUrlConfigured: boolean;
+  webStaticAssetsConfigured: boolean;
 }): DaemonDeploymentPostureResponse {
   const bindingExposure = classifyDaemonBindHost(options.host);
   const resourceAccessBaseUrlExposure = classifyResourceAccessBaseUrl(
@@ -1465,6 +1492,14 @@ function buildDeploymentPosture(options: {
         ? "depends_on_configured_store"
         : "lost_on_restart"
     },
+    webAssets: {
+      configured: options.webStaticAssetsConfigured,
+      routeMode: options.webStaticAssetsConfigured
+        ? "html_accept_spa_shell_json_api_split"
+        : "disabled",
+      shellCache: "no_store",
+      assetCache: "immutable"
+    },
     productionReadiness: {
       status:
         bindingExposure === "localhost"
@@ -1477,7 +1512,7 @@ function buildDeploymentPosture(options: {
     },
     safety: [
       "This posture is derived from safe daemon configuration state only.",
-      "It does not expose bearer tokens, CORS origin values, resource access ids, resource URLs, provider secrets, request bodies, or payloads.",
+      "It does not expose bearer tokens, CORS origin values, resource access ids, resource URLs, configured file paths, provider secrets, request bodies, or payloads.",
       "A non-local binding or public resource access base URL is not production authorization.",
       "Production deployment still requires an external authorization layer, multi-user policy, and production-grade multi-writer coordination."
     ]
@@ -1553,6 +1588,213 @@ function arraysEqual(left: readonly string[], right: readonly string[]): boolean
   }
 
   return left.every((value, index) => value === right[index]);
+}
+
+async function serveWebStaticAssets(
+  context: Context,
+  options: WebStaticAssetsOptions | undefined
+): Promise<Response | undefined> {
+  if (!options) {
+    return undefined;
+  }
+
+  const method = context.req.method.toUpperCase();
+  if (method !== "GET" && method !== "HEAD") {
+    return undefined;
+  }
+
+  const path = context.req.path;
+  if (isWebStaticAssetPath(path)) {
+    return serveWebAssetFile(context, options, path.slice(1), {
+      cache: "immutable_asset"
+    });
+  }
+
+  if (acceptsHtml(context) && isWebShellRoute(path)) {
+    return serveWebAssetFile(context, options, options.indexFile ?? "index.html", {
+      cache: "html_shell",
+      varyAccept: true
+    });
+  }
+
+  return undefined;
+}
+
+async function serveWebAssetFile(
+  context: Context,
+  options: WebStaticAssetsOptions,
+  relativePath: string,
+  responseOptions: {
+    cache: "html_shell" | "immutable_asset";
+    varyAccept?: boolean;
+  }
+): Promise<Response> {
+  const rootDir = resolve(options.rootDir);
+  const safePath = safeRelativeWebAssetPath(relativePath);
+  if (!safePath) {
+    return webAssetNotFound();
+  }
+
+  const filePath = resolve(rootDir, safePath);
+  if (!isPathInside(rootDir, filePath)) {
+    return webAssetNotFound();
+  }
+
+  try {
+    const fileStats = await stat(filePath);
+    if (!fileStats.isFile()) {
+      return webAssetNotFound();
+    }
+
+    const isHead = context.req.method.toUpperCase() === "HEAD";
+    const file = isHead ? undefined : await readFile(filePath);
+    const response = new Response(file, {
+      status: 200,
+      headers: {
+        "Content-Type": contentTypeForWebAsset(filePath),
+        "X-Content-Type-Options": "nosniff"
+      }
+    });
+
+    if (responseOptions.cache === "html_shell") {
+      response.headers.set("Cache-Control", "no-store");
+      response.headers.set("Pragma", "no-cache");
+    } else {
+      response.headers.set(
+        "Cache-Control",
+        `public, max-age=${options.assetCacheMaxAgeSeconds ?? 31536000}, immutable`
+      );
+    }
+
+    if (responseOptions.varyAccept) {
+      response.headers.set("Vary", "Accept");
+    }
+
+    return response;
+  } catch (error) {
+    if (isFileReadNotFound(error)) {
+      return webAssetNotFound();
+    }
+
+    throw error;
+  }
+}
+
+function isWebStaticAssetPath(path: string): boolean {
+  return path === "/favicon.ico" || path.startsWith("/assets/");
+}
+
+function isWebShellRoute(path: string): boolean {
+  if (path === "/") {
+    return true;
+  }
+
+  if (path === "/runs" || path === "/runs/new") {
+    return true;
+  }
+
+  if (/^\/runs\/[^/]+(?:\/outcome)?$/.test(path)) {
+    return true;
+  }
+
+  if (
+    /^\/sessions\/[^/]+(?:\/(?:frontier|objections|obligations|events|final|resources))?$/.test(
+      path
+    )
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function acceptsHtml(context: Context): boolean {
+  return (context.req.header("accept") ?? "")
+    .split(",")
+    .some((entry) => entry.trim().toLowerCase().startsWith("text/html"));
+}
+
+function safeRelativeWebAssetPath(path: string): string | undefined {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    return undefined;
+  }
+
+  const normalized = decoded.replace(/^\/+/, "");
+  if (
+    normalized.length === 0 ||
+    normalized.startsWith("..") ||
+    normalized.includes(`${sep}..${sep}`) ||
+    normalized.includes("../") ||
+    normalized.includes("\\")
+  ) {
+    return undefined;
+  }
+
+  return normalized;
+}
+
+function isPathInside(rootDir: string, filePath: string): boolean {
+  const relativePath = relative(rootDir, filePath);
+
+  return (
+    relativePath.length > 0 &&
+    !relativePath.startsWith("..") &&
+    !relativePath.includes(`..${sep}`) &&
+    !relativePath.startsWith(sep)
+  );
+}
+
+function contentTypeForWebAsset(filePath: string): string {
+  switch (extname(filePath).toLowerCase()) {
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".js":
+    case ".mjs":
+      return "text/javascript; charset=utf-8";
+    case ".css":
+      return "text/css; charset=utf-8";
+    case ".json":
+      return "application/json; charset=utf-8";
+    case ".svg":
+      return "image/svg+xml";
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".webp":
+      return "image/webp";
+    case ".ico":
+      return "image/x-icon";
+    case ".txt":
+      return "text/plain; charset=utf-8";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+function webAssetNotFound(): Response {
+  return new Response("Not found", {
+    status: 404,
+    headers: {
+      "Cache-Control": "no-store",
+      "Pragma": "no-cache",
+      "X-Content-Type-Options": "nosniff"
+    }
+  });
+}
+
+function isFileReadNotFound(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    ((error as { code?: unknown }).code === "ENOENT" ||
+      (error as { code?: unknown }).code === "ENOTDIR")
+  );
 }
 
 function authenticateDaemonRequest(

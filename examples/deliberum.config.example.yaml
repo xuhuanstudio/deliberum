@@ -35,6 +35,12 @@ local:
   web:
     daemonUrl: http://127.0.0.1:3877
     daemonAuthTokenEnv: VITE_DELIBERUM_DAEMON_AUTH_TOKEN
+    daemonServedAssets:
+      distPathEnv: DELIBERUM_DAEMON_WEB_ASSETS_PATH
+      routeMode: accept_header_html_shell_json_api_split
+      shellCache: no_store
+      assetCache: immutable
+      productionPublicHosting: deferred
   adaptiveProcess:
     suggestionEndpoint: read_only
     persistentProposalLifecycle: implemented
