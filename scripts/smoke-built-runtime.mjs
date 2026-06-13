@@ -1,13 +1,14 @@
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const packagesDir = join(repoRoot, "packages");
 const cliEntry = join(repoRoot, "apps", "cli", "dist", "index.js");
 const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
 const webDist = join(repoRoot, "apps", "web", "dist");
@@ -17,6 +18,7 @@ assertFile(cliEntry);
 assertFile(daemonEntry);
 assertFile(join(webDist, "index.html"));
 
+await smokeBuiltPackageEntrypoints();
 await smokeBuiltCli();
 await smokeBuiltDaemon();
 
@@ -52,6 +54,39 @@ async function smokeBuiltCli() {
     }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function smokeBuiltPackageEntrypoints() {
+  const packageDirs = readdirSync(packagesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+
+  if (packageDirs.length === 0) {
+    throw new Error(`No workspace packages found in: ${packagesDir}`);
+  }
+
+  for (const packageDirName of packageDirs) {
+    const packageDir = join(packagesDir, packageDirName);
+    const packageJsonPath = join(packageDir, "package.json");
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+    const entrypoint = packageJson.exports?.["."]?.default ?? packageJson.main;
+
+    if (typeof entrypoint !== "string" || entrypoint.length === 0) {
+      throw new Error(`Built package entrypoint is not declared: ${packageJsonPath}`);
+    }
+
+    const entryPath = join(packageDir, entrypoint);
+    assertFile(entryPath);
+
+    try {
+      await import(pathToFileURL(entryPath).href);
+    } catch (error) {
+      throw new Error(`Built package entrypoint import failed: ${packageJson.name}`, {
+        cause: error
+      });
+    }
   }
 }
 
