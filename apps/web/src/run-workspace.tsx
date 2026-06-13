@@ -1461,6 +1461,99 @@ function RunQualityOverview({
             sessionId={sessionId}
           />
         </div>
+        <div className="du-readable-list du-discussion-next-actions" aria-label="Next recommended actions">
+          <h4>Next recommended actions</h4>
+          {continuationView.reviewReady ? (
+            <article className="du-readable-item">
+              <p className="du-kicker">Step 1</p>
+              <h4>Review current conclusion</h4>
+              <p>
+                Start with the current conclusion, then check the visible disagreements,
+                requirements, and evidence gaps before relying on it.
+              </p>
+              <div className="du-action-row">
+                <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
+                  Open conclusion
+                </Link>
+              </div>
+            </article>
+          ) : (
+            <article className="du-readable-item">
+              <p className="du-kicker">Step 1</p>
+              <h4>Continue guided discussion</h4>
+              <p>
+                Continue the discussion so independent first responses, main perspectives,
+                disagreements, requirements, evidence, and a current conclusion can be produced.
+              </p>
+            </article>
+          )}
+          {unresolvedObjections > 0 ? (
+            <article className="du-readable-item">
+              <p className="du-kicker">Check</p>
+              <h4>Review open disagreements</h4>
+              <p>
+                There are unresolved disagreements that still constrain the current conclusion.
+              </p>
+              <div className="du-action-row">
+                <Link
+                  className="du-action-link du-secondary-link"
+                  to="/sessions/$sessionId/objections"
+                  params={{ sessionId }}
+                >
+                  View disagreements
+                </Link>
+              </div>
+            </article>
+          ) : null}
+          {unresolvedEvidenceNeeds > 0 ? (
+            <article className="du-readable-item">
+              <p className="du-kicker">Check</p>
+              <h4>Resolve evidence gaps</h4>
+              <p>
+                Missing or unchecked evidence should be resolved before the conclusion is treated
+                as reliable.
+              </p>
+              <div className="du-action-row">
+                <Link
+                  className="du-action-link du-secondary-link"
+                  to="/sessions/$sessionId/resources"
+                  params={{ sessionId }}
+                >
+                  Review evidence
+                </Link>
+              </div>
+            </article>
+          ) : null}
+          {openObligations > 0 ? (
+            <article className="du-readable-item">
+              <p className="du-kicker">Check</p>
+              <h4>Confirm answer requirements</h4>
+              <p>
+                Requirements that are not satisfied yet should be resolved or explicitly
+                acknowledged in the conclusion.
+              </p>
+              <div className="du-action-row">
+                <Link
+                  className="du-action-link du-secondary-link"
+                  to="/sessions/$sessionId/obligations"
+                  params={{ sessionId }}
+                >
+                  View requirements
+                </Link>
+              </div>
+            </article>
+          ) : null}
+          {candidates.length === 0 ? (
+            <article className="du-readable-item">
+              <p className="du-kicker">Check</p>
+              <h4>Collect main perspectives</h4>
+              <p>
+                No main perspectives are visible yet. Continue the discussion before relying on a
+                conclusion.
+              </p>
+            </article>
+          ) : null}
+        </div>
       </QueryState>
     </DataPanel>
   );

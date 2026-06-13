@@ -413,6 +413,10 @@ textarea:focus-visible {
   background: #f8fff9;
 }
 
+.du-discussion-next-actions {
+  margin-top: 12px;
+}
+
 .du-quality-summary-item span,
 .du-quality-summary-item strong,
 .du-quality-summary-item p {

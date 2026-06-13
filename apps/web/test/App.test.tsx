@@ -1447,6 +1447,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Ready")).toBeTruthy();
     expect(screen.getByText("Evidence gaps")).toBeTruthy();
     expect(screen.getAllByText("1/1").length).toBeGreaterThan(0);
+    expect(screen.getByText("Next recommended actions")).toBeTruthy();
+    expect(screen.getByText("Open conclusion")).toBeTruthy();
+    expect(screen.getByText("Review evidence")).toBeTruthy();
+    expect(screen.getByText("View disagreements")).toBeTruthy();
+    expect(screen.getByText("View requirements")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
     expect(screen.getByText("Strong options stay visible without collapsing into one hidden authority.")).toBeTruthy();
     expect(screen.getByText("What this discussion status means")).toBeTruthy();
@@ -1461,7 +1466,7 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByText("Advanced / Developer Mode: next-step proposal controls"));
     await waitFor(() => expect(client.getRunProcessProposals).toHaveBeenCalledWith("run-1"));
     await waitFor(() => expect(client.getProcessProposalStates).toHaveBeenCalledWith("session-1"));
-    expect(await screen.findByText("Next recommended actions")).toBeTruthy();
+    expect((await screen.findAllByText("Next recommended actions")).length).toBeGreaterThan(1);
     expect(screen.getByText("Prepare current conclusion")).toBeTruthy();
     expect(screen.getByText("Strong current options are ready to become a reviewable current conclusion.")).toBeTruthy();
     expect(screen.getByText("Recommended actions")).toBeTruthy();
