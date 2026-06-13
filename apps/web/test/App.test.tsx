@@ -825,13 +825,13 @@ describe("@deliberum/web shell", () => {
   it("opens sessions through explicit session-id navigation without stored session state", async () => {
     const client = renderApp("/");
 
-    expect(await screen.findByText("Start or inspect a deliberation")).toBeTruthy();
-    expect(screen.getByText("Primary path")).toBeTruthy();
-    expect(screen.getByText("Quality map")).toBeTruthy();
-    expect(screen.getByText("1. Start from a Topic Contract")).toBeTruthy();
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    expect(screen.getByText("What you can do")).toBeTruthy();
+    expect(screen.getByText("How the system maps to plain language")).toBeTruthy();
+    expect(screen.getAllByText("1. Start a discussion").length).toBeGreaterThan(0);
     expect(
       screen.getByText(
-        "Candidate Frontier, objections, obligations, evidence state, and provisional outcome stay separate and inspectable."
+        "The current conclusion keeps open disagreements, risks, missing evidence, and recommended next actions together."
       )
     ).toBeTruthy();
     expect(screen.queryByLabelText(/chat/i)).toBeNull();
@@ -844,22 +844,22 @@ describe("@deliberum/web shell", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
 
-    await screen.findByText("Ledger position");
+    expect((await screen.findAllByText("Discussion brief")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
   });
 
   it("renders the daemon session catalog without owning session state", async () => {
     const client = renderApp("/");
 
-    expect(await screen.findByText("Daemon sessions")).toBeTruthy();
+    expect((await screen.findAllByText("Continue existing discussions")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listSessions).toHaveBeenCalled());
     expect(screen.getByText("Stage 11 shell")).toBeTruthy();
     expect(screen.getByText("Evaluate the local daemon run workspace")).toBeTruthy();
-    expect(screen.getByText("event-1")).toBeTruthy();
+    expect(screen.getByText("7 updates")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("link", { name: "Open session" }));
+    fireEvent.click(screen.getByRole("link", { name: "Open discussion" }));
 
-    await screen.findByText("Ledger position");
+    expect((await screen.findAllByText("Discussion brief")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
   });
 
@@ -975,16 +975,17 @@ describe("@deliberum/web shell", () => {
   it("renders the session overview from daemon ledger events", async () => {
     const client = renderApp("/sessions/session-1");
 
-    await screen.findByText("Ledger position");
+    expect((await screen.findAllByText("Discussion brief")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
-    expect(screen.getByText("Event entries")).toBeTruthy();
+    expect(screen.getByText("Current activity")).toBeTruthy();
+    expect(screen.getByText("Discussion brief published")).toBeTruthy();
     expect(screen.getByText("topic_contract_published")).toBeTruthy();
   });
 
   it("renders Candidate Frontier as a basis plus candidate list", async () => {
     const client = renderApp("/sessions/session-1/frontier");
 
-    await screen.findByText("Accepted active candidates");
+    expect((await screen.findAllByText("Main perspectives")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText(/accepted_active_candidates/)).toBeTruthy();
     expect(screen.getAllByText(/candidate-1/).length).toBeGreaterThan(0);
@@ -998,17 +999,17 @@ describe("@deliberum/web shell", () => {
   it("renders objections and quality obligations from daemon projections", async () => {
     const client = renderApp("/sessions/session-1/objections");
 
-    await screen.findByText("First-class objections");
+    expect((await screen.findAllByText("Open disagreements")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
-    expect(screen.getByText(/objection-1/)).toBeTruthy();
+    expect(screen.getAllByText(/objection-1/).length).toBeGreaterThan(0);
 
     cleanup();
 
     const nextClient = renderApp("/sessions/session-1/obligations");
-    await screen.findByText("Obligations and status");
+    expect((await screen.findAllByText("Requirements this answer must satisfy")).length).toBeGreaterThan(0);
     await waitFor(() => expect(nextClient.getObligations).toHaveBeenCalledWith("session-1"));
-    expect(screen.getByText(/quality-1/)).toBeTruthy();
-    expect(screen.getByText(/unanswered/)).toBeTruthy();
+    expect(screen.getAllByText(/quality-1/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/unanswered/).length).toBeGreaterThan(0);
   });
 
   it("renders append-only ledger entries without stripping arbitrary payload keys", async () => {
@@ -1029,25 +1030,28 @@ describe("@deliberum/web shell", () => {
 
     renderApp("/sessions/session-1/events", client);
 
-    await screen.findByText("Append-only ledger entries");
+    expect((await screen.findAllByText("Ledger events")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText(/sealed_contribution_submitted/)).toBeTruthy();
     expect(screen.getByText(/legitimate user payload field/)).toBeTruthy();
   });
 
-  it("lists daemon runs", async () => {
+  it("lists deliberation runs", async () => {
     const client = renderApp("/runs");
 
-    await screen.findByText("Daemon runs");
+    expect((await screen.findAllByText("Discussions")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
-    expect(screen.getByText("How local runs work")).toBeTruthy();
-    expect(screen.getByText("A controlled orchestration job owned by the local daemon run store.")).toBeTruthy();
-    expect(screen.getByText("The underlying append-only event ledger session created for the run.")).toBeTruthy();
-    expect(screen.getByText(/Recorded lifecycle events/)).toBeTruthy();
-    expect(screen.getByText(/compiled artifact from accepted proposal material/)).toBeTruthy();
+    expect(screen.getByText("How discussions work")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The topic, goals, constraints, participants, and output expectations before anyone contributes."
+      )
+    ).toBeTruthy();
+    expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
+    expect(screen.getByText("Advanced run details")).toBeTruthy();
     expect(screen.getByText("Run Alpha")).toBeTruthy();
     expect(screen.getByText("run-1")).toBeTruthy();
-    expect(screen.getByText("Created: run exists, pipeline has not started.")).toBeTruthy();
+    expect(screen.getByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
     expect(screen.getAllByText("Completed").length).toBeGreaterThan(0);
   });
 
@@ -1059,10 +1063,10 @@ describe("@deliberum/web shell", () => {
       constraints: ["Keep provisional"]
     };
 
-    await screen.findByText("Start a deliberation run");
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(screen.getByText("Guided local preset")).toBeTruthy();
-    expect(screen.getByText("Full quality loop")).toBeTruthy();
-    fireEvent.click(screen.getByText("Advanced JSON plan"));
+    expect(screen.getByText("Complete discussion loop")).toBeTruthy();
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: JSON plan"));
     fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
       target: {
         value: JSON.stringify(runPlan)
@@ -1071,15 +1075,15 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create run" }));
 
     await waitFor(() => expect(client.createRun).toHaveBeenCalledWith({ runPlan }));
-    expect(await screen.findByText("Run created")).toBeTruthy();
-    expect(screen.getByText(/run-1/)).toBeTruthy();
+    expect(await screen.findByText("Discussion created")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
   });
 
   it("rejects invalid run plan JSON without calling the daemon", async () => {
     const client = renderApp("/runs/new");
 
-    await screen.findByText("Start a deliberation run");
-    fireEvent.click(screen.getByText("Advanced JSON plan"));
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: JSON plan"));
     fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
       target: {
         value: "{"
@@ -1104,8 +1108,8 @@ describe("@deliberum/web shell", () => {
   it("fills and creates the local preset run plan", async () => {
     const client = renderApp("/runs/new");
 
-    await screen.findByText("Start a deliberation run");
-    fireEvent.click(screen.getByText("Advanced JSON plan"));
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: JSON plan"));
     fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
       target: {
         value: "{}"
@@ -1117,7 +1121,7 @@ describe("@deliberum/web shell", () => {
       (screen.getByLabelText("Advanced JSON run plan") as HTMLTextAreaElement).value
     ).toContain("local-preset-alpha");
 
-    fireEvent.click(screen.getByRole("button", { name: "Create local preset run" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create guided discussion" }));
 
     await waitFor(() =>
       expect(client.createRun).toHaveBeenCalledWith({
@@ -1137,7 +1141,7 @@ describe("@deliberum/web shell", () => {
   it("renders run detail, stage status, and projection panels without raw event loading", async () => {
     const client = renderApp("/runs/run-1");
 
-    await screen.findByText("Run detail");
+    await screen.findByText("Run Alpha");
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
     await waitFor(() => expect(client.getRunProcessProposals).toHaveBeenCalledWith("run-1"));
@@ -1146,30 +1150,30 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
 
-    expect(screen.getByText("Run status")).toBeTruthy();
+    expect(screen.getAllByText("Discussion status").length).toBeGreaterThan(0);
     expect(screen.getByText("Ledger events")).toBeTruthy();
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
-    expect(screen.getByText("Deliberation quality overview")).toBeTruthy();
-    expect(screen.getByText("Open pressure")).toBeTruthy();
-    expect(screen.getByText("Accepted active candidate material, without collapsing the frontier into one hidden authority.")).toBeTruthy();
+    expect(screen.getByText("Discussion overview")).toBeTruthy();
+    expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
+    expect(screen.getByText("Accepted active options stay visible without collapsing into one hidden authority.")).toBeTruthy();
     expect(screen.getByText("Run ledger timeline")).toBeTruthy();
     expect(screen.getByText("Event entries")).toBeTruthy();
     expect(screen.getByText(/topic_contract_published/)).toBeTruthy();
     expect(screen.getByText(/sealed_until_reveal/)).toBeTruthy();
-    expect(screen.getByText("Current run meaning")).toBeTruthy();
-    expect(screen.getByText("Stage status")).toBeTruthy();
-    expect(screen.getByText("Process proposals")).toBeTruthy();
-    expect(screen.getByText("final_contest")).toBeTruthy();
-    expect(screen.getByText("Suggested primitives")).toBeTruthy();
+    expect(screen.getByText("What this discussion status means")).toBeTruthy();
+    expect(screen.getByText("Discussion progress")).toBeTruthy();
+    expect(screen.getByText("Next recommended actions")).toBeTruthy();
+    expect(screen.getByText("Final contest")).toBeTruthy();
+    expect(screen.getByText("Recommended actions")).toBeTruthy();
     expect(screen.getByText("Suggestion observations")).toBeTruthy();
     expect(screen.getByText("Process governance ledger")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Record proposal in ledger" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Record suggestion for review" })).toBeTruthy();
     expect(screen.getByText("No recorded process proposals")).toBeTruthy();
-    expect(screen.getByText("Candidate Frontier projection")).toBeTruthy();
+    expect(screen.getAllByText("Main perspectives").length).toBeGreaterThan(0);
     expect(screen.getByText("Candidate A")).toBeTruthy();
-    expect(screen.getByText("Objections projection")).toBeTruthy();
+    expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/objection-1/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Quality obligations projection")).toBeTruthy();
+    expect(screen.getAllByText("Requirements this answer must satisfy").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/quality-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Projection events").length).toBeGreaterThan(0);
     expect(client.listEvents).not.toHaveBeenCalled();
@@ -1222,8 +1226,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    await screen.findByText("Process proposals");
-    fireEvent.click(await screen.findByRole("button", { name: "Record proposal in ledger" }));
+    await screen.findByText("Next recommended actions");
+    fireEvent.click(await screen.findByRole("button", { name: "Record suggestion for review" }));
 
     await waitFor(() =>
       expect(proposeProcessProposal).toHaveBeenCalledWith("session-1", {
@@ -1236,7 +1240,7 @@ describe("@deliberum/web shell", () => {
         basedOnEventIds: ["event-1", "proposal-event-1"]
       })
     );
-    expect(await screen.findByText("Process proposal recorded")).toBeTruthy();
+    expect(await screen.findByText("Recommended action recorded")).toBeTruthy();
     await waitFor(() => expect(getProcessProposalStates).toHaveBeenCalledTimes(2));
     expect(client.startRun).not.toHaveBeenCalled();
   });
@@ -1396,7 +1400,7 @@ describe("@deliberum/web shell", () => {
         "process-proposal-event-1"
       )
     );
-    expect(await screen.findByText("Run request completed")).toBeTruthy();
+    expect(await screen.findByText("Discussion update completed")).toBeTruthy();
     expect(screen.getByText("Stage results")).toBeTruthy();
     expect(client.startRun).not.toHaveBeenCalled();
   });
@@ -1537,10 +1541,10 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByText("Created: run exists, pipeline has not started.")).toBeTruthy();
+    expect(await screen.findByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
     expect(screen.getByText("1 recorded lifecycle event")).toBeTruthy();
     expect(screen.getAllByText("Not run yet").length).toBeGreaterThanOrEqual(4);
-    expect(screen.getByText("No round has been recorded for that stage.")).toBeTruthy();
+    expect(screen.getByText("No work has been recorded for that part of the discussion.")).toBeTruthy();
   });
 
   it("starts a run from a JSON start request and renders only stage metadata", async () => {
@@ -1551,8 +1555,8 @@ describe("@deliberum/web shell", () => {
       }
     };
 
-    await screen.findByText("Start orchestration");
-    fireEvent.click(screen.getByText("Advanced start request"));
+    await screen.findByText("Continue discussion");
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: start request"));
     fireEvent.change(screen.getByLabelText("Advanced start request JSON"), {
       target: {
         value: JSON.stringify(startRequest)
@@ -1561,7 +1565,7 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start run" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledWith("run-1", startRequest));
-    expect(await screen.findByText("Run request completed")).toBeTruthy();
+    expect(await screen.findByText("Discussion update completed")).toBeTruthy();
     expect(screen.getByText("Stage results")).toBeTruthy();
     expect(screen.getByText(/sealed_divergence/)).toBeTruthy();
     expect(screen.getByText(/event-2/)).toBeTruthy();
@@ -1571,8 +1575,8 @@ describe("@deliberum/web shell", () => {
   it("fills and starts the full local preset pipeline through the client", async () => {
     const client = renderApp("/runs/run-1");
 
-    await screen.findByText("Start orchestration");
-    fireEvent.click(screen.getByText("Advanced start request"));
+    await screen.findByText("Continue discussion");
+    fireEvent.click(screen.getByText("Advanced / Developer Mode: start request"));
     fireEvent.change(screen.getByLabelText("Advanced start request JSON"), {
       target: {
         value: "{}"
@@ -1584,7 +1588,7 @@ describe("@deliberum/web shell", () => {
       (screen.getByLabelText("Advanced start request JSON") as HTMLTextAreaElement).value
     ).toContain("local-preset-extractor");
 
-    fireEvent.click(screen.getByRole("button", { name: "Start full local preset pipeline" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue guided discussion" }));
 
     await waitFor(() =>
       expect(client.startRun).toHaveBeenCalledWith(
@@ -1701,13 +1705,13 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    await screen.findByText("No Candidate Frontier entries");
+    await screen.findByText("No main perspectives");
     expect(screen.queryByText("Projection refreshed after start")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Start full local preset pipeline" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue guided discussion" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalled());
-    expect(await screen.findByText("Run request completed")).toBeTruthy();
+    expect(await screen.findByText("Discussion update completed")).toBeTruthy();
     expect(await screen.findByText("Projection refreshed after start")).toBeTruthy();
     expect(screen.getByText("Projection objection refreshed after start")).toBeTruthy();
     expect(screen.getByText("Projection obligation refreshed after start")).toBeTruthy();
@@ -1731,8 +1735,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    await screen.findByText("Start orchestration");
-    fireEvent.click(screen.getByRole("button", { name: "Start full local preset pipeline" }));
+    await screen.findByText("Continue discussion");
+    fireEvent.click(screen.getByRole("button", { name: "Continue guided discussion" }));
 
     expect(await screen.findByText("Run start failed")).toBeTruthy();
     expect(screen.getAllByText(/DELIBERUM_ENABLE_LOCAL_PRESET=true/).length).toBeGreaterThan(0);
@@ -1742,11 +1746,11 @@ describe("@deliberum/web shell", () => {
   it("renders compiled run output as a provisional outcome", async () => {
     const client = renderApp("/runs/run-1/outcome");
 
-    await screen.findByText("Provisional outcome");
+    expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
     expect(screen.getByText("Draft status")).toBeTruthy();
     expect(screen.getAllByText(/provisional/i).length).toBeGreaterThan(0);
-    expect(screen.getByText("Outcome brief")).toBeTruthy();
+    expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: "Outcome snapshot" })).toBeTruthy();
     expect(screen.getAllByText("Open objections").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Evidence needs").length).toBeGreaterThan(0);
@@ -1761,7 +1765,7 @@ describe("@deliberum/web shell", () => {
     const client = renderApp("/runs/run-1/outcome");
     const getRunOutcome = vi.mocked(client.getRunOutcome);
 
-    await screen.findByText("Provisional outcome");
+    expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(getRunOutcome).toHaveBeenCalledWith("run-1"));
 
     fireEvent.change(screen.getByLabelText("Candidate proposal event override"), {
@@ -1798,16 +1802,16 @@ describe("@deliberum/web shell", () => {
 
     renderApp("/runs/run-1/outcome", client);
 
-    expect(await screen.findByText("Provisional outcome not available")).toBeTruthy();
+    expect(await screen.findByText("Current conclusion not available")).toBeTruthy();
     expect(screen.getByText(/No final candidate proposal exists yet/)).toBeTruthy();
   });
 
   it("renders session final projection from the daemon endpoint", async () => {
     const client = renderApp("/sessions/session-1/final");
 
-    await screen.findByText("Compiled outcome projection");
+    expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getSessionFinal).toHaveBeenCalledWith("session-1"));
-    expect(screen.getByText("Projection remains provisional")).toBeTruthy();
+    expect(screen.getByText("Current conclusion remains provisional")).toBeTruthy();
     expect(screen.getByText("Candidate proposal event")).toBeTruthy();
     expect(screen.getAllByText(/final-candidate-event-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Use the daemon-backed final projection/).length).toBeGreaterThan(0);
@@ -1819,14 +1823,14 @@ describe("@deliberum/web shell", () => {
       Array.from(document.querySelectorAll(".du-nav-link.is-active")).map(
         (element) => element.textContent
       )
-    ).toEqual(["Final"]);
+    ).toEqual(["Current conclusion"]);
   });
 
   it("compiles session final projection for a selected proposal event", async () => {
     const client = renderApp("/sessions/session-1/final");
     const getSessionFinal = vi.mocked(client.getSessionFinal);
 
-    await screen.findByText("Compiled outcome projection");
+    expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(getSessionFinal).toHaveBeenCalledWith("session-1"));
 
     fireEvent.change(screen.getByLabelText("Candidate proposal event override"), {
@@ -1969,9 +1973,9 @@ describe("@deliberum/web shell", () => {
   it("renders session resources and evidence needs from the daemon endpoint", async () => {
     const client = renderApp("/sessions/session-1/resources");
 
-    expect(await screen.findByText("Session resource projection")).toBeTruthy();
+    expect(await screen.findByText("Evidence and verification")).toBeTruthy();
     await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
-    expect(screen.getByText("Run-plan resources projected")).toBeTruthy();
+    expect(screen.getByText("Evidence gaps visible")).toBeTruthy();
     expect(screen.getByText("Registered resources")).toBeTruthy();
     expect(screen.getByText("1 of 2")).toBeTruthy();
     expect(screen.getByText("Delivery audits")).toBeTruthy();
@@ -1984,7 +1988,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText(/resource-access-audit-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/resource-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/resource-missing/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Accepted evidence needs")).toBeTruthy();
+    expect(screen.getByText("Risks and missing evidence")).toBeTruthy();
     expect(screen.getAllByText(/evidence-need-1/).length).toBeGreaterThan(0);
     expect(screen.getByText("Resource projection JSON")).toBeTruthy();
     expect(client.getRunOutcome).not.toHaveBeenCalled();
@@ -1992,7 +1996,7 @@ describe("@deliberum/web shell", () => {
       Array.from(document.querySelectorAll(".du-nav-link.is-active")).map(
         (element) => element.textContent
       )
-    ).toEqual(["Resources"]);
+    ).toEqual(["Evidence"]);
   });
 
   it("does not add hidden session persistence or forbidden semantic authority APIs", () => {

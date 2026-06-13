@@ -16,7 +16,7 @@ import {
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
 import {
-  DaemonStatus,
+  AdvancedDetails,
   QueryState,
   RecordCollection,
   ViewFrame,
@@ -52,22 +52,22 @@ export function RunsListPage() {
   return (
     <RunWorkspaceShell>
       <ViewFrame
-        eyebrow="Run workspace"
-        title="Daemon runs"
-        description="Controlled local orchestration jobs from the daemon run store."
+        eyebrow="User Mode"
+        title="Discussions"
+        description="Start or continue a deliberation in plain language, then inspect the current conclusion, perspectives, disagreements, evidence gaps, and next actions."
         actions={
           <Link className="du-action-link" to="/runs/new">
-            New run
+            Start a discussion
           </Link>
         }
       >
         <RunConceptPanel />
         <QueryState query={runsQuery}>
-          <DataPanel title="Runs">
+          <DataPanel title="Existing discussions">
             {runs.length === 0 ? (
               <EmptyState
-                title="No runs"
-                description="Create a local preset run or submit an advanced JSON run plan."
+                title="No discussions yet"
+                description="Start a discussion from the guided local preset or use Advanced JSON if you are developing against the runtime."
               />
             ) : (
               <div className="du-run-list">
@@ -119,17 +119,17 @@ export function RunNewPage() {
   return (
     <RunWorkspaceShell>
       <ViewFrame
-        eyebrow="Run creation"
-        title="Start a deliberation run"
-        description="Create a ledger-backed run that exercises the core deliberation loop before reading raw daemon records."
+        eyebrow="User Mode"
+        title="Start a discussion"
+        description="Create a local deliberation that shows the discussion brief, independent first responses, strongest options, disagreements, requirements, evidence checks, risk review, and current conclusion."
       >
         <StatusBanner
-          title="Local preset requires daemon opt-in"
-          detail="To run the built-in preset pipeline, start the daemon with DELIBERUM_ENABLE_LOCAL_PRESET=true. Without it, the run can be created but start will report missing local components."
+          title="Guided local discussion"
+          detail="The built-in preset does not require provider credentials. To execute the full preset pipeline, start the local daemon with DELIBERUM_ENABLE_LOCAL_PRESET=true."
         />
         <DataPanel
           title="Guided local preset"
-          description="Use this path to see Topic Contract, sealed divergence, Candidate Frontier, objections, obligations, and provisional outcome views with deterministic local components."
+          description="Use this path to see the core deliberation concepts mapped into user-facing language with deterministic local components."
         >
           <div className="du-readable-list">
             <ExplainerItem
@@ -137,8 +137,8 @@ export function RunNewPage() {
               detail="The preset does not call external models and is meant for product walkthroughs and local verification."
             />
             <ExplainerItem
-              title="Full quality loop"
-              detail="It creates traceable proposal material, reviewable candidate state, and a provisional compiled output."
+              title="Complete discussion loop"
+              detail="It creates a discussion brief, independent first responses, strongest options, disagreements, requirements, evidence needs, risk review, and current conclusion."
             />
           </div>
           <div className="du-action-row">
@@ -147,12 +147,14 @@ export function RunNewPage() {
               onClick={createLocalPresetRun}
               disabled={createMutation.isPending}
             >
-              Create local preset run
+              Create guided discussion
             </button>
           </div>
         </DataPanel>
-        <details className="du-advanced-panel">
-          <summary>Advanced JSON plan</summary>
+        <AdvancedDetails
+          summary="Advanced / Developer Mode: JSON plan"
+          description="Create a run from a raw JSON plan when testing low-level runtime behavior."
+        >
           <JsonInputForm
             id="run-plan-json"
             label="Advanced JSON run plan"
@@ -174,7 +176,7 @@ export function RunNewPage() {
               </>
             }
           />
-        </details>
+        </AdvancedDetails>
         {inputError ? <StatusBanner tone="error" title={inputError} /> : null}
         {createMutation.isError ? (
           <StatusBanner
@@ -186,21 +188,21 @@ export function RunNewPage() {
         {createdRunId ? (
           <StatusBanner
             tone="ok"
-            title="Run created"
-            detail={`Run ${createdRunId} is available in the local daemon.`}
+            title="Discussion created"
+            detail="The discussion is available in the local workspace. Advanced details include its internal run id."
           />
         ) : null}
         {createdRunId ? (
           <div className="du-action-row">
             <Link className="du-action-link" to="/runs/$runId" params={{ runId: createdRunId }}>
-              Open run
+              Open discussion
             </Link>
             <Link
               className="du-action-link"
               to="/runs/$runId/outcome"
               params={{ runId: createdRunId }}
             >
-              View provisional outcome
+              View current conclusion
             </Link>
           </div>
         ) : null}
@@ -222,12 +224,16 @@ export function RunDetailPage() {
   return (
     <RunWorkspaceShell runId={runId}>
       <ViewFrame
-        eyebrow="Run detail"
-        title={getStringRecordValue(run, "title") ?? getStringRecordValue(run, "topic") ?? runId}
-        description="Run status, stage progress, safe projections, and local preset controls."
+        eyebrow="User Mode"
+        title={
+          getStringRecordValue(run, "title") ??
+          getStringRecordValue(run, "topic") ??
+          "Discussion"
+        }
+        description="Review the discussion status, main perspectives, open disagreements, requirements, evidence gaps, and next recommended actions."
         actions={
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-            View provisional outcome
+            View current conclusion
           </Link>
         }
       >
@@ -238,10 +244,11 @@ export function RunDetailPage() {
           <RunStageStatus run={run} />
           <StartRunForm runId={runId} sessionId={sessionId} />
           <RunProcessProposals runId={runId} sessionId={sessionId} />
-          {sessionId ? <RunProcessGovernance runId={runId} sessionId={sessionId} /> : null}
           {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
-          <details className="du-advanced-panel">
-            <summary>Ledger trace and advanced run records</summary>
+          <AdvancedDetails
+            description="Ledger trace, process governance, run plan, round metadata, and internal ids for developer inspection."
+          >
+            {sessionId ? <RunProcessGovernance runId={runId} sessionId={sessionId} /> : null}
             <RunEventTimeline runId={runId} />
             <DataPanel title="Run plan view">
               <JsonBlock value={sanitizeForDisplay(getRecordValue(run, "plan") ?? {})} />
@@ -252,7 +259,7 @@ export function RunDetailPage() {
             >
               <JsonBlock value={sanitizeForDisplay(getRecordValue(run, "rounds") ?? {})} />
             </DataPanel>
-          </details>
+          </AdvancedDetails>
         </QueryState>
       </ViewFrame>
     </RunWorkspaceShell>
@@ -304,82 +311,85 @@ export function RunOutcomePage() {
   return (
     <RunWorkspaceShell runId={runId}>
       <ViewFrame
-        eyebrow="Outcome view"
-        title="Provisional outcome"
-        description="A compiled artifact from accepted proposal material, not a final answer."
+        eyebrow="User Mode"
+        title="Current conclusion"
+        description="Outcome Compilation shown as a readable current conclusion with disagreements, risks, missing evidence, and next actions."
         actions={
           <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
-            Back to run
+            Back to discussion
           </Link>
         }
       >
-        <form className="du-inline-form" onSubmit={submitProjectionOverride}>
-          <label htmlFor="du-run-outcome-projection-event">
-            Candidate proposal event override
-          </label>
-          <div className="du-inline-form-row">
-            <input
-              id="du-run-outcome-projection-event"
-              value={projectionProposalEventId}
-              placeholder="final-candidate-event-1"
-              onChange={(event) => setProjectionProposalEventId(event.target.value)}
-            />
-            <button type="submit">Compile projection</button>
-            <button
-              className="du-secondary-button"
-              type="button"
-              disabled={!canClearProjectionOverride}
-              onClick={clearProjectionOverride}
-            >
-              Use latest proposal
-            </button>
-          </div>
-          {appliedProjectionProposalEventId ? (
-            <StatusBanner
-              tone="neutral"
-              title="Specific final proposal selected"
-              detail={appliedProjectionProposalEventId}
-            />
-          ) : null}
-        </form>
         <QueryState query={outcomeQuery}>
           {outcome?.status === "compiled" ? (
             <>
-              <KeyValueGrid
-                items={[
-                  {
-                    label: "Run id",
-                    value: outcome.runId
-                  },
-                  {
-                    label: "Session id",
-                    value: outcome.sessionId
-                  },
-                  {
-                    label: "Draft status",
-                    value: outcome.draftStatus
-                  },
-                  {
-                    label: "Candidate proposal event",
-                    value: finalCandidateProposalEventId ?? "None"
-                  }
-                ]}
-              />
               <DataPanel
-                title="Outcome brief"
-                description="Readable projection of the compiled outcome. The full daemon material remains available below for traceability."
+                title="Current conclusion"
+                description="Readable projection of the compiled outcome. Full daemon material remains in Advanced details for traceability."
               >
                 <OutcomeBrief outcome={outcome.outcome} />
               </DataPanel>
-              <details className="du-advanced-panel">
-                <summary>Raw outcome material</summary>
-                <JsonBlock value={sanitizeForDisplay(outcome.outcome)} />
-              </details>
+              <AdvancedDetails
+                description="Projection override, internal ids, draft status, and raw outcome material for developer inspection."
+              >
+                <form className="du-inline-form" onSubmit={submitProjectionOverride}>
+                  <label htmlFor="du-run-outcome-projection-event">
+                    Candidate proposal event override
+                  </label>
+                  <div className="du-inline-form-row">
+                    <input
+                      id="du-run-outcome-projection-event"
+                      value={projectionProposalEventId}
+                      placeholder="final-candidate-event-1"
+                      onChange={(event) => setProjectionProposalEventId(event.target.value)}
+                    />
+                    <button type="submit">Compile projection</button>
+                    <button
+                      className="du-secondary-button"
+                      type="button"
+                      disabled={!canClearProjectionOverride}
+                      onClick={clearProjectionOverride}
+                    >
+                      Use latest proposal
+                    </button>
+                  </div>
+                  {appliedProjectionProposalEventId ? (
+                    <StatusBanner
+                      tone="neutral"
+                      title="Specific final proposal selected"
+                      detail={appliedProjectionProposalEventId}
+                    />
+                  ) : null}
+                </form>
+                <KeyValueGrid
+                  items={[
+                    {
+                      label: "Run id",
+                      value: outcome.runId
+                    },
+                    {
+                      label: "Session id",
+                      value: outcome.sessionId
+                    },
+                    {
+                      label: "Draft status",
+                      value: outcome.draftStatus
+                    },
+                    {
+                      label: "Candidate proposal event",
+                      value: finalCandidateProposalEventId ?? "None"
+                    }
+                  ]}
+                />
+                <DataPanel title="Raw outcome material">
+                  <JsonBlock value={sanitizeForDisplay(outcome.outcome)} />
+                </DataPanel>
+              </AdvancedDetails>
             </>
           ) : (
             <StatusBanner
               tone="warning"
-              title="Provisional outcome not available"
+              title="Current conclusion not available"
               detail={describeOutcomeUnavailableReason(getRecordValue(outcome, "reason"))}
             />
           )}
@@ -396,15 +406,11 @@ function RunWorkspaceShell({
   runId?: string;
   children: ReactNode;
 }) {
-  const { daemonBaseUrl } = useDaemonRuntime();
-
   return (
     <WorkspaceShell
       productName="Deliberum"
-      workspaceLabel="Run workspace"
-      daemonBaseUrl={daemonBaseUrl}
+      workspaceLabel="User Mode"
       navigation={<RunNavigation runId={runId} />}
-      status={<DaemonStatus />}
     >
       {children}
     </WorkspaceShell>
@@ -422,7 +428,7 @@ function RunNavigation({ runId }: { runId?: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Runs
+        Discussions
       </Link>
       <Link
         to="/runs/new"
@@ -430,7 +436,7 @@ function RunNavigation({ runId }: { runId?: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        New run
+        Start discussion
       </Link>
       {runId ? (
         <Link
@@ -440,7 +446,7 @@ function RunNavigation({ runId }: { runId?: string }) {
           activeProps={{ className: `${linkClass} is-active` }}
           inactiveProps={{ className: linkClass }}
         >
-          Detail
+          Discussion
         </Link>
       ) : null}
       {runId ? (
@@ -451,7 +457,7 @@ function RunNavigation({ runId }: { runId?: string }) {
           activeProps={{ className: `${linkClass} is-active` }}
           inactiveProps={{ className: linkClass }}
         >
-          Outcome
+          Current conclusion
         </Link>
       ) : null}
     </>
@@ -461,25 +467,25 @@ function RunNavigation({ runId }: { runId?: string }) {
 function RunConceptPanel() {
   return (
     <DataPanel
-      title="How local runs work"
-      description="The Web workspace controls and views daemon runs; it is not a semantic authority."
+      title="How discussions work"
+      description="The default mode explains the deliberation loop in user language before showing developer records."
     >
       <div className="du-explainer-grid">
         <ExplainerItem
-          title="Run"
-          detail="A controlled orchestration job owned by the local daemon run store."
+          title="Discussion brief"
+          detail="The topic, goals, constraints, participants, and output expectations before anyone contributes."
         />
         <ExplainerItem
-          title="Session"
-          detail="The underlying append-only event ledger session created for the run."
+          title="Independent first responses"
+          detail="Early work is kept separate so one visible answer does not anchor the discussion."
         />
         <ExplainerItem
-          title="Ledger events"
-          detail="Recorded lifecycle events from the daemon. Payload visibility follows daemon redaction rules."
+          title="Strongest current options"
+          detail="Main perspectives stay visible as options, without a hidden authority choosing for the user."
         />
         <ExplainerItem
-          title="Provisional outcome"
-          detail="A compiled artifact from accepted proposal material, not a final answer."
+          title="Current conclusion"
+          detail="A reviewable outcome with open disagreements, risks, missing evidence, and next steps."
         />
       </div>
     </DataPanel>
@@ -488,15 +494,15 @@ function RunConceptPanel() {
 
 function RunDetailGuide() {
   return (
-    <DataPanel title="Current run meaning">
+    <DataPanel title="What this discussion status means">
       <div className="du-explainer-grid">
         <ExplainerItem
           title="Created"
-          detail="The run exists, but the pipeline has not started yet."
+          detail="The discussion exists, but the deliberation steps have not started yet."
         />
         <ExplainerItem
           title="Not run yet"
-          detail="No round has been recorded for that stage."
+          detail="No work has been recorded for that part of the discussion."
         />
         <ExplainerItem
           title="Missing local components"
@@ -523,19 +529,15 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
   return (
     <article className="du-run-list-item">
       <div>
-        <p className="du-kicker">Run {index + 1}</p>
-        <h3>{title ?? runId ?? "Untitled run"}</h3>
-        <p>{runId ?? "Run id unavailable"}</p>
+        <p className="du-kicker">Discussion {index + 1}</p>
+        <h3>{title ?? "Untitled discussion"}</h3>
+        <p>{formatRecordValue(getRecordValue(run, "topic") ?? "No topic summary")}</p>
       </div>
       <KeyValueGrid
         items={[
           {
-            label: "Status",
-            value: describeRunStatus(getRecordValue(run, "status"))
-          },
-          {
-            label: "Session",
-            value: formatRecordValue(getRecordValue(run, "sessionId"))
+            label: "Discussion status",
+            value: describeDiscussionStatus(getRecordValue(run, "status"))
           },
           {
             label: "Updated",
@@ -545,21 +547,41 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
       />
       <StageStatusList
         stages={[
-          ["Sealed divergence", getRecordValue(run, "sealedDivergenceStatus")],
-          ["Extraction", getRecordValue(run, "latestExtractionStatus")],
-          ["Candidate repair", getRecordValue(run, "latestCandidateRepairStatus")],
-          ["Evidence check", getRecordValue(run, "latestEvidenceCheckStatus")],
-          ["Proposal review", getRecordValue(run, "latestProposalReviewStatus")],
-          ["Finalization", getRecordValue(run, "latestFinalizationStatus")]
+          ["Independent first responses", getRecordValue(run, "sealedDivergenceStatus")],
+          ["Strongest current options", getRecordValue(run, "latestExtractionStatus")],
+          ["Option repair", getRecordValue(run, "latestCandidateRepairStatus")],
+          ["Evidence and verification", getRecordValue(run, "latestEvidenceCheckStatus")],
+          ["Requirements review", getRecordValue(run, "latestProposalReviewStatus")],
+          ["Current conclusion", getRecordValue(run, "latestFinalizationStatus")]
         ]}
       />
+      <AdvancedDetails summary="Advanced run details">
+        <KeyValueGrid
+          items={[
+            {
+              label: "Run id",
+              value: runId ?? "None"
+            },
+            {
+              label: "Session id",
+              value: formatRecordValue(getRecordValue(run, "sessionId"))
+            },
+            {
+              label: "Ledger events",
+              value: describeLedgerEvents(
+                getRecordValue(getRecordValue(run, "ledger"), "eventCount")
+              )
+            }
+          ]}
+        />
+      </AdvancedDetails>
       {runId ? (
         <div className="du-action-row">
           <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
-            Open detail
+            Open discussion
           </Link>
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-            Provisional outcome
+            Current conclusion
           </Link>
         </div>
       ) : null}
@@ -569,51 +591,64 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
 
 function RunSummary({ run }: { run: unknown }) {
   return (
-    <KeyValueGrid
-      items={[
-        {
-          label: "Run id",
-          value: formatRecordValue(getRecordValue(run, "runId"))
-        },
-        {
-          label: "Session id",
-          value: formatRecordValue(getRecordValue(run, "sessionId"))
-        },
-        {
-          label: "Run status",
-          value: describeRunStatus(getRecordValue(run, "status"))
-        },
-        {
-          label: "Ledger events",
-          value: describeLedgerEvents(getRecordValue(getRecordValue(run, "ledger"), "eventCount"))
-        },
-        {
-          label: "Created",
-          value: formatRecordValue(getRecordValue(run, "createdAt"))
-        },
-        {
-          label: "Updated",
-          value: formatRecordValue(getRecordValue(run, "updatedAt"))
-        }
-      ]}
-    />
+    <DataPanel
+      title="Discussion status"
+      description="A user-facing summary of where the discussion currently stands."
+    >
+      <KeyValueGrid
+        items={[
+          {
+            label: "Discussion status",
+            value: describeDiscussionStatus(getRecordValue(run, "status"))
+          },
+          {
+            label: "Created",
+            value: formatRecordValue(getRecordValue(run, "createdAt"))
+          },
+          {
+            label: "Updated",
+            value: formatRecordValue(getRecordValue(run, "updatedAt"))
+          }
+        ]}
+      />
+      <AdvancedDetails summary="Advanced run identifiers">
+        <KeyValueGrid
+          items={[
+            {
+              label: "Run id",
+              value: formatRecordValue(getRecordValue(run, "runId"))
+            },
+            {
+              label: "Session id",
+              value: formatRecordValue(getRecordValue(run, "sessionId"))
+            },
+            {
+              label: "Ledger events",
+              value: describeLedgerEvents(
+                getRecordValue(getRecordValue(run, "ledger"), "eventCount")
+              )
+            }
+          ]}
+        />
+      </AdvancedDetails>
+    </DataPanel>
   );
 }
 
 function RunStageStatus({ run }: { run: unknown }) {
   return (
     <DataPanel
-      title="Stage status"
-      description="Each stage is controlled by the daemon. Not run yet means no stage round exists in this run."
+      title="Discussion progress"
+      description="Each step corresponds to a core Deliberum concept, presented in user-facing language."
     >
       <StageStatusList
         stages={[
-          ["Sealed divergence", getRecordValue(run, "sealedDivergenceStatus")],
-          ["Extraction", getRecordValue(run, "latestExtractionStatus")],
-          ["Candidate repair", getRecordValue(run, "latestCandidateRepairStatus")],
-          ["Evidence check", getRecordValue(run, "latestEvidenceCheckStatus")],
-          ["Proposal review", getRecordValue(run, "latestProposalReviewStatus")],
-          ["Finalization", getRecordValue(run, "latestFinalizationStatus")]
+          ["Independent first responses", getRecordValue(run, "sealedDivergenceStatus")],
+          ["Strongest current options", getRecordValue(run, "latestExtractionStatus")],
+          ["Option repair", getRecordValue(run, "latestCandidateRepairStatus")],
+          ["Evidence and verification", getRecordValue(run, "latestEvidenceCheckStatus")],
+          ["Requirements review", getRecordValue(run, "latestProposalReviewStatus")],
+          ["Current conclusion", getRecordValue(run, "latestFinalizationStatus")]
         ]}
       />
     </DataPanel>
@@ -830,13 +865,13 @@ function StartRunForm({ runId, sessionId }: { runId: string; sessionId?: string 
 
   return (
     <DataPanel
-      title="Start orchestration"
-      description="Start requested stages through the daemon. The local preset pipeline requires the daemon preset flag."
+      title="Continue discussion"
+      description="Run the guided local discussion steps so perspectives, disagreements, requirements, evidence gaps, risk review, and conclusion can appear."
     >
       <div className="du-readable-list">
         <ExplainerItem
-          title="Run the full local preset"
-          detail="Executes sealed divergence, extraction, review, and finalization through deterministic local components."
+          title="Run the full guided discussion"
+          detail="Executes independent first responses, option extraction, review, evidence checks, and finalization through deterministic local components."
         />
       </div>
       <div className="du-action-row">
@@ -845,11 +880,13 @@ function StartRunForm({ runId, sessionId }: { runId: string; sessionId?: string 
           onClick={startLocalPresetPipeline}
           disabled={startMutation.isPending}
         >
-          Start full local preset pipeline
+          Continue guided discussion
         </button>
       </div>
-      <details className="du-advanced-panel">
-        <summary>Advanced start request</summary>
+      <AdvancedDetails
+        summary="Advanced / Developer Mode: start request"
+        description="Submit a raw start request when testing low-level runtime behavior."
+      >
         <JsonInputForm
           id="start-request-json"
           label="Advanced start request JSON"
@@ -871,7 +908,7 @@ function StartRunForm({ runId, sessionId }: { runId: string; sessionId?: string 
             </>
           }
         />
-      </details>
+      </AdvancedDetails>
       {inputError ? <StatusBanner tone="error" title={inputError} /> : null}
       {startMutation.isError ? (
         <StatusBanner
@@ -921,7 +958,7 @@ function StartResult({ result }: { result: unknown }) {
     <div className="du-start-result">
       <StatusBanner
         tone={stopped === true ? "warning" : "ok"}
-        title={stopped === true ? "Run stopped" : "Run request completed"}
+        title={stopped === true ? "Discussion stopped" : "Discussion update completed"}
         detail={
           stopped === true
             ? `Reason: ${formatRecordValue(getRecordValue(result, "stopReason"))}`
@@ -965,28 +1002,28 @@ function RunQualityOverview({ sessionId }: { sessionId: string }) {
 
   return (
     <DataPanel
-      title="Deliberation quality overview"
-      description="A product-level map of the current run state from daemon projections."
+      title="Discussion overview"
+      description="A user-facing map of the current perspectives, disagreements, and requirements."
     >
       <QueryState query={queryState}>
         <div className="du-quality-summary-grid">
           <QualitySummaryLink
-            title="Candidate Frontier"
-            detail="Accepted active candidate material, without collapsing the frontier into one hidden authority."
+            title="Main perspectives"
+            detail="Accepted active options stay visible without collapsing into one hidden authority."
             metric={String(candidates.length)}
             to="/sessions/$sessionId/frontier"
             sessionId={sessionId}
           />
           <QualitySummaryLink
-            title="Open pressure"
-            detail="Unresolved objection records that still constrain the outcome."
+            title="Open disagreements"
+            detail="Unresolved objections that still constrain the current conclusion."
             metric={String(unresolvedObjections)}
             to="/sessions/$sessionId/objections"
             sessionId={sessionId}
           />
           <QualitySummaryLink
-            title="Quality obligations"
-            detail="Explicit duties that keep the output correct, complete, and bounded."
+            title="Requirements to satisfy"
+            detail="Explicit obligations that keep the output correct, complete, and bounded."
             metric={`${openObligations}/${obligations.length}`}
             to="/sessions/$sessionId/obligations"
             sessionId={sessionId}
@@ -1022,7 +1059,7 @@ function QualitySummaryLink({
   );
 }
 
-function OutcomeBrief({ outcome }: { outcome: unknown }) {
+export function OutcomeBrief({ outcome }: { outcome: unknown }) {
   const recommendation =
     getStringRecordValue(outcome, "recommendation") ??
     getStringRecordValue(outcome, "summary") ??
@@ -1046,12 +1083,12 @@ function OutcomeBrief({ outcome }: { outcome: unknown }) {
     <div className="du-outcome-brief">
       <section className="du-outcome-hero" aria-label="Outcome snapshot">
         <article className="du-outcome-recommendation">
-          <p className="du-kicker">Recommendation</p>
+          <p className="du-kicker">Current recommendation</p>
           <h4>{recommendation}</h4>
         </article>
         <div className="du-outcome-status-grid">
           <OutcomeStatusItem
-            title="Alternatives"
+            title="Main perspectives"
             value={String(alternatives.length)}
             detail={describeOutcomeCount(alternatives.length, "explored option", "explored options")}
           />
@@ -1082,7 +1119,7 @@ function OutcomeBrief({ outcome }: { outcome: unknown }) {
             tone={uncheckedEvidenceNeeds > 0 ? "warning" : "ok"}
           />
           <OutcomeStatusItem
-            title="Limits"
+            title="Risks and limits"
             value={String(limitations.length)}
             detail={describeOutcomeCount(limitations.length, "known boundary", "known boundaries")}
             tone={limitations.length > 0 ? "warning" : "neutral"}
@@ -1102,7 +1139,7 @@ function OutcomeBrief({ outcome }: { outcome: unknown }) {
         />
       </div>
       <ReadableRecordList
-        title="Alternatives"
+        title="Main perspectives"
         items={alternatives}
         emptyTitle="No alternatives returned"
         summarizeItem={summarizeAlternative}
@@ -1126,7 +1163,7 @@ function OutcomeBrief({ outcome }: { outcome: unknown }) {
         summarizeItem={summarizeQualityObligation}
       />
       <ReadableStringList
-        title="Continuation suggestions"
+        title="Next recommended actions"
         items={continuationSuggestions}
         emptyTitle="No continuation suggestions returned"
       />
@@ -1369,45 +1406,51 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
   return (
     <section className="du-projection-section" aria-label="Run projection panels">
       <DataPanel
-        title="Candidate Frontier projection"
-        description="Read from the daemon projection endpoint. Web displays the returned projection; it does not compute it."
+        title="Main perspectives"
+        description="Strongest current options accepted into the discussion so far."
       >
         <QueryState query={frontierQuery}>
           <ProjectionRecordList
             records={asArray(frontierQuery.data?.candidates)}
-            emptyTitle="No Candidate Frontier entries"
-            emptyDescription="Accepted candidate projections will appear after extraction proposals are accepted."
+            emptyTitle="No main perspectives"
+            emptyDescription="No main perspectives have been accepted into this discussion yet."
             kind="candidate"
           />
-          <ProjectionMetadata projection={frontierQuery.data?.projection} />
+          <AdvancedDetails summary="Advanced projection details">
+            <ProjectionMetadata projection={frontierQuery.data?.projection} />
+          </AdvancedDetails>
         </QueryState>
       </DataPanel>
       <DataPanel
-        title="Objections projection"
-        description="Accepted objection objects returned by the daemon projection endpoint."
+        title="Open disagreements"
+        description="Unresolved objections and challenges that still constrain the discussion."
       >
         <QueryState query={objectionsQuery}>
           <ProjectionRecordList
             records={asArray(objectionsQuery.data?.objections)}
-            emptyTitle="No objections"
-            emptyDescription="Accepted objections will appear here when projection data is available."
+            emptyTitle="No open disagreements"
+            emptyDescription="No open disagreements have been accepted into this discussion yet."
             kind="objection"
           />
-          <ProjectionMetadata projection={objectionsQuery.data?.projection} />
+          <AdvancedDetails summary="Advanced projection details">
+            <ProjectionMetadata projection={objectionsQuery.data?.projection} />
+          </AdvancedDetails>
         </QueryState>
       </DataPanel>
       <DataPanel
-        title="Quality obligations projection"
-        description="Accepted quality obligations returned by the daemon projection endpoint."
+        title="Requirements this answer must satisfy"
+        description="Explicit requirements for the current conclusion."
       >
         <QueryState query={obligationsQuery}>
           <ProjectionRecordList
             records={asArray(obligationsQuery.data?.qualityObligations)}
-            emptyTitle="No quality obligations"
-            emptyDescription="Accepted quality obligations will appear after proposal material is accepted."
+            emptyTitle="No requirements"
+            emptyDescription="No explicit requirements have been accepted into this discussion yet."
             kind="quality obligation"
           />
-          <ProjectionMetadata projection={obligationsQuery.data?.projection} />
+          <AdvancedDetails summary="Advanced projection details">
+            <ProjectionMetadata projection={obligationsQuery.data?.projection} />
+          </AdvancedDetails>
         </QueryState>
       </DataPanel>
     </section>
@@ -1442,40 +1485,19 @@ function RunProcessProposals({ runId, sessionId }: { runId: string; sessionId?: 
 
   return (
     <DataPanel
-      title="Process proposals"
-      description="Adaptive primitive suggestions from daemon run state and ledger events. Recording a suggestion appends proposal material only."
+      title="Next recommended actions"
+      description="Suggested next steps based on the current discussion state. Recording a suggestion keeps it reviewable and does not execute it automatically."
     >
       <QueryState query={processProposalQuery}>
         <KeyValueGrid
           items={[
             {
-              label: "Run id",
-              value: processProposalQuery.data?.runId ?? runId
-            },
-            {
-              label: "Session id",
-              value: processProposalQuery.data?.sessionId ?? "None"
-            },
-            {
-              label: "Suggested primitives",
+              label: "Recommended actions",
               value: proposals.length
             },
             {
-              label: "Execution policy",
-              value:
-                getRecordValue(executionPolicy, "automaticExecution") === false
-                  ? "Explicit only"
-                  : "Not reported"
-            },
-            {
-              label: "Ready ledger proposals",
+              label: "Ready for explicit action",
               value: readyCount
-            },
-            {
-              label: "Suggestion event range",
-              value: formatEventRange(
-                getRecordValue(getRecordValue(processProposalQuery.data, "metadata"), "eventRange")
-              )
             }
           ]}
         />
@@ -1496,6 +1518,36 @@ function RunProcessProposals({ runId, sessionId }: { runId: string; sessionId?: 
         <ProcessProposalObservations
           observations={asArray(processProposalQuery.data?.observations)}
         />
+        <AdvancedDetails summary="Advanced recommendation details">
+          <KeyValueGrid
+            items={[
+              {
+                label: "Run id",
+                value: processProposalQuery.data?.runId ?? runId
+              },
+              {
+                label: "Session id",
+                value: processProposalQuery.data?.sessionId ?? "None"
+              },
+              {
+                label: "Execution policy",
+                value:
+                  getRecordValue(executionPolicy, "automaticExecution") === false
+                    ? "Explicit only"
+                    : "Not reported"
+              },
+              {
+                label: "Suggestion event range",
+                value: formatEventRange(
+                  getRecordValue(
+                    getRecordValue(processProposalQuery.data, "metadata"),
+                    "eventRange"
+                  )
+                )
+              }
+            ]}
+          />
+        </AdvancedDetails>
       </QueryState>
     </DataPanel>
   );
@@ -1575,8 +1627,8 @@ function ProcessProposalList({
   if (proposals.length === 0) {
     return (
       <EmptyState
-        title="No process proposals"
-        description="The daemon did not detect a next primitive suggestion for this run state."
+        title="No recommended actions"
+        description="The current discussion state did not produce a next-step suggestion."
       />
     );
   }
@@ -1607,26 +1659,14 @@ function ProcessProposalRecord({
 
   return (
     <article className="du-readable-item">
-      <p className="du-kicker">Process proposal</p>
-      <h4>{primitive}</h4>
+      <p className="du-kicker">Recommended action</p>
+      <h4>{formatOutcomeLabel(primitive)}</h4>
       <KeyValueGrid
         items={[
-          {
-            label: "Proposal id",
-            value: formatRecordValue(getRecordValue(proposal, "id"))
-          },
           {
             label: "Status",
             value: formatRecordValue(getRecordValue(proposal, "status"))
           },
-          {
-            label: "Targets",
-            value: formatEventIds(targetIds)
-          }
-        ]}
-      />
-      <KeyValueGrid
-        items={[
           {
             label: "Expected gain",
             value: formatRecordValue(getRecordValue(proposal, "expectedQualityGain"))
@@ -1637,18 +1677,32 @@ function ProcessProposalRecord({
           }
         ]}
       />
-      <KeyValueGrid
-        items={[
-          {
-            label: "Max events",
-            value: formatRecordValue(getRecordValue(requestedBudget, "maxEvents"))
-          },
-          {
-            label: "Max provider calls",
-            value: formatRecordValue(getRecordValue(requestedBudget, "maxProviderCalls"))
-          }
-        ]}
-      />
+      <AdvancedDetails summary="Advanced proposal details">
+        <KeyValueGrid
+          items={[
+            {
+              label: "Proposal id",
+              value: formatRecordValue(getRecordValue(proposal, "id"))
+            },
+            {
+              label: "Primitive",
+              value: primitive
+            },
+            {
+              label: "Targets",
+              value: formatEventIds(targetIds)
+            },
+            {
+              label: "Max events",
+              value: formatRecordValue(getRecordValue(requestedBudget, "maxEvents"))
+            },
+            {
+              label: "Max provider calls",
+              value: formatRecordValue(getRecordValue(requestedBudget, "maxProviderCalls"))
+            }
+          ]}
+        />
+      </AdvancedDetails>
       {actions ? <div className="du-process-actions">{actions}</div> : null}
     </article>
   );
@@ -1686,19 +1740,19 @@ function RecordProcessSuggestionAction({
       <button
         type="button"
         onClick={() => recordMutation.mutate()}
-        disabled={recorded || recordMutation.isPending}
+      disabled={recorded || recordMutation.isPending}
       >
         {recorded
-          ? "Recorded in ledger"
+          ? "Recorded for review"
           : recordMutation.isPending
-            ? "Recording"
-            : "Record proposal in ledger"}
+            ? "Recording suggestion"
+            : "Record suggestion for review"}
       </button>
       {recordMutation.data ? (
         <StatusBanner
           tone="ok"
-          title="Process proposal recorded"
-          detail="The daemon appended process proposal material only; no primitive was executed."
+          title="Recommended action recorded"
+          detail="The suggestion was appended as reviewable material only; no primitive was executed."
         />
       ) : null}
       {recordMutation.isError ? (
@@ -2090,31 +2144,42 @@ function ProjectionRecord({
 
   return (
     <article className="du-readable-item">
-      <p className="du-kicker">{kind}</p>
+      <p className="du-kicker">{formatProjectionKind(kind)}</p>
       <h4>{title}</h4>
       {description && description !== title ? <p>{description}</p> : null}
-      <KeyValueGrid
-        items={[
-          {
-            label: "Object id",
-            value: id
-          },
-          {
-            label: "Status",
-            value: formatRecordValue(status)
-          },
-          {
-            label: "Proposal event",
-            value: formatRecordValue(proposalEventId)
-          },
-          {
-            label: "Source events",
-            value: formatEventIds(sourceEventIds)
-          }
-        ]}
-      />
+      <p className="du-readable-meta">Status: {formatRecordValue(status)}</p>
+      <AdvancedDetails summary="Advanced record details">
+        <KeyValueGrid
+          items={[
+            {
+              label: "Object id",
+              value: id
+            },
+            {
+              label: "Proposal event",
+              value: formatRecordValue(proposalEventId)
+            },
+            {
+              label: "Source events",
+              value: formatEventIds(sourceEventIds)
+            }
+          ]}
+        />
+      </AdvancedDetails>
     </article>
   );
+}
+
+function formatProjectionKind(kind: "candidate" | "objection" | "quality obligation"): string {
+  if (kind === "candidate") {
+    return "Main perspective";
+  }
+
+  if (kind === "objection") {
+    return "Open disagreement";
+  }
+
+  return "Requirement";
 }
 
 function ProjectionMetadata({ projection }: { projection: unknown }) {
@@ -2346,9 +2411,9 @@ function describeRunFollowTone(status: RunFollowStatus): "neutral" | "ok" | "war
   return "neutral";
 }
 
-function describeRunStatus(status: unknown): string {
+function describeDiscussionStatus(status: unknown): string {
   if (status === "created") {
-    return "Created: run exists, pipeline has not started.";
+    return "Created: discussion exists, deliberation steps have not started.";
   }
 
   return formatRecordValue(status);
@@ -2366,41 +2431,41 @@ function describeStageStatus(status: unknown): { label: string; detail: string }
   if (status === undefined || status === null) {
     return {
       label: "Not run yet",
-      detail: "This stage has no recorded round for the run."
+      detail: "This discussion step has no recorded work yet."
     };
   }
 
   if (status === "revealed") {
     return {
       label: "Revealed",
-      detail: "Sealed divergence has produced revealed contribution events."
+      detail: "Independent first responses have been revealed for review."
     };
   }
 
   if (status === "completed") {
     return {
       label: "Completed",
-      detail: "The daemon recorded this stage as completed."
+      detail: "This discussion step has been completed."
     };
   }
 
   if (status === "failed") {
     return {
       label: "Failed",
-      detail: "The daemon could not process this stage safely."
+      detail: "This discussion step could not be processed safely."
     };
   }
 
   if (typeof status === "string") {
     return {
       label: status,
-      detail: "Status reported by the daemon run view."
+      detail: "Status reported for this discussion step."
     };
   }
 
   return {
     label: "Unavailable",
-    detail: "The daemon did not return a readable stage status."
+    detail: "No readable status was returned for this discussion step."
   };
 }
 

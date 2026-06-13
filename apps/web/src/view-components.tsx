@@ -17,6 +17,12 @@ export type ViewFrameProps = {
   children: ReactNode;
 };
 
+export type AdvancedDetailsProps = {
+  summary?: string;
+  description?: string;
+  children: ReactNode;
+};
+
 export function ViewFrame({
   eyebrow,
   title,
@@ -34,6 +40,20 @@ export function ViewFrame({
       />
       <div className="du-view-body">{children}</div>
     </div>
+  );
+}
+
+export function AdvancedDetails({
+  summary = "Advanced / Developer Mode",
+  description,
+  children
+}: AdvancedDetailsProps) {
+  return (
+    <details className="du-advanced-panel">
+      <summary>{summary}</summary>
+      {description ? <p className="du-advanced-description">{description}</p> : null}
+      <div className="du-advanced-stack">{children}</div>
+    </details>
   );
 }
 

@@ -30,12 +30,14 @@ import type {
   ResourceAccessPostureResponse
 } from "@deliberum/client";
 import {
+  OutcomeBrief,
   RunDetailPage,
   RunNewPage,
   RunOutcomePage,
   RunsListPage
 } from "./run-workspace";
 import {
+  AdvancedDetails,
   DaemonStatus,
   QueryState,
   RecordCollection,
@@ -283,102 +285,81 @@ function LandingPage() {
   return (
     <WorkspaceShell
       productName="Deliberum"
-      workspaceLabel="Local workspace"
-      daemonBaseUrl={daemonBaseUrl}
-      status={<DaemonStatus />}
+      workspaceLabel="User Mode"
     >
       <section className="du-landing">
         <PageHeader
-          eyebrow="Deliberation workspace"
-          title="Start or inspect a deliberation"
-          description="Begin with a run, then inspect the quality structure that the ledger and daemon projections preserve."
+          eyebrow="User Mode"
+          title="Start a discussion"
+          description="Use Deliberum to frame a hard question, collect independent perspectives, compare the strongest options, keep disagreements visible, and turn the current state into a reviewable conclusion with next steps."
           actions={
             <>
               <Link className="du-action-link" to="/runs/new">
-                Start a run
+                Start a discussion
               </Link>
               <Link className="du-action-link du-secondary-link" to="/runs">
-                View runs
+                Continue discussions
               </Link>
             </>
           }
         />
         <div className="du-product-grid">
           <DataPanel
-            title="Primary path"
-            description="Create or continue a deliberation run before inspecting daemon diagnostics."
+            title="What you can do"
+            description="The default path is for people who need a clear decision surface, not runtime records."
           >
             <div className="du-readable-list">
               <QualityPathItem
-                title="1. Start from a Topic Contract"
-                detail="The run defines goals, constraints, participants, and output expectations before anyone contributes."
+                title="1. Start a discussion"
+                detail="Write the question, goals, constraints, and expected output as a discussion brief."
               />
               <QualityPathItem
-                title="2. Preserve independent perspectives"
-                detail="Sealed divergence keeps early participant work from anchoring on one visible answer."
+                title="2. Review the strongest current options"
+                detail="Independent first responses become visible as main perspectives without collapsing them into a hidden authority."
               />
               <QualityPathItem
-                title="3. Review the quality structure"
-                detail="Candidate Frontier, objections, obligations, evidence state, and provisional outcome stay separate and inspectable."
+                title="3. Decide what to do next"
+                detail="The current conclusion keeps open disagreements, risks, missing evidence, and recommended next actions together."
               />
             </div>
             <div className="du-action-row">
               <Link className="du-action-link" to="/runs/new">
-                Start a deliberation run
+                Start a discussion
               </Link>
               <Link className="du-action-link du-secondary-link" to="/runs">
-                Continue existing runs
+                Continue existing discussions
               </Link>
             </div>
           </DataPanel>
           <DataPanel
-            title="Quality map"
-            description="The product surface should make these objects readable before showing raw records."
+            title="How the system maps to plain language"
+            description="Core Deliberum concepts are preserved, but the default UI names what a person needs to understand."
           >
             <div className="du-quality-map">
-              <QualityMapItem label="Topic" value="Contract" />
-              <QualityMapItem label="Divergence" value="Sealed" />
-              <QualityMapItem label="Candidates" value="Frontier" />
-              <QualityMapItem label="Pressure" value="Objections" />
-              <QualityMapItem label="Duties" value="Obligations" />
-              <QualityMapItem label="Output" value="Provisional" />
+              <QualityMapItem label="Topic Contract" value="Discussion brief" />
+              <QualityMapItem label="Sealed Divergence" value="Independent first responses" />
+              <QualityMapItem label="Candidate Frontier" value="Strongest current options" />
+              <QualityMapItem label="Objections" value="Open disagreements" />
+              <QualityMapItem label="Quality Obligations" value="Requirements to satisfy" />
+              <QualityMapItem label="Outcome Compilation" value="Current conclusion" />
             </div>
           </DataPanel>
         </div>
         <DataPanel
-          title="Open by session id"
-          description="Use this when you already know the underlying ledger session."
-        >
-          <form className="du-session-form" onSubmit={submitSession}>
-            <label htmlFor="session-id">Session id</label>
-            <div className="du-session-form-row">
-              <input
-                id="session-id"
-                value={sessionId}
-                onChange={(event) => setSessionId(event.currentTarget.value)}
-                placeholder="session-id"
-              />
-              <button type="submit" disabled={trimmedSessionId.length === 0}>
-                Open
-              </button>
-            </div>
-          </form>
-        </DataPanel>
-        <DataPanel
-          title="Daemon sessions"
-          description="Continue from the ledger-backed sessions the daemon already knows about."
+          title="Continue existing discussions"
+          description="Open a known discussion and review its brief, perspectives, disagreements, requirements, evidence, conclusion, and next actions."
         >
           <QueryState query={sessionsQuery}>
             {sessionEntries.length === 0 ? (
               <EmptyState
-                title="No daemon sessions"
-                description="Create a run or post a session to the local daemon."
+                title="No discussions yet"
+                description="Start a discussion to create the first local deliberation workspace."
               />
             ) : (
               <div className="du-run-list">
                 {sessionEntries.map(({ session, index, sessionId: catalogSessionId }) => (
                   <article className="du-run-list-item" key={`${catalogSessionId}-${index}`}>
-                    <p className="du-kicker">{catalogSessionId}</p>
+                    <p className="du-kicker">Discussion {index + 1}</p>
                     <h3>
                       {formatRecordValue(
                         getRecordValue(session, "title") ?? "Untitled session"
@@ -392,19 +373,19 @@ function LandingPage() {
                     <KeyValueGrid
                       items={[
                         {
-                          label: "Events",
-                          value: formatRecordValue(getRecordValue(session, "eventCount"))
+                          label: "Activity",
+                          value: `${formatRecordValue(getRecordValue(session, "eventCount"))} updates`
                         },
                         {
-                          label: "Latest event",
+                          label: "Last updated",
                           value: formatRecordValue(
                             getRecordValue(session, "latestEventRecordedAt")
                           )
                         },
                         {
-                          label: "Topic contract event",
+                          label: "Created",
                           value: formatRecordValue(
-                            getRecordValue(session, "topicContractEventId")
+                            getRecordValue(session, "createdAt")
                           )
                         }
                       ]}
@@ -415,7 +396,7 @@ function LandingPage() {
                         to="/sessions/$sessionId"
                         params={{ sessionId: catalogSessionId }}
                       >
-                        Open session
+                        Open discussion
                       </Link>
                     </div>
                   </article>
@@ -424,14 +405,41 @@ function LandingPage() {
             )}
           </QueryState>
         </DataPanel>
-        <div className="du-section-label">
-          <p className="du-kicker">Operator readiness</p>
-          <h3>Local daemon diagnostics</h3>
-          <p>
-            These panels stay available for setup and safety checks, but they are not the primary
-            deliberation experience.
-          </p>
-        </div>
+        <AdvancedDetails
+          description="Runtime, daemon, resource, audit, deployment, raw session ids, and other operator details stay available here without leading the product experience."
+        >
+          <DataPanel title="Daemon status" description="Local daemon connection used by the Web UI.">
+            <div className="du-advanced-status-grid">
+              <DaemonStatus />
+              <KeyValueGrid
+                items={[
+                  {
+                    label: "Daemon base URL",
+                    value: daemonBaseUrl
+                  }
+                ]}
+              />
+            </div>
+          </DataPanel>
+          <DataPanel
+            title="Open by session id"
+            description="Use this when you already know the underlying ledger session."
+          >
+            <form className="du-session-form" onSubmit={submitSession}>
+              <label htmlFor="session-id">Session id</label>
+              <div className="du-session-form-row">
+                <input
+                  id="session-id"
+                  value={sessionId}
+                  onChange={(event) => setSessionId(event.currentTarget.value)}
+                  placeholder="session-id"
+                />
+                <button type="submit" disabled={trimmedSessionId.length === 0}>
+                  Open
+                </button>
+              </div>
+            </form>
+          </DataPanel>
         <DataPanel
           title="Deployment posture"
           description="Safe local/pre-production daemon posture without secrets or configured resource URLs."
@@ -721,6 +729,7 @@ function LandingPage() {
             )}
           </QueryState>
         </DataPanel>
+        </AdvancedDetails>
       </section>
     </WorkspaceShell>
   );
@@ -742,6 +751,151 @@ function QualityMapItem({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+type SessionReadableKind = "perspective" | "disagreement" | "requirement" | "evidence";
+
+function ReadableSessionRecordList({
+  records,
+  emptyTitle,
+  emptyDescription,
+  kind
+}: {
+  records: unknown[];
+  emptyTitle: string;
+  emptyDescription: string;
+  kind: SessionReadableKind;
+}) {
+  if (records.length === 0) {
+    return <EmptyState title={emptyTitle} description={emptyDescription} />;
+  }
+
+  return (
+    <div className="du-readable-list">
+      {records.map((record, index) => (
+        <ReadableSessionRecord
+          key={`${kind}:${index}:${formatRecordValue(getRecordValue(record, "proposalEventId"))}`}
+          record={record}
+          index={index}
+          kind={kind}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ReadableSessionRecord({
+  record,
+  index,
+  kind
+}: {
+  record: unknown;
+  index: number;
+  kind: SessionReadableKind;
+}) {
+  const object = getRecordValue(record, "object") ?? record;
+  const id = getStringRecordValue(object, "id") ?? `${kind}-${index + 1}`;
+  const title =
+    getFirstDisplayValue(object, ["title", "name", "question", "requirement", "failureMode"]) ??
+    id;
+  const detail =
+    getFirstDisplayValue(object, [
+      "summary",
+      "description",
+      "content",
+      "rationale",
+      "consequence",
+      "requirement"
+    ]) ?? "Detailed material is available in Advanced record details.";
+  const status = formatRecordValue(getRecordValue(object, "status"));
+  const proposalEventId = formatRecordValue(getRecordValue(record, "proposalEventId"));
+  const sourceEventIds = formatRecordIdList(asArray(getRecordValue(object, "sourceEventIds")));
+
+  return (
+    <article className="du-readable-item">
+      <p className="du-kicker">{formatReadableKind(kind)} {index + 1}</p>
+      <h4>{title}</h4>
+      {detail !== title ? <p>{detail}</p> : null}
+      <p className="du-readable-meta">Status: {status}</p>
+      <AdvancedDetails summary="Advanced record details">
+        <KeyValueGrid
+          items={[
+            {
+              label: "Object id",
+              value: id
+            },
+            {
+              label: "Proposal event",
+              value: proposalEventId
+            },
+            {
+              label: "Source events",
+              value: sourceEventIds
+            }
+          ]}
+        />
+        <JsonBlock value={sanitizeForDisplay(record)} />
+      </AdvancedDetails>
+    </article>
+  );
+}
+
+function getFirstDisplayValue(record: unknown, keys: readonly string[]): string | undefined {
+  for (const key of keys) {
+    const value = getStringRecordValue(record, key);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function formatReadableKind(kind: SessionReadableKind): string {
+  if (kind === "perspective") {
+    return "Perspective";
+  }
+
+  if (kind === "disagreement") {
+    return "Open disagreement";
+  }
+
+  if (kind === "requirement") {
+    return "Requirement";
+  }
+
+  return "Evidence need";
+}
+
+function formatSessionEventTypeForUser(value: unknown): string {
+  if (value === "topic_contract_published") {
+    return "Discussion brief published";
+  }
+
+  if (value === "sealed_contribution_submitted") {
+    return "Independent response received";
+  }
+
+  if (value === "final_audit_recorded") {
+    return "Risk review recorded";
+  }
+
+  if (typeof value === "string" && value.length > 0) {
+    return value
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/^./, (character) => character.toUpperCase());
+  }
+
+  return "No visible step returned";
+}
+
+function formatRecordIdList(values: unknown[]): string {
+  const ids = values.filter((value): value is string => typeof value === "string");
+
+  return ids.length > 0 ? ids.join(", ") : "None";
 }
 
 function formatRuntimeProfileStatus(value: unknown): string {
@@ -955,17 +1109,13 @@ function formatUnknownArray(value: unknown): string[] {
 }
 
 function SessionRoute() {
-  const { daemonBaseUrl } = useDaemonRuntime();
   const { sessionId } = useSessionParams();
 
   return (
     <WorkspaceShell
       productName="Deliberum"
-      workspaceLabel="Deliberation workspace"
-      sessionId={sessionId}
-      daemonBaseUrl={daemonBaseUrl}
+      workspaceLabel="User Mode"
       navigation={<SessionNavigation sessionId={sessionId} />}
-      status={<DaemonStatus />}
     >
       <Outlet />
     </WorkspaceShell>
@@ -984,7 +1134,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Overview
+        Discussion brief
       </Link>
       <Link
         to="/sessions/$sessionId/frontier"
@@ -992,7 +1142,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Candidate Frontier
+        Main perspectives
       </Link>
       <Link
         to="/sessions/$sessionId/objections"
@@ -1000,7 +1150,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Objections
+        Open disagreements
       </Link>
       <Link
         to="/sessions/$sessionId/obligations"
@@ -1008,15 +1158,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Quality Obligations
-      </Link>
-      <Link
-        to="/sessions/$sessionId/events"
-        params={{ sessionId }}
-        activeProps={{ className: `${linkClass} is-active` }}
-        inactiveProps={{ className: linkClass }}
-      >
-        Events
+        Requirements
       </Link>
       <Link
         to="/sessions/$sessionId/final"
@@ -1024,7 +1166,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Final
+        Current conclusion
       </Link>
       <Link
         to="/sessions/$sessionId/resources"
@@ -1032,8 +1174,19 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Resources
+        Evidence
       </Link>
+      <details className="du-nav-advanced">
+        <summary>Advanced</summary>
+        <Link
+          to="/sessions/$sessionId/events"
+          params={{ sessionId }}
+          activeProps={{ className: `${linkClass} is-active` }}
+          inactiveProps={{ className: linkClass }}
+        >
+          Ledger events
+        </Link>
+      </details>
     </>
   );
 }
@@ -1043,40 +1196,71 @@ function SessionOverviewPage() {
   const eventsQuery = useSessionEventsQuery(sessionId);
   const events = asArray(eventsQuery.data?.events);
   const latestEvent = events.at(-1);
+  const topicContractEvent =
+    events.find((event) => getRecordValue(event, "type") === "topic_contract_published") ??
+    latestEvent;
+  const topicContractPayload = getRecordValue(topicContractEvent, "payload");
+  const discussionTopic = formatRecordValue(
+    getRecordValue(topicContractPayload, "topic") ?? "No discussion brief returned"
+  );
 
   return (
     <ViewFrame
-      eyebrow="Session overview"
-      title="Ledger position"
-      description="A compact readout from the daemon event endpoint."
+      eyebrow="User Mode"
+      title="Discussion brief"
+      description="The human-facing starting point for this discussion: what is being decided and where the discussion currently stands."
     >
       <QueryState query={eventsQuery}>
-        <KeyValueGrid
-          items={[
-            {
-              label: "Event entries",
-              value: events.length
-            },
-            {
-              label: "Latest sequence",
-              value: formatRecordValue(getRecordValue(latestEvent, "sequence"))
-            },
-            {
-              label: "Latest event type",
-              value: formatRecordValue(getRecordValue(latestEvent, "type"))
-            }
-          ]}
-        />
-        <DataPanel title="Latest ledger entry">
-          {latestEvent ? (
-            <JsonBlock value={latestEvent} />
-          ) : (
-            <EmptyState
-              title="No ledger entries"
-              description="The daemon returned no events for this session id."
+        <DataPanel
+          title="Discussion brief"
+          description="The discussion setup is shown here in plain language."
+        >
+          <div className="du-readable-list">
+            <QualityPathItem title="Question or topic" detail={discussionTopic} />
+            <QualityPathItem
+              title="Current activity"
+              detail={`${events.length} update${events.length === 1 ? "" : "s"} recorded for this discussion.`}
             />
-          )}
+            <QualityPathItem
+              title="Latest visible step"
+              detail={formatSessionEventTypeForUser(getRecordValue(latestEvent, "type"))}
+            />
+          </div>
         </DataPanel>
+        <AdvancedDetails
+          description="Ledger position and raw latest entry are available for debugging without leading the user experience."
+        >
+          <KeyValueGrid
+            items={[
+              {
+                label: "Session id",
+                value: sessionId
+              },
+              {
+                label: "Ledger events",
+                value: events.length
+              },
+              {
+                label: "Latest sequence",
+                value: formatRecordValue(getRecordValue(latestEvent, "sequence"))
+              },
+              {
+                label: "Latest event type",
+                value: formatRecordValue(getRecordValue(latestEvent, "type"))
+              }
+            ]}
+          />
+          <DataPanel title="Latest ledger entry">
+            {latestEvent ? (
+              <JsonBlock value={latestEvent} />
+            ) : (
+              <EmptyState
+                title="No ledger entries"
+                description="The daemon returned no events for this session id."
+              />
+            )}
+          </DataPanel>
+        </AdvancedDetails>
       </QueryState>
     </ViewFrame>
   );
@@ -1092,25 +1276,32 @@ function FrontierPage() {
 
   return (
     <ViewFrame
-      eyebrow="Candidate Frontier"
-      title="Accepted active candidates"
-      description="This view renders the daemon projection basis and candidate set without selecting one proposal."
+      eyebrow="User Mode"
+      title="Main perspectives"
+      description="The strongest current options stay visible without selecting one hidden answer."
     >
       <QueryState query={frontierQuery}>
-        <DataPanel title="Projection shape">
-          <JsonBlock
-            value={{
-              basis: frontierQuery.data?.basis ?? "accepted_active_candidates",
-              candidates: frontierQuery.data?.candidates ?? []
-            }}
+        <DataPanel
+          title="Strongest current options"
+          description="These are accepted active perspectives that remain open to challenge."
+        >
+          <ReadableSessionRecordList
+            records={asArray(frontierQuery.data?.candidates)}
+            emptyTitle="No active candidates"
+            emptyDescription="No main perspectives have been accepted into this discussion yet."
+            kind="perspective"
           />
         </DataPanel>
-        <RecordCollection
-          title="Candidates"
-          records={asArray(frontierQuery.data?.candidates)}
-          emptyTitle="No active candidates"
-          emptyDescription="Accepted extraction proposals have not produced active candidates yet."
-        />
+        <AdvancedDetails description="Projection basis and raw candidate material for developer inspection.">
+          <DataPanel title="Candidate Frontier projection">
+            <JsonBlock
+              value={sanitizeForDisplay({
+                basis: frontierQuery.data?.basis ?? "accepted_active_candidates",
+                candidates: frontierQuery.data?.candidates ?? []
+              })}
+            />
+          </DataPanel>
+        </AdvancedDetails>
       </QueryState>
     </ViewFrame>
   );
@@ -1126,17 +1317,30 @@ function ObjectionsPage() {
 
   return (
     <ViewFrame
-      eyebrow="Objection Ledger"
-      title="First-class objections"
-      description="Objections are displayed as derived records and remain visible when unresolved."
+      eyebrow="User Mode"
+      title="Open disagreements"
+      description="Objections stay visible as unresolved disagreements that can still constrain the conclusion."
     >
       <QueryState query={objectionsQuery}>
-        <RecordCollection
-          title="Objections"
-          records={asArray(objectionsQuery.data?.objections)}
-          emptyTitle="No derived objections"
-          emptyDescription="Accepted extraction proposals have not introduced objections yet."
-        />
+        <DataPanel
+          title="Open disagreements"
+          description="These are challenges, failure modes, or unresolved concerns raised against the current options."
+        >
+          <ReadableSessionRecordList
+            records={asArray(objectionsQuery.data?.objections)}
+            emptyTitle="No open disagreements"
+            emptyDescription="No open disagreements have been accepted into this discussion yet."
+            kind="disagreement"
+          />
+        </DataPanel>
+        <AdvancedDetails description="Raw objection projection material for developer inspection.">
+          <RecordCollection
+            title="Objection projection records"
+            records={asArray(objectionsQuery.data?.objections)}
+            emptyTitle="No derived objections"
+            emptyDescription="Accepted extraction proposals have not introduced objections yet."
+          />
+        </AdvancedDetails>
       </QueryState>
     </ViewFrame>
   );
@@ -1152,17 +1356,30 @@ function ObligationsPage() {
 
   return (
     <ViewFrame
-      eyebrow="Quality Obligations"
-      title="Obligations and status"
-      description="The page preserves obligation status from the daemon projection."
+      eyebrow="User Mode"
+      title="Requirements this answer must satisfy"
+      description="Explicit requirements keep the conclusion correct, bounded, and complete."
     >
       <QueryState query={obligationsQuery}>
-        <RecordCollection
-          title="Quality obligations"
-          records={asArray(obligationsQuery.data?.qualityObligations)}
-          emptyTitle="No quality obligations"
-          emptyDescription="Accepted extraction proposals have not introduced obligations yet."
-        />
+        <DataPanel
+          title="Requirements this answer must satisfy"
+          description="Unanswered requirements should be resolved before relying on the conclusion."
+        >
+          <ReadableSessionRecordList
+            records={asArray(obligationsQuery.data?.qualityObligations)}
+            emptyTitle="No requirements returned"
+            emptyDescription="No explicit requirements have been accepted into this discussion yet."
+            kind="requirement"
+          />
+        </DataPanel>
+        <AdvancedDetails description="Raw quality obligation projection material for developer inspection.">
+          <RecordCollection
+            title="Quality obligation projection records"
+            records={asArray(obligationsQuery.data?.qualityObligations)}
+            emptyTitle="No quality obligations"
+            emptyDescription="Accepted extraction proposals have not introduced obligations yet."
+          />
+        </AdvancedDetails>
       </QueryState>
     </ViewFrame>
   );
@@ -1174,9 +1391,9 @@ function EventsPage() {
 
   return (
     <ViewFrame
-      eyebrow="Event Timeline"
-      title="Append-only ledger entries"
-      description="Entries are shown as returned by the daemon and preserve raw payload fields."
+      eyebrow="Advanced / Developer Mode"
+      title="Ledger events"
+      description="Append-only event records are shown as returned by the daemon for debugging and audit inspection."
     >
       <QueryState query={eventsQuery}>
         <RecordCollection
@@ -1267,7 +1484,6 @@ function FinalPage() {
     provenance,
     "finalCandidateProposalEventId"
   );
-  const recommendation = getRecordValue(outcome, "recommendation");
   const acceptedCandidateIds = extractCandidateIdsFromFrontier(frontierQuery.data);
   const acceptedCandidateInput = formatFinalCandidateInput(acceptedCandidateIds);
   const auditProposalEventId = getFinalAuditProposalEventId(auditInput);
@@ -1355,181 +1571,165 @@ function FinalPage() {
 
   return (
     <ViewFrame
-      eyebrow="Outcome Compiler"
-      title="Compiled outcome projection"
-      description="A daemon-backed projection from accepted proposal material and ledger provenance. It remains reviewable deliberation material, not authority."
+      eyebrow="User Mode"
+      title="Current conclusion"
+      description="Outcome Compilation is shown as a readable current conclusion with alternatives, disagreements, risks, missing evidence, and next steps."
     >
-      <form className="du-inline-form" onSubmit={submitProjectionOverride}>
-        <label htmlFor="du-final-projection-event">
-          Candidate proposal event override
-        </label>
-        <div className="du-inline-form-row">
-          <input
-            id="du-final-projection-event"
-            value={projectionProposalEventId}
-            placeholder="final-candidate-event-1"
-            onChange={(event) => setProjectionProposalEventId(event.target.value)}
-          />
-          <button type="submit">Compile projection</button>
-          <button
-            className="du-secondary-button"
-            type="button"
-            disabled={!canClearProjectionOverride}
-            onClick={clearProjectionOverride}
-          >
-            Use latest proposal
-          </button>
-        </div>
-        {appliedProjectionProposalEventId ? (
-          <StatusBanner
-            tone="neutral"
-            title="Specific final proposal selected"
-            detail={appliedProjectionProposalEventId}
-          />
-        ) : null}
-      </form>
       <QueryState query={finalQuery}>
         <StatusBanner
           tone={finalQuery.data?.draftStatus === "draft" ? "ok" : "warning"}
           title={
             finalQuery.data?.draftStatus === "draft"
-              ? "Draft compiled"
-              : "Projection remains provisional"
+              ? "Current conclusion compiled"
+              : "Current conclusion remains provisional"
           }
-          detail="The page reads the daemon session final endpoint and preserves unresolved material in the returned projection."
-        />
-        <KeyValueGrid
-          items={[
-            {
-              label: "Session id",
-              value: finalQuery.data?.sessionId ?? sessionId
-            },
-            {
-              label: "Draft status",
-              value: finalQuery.data?.draftStatus ?? "None"
-            },
-            {
-              label: "Event range",
-              value:
-                typeof fromSequence === "number" || typeof toSequence === "number"
-                  ? `${formatRecordValue(fromSequence)} to ${formatRecordValue(toSequence)}`
-                  : "None"
-            },
-            {
-              label: "Candidate proposal event",
-              value: finalCandidateProposalEventId ?? "None"
-            }
-          ]}
+          detail="This is reviewable deliberation material. It should keep open disagreements, risks, evidence gaps, and next actions visible."
         />
         <DataPanel
-          title="Recommendation"
-          description="The compiled recommendation is shown as projection material."
+          title="Current conclusion"
+          description="Readable projection of the compiled outcome. Raw provenance remains in Advanced details."
         >
-          {typeof recommendation === "string" && recommendation.length > 0 ? (
-            <JsonBlock value={recommendation} />
-          ) : (
-            <EmptyState
-              title="No recommendation"
-              description="The daemon compiled no recommendation text for this session."
-            />
-          )}
+          <OutcomeBrief outcome={outcome} />
         </DataPanel>
-        <DataPanel title="Unresolved questions">
-          <JsonBlock
-            value={sanitizeForDisplay(getRecordValue(outcome, "unresolvedQuestions") ?? [])}
-          />
-        </DataPanel>
-        <DataPanel title="Continuation suggestions">
-          <JsonBlock
-            value={sanitizeForDisplay(getRecordValue(outcome, "continuationSuggestions") ?? [])}
-          />
-        </DataPanel>
-        <DataPanel title="Limitations">
-          <JsonBlock value={sanitizeForDisplay(getRecordValue(outcome, "limitations") ?? [])} />
-        </DataPanel>
-        <DataPanel
-          title="Provenance"
-          description="Projection version, event ids, and selected candidate proposal reference."
+        <AdvancedDetails
+          description="Projection overrides, provenance, raw JSON, internal ids, Final Audit controls, and proposal lifecycle controls for developers."
         >
-          <JsonBlock value={sanitizeForDisplay(provenance ?? {})} />
-        </DataPanel>
-        <DataPanel
-          title="Compiled outcome JSON"
-          description="Complete daemon response for inspection; rendered without client-side semantic mutation."
-        >
-          <JsonBlock value={sanitizeForDisplay(outcome ?? {})} />
-        </DataPanel>
-        <DataPanel
-          title="Final lifecycle controls"
-          description="Submits final candidate proposals and final audits to daemon lifecycle endpoints."
-        >
-          <div className="du-final-lifecycle-grid">
-            <form className="du-json-form" onSubmit={submitFinalCandidate}>
-              <label htmlFor="du-final-candidate-input">Final candidate proposal JSON</label>
-              <textarea
-                id="du-final-candidate-input"
-                value={candidateInput}
-                onChange={(event) => {
-                  setCandidateInputTouched(true);
-                  setCandidateInput(event.target.value);
-                }}
+          <form className="du-inline-form" onSubmit={submitProjectionOverride}>
+            <label htmlFor="du-final-projection-event">
+              Candidate proposal event override
+            </label>
+            <div className="du-inline-form-row">
+              <input
+                id="du-final-projection-event"
+                value={projectionProposalEventId}
+                placeholder="final-candidate-event-1"
+                onChange={(event) => setProjectionProposalEventId(event.target.value)}
               />
-              <button type="submit" disabled={!canSubmitFinalCandidate}>
-                {finalCandidateMutation.isPending ? "Submitting" : "Propose final candidate"}
+              <button type="submit">Compile projection</button>
+              <button
+                className="du-secondary-button"
+                type="button"
+                disabled={!canClearProjectionOverride}
+                onClick={clearProjectionOverride}
+              >
+                Use latest proposal
               </button>
-              {finalCandidateReadiness ? (
-                <StatusBanner
-                  tone={finalCandidateReadiness.tone}
-                  title={finalCandidateReadiness.title}
-                  detail={finalCandidateReadiness.detail}
-                />
-              ) : null}
-              {candidateInputError ? (
-                <StatusBanner tone="error" title={candidateInputError} />
-              ) : null}
-              {finalCandidateMutation.isError ? (
-                <StatusBanner
-                  tone="error"
-                  title="Final candidate proposal failed"
-                  detail={formatSafeErrorMessage(finalCandidateMutation.error)}
-                />
-              ) : null}
-              {candidateResult ? (
-                <JsonBlock value={sanitizeForDisplay(candidateResult)} />
-              ) : null}
-            </form>
-            <form className="du-json-form" onSubmit={submitFinalAudit}>
-              <label htmlFor="du-final-audit-input">Final audit JSON</label>
-              <textarea
-                id="du-final-audit-input"
-                value={auditInput}
-                onChange={(event) => {
-                  setAuditInputTouched(true);
-                  setAuditInput(event.target.value);
-                }}
+            </div>
+            {appliedProjectionProposalEventId ? (
+              <StatusBanner
+                tone="neutral"
+                title="Specific final proposal selected"
+                detail={appliedProjectionProposalEventId}
               />
-              <button type="submit" disabled={!canSubmitFinalAudit}>
-                {finalAuditMutation.isPending ? "Submitting" : "Record final audit"}
-              </button>
-              {finalAuditReadiness ? (
-                <StatusBanner
-                  tone={finalAuditReadiness.tone}
-                  title={finalAuditReadiness.title}
-                  detail={finalAuditReadiness.detail}
+            ) : null}
+          </form>
+          <KeyValueGrid
+            items={[
+              {
+                label: "Session id",
+                value: finalQuery.data?.sessionId ?? sessionId
+              },
+              {
+                label: "Draft status",
+                value: finalQuery.data?.draftStatus ?? "None"
+              },
+              {
+                label: "Event range",
+                value:
+                  typeof fromSequence === "number" || typeof toSequence === "number"
+                    ? `${formatRecordValue(fromSequence)} to ${formatRecordValue(toSequence)}`
+                    : "None"
+              },
+              {
+                label: "Candidate proposal event",
+                value: finalCandidateProposalEventId ?? "None"
+              }
+            ]}
+          />
+          <DataPanel
+            title="Provenance"
+            description="Projection version, event ids, and selected candidate proposal reference."
+          >
+            <JsonBlock value={sanitizeForDisplay(provenance ?? {})} />
+          </DataPanel>
+          <DataPanel
+            title="Compiled outcome JSON"
+            description="Complete daemon response for inspection; rendered without client-side semantic mutation."
+          >
+            <JsonBlock value={sanitizeForDisplay(outcome ?? {})} />
+          </DataPanel>
+          <DataPanel
+            title="Final lifecycle controls"
+            description="Submits final candidate proposals and final audits to daemon lifecycle endpoints."
+          >
+            <div className="du-final-lifecycle-grid">
+              <form className="du-json-form" onSubmit={submitFinalCandidate}>
+                <label htmlFor="du-final-candidate-input">Final candidate proposal JSON</label>
+                <textarea
+                  id="du-final-candidate-input"
+                  value={candidateInput}
+                  onChange={(event) => {
+                    setCandidateInputTouched(true);
+                    setCandidateInput(event.target.value);
+                  }}
                 />
-              ) : null}
-              {auditInputError ? <StatusBanner tone="error" title={auditInputError} /> : null}
-              {finalAuditMutation.isError ? (
-                <StatusBanner
-                  tone="error"
-                  title="Final audit failed"
-                  detail={formatSafeErrorMessage(finalAuditMutation.error)}
+                <button type="submit" disabled={!canSubmitFinalCandidate}>
+                  {finalCandidateMutation.isPending ? "Submitting" : "Propose final candidate"}
+                </button>
+                {finalCandidateReadiness ? (
+                  <StatusBanner
+                    tone={finalCandidateReadiness.tone}
+                    title={finalCandidateReadiness.title}
+                    detail={finalCandidateReadiness.detail}
+                  />
+                ) : null}
+                {candidateInputError ? (
+                  <StatusBanner tone="error" title={candidateInputError} />
+                ) : null}
+                {finalCandidateMutation.isError ? (
+                  <StatusBanner
+                    tone="error"
+                    title="Final candidate proposal failed"
+                    detail={formatSafeErrorMessage(finalCandidateMutation.error)}
+                  />
+                ) : null}
+                {candidateResult ? (
+                  <JsonBlock value={sanitizeForDisplay(candidateResult)} />
+                ) : null}
+              </form>
+              <form className="du-json-form" onSubmit={submitFinalAudit}>
+                <label htmlFor="du-final-audit-input">Final audit JSON</label>
+                <textarea
+                  id="du-final-audit-input"
+                  value={auditInput}
+                  onChange={(event) => {
+                    setAuditInputTouched(true);
+                    setAuditInput(event.target.value);
+                  }}
                 />
-              ) : null}
-              {auditResult ? <JsonBlock value={sanitizeForDisplay(auditResult)} /> : null}
-            </form>
-          </div>
-        </DataPanel>
+                <button type="submit" disabled={!canSubmitFinalAudit}>
+                  {finalAuditMutation.isPending ? "Submitting" : "Record final audit"}
+                </button>
+                {finalAuditReadiness ? (
+                  <StatusBanner
+                    tone={finalAuditReadiness.tone}
+                    title={finalAuditReadiness.title}
+                    detail={finalAuditReadiness.detail}
+                  />
+                ) : null}
+                {auditInputError ? <StatusBanner tone="error" title={auditInputError} /> : null}
+                {finalAuditMutation.isError ? (
+                  <StatusBanner
+                    tone="error"
+                    title="Final audit failed"
+                    detail={formatSafeErrorMessage(finalAuditMutation.error)}
+                  />
+                ) : null}
+                {auditResult ? <JsonBlock value={sanitizeForDisplay(auditResult)} /> : null}
+              </form>
+            </div>
+          </DataPanel>
+        </AdvancedDetails>
       </QueryState>
     </ViewFrame>
   );
@@ -1553,81 +1753,88 @@ function ResourcesPage() {
 
   return (
     <ViewFrame
-      eyebrow="Resources and evidence"
-      title="Session resource projection"
-      description="A daemon-backed view of run-plan resource references, safe broker metadata, and accepted evidence needs."
+      eyebrow="User Mode"
+      title="Evidence and verification"
+      description="Evidence Checks are shown as missing evidence, verification needs, and risks that should be resolved before relying on the conclusion."
     >
       <QueryState query={resourcesQuery}>
         <StatusBanner
-          tone={plannedResources.length > 0 ? "ok" : "neutral"}
+          tone={evidenceNeeds.length > 0 ? "warning" : "neutral"}
           title={
-            plannedResources.length > 0
-              ? "Run-plan resources projected"
-              : "No run-plan resources"
+            evidenceNeeds.length > 0
+              ? "Evidence gaps visible"
+              : "No evidence gaps returned"
           }
-          detail="This page shows projection and audit state only; signed access grants are created only by explicit daemon delivery requests."
-        />
-        <KeyValueGrid
-          items={[
-            {
-              label: "Session id",
-              value: resourcesQuery.data?.sessionId ?? sessionId
-            },
-            {
-              label: "Source",
-              value:
-                source?.kind === "run_plan" && source.runId
-                  ? `run plan ${source.runId}`
-                  : "No run plan"
-            },
-            {
-              label: "Registered resources",
-              value: `${registeredResourceCount} of ${plannedResources.length}`
-            },
-            {
-              label: "Delivery audits",
-              value: deliveryAudits.length
-            },
-            {
-              label: "Access audits",
-              value: accessAudits.length
-            },
-            {
-              label: "Evidence needs",
-              value: evidenceNeeds.length
-            }
-          ]}
-        />
-        <RecordCollection
-          title="Planned resources"
-          records={plannedResources}
-          emptyTitle="No resource references"
-          emptyDescription="No run plan is linked to this session, or the linked run plan does not reference resources."
-        />
-        <RecordCollection
-          title="Resource delivery audits"
-          records={deliveryAudits}
-          emptyTitle="No delivery audit events"
-          emptyDescription="No daemon resource delivery planning decisions have been recorded for this session."
-        />
-        <RecordCollection
-          title="Resource access audits"
-          records={accessAudits}
-          emptyTitle="No access audit events"
-          emptyDescription="No daemon resource access grants or revocations have been recorded for this session."
-        />
-        <RecordCollection
-          title="Accepted evidence needs"
-          records={evidenceNeeds}
-          emptyTitle="No accepted evidence needs"
-          emptyDescription="Accepted extraction proposals have not introduced evidence needs for this session."
+          detail="This page focuses on what still needs to be checked. Resource access details remain in Advanced mode."
         />
         <DataPanel
-          title="Resource projection JSON"
-          description="Complete daemon response for inspection; rendered without client-side delivery planning."
+          title="Risks and missing evidence"
+          description="Evidence needs are user-facing verification work, not raw resource access state."
         >
-          <JsonBlock value={sanitizeForDisplay(resourcesQuery.data ?? {})} />
+          <ReadableSessionRecordList
+            records={evidenceNeeds}
+            emptyTitle="No accepted evidence needs"
+            emptyDescription="No evidence needs have been accepted into this discussion yet."
+            kind="evidence"
+          />
         </DataPanel>
+        <AdvancedDetails description="Resource access posture, delivery/access audits, source ids, and raw projection JSON for developer inspection.">
+          <KeyValueGrid
+            items={[
+              {
+                label: "Session id",
+                value: resourcesQuery.data?.sessionId ?? sessionId
+              },
+              {
+                label: "Source",
+                value:
+                  source?.kind === "run_plan" && source.runId
+                    ? `run plan ${source.runId}`
+                    : "No run plan"
+              },
+              {
+                label: "Registered resources",
+                value: `${registeredResourceCount} of ${plannedResources.length}`
+              },
+              {
+                label: "Delivery audits",
+                value: deliveryAudits.length
+              },
+              {
+                label: "Access audits",
+                value: accessAudits.length
+              },
+              {
+                label: "Evidence needs",
+                value: evidenceNeeds.length
+              }
+            ]}
+          />
+          <RecordCollection
+            title="Planned resources"
+            records={plannedResources}
+            emptyTitle="No resource references"
+            emptyDescription="No run plan is linked to this session, or the linked run plan does not reference resources."
+          />
+          <RecordCollection
+            title="Resource delivery audits"
+            records={deliveryAudits}
+            emptyTitle="No delivery audit events"
+            emptyDescription="No daemon resource delivery planning decisions have been recorded for this session."
+          />
+          <RecordCollection
+            title="Resource access audits"
+            records={accessAudits}
+            emptyTitle="No access audit events"
+            emptyDescription="No daemon resource access grants or revocations have been recorded for this session."
+          />
+          <DataPanel
+            title="Resource projection JSON"
+            description="Complete daemon response for inspection; rendered without client-side delivery planning."
+          >
+            <JsonBlock value={sanitizeForDisplay(resourcesQuery.data ?? {})} />
+          </DataPanel>
+        </AdvancedDetails>
       </QueryState>
     </ViewFrame>
   );
