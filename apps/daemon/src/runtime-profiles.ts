@@ -274,6 +274,27 @@ function buildOpenAICompatibleProfile(
       false,
       "Optional reasoning compatibility setting."
     ),
+    envVarWithConfigured(
+      OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR,
+      options.enableOpenAICompatibleExtraction,
+      false,
+      false,
+      "Optional component flag for provider-backed proposal extraction."
+    ),
+    envVarWithConfigured(
+      OPENAI_COMPATIBLE_REVIEW_ENV_VAR,
+      options.enableOpenAICompatibleReview,
+      false,
+      false,
+      "Optional component flag for provider-backed proposal review."
+    ),
+    envVarWithConfigured(
+      OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR,
+      options.enableOpenAICompatibleFinalization,
+      false,
+      false,
+      "Optional component flag for provider-backed final candidate and audit generation."
+    ),
     envVar(
       OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR,
       env,
@@ -521,14 +542,14 @@ function buildMcpToolProfile(
       MCP_TOOL_URL_ENV_VAR,
       env,
       false,
-      false,
+      true,
       "Required MCP-compatible JSON-RPC tool endpoint URL."
     ),
     envVar(
       MCP_TOOL_NAME_ENV_VAR,
       env,
       false,
-      false,
+      true,
       "Required allowed tool name for this daemon profile."
     ),
     envVar(
@@ -632,6 +653,22 @@ function envVar(
   return {
     name,
     configured: isConfigured(env, name),
+    secret,
+    required,
+    purpose
+  };
+}
+
+function envVarWithConfigured(
+  name: string,
+  configured: boolean,
+  secret: boolean,
+  required: boolean,
+  purpose: string
+): RuntimeProfileEnvVarView {
+  return {
+    name,
+    configured,
     secret,
     required,
     purpose

@@ -2022,6 +2022,24 @@ describe("daemon API", () => {
           name: OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR,
           configured: false,
           secret: false
+        }),
+        expect.objectContaining({
+          name: OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR,
+          configured: true,
+          secret: false,
+          required: false
+        }),
+        expect.objectContaining({
+          name: OPENAI_COMPATIBLE_REVIEW_ENV_VAR,
+          configured: true,
+          secret: false,
+          required: false
+        }),
+        expect.objectContaining({
+          name: OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR,
+          configured: false,
+          secret: false,
+          required: false
         })
       ])
     );
@@ -2085,12 +2103,14 @@ describe("daemon API", () => {
         expect.objectContaining({
           name: MCP_TOOL_URL_ENV_VAR,
           configured: true,
-          secret: false
+          secret: false,
+          required: true
         }),
         expect.objectContaining({
           name: MCP_TOOL_NAME_ENV_VAR,
           configured: true,
-          secret: false
+          secret: false,
+          required: true
         }),
         expect.objectContaining({
           name: MCP_TOOL_ALLOW_REMOTE_ENV_VAR,

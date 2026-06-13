@@ -58,6 +58,7 @@ export const CLI_COMMANDS = [
   "daemon profiles",
   "daemon env-template",
   "daemon profile-doctor",
+  "daemon setup-plan",
   "daemon operation-audit",
   "daemon resource-access status",
   "daemon resource-access revoke",
@@ -242,6 +243,56 @@ type DaemonProfileDoctorReport = {
     missingRecommendedEnvVars: string[];
   };
   profiles: DaemonProfileDoctorProfile[];
+  safety: string[];
+};
+
+type DaemonSetupPlanStepKind =
+  | "render_env_template"
+  | "enable_profile"
+  | "configure_required_env"
+  | "configure_recommended_env"
+  | "provide_run_config"
+  | "verify_profile";
+
+type DaemonSetupPlanStep = {
+  order: number;
+  kind: DaemonSetupPlanStepKind;
+  profileId: string;
+  description: string;
+  envVars?: string[];
+  command?: string;
+};
+
+type DaemonSetupPlanProfile = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  status: DaemonProfileDoctorStatus;
+  enabledComponentCount: number;
+  missingRequiredEnvVars: string[];
+  missingRecommendedEnvVars: string[];
+  configuredEnvVarCount: number;
+  configuredSecretEnvVarCount: number;
+  secretEnvVarNames: string[];
+  optionalEnvVarNames: string[];
+  steps: DaemonSetupPlanStep[];
+  notes: string[];
+  boundaries: string[];
+};
+
+type DaemonSetupPlan = {
+  summary: {
+    profileCount: number;
+    enabledProfileCount: number;
+    readyProfileCount: number;
+    readyWithRunConfigCount: number;
+    needsConfigurationCount: number;
+    missingRequiredEnvVars: string[];
+    missingRecommendedEnvVars: string[];
+    secretEnvVarNames: string[];
+  };
+  profiles: DaemonSetupPlanProfile[];
+  steps: DaemonSetupPlanStep[];
   safety: string[];
 };
 
@@ -735,6 +786,17 @@ async function executeDaemonCommand(
     return createDaemonProfileDoctorReport(profiles, getLastOption(parsedArgs, "profile"));
   }
 
+  if (action === "setup-plan") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon setup-plan [--profile <id>] [--daemon-url <local-url>]"
+    );
+
+    const profiles = await daemonClient.getRuntimeProfiles();
+
+    return createDaemonSetupPlan(profiles, getLastOption(parsedArgs, "profile"));
+  }
+
   if (action === "operation-audit") {
     requireNoPositionals(
       restPositionals,
@@ -787,7 +849,14 @@ async function executeDaemonCommand(
 
 function assertKnownDaemonCommand(action: string): void {
   if (
-    ["profiles", "env-template", "profile-doctor", "operation-audit", "resource-access"].includes(action)
+    [
+      "profiles",
+      "env-template",
+      "profile-doctor",
+      "setup-plan",
+      "operation-audit",
+      "resource-access"
+    ].includes(action)
   ) {
     return;
   }
@@ -798,7 +867,9 @@ function assertKnownDaemonCommand(action: string): void {
 function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): void {
   const allowedOptions = new Set([
     "daemon-url",
-    ...(action === "env-template" || action === "profile-doctor" ? ["profile"] : []),
+    ...(action === "env-template" || action === "profile-doctor" || action === "setup-plan"
+      ? ["profile"]
+      : []),
     ...(action === "operation-audit" ? ["limit", "format"] : [])
   ]);
 
@@ -1563,6 +1634,180 @@ function createDaemonProfileDoctorActions(
   }
 
   return actions;
+}
+
+function createDaemonSetupPlan(
+  response: RuntimeProfilesResponse,
+  profileId: string | undefined
+): DaemonSetupPlan {
+  const profiles = filterRuntimeProfiles(response, profileId);
+  const plannedProfiles = profiles.map(createDaemonSetupPlanProfile);
+  const steps = plannedProfiles.flatMap((profile) => profile.steps).map((step, index) => ({
+    ...step,
+    order: index + 1
+  }));
+  const profilesWithRenumberedSteps = plannedProfiles.map((profile) => ({
+    ...profile,
+    steps: steps.filter((step) => step.profileId === profile.id)
+  }));
+
+  return {
+    summary: {
+      profileCount: profilesWithRenumberedSteps.length,
+      enabledProfileCount: profilesWithRenumberedSteps.filter((profile) => profile.enabled)
+        .length,
+      readyProfileCount: profilesWithRenumberedSteps.filter(
+        (profile) => profile.status === "ready"
+      ).length,
+      readyWithRunConfigCount: profilesWithRenumberedSteps.filter(
+        (profile) => profile.status === "ready_with_run_config"
+      ).length,
+      needsConfigurationCount: profilesWithRenumberedSteps.filter(
+        (profile) => profile.status === "needs_configuration"
+      ).length,
+      missingRequiredEnvVars: uniqueSorted(
+        profilesWithRenumberedSteps.flatMap((profile) => profile.missingRequiredEnvVars)
+      ),
+      missingRecommendedEnvVars: uniqueSorted(
+        profilesWithRenumberedSteps.flatMap((profile) => profile.missingRecommendedEnvVars)
+      ),
+      secretEnvVarNames: uniqueSorted(
+        profilesWithRenumberedSteps.flatMap((profile) => profile.secretEnvVarNames)
+      )
+    },
+    profiles: profilesWithRenumberedSteps,
+    steps,
+    safety: [
+      "This setup plan is derived from safe /runtime/profiles metadata.",
+      "It reports only env var names, booleans, component counts, notes, boundaries, and local CLI commands.",
+      "It does not read, request, print, persist, or validate provider secrets or bearer tokens.",
+      "It does not write .env files, mutate daemon configuration, start providers, start MCP servers, execute adapters, or change run plans.",
+      "Daemon and CLI processes still read environment values from process.env at process start."
+    ]
+  };
+}
+
+function createDaemonSetupPlanProfile(
+  profile: RuntimeProfilesResponse["profiles"][number]
+): DaemonSetupPlanProfile {
+  const configuredEnvVars = profile.setup.envVars.filter((envVarView) => envVarView.configured);
+  const missingRequiredEnvVars = profile.setup.envVars
+    .filter((envVarView) => envVarView.required && !envVarView.configured)
+    .map((envVarView) => envVarView.name);
+  const missingRecommendedEnvVars = profile.setup.missingRecommendedEnvVars.filter(
+    (name) => !missingRequiredEnvVars.includes(name)
+  );
+  const enabledComponents = profile.components.filter((component) => component.enabled);
+  const secretEnvVarNames = profile.setup.envVars
+    .filter((envVarView) => envVarView.secret)
+    .map((envVarView) => envVarView.name);
+  const optionalEnvVarNames = profile.setup.envVars
+    .filter(
+      (envVarView) =>
+        !envVarView.required &&
+        !profile.setup.missingRecommendedEnvVars.includes(envVarView.name)
+    )
+    .map((envVarView) => envVarView.name);
+
+  return {
+    id: profile.id,
+    name: profile.name,
+    enabled: profile.enabled,
+    status: profile.status,
+    enabledComponentCount: enabledComponents.length,
+    missingRequiredEnvVars,
+    missingRecommendedEnvVars,
+    configuredEnvVarCount: configuredEnvVars.length,
+    configuredSecretEnvVarCount: configuredEnvVars.filter((envVarView) => envVarView.secret)
+      .length,
+    secretEnvVarNames,
+    optionalEnvVarNames,
+    steps: createDaemonSetupPlanSteps({
+      profile,
+      missingRequiredEnvVars,
+      missingRecommendedEnvVars
+    }),
+    notes: [...profile.setup.notes],
+    boundaries: [...profile.boundaries]
+  };
+}
+
+function createDaemonSetupPlanSteps(input: {
+  profile: RuntimeProfilesResponse["profiles"][number];
+  missingRequiredEnvVars: readonly string[];
+  missingRecommendedEnvVars: readonly string[];
+}): DaemonSetupPlanStep[] {
+  const steps: Array<Omit<DaemonSetupPlanStep, "order">> = [
+    {
+      kind: "render_env_template",
+      profileId: input.profile.id,
+      description: "Render a comment-only local environment template for this profile.",
+      command: `deliberum daemon env-template --profile ${input.profile.id}`
+    }
+  ];
+
+  if (!input.profile.enabled) {
+    steps.push({
+      kind: "enable_profile",
+      profileId: input.profile.id,
+      description: "Enable the profile in the daemon process environment when this profile should be available.",
+      envVars: [input.profile.setup.enableEnvVar]
+    });
+  }
+
+  if (input.missingRequiredEnvVars.length > 0) {
+    steps.push({
+      kind: "configure_required_env",
+      profileId: input.profile.id,
+      description: "Configure required daemon environment variables before this profile can become ready.",
+      envVars: [...input.missingRequiredEnvVars]
+    });
+  }
+
+  if (input.missingRecommendedEnvVars.length > 0) {
+    steps.push({
+      kind: "configure_recommended_env",
+      profileId: input.profile.id,
+      description: "Configure daemon-wide defaults, or keep supplying equivalent non-secret run provider config where supported.",
+      envVars: [...input.missingRecommendedEnvVars]
+    });
+  }
+
+  if (input.profile.status === "ready_with_run_config") {
+    steps.push({
+      kind: "provide_run_config",
+      profileId: input.profile.id,
+      description: "Provide the provider configuration in the run plan when daemon-wide defaults are intentionally omitted."
+    });
+  }
+
+  steps.push({
+    kind: "verify_profile",
+    profileId: input.profile.id,
+    description: "Re-run safe diagnostics after changing the daemon environment and restarting the daemon.",
+    command: `deliberum daemon profile-doctor --profile ${input.profile.id}`
+  });
+
+  return steps.map((step, index) => ({ ...step, order: index + 1 }));
+}
+
+function filterRuntimeProfiles(
+  response: RuntimeProfilesResponse,
+  profileId: string | undefined
+): RuntimeProfilesResponse["profiles"] {
+  const profiles = profileId
+    ? response.profiles.filter((profile) => profile.id === profileId)
+    : response.profiles;
+
+  if (profileId && profiles.length === 0) {
+    throw new CliUsageError(`Runtime profile was not found: ${profileId}`);
+  }
+
+  return profiles;
+}
+
+function uniqueSorted(values: readonly string[]): string[] {
+  return [...new Set(values)].sort();
 }
 
 function sanitizeEnvTemplateComment(value: string): string {
