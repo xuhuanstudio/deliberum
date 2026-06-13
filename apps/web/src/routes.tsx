@@ -332,9 +332,32 @@ function LandingPage() {
             </div>
           </DataPanel>
           <DataPanel
-            title="How the system maps to plain language"
-            description="Core Deliberum concepts are preserved, but the default UI names what a person needs to understand."
+            title="What the discussion keeps visible"
+            description="Deliberum keeps the decision surface organized around what a person needs to inspect before relying on a conclusion."
           >
+            <div className="du-quality-map">
+              <QualityMapItem label="Discussion brief" value="Question, goals, constraints, and expected output." />
+              <QualityMapItem label="Independent first responses" value="Separate starting perspectives before the group converges." />
+              <QualityMapItem
+                label="Strongest current options"
+                value="The best visible choices without selecting one option invisibly."
+              />
+              <QualityMapItem label="Open disagreements" value="Concerns that still constrain the conclusion." />
+              <QualityMapItem
+                label="Requirements this answer must satisfy"
+                value="Conditions the final answer must meet."
+              />
+              <QualityMapItem label="Evidence and verification" value="Claims or gaps that still need checking." />
+              <QualityMapItem label="Risk review" value="Limits, assumptions, and failure cases to keep visible." />
+              <QualityMapItem label="Current conclusion" value="The reviewable result with next steps." />
+            </div>
+          </DataPanel>
+        </div>
+        <AdvancedDetails
+          summary="Advanced / Developer Mode: concept mapping"
+          description="Core Deliberum concept names are preserved here for implementers and documentation readers."
+        >
+          <DataPanel title="Core concept mapping">
             <div className="du-quality-map">
               <QualityMapItem label="Topic Contract" value="Discussion brief" />
               <QualityMapItem label="Sealed Divergence" value="Independent first responses" />
@@ -349,7 +372,7 @@ function LandingPage() {
               <QualityMapItem label="Outcome Compilation" value="Current conclusion" />
             </div>
           </DataPanel>
-        </div>
+        </AdvancedDetails>
         <DataPanel
           title="Continue existing discussions"
           description="Open a known discussion and review its brief, perspectives, disagreements, requirements, evidence, conclusion, and next actions."

@@ -827,7 +827,10 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(screen.getByText("What you can do")).toBeTruthy();
-    expect(screen.getByText("How the system maps to plain language")).toBeTruthy();
+    expect(screen.getByText("What the discussion keeps visible")).toBeTruthy();
+    expect(screen.getByText("Advanced / Developer Mode: concept mapping")).toBeTruthy();
+    expect(screen.getByText("Core concept mapping")).toBeTruthy();
+    expect(screen.getByText("Topic Contract")).toBeTruthy();
     expect(screen.getAllByText("1. Start a discussion").length).toBeGreaterThan(0);
     expect(
       screen.getByText(
