@@ -181,7 +181,8 @@ function createFakeRunDaemonClient(
         resourceBroker: "configured_store",
         resourceAccessGrants: "configured_store",
         operationAudit: "configured_store",
-        productionMultiWriterCoordination: false
+        productionMultiWriterCoordination: false,
+        sqliteProcessLock: "disabled"
       },
       resourceAccess: {
         baseUrlConfigured: false,
@@ -1956,7 +1957,10 @@ describe("CLI command routing", () => {
         tokenMode: string;
         principalCount: number;
       };
-      persistence: { productionMultiWriterCoordination: boolean };
+      persistence: {
+        productionMultiWriterCoordination: boolean;
+        sqliteProcessLock: string;
+      };
       webAssets: { configured: boolean; routeMode: string };
       productionReadiness: { readyForProduction: boolean; blockers: string[] };
       safety: string[];
@@ -1984,7 +1988,8 @@ describe("CLI command routing", () => {
           principalCount: 3
         },
         persistence: expect.objectContaining({
-          productionMultiWriterCoordination: false
+          productionMultiWriterCoordination: false,
+          sqliteProcessLock: "disabled"
         }),
         webAssets: expect.objectContaining({
           configured: true,

@@ -41,6 +41,12 @@ import { SQLiteResourceBroker } from "./sqlite-resource-broker";
 import { SQLiteRunStore } from "./sqlite-run-store";
 import { SQLiteOperationAuditLog } from "./sqlite-operation-audit-log";
 import {
+  SQLiteDaemonProcessLock,
+  SQLITE_DAEMON_PROCESS_LOCK_DEFAULT_HEARTBEAT_MS,
+  SQLITE_DAEMON_PROCESS_LOCK_DEFAULT_TTL_MS,
+  type SQLiteDaemonProcessLockClock
+} from "./sqlite-daemon-process-lock";
+import {
   classifyResourceAccessBaseUrl,
   parseResourceAccessSigningSecret
 } from "./resource-access-store";
@@ -72,6 +78,12 @@ export const DAEMON_WEB_ASSETS_PATH_ENV_VAR = "DELIBERUM_DAEMON_WEB_ASSETS_PATH"
 export const DAEMON_AUTH_TOKEN_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
 export const DAEMON_AUTH_TOKENS_JSON_ENV_VAR =
   "DELIBERUM_DAEMON_AUTH_TOKENS_JSON" as const;
+export const DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR =
+  "DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK" as const;
+export const DAEMON_SQLITE_PROCESS_LOCK_TTL_MS_ENV_VAR =
+  "DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK_TTL_MS" as const;
+export const DAEMON_SQLITE_PROCESS_LOCK_HEARTBEAT_MS_ENV_VAR =
+  "DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK_HEARTBEAT_MS" as const;
 export const DAEMON_HOST_ENV_VAR = "DELIBERUM_HOST" as const;
 export const DAEMON_PORT_ENV_VAR = "DELIBERUM_PORT" as const;
 export const RESOURCE_ACCESS_BASE_URL_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_BASE_URL" as const;
@@ -84,10 +96,20 @@ export const RESOURCE_ACCESS_SIGNING_SECRET_ENV_VAR =
 export type StartDaemonOptions = DaemonAppOptions & {
   onListening?: (address: { host: string; port: number }) => void;
   operationAuditExportDispatch?: OperationAuditHttpDispatch;
+  sqliteProcessLock?: boolean;
+  sqliteProcessLockClock?: SQLiteDaemonProcessLockClock;
+  sqliteProcessLockOwnerId?: string;
+  sqliteProcessLockTtlMs?: number;
+  sqliteProcessLockHeartbeatMs?: number;
 };
 
 export type StartedDaemon = DaemonApp & {
   server: ServerType;
+  sqliteProcessLock?: SQLiteDaemonProcessLock;
+};
+
+type StartDaemonRuntimeResource = {
+  close: () => void;
 };
 
 export function resolveStartDaemonHost(
@@ -125,11 +147,122 @@ export function resolveStartDaemonPort(
   return port;
 }
 
+function resolvePositiveIntegerEnvOption(input: {
+  optionValue: number | undefined;
+  envValue: string | undefined;
+  envVar: string;
+  defaultValue: number;
+}): number {
+  if (input.optionValue !== undefined) {
+    if (!Number.isSafeInteger(input.optionValue) || input.optionValue <= 0) {
+      throw new Error(`${input.envVar} must be a positive integer.`);
+    }
+
+    return input.optionValue;
+  }
+
+  const value = input.envValue?.trim();
+  if (!value) {
+    return input.defaultValue;
+  }
+
+  if (!/^\d+$/.test(value)) {
+    throw new Error(`${input.envVar} must be a positive integer.`);
+  }
+
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${input.envVar} must be a positive integer.`);
+  }
+
+  return parsed;
+}
+
 export function resolveStartDaemonSQLitePath(
   env: Record<string, string | undefined> = process.env
 ): string | undefined {
   const value = env[DAEMON_SQLITE_PATH_ENV_VAR]?.trim();
   return value && value.length > 0 ? value : undefined;
+}
+
+export function resolveStartDaemonSQLiteProcessLock(
+  options: Pick<StartDaemonOptions, "sqliteProcessLock"> = {},
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  if (options.sqliteProcessLock !== undefined) {
+    return options.sqliteProcessLock;
+  }
+
+  const value = env[DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR]?.trim();
+
+  if (!value) {
+    return false;
+  }
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  throw new Error(`${DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR} must be true or false.`);
+}
+
+export function resolveStartDaemonSQLiteProcessLockTtlMs(
+  options: Pick<StartDaemonOptions, "sqliteProcessLockTtlMs"> = {},
+  env: Record<string, string | undefined> = process.env
+): number {
+  return resolvePositiveIntegerEnvOption({
+    optionValue: options.sqliteProcessLockTtlMs,
+    envValue: env[DAEMON_SQLITE_PROCESS_LOCK_TTL_MS_ENV_VAR],
+    envVar: DAEMON_SQLITE_PROCESS_LOCK_TTL_MS_ENV_VAR,
+    defaultValue: SQLITE_DAEMON_PROCESS_LOCK_DEFAULT_TTL_MS
+  });
+}
+
+export function resolveStartDaemonSQLiteProcessLockHeartbeatMs(
+  options: Pick<StartDaemonOptions, "sqliteProcessLockHeartbeatMs"> = {},
+  env: Record<string, string | undefined> = process.env
+): number {
+  return resolvePositiveIntegerEnvOption({
+    optionValue: options.sqliteProcessLockHeartbeatMs,
+    envValue: env[DAEMON_SQLITE_PROCESS_LOCK_HEARTBEAT_MS_ENV_VAR],
+    envVar: DAEMON_SQLITE_PROCESS_LOCK_HEARTBEAT_MS_ENV_VAR,
+    defaultValue: SQLITE_DAEMON_PROCESS_LOCK_DEFAULT_HEARTBEAT_MS
+  });
+}
+
+export function createStartDaemonSQLiteProcessLock(
+  options: Pick<
+    StartDaemonOptions,
+    | "sqliteProcessLock"
+    | "sqliteProcessLockClock"
+    | "sqliteProcessLockOwnerId"
+    | "sqliteProcessLockTtlMs"
+    | "sqliteProcessLockHeartbeatMs"
+  > = {},
+  env: Record<string, string | undefined> = process.env
+): SQLiteDaemonProcessLock | undefined {
+  if (!resolveStartDaemonSQLiteProcessLock(options, env)) {
+    return undefined;
+  }
+
+  const sqlitePath = resolveStartDaemonSQLitePath(env);
+  if (!sqlitePath) {
+    throw new Error(
+      `${DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR}=true requires ${DAEMON_SQLITE_PATH_ENV_VAR}.`
+    );
+  }
+
+  return new SQLiteDaemonProcessLock({
+    filePath: sqlitePath,
+    ownerId: options.sqliteProcessLockOwnerId,
+    clock: options.sqliteProcessLockClock,
+    ttlMs: resolveStartDaemonSQLiteProcessLockTtlMs(options, env),
+    heartbeatMs: resolveStartDaemonSQLiteProcessLockHeartbeatMs(options, env)
+  });
 }
 
 export function resolveStartDaemonAuthToken(
@@ -609,85 +742,199 @@ function normalizeStartDaemonResourceAccessBaseUrl(
 export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const host = resolveStartDaemonHost(options);
   const port = resolveStartDaemonPort(options);
-  const eventStore = createStartDaemonEventStore(options);
-  const runStore = createStartDaemonRunStore(options);
-  const operationAuditLog = createStartDaemonOperationAuditLog(options);
-  const operationAuditMaxEntries = options.operationAuditLog
-    ? options.operationAuditMaxEntries
-    : options.operationAuditMaxEntries ?? resolveStartDaemonOperationAuditMaxEntries();
-  const enableLocalPreset = resolveStartDaemonEnableLocalPreset(options);
-  const enableOpenAICompatibleProfile =
-    resolveStartDaemonEnableOpenAICompatibleProfile(options);
-  const enableOpenAICompatibleExtraction =
-    enableOpenAICompatibleProfile &&
-    resolveStartDaemonEnableOpenAICompatibleExtraction(options);
-  const enableOpenAICompatibleReview =
-    enableOpenAICompatibleProfile &&
-    resolveStartDaemonEnableOpenAICompatibleReview(options);
-  const enableOpenAICompatibleFinalization =
-    enableOpenAICompatibleProfile &&
-    resolveStartDaemonEnableOpenAICompatibleFinalization(options);
-  const enableHttpTemplateProfile = resolveStartDaemonEnableHttpTemplateProfile(options);
-  const enableMcpToolProfile = resolveStartDaemonEnableMcpToolProfile(options);
-  const resourceAccessBaseUrl = resolveStartDaemonResourceAccessBaseUrl(options);
-  const resourceAccessTtlMs = resolveStartDaemonResourceAccessTtlMs(options);
-  const resourceAccessUrlSigningSecret =
-    resolveStartDaemonResourceAccessSigningSecret(options);
-  const daemonAuthToken = resolveStartDaemonAuthToken(options);
-  const daemonAuthTokens = resolveStartDaemonAuthTokens(options);
-  const webStaticAssets = createStartDaemonWebStaticAssets(options, process.env);
-  const resourceAccessStore = createStartDaemonResourceAccessStore(
-    {
-      ...options,
-      resourceAccessTtlMs
-    },
-    process.env
-  );
-  const resourceBroker = createStartDaemonResourceStore(options, process.env);
-  const daemon = createDaemonApp({
-    ...options,
-    eventStore,
-    runStore,
-    operationAuditLog,
-    operationAuditMaxEntries,
-    resourceAccessStore,
-    resourceBroker,
-    enableLocalPreset,
-    enableOpenAICompatibleProfile,
-    enableOpenAICompatibleExtraction,
-    enableOpenAICompatibleReview,
-    enableOpenAICompatibleFinalization,
-    enableHttpTemplateProfile,
-    openAICompatibleEnv:
-      options.openAICompatibleEnv ??
-      (enableOpenAICompatibleProfile ? process.env : undefined),
-    httpTemplateEnv:
-      options.httpTemplateEnv ?? (enableHttpTemplateProfile ? process.env : undefined),
-    enableMcpToolProfile,
-    mcpToolEnv: options.mcpToolEnv ?? (enableMcpToolProfile ? process.env : undefined),
-    resourceAccessBaseUrl,
-    resourceAccessUrlSigningSecret,
-    resourceAccessTtlMs,
-    daemonAuthToken,
-    daemonAuthTokens,
-    webStaticAssets,
-    corsOrigins: options.corsOrigins ?? parseDaemonCorsOriginsFromEnv(process.env),
-    host,
-    port
-  });
-  const server = serve(
-    {
-      fetch: daemon.app.fetch,
-      hostname: host,
-      port
-    },
-    () => {
-      options.onListening?.({ host, port });
-    }
-  );
+  const sqliteProcessLock = createStartDaemonSQLiteProcessLock(options, process.env);
+  const runtimeResources: StartDaemonRuntimeResource[] = [];
 
-  return {
-    ...daemon,
-    server
+  try {
+    sqliteProcessLock?.acquire();
+    sqliteProcessLock?.startHeartbeat();
+
+    const eventStore = createStartDaemonEventStore(options);
+    if (!options.eventStore) {
+      addStartDaemonRuntimeResource(runtimeResources, eventStore);
+    }
+    const runStore = createStartDaemonRunStore(options);
+    if (!options.runStore) {
+      addStartDaemonRuntimeResource(runtimeResources, runStore);
+    }
+    const operationAuditLog = createStartDaemonOperationAuditLog(options);
+    if (!options.operationAuditLog) {
+      addStartDaemonRuntimeResource(runtimeResources, operationAuditLog);
+    }
+    const operationAuditMaxEntries = options.operationAuditLog
+      ? options.operationAuditMaxEntries
+      : options.operationAuditMaxEntries ?? resolveStartDaemonOperationAuditMaxEntries();
+    const enableLocalPreset = resolveStartDaemonEnableLocalPreset(options);
+    const enableOpenAICompatibleProfile =
+      resolveStartDaemonEnableOpenAICompatibleProfile(options);
+    const enableOpenAICompatibleExtraction =
+      enableOpenAICompatibleProfile &&
+      resolveStartDaemonEnableOpenAICompatibleExtraction(options);
+    const enableOpenAICompatibleReview =
+      enableOpenAICompatibleProfile &&
+      resolveStartDaemonEnableOpenAICompatibleReview(options);
+    const enableOpenAICompatibleFinalization =
+      enableOpenAICompatibleProfile &&
+      resolveStartDaemonEnableOpenAICompatibleFinalization(options);
+    const enableHttpTemplateProfile = resolveStartDaemonEnableHttpTemplateProfile(options);
+    const enableMcpToolProfile = resolveStartDaemonEnableMcpToolProfile(options);
+    const resourceAccessBaseUrl = resolveStartDaemonResourceAccessBaseUrl(options);
+    const resourceAccessTtlMs = resolveStartDaemonResourceAccessTtlMs(options);
+    const resourceAccessUrlSigningSecret =
+      resolveStartDaemonResourceAccessSigningSecret(options);
+    const daemonAuthToken = resolveStartDaemonAuthToken(options);
+    const daemonAuthTokens = resolveStartDaemonAuthTokens(options);
+    const webStaticAssets = createStartDaemonWebStaticAssets(options, process.env);
+    const resourceAccessStore = createStartDaemonResourceAccessStore(
+      {
+        ...options,
+        resourceAccessTtlMs
+      },
+      process.env
+    );
+    if (!options.resourceAccessStore) {
+      addStartDaemonRuntimeResource(runtimeResources, resourceAccessStore);
+    }
+    const resourceBroker = createStartDaemonResourceStore(options, process.env);
+    if (!options.resourceBroker) {
+      addStartDaemonRuntimeResource(runtimeResources, resourceBroker);
+    }
+    const daemon = createDaemonApp({
+      ...options,
+      eventStore,
+      runStore,
+      operationAuditLog,
+      operationAuditMaxEntries,
+      resourceAccessStore,
+      resourceBroker,
+      sqliteProcessLockConfigured: sqliteProcessLock !== undefined,
+      enableLocalPreset,
+      enableOpenAICompatibleProfile,
+      enableOpenAICompatibleExtraction,
+      enableOpenAICompatibleReview,
+      enableOpenAICompatibleFinalization,
+      enableHttpTemplateProfile,
+      openAICompatibleEnv:
+        options.openAICompatibleEnv ??
+        (enableOpenAICompatibleProfile ? process.env : undefined),
+      httpTemplateEnv:
+        options.httpTemplateEnv ?? (enableHttpTemplateProfile ? process.env : undefined),
+      enableMcpToolProfile,
+      mcpToolEnv: options.mcpToolEnv ?? (enableMcpToolProfile ? process.env : undefined),
+      resourceAccessBaseUrl,
+      resourceAccessUrlSigningSecret,
+      resourceAccessTtlMs,
+      daemonAuthToken,
+      daemonAuthTokens,
+      webStaticAssets,
+      corsOrigins: options.corsOrigins ?? parseDaemonCorsOriginsFromEnv(process.env),
+      host,
+      port
+    });
+    const server = serve(
+      {
+        fetch: daemon.app.fetch,
+        hostname: host,
+        port
+      },
+      () => {
+        options.onListening?.({ host, port });
+      }
+    );
+    closeStartDaemonRuntimeResourcesOnServerClose(
+      server,
+      runtimeResources,
+      sqliteProcessLock
+    );
+
+    return {
+      ...daemon,
+      server,
+      sqliteProcessLock
+    };
+  } catch (error) {
+    closeStartDaemonRuntimeResources(runtimeResources);
+    sqliteProcessLock?.release();
+    throw error;
+  }
+}
+
+function addStartDaemonRuntimeResource(
+  resources: StartDaemonRuntimeResource[],
+  resource: unknown
+): void {
+  if (isStartDaemonRuntimeResource(resource)) {
+    resources.push(resource);
+  }
+}
+
+function isStartDaemonRuntimeResource(
+  resource: unknown
+): resource is StartDaemonRuntimeResource {
+  return (
+    typeof resource === "object" &&
+    resource !== null &&
+    typeof (resource as { close?: unknown }).close === "function"
+  );
+}
+
+function closeStartDaemonRuntimeResources(
+  resources: StartDaemonRuntimeResource[]
+): Error | undefined {
+  let firstError: Error | undefined;
+
+  for (const resource of resources) {
+    try {
+      resource.close();
+    } catch (error) {
+      firstError ??= normalizeCloseError(error);
+    }
+  }
+
+  return firstError;
+}
+
+function closeStartDaemonRuntimeResourcesOnServerClose(
+  server: ServerType,
+  runtimeResources: StartDaemonRuntimeResource[],
+  sqliteProcessLock: SQLiteDaemonProcessLock | undefined
+): void {
+  if (runtimeResources.length === 0 && !sqliteProcessLock) {
+    return;
+  }
+
+  const originalClose = server.close.bind(server);
+  let closed = false;
+  const closeOnce = (): Error | undefined => {
+    if (closed) {
+      return undefined;
+    }
+
+    closed = true;
+    const closeError = closeStartDaemonRuntimeResources(runtimeResources);
+
+    try {
+      sqliteProcessLock?.release();
+    } catch (error) {
+      return closeError ?? normalizeCloseError(error);
+    }
+
+    return closeError;
   };
+
+  server.close = ((callback?: (error?: Error) => void) => {
+    try {
+      return originalClose((error?: Error) => {
+        const closeError = closeOnce();
+        callback?.(error ?? closeError);
+      });
+    } catch (error) {
+      closeOnce();
+      throw error;
+    }
+  }) as ServerType["close"];
+}
+
+function normalizeCloseError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }

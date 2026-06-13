@@ -365,6 +365,7 @@ export type DeploymentPostureResponse = {
     resourceAccessGrants: "process_memory" | "configured_store";
     operationAudit: "process_memory" | "configured_store";
     productionMultiWriterCoordination: false;
+    sqliteProcessLock: "disabled" | "configured";
   };
   resourceAccess: {
     baseUrlConfigured: boolean;

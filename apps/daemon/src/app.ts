@@ -122,6 +122,7 @@ export type DaemonAppOptions = {
   resourceAccessBaseUrl?: string;
   resourceAccessUrlSigningSecret?: string;
   resourceAccessTtlMs?: number;
+  sqliteProcessLockConfigured?: boolean;
   resourceBroker?: ResourceBroker;
   deliveryPlanner?: DeliveryPlanner;
   runStore?: DaemonRunOrchestrationOptions["runStore"];
@@ -253,6 +254,7 @@ export type DaemonDeploymentPostureResponse = {
     resourceAccessGrants: "process_memory" | "configured_store";
     operationAudit: "process_memory" | "configured_store";
     productionMultiWriterCoordination: false;
+    sqliteProcessLock: "disabled" | "configured";
   };
   resourceAccess: {
     baseUrlConfigured: boolean;
@@ -761,6 +763,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         resourceAccessBaseUrlConfigured: options.resourceAccessBaseUrl !== undefined,
         resourceAccessUrlSigningConfigured:
           resourceAccessUrlSigningSecret !== undefined,
+        sqliteProcessLockConfigured: options.sqliteProcessLockConfigured === true,
         webStaticAssetsConfigured: options.webStaticAssets !== undefined
       })
     )
@@ -1855,6 +1858,7 @@ function buildDeploymentPosture(options: {
   resourceAccessBaseUrl: string;
   resourceAccessBaseUrlConfigured: boolean;
   resourceAccessUrlSigningConfigured: boolean;
+  sqliteProcessLockConfigured: boolean;
   webStaticAssetsConfigured: boolean;
 }): DaemonDeploymentPostureResponse {
   const bindingExposure = classifyDaemonBindHost(options.host);
@@ -1899,7 +1903,10 @@ function buildDeploymentPosture(options: {
       resourceBroker: configuredStore(options.resourceBrokerConfigured),
       resourceAccessGrants: configuredStore(options.resourceAccessStoreConfigured),
       operationAudit: configuredStore(options.operationAuditLogConfigured),
-      productionMultiWriterCoordination: false
+      productionMultiWriterCoordination: false,
+      sqliteProcessLock: options.sqliteProcessLockConfigured
+        ? "configured"
+        : "disabled"
     },
     resourceAccess: {
       baseUrlConfigured: options.resourceAccessBaseUrlConfigured,
@@ -1930,6 +1937,7 @@ function buildDeploymentPosture(options: {
     safety: [
       "This posture is derived from safe daemon configuration state only.",
       "It does not expose bearer tokens, CORS origin values, resource access ids, resource URLs, configured file paths, provider secrets, request bodies, or payloads.",
+      "The SQLite process lock is a cooperative single-daemon guard, not distributed multi-writer coordination.",
       "A non-local binding or public resource access base URL is not production authorization.",
       "Production deployment still requires an external authorization layer, multi-user policy, and production-grade multi-writer coordination."
     ]

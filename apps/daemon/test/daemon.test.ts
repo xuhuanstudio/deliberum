@@ -130,6 +130,9 @@ import {
   DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR,
   DAEMON_OPERATION_AUDIT_JSONL_PATH_ENV_VAR,
   DAEMON_PORT_ENV_VAR,
+  DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR,
+  DAEMON_SQLITE_PROCESS_LOCK_HEARTBEAT_MS_ENV_VAR,
+  DAEMON_SQLITE_PROCESS_LOCK_TTL_MS_ENV_VAR,
   RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR,
   RESOURCE_ACCESS_BASE_URL_ENV_VAR,
   RESOURCE_ACCESS_SIGNING_SECRET_ENV_VAR,
@@ -141,6 +144,7 @@ import {
   createStartDaemonResourceAccessStore,
   createStartDaemonResourceStore,
   createStartDaemonRunStore,
+  createStartDaemonSQLiteProcessLock,
   createStartDaemonWebStaticAssets,
   createDaemonApp,
   createOpenAICompatibleRunRegistries,
@@ -167,7 +171,10 @@ import {
   resolveStartDaemonResourceAccessAllowRemote,
   resolveStartDaemonResourceAccessSigningSecret,
   resolveStartDaemonResourceAccessTtlMs,
+  resolveStartDaemonSQLiteProcessLock,
+  resolveStartDaemonSQLiteProcessLockHeartbeatMs,
   resolveStartDaemonSQLitePath,
+  resolveStartDaemonSQLiteProcessLockTtlMs,
   resolveStartDaemonEnableOpenAICompatibleExtraction,
   resolveStartDaemonEnableOpenAICompatibleFinalization,
   resolveStartDaemonEnableOpenAICompatibleProfile,
@@ -176,11 +183,14 @@ import {
   resolveStartDaemonEnableMcpToolProfile,
   resolveStartDaemonEnableLocalPreset,
   ResourceAccessGrantStore,
+  SQLiteDaemonProcessLock,
+  SQLiteDaemonProcessLockError,
   JsonFileOperationAuditLog,
   MirroredOperationAuditLog,
   SQLiteOperationAuditLog,
   SQLiteResourceAccessGrantStore,
   SQLiteRunStore,
+  startDaemon,
   type DaemonApp,
   type McpToolFetchInit,
   type McpToolFetchLike
@@ -289,6 +299,19 @@ async function postJson(app: DaemonApp["app"], path: string, body: unknown): Pro
       "Content-Type": "application/json"
     },
     body: JSON.stringify(body)
+  });
+}
+
+function closeStartedDaemon(daemonInstance: ReturnType<typeof startDaemon>): Promise<void> {
+  return new Promise((resolve, reject) => {
+    daemonInstance.server.close((error?: Error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
   });
 }
 
@@ -2611,6 +2634,7 @@ describe("daemon API", () => {
         resourceAccessGrants: string;
         operationAudit: string;
         productionMultiWriterCoordination: boolean;
+        sqliteProcessLock: string;
       };
       resourceAccess: {
         baseUrlConfigured: boolean;
@@ -2667,7 +2691,8 @@ describe("daemon API", () => {
           resourceBroker: "process_memory",
           resourceAccessGrants: "process_memory",
           operationAudit: "process_memory",
-          productionMultiWriterCoordination: false
+          productionMultiWriterCoordination: false,
+          sqliteProcessLock: "disabled"
         },
         resourceAccess: {
           baseUrlConfigured: false,
@@ -6497,6 +6522,61 @@ describe("daemon API", () => {
     }
   });
 
+  it("uses restart-safe default ids for durable operation audit logs", () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-operation-audit-ids-"));
+    const jsonPath = join(dir, "operations.json");
+    const sqlitePath = join(dir, "operations.sqlite");
+    let sqliteLog: SQLiteOperationAuditLog | undefined;
+    let reopenedSQLiteLog: SQLiteOperationAuditLog | undefined;
+
+    try {
+      const jsonLog = new JsonFileOperationAuditLog({
+        filePath: jsonPath,
+        clock
+      });
+      const firstJsonEntry = jsonLog.record(operationAuditInput("json_before_restart"));
+      const reopenedJsonLog = new JsonFileOperationAuditLog({
+        filePath: jsonPath,
+        clock
+      });
+      const secondJsonEntry = reopenedJsonLog.record(
+        operationAuditInput("json_after_restart")
+      );
+      expect(secondJsonEntry.id).not.toBe(firstJsonEntry.id);
+      expect(reopenedJsonLog.list({ limit: 10 }).map((entry) => entry.action).sort()).toEqual([
+        "json_after_restart",
+        "json_before_restart"
+      ]);
+
+      sqliteLog = new SQLiteOperationAuditLog({
+        filePath: sqlitePath,
+        clock
+      });
+      const firstSQLiteEntry = sqliteLog.record(
+        operationAuditInput("sqlite_before_restart")
+      );
+      sqliteLog.close();
+      sqliteLog = undefined;
+
+      reopenedSQLiteLog = new SQLiteOperationAuditLog({
+        filePath: sqlitePath,
+        clock
+      });
+      const secondSQLiteEntry = reopenedSQLiteLog.record(
+        operationAuditInput("sqlite_after_restart")
+      );
+      expect(secondSQLiteEntry.id).not.toBe(firstSQLiteEntry.id);
+      expect(reopenedSQLiteLog.list({ limit: 10 }).map((entry) => entry.action).sort()).toEqual([
+        "sqlite_after_restart",
+        "sqlite_before_restart"
+      ]);
+    } finally {
+      reopenedSQLiteLog?.close();
+      sqliteLog?.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("resolves resource access base URL, TTL, and signing secret from explicit options or env", () => {
     expect(
       resolveStartDaemonResourceAccessBaseUrl(
@@ -6903,6 +6983,200 @@ describe("daemon API", () => {
       ]);
       (reopenedOperationAuditLog as SQLiteOperationAuditLog).close();
     } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves optional daemon SQLite process lock settings", () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-sqlite-lock-resolve-"));
+    const filePath = join(dir, "daemon.sqlite");
+    let lock: SQLiteDaemonProcessLock | undefined;
+
+    try {
+      expect(resolveStartDaemonSQLiteProcessLock({}, {})).toBe(false);
+      expect(
+        resolveStartDaemonSQLiteProcessLock(
+          {},
+          {
+            [DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR]: "true"
+          }
+        )
+      ).toBe(true);
+      expect(
+        resolveStartDaemonSQLiteProcessLock(
+          { sqliteProcessLock: false },
+          {
+            [DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR]: "true"
+          }
+        )
+      ).toBe(false);
+      expect(() =>
+        resolveStartDaemonSQLiteProcessLock(
+          {},
+          {
+            [DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR]: "TRUE"
+          }
+        )
+      ).toThrow(`${DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR} must be true or false.`);
+      expect(
+        resolveStartDaemonSQLiteProcessLockTtlMs(
+          {},
+          {
+            [DAEMON_SQLITE_PROCESS_LOCK_TTL_MS_ENV_VAR]: "45000"
+          }
+        )
+      ).toBe(45000);
+      expect(
+        resolveStartDaemonSQLiteProcessLockHeartbeatMs(
+          { sqliteProcessLockHeartbeatMs: 15000 },
+          {
+            [DAEMON_SQLITE_PROCESS_LOCK_HEARTBEAT_MS_ENV_VAR]: "20000"
+          }
+        )
+      ).toBe(15000);
+      expect(() =>
+        resolveStartDaemonSQLiteProcessLockTtlMs(
+          {},
+          {
+            [DAEMON_SQLITE_PROCESS_LOCK_TTL_MS_ENV_VAR]: "0"
+          }
+        )
+      ).toThrow(`${DAEMON_SQLITE_PROCESS_LOCK_TTL_MS_ENV_VAR} must be a positive integer.`);
+      expect(createStartDaemonSQLiteProcessLock({}, {})).toBeUndefined();
+      expect(() =>
+        createStartDaemonSQLiteProcessLock(
+          {},
+          {
+            [DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR]: "true"
+          }
+        )
+      ).toThrow(
+        `${DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR}=true requires ${DAEMON_SQLITE_PATH_ENV_VAR}.`
+      );
+
+      lock = createStartDaemonSQLiteProcessLock(
+        {
+          sqliteProcessLockOwnerId: "daemon-test",
+          sqliteProcessLockClock: () => Date.parse(clock()),
+          sqliteProcessLockTtlMs: 45000,
+          sqliteProcessLockHeartbeatMs: 15000
+        },
+        {
+          [DAEMON_SQLITE_PATH_ENV_VAR]: filePath,
+          [DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR]: "true"
+        }
+      );
+
+      expect(lock).toBeInstanceOf(SQLiteDaemonProcessLock);
+      expect(() => lock?.acquire()).not.toThrow();
+    } finally {
+      lock?.release();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("guards one SQLite-backed daemon process when the process lock is enabled", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-sqlite-lock-start-"));
+    const filePath = join(dir, "daemon.sqlite");
+    const previousSqlitePath = process.env[DAEMON_SQLITE_PATH_ENV_VAR];
+    const previousProcessLock = process.env[DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR];
+    let now = Date.parse(clock());
+    let firstDaemon: ReturnType<typeof startDaemon> | undefined;
+    let secondDaemon: ReturnType<typeof startDaemon> | undefined;
+    let resolveFirstListening: () => void = () => {};
+    let resolveSecondListening: () => void = () => {};
+    const firstListening = new Promise<void>((resolve) => {
+      resolveFirstListening = resolve;
+    });
+    const secondListening = new Promise<void>((resolve) => {
+      resolveSecondListening = resolve;
+    });
+
+    process.env[DAEMON_SQLITE_PATH_ENV_VAR] = filePath;
+    process.env[DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR] = "true";
+
+    try {
+      firstDaemon = startDaemon({
+        host: "127.0.0.1",
+        port: 0,
+        sqliteProcessLockOwnerId: "daemon-a",
+        sqliteProcessLockClock: () => now,
+        sqliteProcessLockTtlMs: 1000,
+        sqliteProcessLockHeartbeatMs: 500,
+        idGenerator: createIds(),
+        clock,
+        onListening: resolveFirstListening
+      });
+      await firstListening;
+      const posture = (await (
+        await firstDaemon.app.request("/runtime/deployment-posture")
+      ).json()) as {
+        persistence: {
+          sqliteProcessLock: string;
+          productionMultiWriterCoordination: boolean;
+        };
+        safety: string[];
+      };
+
+      expect(posture.persistence.sqliteProcessLock).toBe("configured");
+      expect(posture.persistence.productionMultiWriterCoordination).toBe(false);
+      expect(posture.safety.join(" ")).toContain("cooperative single-daemon guard");
+      expect(() =>
+        startDaemon({
+          host: "127.0.0.1",
+          port: 0,
+          sqliteProcessLockOwnerId: "daemon-b",
+          sqliteProcessLockClock: () => now,
+          sqliteProcessLockTtlMs: 1000,
+          sqliteProcessLockHeartbeatMs: 500,
+          idGenerator: createIds(),
+          clock
+        })
+      ).toThrow(SQLiteDaemonProcessLockError);
+
+      await closeStartedDaemon(firstDaemon);
+      firstDaemon = undefined;
+
+      now += 100;
+      secondDaemon = startDaemon({
+        host: "127.0.0.1",
+        port: 0,
+        sqliteProcessLockOwnerId: "daemon-b",
+        sqliteProcessLockClock: () => now,
+        sqliteProcessLockTtlMs: 1000,
+        sqliteProcessLockHeartbeatMs: 500,
+        idGenerator: createIds(),
+        clock,
+        onListening: resolveSecondListening
+      });
+      await secondListening;
+
+      const secondPostureResponse = await secondDaemon.app.request(
+        "/runtime/deployment-posture"
+      );
+      const secondPostureText = await secondPostureResponse.text();
+      expect(secondPostureResponse.status, secondPostureText).toBe(200);
+      const secondPosture = JSON.parse(secondPostureText) as {
+        persistence: { sqliteProcessLock: string };
+      };
+      expect(secondPosture.persistence.sqliteProcessLock).toBe("configured");
+    } finally {
+      if (firstDaemon) {
+        await closeStartedDaemon(firstDaemon);
+      }
+      if (secondDaemon) {
+        await closeStartedDaemon(secondDaemon);
+      }
+      if (previousSqlitePath === undefined) {
+        delete process.env[DAEMON_SQLITE_PATH_ENV_VAR];
+      } else {
+        process.env[DAEMON_SQLITE_PATH_ENV_VAR] = previousSqlitePath;
+      }
+      if (previousProcessLock === undefined) {
+        delete process.env[DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR];
+      } else {
+        process.env[DAEMON_SQLITE_PROCESS_LOCK_ENV_VAR] = previousProcessLock;
+      }
       rmSync(dir, { recursive: true, force: true });
     }
   });

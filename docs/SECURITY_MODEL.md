@@ -22,6 +22,10 @@ The daemon supports local/pre-production control-plane bearer auth in two modes.
 
 The daemon hashes configured token values for request matching and never writes token values to event records, operation audit records, deployment posture, CLI output, or Web output. Principal ids must be non-secret identifiers because they can appear in safe audit metadata. This bearer registry is an operator hardening layer for local/pre-production control surfaces; it is not production identity, SSO, tenant authorization, or public multi-user access control.
 
+## Durable store coordination
+
+With `DELIBERUM_DAEMON_SQLITE_PATH`, the local/pre-production daemon can persist session events, run metadata, resource broker metadata/content, resource access grant state, and operation audit records in one SQLite file. `DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK=true` adds a cooperative single-daemon lease in that SQLite file so a second Deliberum daemon using the same code path refuses to start while the first lock is active. The lease uses a heartbeat and stale timeout for crash recovery. Deployment posture reports only whether this process lock is configured; it does not expose SQLite paths, lock owner ids, or timing values. This guard reduces accidental concurrent daemon ownership but is not distributed production multi-writer coordination.
+
 ## Operation audit security
 
 The daemon operation audit log is separate from the semantic event ledger. It records local control-plane action, method, normalized route, status code, outcome, auth mode/presence, safe principal id, role, scopes, and non-secret target ids for daemon requests. It does not make projections authoritative and does not become a source of deliberation truth.

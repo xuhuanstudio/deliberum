@@ -735,8 +735,10 @@ function formatDeploymentPersistence(
     value.operationAudit
   ];
   const configuredCount = modes.filter((mode) => mode === "configured_store").length;
+  const processLock =
+    value.sqliteProcessLock === "configured" ? "process lock" : "no process lock";
 
-  return `${configuredCount}/${modes.length}`;
+  return `${configuredCount}/${modes.length}, ${processLock}`;
 }
 
 function formatDeploymentResourceAccess(

@@ -17,6 +17,7 @@ export * from "./resource-access-store";
 export * from "./resource-delivery-routes";
 export * from "./runtime-profiles";
 export * from "./server";
+export * from "./sqlite-daemon-process-lock";
 export * from "./sqlite-resource-access-store";
 export * from "./sqlite-operation-audit-log";
 export * from "./sqlite-run-store";

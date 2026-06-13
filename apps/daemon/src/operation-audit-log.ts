@@ -1,4 +1,5 @@
 import { dirname } from "node:path";
+import { randomUUID } from "node:crypto";
 import {
   appendFileSync,
   existsSync,
@@ -1374,12 +1375,7 @@ function isLocalOperationAuditHttpHost(hostname: string): boolean {
 }
 
 function createDefaultAuditIdGenerator(): IdGenerator {
-  let index = 0;
-
-  return () => {
-    index += 1;
-    return `operation-audit-${index}`;
-  };
+  return () => randomUUID();
 }
 
 function cloneEntry(entry: OperationAuditEntry): OperationAuditEntry {

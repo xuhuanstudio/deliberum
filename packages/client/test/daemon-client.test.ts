@@ -393,7 +393,8 @@ describe("DeliberumDaemonClient", () => {
         resourceBroker: "process_memory",
         resourceAccessGrants: "process_memory",
         operationAudit: "process_memory",
-        productionMultiWriterCoordination: false
+        productionMultiWriterCoordination: false,
+        sqliteProcessLock: "disabled"
       },
       resourceAccess: {
         baseUrlConfigured: false,

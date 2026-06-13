@@ -184,7 +184,8 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         resourceBroker: "configured_store",
         resourceAccessGrants: "configured_store",
         operationAudit: "configured_store",
-        productionMultiWriterCoordination: false
+        productionMultiWriterCoordination: false,
+        sqliteProcessLock: "configured"
       },
       resourceAccess: {
         baseUrlConfigured: true,
@@ -857,7 +858,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Control auth")).toBeTruthy();
     expect(screen.getByText("Daemon bearer / registry / 3 principals")).toBeTruthy();
     expect(screen.getByText("Configured stores")).toBeTruthy();
-    expect(screen.getByText("5/5")).toBeTruthy();
+    expect(screen.getByText("5/5, process lock")).toBeTruthy();
     expect(screen.getByText("Resource access")).toBeTruthy();
     expect(screen.getByText("Localhost, restart-aware, signed")).toBeTruthy();
     expect(screen.getByText("Web assets")).toBeTruthy();

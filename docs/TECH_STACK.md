@@ -21,7 +21,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - Hono and `@hono/node-server` for the local daemon API;
 - opt-in daemon control-plane bearer auth for local/pre-production hardening, with legacy single-token mode and scoped token registry mode;
 - process-local `InMemoryEventStore` for daemon defaults;
-- `better-sqlite3` for optional local/pre-production daemon SQLite event ledger, run metadata, resource broker, resource access grant, and operation audit log persistence with local connection-level writer serialization;
+- `better-sqlite3` for optional local/pre-production daemon SQLite event ledger, run metadata, resource broker, resource access grant, and operation audit log persistence with local connection-level writer serialization and optional single-daemon process locking;
 - shared Node `JsonFileEventStore` for CLI persistence and optional local daemon event ledger persistence;
 - daemon-local `JsonFileRunStore` for optional local run metadata persistence;
 - daemon-local operation audit log with in-memory defaults, optional JSON persistence, optional SQLite persistence, local retention caps, optional rotated JSONL mirror, optional HTTP export, and CLI JSONL export for safe control-plane operation metadata;
@@ -30,7 +30,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - Server-Sent Events for daemon event streaming;
 - daemon-local session-scoped resource delivery planning through the Resource Broker and Delivery Planner, with safe ledger audit events for delivery decisions and short-lived access grants for allowed URL and hosted in-memory content deliveries;
 - daemon resource access base URL validation, optional HMAC-signed daemon access URLs, and safe posture reporting with explicit opt-in for env-configured non-local access URLs and HTTPS-only public access URLs;
-- daemon deployment posture reporting for bind exposure, control-plane auth mode, token mode, principal count, CORS origin count, persistence classes, resource access continuity, production-readiness blockers, and safety notes without exposing secrets, resource access URLs, or provider/tool endpoint values;
+- daemon deployment posture reporting for bind exposure, control-plane auth mode, token mode, principal count, CORS origin count, persistence classes, SQLite process-lock status, resource access continuity, production-readiness blockers, and safety notes without exposing secrets, configured file paths, resource access URLs, or provider/tool endpoint values;
 - optional daemon-served built Web static assets for local/pre-production shells, with Accept-based SPA/API route separation, no-store shell responses, immutable asset caching, and configured-root path constraints;
 - package-level HTTP-template participant adapter and opt-in daemon participant profile for non-OpenAI HTTP providers;
 - package-level MCP-compatible tool participant adapter with injected client lifecycle, execution policy controls, and an opt-in daemon MCP tool participant profile;

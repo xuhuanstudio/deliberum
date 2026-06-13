@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { dirname } from "node:path";
 import { mkdirSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import {
   OPERATION_AUDIT_LOG_SCHEMA_VERSION,
   OperationAuditLogError,
@@ -258,10 +259,5 @@ function mapSQLiteOperationAuditLogError(error: unknown): unknown {
 }
 
 function createDefaultAuditIdGenerator(): IdGenerator {
-  let index = 0;
-
-  return () => {
-    index += 1;
-    return `operation-audit-${index}`;
-  };
+  return () => randomUUID();
 }
