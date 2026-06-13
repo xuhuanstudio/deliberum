@@ -1904,6 +1904,43 @@ describe("@deliberum/web shell", () => {
     expect(readableConclusion).not.toContain("evidence-1");
   });
 
+  it("fills missing run conclusion sections from discussion context", async () => {
+    const client = createClient({
+      getRunOutcome: vi.fn(async () => ({
+        runId: runDetail.runId,
+        sessionId: runDetail.sessionId,
+        status: "compiled",
+        draftStatus: "provisional",
+        outcome: {
+          recommendation: "Use the current discussion state as reviewable material.",
+          unresolvedQuestions: [],
+          continuationSuggestions: [],
+          limitations: []
+        }
+      }))
+    });
+
+    renderApp("/runs/run-1/outcome", client);
+
+    expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
+    await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
+
+    const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
+    expect(readableConclusion).toContain("Candidate A");
+    expect(readableConclusion).toContain("1 visible perspective returned");
+    expect(readableConclusion).toContain("Open disagreement 1");
+    expect(readableConclusion).toContain("Requirement 1");
+    expect(readableConclusion).toContain("Missing evidence 1");
+    expect(readableConclusion).not.toContain("candidate-1");
+    expect(readableConclusion).not.toContain("objection-1");
+    expect(readableConclusion).not.toContain("quality-1");
+    expect(readableConclusion).not.toContain("evidence-need-1");
+  });
+
   it("compiles run output for a selected proposal event", async () => {
     const client = renderApp("/runs/run-1/outcome");
     const getRunOutcome = vi.mocked(client.getRunOutcome);
@@ -1964,6 +2001,10 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Current conclusion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getSessionFinal).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText("Current conclusion remains provisional")).toBeTruthy();
     expect(screen.getByText("Candidate proposal event")).toBeTruthy();
     expect(screen.getAllByText(/final-candidate-event-1/).length).toBeGreaterThan(0);
@@ -1971,6 +2012,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Unresolved questions")).toBeTruthy();
     expect(screen.getAllByText(/Evidence coverage remains incomplete/).length).toBeGreaterThan(0);
     expect(screen.getByText("Provenance")).toBeTruthy();
+    const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
+    expect(readableConclusion).toContain("Candidate A");
+    expect(readableConclusion).toContain("1 visible perspective returned");
+    expect(readableConclusion).not.toContain("candidate-1");
     expect(client.getRunOutcome).not.toHaveBeenCalled();
     expect(
       Array.from(document.querySelectorAll(".du-nav-link.is-active")).map(

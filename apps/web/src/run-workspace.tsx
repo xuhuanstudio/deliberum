@@ -353,12 +353,14 @@ export function RunOutcomePage() {
         : client.getRunOutcome(runId)
   });
   const outcome = outcomeQuery.data;
+  const outcomeSessionId = getStringRecordValue(outcome, "sessionId");
   const compiledOutcome = outcome?.status === "compiled" ? outcome.outcome : undefined;
   const provenance = getRecordValue(compiledOutcome, "provenance");
   const finalCandidateProposalEventId = getStringRecordValue(
     provenance,
     "finalCandidateProposalEventId"
   );
+  const contextQueries = useOutcomeContextQueries(outcomeSessionId);
   const canClearProjectionOverride =
     appliedProjectionProposalEventId !== undefined ||
     projectionProposalEventId.trim().length > 0;
@@ -397,7 +399,7 @@ export function RunOutcomePage() {
                 title="Current conclusion"
                 description="A readable summary of the current result. Advanced details keep the underlying technical response for developers."
               >
-                <OutcomeBrief outcome={outcome.outcome} />
+                <OutcomeBrief outcome={outcome.outcome} context={contextQueries.context} />
               </DataPanel>
               <AdvancedDetails
                 description="Projection override, internal ids, draft status, and raw outcome material for developer inspection."
@@ -1241,6 +1243,56 @@ function humanizeIdentifier(value: string): string {
     .join(" ");
 }
 
+type OutcomeBriefContext = {
+  mainPerspectives: unknown[];
+  openDisagreements: unknown[];
+  missingEvidence: unknown[];
+  answerRequirements: unknown[];
+};
+
+const EMPTY_OUTCOME_CONTEXT: OutcomeBriefContext = {
+  mainPerspectives: [],
+  openDisagreements: [],
+  missingEvidence: [],
+  answerRequirements: []
+};
+
+function useOutcomeContextQueries(sessionId: string | undefined): {
+  context: OutcomeBriefContext;
+} {
+  const { client } = useDaemonRuntime();
+  const enabled = Boolean(sessionId);
+  const frontierQuery = useQuery({
+    queryKey: ["outcome-frontier", sessionId ?? "none"],
+    queryFn: () => client.getFrontier(sessionId ?? ""),
+    enabled
+  });
+  const objectionsQuery = useQuery({
+    queryKey: ["outcome-objections", sessionId ?? "none"],
+    queryFn: () => client.getObjections(sessionId ?? ""),
+    enabled
+  });
+  const obligationsQuery = useQuery({
+    queryKey: ["outcome-obligations", sessionId ?? "none"],
+    queryFn: () => client.getObligations(sessionId ?? ""),
+    enabled
+  });
+  const resourcesQuery = useQuery({
+    queryKey: ["outcome-resources", sessionId ?? "none"],
+    queryFn: () => client.getSessionResources(sessionId ?? ""),
+    enabled
+  });
+
+  return {
+    context: {
+      mainPerspectives: asArray(frontierQuery.data?.candidates),
+      openDisagreements: asArray(objectionsQuery.data?.objections),
+      missingEvidence: asArray(resourcesQuery.data?.evidenceNeeds),
+      answerRequirements: asArray(obligationsQuery.data?.qualityObligations)
+    }
+  };
+}
+
 function RunQualityOverview({ sessionId }: { sessionId: string }) {
   const { client } = useDaemonRuntime();
   const frontierQuery = useQuery({
@@ -1325,7 +1377,13 @@ function QualitySummaryLink({
   );
 }
 
-export function OutcomeBrief({ outcome }: { outcome: unknown }) {
+export function OutcomeBrief({
+  outcome,
+  context = EMPTY_OUTCOME_CONTEXT
+}: {
+  outcome: unknown;
+  context?: OutcomeBriefContext;
+}) {
   const recommendation =
     getStringRecordValue(outcome, "recommendation") ??
     getStringRecordValue(outcome, "summary") ??
@@ -1341,9 +1399,29 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
   const evidenceNeeds = asArray(
     getRecordValue(getRecordValue(outcome, "evidenceStatus"), "evidenceNeeds")
   );
-  const uncheckedEvidenceNeeds = evidenceNeeds.filter(
-    (entry) => getRecordValue(entry, "status") === "unchecked"
-  ).length;
+  const mainPerspectives = preferOutcomeRecords(alternatives, context.mainPerspectives);
+  const openDisagreements = preferOutcomeRecords(
+    unresolvedObjections,
+    context.openDisagreements
+  );
+  const visibleEvidenceNeeds = preferOutcomeRecords(evidenceNeeds, context.missingEvidence);
+  const visibleQualityObligations = preferOutcomeRecords(
+    qualityObligations,
+    context.answerRequirements
+  );
+  const unresolvedEvidenceNeeds = visibleEvidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
+  const mainPerspectiveDetail =
+    alternatives.length > 0
+      ? describeOutcomeCount(alternatives.length, "explored option", "explored options")
+      : describeOutcomeCount(
+          mainPerspectives.length,
+          "visible perspective",
+          "visible perspectives"
+        );
+  const evidenceDetail =
+    visibleEvidenceNeeds.length === 0
+      ? "No evidence gaps listed"
+      : `${unresolvedEvidenceNeeds}/${visibleEvidenceNeeds.length} still need checking`;
 
   return (
     <div className="du-outcome-brief">
@@ -1355,34 +1433,28 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
         <div className="du-outcome-status-grid">
           <OutcomeStatusItem
             title="Main perspectives"
-            value={String(alternatives.length)}
-            detail={describeOutcomeCount(alternatives.length, "explored option", "explored options")}
+            value={String(mainPerspectives.length)}
+            detail={mainPerspectiveDetail}
           />
           <OutcomeStatusItem
             title="Open disagreements"
-            value={String(unresolvedObjections.length)}
+            value={String(openDisagreements.length)}
             detail={describeOutcomeCount(
-              unresolvedObjections.length,
+              openDisagreements.length,
               "open disagreement",
               "open disagreements"
             )}
-            tone={unresolvedObjections.length > 0 ? "warning" : "ok"}
+            tone={openDisagreements.length > 0 ? "warning" : "ok"}
           />
           <OutcomeStatusItem
             title="Missing evidence"
             value={
-              evidenceNeeds.length === 0
+              visibleEvidenceNeeds.length === 0
                 ? "0"
-                : `${uncheckedEvidenceNeeds}/${evidenceNeeds.length}`
+                : `${unresolvedEvidenceNeeds}/${visibleEvidenceNeeds.length}`
             }
-            detail={
-              evidenceNeeds.length === 0
-                ? "No evidence gaps listed"
-                : `${uncheckedEvidenceNeeds} unchecked evidence gap${
-                    uncheckedEvidenceNeeds === 1 ? "" : "s"
-                  }`
-            }
-            tone={uncheckedEvidenceNeeds > 0 ? "warning" : "ok"}
+            detail={evidenceDetail}
+            tone={unresolvedEvidenceNeeds > 0 ? "warning" : "ok"}
           />
           <OutcomeStatusItem
             title="Risks and boundaries"
@@ -1410,25 +1482,25 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
       </div>
       <ReadableRecordList
         title="Main perspectives"
-        items={alternatives}
+        items={mainPerspectives}
         emptyTitle="No alternatives returned"
         summarizeItem={summarizeAlternative}
       />
       <ReadableRecordList
         title="Open disagreements"
-        items={unresolvedObjections}
+        items={openDisagreements}
         emptyTitle="No open disagreements returned"
         summarizeItem={summarizeOpenObjection}
       />
       <ReadableRecordList
         title="Missing evidence"
-        items={evidenceNeeds}
+        items={visibleEvidenceNeeds}
         emptyTitle="No missing evidence returned"
         summarizeItem={summarizeEvidenceNeed}
       />
       <ReadableRecordList
         title="Requirements this answer must satisfy"
-        items={qualityObligations}
+        items={visibleQualityObligations}
         emptyTitle="No answer requirements returned"
         summarizeItem={summarizeQualityObligation}
       />
@@ -1439,6 +1511,17 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
       />
     </div>
   );
+}
+
+function preferOutcomeRecords(outcomeRecords: unknown[], contextRecords: unknown[]): unknown[] {
+  return outcomeRecords.length > 0 ? outcomeRecords : contextRecords;
+}
+
+function isUnresolvedEvidenceNeed(entry: unknown): boolean {
+  const object = getRecordValue(entry, "object") ?? entry;
+  const status = getStringRecordValue(object, "status");
+
+  return status !== "checked" && status !== "satisfied" && status !== "resolved";
 }
 
 function OutcomeStatusItem({

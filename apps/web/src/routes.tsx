@@ -1465,6 +1465,18 @@ function FinalPage() {
     queryKey: ["frontier", sessionId],
     queryFn: () => client.getFrontier(sessionId)
   });
+  const objectionsQuery = useQuery({
+    queryKey: ["session-final-objections", sessionId],
+    queryFn: () => client.getObjections(sessionId)
+  });
+  const obligationsQuery = useQuery({
+    queryKey: ["session-final-obligations", sessionId],
+    queryFn: () => client.getObligations(sessionId)
+  });
+  const resourcesQuery = useQuery({
+    queryKey: ["session-final-resources", sessionId],
+    queryFn: () => client.getSessionResources(sessionId)
+  });
   const finalCandidateMutation = useMutation({
     mutationFn: () =>
       client.proposeFinalCandidate(
@@ -1534,6 +1546,12 @@ function FinalPage() {
   const canClearProjectionOverride =
     appliedProjectionProposalEventId !== undefined ||
     projectionProposalEventId.trim().length > 0;
+  const outcomeContext = {
+    mainPerspectives: asArray(frontierQuery.data?.candidates),
+    openDisagreements: asArray(objectionsQuery.data?.objections),
+    missingEvidence: asArray(resourcesQuery.data?.evidenceNeeds),
+    answerRequirements: asArray(obligationsQuery.data?.qualityObligations)
+  };
 
   useEffect(() => {
     if (candidateInputTouched || acceptedCandidateIds.length === 0) {
@@ -1618,7 +1636,7 @@ function FinalPage() {
           title="Current conclusion"
           description="A readable summary of the current result. Advanced details keep technical provenance and developer controls."
         >
-          <OutcomeBrief outcome={outcome} />
+          <OutcomeBrief outcome={outcome} context={outcomeContext} />
         </DataPanel>
         <AdvancedDetails
           description="Projection overrides, provenance, raw JSON, internal ids, Final Audit controls, and proposal lifecycle controls for developers."
