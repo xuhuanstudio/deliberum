@@ -202,6 +202,44 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       },
       safety: ["No secrets, configured resource URLs, or provider endpoint values are returned."]
     })),
+    getResourceAccessPosture: vi.fn(async () => ({
+      baseUrl: {
+        configured: true,
+        exposure: "localhost",
+        routePattern: "/resource-access/:accessId"
+      },
+      ttl: {
+        configured: true,
+        defaultTtlMs: 120000,
+        maxTtlMs: 3600000
+      },
+      grantStore: {
+        mode: "configured_store",
+        restartContinuity: "depends_on_configured_store"
+      },
+      hostedContent: {
+        supported: true,
+        requiresExplicitPolicy: true,
+        requiresSizeLimit: true,
+        deliveryMaterial: "short_lived_access_url",
+        sensitiveDefault: "none",
+        brokerContentRestartContinuity: "depends_on_configured_store",
+        grantRestartContinuity: "depends_on_configured_store"
+      },
+      productionHosting: {
+        status: "not_production_hosting",
+        publicUrlHosting: false,
+        signedUrls: false,
+        arbitraryFileServing: false,
+        blockers: [
+          "Production public resource hosting is not implemented.",
+          "Signed URL issuance is not implemented."
+        ]
+      },
+      safety: [
+        "It does not expose resource access ids, bearer tokens, source URLs, redirected targets, hosted content, or resource payloads."
+      ]
+    })),
     listSessions: vi.fn(async () => ({
       sessions: [
         {
@@ -803,6 +841,40 @@ describe("@deliberum/web shell", () => {
       ["local-daemon-auth", "token"].join("-")
     );
     expect(document.body.textContent ?? "").not.toContain("https://resource.example");
+  });
+
+  it("renders safe daemon resource access posture without access material", async () => {
+    const client = renderApp("/");
+
+    expect(await screen.findByText("Resource access posture")).toBeTruthy();
+    await waitFor(() => expect(client.getResourceAccessPosture).toHaveBeenCalled());
+    expect(screen.getByText("Base URL posture")).toBeTruthy();
+    expect(screen.getByText("Localhost, configured")).toBeTruthy();
+    expect(screen.getByText("Route pattern")).toBeTruthy();
+    expect(screen.getByText("/resource-access/:accessId")).toBeTruthy();
+    expect(screen.getByText("TTL")).toBeTruthy();
+    expect(screen.getByText("120000 ms / max 3600000 ms")).toBeTruthy();
+    expect(screen.getByText("Grant store")).toBeTruthy();
+    expect(screen.getByText("Configured store, restart-aware")).toBeTruthy();
+    expect(screen.getByText("Hosted content")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Explicit policy, size-limited, broker restart-aware, grants restart-aware"
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Sensitive default")).toBeTruthy();
+    expect(screen.getByText("Short-lived access URL")).toBeTruthy();
+    expect(screen.getAllByText("Not production hosting").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Production public resource hosting is not implemented. Signed URL issuance is not implemented."
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain(
+      ["https://resource", "example"].join(".")
+    );
+    expect(document.body.textContent ?? "").not.toContain("resource-access-audit-1");
+    expect(document.body.textContent ?? "").not.toContain("ZZZZ");
   });
 
   it("renders the session overview from daemon ledger events", async () => {

@@ -25,7 +25,8 @@ import { buildRuntimeSetupPlan } from "@deliberum/client";
 import type {
   AuditFinalCandidateRequest,
   DeploymentPostureResponse,
-  ProposeFinalCandidateRequest
+  ProposeFinalCandidateRequest,
+  ResourceAccessPostureResponse
 } from "@deliberum/client";
 import {
   RunDetailPage,
@@ -233,9 +234,14 @@ function LandingPage() {
     queryKey: ["deployment-posture"],
     queryFn: () => client.getDeploymentPosture()
   });
+  const resourceAccessPostureQuery = useQuery({
+    queryKey: ["resource-access-posture"],
+    queryFn: () => client.getResourceAccessPosture()
+  });
   const sessions = asArray(sessionsQuery.data?.sessions);
   const runtimeProfiles = asArray(runtimeProfilesQuery.data?.profiles);
   const deploymentPosture = deploymentPostureQuery.data;
+  const resourceAccessPosture = resourceAccessPostureQuery.data;
   const runtimeSetupPlan = runtimeProfilesQuery.data
     ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
     : undefined;
@@ -368,6 +374,72 @@ function LandingPage() {
               <EmptyState
                 title="No deployment posture"
                 description="The daemon did not return safe deployment posture metadata."
+              />
+            )}
+          </QueryState>
+        </DataPanel>
+        <DataPanel
+          title="Resource access posture"
+          description="Safe daemon resource delivery metadata without access ids, configured URLs, or payloads."
+        >
+          <QueryState query={resourceAccessPostureQuery}>
+            {resourceAccessPosture ? (
+              <>
+                <KeyValueGrid
+                  items={[
+                    {
+                      label: "Base URL posture",
+                      value: formatResourceBaseUrl(resourceAccessPosture.baseUrl)
+                    },
+                    {
+                      label: "Route pattern",
+                      value: resourceAccessPosture.baseUrl.routePattern
+                    },
+                    {
+                      label: "TTL",
+                      value: formatResourceTtl(resourceAccessPosture.ttl)
+                    },
+                    {
+                      label: "Grant store",
+                      value: formatResourceGrantStore(resourceAccessPosture.grantStore)
+                    },
+                    {
+                      label: "Hosted content",
+                      value: formatHostedContent(resourceAccessPosture.hostedContent)
+                    },
+                    {
+                      label: "Sensitive default",
+                      value: "None"
+                    },
+                    {
+                      label: "Delivery material",
+                      value: "Short-lived access URL"
+                    },
+                    {
+                      label: "Production hosting",
+                      value: "Not production hosting"
+                    },
+                    {
+                      label: "Blockers",
+                      value: String(
+                        resourceAccessPosture.productionHosting.blockers.length
+                      )
+                    }
+                  ]}
+                />
+                <div className="du-status du-status-warning">
+                  <strong>Not production hosting</strong>
+                  <span>
+                    {resourceAccessPosture.productionHosting.blockers.length > 0
+                      ? resourceAccessPosture.productionHosting.blockers.join(" ")
+                      : "No daemon-reported blockers."}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <EmptyState
+                title="No resource access posture"
+                description="The daemon did not return safe resource access posture metadata."
               />
             )}
           </QueryState>
@@ -638,6 +710,51 @@ function formatDeploymentReadinessClass(
   }
 
   return "du-status-warning";
+}
+
+function formatResourceBaseUrl(
+  value: ResourceAccessPostureResponse["baseUrl"]
+): string {
+  const exposure = formatDeploymentExposure(value.exposure);
+  const configured = value.configured ? "configured" : "default";
+
+  return `${exposure}, ${configured}`;
+}
+
+function formatResourceTtl(value: ResourceAccessPostureResponse["ttl"]): string {
+  const configured = value.configured ? "" : " default";
+
+  return `${value.defaultTtlMs} ms / max ${value.maxTtlMs} ms${configured}`;
+}
+
+function formatResourceGrantStore(
+  value: ResourceAccessPostureResponse["grantStore"]
+): string {
+  const mode = value.mode === "configured_store" ? "Configured store" : "Process memory";
+  const continuity = formatResourceRestartContinuity(value.restartContinuity);
+
+  return `${mode}, ${continuity}`;
+}
+
+function formatHostedContent(
+  value: ResourceAccessPostureResponse["hostedContent"]
+): string {
+  const policy = value.requiresExplicitPolicy ? "Explicit policy" : "Implicit policy";
+  const sizeLimit = value.requiresSizeLimit ? "size-limited" : "unbounded";
+  const brokerContinuity = formatResourceRestartContinuity(
+    value.brokerContentRestartContinuity
+  );
+  const grantContinuity = formatResourceRestartContinuity(value.grantRestartContinuity);
+
+  return `${policy}, ${sizeLimit}, broker ${brokerContinuity}, grants ${grantContinuity}`;
+}
+
+function formatResourceRestartContinuity(
+  value:
+    | ResourceAccessPostureResponse["grantStore"]["restartContinuity"]
+    | ResourceAccessPostureResponse["hostedContent"]["brokerContentRestartContinuity"]
+): string {
+  return value === "depends_on_configured_store" ? "restart-aware" : "restart-lost";
 }
 
 function formatUnknownArray(value: unknown): string[] {

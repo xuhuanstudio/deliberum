@@ -8,6 +8,7 @@ import {
   type DeploymentPostureResponse,
   type EventResponse,
   type EventsResponse,
+  type ResourceAccessPostureResponse,
   type ObjectionsResponse,
   type ObligationsResponse,
   type AuditFinalCandidateRequest,
@@ -44,6 +45,7 @@ export type WebDaemonClient = {
   health: () => Promise<DaemonHealthResponse>;
   getRuntimeProfiles: () => Promise<RuntimeProfilesResponse>;
   getDeploymentPosture: () => Promise<DeploymentPostureResponse>;
+  getResourceAccessPosture: () => Promise<ResourceAccessPostureResponse>;
   listSessions: () => Promise<ListSessionsResponse>;
   createRun: (input: CreateRunRequest) => Promise<CreateRunResponse>;
   listRuns: () => Promise<ListRunsResponse>;
