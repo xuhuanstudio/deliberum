@@ -1236,7 +1236,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Evidence
+        Risks and evidence
       </Link>
       <details className="du-nav-advanced">
         <summary>Advanced</summary>
@@ -1372,7 +1372,7 @@ function SessionOverviewPage() {
               to="/sessions/$sessionId/resources"
               params={{ sessionId }}
             >
-              Check evidence
+              Review risks and evidence
             </Link>
           </div>
         </DataPanel>

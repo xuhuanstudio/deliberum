@@ -1007,7 +1007,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Review open disagreements")).toBeTruthy();
     expect(screen.getByRole("link", { name: "View current conclusion" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "View main perspectives" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Review risks and evidence" })).toBeTruthy();
     expect(screen.getByText("topic_contract_published")).toBeTruthy();
   });
 
@@ -2256,7 +2256,7 @@ describe("@deliberum/web shell", () => {
       Array.from(document.querySelectorAll(".du-nav-link.is-active")).map(
         (element) => element.textContent
       )
-    ).toEqual(["Evidence"]);
+    ).toEqual(["Risks and evidence"]);
   });
 
   it("does not add hidden session persistence or forbidden semantic authority APIs", () => {
