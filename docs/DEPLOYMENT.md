@@ -45,7 +45,7 @@ corepack pnpm --filter @deliberum/web build
 DELIBERUM_DAEMON_WEB_ASSETS_PATH=apps/web/dist node apps/daemon/dist/index.js
 ```
 
-When this path is set, the daemon serves Vite assets under `/assets/*` and serves the Web shell for browser navigation requests that accept `text/html`, including refreshed Web routes such as `/runs` and `/sessions/:sessionId`. JSON API callers that do not request `text/html` keep receiving the existing daemon API responses on the same paths. The shell index is returned with no-store headers, hashed assets use immutable cache headers, and file paths are constrained to the configured asset root. This is local/pre-production static serving only; it does not add public hosting, production authorization, multi-user sessions, or a secret-capturing provider setup flow.
+When this path is set, the daemon serves Vite assets under `/assets/*` and serves the Web shell for browser navigation requests that accept `text/html`, including refreshed Web routes such as `/runs` and `/sessions/:sessionId`. JSON API callers that do not request `text/html` keep receiving the existing daemon API responses on the same paths. The shell index is returned with no-store headers, hashed assets use immutable cache headers, and file paths are constrained to the configured asset root. This is local/pre-production static serving only; it does not add public hosting, production authorization, multi-user sessions, or a Web-based secret-capturing provider setup flow.
 
 ## Local/pre-production container
 
@@ -69,6 +69,70 @@ docker compose up --build
 
 The container sets `DELIBERUM_HOST=0.0.0.0` inside the container so Docker port publishing can reach the daemon. The Compose file still binds the published host port to `127.0.0.1`. Keep that host-side localhost binding unless a separate fronting auth layer and network policy are in place. Use runtime environment injection for provider keys and daemon auth tokens; do not bake secrets into the image, Compose file, Dockerfile, or Web build.
 
+## Remote/pre-production hardening runbook
+
+Use this runbook for a single-operator or trusted-team pre-production daemon. It is not a production multi-user deployment model.
+
+1. Build from a clean checkout and keep CI green before packaging:
+
+   ```bash
+   corepack pnpm run ci
+   docker build -t deliberum:local .
+   ```
+
+2. Generate a local environment file from daemon profile metadata, then review it before starting the daemon:
+
+   ```bash
+   node apps/cli/dist/index.js daemon setup-wizard \
+     --output .deliberum/daemon.env \
+     --profile openai-compatible
+   ```
+
+   The setup wizard captures secret values locally and writes a marker-delimited env block. Do not commit generated env files.
+
+3. Keep the daemon private by default. Prefer one of these exposure patterns:
+
+   - SSH tunnel: keep the daemon bound to `127.0.0.1` on the server and tunnel `127.0.0.1:3877` from the operator machine.
+   - Private reverse proxy: put TLS, authentication, request limits, and network policy in front of the daemon, and keep daemon control-plane bearer auth enabled.
+   - Local container: keep Compose's host port binding at `127.0.0.1:3877` unless a separate fronting auth layer exists.
+
+4. Use durable local/pre-production state and audit metadata:
+
+   ```bash
+   DELIBERUM_DAEMON_SQLITE_PATH=/data/deliberum.sqlite
+   DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES=10000
+   DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_PATH=/data/operation-audit.jsonl
+   DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES=10485760
+   DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES=5
+   ```
+
+   Configure `DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_URL` only for a trusted HTTPS collector. Localhost HTTP is allowed for local collectors; non-local HTTP requires the explicit insecure opt-in and should not be used for shared environments.
+
+5. Serve the Web shell from the daemon for remote/pre-production use instead of exposing a separate public Vite origin:
+
+   ```bash
+   DELIBERUM_DAEMON_WEB_ASSETS_PATH=/app/apps/web/dist
+   ```
+
+   The daemon CORS allow-list intentionally accepts local origins only. For remote browser access, use the daemon-served same-origin Web shell behind the same private tunnel or fronting proxy.
+
+6. Configure resource access only for the exposure class you actually need:
+
+   - For SSH-tunneled or localhost use, leave `DELIBERUM_RESOURCE_ACCESS_BASE_URL` unset or set it to the local daemon URL.
+   - For LAN or public pre-production access URLs, set `DELIBERUM_RESOURCE_ACCESS_BASE_URL` to the externally reachable HTTPS URL and set `DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE=true`.
+   - Keep `DELIBERUM_RESOURCE_ACCESS_TTL_MS` short enough for the review workflow. Resource access grants are revocable, but they are not production authorization.
+
+7. Verify posture after startup:
+
+   ```bash
+   curl -fsS http://127.0.0.1:3877/health
+   node apps/cli/dist/index.js daemon deployment-posture --json
+   node apps/cli/dist/index.js daemon resource-access status --json
+   node apps/cli/dist/index.js daemon operation-audit --limit 25 --json
+   ```
+
+   Expected pre-production blockers still include missing production authorization, missing production multi-writer coordination, and missing production public resource hosting. Treat those blockers as deployment boundaries, not warnings to suppress.
+
 ## Deferred deployment work
 
 The following remain future work:
@@ -76,5 +140,5 @@ The following remain future work:
 - production multi-writer coordination;
 - production public resource hosting and signed URL service implementation;
 - production authorization;
-- multi-user deployment and SSH/remote deployment guidance beyond manual local port forwarding;
+- multi-user deployment;
 - Postgres-backed team/server deployments.

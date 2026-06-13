@@ -46,6 +46,10 @@ local:
       productionAuthorization: deferred
   cli:
     store: .deliberum/events.json
+    setupWizard:
+      command: deliberum daemon setup-wizard --output .deliberum/daemon.env
+      secretMode: local_tty_hidden_prompt
+      writes: marker_delimited_env_block
   web:
     daemonUrl: http://127.0.0.1:3877
     daemonAuthTokenEnv: VITE_DELIBERUM_DAEMON_AUTH_TOKEN
@@ -62,6 +66,7 @@ local:
     publishedHostDefault: 127.0.0.1
     dataVolumePath: /data
     imageSecretPolicy: runtime_env_only
+    remotePreproductionGuidance: documented
     productionDeployment: deferred
   adaptiveProcess:
     suggestionEndpoint: read_only
@@ -148,7 +153,7 @@ deferred:
   productionAuthorization: true
   signedUrlServer: true
   automatedPrimitiveExecutionPolicy: true
-  providerSetupUx: true
+  webProviderSetupUx: true
   mcpServerLifecycle: true
   mcpToolSandboxing: true
   productionAuth: true

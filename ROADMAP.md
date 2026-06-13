@@ -35,7 +35,7 @@ This is still a pre-production local-first implementation, not a production serv
 - Broader primitive runner coverage and automated policy beyond read-only accepted process proposal readiness.
 - Production public resource hosting and signed URL service implementation.
 - MCP server lifecycle management, broader external tool execution policy, and adapter sandboxing.
-- Production authorization, multi-user deployment, and production remote deployment guidance.
+- Production authorization and multi-user deployment.
 
 ## Later Evaluation And Release Work
 
