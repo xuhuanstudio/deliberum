@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { ResourceUrlExposure } from "@deliberum/protocol";
 
 export const RESOURCE_ACCESS_DEFAULT_TTL_MS = 5 * 60 * 1000;
@@ -6,6 +6,23 @@ export const RESOURCE_ACCESS_MAX_TTL_MS = 60 * 60 * 1000;
 
 export type ResourceAccessClock = () => number;
 export type ResourceAccessTokenGenerator = () => string;
+export type ResourceAccessUrlSigningOptions = {
+  secret: string;
+  expiresAt: number;
+};
+
+export type VerifyResourceAccessUrlSignatureOptions = {
+  accessId: string;
+  expiresAt: string | undefined;
+  signature: string | undefined;
+  secret: string;
+  now: number;
+};
+
+export const RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM =
+  "resourceAccessExpiresAt" as const;
+export const RESOURCE_ACCESS_URL_SIGNATURE_QUERY_PARAM =
+  "resourceAccessSignature" as const;
 
 export type ResourceAccessGrantMode = "redirect" | "content";
 
@@ -222,14 +239,89 @@ export class ResourceAccessGrantStore implements ResourceAccessGrantStoreLike {
   }
 }
 
-export function createResourceAccessUrl(baseUrl: string, accessId: string): string {
+export function createResourceAccessUrl(
+  baseUrl: string,
+  accessId: string,
+  signing?: ResourceAccessUrlSigningOptions
+): string {
   const parsed = parseBaseUrl(baseUrl);
+  const parsedAccessId = parseResourceAccessId(accessId);
   const basePath = parsed.pathname.replace(/\/$/, "");
-  parsed.pathname = `${basePath}/resource-access/${encodeURIComponent(parseResourceAccessId(accessId))}`;
+  parsed.pathname = `${basePath}/resource-access/${encodeURIComponent(parsedAccessId)}`;
   parsed.search = "";
   parsed.hash = "";
 
+  if (signing !== undefined) {
+    const expiresAt = parseResourceAccessSignatureExpiresAt(signing.expiresAt);
+    parsed.searchParams.set(
+      RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM,
+      String(expiresAt)
+    );
+    parsed.searchParams.set(
+      RESOURCE_ACCESS_URL_SIGNATURE_QUERY_PARAM,
+      createResourceAccessUrlSignature({
+        accessId: parsedAccessId,
+        expiresAt,
+        secret: signing.secret
+      })
+    );
+  }
+
   return parsed.toString();
+}
+
+export function createResourceAccessUrlSignature(input: {
+  accessId: string;
+  expiresAt: number;
+  secret: string;
+}): string {
+  const accessId = parseResourceAccessId(input.accessId);
+  const expiresAt = parseResourceAccessSignatureExpiresAt(input.expiresAt);
+  const secret = parseResourceAccessSigningSecret(input.secret);
+
+  return createHmac("sha256", secret)
+    .update(createResourceAccessSignaturePayload(accessId, expiresAt))
+    .digest("base64url");
+}
+
+export function verifyResourceAccessUrlSignature(
+  options: VerifyResourceAccessUrlSignatureOptions
+): void {
+  const accessId = parseResourceAccessId(options.accessId);
+  const expiresAt = parseResourceAccessSignatureExpiresAtString(options.expiresAt);
+  const signature = parseResourceAccessSignature(options.signature);
+  const now = parseResourceAccessTimestamp(options.now, "now");
+
+  if (expiresAt <= now) {
+    throw new ResourceAccessError(
+      "resource_access_signature_expired",
+      "Resource access URL signature is expired."
+    );
+  }
+
+  const expected = createResourceAccessUrlSignature({
+    accessId,
+    expiresAt,
+    secret: options.secret
+  });
+
+  if (!safeEqualSignature(signature, expected)) {
+    throw new ResourceAccessError(
+      "resource_access_signature_invalid",
+      "Resource access URL signature is invalid."
+    );
+  }
+}
+
+export function parseResourceAccessSigningSecret(value: string): string {
+  if (typeof value !== "string" || value.trim().length < 32) {
+    throw new ResourceAccessError(
+      "invalid_resource_access_signing_secret",
+      "Resource access signing secret must contain at least 32 non-whitespace characters."
+    );
+  }
+
+  return value.trim();
 }
 
 export function classifyResourceAccessBaseUrl(baseUrl: string): ResourceUrlExposure {
@@ -469,6 +561,56 @@ function parseResourceAccessCount(value: unknown, name: string): number {
   }
 
   return value as number;
+}
+
+function parseResourceAccessSignatureExpiresAt(value: unknown): number {
+  if (!Number.isInteger(value) || (value as number) <= 0) {
+    throw new ResourceAccessError(
+      "invalid_resource_access_signature_expiry",
+      "Resource access URL signature expiry must be a positive millisecond timestamp."
+    );
+  }
+
+  return value as number;
+}
+
+function parseResourceAccessSignatureExpiresAtString(value: string | undefined): number {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
+    throw new ResourceAccessError(
+      "resource_access_signature_missing",
+      "Resource access URL signature metadata is required."
+    );
+  }
+
+  return parseResourceAccessSignatureExpiresAt(Number(value));
+}
+
+function parseResourceAccessSignature(value: string | undefined): string {
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{32,}$/.test(value)) {
+    throw new ResourceAccessError(
+      "resource_access_signature_missing",
+      "Resource access URL signature metadata is required."
+    );
+  }
+
+  return value;
+}
+
+function createResourceAccessSignaturePayload(
+  accessId: string,
+  expiresAt: number
+): string {
+  return `resource-access-url-v1\n${accessId}\n${expiresAt}`;
+}
+
+function safeEqualSignature(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  return (
+    leftBuffer.byteLength === rightBuffer.byteLength &&
+    timingSafeEqual(leftBuffer, rightBuffer)
+  );
 }
 
 function parseBaseUrl(value: string): URL {

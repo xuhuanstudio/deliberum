@@ -18,11 +18,14 @@ import type { DaemonEventBus } from "./event-stream";
 import {
   classifyResourceAccessBaseUrl,
   createResourceAccessUrl,
+  RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM,
+  RESOURCE_ACCESS_URL_SIGNATURE_QUERY_PARAM,
   ResourceAccessError,
   type ResourceAccessGrant,
   type ResourceAccessGrantCreated,
   type ResourceAccessGrantStoreLike,
-  toResourceAccessSafeView
+  toResourceAccessSafeView,
+  verifyResourceAccessUrlSignature
 } from "./resource-access-store";
 
 export type ResourceAccessRouteOptions = {
@@ -31,6 +34,7 @@ export type ResourceAccessRouteOptions = {
   eventBus: DaemonEventBus;
   resourceAccessStore: ResourceAccessGrantStoreLike;
   resourceBroker: ResourceBroker;
+  resourceAccessUrlSigningSecret?: string;
   idGenerator: IdGenerator;
   clock?: Clock;
 };
@@ -38,6 +42,7 @@ export type ResourceAccessRouteOptions = {
 export type ResourceAccessDeliveryOptions = {
   resourceAccessStore: ResourceAccessGrantStoreLike;
   resourceAccessBaseUrl: string;
+  resourceAccessUrlSigningSecret?: string;
   resourceBroker: ResourceBroker;
   resource: Resource;
   idGenerator: IdGenerator;
@@ -63,7 +68,9 @@ export function registerResourceAccessRoutes(
   const { app, resourceAccessStore, resourceBroker } = options;
 
   app.get("/resource-access/:accessId", (context) => {
-    const grant = resourceAccessStore.recordAccess(context.req.param("accessId"));
+    const accessId = context.req.param("accessId");
+    verifyAccessUrlSignatureIfConfigured(options, context, accessId);
+    const grant = resourceAccessStore.recordAccess(accessId);
 
     if (grant.mode === "content") {
       const content = resourceBroker.getExplicitInMemoryContent(grant.content.dataRef);
@@ -191,7 +198,8 @@ function createRedirectAccessDeliveryPlan(
   options.onAccessGrantCreated?.(grant);
   const accessUrl = createResourceAccessUrl(
     options.resourceAccessBaseUrl,
-    grant.accessId
+    grant.accessId,
+    createSigningOptions(options.resourceAccessUrlSigningSecret, grant.grant.expiresAt)
   );
 
   return {
@@ -298,7 +306,8 @@ function createHostedContentAccessDeliveryPlan(
     options.onAccessGrantCreated?.(grant);
     const accessUrl = createResourceAccessUrl(
       options.resourceAccessBaseUrl,
-      grant.accessId
+      grant.accessId,
+      createSigningOptions(options.resourceAccessUrlSigningSecret, grant.grant.expiresAt)
     );
 
     return {
@@ -387,6 +396,47 @@ function createNonePlan(
     reason,
     warnings: []
   };
+}
+
+function createSigningOptions(
+  secret: string | undefined,
+  expiresAt: number
+): { secret: string; expiresAt: number } | undefined {
+  return secret === undefined ? undefined : { secret, expiresAt };
+}
+
+function verifyAccessUrlSignatureIfConfigured(
+  options: ResourceAccessRouteOptions,
+  context: Context,
+  accessId: string
+): void {
+  if (options.resourceAccessUrlSigningSecret === undefined) {
+    return;
+  }
+
+  verifyResourceAccessUrlSignature({
+    accessId,
+    expiresAt: context.req.query(RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM),
+    signature: context.req.query(RESOURCE_ACCESS_URL_SIGNATURE_QUERY_PARAM),
+    secret: options.resourceAccessUrlSigningSecret,
+    now: parseResourceAccessRouteNow(options.clock)
+  });
+}
+
+function parseResourceAccessRouteNow(clock: Clock | undefined): number {
+  if (!clock) {
+    return Date.now();
+  }
+
+  const parsed = Date.parse(clock());
+  if (!Number.isFinite(parsed)) {
+    throw new ResourceAccessError(
+      "resource_access_clock_invalid",
+      "Resource access clock returned an invalid timestamp."
+    );
+  }
+
+  return parsed;
 }
 
 export function handleResourceAccessRouteError(

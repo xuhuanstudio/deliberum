@@ -189,7 +189,8 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       resourceAccess: {
         baseUrlConfigured: true,
         baseUrlExposure: "localhost",
-        grantStoreRestartContinuity: "depends_on_configured_store"
+        grantStoreRestartContinuity: "depends_on_configured_store",
+        urlSigningConfigured: true
       },
       webAssets: {
         configured: true,
@@ -215,6 +216,11 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         defaultTtlMs: 120000,
         maxTtlMs: 3600000
       },
+      urlSigning: {
+        configured: true,
+        algorithm: "hmac-sha256",
+        requiredForAccess: true
+      },
       grantStore: {
         mode: "configured_store",
         restartContinuity: "depends_on_configured_store"
@@ -231,11 +237,11 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       productionHosting: {
         status: "not_production_hosting",
         publicUrlHosting: false,
-        signedUrls: false,
+        signedUrls: true,
         arbitraryFileServing: false,
         blockers: [
           "Production public resource hosting is not implemented.",
-          "Signed URL issuance is not implemented."
+          "Daemon-signed resource access URLs do not replace object-storage or CDN signed URL services."
         ]
       },
       safety: [
@@ -853,7 +859,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Configured stores")).toBeTruthy();
     expect(screen.getByText("5/5")).toBeTruthy();
     expect(screen.getByText("Resource access")).toBeTruthy();
-    expect(screen.getByText("Localhost, restart-aware")).toBeTruthy();
+    expect(screen.getByText("Localhost, restart-aware, signed")).toBeTruthy();
     expect(screen.getByText("Web assets")).toBeTruthy();
     expect(screen.getByText("HTML shell split")).toBeTruthy();
     expect(screen.getByText("Production ready")).toBeTruthy();
@@ -879,6 +885,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("/resource-access/:accessId")).toBeTruthy();
     expect(screen.getByText("TTL")).toBeTruthy();
     expect(screen.getByText("120000 ms / max 3600000 ms")).toBeTruthy();
+    expect(screen.getByText("URL signing")).toBeTruthy();
+    expect(screen.getByText("hmac-sha256, required")).toBeTruthy();
     expect(screen.getByText("Grant store")).toBeTruthy();
     expect(screen.getByText("Configured store, restart-aware")).toBeTruthy();
     expect(screen.getByText("Hosted content")).toBeTruthy();
@@ -892,7 +900,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Not production hosting").length).toBeGreaterThan(0);
     expect(
       screen.getByText(
-        "Production public resource hosting is not implemented. Signed URL issuance is not implemented."
+        "Production public resource hosting is not implemented. Daemon-signed resource access URLs do not replace object-storage or CDN signed URL services."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain(
@@ -900,6 +908,7 @@ describe("@deliberum/web shell", () => {
     );
     expect(document.body.textContent ?? "").not.toContain("resource-access-audit-1");
     expect(document.body.textContent ?? "").not.toContain("ZZZZ");
+    expect(document.body.textContent ?? "").not.toContain("resource-access-url-signing-key");
   });
 
   it("renders safe daemon operation audit metadata without request material", async () => {

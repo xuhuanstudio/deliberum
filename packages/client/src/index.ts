@@ -313,6 +313,11 @@ export type ResourceAccessPostureResponse = {
     defaultTtlMs: number;
     maxTtlMs: number;
   };
+  urlSigning: {
+    configured: boolean;
+    algorithm: "hmac-sha256";
+    requiredForAccess: boolean;
+  };
   grantStore: {
     mode: "process_memory" | "configured_store";
     restartContinuity: "lost_on_restart" | "depends_on_configured_store";
@@ -329,7 +334,7 @@ export type ResourceAccessPostureResponse = {
   productionHosting: {
     status: "not_production_hosting";
     publicUrlHosting: false;
-    signedUrls: false;
+    signedUrls: boolean;
     arbitraryFileServing: false;
     blockers: string[];
   };
@@ -365,6 +370,7 @@ export type DeploymentPostureResponse = {
     baseUrlConfigured: boolean;
     baseUrlExposure: "localhost" | "lan" | "public";
     grantStoreRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
+    urlSigningConfigured: boolean;
   };
   webAssets: {
     configured: boolean;

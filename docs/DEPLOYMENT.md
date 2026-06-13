@@ -26,7 +26,7 @@ The daemon also exposes `GET /runtime/deployment-posture` as a no-store safe dia
 
 For local/pre-production durable storage, set `DELIBERUM_DAEMON_SQLITE_PATH=<path>`. The daemon will use SQLite-backed stores for session ledger events, run metadata, explicitly registered resource broker metadata/content, resource access grant state, and safe operation audit metadata in that database, with WAL mode, a busy timeout, and local connection-level writer serialization.
 
-The resource access base URL defaults to the daemon's local host and port. If `DELIBERUM_RESOURCE_ACCESS_BASE_URL` is configured to a non-local URL, `DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE=true` must also be set. Public resource access base URLs must use HTTPS.
+The resource access base URL defaults to the daemon's local host and port. If `DELIBERUM_RESOURCE_ACCESS_BASE_URL` is configured to a non-local URL, `DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE=true` must also be set. Public resource access base URLs must use HTTPS. Set `DELIBERUM_RESOURCE_ACCESS_SIGNING_SECRET` to require HMAC-signed daemon access URLs for generated resource access grants; the key stays runtime-only and posture reports only whether signing is configured.
 
 For local development fallback without SQLite, `DELIBERUM_DAEMON_EVENT_STORE_PATH=<path>` opts into the shared JSON EventStore for daemon event ledger persistence, `DELIBERUM_DAEMON_RUN_STORE_PATH=<path>` opts into JSON run metadata persistence, and `DELIBERUM_DAEMON_OPERATION_AUDIT_PATH=<path>` opts into JSON operation audit log persistence. Use the event/run JSON paths together when the local run workspace must survive daemon restarts.
 
@@ -120,6 +120,7 @@ Use this runbook for a single-operator or trusted-team pre-production daemon. It
 
    - For SSH-tunneled or localhost use, leave `DELIBERUM_RESOURCE_ACCESS_BASE_URL` unset or set it to the local daemon URL.
    - For LAN or public pre-production access URLs, set `DELIBERUM_RESOURCE_ACCESS_BASE_URL` to the externally reachable HTTPS URL and set `DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE=true`.
+   - For public pre-production access URLs, set `DELIBERUM_RESOURCE_ACCESS_SIGNING_SECRET` to a runtime-only value with at least 32 non-whitespace characters.
    - Keep `DELIBERUM_RESOURCE_ACCESS_TTL_MS` short enough for the review workflow. Resource access grants are revocable, but they are not production authorization.
 
 7. Verify posture after startup:

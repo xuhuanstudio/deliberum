@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   classifyResourceAccessBaseUrl,
   createResourceAccessUrl,
+  createResourceAccessUrlSignature,
+  RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM,
+  RESOURCE_ACCESS_URL_SIGNATURE_QUERY_PARAM,
   ResourceAccessError,
-  ResourceAccessGrantStore
+  ResourceAccessGrantStore,
+  verifyResourceAccessUrlSignature
 } from "../src";
 
 describe("ResourceAccessGrantStore", () => {
@@ -146,6 +150,63 @@ describe("ResourceAccessGrantStore", () => {
     expect(classifyResourceAccessBaseUrl("https://resources.example")).toBe("public");
     expect(() =>
       createResourceAccessUrl("https://user:secret@example.com", accessId)
+    ).toThrow(ResourceAccessError);
+  });
+
+  it("can sign and verify resource access URLs without exposing signing material", () => {
+    const accessId = "S".repeat(32);
+    const expiresAt = Date.parse("2026-06-10T00:05:00.000Z");
+    const signingSecret = "resource-access-url-signing-key-32";
+    const accessUrl = createResourceAccessUrl(
+      "https://resources.example/prefix",
+      accessId,
+      {
+        secret: signingSecret,
+        expiresAt
+      }
+    );
+    const parsed = new URL(accessUrl);
+    const signature = parsed.searchParams.get(
+      RESOURCE_ACCESS_URL_SIGNATURE_QUERY_PARAM
+    );
+
+    expect(accessUrl).toContain(
+      `${RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM}=${expiresAt}`
+    );
+    expect(signature).toBe(
+      createResourceAccessUrlSignature({
+        accessId,
+        expiresAt,
+        secret: signingSecret
+      })
+    );
+    expect(accessUrl).not.toContain(signingSecret);
+    expect(() =>
+      verifyResourceAccessUrlSignature({
+        accessId,
+        expiresAt: parsed.searchParams.get(RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM) ?? undefined,
+        signature: signature ?? undefined,
+        secret: signingSecret,
+        now: Date.parse("2026-06-10T00:04:00.000Z")
+      })
+    ).not.toThrow();
+    expect(() =>
+      verifyResourceAccessUrlSignature({
+        accessId,
+        expiresAt: parsed.searchParams.get(RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM) ?? undefined,
+        signature: "x".repeat(43),
+        secret: signingSecret,
+        now: Date.parse("2026-06-10T00:04:00.000Z")
+      })
+    ).toThrow(ResourceAccessError);
+    expect(() =>
+      verifyResourceAccessUrlSignature({
+        accessId,
+        expiresAt: parsed.searchParams.get(RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM) ?? undefined,
+        signature: signature ?? undefined,
+        secret: signingSecret,
+        now: expiresAt
+      })
     ).toThrow(ResourceAccessError);
   });
 });

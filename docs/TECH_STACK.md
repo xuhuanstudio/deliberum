@@ -29,7 +29,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - shared `@deliberum/client` setup-plan projection helpers for CLI/Web local setup summaries derived from safe runtime profile metadata, plus daemon deployment posture response types and reads;
 - Server-Sent Events for daemon event streaming;
 - daemon-local session-scoped resource delivery planning through the Resource Broker and Delivery Planner, with safe ledger audit events for delivery decisions and short-lived access grants for allowed URL and hosted in-memory content deliveries;
-- daemon resource access base URL validation and safe posture reporting with explicit opt-in for env-configured non-local access URLs and HTTPS-only public access URLs;
+- daemon resource access base URL validation, optional HMAC-signed daemon access URLs, and safe posture reporting with explicit opt-in for env-configured non-local access URLs and HTTPS-only public access URLs;
 - daemon deployment posture reporting for bind exposure, control-plane auth mode, token mode, principal count, CORS origin count, persistence classes, resource access continuity, production-readiness blockers, and safety notes without exposing secrets, resource access URLs, or provider/tool endpoint values;
 - optional daemon-served built Web static assets for local/pre-production shells, with Accept-based SPA/API route separation, no-store shell responses, immutable asset caching, and configured-root path constraints;
 - package-level HTTP-template participant adapter and opt-in daemon participant profile for non-OpenAI HTTP providers;

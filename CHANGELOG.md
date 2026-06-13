@@ -18,6 +18,7 @@ This project follows a human-readable changelog. The initial public repository s
 - Added a local CLI helper for generating scoped daemon auth registry entries and process-specific env assignment hints.
 - Added remote/pre-production deployment hardening guidance for private daemon exposure, durable local state, audit export, daemon-served Web assets, resource access posture, and verification commands.
 - Added safe daemon resource access posture diagnostics for hosted-content preconditions, restart-continuity classes, and production resource hosting blockers without exposing resource material.
+- Added optional HMAC-signed daemon resource access URLs for local/pre-production resource grants, with safe posture reporting that never exposes signing keys or signatures.
 - Added Web landing deployment posture summaries derived from the safe daemon posture endpoint.
 - Added optional daemon-served Web static assets for built local/pre-production Web shells with Accept-based SPA/API routing separation.
 - Added local/pre-production container packaging for daemon-served Web shells with localhost-bound Compose defaults and SQLite data volume persistence.

@@ -406,6 +406,10 @@ function LandingPage() {
                       value: formatResourceTtl(resourceAccessPosture.ttl)
                     },
                     {
+                      label: "URL signing",
+                      value: formatResourceUrlSigning(resourceAccessPosture.urlSigning)
+                    },
+                    {
                       label: "Grant store",
                       value: formatResourceGrantStore(resourceAccessPosture.grantStore)
                     },
@@ -743,8 +747,9 @@ function formatDeploymentResourceAccess(
     value.grantStoreRestartContinuity === "depends_on_configured_store"
       ? "restart-aware"
       : "restart-lost";
+  const signing = value.urlSigningConfigured ? "signed" : "unsigned";
 
-  return `${exposure}, ${continuity}`;
+  return `${exposure}, ${continuity}, ${signing}`;
 }
 
 function formatDeploymentWebAssets(
@@ -790,6 +795,14 @@ function formatResourceTtl(value: ResourceAccessPostureResponse["ttl"]): string 
   const configured = value.configured ? "" : " default";
 
   return `${value.defaultTtlMs} ms / max ${value.maxTtlMs} ms${configured}`;
+}
+
+function formatResourceUrlSigning(
+  value: ResourceAccessPostureResponse["urlSigning"]
+): string {
+  return value.configured
+    ? `${value.algorithm}, required`
+    : `${value.algorithm}, not configured`;
 }
 
 function formatResourceGrantStore(

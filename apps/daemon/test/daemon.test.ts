@@ -132,7 +132,10 @@ import {
   DAEMON_PORT_ENV_VAR,
   RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR,
   RESOURCE_ACCESS_BASE_URL_ENV_VAR,
+  RESOURCE_ACCESS_SIGNING_SECRET_ENV_VAR,
   RESOURCE_ACCESS_TTL_MS_ENV_VAR,
+  RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM,
+  RESOURCE_ACCESS_URL_SIGNATURE_QUERY_PARAM,
   createStartDaemonOperationAuditLog,
   createStartDaemonEventStore,
   createStartDaemonResourceAccessStore,
@@ -162,6 +165,7 @@ import {
   resolveStartDaemonAuthTokens,
   resolveStartDaemonResourceAccessBaseUrl,
   resolveStartDaemonResourceAccessAllowRemote,
+  resolveStartDaemonResourceAccessSigningSecret,
   resolveStartDaemonResourceAccessTtlMs,
   resolveStartDaemonSQLitePath,
   resolveStartDaemonEnableOpenAICompatibleExtraction,
@@ -1387,6 +1391,7 @@ function createRunDaemon(options: {
   providerSecret?: string;
   resourceBroker?: InMemoryResourceBroker;
   resourceAccessBaseUrl?: string;
+  resourceAccessUrlSigningSecret?: string;
   resourceAccessTokenGenerator?: () => string;
   resourceAccessTtlMs?: number;
   slowAdapter?: {
@@ -1400,6 +1405,7 @@ function createRunDaemon(options: {
     clock,
     resourceBroker: options.resourceBroker,
     resourceAccessBaseUrl: options.resourceAccessBaseUrl,
+    resourceAccessUrlSigningSecret: options.resourceAccessUrlSigningSecret,
     resourceAccessTokenGenerator: options.resourceAccessTokenGenerator,
     resourceAccessTtlMs: options.resourceAccessTtlMs,
     runEnv: options.providerSecret
@@ -2479,6 +2485,11 @@ describe("daemon API", () => {
         defaultTtlMs: number;
         maxTtlMs: number;
       };
+      urlSigning: {
+        configured: boolean;
+        algorithm: string;
+        requiredForAccess: boolean;
+      };
       grantStore: {
         mode: string;
         restartContinuity: string;
@@ -2524,6 +2535,11 @@ describe("daemon API", () => {
         defaultTtlMs: 120000,
         maxTtlMs: 3600000
       },
+      urlSigning: {
+        configured: false,
+        algorithm: "hmac-sha256",
+        requiredForAccess: false
+      },
       grantStore: {
         mode: "configured_store",
         restartContinuity: "depends_on_configured_store"
@@ -2544,11 +2560,12 @@ describe("daemon API", () => {
         arbitraryFileServing: false,
         blockers: expect.arrayContaining([
           "Production public resource hosting is not implemented.",
-          "Signed URL issuance is not implemented."
+          "Signed resource access URLs are not configured."
         ])
       }
     });
     expect(body.safety.join(" ")).toContain("does not expose resource access ids");
+    expect(body.safety.join(" ")).toContain("signing secrets and signatures are not exposed");
     expect(body.safety.join(" ")).toContain("explicit per-request policy");
     expect(text).not.toContain("https://access.example");
     expect(text).not.toContain("ZZZZ");
@@ -2599,6 +2616,7 @@ describe("daemon API", () => {
         baseUrlConfigured: boolean;
         baseUrlExposure: string;
         grantStoreRestartContinuity: string;
+        urlSigningConfigured: boolean;
       };
       webAssets: {
         configured: boolean;
@@ -2654,7 +2672,8 @@ describe("daemon API", () => {
         resourceAccess: {
           baseUrlConfigured: false,
           baseUrlExposure: "localhost",
-          grantStoreRestartContinuity: "lost_on_restart"
+          grantStoreRestartContinuity: "lost_on_restart",
+          urlSigningConfigured: false
         },
         webAssets: {
           configured: false,
@@ -3863,6 +3882,88 @@ describe("daemon API", () => {
     expectSafeRunApiPayload(body);
     expectSafeRunApiPayload(revoked);
     expectSafeRunApiPayload(revokedAccess);
+  });
+
+  it("requires configured signatures for resource access URLs", async () => {
+    const accessId = "S".repeat(32);
+    const signingSecret = "resource-access-route-signing-key-32";
+    const resourceBroker = new InMemoryResourceBroker();
+    const publicResource = resourceBroker.registerResource({
+      resource: publicUrlResource("daemon-delivery-signed-route")
+    });
+    const daemonApp = createRunDaemon({
+      resourceBroker,
+      resourceAccessBaseUrl: "https://access.example",
+      resourceAccessUrlSigningSecret: signingSecret,
+      resourceAccessTokenGenerator: createTokenGenerator([accessId]),
+      resourceAccessTtlMs: 120000
+    });
+    const created = await createRun(daemonApp, {
+      ...orchestratedRunPlan(),
+      resources: [
+        {
+          resourceId: publicResource.id,
+          required: true,
+          preferredDeliveryMode: "url"
+        }
+      ]
+    });
+    const response = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/resources/${publicResource.id}/deliveries`,
+      {
+        participantId: "participant-1",
+        policy: {
+          requestedMode: "url",
+          allowPublicUrl: true
+        }
+      }
+    );
+    const text = await response.text();
+    const body = JSON.parse(text) as {
+      delivery: {
+        delivery?: {
+          url: string;
+          expiresAt: string;
+        };
+      };
+    };
+    const accessUrl = body.delivery.delivery?.url;
+
+    expect(response.status).toBe(200);
+    expect(accessUrl).toBeDefined();
+
+    const parsed = new URL(accessUrl ?? "https://invalid.example");
+    const signature = parsed.searchParams.get(RESOURCE_ACCESS_URL_SIGNATURE_QUERY_PARAM);
+    const unsignedResponse = await daemonApp.app.request(parsed.pathname);
+    const tampered = new URL(parsed.toString());
+    tampered.searchParams.set(RESOURCE_ACCESS_URL_SIGNATURE_QUERY_PARAM, "x".repeat(43));
+    const tamperedResponse = await daemonApp.app.request(
+      `${tampered.pathname}${tampered.search}`
+    );
+    const signedResponse = await daemonApp.app.request(`${parsed.pathname}${parsed.search}`);
+    const auditEvents = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .filter(
+        (event) =>
+          event.type === RESOURCE_ACCESS_GRANT_CREATED_EVENT_TYPE ||
+          event.type === RESOURCE_DELIVERY_PLANNED_EVENT_TYPE
+      );
+    const serializedAuditEvents = JSON.stringify(auditEvents);
+
+    expect(parsed.searchParams.get(RESOURCE_ACCESS_URL_EXPIRES_AT_QUERY_PARAM)).toBe(
+      String(Date.parse(body.delivery.delivery?.expiresAt ?? ""))
+    );
+    expect(signature).toMatch(/^[A-Za-z0-9_-]{32,}$/);
+    expect(text).not.toContain(signingSecret);
+    expect(unsignedResponse.status).toBe(400);
+    expect(tamperedResponse.status).toBe(400);
+    expect(signedResponse.status).toBe(302);
+    expect(signedResponse.headers.get("location")).toBe(
+      "https://example.com/resource.txt"
+    );
+    expect(serializedAuditEvents).not.toContain(signingSecret);
+    expect(serializedAuditEvents).not.toContain(signature ?? "missing-signature");
   });
 
   it("hosts registered in-memory base64 content through revocable resource access grants", async () => {
@@ -6396,7 +6497,7 @@ describe("daemon API", () => {
     }
   });
 
-  it("resolves resource access base URL and TTL from explicit options or env", () => {
+  it("resolves resource access base URL, TTL, and signing secret from explicit options or env", () => {
     expect(
       resolveStartDaemonResourceAccessBaseUrl(
         {},
@@ -6478,6 +6579,32 @@ describe("daemon API", () => {
         }
       )
     ).toThrow(`${RESOURCE_ACCESS_TTL_MS_ENV_VAR} must be a positive integer.`);
+    expect(
+      resolveStartDaemonResourceAccessSigningSecret(
+        {},
+        {
+          [RESOURCE_ACCESS_SIGNING_SECRET_ENV_VAR]: " resource-access-env-signing-key-32 "
+        }
+      )
+    ).toBe("resource-access-env-signing-key-32");
+    expect(resolveStartDaemonResourceAccessSigningSecret({}, {})).toBeUndefined();
+    expect(
+      resolveStartDaemonResourceAccessSigningSecret(
+        { resourceAccessUrlSigningSecret: "resource-access-option-signing-key-32" },
+        {
+          [RESOURCE_ACCESS_SIGNING_SECRET_ENV_VAR]:
+            "resource-access-env-signing-key-32"
+        }
+      )
+    ).toBe("resource-access-option-signing-key-32");
+    expect(() =>
+      resolveStartDaemonResourceAccessSigningSecret(
+        {},
+        {
+          [RESOURCE_ACCESS_SIGNING_SECRET_ENV_VAR]: "short"
+        }
+      )
+    ).toThrow("Resource access signing secret must contain at least 32");
   });
 
   it("resolves optional daemon auth token from explicit options or env", () => {

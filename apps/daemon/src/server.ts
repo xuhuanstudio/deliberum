@@ -40,7 +40,10 @@ import { SQLiteResourceAccessGrantStore } from "./sqlite-resource-access-store";
 import { SQLiteResourceBroker } from "./sqlite-resource-broker";
 import { SQLiteRunStore } from "./sqlite-run-store";
 import { SQLiteOperationAuditLog } from "./sqlite-operation-audit-log";
-import { classifyResourceAccessBaseUrl } from "./resource-access-store";
+import {
+  classifyResourceAccessBaseUrl,
+  parseResourceAccessSigningSecret
+} from "./resource-access-store";
 
 export { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT };
 
@@ -75,6 +78,8 @@ export const RESOURCE_ACCESS_BASE_URL_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_BASE_
 export const RESOURCE_ACCESS_TTL_MS_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_TTL_MS" as const;
 export const RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR =
   "DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE" as const;
+export const RESOURCE_ACCESS_SIGNING_SECRET_ENV_VAR =
+  "DELIBERUM_RESOURCE_ACCESS_SIGNING_SECRET" as const;
 
 export type StartDaemonOptions = DaemonAppOptions & {
   onListening?: (address: { host: string; port: number }) => void;
@@ -567,6 +572,19 @@ export function resolveStartDaemonResourceAccessTtlMs(
   return ttlMs;
 }
 
+export function resolveStartDaemonResourceAccessSigningSecret(
+  options: Pick<StartDaemonOptions, "resourceAccessUrlSigningSecret"> = {},
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  if (options.resourceAccessUrlSigningSecret !== undefined) {
+    return parseResourceAccessSigningSecret(options.resourceAccessUrlSigningSecret);
+  }
+
+  const value = env[RESOURCE_ACCESS_SIGNING_SECRET_ENV_VAR]?.trim();
+
+  return value && value.length > 0 ? parseResourceAccessSigningSecret(value) : undefined;
+}
+
 function normalizeStartDaemonResourceAccessBaseUrl(
   value: string,
   allowRemote: boolean
@@ -613,6 +631,8 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const enableMcpToolProfile = resolveStartDaemonEnableMcpToolProfile(options);
   const resourceAccessBaseUrl = resolveStartDaemonResourceAccessBaseUrl(options);
   const resourceAccessTtlMs = resolveStartDaemonResourceAccessTtlMs(options);
+  const resourceAccessUrlSigningSecret =
+    resolveStartDaemonResourceAccessSigningSecret(options);
   const daemonAuthToken = resolveStartDaemonAuthToken(options);
   const daemonAuthTokens = resolveStartDaemonAuthTokens(options);
   const webStaticAssets = createStartDaemonWebStaticAssets(options, process.env);
@@ -646,6 +666,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
     enableMcpToolProfile,
     mcpToolEnv: options.mcpToolEnv ?? (enableMcpToolProfile ? process.env : undefined),
     resourceAccessBaseUrl,
+    resourceAccessUrlSigningSecret,
     resourceAccessTtlMs,
     daemonAuthToken,
     daemonAuthTokens,

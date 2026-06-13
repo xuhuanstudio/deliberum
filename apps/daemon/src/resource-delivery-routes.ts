@@ -37,6 +37,7 @@ export type ResourceDeliveryRouteOptions = {
   deliveryPlanner: DeliveryPlanner;
   resourceAccessStore: ResourceAccessGrantStoreLike;
   resourceAccessBaseUrl: string;
+  resourceAccessUrlSigningSecret?: string;
   resourceAccessTtlMs?: number;
   idGenerator: IdGenerator;
   clock?: Clock;
@@ -112,6 +113,7 @@ export function registerResourceDeliveryRoutes(
     const safeDelivery = createResourceAccessDeliveryPlan({
       resourceAccessStore: options.resourceAccessStore,
       resourceAccessBaseUrl: options.resourceAccessBaseUrl,
+      resourceAccessUrlSigningSecret: options.resourceAccessUrlSigningSecret,
       resourceBroker: options.resourceBroker,
       resource,
       idGenerator: options.idGenerator,

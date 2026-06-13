@@ -89,6 +89,7 @@ import {
   RESOURCE_ACCESS_MAX_TTL_MS,
   ResourceAccessGrantStore,
   classifyResourceAccessBaseUrl,
+  parseResourceAccessSigningSecret,
   type ResourceAccessGrantStoreLike,
   type ResourceAccessClock,
   type ResourceAccessTokenGenerator
@@ -119,6 +120,7 @@ export type DaemonAppOptions = {
   resourceAccessClock?: ResourceAccessClock;
   resourceAccessTokenGenerator?: ResourceAccessTokenGenerator;
   resourceAccessBaseUrl?: string;
+  resourceAccessUrlSigningSecret?: string;
   resourceAccessTtlMs?: number;
   resourceBroker?: ResourceBroker;
   deliveryPlanner?: DeliveryPlanner;
@@ -199,6 +201,11 @@ export type ResourceAccessPostureResponse = {
     defaultTtlMs: number;
     maxTtlMs: number;
   };
+  urlSigning: {
+    configured: boolean;
+    algorithm: "hmac-sha256";
+    requiredForAccess: boolean;
+  };
   grantStore: {
     mode: "process_memory" | "configured_store";
     restartContinuity: "lost_on_restart" | "depends_on_configured_store";
@@ -215,7 +222,7 @@ export type ResourceAccessPostureResponse = {
   productionHosting: {
     status: "not_production_hosting";
     publicUrlHosting: false;
-    signedUrls: false;
+    signedUrls: boolean;
     arbitraryFileServing: false;
     blockers: string[];
   };
@@ -251,6 +258,7 @@ export type DaemonDeploymentPostureResponse = {
     baseUrlConfigured: boolean;
     baseUrlExposure: "localhost" | "lan" | "public";
     grantStoreRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
+    urlSigningConfigured: boolean;
   };
   webAssets: {
     configured: boolean;
@@ -333,6 +341,10 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   const deliveryPlanner = options.deliveryPlanner ?? new DeliveryPlanner({ broker: resourceBroker });
   const resourceAccessBaseUrl =
     options.resourceAccessBaseUrl ?? `http://${host}:${port}`;
+  const resourceAccessUrlSigningSecret =
+    options.resourceAccessUrlSigningSecret === undefined
+      ? undefined
+      : parseResourceAccessSigningSecret(options.resourceAccessUrlSigningSecret);
   const resourceAccessStore =
     options.resourceAccessStore ??
     new ResourceAccessGrantStore({
@@ -691,6 +703,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     deliveryPlanner,
     resourceAccessStore,
     resourceAccessBaseUrl,
+    resourceAccessUrlSigningSecret,
     resourceAccessTtlMs: options.resourceAccessTtlMs,
     idGenerator,
     clock
@@ -722,6 +735,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       buildResourceAccessPosture({
         resourceAccessBaseUrl,
         resourceAccessBaseUrlConfigured: options.resourceAccessBaseUrl !== undefined,
+        resourceAccessUrlSigningConfigured:
+          resourceAccessUrlSigningSecret !== undefined,
         resourceAccessTtlMs: options.resourceAccessTtlMs,
         resourceBrokerConfigured: options.resourceBroker !== undefined,
         resourceAccessStoreConfigured: options.resourceAccessStore !== undefined
@@ -744,6 +759,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         operationAuditLogConfigured: options.operationAuditLog !== undefined,
         resourceAccessBaseUrl,
         resourceAccessBaseUrlConfigured: options.resourceAccessBaseUrl !== undefined,
+        resourceAccessUrlSigningConfigured:
+          resourceAccessUrlSigningSecret !== undefined,
         webStaticAssetsConfigured: options.webStaticAssets !== undefined
       })
     )
@@ -1039,6 +1056,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     deliveryPlanner,
     resourceAccessStore,
     resourceAccessBaseUrl,
+    resourceAccessUrlSigningSecret,
     resourceAccessTtlMs: options.resourceAccessTtlMs,
     idGenerator,
     clock
@@ -1050,6 +1068,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     eventBus,
     resourceAccessStore,
     resourceBroker,
+    resourceAccessUrlSigningSecret,
     idGenerator,
     clock
   });
@@ -1752,6 +1771,7 @@ function noStoreJson(context: Context, payload: unknown, status: 200 | 201 | 400
 function buildResourceAccessPosture(options: {
   resourceAccessBaseUrl: string;
   resourceAccessBaseUrlConfigured: boolean;
+  resourceAccessUrlSigningConfigured: boolean;
   resourceAccessTtlMs?: number;
   resourceBrokerConfigured: boolean;
   resourceAccessStoreConfigured: boolean;
@@ -1774,6 +1794,11 @@ function buildResourceAccessPosture(options: {
       defaultTtlMs: options.resourceAccessTtlMs ?? RESOURCE_ACCESS_DEFAULT_TTL_MS,
       maxTtlMs: RESOURCE_ACCESS_MAX_TTL_MS
     },
+    urlSigning: {
+      configured: options.resourceAccessUrlSigningConfigured,
+      algorithm: "hmac-sha256",
+      requiredForAccess: options.resourceAccessUrlSigningConfigured
+    },
     grantStore: options.resourceAccessStoreConfigured
       ? {
           mode: "configured_store",
@@ -1795,17 +1820,22 @@ function buildResourceAccessPosture(options: {
     productionHosting: {
       status: "not_production_hosting",
       publicUrlHosting: false,
-      signedUrls: false,
+      signedUrls: options.resourceAccessUrlSigningConfigured,
       arbitraryFileServing: false,
       blockers: [
         "Production public resource hosting is not implemented.",
-        "Signed URL issuance is not implemented.",
+        ...(options.resourceAccessUrlSigningConfigured
+          ? [
+              "Daemon-signed resource access URLs do not replace object-storage or CDN signed URL services."
+            ]
+          : ["Signed resource access URLs are not configured."]),
         "Daemon resource access grants do not replace production authorization or multi-user policy."
       ]
     },
     safety: [
       "This posture is derived from daemon configuration only.",
       "It does not expose resource access ids, bearer tokens, source URLs, redirected targets, hosted content, or resource payloads.",
+      "Resource access URL signing status is reported as a boolean only; signing secrets and signatures are not exposed.",
       "Hosted content delivery requires explicit per-request policy and a size limit; sensitive resources default to no delivery.",
       "Resource access grants remain scoped, revocable, short-lived delivery-layer material and are not semantic ledger authority."
     ]
@@ -1824,6 +1854,7 @@ function buildDeploymentPosture(options: {
   operationAuditLogConfigured: boolean;
   resourceAccessBaseUrl: string;
   resourceAccessBaseUrlConfigured: boolean;
+  resourceAccessUrlSigningConfigured: boolean;
   webStaticAssetsConfigured: boolean;
 }): DaemonDeploymentPostureResponse {
   const bindingExposure = classifyDaemonBindHost(options.host);
@@ -1832,6 +1863,8 @@ function buildDeploymentPosture(options: {
   );
   const blockers = createDeploymentPostureBlockers({
     bindingExposure,
+    resourceAccessBaseUrlExposure,
+    resourceAccessUrlSigningConfigured: options.resourceAccessUrlSigningConfigured,
     daemonAuthConfigured: options.daemonAuthPolicy.configured,
     eventStoreConfigured: options.eventStoreConfigured,
     runStoreConfigured: options.runStoreConfigured,
@@ -1873,7 +1906,8 @@ function buildDeploymentPosture(options: {
       baseUrlExposure: resourceAccessBaseUrlExposure,
       grantStoreRestartContinuity: options.resourceAccessStoreConfigured
         ? "depends_on_configured_store"
-        : "lost_on_restart"
+        : "lost_on_restart",
+      urlSigningConfigured: options.resourceAccessUrlSigningConfigured
     },
     webAssets: {
       configured: options.webStaticAssetsConfigured,
@@ -1904,6 +1938,8 @@ function buildDeploymentPosture(options: {
 
 function createDeploymentPostureBlockers(input: {
   bindingExposure: "localhost" | "lan" | "public";
+  resourceAccessBaseUrlExposure: "localhost" | "lan" | "public";
+  resourceAccessUrlSigningConfigured: boolean;
   daemonAuthConfigured: boolean;
   eventStoreConfigured: boolean;
   runStoreConfigured: boolean;
@@ -1918,6 +1954,13 @@ function createDeploymentPostureBlockers(input: {
 
   if (input.bindingExposure !== "localhost" && !input.daemonAuthConfigured) {
     blockers.push("Non-local daemon bindings should not be exposed without daemon bearer auth.");
+  }
+
+  if (
+    input.resourceAccessBaseUrlExposure === "public" &&
+    !input.resourceAccessUrlSigningConfigured
+  ) {
+    blockers.push("Public resource access base URLs should use signed daemon access URLs.");
   }
 
   if (
