@@ -160,11 +160,11 @@ export function RunNewPage() {
       <ViewFrame
         eyebrow="User Mode"
         title="Start a discussion"
-        description="Create a local deliberation that shows the discussion brief, independent first responses, strongest options, disagreements, requirements, evidence and verification, risk review, and current conclusion."
+        description="Create a discussion that keeps the brief, independent first responses, strongest options, disagreements, requirements, evidence and verification, risk review, and current conclusion visible."
       >
         <StatusBanner
           title="Start from a question"
-          detail="Write a brief in plain language or use the sample brief to create a reviewable discussion without provider credentials."
+          detail="Write a brief in plain language or use the sample brief to try the full discussion flow immediately."
         />
         <DataPanel
           title="Discussion brief"
@@ -207,8 +207,8 @@ export function RunNewPage() {
             />
             <div className="du-readable-list">
               <ExplainerItem
-                title="No provider credentials"
-                detail="The sample workflow is deterministic and does not call external models."
+                title="Works without setup"
+                detail="The sample brief uses built-in discussion material so a first-time user can review the flow immediately."
               />
               <ExplainerItem
                 title="Complete discussion loop"

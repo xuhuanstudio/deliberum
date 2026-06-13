@@ -1119,6 +1119,9 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(screen.getByText("Start from a question")).toBeTruthy();
     expect(screen.getByText("Complete discussion loop")).toBeTruthy();
+    expect(screen.getByText("Works without setup")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("provider credentials");
+    expect(document.body.textContent ?? "").not.toContain("external models");
     fireEvent.click(screen.getByText("Advanced / Developer Mode: JSON plan"));
     fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
       target: {
