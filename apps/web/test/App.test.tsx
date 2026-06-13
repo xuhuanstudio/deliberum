@@ -1055,6 +1055,25 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Completed").length).toBeGreaterThan(0);
   });
 
+  it("renders the empty discussion list without runtime setup language", async () => {
+    const client = createClient({
+      listRuns: vi.fn(async () => ({
+        runs: []
+      }))
+    });
+
+    renderApp("/runs", client);
+
+    expect(await screen.findByText("No discussions yet")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Start with a question. Deliberum will create a discussion brief, collect independent first responses, and keep the conclusion, disagreements, risks, and next steps visible."
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("Advanced JSON");
+    expect(document.body.textContent ?? "").not.toContain("runtime");
+  });
+
   it("creates a run from a JSON run plan object", async () => {
     const client = renderApp("/runs/new");
     const runPlan = {
@@ -1076,6 +1095,12 @@ describe("@deliberum/web shell", () => {
 
     await waitFor(() => expect(client.createRun).toHaveBeenCalledWith({ runPlan }));
     expect(await screen.findByText("Discussion created")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Open the discussion to continue the guided deliberation and review its conclusion when it is ready."
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("internal run id");
     expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
   });
 
@@ -1132,6 +1157,11 @@ describe("@deliberum/web shell", () => {
       })
     );
     expect(await screen.findByText("Discussion created")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Open the discussion to continue the guided deliberation and review its conclusion when it is ready."
+      )
+    ).toBeTruthy();
   });
 
   it("fills the sample brief with user-facing discussion text", async () => {

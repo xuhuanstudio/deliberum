@@ -69,7 +69,7 @@ export function RunsListPage() {
             {runs.length === 0 ? (
               <EmptyState
                 title="No discussions yet"
-                description="Start a discussion from the guided local preset or use Advanced JSON if you are developing against the runtime."
+                description="Start with a question. Deliberum will create a discussion brief, collect independent first responses, and keep the conclusion, disagreements, risks, and next steps visible."
               />
             ) : (
               <div className="du-run-list">
@@ -251,7 +251,7 @@ export function RunNewPage() {
         {createMutation.isError ? (
           <StatusBanner
             tone="error"
-            title="Run creation failed"
+            title="Discussion could not be created"
             detail={formatSafeErrorMessage(createMutation.error)}
           />
         ) : null}
@@ -259,7 +259,7 @@ export function RunNewPage() {
           <StatusBanner
             tone="ok"
             title="Discussion created"
-            detail="The discussion is available in the local workspace. Advanced details include its internal run id."
+            detail="Open the discussion to continue the guided deliberation and review its conclusion when it is ready."
           />
         ) : null}
         {createdRunId ? (
