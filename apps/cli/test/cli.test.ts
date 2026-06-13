@@ -331,6 +331,40 @@ function createFakeRunDaemonClient(
         eventIds: ["topic-contract-event-1"]
       }
     })),
+    proposeProcessProposal: vi.fn(async (sessionId: string, input: unknown) => ({
+      proposalId: "process-proposal-1",
+      appended: true,
+      event: {
+        id: "process-proposal-event-1",
+        sessionId,
+        type: "process_proposal_proposed",
+        payload: input
+      }
+    })),
+    challengeProcessProposal: vi.fn(
+      async (sessionId: string, proposalEventId: string, input: unknown) => ({
+        appended: true,
+        event: {
+          id: "process-proposal-challenge-event-1",
+          sessionId,
+          type: "process_proposal_challenged",
+          basedOnEventIds: [proposalEventId],
+          payload: input
+        }
+      })
+    ),
+    decideProcessProposal: vi.fn(
+      async (sessionId: string, proposalEventId: string, input: unknown) => ({
+        appended: true,
+        event: {
+          id: "process-proposal-decision-event-1",
+          sessionId,
+          type: "process_proposal_decided",
+          basedOnEventIds: [proposalEventId],
+          payload: input
+        }
+      })
+    ),
     executeRunProcessProposal: vi.fn(async (runId: string, proposalEventId: string) => ({
       run: {
         runId
@@ -2255,6 +2289,17 @@ describe("CLI command routing", () => {
             };
           }
 
+          if (filePath === "process-proposal.json") {
+            return {
+              id: "process-proposal-1",
+              primitive: "sealed_divergence",
+              targetIds: ["topic-contract-event-1"],
+              expectedQualityGain: "Collect independent starting positions.",
+              riskIfSkipped: "The run may converge before alternatives are visible.",
+              status: "proposed"
+            };
+          }
+
           if (filePath === "final-candidate.json") {
             return {
               candidateIds: ["candidate-1"],
@@ -2326,6 +2371,75 @@ describe("CLI command routing", () => {
       observations: string[];
     }>(
       await runCli(["runs", "process-proposals", "run-1", "--json"], dependencies)
+    );
+    const proposedProcess = parseOutput<{
+      proposalId: string;
+      appended: boolean;
+      event: { type: string; sessionId: string };
+    }>(
+      await runCli(
+        [
+          "runs",
+          "process-propose",
+          "run-1",
+          "--author",
+          "process-coordinator",
+          "--input",
+          "process-proposal.json",
+          "--based-on-event",
+          "topic-contract-event-1",
+          "--idempotency-key",
+          "daemon-process-proposal-1",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const challengedProcess = parseOutput<{
+      appended: boolean;
+      event: { type: string; sessionId: string; basedOnEventIds: string[] };
+    }>(
+      await runCli(
+        [
+          "runs",
+          "process-challenge",
+          "run-1",
+          "--proposal-event",
+          "process-proposal-event-1",
+          "--author",
+          "participant-2",
+          "--reason",
+          "Needs process scrutiny.",
+          "--idempotency-key",
+          "daemon-process-challenge-1",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const decidedProcess = parseOutput<{
+      appended: boolean;
+      event: { type: string; sessionId: string; basedOnEventIds: string[] };
+    }>(
+      await runCli(
+        [
+          "runs",
+          "process-decide",
+          "run-1",
+          "--proposal-event",
+          "process-proposal-event-1",
+          "--author",
+          "coordinator-1",
+          "--status",
+          "accepted",
+          "--rationale",
+          "Run explicitly.",
+          "--idempotency-key",
+          "daemon-process-decision-1",
+          "--json"
+        ],
+        dependencies
+      )
     );
     const finalProposal = parseOutput<{
       proposalId: string;
@@ -2433,6 +2547,30 @@ describe("CLI command routing", () => {
     expect(processProposals.observations).toContain(
       "No sealed divergence round is recorded for this run."
     );
+    expect(proposedProcess).toMatchObject({
+      proposalId: "process-proposal-1",
+      appended: true,
+      event: {
+        sessionId: "session-1",
+        type: "process_proposal_proposed"
+      }
+    });
+    expect(challengedProcess).toMatchObject({
+      appended: true,
+      event: {
+        sessionId: "session-1",
+        type: "process_proposal_challenged",
+        basedOnEventIds: ["process-proposal-event-1"]
+      }
+    });
+    expect(decidedProcess).toMatchObject({
+      appended: true,
+      event: {
+        sessionId: "session-1",
+        type: "process_proposal_decided",
+        basedOnEventIds: ["process-proposal-event-1"]
+      }
+    });
     expect(finalProposal).toMatchObject({
       proposalId: "final-candidate-1",
       appended: true,
@@ -2468,7 +2606,7 @@ describe("CLI command routing", () => {
     });
     expect(daemonClient.listRuns).toHaveBeenCalledTimes(1);
     expect(daemonClient.getRun).toHaveBeenCalledWith("run-1");
-    expect(daemonClient.getRun).toHaveBeenCalledTimes(4);
+    expect(daemonClient.getRun).toHaveBeenCalledTimes(7);
     expect(daemonClient.getRunEvents).toHaveBeenCalledWith("run-1");
     expect(daemonClient.startRun).toHaveBeenCalledWith("run-1", {
       sealedDivergence: {
@@ -2481,6 +2619,38 @@ describe("CLI command routing", () => {
     });
     expect(daemonClient.getSessionResources).toHaveBeenCalledWith("session-1");
     expect(daemonClient.getRunProcessProposals).toHaveBeenCalledWith("run-1");
+    expect(daemonClient.proposeProcessProposal).toHaveBeenCalledWith("session-1", {
+      authorId: "process-coordinator",
+      proposal: {
+        id: "process-proposal-1",
+        primitive: "sealed_divergence",
+        targetIds: ["topic-contract-event-1"],
+        expectedQualityGain: "Collect independent starting positions.",
+        riskIfSkipped: "The run may converge before alternatives are visible.",
+        status: "proposed"
+      },
+      basedOnEventIds: ["topic-contract-event-1"],
+      idempotencyKey: "daemon-process-proposal-1"
+    });
+    expect(daemonClient.challengeProcessProposal).toHaveBeenCalledWith(
+      "session-1",
+      "process-proposal-event-1",
+      {
+        authorId: "participant-2",
+        reason: "Needs process scrutiny.",
+        idempotencyKey: "daemon-process-challenge-1"
+      }
+    );
+    expect(daemonClient.decideProcessProposal).toHaveBeenCalledWith(
+      "session-1",
+      "process-proposal-event-1",
+      {
+        authorId: "coordinator-1",
+        status: "accepted",
+        rationale: "Run explicitly.",
+        idempotencyKey: "daemon-process-decision-1"
+      }
+    );
     expect(daemonClient.proposeFinalCandidate).toHaveBeenCalledWith("session-1", {
       authorId: "final-coordinator",
       candidateIds: ["candidate-1"],
@@ -2511,7 +2681,7 @@ describe("CLI command routing", () => {
       "run-1",
       "process-proposal-event-1"
     );
-    expect(createDaemonClient).toHaveBeenCalledTimes(12);
+    expect(createDaemonClient).toHaveBeenCalledTimes(15);
     expect(createEventStore).not.toHaveBeenCalled();
   });
 

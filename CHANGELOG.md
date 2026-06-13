@@ -20,6 +20,7 @@ This project follows a human-readable changelog. The initial public repository s
 - Added safe daemon resource access posture diagnostics for hosted-content preconditions, restart-continuity classes, and production resource hosting blockers without exposing resource material.
 - Added optional HMAC-signed daemon resource access URLs for local/pre-production resource grants, with safe posture reporting that never exposes signing keys or signatures.
 - Added optional SQLite single-daemon process locking for local/pre-production daemon state, with safe deployment posture reporting that does not expose SQLite paths or lock owner ids.
+- Added daemon-backed CLI run commands for process proposal lifecycle recording without using the local JSON ledger.
 - Fixed durable operation audit default ids so SQLite and JSON-backed audit logs can keep recording safely after daemon restarts.
 - Tightened accepted process proposal execution so executable primitives must still target current run material before they can execute.
 - Added Web landing deployment posture summaries derived from the safe daemon posture endpoint.

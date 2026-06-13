@@ -79,6 +79,9 @@ export const CLI_COMMANDS = [
   "runs outcome",
   "runs resources",
   "runs process-proposals",
+  "runs process-propose",
+  "runs process-challenge",
+  "runs process-decide",
   "runs execute-process-proposal",
   "runs final-propose",
   "runs final-audit"
@@ -188,6 +191,9 @@ export type CliRunDaemonClient = Pick<
   | "getRunOutcome"
   | "getSessionResources"
   | "getRunProcessProposals"
+  | "proposeProcessProposal"
+  | "challengeProcessProposal"
+  | "decideProcessProposal"
   | "executeRunProcessProposal"
   | "revokeResourceAccess"
   | "proposeFinalCandidate"
@@ -1128,6 +1134,66 @@ async function executeRunCommand(
     return daemonClient.getRunProcessProposals(runId);
   }
 
+  if (action === "process-propose") {
+    const runId = requireRunId(
+      restPositionals,
+      "Usage: deliberum runs process-propose <runId> --author <id> --input <json-file>"
+    );
+    const run = await daemonClient.getRun(runId);
+    const sessionId = extractSessionIdFromRunResponse(run);
+    const proposal = readJsonObjectInput(
+      dependencies,
+      requireOption(parsedArgs, "input"),
+      "Process proposal input"
+    );
+
+    return daemonClient.proposeProcessProposal(sessionId, {
+      authorId: requireOption(parsedArgs, "author"),
+      proposal,
+      basedOnEventIds: getManyOptions(parsedArgs, "based-on-event"),
+      idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+    });
+  }
+
+  if (action === "process-challenge") {
+    const runId = requireRunId(
+      restPositionals,
+      "Usage: deliberum runs process-challenge <runId> --proposal-event <eventId> --author <id> --reason <text>"
+    );
+    const run = await daemonClient.getRun(runId);
+    const sessionId = extractSessionIdFromRunResponse(run);
+
+    return daemonClient.challengeProcessProposal(
+      sessionId,
+      requireOption(parsedArgs, "proposal-event"),
+      {
+        authorId: requireOption(parsedArgs, "author"),
+        reason: requireOption(parsedArgs, "reason"),
+        idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+      }
+    );
+  }
+
+  if (action === "process-decide") {
+    const runId = requireRunId(
+      restPositionals,
+      "Usage: deliberum runs process-decide <runId> --proposal-event <eventId> --author <id> --status <accepted|deferred|rejected> --rationale <text>"
+    );
+    const run = await daemonClient.getRun(runId);
+    const sessionId = extractSessionIdFromRunResponse(run);
+
+    return daemonClient.decideProcessProposal(
+      sessionId,
+      requireOption(parsedArgs, "proposal-event"),
+      {
+        authorId: requireOption(parsedArgs, "author"),
+        status: requireOption(parsedArgs, "status") as ProcessProposalDecisionStatus,
+        rationale: requireOption(parsedArgs, "rationale"),
+        idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
+      }
+    );
+  }
+
   if (action === "final-propose") {
     const runId = requireRunId(
       restPositionals,
@@ -1205,6 +1271,9 @@ function assertKnownRunCommand(action: string): void {
       "outcome",
       "resources",
       "process-proposals",
+      "process-propose",
+      "process-challenge",
+      "process-decide",
       "execute-process-proposal",
       "final-propose",
       "final-audit"
@@ -1245,6 +1314,28 @@ function assertRunCommandOptions(action: string, parsedArgs: ParsedArgs): void {
 
   if (action === "outcome" || action === "execute-process-proposal") {
     allowedOptions.add("proposal-event");
+  }
+
+  if (action === "process-propose") {
+    allowedOptions.add("author");
+    allowedOptions.add("input");
+    allowedOptions.add("based-on-event");
+    allowedOptions.add("idempotency-key");
+  }
+
+  if (action === "process-challenge") {
+    allowedOptions.add("proposal-event");
+    allowedOptions.add("author");
+    allowedOptions.add("reason");
+    allowedOptions.add("idempotency-key");
+  }
+
+  if (action === "process-decide") {
+    allowedOptions.add("proposal-event");
+    allowedOptions.add("author");
+    allowedOptions.add("status");
+    allowedOptions.add("rationale");
+    allowedOptions.add("idempotency-key");
   }
 
   if (action === "final-propose" || action === "final-audit") {
