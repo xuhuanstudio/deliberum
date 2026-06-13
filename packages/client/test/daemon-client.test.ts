@@ -261,6 +261,15 @@ describe("DeliberumDaemonClient", () => {
         secretEnvVarNames: ["DELIBERUM_OPENAI_API_KEY"],
         steps: expect.arrayContaining([
           expect.objectContaining({
+            kind: "render_env_template",
+            command: "deliberum daemon env-template --profile openai-compatible"
+          }),
+          expect.objectContaining({
+            kind: "write_env_block",
+            command:
+              "deliberum daemon env-write --profile openai-compatible --output .env --dry-run"
+          }),
+          expect.objectContaining({
             kind: "configure_recommended_env",
             envVars: ["DELIBERUM_OPENAI_BASE_URL"]
           }),
@@ -293,6 +302,10 @@ describe("DeliberumDaemonClient", () => {
         expect.objectContaining({
           kind: "enable_profile",
           envVars: ["DELIBERUM_ENABLE_DISABLED_PROFILE"]
+        }),
+        expect.objectContaining({
+          kind: "write_env_block",
+          command: "deliberum daemon env-write --profile disabled-profile --output .env --dry-run"
         })
       ])
     );

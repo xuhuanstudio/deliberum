@@ -66,6 +66,7 @@ export type RuntimeProfilesResponse = {
 
 export type RuntimeSetupPlanStepKind =
   | "render_env_template"
+  | "write_env_block"
   | "enable_profile"
   | "configure_required_env"
   | "configure_recommended_env"
@@ -166,7 +167,7 @@ export function buildRuntimeSetupPlan(
       "This setup plan is derived from safe /runtime/profiles metadata.",
       "It reports only env var names, booleans, component counts, notes, boundaries, and local CLI commands.",
       "It does not read, request, print, persist, or validate provider secrets or bearer tokens.",
-      "It does not write .env files, mutate daemon configuration, start providers, start MCP servers, execute adapters, or change run plans.",
+      "The setup plan itself does not write .env files, mutate daemon configuration, start providers, start MCP servers, execute adapters, or change run plans.",
       "Daemon and CLI processes still read environment values from process.env at process start."
     ]
   };
@@ -228,6 +229,12 @@ function createRuntimeSetupPlanSteps(input: {
       profileId: input.profile.id,
       description: "Render a comment-only local environment template for this profile.",
       command: `deliberum daemon env-template --profile ${input.profile.id}`
+    },
+    {
+      kind: "write_env_block",
+      profileId: input.profile.id,
+      description: "Preview a marker-delimited local env block with profile enable flags and manual secret placeholders before choosing an output path.",
+      command: `deliberum daemon env-write --profile ${input.profile.id} --output .env --dry-run`
     }
   ];
 

@@ -1237,6 +1237,11 @@ describe("CLI command routing", () => {
             command: "deliberum daemon env-template --profile openai-compatible"
           }),
           expect.objectContaining({
+            kind: "write_env_block",
+            command:
+              "deliberum daemon env-write --profile openai-compatible --output .env --dry-run"
+          }),
+          expect.objectContaining({
             kind: "configure_recommended_env",
             envVars: ["DELIBERUM_OPENAI_BASE_URL"]
           }),
