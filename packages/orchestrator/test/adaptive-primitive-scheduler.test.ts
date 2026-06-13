@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptProposal,
+  proposeProcessProposal,
   proposeExtraction
 } from "@deliberum/core";
 import { InMemoryEventStore } from "@deliberum/storage";
@@ -458,5 +459,127 @@ describe("suggestAdaptivePrimitiveProposals", () => {
       targetIds: ["final-proposal-event-1"],
       status: "proposed"
     });
+  });
+
+  it("suggests omission audit for audited final candidate proposal material", () => {
+    const { eventStore, run, topicContractEventId } = createRunFixture();
+    const accepted = acceptExtractionWithObjects({
+      run,
+      eventStore,
+      sourceEventId: topicContractEventId
+    });
+    const reviewedRun = withRevealedAndReviewedRun(
+      run,
+      accepted.proposalEventId,
+      accepted.acceptanceEventId
+    );
+    const finalizationRun: DeliberationRunRecord = {
+      ...reviewedRun,
+      finalizationRounds: [
+        {
+          roundId: "final-round-1",
+          sourceProposalReviewRoundId: "review-round-1",
+          status: "completed",
+          finalCandidate: {
+            sourceId: "final-generator-1",
+            sourceType: "generator",
+            status: "proposed",
+            proposalEventId: "final-proposal-event-1",
+            attempts: 1
+          },
+          auditorStates: [],
+          finalCandidateProposalEventId: "final-proposal-event-1",
+          auditEventIds: ["final-audit-event-1"]
+        }
+      ]
+    };
+
+    const result = suggestAdaptivePrimitiveProposals({
+      run: finalizationRun,
+      eventStore
+    });
+
+    expect(result.proposals).toEqual([
+      expect.objectContaining({
+        primitive: "omission_audit",
+        targetIds: ["final-proposal-event-1"],
+        status: "proposed"
+      })
+    ]);
+    expect(result.observations).toContain(
+      "Audited final candidate material is available without an active omission audit proposal."
+    );
+  });
+
+  it("does not repeat omission audit suggestions with an active matching process proposal", () => {
+    const { eventStore, run, topicContractEventId } = createRunFixture();
+    const accepted = acceptExtractionWithObjects({
+      run,
+      eventStore,
+      sourceEventId: topicContractEventId
+    });
+    const reviewedRun = withRevealedAndReviewedRun(
+      run,
+      accepted.proposalEventId,
+      accepted.acceptanceEventId
+    );
+    const finalizationRun: DeliberationRunRecord = {
+      ...reviewedRun,
+      finalizationRounds: [
+        {
+          roundId: "final-round-1",
+          sourceProposalReviewRoundId: "review-round-1",
+          status: "completed",
+          finalCandidate: {
+            sourceId: "final-generator-1",
+            sourceType: "generator",
+            status: "proposed",
+            proposalEventId: "final-proposal-event-1",
+            attempts: 1
+          },
+          auditorStates: [],
+          finalCandidateProposalEventId: "final-proposal-event-1",
+          auditEventIds: ["final-audit-event-1"]
+        }
+      ]
+    };
+
+    proposeProcessProposal(
+      {
+        sessionId: run.sessionId,
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-omission-audit",
+          primitive: "omission_audit",
+          targetIds: ["final-proposal-event-1"],
+          expectedQualityGain: "Check whether audited final candidate material dropped important insights.",
+          riskIfSkipped: "Dropped insights may remain invisible during outcome compilation.",
+          requestedBudget: {
+            maxEvents: 1,
+            maxProviderCalls: 1
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: [topicContractEventId]
+      },
+      {
+        eventStore,
+        idGenerator: createIds(["process-proposal-event-1"]),
+        clock: () => "2026-06-12T00:00:03.000Z"
+      }
+    );
+
+    const result = suggestAdaptivePrimitiveProposals({
+      run: finalizationRun,
+      eventStore
+    });
+
+    expect(result.proposals.map((proposal) => proposal.primitive)).not.toContain(
+      "omission_audit"
+    );
+    expect(result.proposals.map((proposal) => proposal.primitive)).not.toContain(
+      "final_contest"
+    );
+    expect(result.observations).toContain("No explicit adaptive primitive gap was detected.");
   });
 });

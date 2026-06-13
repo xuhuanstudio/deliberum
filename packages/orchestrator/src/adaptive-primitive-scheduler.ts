@@ -1,7 +1,9 @@
 import {
   SEALED_CONTRIBUTION_SUBMITTED_EVENT_TYPE,
   projectAcceptedDeliberationObjects,
-  projectCandidateFrontier
+  projectCandidateFrontier,
+  projectProcessProposalStates,
+  type ProcessProposalState
 } from "@deliberum/core";
 import {
   ProcessProposalSchema,
@@ -64,6 +66,10 @@ export function suggestAdaptivePrimitiveProposals(
     events,
     sessionId: input.run.sessionId
   });
+  const processProposalStates = projectProcessProposalStates({
+    events,
+    sessionId: input.run.sessionId
+  }).proposalStates;
   const proposals: ProcessProposal[] = [];
   const observations: string[] = [];
   const maxProposals = normalizeMaxProposals(input.maxProposals);
@@ -203,21 +209,38 @@ export function suggestAdaptivePrimitiveProposals(
   }
 
   const latestFinalizationRound = input.run.finalizationRounds?.at(-1);
-  if (
-    latestFinalizationRound?.finalCandidateProposalEventId &&
-    latestFinalizationRound.auditEventIds.length === 0
-  ) {
-    addProposal({
-      primitive: "final_audit",
-      targetIds: [latestFinalizationRound.finalCandidateProposalEventId],
-      expectedQualityGain: "Audit final candidate proposal material before outcome compilation.",
-      riskIfSkipped: "The compiled outcome may omit unresolved limitations or audit findings.",
-      requestedBudget: {
-        maxEvents: 1,
-        maxProviderCalls: 1
-      }
-    });
-    observations.push("A final candidate proposal exists without recorded final audit events.");
+  if (latestFinalizationRound?.finalCandidateProposalEventId) {
+    if (latestFinalizationRound.auditEventIds.length === 0) {
+      addProposal({
+        primitive: "final_audit",
+        targetIds: [latestFinalizationRound.finalCandidateProposalEventId],
+        expectedQualityGain: "Audit final candidate proposal material before outcome compilation.",
+        riskIfSkipped: "The compiled outcome may omit unresolved limitations or audit findings.",
+        requestedBudget: {
+          maxEvents: 1,
+          maxProviderCalls: 1
+        }
+      });
+      observations.push("A final candidate proposal exists without recorded final audit events.");
+    } else if (
+      !hasActiveProcessProposalTarget(
+        processProposalStates,
+        "omission_audit",
+        latestFinalizationRound.finalCandidateProposalEventId
+      )
+    ) {
+      addProposal({
+        primitive: "omission_audit",
+        targetIds: [latestFinalizationRound.finalCandidateProposalEventId],
+        expectedQualityGain: "Check whether audited final candidate material dropped important insights before outcome compilation.",
+        riskIfSkipped: "The compiled outcome may preserve a coherent summary while omitting relevant accepted material or unresolved limitations.",
+        requestedBudget: {
+          maxEvents: 1,
+          maxProviderCalls: 1
+        }
+      });
+      observations.push("Audited final candidate material is available without an active omission audit proposal.");
+    }
   } else if (
     frontier.candidates.length > 0 &&
     openEvidenceNeedIds.length === 0 &&
@@ -315,6 +338,20 @@ function normalizeMaxProposals(maxProposals: number | undefined): number {
 
 function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
+}
+
+function hasActiveProcessProposalTarget(
+  proposalStates: readonly ProcessProposalState[],
+  primitive: string,
+  targetId: string
+): boolean {
+  return proposalStates.some(
+    (state) =>
+      state.latestStatus !== "rejected" &&
+      state.proposal.primitive === primitive &&
+      state.proposal.targetIds.length === 1 &&
+      state.proposal.targetIds[0] === targetId
+  );
 }
 
 function stableHash(input: unknown): string {

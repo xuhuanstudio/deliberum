@@ -49,6 +49,11 @@ append events, start stages, accept proposals, mutate Candidate Frontier, or
 compile outcomes. The suggested primitive remains challengeable process
 material; it is not a hidden scheduler or semantic authority.
 
+Current suggestions can surface final audit gaps for unaudited final candidate
+proposal material and omission audit gaps after final candidate material has at
+least one recorded audit. An active non-rejected omission audit process proposal
+for the same final candidate suppresses repeated omission-audit suggestions.
+
 The ledger-backed process proposal lifecycle is exposed separately:
 
 ```text
