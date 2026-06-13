@@ -1,4 +1,11 @@
-import type { JsonRecord, TopicContract } from "@deliberum/protocol";
+import type {
+  BudgetLease,
+  GovernanceRule,
+  JsonRecord,
+  ResourcePolicy,
+  ResourcePolicyResourceRef,
+  TopicContract
+} from "@deliberum/protocol";
 import type { DeliberationRunPlan, RunResourceReference } from "./types";
 
 export type BuildTopicContractFromRunPlanOptions = {
@@ -19,14 +26,7 @@ export function buildTopicContractFromRunPlan(
     participantIds: plan.participants.map((participant) => participant.id),
     allowedAdapters: unique(plan.participants.map((participant) => participant.adapterId)),
     budgetLease: buildBudgetLease(plan),
-    governanceRules: [
-      {
-        orchestratedRun: true,
-        runSchemaVersion: "1",
-        sealedDivergencePurpose: plan.sealedDivergence.purpose,
-        sealedDivergenceRevealPolicy: plan.sealedDivergence.revealPolicy
-      }
-    ],
+    governanceRules: [buildGovernanceRule(plan)],
     resourcePolicy: buildResourcePolicy(plan.resources)
   };
 }
@@ -45,7 +45,7 @@ function buildOutputExpectations(plan: DeliberationRunPlan): string[] {
   return expectations;
 }
 
-function buildBudgetLease(plan: DeliberationRunPlan): JsonRecord {
+function buildBudgetLease(plan: DeliberationRunPlan): BudgetLease {
   return withoutUndefined({
     maxEvents: plan.budget.maxEvents,
     maxProviderCalls: plan.budget.maxProviderCalls,
@@ -56,21 +56,37 @@ function buildBudgetLease(plan: DeliberationRunPlan): JsonRecord {
   });
 }
 
+function buildGovernanceRule(plan: DeliberationRunPlan): GovernanceRule {
+  return {
+    orchestratedRun: true,
+    runSchemaVersion: "1",
+    sealedDivergencePurpose: plan.sealedDivergence.purpose,
+    sealedDivergenceRevealPolicy: plan.sealedDivergence.revealPolicy,
+    requiresExplicitProcessDecisions: true
+  };
+}
+
 function buildResourcePolicy(
   resources: readonly RunResourceReference[] | undefined
-): JsonRecord | undefined {
+): ResourcePolicy | undefined {
   if (!resources || resources.length === 0) {
     return undefined;
   }
 
   return {
-    resourceRefs: resources.map((resource) =>
-      withoutUndefined({
-        resourceId: resource.resourceId,
-        required: resource.required,
-        preferredDeliveryMode: resource.preferredDeliveryMode
-      })
-    )
+    resourceRefs: resources.map((resource) => buildResourcePolicyResourceRef(resource))
+  };
+}
+
+function buildResourcePolicyResourceRef(
+  resource: RunResourceReference
+): ResourcePolicyResourceRef {
+  return {
+    resourceId: resource.resourceId,
+    ...(resource.required !== undefined ? { required: resource.required } : {}),
+    ...(resource.preferredDeliveryMode
+      ? { preferredDeliveryMode: resource.preferredDeliveryMode }
+      : {})
   };
 }
 

@@ -64,6 +64,24 @@ type TopicContract = {
 }
 ```
 
+`BudgetLease` is an extensible JSON object with validated standard fields:
+`maxEvents`, `maxProviderCalls`, `maxEstimatedCostCents`, `maxRunSeconds`,
+`participantTimeoutMs`, and `overallTimeoutMs`. Standard count and cost fields
+are nonnegative or positive integers as appropriate; extension fields must still
+be JSON-safe values.
+
+`GovernanceRule` is an extensible JSON object with validated standard fields:
+`id`, `description`, `orchestratedRun`, `runSchemaVersion`,
+`sealedDivergencePurpose`, `sealedDivergenceRevealPolicy`, and
+`requiresExplicitProcessDecisions`. A governance rule records process
+constraints; it does not create a central judge or hidden scheduler.
+
+`ResourcePolicy` is an extensible JSON object with optional `resourceRefs`.
+Each reference has a `resourceId` and may include `required`,
+`preferredDeliveryMode`, `allowedDeliveryModes`, `maxBase64SizeBytes`, and
+`allowHostedContentUrl`. Resource policy fields describe delivery constraints;
+delivery material remains response-only or access-layer state.
+
 ## Participant
 
 ```ts
@@ -77,6 +95,13 @@ type Participant = {
   reliabilityNotes?: string[]
 }
 ```
+
+`ParticipantCapabilities` is an extensible JSON object with optional `input`,
+`output`, `limits`, `reliability`, and `notes` fields. It can express common
+adapter capabilities such as text, JSON, URL, structured JSON, streaming, and
+manual paste support while preserving JSON-safe extension fields for adapters
+that need more detail. Capabilities describe what an adapter can handle; they do
+not make adapter output authoritative.
 
 ## Batch
 

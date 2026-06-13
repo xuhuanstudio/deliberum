@@ -1,20 +1,123 @@
 import { z } from "zod";
-import { IdSchema, JsonRecordSchema, NonEmptyStringSchema, TimestampStringSchema } from "./common";
+import { IdSchema, JsonValueSchema, NonEmptyStringSchema, TimestampStringSchema } from "./common";
 
-// Minimal Stage 1 placeholder: docs name this object but do not define policy semantics yet.
-export const BudgetLeaseSchema = JsonRecordSchema;
+const NonnegativeIntegerSchema = z.number().int().nonnegative();
+const PositiveIntegerSchema = z.number().int().positive();
+
+export const SealedBatchPurposeSchema = z.enum([
+  "initial_divergence",
+  "relation_mapping",
+  "final_contest",
+  "blind_reframe"
+]);
+export type SealedBatchPurpose = z.infer<typeof SealedBatchPurposeSchema>;
+
+export const SealedBatchRevealPolicySchema = z.enum([
+  "all_completed",
+  "quorum",
+  "deadline",
+  "manual"
+]);
+export type SealedBatchRevealPolicy = z.infer<typeof SealedBatchRevealPolicySchema>;
+
+export const BudgetLeaseSchema = z
+  .object({
+    maxEvents: PositiveIntegerSchema.optional(),
+    maxProviderCalls: NonnegativeIntegerSchema.optional(),
+    maxEstimatedCostCents: NonnegativeIntegerSchema.optional(),
+    maxRunSeconds: PositiveIntegerSchema.optional(),
+    participantTimeoutMs: PositiveIntegerSchema.optional(),
+    overallTimeoutMs: PositiveIntegerSchema.optional()
+  })
+  .catchall(JsonValueSchema);
 export type BudgetLease = z.infer<typeof BudgetLeaseSchema>;
 
-// Minimal Stage 1 placeholder: docs name this object but do not define governance semantics yet.
-export const GovernanceRuleSchema = JsonRecordSchema;
+export const GovernanceRuleSchema = z
+  .object({
+    id: IdSchema.optional(),
+    description: NonEmptyStringSchema.optional(),
+    orchestratedRun: z.boolean().optional(),
+    runSchemaVersion: NonEmptyStringSchema.optional(),
+    sealedDivergencePurpose: SealedBatchPurposeSchema.optional(),
+    sealedDivergenceRevealPolicy: SealedBatchRevealPolicySchema.optional(),
+    requiresExplicitProcessDecisions: z.boolean().optional()
+  })
+  .catchall(JsonValueSchema);
 export type GovernanceRule = z.infer<typeof GovernanceRuleSchema>;
 
-// Minimal Stage 1 placeholder: docs name this object but do not define resource policy semantics yet.
-export const ResourcePolicySchema = JsonRecordSchema;
+export const ResourcePolicyResourceRefSchema = z
+  .object({
+    resourceId: IdSchema,
+    required: z.boolean().optional(),
+    preferredDeliveryMode: NonEmptyStringSchema.optional(),
+    allowedDeliveryModes: z.array(NonEmptyStringSchema).optional(),
+    maxBase64SizeBytes: NonnegativeIntegerSchema.optional(),
+    allowHostedContentUrl: z.boolean().optional()
+  })
+  .catchall(JsonValueSchema);
+export type ResourcePolicyResourceRef = z.infer<typeof ResourcePolicyResourceRefSchema>;
+
+export const ResourcePolicySchema = z
+  .object({
+    resourceRefs: z.array(ResourcePolicyResourceRefSchema).optional(),
+    defaultRequired: z.boolean().optional(),
+    defaultDeliveryModes: z.array(NonEmptyStringSchema).optional()
+  })
+  .catchall(JsonValueSchema);
 export type ResourcePolicy = z.infer<typeof ResourcePolicySchema>;
 
-// Minimal Stage 1 placeholder: docs name this object but do not define capability semantics yet.
-export const ParticipantCapabilitiesSchema = JsonRecordSchema;
+export const ParticipantCapabilityInputSchema = z
+  .object({
+    text: z.boolean().optional(),
+    markdown: z.boolean().optional(),
+    json: z.boolean().optional(),
+    imageUrl: z.boolean().optional(),
+    imageBase64: z.boolean().optional(),
+    pdfUrl: z.boolean().optional(),
+    fileUrl: z.boolean().optional(),
+    webBrowsing: z.boolean().optional()
+  })
+  .catchall(JsonValueSchema);
+export type ParticipantCapabilityInput = z.infer<typeof ParticipantCapabilityInputSchema>;
+
+export const ParticipantCapabilityOutputSchema = z
+  .object({
+    structuredJson: z.boolean().optional(),
+    markdown: z.boolean().optional(),
+    streaming: z.boolean().optional(),
+    manualPaste: z.boolean().optional()
+  })
+  .catchall(JsonValueSchema);
+export type ParticipantCapabilityOutput = z.infer<typeof ParticipantCapabilityOutputSchema>;
+
+export const ParticipantCapabilityLimitsSchema = z
+  .object({
+    maxPromptChars: PositiveIntegerSchema.optional(),
+    maxInputTokens: PositiveIntegerSchema.optional(),
+    maxOutputTokens: PositiveIntegerSchema.optional(),
+    maxUrlChars: PositiveIntegerSchema.optional(),
+    maxResourceSizeBytes: PositiveIntegerSchema.optional()
+  })
+  .catchall(JsonValueSchema);
+export type ParticipantCapabilityLimits = z.infer<typeof ParticipantCapabilityLimitsSchema>;
+
+export const ParticipantReliabilitySchema = z.enum([
+  "high",
+  "medium",
+  "low",
+  "experimental"
+]);
+export type ParticipantReliability = z.infer<typeof ParticipantReliabilitySchema>;
+
+export const ParticipantCapabilitiesSchema = z
+  .object({
+    input: ParticipantCapabilityInputSchema.optional(),
+    output: ParticipantCapabilityOutputSchema.optional(),
+    limits: ParticipantCapabilityLimitsSchema.optional(),
+    reliability: ParticipantReliabilitySchema.optional(),
+    notes: z.array(NonEmptyStringSchema).optional()
+  })
+  .catchall(JsonValueSchema);
 export type ParticipantCapabilities = z.infer<typeof ParticipantCapabilitiesSchema>;
 
 export const TopicContractSchema = z
@@ -57,24 +160,8 @@ export const ParticipantSchema = z
   .strict();
 export type Participant = z.infer<typeof ParticipantSchema>;
 
-export const SealedBatchPurposeSchema = z.enum([
-  "initial_divergence",
-  "relation_mapping",
-  "final_contest",
-  "blind_reframe"
-]);
-export type SealedBatchPurpose = z.infer<typeof SealedBatchPurposeSchema>;
-
 export const SealedBatchStatusSchema = z.enum(["open", "sealed", "revealed", "cancelled"]);
 export type SealedBatchStatus = z.infer<typeof SealedBatchStatusSchema>;
-
-export const SealedBatchRevealPolicySchema = z.enum([
-  "all_completed",
-  "quorum",
-  "deadline",
-  "manual"
-]);
-export type SealedBatchRevealPolicy = z.infer<typeof SealedBatchRevealPolicySchema>;
 
 export const SealedBatchSchema = z
   .object({

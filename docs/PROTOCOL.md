@@ -35,6 +35,13 @@ A Topic Contract includes:
 
 The Topic Contract is the root event. A human creator may configure it, but the discussion itself starts from a system-issued contract rather than a privileged user message.
 
+Budget leases, governance rules, resource policies, and participant
+capabilities are structured but extensible protocol objects. Known fields are
+runtime validated, while extension fields must remain JSON-safe. These objects
+describe bounded resources, process constraints, delivery constraints, and
+adapter capabilities; they do not create a production authorization layer, a
+hidden scheduler, or a semantic judge.
+
 ## Sealed divergence
 
 The initial divergence round is sealed:

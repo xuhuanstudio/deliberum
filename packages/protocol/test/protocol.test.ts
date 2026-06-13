@@ -117,30 +117,147 @@ describe("protocol event envelope", () => {
   });
 });
 
-describe("minimal placeholder policy and capability schemas", () => {
-  it("accepts simple JSON object fields without defining policy semantics", () => {
-    const jsonPolicy = {
-      label: "stage-one-placeholder",
-      maxItems: 3,
-      enabled: true,
-      nested: {
-        mode: "draft"
-      },
-      list: ["a", 1, false, null]
-    };
-
-    expect(protocol.BudgetLeaseSchema.safeParse(jsonPolicy).success).toBe(true);
-    expect(protocol.GovernanceRuleSchema.safeParse(jsonPolicy).success).toBe(true);
-    expect(protocol.ResourcePolicySchema.safeParse(jsonPolicy).success).toBe(true);
-    expect(protocol.ParticipantCapabilitiesSchema.safeParse(jsonPolicy).success).toBe(true);
+describe("policy and capability schemas", () => {
+  it("validates known protocol fields while preserving JSON extension fields", () => {
+    expect(
+      protocol.BudgetLeaseSchema.safeParse({
+        maxEvents: 10,
+        maxProviderCalls: 0,
+        maxEstimatedCostCents: 250,
+        maxRunSeconds: 60,
+        participantTimeoutMs: 1000,
+        overallTimeoutMs: 30000,
+        extension: {
+          mode: "local"
+        }
+      }).success
+    ).toBe(true);
+    expect(
+      protocol.GovernanceRuleSchema.safeParse({
+        orchestratedRun: true,
+        runSchemaVersion: "1",
+        sealedDivergencePurpose: "initial_divergence",
+        sealedDivergenceRevealPolicy: "all_completed",
+        requiresExplicitProcessDecisions: true,
+        extension: ["challengeable"]
+      }).success
+    ).toBe(true);
+    expect(
+      protocol.ResourcePolicySchema.safeParse({
+        resourceRefs: [
+          {
+            resourceId: "resource-1",
+            required: true,
+            preferredDeliveryMode: "url",
+            allowedDeliveryModes: ["url", "webget"],
+            maxBase64SizeBytes: 1024,
+            allowHostedContentUrl: false
+          }
+        ],
+        defaultDeliveryModes: ["url"],
+        extension: {
+          localOnly: true
+        }
+      }).success
+    ).toBe(true);
+    expect(
+      protocol.ParticipantCapabilitiesSchema.safeParse({
+        input: {
+          text: true,
+          markdown: true,
+          json: true,
+          imageUrl: false,
+          imageBase64: false,
+          pdfUrl: false,
+          fileUrl: false,
+          webBrowsing: false
+        },
+        output: {
+          structuredJson: true,
+          markdown: true,
+          streaming: false,
+          manualPaste: false
+        },
+        limits: {
+          maxPromptChars: 10000,
+          maxOutputTokens: 1000
+        },
+        reliability: "experimental",
+        notes: ["Adapter output remains proposal material."],
+        extension: {
+          profile: "local"
+        }
+      }).success
+    ).toBe(true);
   });
 
-  it("rejects non-JSON placeholder values", () => {
+  it("rejects invalid known fields and non-JSON extension values", () => {
+    expect(protocol.BudgetLeaseSchema.safeParse({ maxEvents: 0 }).success).toBe(false);
+    expect(
+      protocol.GovernanceRuleSchema.safeParse({
+        sealedDivergenceRevealPolicy: "vote"
+      }).success
+    ).toBe(false);
+    expect(
+      protocol.ResourcePolicySchema.safeParse({
+        resourceRefs: [
+          {
+            resourceId: "",
+            maxBase64SizeBytes: -1
+          }
+        ]
+      }).success
+    ).toBe(false);
+    expect(
+      protocol.ParticipantCapabilitiesSchema.safeParse({
+        reliability: "authoritative"
+      }).success
+    ).toBe(false);
     expect(
       protocol.BudgetLeaseSchema.safeParse({
         unsupported: undefined
       }).success
     ).toBe(false);
+  });
+});
+
+describe("topic contract policy fields", () => {
+  it("accepts structured budget, governance, and resource policy objects", () => {
+    expect(
+      protocol.TopicContractSchema.safeParse({
+        id: "topic-contract-1",
+        title: "Protocol policy fields",
+        topic: "Validate structured policy fields.",
+        goals: ["Keep root contract objects runtime validated."],
+        constraints: ["Do not make policy objects semantic authority."],
+        outputExpectations: ["Return a provisional outcome."],
+        participantIds: ["participant-1"],
+        allowedAdapters: ["adapter-1"],
+        budgetLease: {
+          maxEvents: 20,
+          maxProviderCalls: 5,
+          overallTimeoutMs: 30000
+        },
+        governanceRules: [
+          {
+            orchestratedRun: true,
+            runSchemaVersion: "1",
+            sealedDivergencePurpose: "initial_divergence",
+            sealedDivergenceRevealPolicy: "all_completed",
+            requiresExplicitProcessDecisions: true
+          }
+        ],
+        resourcePolicy: {
+          resourceRefs: [
+            {
+              resourceId: "resource-1",
+              required: false,
+              preferredDeliveryMode: "url"
+            }
+          ]
+        }
+      }).success
+    ).toBe(true);
   });
 });
 
