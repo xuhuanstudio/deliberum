@@ -110,6 +110,31 @@ describe("baseline comparison report", () => {
       findingCount: 4,
       missingFindingCount: 2,
       unsupportedFindingCount: 0,
+      coverage: {
+        coveredDimensions: [
+          "critical_risk_discovery",
+          "objection_handling",
+          "traceability"
+        ],
+        missingStandardDimensions: [
+          "final_answer_quality",
+          "minority_insight_preservation",
+          "factual_correctness",
+          "executability",
+          "cost",
+          "latency",
+          "user_comprehension"
+        ],
+        coveredBaselineRunKinds: ["direct_answer", "central_judge_workflow"],
+        missingStandardBaselineRunKinds: [
+          "multi_perspective_prompt",
+          "independent_answers_summary",
+          "role_agent_workflow",
+          "voting_aggregation"
+        ],
+        fullyAssessedCaseCount: 0,
+        incompleteFindingMatrixCaseCount: 1
+      },
       caseSummaries: [
         {
           caseId: "case-1",
@@ -147,21 +172,49 @@ describe("baseline comparison report", () => {
 
     expect(report).toMatchObject({
       schemaVersion: "1",
-      caseCount: 3,
-      runCount: 9,
-      findingCount: 18,
+      caseCount: 4,
+      runCount: 12,
+      findingCount: 22,
       missingFindingCount: 0,
-      unsupportedFindingCount: 0
+      unsupportedFindingCount: 0,
+      coverage: {
+        coveredDimensions: [
+          "final_answer_quality",
+          "critical_risk_discovery",
+          "objection_handling",
+          "minority_insight_preservation",
+          "factual_correctness",
+          "executability",
+          "traceability",
+          "cost",
+          "latency",
+          "user_comprehension"
+        ],
+        missingStandardDimensions: [],
+        coveredBaselineRunKinds: [
+          "direct_answer",
+          "multi_perspective_prompt",
+          "independent_answers_summary",
+          "role_agent_workflow",
+          "central_judge_workflow",
+          "voting_aggregation"
+        ],
+        missingStandardBaselineRunKinds: [],
+        fullyAssessedCaseCount: 4,
+        incompleteFindingMatrixCaseCount: 0
+      }
     });
     expect(report.provenance.caseIds).toEqual([
       "case-local-daemon-resource-access",
       "case-provider-setup",
-      "case-final-audit-readiness"
+      "case-final-audit-readiness",
+      "case-cost-latency-transparency"
     ]);
     expect(report.caseSummaries.map((summary) => summary.baselineRunIds)).toEqual([
       ["direct-resource-access", "judge-resource-access"],
       ["multi-perspective-provider-setup", "role-agent-provider-setup"],
-      ["independent-summary-final-audit", "voting-final-audit"]
+      ["independent-summary-final-audit", "voting-final-audit"],
+      ["direct-cost-latency", "multi-perspective-cost-latency"]
     ]);
     expect(serialized).not.toContain("winner");
     expect(serialized).not.toContain("currentBest");

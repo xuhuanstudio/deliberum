@@ -16,6 +16,15 @@ export const BaselineRunKindSchema = z.enum([
 ]);
 export type BaselineRunKind = z.infer<typeof BaselineRunKindSchema>;
 
+export const STANDARD_BASELINE_RUN_KINDS = [
+  "direct_answer",
+  "multi_perspective_prompt",
+  "independent_answers_summary",
+  "role_agent_workflow",
+  "central_judge_workflow",
+  "voting_aggregation"
+] as const satisfies readonly BaselineRunKind[];
+
 export const EvaluationDimensionSchema = z.enum([
   "final_answer_quality",
   "critical_risk_discovery",
@@ -116,6 +125,15 @@ export type BaselineComparisonCaseSummary = {
   dimensionSummaries: BaselineComparisonDimensionSummary[];
 };
 
+export type BaselineComparisonCoverage = {
+  coveredDimensions: EvaluationDimension[];
+  missingStandardDimensions: EvaluationDimension[];
+  coveredBaselineRunKinds: BaselineRunKind[];
+  missingStandardBaselineRunKinds: BaselineRunKind[];
+  fullyAssessedCaseCount: number;
+  incompleteFindingMatrixCaseCount: number;
+};
+
 export type BaselineComparisonReport = {
   schemaVersion: "1";
   caseCount: number;
@@ -124,6 +142,7 @@ export type BaselineComparisonReport = {
   missingFindingCount: number;
   unsupportedFindingCount: number;
   caseSummaries: BaselineComparisonCaseSummary[];
+  coverage: BaselineComparisonCoverage;
   provenance: {
     caseIds: string[];
     sourceRefs: string[];
@@ -185,6 +204,7 @@ export function createBaselineComparisonReport(
       0
     ),
     caseSummaries,
+    coverage: createCoverageSummary(parsed.data, caseSummaries),
     provenance: {
       caseIds: parsed.data.cases.map((testCase) => testCase.id),
       sourceRefs: [...allSourceRefs].sort()
@@ -193,6 +213,46 @@ export function createBaselineComparisonReport(
       "The harness aggregates supplied comparative findings; it does not evaluate quality by itself or choose an authoritative outcome.",
       "Finding quality depends on the external evaluator and source references supplied to the harness."
     ]
+  };
+}
+
+function createCoverageSummary(
+  input: BaselineComparisonInput,
+  caseSummaries: readonly BaselineComparisonCaseSummary[]
+): BaselineComparisonCoverage {
+  const coveredDimensions = new Set<EvaluationDimension>();
+  const coveredBaselineRunKinds = new Set<BaselineRunKind>();
+
+  for (const testCase of input.cases) {
+    for (const dimension of testCase.dimensions) {
+      coveredDimensions.add(dimension);
+    }
+
+    for (const run of testCase.runs) {
+      if (run.kind !== "deliberum") {
+        coveredBaselineRunKinds.add(run.kind);
+      }
+    }
+  }
+
+  const fullyAssessedCaseCount = caseSummaries.filter(
+    (summary) => summary.missingFindingCount === 0 && summary.unsupportedFindingCount === 0
+  ).length;
+
+  return {
+    coveredDimensions: sortBySchemaOrder(coveredDimensions, EvaluationDimensionSchema.options),
+    missingStandardDimensions: EvaluationDimensionSchema.options.filter(
+      (dimension) => !coveredDimensions.has(dimension)
+    ),
+    coveredBaselineRunKinds: sortBySchemaOrder(
+      coveredBaselineRunKinds,
+      BaselineRunKindSchema.options
+    ),
+    missingStandardBaselineRunKinds: STANDARD_BASELINE_RUN_KINDS.filter(
+      (kind) => !coveredBaselineRunKinds.has(kind)
+    ),
+    fullyAssessedCaseCount,
+    incompleteFindingMatrixCaseCount: caseSummaries.length - fullyAssessedCaseCount
   };
 }
 
@@ -279,4 +339,8 @@ function createDimensionSummary(
 
 function createFindingKey(dimension: EvaluationDimension, baselineRunId: string): string {
   return `${dimension}:${baselineRunId}`;
+}
+
+function sortBySchemaOrder<T extends string>(values: ReadonlySet<T>, schemaOrder: readonly T[]): T[] {
+  return schemaOrder.filter((value) => values.has(value));
 }

@@ -25,12 +25,19 @@ The harness does not evaluate quality by itself, rank systems, vote, or select
 an authoritative outcome. It is an evidence organization layer for human or
 external evaluator findings.
 
+Reports include benchmark coverage metadata: covered evaluation dimensions,
+missing standard dimensions, covered baseline run kinds, missing standard
+baseline kinds, and whether each case has a complete finding matrix. Coverage
+metadata is a dataset governance aid only; it is not a quality score.
+
 The repository includes
 `examples/evaluation/baseline-comparison.sample.json` as a small public sample
-fixture. It covers resource access posture, provider setup, and final audit
-readiness across direct-answer, central-judge, multi-perspective, role-agent,
-independent-summary, and voting baselines. The sample is illustrative harness
-input, not a benchmark score, leaderboard, or system ranking.
+fixture. It covers resource access posture, provider setup, final audit
+readiness, and cost/latency transparency across direct-answer, central-judge,
+multi-perspective, role-agent, independent-summary, and voting baselines. The
+sample covers every implemented evaluation dimension at least once. It is
+illustrative harness input, not a benchmark score, leaderboard, or system
+ranking.
 
 ## Evaluation dimensions
 

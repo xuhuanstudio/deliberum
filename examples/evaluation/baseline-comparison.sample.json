@@ -341,6 +341,107 @@
           ]
         }
       ]
+    },
+    {
+      "id": "case-cost-latency-transparency",
+      "title": "Cost and latency transparency",
+      "prompt": "How should a deliberation system account for extra provider calls and latency without hiding the quality tradeoff?",
+      "dimensions": [
+        "cost",
+        "latency"
+      ],
+      "sourceRefs": [
+        "examples/evaluation/case-cost-latency-transparency/prompt.md"
+      ],
+      "runs": [
+        {
+          "id": "deliberum-cost-latency",
+          "kind": "deliberum",
+          "label": "Deliberum structured run",
+          "outputSummary": "Expose provider call count, event count, and unresolved quality tradeoffs instead of presenting extra deliberation as free.",
+          "sourceRefs": [
+            "ledger/cost-latency/events.json",
+            "projection/cost-latency/outcome.json"
+          ],
+          "metrics": {
+            "latencyMs": 184000,
+            "providerCallCount": 7,
+            "eventCount": 31
+          }
+        },
+        {
+          "id": "direct-cost-latency",
+          "kind": "direct_answer",
+          "label": "Direct answer baseline",
+          "outputSummary": "Return a concise answer with one provider call and no explicit deliberation overhead.",
+          "sourceRefs": [
+            "baselines/cost-latency/direct-answer.md"
+          ],
+          "metrics": {
+            "latencyMs": 18000,
+            "providerCallCount": 1
+          }
+        },
+        {
+          "id": "multi-perspective-cost-latency",
+          "kind": "multi_perspective_prompt",
+          "label": "Multi-perspective prompt baseline",
+          "outputSummary": "Ask one model to compare several perspectives in one request and summarize the tradeoff.",
+          "sourceRefs": [
+            "baselines/cost-latency/multi-perspective.md"
+          ],
+          "metrics": {
+            "latencyMs": 26000,
+            "providerCallCount": 1
+          }
+        }
+      ],
+      "findings": [
+        {
+          "dimension": "cost",
+          "baselineRunId": "direct-cost-latency",
+          "status": "baseline_stronger",
+          "evidence": "The direct answer baseline used one provider call, while the Deliberum run used seven provider calls to preserve objections, audit material, and provenance.",
+          "sourceRefs": [
+            "ledger/cost-latency/events.json",
+            "baselines/cost-latency/direct-answer.md"
+          ],
+          "notes": [
+            "Lower cost is a legitimate baseline advantage when the task does not need deliberation depth."
+          ]
+        },
+        {
+          "dimension": "latency",
+          "baselineRunId": "direct-cost-latency",
+          "status": "baseline_stronger",
+          "evidence": "The direct answer completed faster because it did not run sealed divergence, review, or final audit stages.",
+          "sourceRefs": [
+            "ledger/cost-latency/events.json",
+            "baselines/cost-latency/direct-answer.md"
+          ]
+        },
+        {
+          "dimension": "cost",
+          "baselineRunId": "multi-perspective-cost-latency",
+          "status": "baseline_stronger",
+          "evidence": "The multi-perspective baseline used one prompt to approximate several viewpoints, while the Deliberum run paid for separate proposal and audit material.",
+          "sourceRefs": [
+            "ledger/cost-latency/events.json",
+            "baselines/cost-latency/multi-perspective.md"
+          ]
+        },
+        {
+          "dimension": "latency",
+          "baselineRunId": "multi-perspective-cost-latency",
+          "status": "mixed",
+          "evidence": "The multi-perspective prompt returned sooner, but the Deliberum run exposed where extra latency came from through event and provider-call metadata.",
+          "sourceRefs": [
+            "ledger/cost-latency/events.json",
+            "projection/cost-latency/outcome.json",
+            "baselines/cost-latency/multi-perspective.md"
+          ]
+        }
+      ]
     }
   ]
 }
