@@ -25,6 +25,7 @@ import { buildRuntimeSetupPlan } from "@deliberum/client";
 import type {
   AuditFinalCandidateRequest,
   DeploymentPostureResponse,
+  OperationAuditResponse,
   ProposeFinalCandidateRequest,
   ResourceAccessPostureResponse
 } from "@deliberum/client";
@@ -238,10 +239,15 @@ function LandingPage() {
     queryKey: ["resource-access-posture"],
     queryFn: () => client.getResourceAccessPosture()
   });
+  const operationAuditQuery = useQuery({
+    queryKey: ["operation-audit", "landing", 10],
+    queryFn: () => client.getOperationAudit({ limit: 10 })
+  });
   const sessions = asArray(sessionsQuery.data?.sessions);
   const runtimeProfiles = asArray(runtimeProfilesQuery.data?.profiles);
   const deploymentPosture = deploymentPostureQuery.data;
   const resourceAccessPosture = resourceAccessPostureQuery.data;
+  const operationAuditEvents = operationAuditQuery.data?.events ?? [];
   const runtimeSetupPlan = runtimeProfilesQuery.data
     ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
     : undefined;
@@ -547,6 +553,51 @@ function LandingPage() {
           </QueryState>
         </DataPanel>
         <DataPanel
+          title="Operation audit"
+          description="Recent safe daemon control-plane metadata without request bodies, tokens, or payloads."
+        >
+          <QueryState query={operationAuditQuery}>
+            {operationAuditEvents.length === 0 ? (
+              <EmptyState
+                title="No operation audit entries"
+                description="The daemon has not returned safe operation audit metadata yet."
+              />
+            ) : (
+              <div className="du-run-list">
+                {operationAuditEvents.map((event) => (
+                  <article className="du-run-list-item" key={event.id}>
+                    <p className="du-kicker">{event.recordedAt}</p>
+                    <h3>{formatRecordValue(event.action)}</h3>
+                    <p>{formatAuditRoute(event)}</p>
+                    <KeyValueGrid
+                      items={[
+                        {
+                          label: "Status",
+                          value: `${event.statusCode} ${formatRecordValue(
+                            event.outcome
+                          )}`
+                        },
+                        {
+                          label: "Method",
+                          value: event.method
+                        },
+                        {
+                          label: "Authorization",
+                          value: formatAuditAuthorization(event.authorization)
+                        },
+                        {
+                          label: "Target",
+                          value: formatAuditTarget(event.target)
+                        }
+                      ]}
+                    />
+                  </article>
+                ))}
+              </div>
+            )}
+          </QueryState>
+        </DataPanel>
+        <DataPanel
           title="Daemon sessions"
           description="Read-only session catalog derived from daemon ledger events."
         >
@@ -755,6 +806,33 @@ function formatResourceRestartContinuity(
     | ResourceAccessPostureResponse["hostedContent"]["brokerContentRestartContinuity"]
 ): string {
   return value === "depends_on_configured_store" ? "restart-aware" : "restart-lost";
+}
+
+function formatAuditRoute(event: OperationAuditResponse["events"][number]): string {
+  return `${event.method} ${event.route}`;
+}
+
+function formatAuditAuthorization(
+  value: OperationAuditResponse["events"][number]["authorization"]
+): string {
+  const mode = formatRecordValue(value.mode);
+  const presence = value.present ? "present" : "absent";
+
+  return `${mode}, ${presence}`;
+}
+
+function formatAuditTarget(
+  value: OperationAuditResponse["events"][number]["target"]
+): string {
+  const parts = [
+    ["run", value.runId],
+    ["session", value.sessionId],
+    ["batch", value.batchId],
+    ["proposal", value.proposalEventId],
+    ["resource", value.resourceId]
+  ].flatMap(([label, id]) => (id ? [`${label}: ${id}`] : []));
+
+  return parts.length > 0 ? parts.join(", ") : "None";
 }
 
 function formatUnknownArray(value: unknown): string[] {

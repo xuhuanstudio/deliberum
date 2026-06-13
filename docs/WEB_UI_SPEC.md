@@ -13,7 +13,7 @@ The Web UI defaults to the local daemon URL and can be configured for developmen
 
 ## Current pages
 
-- Landing page with explicit session-id entry, safe daemon deployment posture, safe resource access posture, runtime profiles, and daemon session catalog;
+- Landing page with explicit session-id entry, safe daemon deployment posture, safe resource access posture, safe operation audit metadata, runtime profiles, and daemon session catalog;
 - Session Overview;
 - Candidate Frontier;
 - Objections;

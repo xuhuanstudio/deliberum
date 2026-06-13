@@ -240,6 +240,26 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         "It does not expose resource access ids, bearer tokens, source URLs, redirected targets, hosted content, or resource payloads."
       ]
     })),
+    getOperationAudit: vi.fn(async () => ({
+      events: [
+        {
+          id: "operation-audit-1",
+          recordedAt: "2026-06-10T00:00:00.000Z",
+          action: "runtime_resource_access_read",
+          method: "GET",
+          route: "/runtime/resource-access",
+          statusCode: 200,
+          outcome: "succeeded",
+          authorization: {
+            mode: "daemon_bearer",
+            present: true
+          },
+          target: {
+            sessionId: "session-1"
+          }
+        }
+      ]
+    })),
     listSessions: vi.fn(async () => ({
       sessions: [
         {
@@ -875,6 +895,25 @@ describe("@deliberum/web shell", () => {
     );
     expect(document.body.textContent ?? "").not.toContain("resource-access-audit-1");
     expect(document.body.textContent ?? "").not.toContain("ZZZZ");
+  });
+
+  it("renders safe daemon operation audit metadata without request material", async () => {
+    const client = renderApp("/");
+
+    expect(await screen.findByText("Operation audit")).toBeTruthy();
+    await waitFor(() =>
+      expect(client.getOperationAudit).toHaveBeenCalledWith({ limit: 10 })
+    );
+    expect(screen.getByText("runtime_resource_access_read")).toBeTruthy();
+    expect(screen.getByText("GET /runtime/resource-access")).toBeTruthy();
+    expect(screen.getByText("200 succeeded")).toBeTruthy();
+    expect(screen.getByText("daemon_bearer, present")).toBeTruthy();
+    expect(screen.getByText("session: session-1")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain(
+      ["local-daemon-auth", "token"].join("-")
+    );
+    expect(document.body.textContent ?? "").not.toContain("headers");
+    expect(document.body.textContent ?? "").not.toContain("requestBody");
   });
 
   it("renders the session overview from daemon ledger events", async () => {
