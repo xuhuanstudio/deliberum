@@ -25,7 +25,13 @@ local:
         maxBytesEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES
         maxFilesEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES
         material: normalized_control_plane_metadata_only
-        remoteShipping: deferred
+      operationAuditHttpExport:
+        urlEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_URL
+        tokenEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_TOKEN
+        timeoutMsEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS
+        allowInsecureHttpEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP
+        material: normalized_control_plane_metadata_only
+        defaultRemotePolicy: https_required
       resourceBrokerState: explicit_registered_resources
       operationAuditMaterial: normalized_control_plane_metadata_only
       inMemoryFallback: true

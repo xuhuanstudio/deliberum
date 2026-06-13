@@ -121,6 +121,10 @@ import {
   OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
   DAEMON_HOST_ENV_VAR,
+  DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP_ENV_VAR,
+  DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS_ENV_VAR,
+  DAEMON_OPERATION_AUDIT_EXPORT_TOKEN_ENV_VAR,
+  DAEMON_OPERATION_AUDIT_EXPORT_URL_ENV_VAR,
   DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR,
   DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR,
   DAEMON_OPERATION_AUDIT_JSONL_PATH_ENV_VAR,
@@ -144,6 +148,10 @@ import {
   resolveStartDaemonOperationAuditJsonlMaxBytes,
   resolveStartDaemonOperationAuditJsonlMaxFiles,
   resolveStartDaemonOperationAuditJsonlPath,
+  resolveStartDaemonOperationAuditExportAllowInsecureHttp,
+  resolveStartDaemonOperationAuditExportTimeoutMs,
+  resolveStartDaemonOperationAuditExportToken,
+  resolveStartDaemonOperationAuditExportUrl,
   resolveStartDaemonWebAssetsPath,
   resolveStartDaemonEventStorePath,
   resolveStartDaemonRunStorePath,
@@ -5837,6 +5845,219 @@ describe("daemon API", () => {
     }
   });
 
+  it("exports operation audit records to an HTTP collector without request material", async () => {
+    const requests: Array<{ url: string; init: RequestInit }> = [];
+    const errors: unknown[] = [];
+    const token = ["audit", "collector", "token"].join("-");
+    const sink = new daemon.HttpOperationAuditExportSink({
+      endpointUrl: "https://audit.example/collect",
+      authToken: token,
+      timeoutMs: 1000,
+      dispatch: async (url, init) => {
+        requests.push({ url, init });
+        return { ok: true, status: 202 };
+      },
+      onError: (error) => errors.push(error)
+    });
+
+    sink.write({
+      ...operationAuditInput("operation_audit_read"),
+      target: {
+        sessionId: "session-1",
+        resourceId: "resource-1"
+      }
+    });
+    await Promise.resolve();
+
+    expect(errors).toEqual([]);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.url).toBe("https://audit.example/collect");
+    expect((requests[0]?.init.headers as Record<string, string>).authorization).toBe(
+      `Bearer ${token}`
+    );
+    expect((requests[0]?.init.headers as Record<string, string>)["content-type"]).toBe(
+      "application/json"
+    );
+
+    const payload = JSON.parse(String(requests[0]?.init.body)) as {
+      schemaVersion: number;
+      event: unknown;
+    };
+    expect(payload).toEqual({
+      schemaVersion: 1,
+      event: expect.objectContaining({
+        action: "operation_audit_read",
+        method: "GET",
+        route: "/runtime/profiles",
+        authorization: {
+          mode: "daemon_bearer",
+          present: true
+        },
+        target: {
+          sessionId: "session-1",
+          resourceId: "resource-1"
+        }
+      })
+    });
+
+    const serializedPayload = JSON.stringify(payload);
+    expect(serializedPayload).not.toContain(token);
+    expect(serializedPayload).not.toContain("Authorization");
+    expect(serializedPayload).not.toContain("requestBody");
+    expect(serializedPayload).not.toContain("headers");
+  });
+
+  it("keeps primary operation audit records when HTTP exporting fails", async () => {
+    const errors: unknown[] = [];
+    const log = new MirroredOperationAuditLog({
+      primary: new daemon.InMemoryOperationAuditLog({
+        idGenerator: createIds(),
+        clock
+      }),
+      sink: new daemon.HttpOperationAuditExportSink({
+        endpointUrl: "https://audit.example/collect",
+        dispatch: async () => ({ ok: false, status: 503 }),
+        onError: (error) => errors.push(error)
+      })
+    });
+
+    const entry = log.record(operationAuditInput("runtime_profiles_read"));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(entry).toEqual(
+      expect.objectContaining({
+        id: "id-1",
+        action: "runtime_profiles_read"
+      })
+    );
+    expect(log.list()).toEqual([
+      expect.objectContaining({
+        id: "id-1",
+        action: "runtime_profiles_read"
+      })
+    ]);
+    expect(errors).toHaveLength(1);
+    expect(String(errors[0])).toContain(
+      "Operation audit HTTP export failed with status 503."
+    );
+  });
+
+  it("attempts every operation audit export sink when one mirror fails", () => {
+    const errors: unknown[] = [];
+    const mirroredEntries: unknown[] = [];
+    const log = new MirroredOperationAuditLog({
+      primary: new daemon.InMemoryOperationAuditLog({
+        idGenerator: createIds(),
+        clock
+      }),
+      sink: new daemon.CompositeOperationAuditExportSink({
+        sinks: [
+          {
+            write: () => {
+              throw new Error("first audit export sink unavailable");
+            }
+          },
+          {
+            write: (entry) => mirroredEntries.push(entry)
+          }
+        ]
+      }),
+      onSinkError: (error) => errors.push(error)
+    });
+
+    const entry = log.record(operationAuditInput("runtime_profiles_read"));
+
+    expect(entry).toEqual(
+      expect.objectContaining({
+        id: "id-1",
+        action: "runtime_profiles_read"
+      })
+    );
+    expect(mirroredEntries).toEqual([
+      expect.objectContaining({
+        id: "id-1",
+        action: "runtime_profiles_read"
+      })
+    ]);
+    expect(errors).toHaveLength(1);
+    expect(String(errors[0])).toContain("first audit export sink unavailable");
+  });
+
+  it("mirrors operation audit records to JSONL and HTTP export sinks from env", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-operation-audit-export-"));
+    const filePath = join(dir, "operations.jsonl");
+    const requests: Array<{ url: string; init: RequestInit }> = [];
+    const token = ["audit", "export", "token"].join("-");
+
+    try {
+      const log = createStartDaemonOperationAuditLog(
+        {
+          operationAuditIdGenerator: createIds(),
+          operationAuditClock: clock,
+          operationAuditExportDispatch: async (url, init) => {
+            requests.push({ url, init });
+            return { ok: true, status: 202 };
+          }
+        },
+        {
+          [DAEMON_OPERATION_AUDIT_JSONL_PATH_ENV_VAR]: ` ${filePath} `,
+          [DAEMON_OPERATION_AUDIT_EXPORT_URL_ENV_VAR]:
+            " https://audit.example/collect ",
+          [DAEMON_OPERATION_AUDIT_EXPORT_TOKEN_ENV_VAR]: ` ${token} `,
+          [DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS_ENV_VAR]: " 1000 "
+        }
+      );
+
+      expect(log).toBeInstanceOf(MirroredOperationAuditLog);
+      expect(
+        resolveStartDaemonOperationAuditExportUrl({
+          [DAEMON_OPERATION_AUDIT_EXPORT_URL_ENV_VAR]:
+            " https://audit.example/collect "
+        })
+      ).toBe("https://audit.example/collect");
+      expect(resolveStartDaemonOperationAuditExportUrl({})).toBeUndefined();
+      expect(
+        resolveStartDaemonOperationAuditExportToken({
+          [DAEMON_OPERATION_AUDIT_EXPORT_TOKEN_ENV_VAR]: ` ${token} `
+        })
+      ).toBe(token);
+      expect(resolveStartDaemonOperationAuditExportToken({})).toBeUndefined();
+      expect(
+        resolveStartDaemonOperationAuditExportTimeoutMs({
+          [DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS_ENV_VAR]: " 1000 "
+        })
+      ).toBe(1000);
+      expect(resolveStartDaemonOperationAuditExportTimeoutMs({})).toBeUndefined();
+      expect(resolveStartDaemonOperationAuditExportAllowInsecureHttp({})).toBe(false);
+
+      log?.record(operationAuditInput("runtime_profiles_read"));
+      await Promise.resolve();
+
+      expect(readJsonlFile(filePath)).toEqual([
+        expect.objectContaining({
+          id: "id-1",
+          action: "runtime_profiles_read",
+          authorization: {
+            mode: "daemon_bearer",
+            present: true
+          },
+          target: {}
+        })
+      ]);
+      expect(requests).toHaveLength(1);
+      expect(requests[0]?.url).toBe("https://audit.example/collect");
+      expect((requests[0]?.init.headers as Record<string, string>).authorization).toBe(
+        `Bearer ${token}`
+      );
+      expect(JSON.stringify(JSON.parse(String(requests[0]?.init.body)))).not.toContain(
+        token
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("keeps primary operation audit records when JSONL mirroring fails", () => {
     const errors: unknown[] = [];
     const log = new MirroredOperationAuditLog({
@@ -5884,6 +6105,45 @@ describe("daemon API", () => {
     ).toThrow(
       `${DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR} must be a positive integer.`
     );
+  });
+
+  it("rejects invalid operation audit HTTP export env values", () => {
+    expect(() =>
+      resolveStartDaemonOperationAuditExportTimeoutMs({
+        [DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS_ENV_VAR]: "not-a-number"
+      })
+    ).toThrow(
+      `${DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS_ENV_VAR} must be a positive integer.`
+    );
+    expect(() =>
+      resolveStartDaemonOperationAuditExportAllowInsecureHttp({
+        [DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP_ENV_VAR]: "maybe"
+      })
+    ).toThrow(
+      `${DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP_ENV_VAR} must be true or false.`
+    );
+    expect(() =>
+      createStartDaemonOperationAuditLog(
+        {},
+        {
+          [DAEMON_OPERATION_AUDIT_EXPORT_URL_ENV_VAR]:
+            "http://audit.example/collect"
+        }
+      )
+    ).toThrow(
+      "Operation audit HTTP export URL must use HTTPS unless insecure HTTP is explicitly allowed."
+    );
+
+    expect(
+      createStartDaemonOperationAuditLog(
+        {},
+        {
+          [DAEMON_OPERATION_AUDIT_EXPORT_URL_ENV_VAR]:
+            "http://audit.example/collect",
+          [DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP_ENV_VAR]: "true"
+        }
+      )
+    ).toBeInstanceOf(MirroredOperationAuditLog);
   });
 
   it("resolves optional daemon Web asset path from env without overriding explicit assets", () => {

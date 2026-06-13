@@ -12,13 +12,18 @@ import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { JsonFileEventStore, SQLiteEventStore, type EventStore } from "@deliberum/storage";
 import { JsonFileRunStore } from "./json-file-run-store";
 import {
+  CompositeOperationAuditExportSink,
+  HttpOperationAuditExportSink,
   JsonFileOperationAuditLog,
   JsonlOperationAuditExportSink,
   MirroredOperationAuditLog,
   InMemoryOperationAuditLog,
+  parseOperationAuditHttpTimeoutMs,
   parseOperationAuditJsonlMaxBytes,
   parseOperationAuditJsonlMaxFiles,
-  parseOperationAuditMaxEntries
+  parseOperationAuditMaxEntries,
+  type OperationAuditExportSink,
+  type OperationAuditHttpDispatch
 } from "./operation-audit-log";
 import { isLocalPresetEnabledFromEnv } from "./local-preset";
 import {
@@ -50,6 +55,14 @@ export const DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR =
   "DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES" as const;
 export const DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR =
   "DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES" as const;
+export const DAEMON_OPERATION_AUDIT_EXPORT_URL_ENV_VAR =
+  "DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_URL" as const;
+export const DAEMON_OPERATION_AUDIT_EXPORT_TOKEN_ENV_VAR =
+  "DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_TOKEN" as const;
+export const DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS_ENV_VAR =
+  "DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS" as const;
+export const DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP_ENV_VAR =
+  "DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP" as const;
 export const DAEMON_WEB_ASSETS_PATH_ENV_VAR = "DELIBERUM_DAEMON_WEB_ASSETS_PATH" as const;
 export const DAEMON_AUTH_TOKEN_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
 export const DAEMON_HOST_ENV_VAR = "DELIBERUM_HOST" as const;
@@ -61,6 +74,7 @@ export const RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR =
 
 export type StartDaemonOptions = DaemonAppOptions & {
   onListening?: (address: { host: string; port: number }) => void;
+  operationAuditExportDispatch?: OperationAuditHttpDispatch;
 };
 
 export type StartedDaemon = DaemonApp & {
@@ -181,6 +195,7 @@ export function createStartDaemonOperationAuditLog(
     | "operationAuditClock"
     | "operationAuditIdGenerator"
     | "operationAuditMaxEntries"
+    | "operationAuditExportDispatch"
     | "clock"
   > = {},
   env: Record<string, string | undefined> = process.env
@@ -212,8 +227,32 @@ export function createStartDaemonOperationAuditLog(
       : undefined;
   }
 
+  const exportSinks: OperationAuditExportSink[] = [];
   const jsonlPath = resolveStartDaemonOperationAuditJsonlPath(env);
-  if (!jsonlPath) {
+  if (jsonlPath) {
+    exportSinks.push(
+      new JsonlOperationAuditExportSink({
+        filePath: jsonlPath,
+        maxBytes: resolveStartDaemonOperationAuditJsonlMaxBytes(env),
+        maxFiles: resolveStartDaemonOperationAuditJsonlMaxFiles(env)
+      })
+    );
+  }
+
+  const exportUrl = resolveStartDaemonOperationAuditExportUrl(env);
+  if (exportUrl) {
+    exportSinks.push(
+      new HttpOperationAuditExportSink({
+        endpointUrl: exportUrl,
+        authToken: resolveStartDaemonOperationAuditExportToken(env),
+        timeoutMs: resolveStartDaemonOperationAuditExportTimeoutMs(env),
+        allowInsecureHttp: resolveStartDaemonOperationAuditExportAllowInsecureHttp(env),
+        dispatch: options.operationAuditExportDispatch
+      })
+    );
+  }
+
+  if (exportSinks.length === 0) {
     return operationAuditLog;
   }
 
@@ -223,11 +262,10 @@ export function createStartDaemonOperationAuditLog(
       new InMemoryOperationAuditLog({
         ...auditOptions
       }),
-    sink: new JsonlOperationAuditExportSink({
-      filePath: jsonlPath,
-      maxBytes: resolveStartDaemonOperationAuditJsonlMaxBytes(env),
-      maxFiles: resolveStartDaemonOperationAuditJsonlMaxFiles(env)
-    })
+    sink:
+      exportSinks.length === 1
+        ? exportSinks[0]!
+        : new CompositeOperationAuditExportSink({ sinks: exportSinks })
   });
 }
 
@@ -276,6 +314,56 @@ export function resolveStartDaemonOperationAuditJsonlMaxFiles(
       `${DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR} must be a positive integer.`
     );
   }
+}
+
+export function resolveStartDaemonOperationAuditExportUrl(
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  const value = env[DAEMON_OPERATION_AUDIT_EXPORT_URL_ENV_VAR]?.trim();
+  return value && value.length > 0 ? value : undefined;
+}
+
+export function resolveStartDaemonOperationAuditExportToken(
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  const value = env[DAEMON_OPERATION_AUDIT_EXPORT_TOKEN_ENV_VAR]?.trim();
+  return value && value.length > 0 ? value : undefined;
+}
+
+export function resolveStartDaemonOperationAuditExportTimeoutMs(
+  env: Record<string, string | undefined> = process.env
+): number | undefined {
+  try {
+    return parseOperationAuditHttpTimeoutMs(
+      env[DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS_ENV_VAR]
+    );
+  } catch (error) {
+    throw new Error(
+      `${DAEMON_OPERATION_AUDIT_EXPORT_TIMEOUT_MS_ENV_VAR} must be a positive integer.`
+    );
+  }
+}
+
+export function resolveStartDaemonOperationAuditExportAllowInsecureHttp(
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  const value = env[DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP_ENV_VAR]?.trim();
+
+  if (!value) {
+    return false;
+  }
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  throw new Error(
+    `${DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP_ENV_VAR} must be true or false.`
+  );
 }
 
 export function resolveStartDaemonWebAssetsPath(

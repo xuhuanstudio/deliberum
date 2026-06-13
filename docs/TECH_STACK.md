@@ -24,7 +24,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - `better-sqlite3` for optional local/pre-production daemon SQLite event ledger, run metadata, resource broker, resource access grant, and operation audit log persistence with local connection-level writer serialization;
 - shared Node `JsonFileEventStore` for CLI persistence and optional local daemon event ledger persistence;
 - daemon-local `JsonFileRunStore` for optional local run metadata persistence;
-- daemon-local operation audit log with in-memory defaults, optional JSON persistence, optional SQLite persistence, local retention caps, optional rotated JSONL mirror, and CLI JSONL export for safe control-plane operation metadata;
+- daemon-local operation audit log with in-memory defaults, optional JSON persistence, optional SQLite persistence, local retention caps, optional rotated JSONL mirror, optional HTTP export, and CLI JSONL export for safe control-plane operation metadata;
 - CLI daemon runtime profile status, comment-only env-template output, safe profile-doctor diagnostics, safe setup-plan output, deployment posture reads, and resource access posture reads for local setup assistance;
 - shared `@deliberum/client` setup-plan projection helpers for CLI/Web local setup summaries derived from safe runtime profile metadata, plus daemon deployment posture response types and reads;
 - Server-Sent Events for daemon event streaming;

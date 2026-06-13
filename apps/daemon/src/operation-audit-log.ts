@@ -18,6 +18,8 @@ export const MAX_OPERATION_AUDIT_RETENTION_ENTRIES = 100_000 as const;
 export const DEFAULT_OPERATION_AUDIT_JSONL_MAX_FILES = 5 as const;
 export const MAX_OPERATION_AUDIT_JSONL_MAX_FILES = 100 as const;
 export const MAX_OPERATION_AUDIT_JSONL_MAX_BYTES = 1_073_741_824 as const;
+export const DEFAULT_OPERATION_AUDIT_HTTP_TIMEOUT_MS = 5000 as const;
+export const MAX_OPERATION_AUDIT_HTTP_TIMEOUT_MS = 60_000 as const;
 
 export const OPERATION_AUDIT_OUTCOMES = [
   "succeeded",
@@ -78,6 +80,11 @@ export interface OperationAuditLog {
 export interface OperationAuditExportSink {
   write(entry: OperationAuditEntry): void;
 }
+
+export type OperationAuditHttpDispatch = (
+  url: string,
+  init: RequestInit
+) => Promise<Pick<Response, "ok" | "status">>;
 
 export class OperationAuditLogError extends Error {
   constructor(message: string) {
@@ -331,6 +338,113 @@ export class JsonlOperationAuditExportSink implements OperationAuditExportSink {
   }
 }
 
+export type CompositeOperationAuditExportSinkOptions = {
+  sinks: readonly OperationAuditExportSink[];
+};
+
+export class CompositeOperationAuditExportSink implements OperationAuditExportSink {
+  private readonly sinks: readonly OperationAuditExportSink[];
+
+  constructor(options: CompositeOperationAuditExportSinkOptions) {
+    this.sinks = [...options.sinks];
+
+    if (this.sinks.length === 0) {
+      throw new OperationAuditLogError(
+        "Composite operation audit export sink requires at least one sink."
+      );
+    }
+  }
+
+  write(entry: OperationAuditEntry): void {
+    let firstError: unknown;
+
+    for (const sink of this.sinks) {
+      try {
+        sink.write(entry);
+      } catch (error) {
+        firstError ??= error;
+      }
+    }
+
+    if (firstError) {
+      throw firstError;
+    }
+  }
+}
+
+export type HttpOperationAuditExportSinkOptions = {
+  endpointUrl: string;
+  authToken?: string;
+  timeoutMs?: number;
+  allowInsecureHttp?: boolean;
+  dispatch?: OperationAuditHttpDispatch;
+  onError?: (error: unknown, entry: OperationAuditEntry) => void;
+};
+
+const defaultOperationAuditHttpDispatch: OperationAuditHttpDispatch = async (
+  url,
+  init
+) => globalThis.fetch(url, init);
+
+export class HttpOperationAuditExportSink implements OperationAuditExportSink {
+  private readonly endpointUrl: string;
+  private readonly authToken?: string;
+  private readonly timeoutMs: number;
+  private readonly dispatch: OperationAuditHttpDispatch;
+  private readonly onError?: (error: unknown, entry: OperationAuditEntry) => void;
+
+  constructor(options: HttpOperationAuditExportSinkOptions) {
+    this.endpointUrl = normalizeOperationAuditHttpEndpointUrl(
+      options.endpointUrl,
+      options.allowInsecureHttp === true
+    );
+    this.authToken = normalizeOperationAuditHttpAuthToken(options.authToken);
+    this.timeoutMs = normalizeOperationAuditHttpTimeoutMs(options.timeoutMs);
+    this.dispatch = options.dispatch ?? defaultOperationAuditHttpDispatch;
+    this.onError = options.onError;
+  }
+
+  write(entry: OperationAuditEntry): void {
+    const clonedEntry = cloneEntry(entry);
+
+    void this.send(clonedEntry).catch((error: unknown) => {
+      this.onError?.(error, cloneEntry(clonedEntry));
+    });
+  }
+
+  private async send(entry: OperationAuditEntry): Promise<void> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    const headers: Record<string, string> = {
+      "content-type": "application/json"
+    };
+
+    if (this.authToken) {
+      headers.authorization = `Bearer ${this.authToken}`;
+    }
+
+    try {
+      const response = await this.dispatch(this.endpointUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          schemaVersion: OPERATION_AUDIT_LOG_SCHEMA_VERSION,
+          event: cloneEntry(entry)
+        }),
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        throw new OperationAuditLogError(
+          `Operation audit HTTP export failed with status ${response.status}.`
+        );
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+}
+
 export type MirroredOperationAuditLogOptions = {
   primary: OperationAuditLog;
   sink: OperationAuditExportSink;
@@ -489,6 +603,38 @@ export function normalizeOperationAuditJsonlMaxFiles(
   }
 
   return Math.min(value, MAX_OPERATION_AUDIT_JSONL_MAX_FILES);
+}
+
+export function parseOperationAuditHttpTimeoutMs(
+  value: string | undefined
+): number | undefined {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    throw new OperationAuditLogError(
+      "Operation audit HTTP export timeout must be a positive integer."
+    );
+  }
+
+  return normalizeOperationAuditHttpTimeoutMs(Number(trimmed));
+}
+
+export function normalizeOperationAuditHttpTimeoutMs(value: number | undefined): number {
+  if (value === undefined) {
+    return DEFAULT_OPERATION_AUDIT_HTTP_TIMEOUT_MS;
+  }
+
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new OperationAuditLogError(
+      "Operation audit HTTP export timeout must be a positive integer."
+    );
+  }
+
+  return Math.min(value, MAX_OPERATION_AUDIT_HTTP_TIMEOUT_MS);
 }
 
 export function createOperationAuditRecord(input: {
@@ -1128,6 +1274,59 @@ function requireEnum<TValue extends string>(
   }
 
   return value as TValue;
+}
+
+function normalizeOperationAuditHttpEndpointUrl(
+  value: string,
+  allowInsecureHttp: boolean
+): string {
+  const trimmed = value.trim();
+
+  if (trimmed.length === 0) {
+    throw new OperationAuditLogError("Operation audit HTTP export URL is required.");
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch (error) {
+    throw new OperationAuditLogError("Operation audit HTTP export URL is invalid.");
+  }
+
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new OperationAuditLogError(
+      "Operation audit HTTP export URL must use HTTP or HTTPS."
+    );
+  }
+
+  if (
+    parsed.protocol === "http:" &&
+    !allowInsecureHttp &&
+    !isLocalOperationAuditHttpHost(parsed.hostname)
+  ) {
+    throw new OperationAuditLogError(
+      "Operation audit HTTP export URL must use HTTPS unless insecure HTTP is explicitly allowed."
+    );
+  }
+
+  return parsed.href;
+}
+
+function normalizeOperationAuditHttpAuthToken(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
+
+function isLocalOperationAuditHttpHost(hostname: string): boolean {
+  const normalized = hostname.toLowerCase();
+
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "::1" ||
+    normalized === "[::1]"
+  );
 }
 
 function createDefaultAuditIdGenerator(): IdGenerator {
