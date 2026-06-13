@@ -1314,6 +1314,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("What this discussion status means")).toBeTruthy();
     expect(screen.getByText("Discussion progress")).toBeTruthy();
     expect(screen.getByText("Next recommended actions")).toBeTruthy();
+    const nextStepControls = screen.getByText("Next recommended actions").closest("details");
+    expect(nextStepControls?.querySelector("summary")?.textContent).toBe(
+      "Advanced / Developer Mode: next-step proposal controls"
+    );
+    expect((nextStepControls as HTMLDetailsElement | null)?.open).toBe(false);
     expect(screen.getByText("Prepare current conclusion")).toBeTruthy();
     expect(screen.getByText("Strong current options are ready to become a reviewable current conclusion.")).toBeTruthy();
     expect(screen.getByText("Recommended actions")).toBeTruthy();

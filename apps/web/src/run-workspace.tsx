@@ -321,12 +321,17 @@ export function RunDetailPage() {
           <RunDetailGuide />
           <RunStageStatus run={run} />
           <StartRunForm runId={runId} sessionId={sessionId} run={run} />
-          <RunProcessProposals runId={runId} sessionId={sessionId} />
           {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
           <AdvancedDetails
-            description="Ledger trace, process governance, run plan, round metadata, and internal ids for developer inspection."
+            summary="Advanced / Developer Mode: next-step proposal controls"
+            description="Adaptive primitive suggestions, process proposal lifecycle, explicit execution readiness, and internal proposal ids for developer inspection."
           >
+            <RunProcessProposals runId={runId} sessionId={sessionId} />
             {sessionId ? <RunProcessGovernance runId={runId} sessionId={sessionId} /> : null}
+          </AdvancedDetails>
+          <AdvancedDetails
+            description="Ledger trace, run plan, round metadata, and internal ids for developer inspection."
+          >
             <RunEventTimeline runId={runId} />
             <DataPanel title="Run plan view">
               <JsonBlock value={sanitizeForDisplay(getRecordValue(run, "plan") ?? {})} />
