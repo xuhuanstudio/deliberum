@@ -1,5 +1,6 @@
 import {
   FINAL_CANDIDATE_PROPOSED_EVENT_TYPE,
+  SEALED_CONTRIBUTION_SUBMITTED_EVENT_TYPE,
   compileOutcome,
   projectAcceptedDeliberationObjects,
   projectCandidateFrontier,
@@ -1110,6 +1111,8 @@ function createStartRequestForAcceptedProcessProposal(
   const primitive = proposalState.proposal.primitive;
 
   if (primitive === "sealed_divergence") {
+    resolveSealedDivergenceTargetIds(proposalState, run);
+
     return {
       sealedDivergence: {
         autoCloseManual: true
@@ -1118,6 +1121,8 @@ function createStartRequestForAcceptedProcessProposal(
   }
 
   if (primitive === "relation_mapping") {
+    resolveRelationMappingTargetIds(proposalState, run, eventStore);
+
     return {
       extraction: {}
     };
@@ -1274,6 +1279,67 @@ function createProcessProposalExecutionReadiness(
 
     throw error;
   }
+}
+
+function resolveSealedDivergenceTargetIds(
+  proposalState: ProcessProposalExecutionState,
+  run: DeliberationRunRecord
+): string[] {
+  const targetIds = unique(proposalState.proposal.targetIds);
+  const expectedTargetId = run.sealedDivergenceRound?.roundId ?? run.topicContractEventId;
+
+  if (!sameStringSet(targetIds, [expectedTargetId])) {
+    throw new DaemonRunOrchestrationError(
+      "process_proposal_target_invalid",
+      run.sealedDivergenceRound
+        ? "Sealed divergence process proposal must target the current sealed divergence round."
+        : "Sealed divergence process proposal must target the run topic contract.",
+      409
+    );
+  }
+
+  return targetIds;
+}
+
+function resolveRelationMappingTargetIds(
+  proposalState: ProcessProposalExecutionState,
+  run: DeliberationRunRecord,
+  eventStore: EventStore
+): string[] {
+  const targetIds = unique(proposalState.proposal.targetIds);
+  const round = run.sealedDivergenceRound;
+
+  if (!round || round.status !== "revealed") {
+    throw new DaemonRunOrchestrationError(
+      "process_proposal_target_invalid",
+      "Relation mapping process proposal requires revealed sealed divergence material.",
+      409
+    );
+  }
+
+  const events = eventStore.listEvents(run.sessionId);
+  const contributionEventIds = events
+    .filter(
+      (event) =>
+        event.type === SEALED_CONTRIBUTION_SUBMITTED_EVENT_TYPE &&
+        event.visibility === "sealed" &&
+        (!run.currentBatchId || event.batchId === run.currentBatchId)
+    )
+    .map((event) => event.id);
+  const expectedTargetIds =
+    contributionEventIds.length > 0
+      ? contributionEventIds
+      : [round.revealedEventId ?? round.roundId];
+
+  if (!sameStringSet(targetIds, expectedTargetIds)) {
+    throw new DaemonRunOrchestrationError(
+      "process_proposal_target_invalid",
+      "Relation mapping process proposal targets must match current revealed divergence material.",
+      409
+    );
+  }
+
+  return targetIds;
 }
 
 function resolveCandidateRepairTargetIds(
@@ -1455,6 +1521,16 @@ function createProcessProposalExecutionRoundId(
 
 function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
+}
+
+function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  const rightSet = new Set(right);
+
+  return left.every((value) => rightSet.has(value));
 }
 
 function safePlanView(run: DeliberationRunRecord): DaemonRunPlanView {

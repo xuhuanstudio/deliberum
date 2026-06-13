@@ -5448,6 +5448,143 @@ describe("daemon API", () => {
     }
   });
 
+  it("rejects accepted sealed-divergence process proposals outside the current run target", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const topicContractEvent = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .find((event) => event.type === "topic_contract_published");
+
+    expect(topicContractEvent).toBeDefined();
+
+    const proposeResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals`,
+      {
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-sealed-divergence-stale",
+          primitive: "sealed_divergence",
+          targetIds: ["missing-topic-contract"],
+          expectedQualityGain: "Collect independent starting positions.",
+          riskIfSkipped: "The run may converge before alternatives are visible.",
+          requestedBudget: {
+            maxEvents: 4,
+            maxProviderCalls: 2
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: [topicContractEvent!.id]
+      }
+    );
+    const proposeBody = (await proposeResponse.json()) as {
+      event: { id: string };
+    };
+
+    await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+      {
+        authorId: "coordinator-1",
+        status: "accepted",
+        rationale: "Accept the process proposal but require current run target validation."
+      }
+    );
+
+    const executeResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+      {}
+    );
+    const executeBody = (await executeResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(executeResponse.status).toBe(409);
+    expect(executeBody.error).toEqual({
+      code: "process_proposal_target_invalid",
+      message: "Sealed divergence process proposal must target the run topic contract."
+    });
+    expect(daemonApp.eventStore.listEventsByType(created.run.sessionId, "sealed_batch_opened")).toEqual(
+      []
+    );
+  });
+
+  it("rejects accepted relation-mapping process proposals with stale revealed targets", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const initialRunResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      {
+        sealedDivergence: {
+          autoCloseManual: true
+        }
+      }
+    );
+
+    expect(initialRunResponse.status).toBe(200);
+
+    const contributionEvents = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "sealed_contribution_submitted"
+    );
+    expect(contributionEvents).toHaveLength(2);
+
+    const proposeResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals`,
+      {
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-relation-mapping-stale",
+          primitive: "relation_mapping",
+          targetIds: ["missing-contribution-event"],
+          expectedQualityGain: "Map revealed contributions into traceable proposal material.",
+          riskIfSkipped: "Raw contributions may remain unstructured.",
+          requestedBudget: {
+            maxEvents: 2,
+            maxProviderCalls: 1
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: contributionEvents.map((event) => event.id)
+      }
+    );
+    const proposeBody = (await proposeResponse.json()) as {
+      event: { id: string };
+    };
+
+    await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+      {
+        authorId: "coordinator-1",
+        status: "accepted",
+        rationale: "Accept the process proposal but require revealed target validation."
+      }
+    );
+
+    const executeResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+      {}
+    );
+    const executeBody = (await executeResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(executeResponse.status).toBe(409);
+    expect(executeBody.error).toEqual({
+      code: "process_proposal_target_invalid",
+      message:
+        "Relation mapping process proposal targets must match current revealed divergence material."
+    });
+    expect(daemonApp.eventStore.listEventsByType(created.run.sessionId, "extraction_proposed")).toEqual(
+      []
+    );
+  });
+
   it("rejects accepted red-team process proposals with stale extraction targets", async () => {
     const daemonApp = createRunDaemon();
     const created = await createRun(daemonApp);
