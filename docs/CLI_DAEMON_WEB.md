@@ -273,6 +273,86 @@ DELIBERUM_OPENAI_THINKING=disabled
 
 The extraction prompt requests exactly one JSON object with no surrounding prose or Markdown, and the parser remains strict: it accepts only a raw JSON object or a single full fenced JSON object. If a provider response fails only this strict JSON shape check, the extractor may make one corrective retry without including the rejected response text. Additional non-secret request options are available for local compatibility testing: `DELIBERUM_OPENAI_TOP_P`, `DELIBERUM_OPENAI_STREAM=true|false`, `DELIBERUM_OPENAI_FREQUENCY_PENALTY`, and `DELIBERUM_OPENAI_PRESENCE_PENALTY`. When streaming is enabled, the OpenAI-compatible client assembles Chat Completions SSE text deltas into a complete response before the existing participant, extraction, review, or finalization parser handles the result.
 
+For a minimal real-provider participant smoke, keep the secret only in the daemon process and create a one-participant run with a small provider-call budget. This verifies the configured provider request path, secret lookup, daemon run orchestration, sealed-divergence recording, and safe run projection. It is not a production deployment recipe and does not evaluate deliberation quality.
+
+In one terminal, start a built daemon with the provider profile and a runtime-only API key:
+
+```bash
+corepack pnpm build
+
+DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE=true \
+DELIBERUM_OPENAI_API_KEY=replace-with-local-secret \
+node apps/daemon/dist/index.js
+```
+
+In another terminal, create and start the smoke run. Replace only the non-secret provider routing values with the provider being tested. If the provider expects `max_tokens` instead of `max_completion_tokens`, change `tokenParameter`; if the provider does not support either token limit field, remove both `tokenParameter` and `maxCompletionTokens`.
+
+```bash
+RUN_ID="$(
+  curl -sS http://127.0.0.1:3877/runs \
+    -H 'Content-Type: application/json' \
+    --data-binary @- <<'JSON' | jq -r '.run.runId'
+{
+  "runPlan": {
+    "title": "OpenAI-compatible participant smoke",
+    "topic": "Identify one concrete risk and one concrete benefit of using structured peer deliberation for technical decisions.",
+    "goals": ["Verify one provider-backed sealed-divergence participant through the daemon."],
+    "constraints": ["Keep provider secrets in daemon environment variables only."],
+    "participants": [
+      {
+        "id": "provider-alpha",
+        "kind": "model",
+        "displayName": "Provider alpha",
+        "adapterId": "openai-compatible",
+        "providerConfigId": "provider-main"
+      }
+    ],
+    "providerConfigs": [
+      {
+        "id": "provider-main",
+        "adapterId": "openai-compatible",
+        "providerConfigId": "provider-main",
+        "modelId": "provider-model",
+        "baseUrl": "https://provider.example",
+        "endpointPath": "/v1/chat/completions",
+        "apiKeyEnvVar": "DELIBERUM_OPENAI_API_KEY",
+        "timeoutMs": 60000,
+        "tokenParameter": "max_completion_tokens",
+        "maxCompletionTokens": 128,
+        "temperature": 0
+      }
+    ],
+    "budget": {
+      "maxEvents": 20,
+      "maxProviderCalls": 1
+    },
+    "timeouts": {
+      "participantMs": 60000,
+      "overallMs": 120000
+    },
+    "output": {
+      "language": "en",
+      "style": "concise",
+      "expectations": ["Return contribution material only."]
+    },
+    "sealedDivergence": {
+      "purpose": "provider_smoke_divergence",
+      "revealPolicy": "all_completed",
+      "participantIds": ["provider-alpha"]
+    }
+  }
+}
+JSON
+)"
+
+curl -sS "http://127.0.0.1:3877/runs/${RUN_ID}/start" \
+  -H 'Content-Type: application/json' \
+  --data-binary '{"sealedDivergence":{"autoCloseManual":true}}' \
+  | jq '{stages: [.stages[] | {stage, executionStatus, status}], run: {runId: .run.runId, sealedDivergenceStatus: .run.sealedDivergenceStatus}}'
+```
+
+Expected success is one `sealed_divergence` stage with `executionStatus` equal to `executed` and a revealed or completed sealed-divergence status. If it fails, use the safe status and error code returned by the daemon first; do not copy provider keys, raw request bodies, or full model text into issues or logs.
+
 CLI run commands do not include API key flags or fields. `deliberum daemon profiles` provides safe read-only profile setup status, `deliberum daemon env-template` can print comment-only setup templates from that metadata, `deliberum daemon env-write` can write marker-delimited env blocks with enable flags and explicit non-secret values, `deliberum daemon setup-wizard` can locally prompt for missing setup values and hidden secret values, `deliberum daemon profile-doctor` can summarize safe local configuration gaps and next actions, and `deliberum daemon setup-plan` can produce an ordered local setup plan with dry-run env-write commands without printing or storing secret values. `deliberum daemon deployment-posture` can summarize safe local/pre-production deployment posture and production-readiness blockers without exposing tokens, origins, configured resource URLs, provider secrets, request bodies, or payloads. The CLI and Web UI use the same client-side setup-plan projection helper, so Web runtime profile summaries show required env var names, recommended env var names, secret env var names, and setup step counts derived from daemon metadata without exposing values. Production identity, production authorization, and public multi-user deployment remain deferred. CLI run commands can read `DELIBERUM_DAEMON_AUTH_TOKEN` as their local client credential for daemon control-plane auth, read the daemon-redacted run event timeline, and follow the daemon-redacted run event stream. The Web run detail page reads the same non-stream timeline and can manually follow the same stream.
 
 Experimental WebGET endpoints are local daemon endpoints:
