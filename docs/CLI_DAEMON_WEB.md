@@ -90,6 +90,8 @@ CLI daemon and run commands are local daemon control commands. They require a ru
 
 The current daemon is a local Hono API. It binds to `127.0.0.1` by default, does not enable wildcard CORS by default, and uses process-local in-memory stores by default.
 
+The daemon entrypoint reads `DELIBERUM_HOST` and `DELIBERUM_PORT` when they are exported in the process environment. Defaults remain `127.0.0.1:3877`; container packaging sets `DELIBERUM_HOST=0.0.0.0` inside the container only so Docker port publishing can reach the process.
+
 For local/pre-production durable daemon storage, set:
 
 ```bash
@@ -101,6 +103,8 @@ This creates SQLite-backed event ledger, run metadata, resource broker, resource
 For development environments that should avoid SQLite, `DELIBERUM_DAEMON_EVENT_STORE_PATH=<path>` opts into the shared JSON EventStore for event ledger persistence, `DELIBERUM_DAEMON_RUN_STORE_PATH=<path>` opts into JSON run metadata persistence, and `DELIBERUM_DAEMON_OPERATION_AUDIT_PATH=<path>` opts into JSON operation audit log persistence. Use the event/run JSON paths together when run workspace state must survive daemon restarts without SQLite. `DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES=<n>` applies a local retention cap to in-memory, JSON, and SQLite operation audit logs.
 
 `DELIBERUM_DAEMON_WEB_ASSETS_PATH=<web-dist-path>` opts into daemon-served built Web assets for local/pre-production shells. The daemon serves `/assets/*` from that directory with immutable cache headers and serves the Web shell index for browser navigation requests that accept `text/html`, including refreshed SPA paths such as `/runs` and `/sessions/:sessionId`. JSON API callers that do not request `text/html` keep using the existing daemon API routes on the same paths. The shell index is no-store, static file paths are constrained to the configured asset root, and this mode does not add public hosting, production authorization, multi-user sessions, or secret-capturing provider setup.
+
+The root `Dockerfile` packages a local/pre-production daemon image with built Web assets and SQLite state under `/data/deliberum.sqlite`. The root `compose.yaml` builds that image, maps the daemon to host `127.0.0.1:3877`, and stores `/data` in a named volume. Keep the host-side localhost binding unless a separate fronting auth layer and network policy are in place; provider keys and daemon auth tokens must be injected at runtime, not baked into the image.
 
 `DELIBERUM_DAEMON_AUTH_TOKEN=<token>` opts into local/pre-production daemon control-plane bearer authentication. When set, daemon control endpoints require `Authorization: Bearer <token>` and return a no-store `401` safe error when the token is absent or invalid. `/health`, WebGET bearer-token endpoints, and `GET /resource-access/:accessId` keep their own health/token semantics so external participants can still use scoped WebGET sessions and short-lived resource grants. CLI commands read the token from `DELIBERUM_DAEMON_AUTH_TOKEN`. The local Web shell can forward `VITE_DELIBERUM_DAEMON_AUTH_TOKEN`, including for browser SSE follow URLs; this is for trusted local/pre-production shells only because browser-visible values are not production user authentication.
 

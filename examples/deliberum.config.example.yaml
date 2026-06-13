@@ -8,7 +8,9 @@ schemaVersion: 1
 local:
   daemon:
     host: 127.0.0.1
+    hostEnv: DELIBERUM_HOST
     port: 3877
+    portEnv: DELIBERUM_PORT
     storage:
       default: sqlite
       sqlitePathEnv: DELIBERUM_DAEMON_SQLITE_PATH
@@ -41,6 +43,14 @@ local:
       shellCache: no_store
       assetCache: immutable
       productionPublicHosting: deferred
+  container:
+    dockerfile: Dockerfile
+    composeFile: compose.yaml
+    listenHostInsideContainer: 0.0.0.0
+    publishedHostDefault: 127.0.0.1
+    dataVolumePath: /data
+    imageSecretPolicy: runtime_env_only
+    productionDeployment: deferred
   adaptiveProcess:
     suggestionEndpoint: read_only
     persistentProposalLifecycle: implemented

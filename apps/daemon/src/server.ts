@@ -41,6 +41,8 @@ export const DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR =
   "DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES" as const;
 export const DAEMON_WEB_ASSETS_PATH_ENV_VAR = "DELIBERUM_DAEMON_WEB_ASSETS_PATH" as const;
 export const DAEMON_AUTH_TOKEN_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
+export const DAEMON_HOST_ENV_VAR = "DELIBERUM_HOST" as const;
+export const DAEMON_PORT_ENV_VAR = "DELIBERUM_PORT" as const;
 export const RESOURCE_ACCESS_BASE_URL_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_BASE_URL" as const;
 export const RESOURCE_ACCESS_TTL_MS_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_TTL_MS" as const;
 export const RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR =
@@ -53,6 +55,41 @@ export type StartDaemonOptions = DaemonAppOptions & {
 export type StartedDaemon = DaemonApp & {
   server: ServerType;
 };
+
+export function resolveStartDaemonHost(
+  options: Pick<StartDaemonOptions, "host"> = {},
+  env: Record<string, string | undefined> = process.env
+): string {
+  const value = options.host ?? env[DAEMON_HOST_ENV_VAR];
+  const host = value?.trim();
+
+  return host && host.length > 0 ? host : DEFAULT_DAEMON_HOST;
+}
+
+export function resolveStartDaemonPort(
+  options: Pick<StartDaemonOptions, "port"> = {},
+  env: Record<string, string | undefined> = process.env
+): number {
+  if (options.port !== undefined) {
+    return options.port;
+  }
+
+  const value = env[DAEMON_PORT_ENV_VAR]?.trim();
+  if (!value) {
+    return DEFAULT_DAEMON_PORT;
+  }
+
+  if (!/^\d+$/.test(value)) {
+    throw new Error(`${DAEMON_PORT_ENV_VAR} must be an integer from 1 to 65535.`);
+  }
+
+  const port = Number(value);
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`${DAEMON_PORT_ENV_VAR} must be an integer from 1 to 65535.`);
+  }
+
+  return port;
+}
 
 export function resolveStartDaemonSQLitePath(
   env: Record<string, string | undefined> = process.env
@@ -383,8 +420,8 @@ function normalizeStartDaemonResourceAccessBaseUrl(
 }
 
 export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
-  const host = options.host ?? DEFAULT_DAEMON_HOST;
-  const port = options.port ?? DEFAULT_DAEMON_PORT;
+  const host = resolveStartDaemonHost(options);
+  const port = resolveStartDaemonPort(options);
   const eventStore = createStartDaemonEventStore(options);
   const runStore = createStartDaemonRunStore(options);
   const operationAuditLog = createStartDaemonOperationAuditLog(options);

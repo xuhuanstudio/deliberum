@@ -13,6 +13,7 @@ This project follows a human-readable changelog. The initial public repository s
 - Added safe daemon deployment posture diagnostics for local/pre-production binding, auth, CORS, persistence, resource access, and production-readiness blockers without exposing secrets, resource access URLs, or provider/tool endpoint values.
 - Added Web landing deployment posture summaries derived from the safe daemon posture endpoint.
 - Added optional daemon-served Web static assets for built local/pre-production Web shells with Accept-based SPA/API routing separation.
+- Added local/pre-production container packaging for daemon-served Web shells with localhost-bound Compose defaults and SQLite data volume persistence.
 - Added public project hygiene files, CI, security/governance documentation, deployment notes, and baseline evaluation harnesses.
 
 ## 0.0.0

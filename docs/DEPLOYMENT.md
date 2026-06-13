@@ -6,9 +6,9 @@ Deliberum is currently a local-first, pre-production implementation. The support
 
 - local CLI commands using the shared JSON EventStore for local file persistence;
 - local daemon API using process-local in-memory stores by default, with optional control-plane bearer auth, optional SQLite event ledger, run metadata, resource broker, resource access grant, and operation audit log persistence for local/pre-production use, plus JSON persistence fallback for local development;
-- separate local Vite Web UI shell reading the daemon through `@deliberum/client`, or optional daemon-served built Web assets for local/pre-production shells.
+- separate local Vite Web UI shell reading the daemon through `@deliberum/client`, optional daemon-served built Web assets for local/pre-production shells, and a local/pre-production container image that packages the daemon with built Web assets.
 
-The daemon binds to `127.0.0.1` by default and does not provide production authorization or multi-user deployment yet.
+The daemon binds to `127.0.0.1` by default and does not provide production authorization or multi-user deployment yet. The daemon entrypoint can read `DELIBERUM_HOST` and `DELIBERUM_PORT` for container or supervised process startup, but the library defaults remain localhost-first.
 
 Use `deliberum daemon deployment-posture` or `GET /runtime/deployment-posture` against a running daemon to inspect safe local/pre-production deployment posture. The diagnostic returns exposure classes, auth mode, persistence classes, resource access continuity, Web static asset mode, production-readiness blockers, and safety notes without exposing daemon tokens, CORS origin values, configured resource access URLs, configured file paths, provider secrets, request bodies, or payloads.
 
@@ -47,6 +47,28 @@ DELIBERUM_DAEMON_WEB_ASSETS_PATH=apps/web/dist node apps/daemon/dist/index.js
 
 When this path is set, the daemon serves Vite assets under `/assets/*` and serves the Web shell for browser navigation requests that accept `text/html`, including refreshed Web routes such as `/runs` and `/sessions/:sessionId`. JSON API callers that do not request `text/html` keep receiving the existing daemon API responses on the same paths. The shell index is returned with no-store headers, hashed assets use immutable cache headers, and file paths are constrained to the configured asset root. This is local/pre-production static serving only; it does not add public hosting, production authorization, multi-user sessions, or a secret-capturing provider setup flow.
 
+## Local/pre-production container
+
+The repository includes a root `Dockerfile` and `compose.yaml` for a single local/pre-production daemon container. The image runs the existing workspace CI during build, packages the built daemon and Web assets, serves the Web shell from `/app/apps/web/dist`, stores durable local daemon state in `/data/deliberum.sqlite`, and exposes `/health` for container health checks.
+
+Build and run directly:
+
+```bash
+docker build -t deliberum:local .
+docker run --rm \
+  -p 127.0.0.1:3877:3877 \
+  -v deliberum-data:/data \
+  deliberum:local
+```
+
+Or use Compose:
+
+```bash
+docker compose up --build
+```
+
+The container sets `DELIBERUM_HOST=0.0.0.0` inside the container so Docker port publishing can reach the daemon. The Compose file still binds the published host port to `127.0.0.1`. Keep that host-side localhost binding unless a separate fronting auth layer and network policy are in place. Use runtime environment injection for provider keys and daemon auth tokens; do not bake secrets into the image, Compose file, Dockerfile, or Web build.
+
 ## Deferred deployment work
 
 The following remain future work:
@@ -55,5 +77,4 @@ The following remain future work:
 - production resource hosting posture;
 - production authorization;
 - multi-user deployment and SSH/remote deployment guidance beyond manual local port forwarding;
-- Postgres-backed team/server deployments;
-- container packaging.
+- Postgres-backed team/server deployments.

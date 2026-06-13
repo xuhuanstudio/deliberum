@@ -75,7 +75,7 @@ The following are planned or possible future additions, not current implementati
 
 ## Why not Next.js first?
 
-The Web UI is a local daemon projection, not a public content site. A separate Vite SPA that reads the local daemon remains the development default, while optional daemon-served Web assets support local/pre-production single-process shells without turning the daemon into a production public host.
+The Web UI is a local daemon projection, not a public content site. A separate Vite SPA that reads the local daemon remains the development default, while optional daemon-served Web assets and the local/pre-production Docker image support single-process shells without turning the daemon into a production public host.
 
 ## Future native packaging
 

@@ -113,6 +113,8 @@ import {
   OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR,
   OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
+  DAEMON_HOST_ENV_VAR,
+  DAEMON_PORT_ENV_VAR,
   RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR,
   RESOURCE_ACCESS_BASE_URL_ENV_VAR,
   RESOURCE_ACCESS_TTL_MS_ENV_VAR,
@@ -132,6 +134,8 @@ import {
   resolveStartDaemonWebAssetsPath,
   resolveStartDaemonEventStorePath,
   resolveStartDaemonRunStorePath,
+  resolveStartDaemonHost,
+  resolveStartDaemonPort,
   resolveStartDaemonAuthToken,
   resolveStartDaemonResourceAccessBaseUrl,
   resolveStartDaemonResourceAccessAllowRemote,
@@ -5494,6 +5498,58 @@ describe("daemon API", () => {
         { DELIBERUM_ENABLE_LOCAL_PRESET: "true" }
       )
     ).toBe(false);
+  });
+
+  it("resolves daemon listen host and port from explicit options or env", () => {
+    expect(resolveStartDaemonHost({}, {})).toBe(DEFAULT_DAEMON_HOST);
+    expect(resolveStartDaemonPort({}, {})).toBe(DEFAULT_DAEMON_PORT);
+    expect(
+      resolveStartDaemonHost(
+        {},
+        {
+          [DAEMON_HOST_ENV_VAR]: " 0.0.0.0 "
+        }
+      )
+    ).toBe("0.0.0.0");
+    expect(
+      resolveStartDaemonPort(
+        {},
+        {
+          [DAEMON_PORT_ENV_VAR]: " 4888 "
+        }
+      )
+    ).toBe(4888);
+    expect(
+      resolveStartDaemonHost(
+        { host: "127.0.0.2" },
+        {
+          [DAEMON_HOST_ENV_VAR]: "0.0.0.0"
+        }
+      )
+    ).toBe("127.0.0.2");
+    expect(
+      resolveStartDaemonPort(
+        { port: 4999 },
+        {
+          [DAEMON_PORT_ENV_VAR]: "4888"
+        }
+      )
+    ).toBe(4999);
+    expect(resolveStartDaemonHost({}, { [DAEMON_HOST_ENV_VAR]: "   " })).toBe(
+      DEFAULT_DAEMON_HOST
+    );
+    expect(resolveStartDaemonPort({}, { [DAEMON_PORT_ENV_VAR]: "   " })).toBe(
+      DEFAULT_DAEMON_PORT
+    );
+    expect(() =>
+      resolveStartDaemonPort({}, { [DAEMON_PORT_ENV_VAR]: "not-a-port" })
+    ).toThrow(`${DAEMON_PORT_ENV_VAR} must be an integer from 1 to 65535.`);
+    expect(() => resolveStartDaemonPort({}, { [DAEMON_PORT_ENV_VAR]: "0" })).toThrow(
+      `${DAEMON_PORT_ENV_VAR} must be an integer from 1 to 65535.`
+    );
+    expect(() => resolveStartDaemonPort({}, { [DAEMON_PORT_ENV_VAR]: "65536" })).toThrow(
+      `${DAEMON_PORT_ENV_VAR} must be an integer from 1 to 65535.`
+    );
   });
 
   it("resolves optional daemon JSON event store path from env without overriding explicit stores", () => {

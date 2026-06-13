@@ -1,0 +1,17 @@
+services:
+  deliberum:
+    build:
+      context: .
+    image: deliberum:local
+    ports:
+      - "127.0.0.1:3877:3877"
+    environment:
+      DELIBERUM_HOST: 0.0.0.0
+      DELIBERUM_PORT: 3877
+      DELIBERUM_DAEMON_SQLITE_PATH: /data/deliberum.sqlite
+      DELIBERUM_DAEMON_WEB_ASSETS_PATH: /app/apps/web/dist
+    volumes:
+      - deliberum-data:/data
+
+volumes:
+  deliberum-data:
