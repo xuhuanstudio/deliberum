@@ -55,6 +55,17 @@ const runDetail = {
   }
 };
 
+const notStartedRunDetail = {
+  ...runDetail,
+  sealedDivergenceStatus: undefined,
+  latestExtractionStatus: undefined,
+  latestProposalReviewStatus: undefined,
+  latestFinalizationStatus: undefined,
+  ledger: {
+    eventCount: 1
+  }
+};
+
 function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient {
   return {
     health: vi.fn(async () => ({
@@ -1274,6 +1285,8 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
 
     expect(screen.getAllByText("Discussion status").length).toBeGreaterThan(0);
+    expect(screen.getByText("Discussion is ready to review")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Run guided discussion again" })).toBeTruthy();
     expect(screen.getByText("Ledger events")).toBeTruthy();
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
     expect(screen.getByText("Discussion overview")).toBeTruthy();
@@ -1672,7 +1685,14 @@ describe("@deliberum/web shell", () => {
   });
 
   it("starts a run from a JSON start request and renders readable step metadata", async () => {
-    const client = renderApp("/runs/run-1");
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: notStartedRunDetail
+        }))
+      })
+    );
     const startRequest = {
       extraction: {
         generatorIds: ["generator-1"]
@@ -1701,7 +1721,14 @@ describe("@deliberum/web shell", () => {
   });
 
   it("fills and starts the full local preset pipeline through the client", async () => {
-    const client = renderApp("/runs/run-1");
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: notStartedRunDetail
+        }))
+      })
+    );
 
     await screen.findByText("Continue discussion");
     fireEvent.click(screen.getByText("Advanced / Developer Mode: start request"));
@@ -1770,6 +1797,9 @@ describe("@deliberum/web shell", () => {
             stopped: false
           };
         }),
+        getRun: vi.fn(async () => ({
+          run: notStartedRunDetail
+        })),
         getFrontier: vi.fn(async () =>
           started
             ? {
@@ -1862,7 +1892,10 @@ describe("@deliberum/web shell", () => {
       createClient({
         startRun: vi.fn(async () => {
           throw error;
-        })
+        }),
+        getRun: vi.fn(async () => ({
+          run: notStartedRunDetail
+        }))
       })
     );
 

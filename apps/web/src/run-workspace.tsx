@@ -42,6 +42,14 @@ const DEFAULT_PROCESS_REVIEWER_ID = "process-reviewer";
 const DEFAULT_PROCESS_COORDINATOR_ID = "process-coordinator";
 type RunFollowStatus = "idle" | "connecting" | "connected" | "error" | "unsupported";
 type ProcessDecisionStatus = "accepted" | "deferred" | "rejected";
+type DiscussionContinuationView = {
+  title: string;
+  description: string;
+  explainerTitle: string;
+  explainerDetail: string;
+  primaryLabel: string;
+  reviewReady: boolean;
+};
 
 export function RunsListPage() {
   const { client } = useDaemonRuntime();
@@ -312,7 +320,7 @@ export function RunDetailPage() {
           {sessionId ? <RunQualityOverview sessionId={sessionId} /> : null}
           <RunDetailGuide />
           <RunStageStatus run={run} />
-          <StartRunForm runId={runId} sessionId={sessionId} />
+          <StartRunForm runId={runId} sessionId={sessionId} run={run} />
           <RunProcessProposals runId={runId} sessionId={sessionId} />
           {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
           <AdvancedDetails
@@ -941,9 +949,18 @@ function StageStatusList({ stages }: { stages: Array<[string, unknown]> }) {
   );
 }
 
-function StartRunForm({ runId, sessionId }: { runId: string; sessionId?: string }) {
+function StartRunForm({
+  runId,
+  sessionId,
+  run
+}: {
+  runId: string;
+  sessionId?: string;
+  run: unknown;
+}) {
   const { client } = useDaemonRuntime();
   const queryClient = useQueryClient();
+  const continuationView = describeDiscussionContinuation(run);
   const [startRequestText, setStartRequestText] = useState(DEFAULT_START_REQUEST_TEXT);
   const [inputError, setInputError] = useState<string | null>(null);
   const startMutation = useMutation({
@@ -982,22 +999,28 @@ function StartRunForm({ runId, sessionId }: { runId: string; sessionId?: string 
 
   return (
     <DataPanel
-      title="Continue discussion"
-      description="Continue the guided discussion so perspectives, disagreements, requirements, evidence gaps, risk review, and conclusion can appear."
+      title={continuationView.title}
+      description={continuationView.description}
     >
       <div className="du-readable-list">
         <ExplainerItem
-          title="Continue the full guided discussion"
-          detail="Collects independent first responses, organizes main perspectives, reviews requirements, checks evidence needs, and compiles a provisional conclusion."
+          title={continuationView.explainerTitle}
+          detail={continuationView.explainerDetail}
         />
       </div>
       <div className="du-action-row">
+        {continuationView.reviewReady ? (
+          <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
+            View current conclusion
+          </Link>
+        ) : null}
         <button
           type="button"
+          className={continuationView.reviewReady ? "du-secondary-button" : undefined}
           onClick={startLocalPresetPipeline}
           disabled={startMutation.isPending}
         >
-          Continue guided discussion
+          {continuationView.primaryLabel}
         </button>
       </div>
       <AdvancedDetails
@@ -2899,6 +2922,36 @@ function describeDiscussionStatus(status: unknown): string {
   }
 
   return formatRecordValue(status);
+}
+
+function describeDiscussionContinuation(run: unknown): DiscussionContinuationView {
+  const status = getRecordValue(run, "status");
+  const finalizationStatus = getRecordValue(run, "latestFinalizationStatus");
+  const reviewReady = status === "revealed" || finalizationStatus === "completed";
+
+  if (reviewReady) {
+    return {
+      title: "Discussion is ready to review",
+      description:
+        "The guided discussion has produced a current conclusion. Review it first; rerun only when you want to refresh the discussion with the same brief.",
+      explainerTitle: "Review the current conclusion",
+      explainerDetail:
+        "Main perspectives, open disagreements, requirements, evidence and verification, risk review, and next recommended actions are available below and on the conclusion page.",
+      primaryLabel: "Run guided discussion again",
+      reviewReady
+    };
+  }
+
+  return {
+    title: "Continue discussion",
+    description:
+      "Continue the guided discussion so perspectives, disagreements, requirements, evidence and verification, risk review, and conclusion can appear.",
+    explainerTitle: "Continue the full guided discussion",
+    explainerDetail:
+      "Collects independent first responses, organizes main perspectives, reviews requirements, checks evidence needs, and compiles a provisional conclusion.",
+    primaryLabel: "Continue guided discussion",
+    reviewReady
+  };
 }
 
 function describeLedgerEvents(eventCount: unknown): string {
