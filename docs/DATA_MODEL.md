@@ -44,7 +44,7 @@ type EventEnvelope<TPayload> = {
 }
 ```
 
-Event stores assign `integrity.eventHash` at append time using a stable SHA-256 hash of the event envelope without `integrity.eventHash`. Events after the first event in a session also include `integrity.previousEventHash`, which links to the previous event's stable hash. The JSON file store validates persisted hashed chains on load while still accepting older events that do not carry integrity metadata. These hashes are local tamper-evidence metadata; they are not distributed consensus, production notarization, or multi-writer coordination.
+Event stores assign `integrity.eventHash` at append time using a stable SHA-256 hash of the event envelope without `integrity.eventHash`. Events after the first event in a session also include `integrity.previousEventHash`, which links to the previous event's stable hash. The JSON file and SQLite event stores validate persisted hashed chains on load while still accepting older events that do not carry integrity metadata. These hashes are local tamper-evidence metadata; they are not distributed consensus, production notarization, or multi-writer coordination.
 
 ## TopicContract
 

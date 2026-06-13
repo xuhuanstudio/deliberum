@@ -10,7 +10,7 @@ import type {
   EventStore
 } from "./event-store";
 import { isCompatibleIdempotentEventInput } from "./idempotency";
-import { attachEventIntegrity } from "./integrity";
+import { attachEventIntegrity, validateEventIntegrityChain } from "./integrity";
 import { cloneAndFreezeEvent, type StoredEvent } from "./immutable";
 import { dirname } from "node:path";
 import { mkdirSync } from "node:fs";
@@ -61,8 +61,13 @@ export class SQLiteEventStore implements EventStore {
     this.database = new Database(options.filePath, {
       timeout: normalizeTimeoutMs(options.timeoutMs)
     });
-    configureSQLiteConnection(this.database, options.filePath, options.timeoutMs);
-    this.initialize();
+    try {
+      configureSQLiteConnection(this.database, options.filePath, options.timeoutMs);
+      this.initialize();
+    } catch (error) {
+      this.database.close();
+      throw error;
+    }
   }
 
   appendEvent<TPayload = unknown>(input: AppendEventInput<TPayload>): StoredEvent<TPayload> {
@@ -203,6 +208,7 @@ export class SQLiteEventStore implements EventStore {
     `);
 
     this.ensureSchemaVersion();
+    this.validateStoredIntegrityChains();
   }
 
   private ensureSchemaVersion(): void {
@@ -227,6 +233,22 @@ export class SQLiteEventStore implements EventStore {
         "INSERT INTO deliberum_store_metadata (key, value) VALUES (?, ?)"
       )
       .run(EVENT_STORE_SCHEMA_KEY, String(SQLITE_EVENT_STORE_SCHEMA_VERSION));
+  }
+
+  private validateStoredIntegrityChains(): void {
+    const events = this.database
+      .prepare<[], EventRow>(
+        [
+          "SELECT event_json FROM deliberum_events",
+          "ORDER BY session_id ASC, sequence ASC"
+        ].join(" ")
+      )
+      .all()
+      .map((row) => this.parseEventEnvelope(row.event_json));
+    const integrityError = validateEventIntegrityChain(events);
+    if (integrityError) {
+      throw new SQLiteEventStoreError(integrityError);
+    }
   }
 
   private appendEventInTransaction<TPayload = unknown>(

@@ -122,6 +122,46 @@ describe("SQLiteEventStore", () => {
     }
   });
 
+  it("validates persisted event integrity hashes on reload", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, "events.sqlite");
+
+    try {
+      const store = new SQLiteEventStore({
+        filePath,
+        clock: () => "2026-06-10T00:00:01.000Z"
+      });
+      const event = store.appendEvent(createInput({ id: "event-1" }));
+      store.close();
+
+      const database = new Database(filePath);
+      database
+        .prepare("UPDATE deliberum_events SET event_json = ? WHERE id = ?")
+        .run(
+          JSON.stringify({
+            ...event,
+            payload: {
+              ok: false
+            }
+          }),
+          event.id
+        );
+      database.close();
+
+      let error: unknown;
+      try {
+        new SQLiteEventStore({ filePath });
+      } catch (caughtError) {
+        error = caughtError;
+      }
+
+      expect(error).toBeInstanceOf(SQLiteEventStoreError);
+      expect((error as Error).message).toContain("Invalid eventHash");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("returns a store error when another SQLite writer holds the event lock", () => {
     const dir = createTempDir();
     const filePath = join(dir, "events.sqlite");
