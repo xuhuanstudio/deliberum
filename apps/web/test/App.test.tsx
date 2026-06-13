@@ -161,6 +161,41 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         }
       ]
     })),
+    getDeploymentPosture: vi.fn(async () => ({
+      binding: {
+        host: "127.0.0.1",
+        port: 3877,
+        exposure: "localhost",
+        defaultLocalhost: true
+      },
+      controlPlane: {
+        auth: "daemon_bearer",
+        protected: true
+      },
+      cors: {
+        originCount: 2,
+        defaultLocalDevelopmentOrigins: true
+      },
+      persistence: {
+        eventLedger: "configured_store",
+        runMetadata: "configured_store",
+        resourceBroker: "configured_store",
+        resourceAccessGrants: "configured_store",
+        operationAudit: "configured_store",
+        productionMultiWriterCoordination: false
+      },
+      resourceAccess: {
+        baseUrlConfigured: true,
+        baseUrlExposure: "localhost",
+        grantStoreRestartContinuity: "depends_on_configured_store"
+      },
+      productionReadiness: {
+        status: "local_only",
+        readyForProduction: false,
+        blockers: ["Production multi-user authorization is not implemented by the daemon."]
+      },
+      safety: ["No secrets, configured resource URLs, or provider endpoint values are returned."]
+    })),
     listSessions: vi.fn(async () => ({
       sessions: [
         {
@@ -735,6 +770,31 @@ describe("@deliberum/web shell", () => {
       screen.getAllByText("DELIBERUM_MCP_TOOL_URL, DELIBERUM_MCP_TOOL_NAME").length
     ).toBeGreaterThan(0);
     expect(screen.queryByText("sk-openai-runtime-secret")).toBeNull();
+  });
+
+  it("renders safe daemon deployment posture without configured URLs or tokens", async () => {
+    const client = renderApp("/");
+
+    expect(await screen.findByText("Deployment posture")).toBeTruthy();
+    await waitFor(() => expect(client.getDeploymentPosture).toHaveBeenCalled());
+    expect(screen.getByText("Bind exposure")).toBeTruthy();
+    expect(screen.getByText("Localhost")).toBeTruthy();
+    expect(screen.getByText("Control auth")).toBeTruthy();
+    expect(screen.getByText("Daemon bearer")).toBeTruthy();
+    expect(screen.getByText("Configured stores")).toBeTruthy();
+    expect(screen.getByText("5/5")).toBeTruthy();
+    expect(screen.getByText("Resource access")).toBeTruthy();
+    expect(screen.getByText("Localhost, restart-aware")).toBeTruthy();
+    expect(screen.getByText("Production ready")).toBeTruthy();
+    expect(screen.getAllByText("No").length).toBeGreaterThan(0);
+    expect(screen.getByText("Local-only posture")).toBeTruthy();
+    expect(
+      screen.getByText("Production multi-user authorization is not implemented by the daemon.")
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain(
+      ["local-daemon-auth", "token"].join("-")
+    );
+    expect(document.body.textContent ?? "").not.toContain("https://resource.example");
   });
 
   it("renders the session overview from daemon ledger events", async () => {

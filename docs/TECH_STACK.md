@@ -36,7 +36,7 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - read-only adaptive primitive suggestion in `@deliberum/orchestrator`, surfaced by the daemon as process proposal material;
 - explicit accepted process proposal execution through the daemon run start path for supported primitives, with read-only daemon execution readiness for recorded process proposal lifecycle state;
 - React + Vite + TypeScript for the Web shell;
-- TanStack Router and TanStack Query for Web routing and daemon reads.
+- TanStack Router and TanStack Query for Web routing and daemon reads, including runtime profile and deployment posture summaries.
 
 ## Repository shape
 

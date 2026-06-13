@@ -24,6 +24,7 @@ import { useDaemonRuntime } from "./daemon-runtime";
 import { buildRuntimeSetupPlan } from "@deliberum/client";
 import type {
   AuditFinalCandidateRequest,
+  DeploymentPostureResponse,
   ProposeFinalCandidateRequest
 } from "@deliberum/client";
 import {
@@ -228,8 +229,13 @@ function LandingPage() {
     queryKey: ["runtime-profiles"],
     queryFn: () => client.getRuntimeProfiles()
   });
+  const deploymentPostureQuery = useQuery({
+    queryKey: ["deployment-posture"],
+    queryFn: () => client.getDeploymentPosture()
+  });
   const sessions = asArray(sessionsQuery.data?.sessions);
   const runtimeProfiles = asArray(runtimeProfilesQuery.data?.profiles);
+  const deploymentPosture = deploymentPostureQuery.data;
   const runtimeSetupPlan = runtimeProfilesQuery.data
     ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
     : undefined;
@@ -294,6 +300,74 @@ function LandingPage() {
             </button>
           </div>
         </form>
+        <DataPanel
+          title="Deployment posture"
+          description="Safe local/pre-production daemon posture without secrets or configured resource URLs."
+        >
+          <QueryState query={deploymentPostureQuery}>
+            {deploymentPosture ? (
+              <>
+                <KeyValueGrid
+                  items={[
+                    {
+                      label: "Bind exposure",
+                      value: formatDeploymentExposure(
+                        deploymentPosture.binding.exposure
+                      )
+                    },
+                    {
+                      label: "Control auth",
+                      value: formatDeploymentAuth(deploymentPosture.controlPlane)
+                    },
+                    {
+                      label: "Configured stores",
+                      value: formatDeploymentPersistence(deploymentPosture.persistence)
+                    },
+                    {
+                      label: "Resource access",
+                      value: formatDeploymentResourceAccess(
+                        deploymentPosture.resourceAccess
+                      )
+                    },
+                    {
+                      label: "Production ready",
+                      value: deploymentPosture.productionReadiness.readyForProduction
+                        ? "Yes"
+                        : "No"
+                    },
+                    {
+                      label: "Blockers",
+                      value: String(
+                        deploymentPosture.productionReadiness.blockers.length
+                      )
+                    }
+                  ]}
+                />
+                <div
+                  className={`du-status ${formatDeploymentReadinessClass(
+                    deploymentPosture.productionReadiness.status
+                  )}`}
+                >
+                  <strong>
+                    {formatDeploymentReadinessStatus(
+                      deploymentPosture.productionReadiness.status
+                    )}
+                  </strong>
+                  <span>
+                    {deploymentPosture.productionReadiness.blockers.length > 0
+                      ? deploymentPosture.productionReadiness.blockers.join(" ")
+                      : "No daemon-reported blockers."}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <EmptyState
+                title="No deployment posture"
+                description="The daemon did not return safe deployment posture metadata."
+              />
+            )}
+          </QueryState>
+        </DataPanel>
         <DataPanel
           title="Runtime profiles"
           description="Safe daemon profile setup status without environment values."
@@ -483,6 +557,77 @@ function formatRuntimeProfileStatus(value: unknown): string {
 
 function formatSetupEnvVarList(values: readonly string[]): string {
   return values.length > 0 ? values.join(", ") : "Complete";
+}
+
+function formatDeploymentExposure(
+  value: DeploymentPostureResponse["binding"]["exposure"]
+): string {
+  if (value === "localhost") {
+    return "Localhost";
+  }
+
+  if (value === "lan") {
+    return "LAN";
+  }
+
+  return "Public";
+}
+
+function formatDeploymentAuth(
+  value: DeploymentPostureResponse["controlPlane"]
+): string {
+  return value.protected ? "Daemon bearer" : "Disabled";
+}
+
+function formatDeploymentPersistence(
+  value: DeploymentPostureResponse["persistence"]
+): string {
+  const modes = [
+    value.eventLedger,
+    value.runMetadata,
+    value.resourceBroker,
+    value.resourceAccessGrants,
+    value.operationAudit
+  ];
+  const configuredCount = modes.filter((mode) => mode === "configured_store").length;
+
+  return `${configuredCount}/${modes.length}`;
+}
+
+function formatDeploymentResourceAccess(
+  value: DeploymentPostureResponse["resourceAccess"]
+): string {
+  const exposure = formatDeploymentExposure(value.baseUrlExposure);
+  const continuity =
+    value.grantStoreRestartContinuity === "depends_on_configured_store"
+      ? "restart-aware"
+      : "restart-lost";
+
+  return `${exposure}, ${continuity}`;
+}
+
+function formatDeploymentReadinessStatus(
+  value: DeploymentPostureResponse["productionReadiness"]["status"]
+): string {
+  if (value === "local_only") {
+    return "Local-only posture";
+  }
+
+  if (value === "preproduction_remote_hardened") {
+    return "Pre-production hardened";
+  }
+
+  return "Not production-ready";
+}
+
+function formatDeploymentReadinessClass(
+  value: DeploymentPostureResponse["productionReadiness"]["status"]
+): string {
+  if (value === "not_production_ready") {
+    return "du-status-error";
+  }
+
+  return "du-status-warning";
 }
 
 function formatUnknownArray(value: unknown): string[] {

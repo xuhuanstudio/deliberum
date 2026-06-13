@@ -5,6 +5,7 @@ import {
   type CreateRunRequest,
   type CreateRunResponse,
   type DaemonHealthResponse,
+  type DeploymentPostureResponse,
   type EventResponse,
   type EventsResponse,
   type ObjectionsResponse,
@@ -42,6 +43,7 @@ export type WebRuntimeEnv = {
 export type WebDaemonClient = {
   health: () => Promise<DaemonHealthResponse>;
   getRuntimeProfiles: () => Promise<RuntimeProfilesResponse>;
+  getDeploymentPosture: () => Promise<DeploymentPostureResponse>;
   listSessions: () => Promise<ListSessionsResponse>;
   createRun: (input: CreateRunRequest) => Promise<CreateRunResponse>;
   listRuns: () => Promise<ListRunsResponse>;
