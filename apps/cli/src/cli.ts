@@ -36,7 +36,7 @@ import type {
   SealedBatchRevealPolicy
 } from "@deliberum/protocol";
 import type { EventStore } from "@deliberum/storage";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { JsonFileEventStore, defaultStorePath } from "./json-file-event-store";
 import { parseJsonArgument, readJsonFile } from "./read-json";
 import { buildTopicContract } from "./topic-contract";
@@ -66,6 +66,7 @@ export const CLI_COMMANDS = [
   "daemon setup-wizard",
   "daemon profile-doctor",
   "daemon setup-plan",
+  "daemon auth-entry",
   "daemon deployment-posture",
   "daemon operation-audit",
   "daemon resource-access status",
@@ -265,6 +266,36 @@ type DaemonProfileDoctorReport = {
     missingRecommendedEnvVars: string[];
   };
   profiles: DaemonProfileDoctorProfile[];
+  safety: string[];
+};
+
+const DAEMON_AUTH_REGISTRY_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKENS_JSON" as const;
+const DAEMON_AUTH_CLIENT_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
+const DAEMON_AUTH_WEB_CLIENT_ENV_VAR = "VITE_DELIBERUM_DAEMON_AUTH_TOKEN" as const;
+const DAEMON_AUTH_ROLES = ["admin", "operator", "observer", "auditor"] as const;
+const DAEMON_AUTH_SCOPES = ["read", "write", "audit"] as const;
+
+type DaemonAuthRole = (typeof DAEMON_AUTH_ROLES)[number];
+type DaemonAuthScope = (typeof DAEMON_AUTH_SCOPES)[number];
+
+type DaemonAuthEntryOutput = {
+  principalId: string;
+  role: DaemonAuthRole;
+  scopes: DaemonAuthScope[];
+  entry: {
+    principalId: string;
+    token: string;
+    role: DaemonAuthRole;
+    scopes: DaemonAuthScope[];
+  };
+  env: {
+    daemonRegistryEnvVar: typeof DAEMON_AUTH_REGISTRY_ENV_VAR;
+    daemonRegistryAssignment: string;
+    cliClientEnvVar: typeof DAEMON_AUTH_CLIENT_ENV_VAR;
+    cliClientAssignment: string;
+    webClientEnvVar: typeof DAEMON_AUTH_WEB_CLIENT_ENV_VAR;
+    webClientAssignment: string;
+  };
   safety: string[];
 };
 
@@ -722,6 +753,20 @@ async function executeDaemonCommand(
   assertKnownDaemonCommand(action);
   assertDaemonCommandOptions(action, parsedArgs);
 
+  if (action === "auth-entry") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon auth-entry --principal <id> [--role <admin|operator|observer|auditor>] [--scope <read|write|audit>] [--token <token>]"
+    );
+
+    return createDaemonAuthEntryOutput({
+      principalId: requireOption(parsedArgs, "principal"),
+      role: getLastOption(parsedArgs, "role"),
+      scopes: getManyOptions(parsedArgs, "scope"),
+      token: getLastOption(parsedArgs, "token")
+    });
+  }
+
   const daemonClient = dependencies.createDaemonClient({
     ...resolveDaemonClientOptions(parsedArgs, dependencies.env)
   });
@@ -938,6 +983,7 @@ function assertKnownDaemonCommand(action: string): void {
       "setup-wizard",
       "profile-doctor",
       "setup-plan",
+      "auth-entry",
       "deployment-posture",
       "operation-audit",
       "resource-access"
@@ -951,7 +997,7 @@ function assertKnownDaemonCommand(action: string): void {
 
 function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): void {
   const allowedOptions = new Set([
-    "daemon-url",
+    ...(action === "auth-entry" ? [] : ["daemon-url"]),
     ...(action === "env-template" ||
     action === "env-write" ||
     action === "setup-wizard" ||
@@ -961,6 +1007,7 @@ function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): voi
       : []),
     ...(action === "env-write" ? ["output", "set"] : []),
     ...(action === "setup-wizard" ? ["output"] : []),
+    ...(action === "auth-entry" ? ["principal", "role", "scope", "token"] : []),
     ...(action === "operation-audit" ? ["limit", "format"] : [])
   ]);
   const allowedFlags = new Set([
@@ -1339,6 +1386,150 @@ function resolveDaemonClientOptions(
     baseUrl: resolveDaemonUrl(parsedArgs, env),
     ...(authToken && authToken.length > 0 ? { authToken } : {})
   };
+}
+
+function createDaemonAuthEntryOutput(input: {
+  principalId: string;
+  role?: string;
+  scopes: readonly string[];
+  token?: string;
+}): DaemonAuthEntryOutput {
+  const principalId = normalizeDaemonAuthPrincipalId(input.principalId);
+  const role = normalizeDaemonAuthRole(input.role);
+  const scopes = normalizeDaemonAuthScopes(input.scopes, role);
+  const token = normalizeDaemonGeneratedToken(input.token ?? generateDaemonAuthToken());
+  const entry = {
+    principalId,
+    token,
+    role,
+    scopes
+  };
+  const registryJson = JSON.stringify([entry]);
+
+  return {
+    principalId,
+    role,
+    scopes,
+    entry,
+    env: {
+      daemonRegistryEnvVar: DAEMON_AUTH_REGISTRY_ENV_VAR,
+      daemonRegistryAssignment: formatEnvAssignment(
+        DAEMON_AUTH_REGISTRY_ENV_VAR,
+        registryJson
+      ),
+      cliClientEnvVar: DAEMON_AUTH_CLIENT_ENV_VAR,
+      cliClientAssignment: formatEnvAssignment(DAEMON_AUTH_CLIENT_ENV_VAR, token),
+      webClientEnvVar: DAEMON_AUTH_WEB_CLIENT_ENV_VAR,
+      webClientAssignment: formatEnvAssignment(DAEMON_AUTH_WEB_CLIENT_ENV_VAR, token)
+    },
+    safety: [
+      "This command generates local/pre-production control-plane bearer material for operator setup.",
+      "Set the registry assignment only in the daemon process environment.",
+      "Set the CLI client assignment only in the local operator CLI process environment.",
+      "Set the Web client assignment only for trusted local/pre-production Web shells.",
+      "Do not commit generated tokens or paste them into run plans, event payloads, docs, issue trackers, logs, or screenshots.",
+      "This helper does not contact the daemon, write files, mutate configuration, or implement production identity."
+    ]
+  };
+}
+
+function normalizeDaemonAuthPrincipalId(value: string): string {
+  const trimmed = value.trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/.test(trimmed)) {
+    throw new CliUsageError("Daemon auth principal id must be a safe non-secret identifier.");
+  }
+
+  if (containsSecretLikeAuthMaterial(trimmed)) {
+    throw new CliUsageError("Daemon auth principal id must not contain secret-like material.");
+  }
+
+  return trimmed;
+}
+
+function normalizeDaemonAuthRole(value: string | undefined): DaemonAuthRole {
+  const role = value?.trim() || "operator";
+  if (!isDaemonAuthRole(role)) {
+    throw new CliUsageError(
+      `Daemon auth role must be one of: ${DAEMON_AUTH_ROLES.join(", ")}.`
+    );
+  }
+
+  return role;
+}
+
+function normalizeDaemonAuthScopes(
+  values: readonly string[],
+  role: DaemonAuthRole
+): DaemonAuthScope[] {
+  if (values.length === 0) {
+    return defaultDaemonAuthScopes(role);
+  }
+
+  const scopes = values.flatMap((value) =>
+    value
+      .split(",")
+      .map((scope) => scope.trim())
+      .filter((scope) => scope.length > 0)
+  );
+
+  if (scopes.length === 0) {
+    throw new CliUsageError("Daemon auth scopes must include at least one scope.");
+  }
+
+  for (const scope of scopes) {
+    if (!isDaemonAuthScope(scope)) {
+      throw new CliUsageError(
+        `Daemon auth scope must be one of: ${DAEMON_AUTH_SCOPES.join(", ")}.`
+      );
+    }
+  }
+
+  return [...new Set(scopes)] as DaemonAuthScope[];
+}
+
+function defaultDaemonAuthScopes(role: DaemonAuthRole): DaemonAuthScope[] {
+  if (role === "admin") {
+    return ["read", "write", "audit"];
+  }
+
+  if (role === "operator") {
+    return ["read", "write"];
+  }
+
+  if (role === "auditor") {
+    return ["read", "audit"];
+  }
+
+  return ["read"];
+}
+
+function normalizeDaemonGeneratedToken(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length < 16 || /\s/.test(trimmed)) {
+    throw new CliUsageError(
+      "Daemon auth token must be at least 16 non-whitespace characters."
+    );
+  }
+
+  return trimmed;
+}
+
+function generateDaemonAuthToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+function isDaemonAuthRole(value: string): value is DaemonAuthRole {
+  return (DAEMON_AUTH_ROLES as readonly string[]).includes(value);
+}
+
+function isDaemonAuthScope(value: string): value is DaemonAuthScope {
+  return (DAEMON_AUTH_SCOPES as readonly string[]).includes(value);
+}
+
+function containsSecretLikeAuthMaterial(value: string): boolean {
+  return /api[_-]?key|secret|private[_-]?token|access[_-]?token|authorization|bearer|sk-[a-z0-9]/i.test(
+    value
+  );
 }
 
 function validateLocalDaemonUrl(input: string): string {

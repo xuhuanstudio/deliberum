@@ -1305,6 +1305,169 @@ describe("CLI command routing", () => {
     expect(createEventStore).not.toHaveBeenCalled();
   });
 
+  it("generates scoped daemon auth registry entries without contacting the daemon", async () => {
+    const { createDaemonClient, createEventStore, dependencies } = createRunCliDependencies();
+    const output = parseOutput<{
+      principalId: string;
+      role: string;
+      scopes: string[];
+      entry: {
+        principalId: string;
+        token: string;
+        role: string;
+        scopes: string[];
+      };
+      env: {
+        daemonRegistryEnvVar: string;
+        daemonRegistryAssignment: string;
+        cliClientEnvVar: string;
+        cliClientAssignment: string;
+        webClientEnvVar: string;
+        webClientAssignment: string;
+      };
+      safety: string[];
+    }>(
+      await runCli(
+        [
+          "daemon",
+          "auth-entry",
+          "--principal",
+          "operator-1",
+          "--role",
+          "operator",
+          "--scope",
+          "read,write",
+          "--token",
+          "provided-control-plane-token-123",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const generated = parseOutput<{
+      entry: { token: string; role: string; scopes: string[] };
+      env: { daemonRegistryAssignment: string };
+    }>(
+      await runCli(
+        ["daemon", "auth-entry", "--principal", "observer-1", "--role", "observer", "--json"],
+        dependencies
+      )
+    );
+
+    expect(output).toEqual(
+      expect.objectContaining({
+        principalId: "operator-1",
+        role: "operator",
+        scopes: ["read", "write"],
+        entry: {
+          principalId: "operator-1",
+          token: "provided-control-plane-token-123",
+          role: "operator",
+          scopes: ["read", "write"]
+        },
+        env: expect.objectContaining({
+          daemonRegistryEnvVar: "DELIBERUM_DAEMON_AUTH_TOKENS_JSON",
+          cliClientEnvVar: "DELIBERUM_DAEMON_AUTH_TOKEN",
+          cliClientAssignment: "DELIBERUM_DAEMON_AUTH_TOKEN=provided-control-plane-token-123",
+          webClientEnvVar: "VITE_DELIBERUM_DAEMON_AUTH_TOKEN",
+          webClientAssignment:
+            "VITE_DELIBERUM_DAEMON_AUTH_TOKEN=provided-control-plane-token-123"
+        })
+      })
+    );
+    expect(output.env.daemonRegistryAssignment).toContain(
+      "DELIBERUM_DAEMON_AUTH_TOKENS_JSON="
+    );
+    expect(output.env.daemonRegistryAssignment).toContain("operator-1");
+    expect(output.env.daemonRegistryAssignment).toContain(
+      "provided-control-plane-token-123"
+    );
+    expect(output.safety.join(" ")).toContain("does not contact the daemon");
+    expect(generated.entry.token).toHaveLength(43);
+    expect(generated.entry.role).toBe("observer");
+    expect(generated.entry.scopes).toEqual(["read"]);
+    expect(generated.env.daemonRegistryAssignment).toContain("observer-1");
+    expect(generated.env.daemonRegistryAssignment).toContain(generated.entry.token);
+    expect(createDaemonClient).not.toHaveBeenCalled();
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("rejects unsafe daemon auth entry input without exposing token material", async () => {
+    const { createDaemonClient, createEventStore, dependencies } = createRunCliDependencies();
+    const secretParam = ["api", "key"].join("_");
+    const urlSecret = ["sk", "runtime-secret"].join("-");
+    const unsafePrincipal = await runCli(
+      [
+        "daemon",
+        "auth-entry",
+        "--principal",
+        "bearer-admin",
+        "--token",
+        "provided-control-plane-token-123",
+        "--json"
+      ],
+      dependencies
+    );
+    const unsafeRole = await runCli(
+      ["daemon", "auth-entry", "--principal", "operator-1", "--role", "owner", "--json"],
+      dependencies
+    );
+    const unsafeScope = await runCli(
+      [
+        "daemon",
+        "auth-entry",
+        "--principal",
+        "operator-1",
+        "--scope",
+        "read,owner",
+        "--json"
+      ],
+      dependencies
+    );
+    const shortToken = await runCli(
+      [
+        "daemon",
+        "auth-entry",
+        "--principal",
+        "operator-1",
+        "--token",
+        "short",
+        "--json"
+      ],
+      dependencies
+    );
+    const unusedDaemonUrl = await runCli(
+      [
+        "daemon",
+        "auth-entry",
+        "--principal",
+        "operator-1",
+        "--daemon-url",
+        `http://localhost:3877?${secretParam}=${urlSecret}`,
+        "--json"
+      ],
+      dependencies
+    );
+
+    expect(unsafePrincipal.exitCode).toBe(1);
+    expect(unsafePrincipal.stdout).toContain("principal id must not contain secret-like material");
+    expect(unsafePrincipal.stdout).not.toContain("provided-control-plane-token-123");
+    expect(unsafeRole.exitCode).toBe(1);
+    expect(unsafeRole.stdout).toContain("Daemon auth role must be one of");
+    expect(unsafeRole.stdout).not.toContain("owner");
+    expect(unsafeScope.exitCode).toBe(1);
+    expect(unsafeScope.stdout).toContain("Daemon auth scope must be one of");
+    expect(unsafeScope.stdout).not.toContain("owner");
+    expect(shortToken.exitCode).toBe(1);
+    expect(shortToken.stdout).toContain("Daemon auth token must be at least 16");
+    expect(shortToken.stdout).not.toContain("short");
+    expect(unusedDaemonUrl.exitCode).toBe(1);
+    expect(unusedDaemonUrl.stdout).toContain("Unknown option for daemon auth-entry");
+    expect(unusedDaemonUrl.stdout).not.toContain(urlSecret);
+    expect(createDaemonClient).not.toHaveBeenCalled();
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
   it("prints a safe daemon environment template from runtime profile metadata", async () => {
     const daemonClient = createFakeRunDaemonClient({
       getRuntimeProfiles: vi.fn(async () => ({
