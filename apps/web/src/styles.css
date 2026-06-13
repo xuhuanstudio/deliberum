@@ -277,11 +277,79 @@ a {
   background: var(--du-accent-strong);
 }
 
+.du-secondary-link {
+  border: 1px solid var(--du-line);
+  background: var(--du-surface);
+  color: var(--du-ink);
+}
+
+.du-secondary-link:hover {
+  background: var(--du-surface-muted);
+  color: var(--du-ink);
+}
+
 .du-action-row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   padding: 14px 0 0;
+}
+
+.du-product-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 16px;
+}
+
+.du-quality-map {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--du-line);
+}
+
+.du-quality-map-item {
+  min-width: 0;
+  background: var(--du-surface);
+  padding: 18px;
+}
+
+.du-quality-map-item span,
+.du-quality-map-item strong {
+  display: block;
+}
+
+.du-quality-map-item span {
+  color: var(--du-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.du-quality-map-item strong {
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  font-size: 1.08rem;
+}
+
+.du-section-label {
+  border-top: 1px solid var(--du-line);
+  padding-top: 24px;
+}
+
+.du-section-label h3,
+.du-section-label p {
+  margin: 0;
+}
+
+.du-section-label h3 {
+  font-size: 1.35rem;
+}
+
+.du-section-label p:not(.du-kicker) {
+  max-width: 680px;
+  margin-top: 8px;
+  color: var(--du-muted);
+  line-height: 1.5;
 }
 
 .du-explainer-grid {
@@ -341,8 +409,7 @@ a {
 
 .du-session-form {
   max-width: 720px;
-  border-top: 1px solid var(--du-line);
-  padding-top: 22px;
+  padding: 16px;
 }
 
 .du-session-form label {
@@ -382,6 +449,23 @@ a {
   display: grid;
   gap: 10px;
   padding: 16px;
+}
+
+.du-advanced-panel {
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: rgba(255, 254, 250, 0.72);
+}
+
+.du-advanced-panel summary {
+  cursor: pointer;
+  color: var(--du-ink);
+  font-weight: 700;
+  padding: 14px 16px;
+}
+
+.du-advanced-panel summary:hover {
+  background: var(--du-surface-muted);
 }
 
 .du-json-form label {
@@ -659,6 +743,10 @@ a {
     padding: 22px;
   }
 
+  .du-product-grid {
+    grid-template-columns: 1fr;
+  }
+
   .du-page-header {
     display: block;
   }
@@ -667,6 +755,7 @@ a {
   .du-inline-form-row,
   .du-key-value-grid,
   .du-explainer-grid,
+  .du-quality-map,
   .du-stage-grid,
   .du-follow-controls,
   .du-final-lifecycle-grid,

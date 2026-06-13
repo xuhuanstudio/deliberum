@@ -794,7 +794,15 @@ describe("@deliberum/web shell", () => {
   it("opens sessions through explicit session-id navigation without stored session state", async () => {
     const client = renderApp("/");
 
-    expect(await screen.findByText("Open a deliberation session")).toBeTruthy();
+    expect(await screen.findByText("Start or inspect a deliberation")).toBeTruthy();
+    expect(screen.getByText("Primary path")).toBeTruthy();
+    expect(screen.getByText("Quality map")).toBeTruthy();
+    expect(screen.getByText("1. Start from a Topic Contract")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Candidate Frontier, objections, obligations, evidence state, and provisional outcome stay separate and inspectable."
+      )
+    ).toBeTruthy();
     expect(screen.queryByLabelText(/chat/i)).toBeNull();
     expect(screen.queryByPlaceholderText(/message/i)).toBeNull();
 
@@ -1020,8 +1028,11 @@ describe("@deliberum/web shell", () => {
       constraints: ["Keep provisional"]
     };
 
-    await screen.findByText("Create a daemon run");
-    fireEvent.change(screen.getByLabelText("Advanced run plan JSON"), {
+    await screen.findByText("Start a deliberation run");
+    expect(screen.getByText("Guided local preset")).toBeTruthy();
+    expect(screen.getByText("Full quality loop")).toBeTruthy();
+    fireEvent.click(screen.getByText("Advanced JSON plan"));
+    fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
       target: {
         value: JSON.stringify(runPlan)
       }
@@ -1036,8 +1047,9 @@ describe("@deliberum/web shell", () => {
   it("rejects invalid run plan JSON without calling the daemon", async () => {
     const client = renderApp("/runs/new");
 
-    await screen.findByText("Create a daemon run");
-    fireEvent.change(screen.getByLabelText("Advanced run plan JSON"), {
+    await screen.findByText("Start a deliberation run");
+    fireEvent.click(screen.getByText("Advanced JSON plan"));
+    fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
       target: {
         value: "{"
       }
@@ -1047,7 +1059,7 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Run plan must be valid JSON.")).toBeTruthy();
     expect(client.createRun).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Advanced run plan JSON"), {
+    fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
       target: {
         value: "[]"
       }
@@ -1061,8 +1073,9 @@ describe("@deliberum/web shell", () => {
   it("fills and creates the local preset run plan", async () => {
     const client = renderApp("/runs/new");
 
-    await screen.findByText("Create a daemon run");
-    fireEvent.change(screen.getByLabelText("Advanced run plan JSON"), {
+    await screen.findByText("Start a deliberation run");
+    fireEvent.click(screen.getByText("Advanced JSON plan"));
+    fireEvent.change(screen.getByLabelText("Advanced JSON run plan"), {
       target: {
         value: "{}"
       }
@@ -1070,7 +1083,7 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Fill local preset run plan" }));
 
     expect(
-      (screen.getByLabelText("Advanced run plan JSON") as HTMLTextAreaElement).value
+      (screen.getByLabelText("Advanced JSON run plan") as HTMLTextAreaElement).value
     ).toContain("local-preset-alpha");
 
     fireEvent.click(screen.getByRole("button", { name: "Create local preset run" }));

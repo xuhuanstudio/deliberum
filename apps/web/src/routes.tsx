@@ -289,29 +289,149 @@ function LandingPage() {
     >
       <section className="du-landing">
         <PageHeader
-          eyebrow="Projection workspace"
-          title="Open a deliberation session"
-          description="Open a session from the local daemon catalog or enter a session id directly."
+          eyebrow="Deliberation workspace"
+          title="Start or inspect a deliberation"
+          description="Begin with a run, then inspect the quality structure that the ledger and daemon projections preserve."
           actions={
-            <Link className="du-action-link" to="/runs">
-              Open runs
-            </Link>
+            <>
+              <Link className="du-action-link" to="/runs/new">
+                Start a run
+              </Link>
+              <Link className="du-action-link du-secondary-link" to="/runs">
+                View runs
+              </Link>
+            </>
           }
         />
-        <form className="du-session-form" onSubmit={submitSession}>
-          <label htmlFor="session-id">Session id</label>
-          <div className="du-session-form-row">
-            <input
-              id="session-id"
-              value={sessionId}
-              onChange={(event) => setSessionId(event.currentTarget.value)}
-              placeholder="session-id"
-            />
-            <button type="submit" disabled={trimmedSessionId.length === 0}>
-              Open
-            </button>
-          </div>
-        </form>
+        <div className="du-product-grid">
+          <DataPanel
+            title="Primary path"
+            description="Create or continue a deliberation run before inspecting daemon diagnostics."
+          >
+            <div className="du-readable-list">
+              <QualityPathItem
+                title="1. Start from a Topic Contract"
+                detail="The run defines goals, constraints, participants, and output expectations before anyone contributes."
+              />
+              <QualityPathItem
+                title="2. Preserve independent perspectives"
+                detail="Sealed divergence keeps early participant work from anchoring on one visible answer."
+              />
+              <QualityPathItem
+                title="3. Review the quality structure"
+                detail="Candidate Frontier, objections, obligations, evidence state, and provisional outcome stay separate and inspectable."
+              />
+            </div>
+            <div className="du-action-row">
+              <Link className="du-action-link" to="/runs/new">
+                Start a deliberation run
+              </Link>
+              <Link className="du-action-link du-secondary-link" to="/runs">
+                Continue existing runs
+              </Link>
+            </div>
+          </DataPanel>
+          <DataPanel
+            title="Quality map"
+            description="The product surface should make these objects readable before showing raw records."
+          >
+            <div className="du-quality-map">
+              <QualityMapItem label="Topic" value="Contract" />
+              <QualityMapItem label="Divergence" value="Sealed" />
+              <QualityMapItem label="Candidates" value="Frontier" />
+              <QualityMapItem label="Pressure" value="Objections" />
+              <QualityMapItem label="Duties" value="Obligations" />
+              <QualityMapItem label="Output" value="Provisional" />
+            </div>
+          </DataPanel>
+        </div>
+        <DataPanel
+          title="Open by session id"
+          description="Use this when you already know the underlying ledger session."
+        >
+          <form className="du-session-form" onSubmit={submitSession}>
+            <label htmlFor="session-id">Session id</label>
+            <div className="du-session-form-row">
+              <input
+                id="session-id"
+                value={sessionId}
+                onChange={(event) => setSessionId(event.currentTarget.value)}
+                placeholder="session-id"
+              />
+              <button type="submit" disabled={trimmedSessionId.length === 0}>
+                Open
+              </button>
+            </div>
+          </form>
+        </DataPanel>
+        <DataPanel
+          title="Daemon sessions"
+          description="Continue from the ledger-backed sessions the daemon already knows about."
+        >
+          <QueryState query={sessionsQuery}>
+            {sessionEntries.length === 0 ? (
+              <EmptyState
+                title="No daemon sessions"
+                description="Create a run or post a session to the local daemon."
+              />
+            ) : (
+              <div className="du-run-list">
+                {sessionEntries.map(({ session, index, sessionId: catalogSessionId }) => (
+                  <article className="du-run-list-item" key={`${catalogSessionId}-${index}`}>
+                    <p className="du-kicker">{catalogSessionId}</p>
+                    <h3>
+                      {formatRecordValue(
+                        getRecordValue(session, "title") ?? "Untitled session"
+                      )}
+                    </h3>
+                    <p>
+                      {formatRecordValue(
+                        getRecordValue(session, "topic") ?? "No topic summary"
+                      )}
+                    </p>
+                    <KeyValueGrid
+                      items={[
+                        {
+                          label: "Events",
+                          value: formatRecordValue(getRecordValue(session, "eventCount"))
+                        },
+                        {
+                          label: "Latest event",
+                          value: formatRecordValue(
+                            getRecordValue(session, "latestEventRecordedAt")
+                          )
+                        },
+                        {
+                          label: "Topic contract event",
+                          value: formatRecordValue(
+                            getRecordValue(session, "topicContractEventId")
+                          )
+                        }
+                      ]}
+                    />
+                    <div className="du-action-row">
+                      <Link
+                        className="du-action-link"
+                        to="/sessions/$sessionId"
+                        params={{ sessionId: catalogSessionId }}
+                      >
+                        Open session
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </QueryState>
+        </DataPanel>
+        <div className="du-section-label">
+          <p className="du-kicker">Operator readiness</p>
+          <h3>Local daemon diagnostics</h3>
+          <p>
+            These panels stay available for setup and safety checks, but they are not the primary
+            deliberation experience.
+          </p>
+        </div>
         <DataPanel
           title="Deployment posture"
           description="Safe local/pre-production daemon posture without secrets or configured resource URLs."
@@ -601,68 +721,26 @@ function LandingPage() {
             )}
           </QueryState>
         </DataPanel>
-        <DataPanel
-          title="Daemon sessions"
-          description="Read-only session catalog derived from daemon ledger events."
-        >
-          <QueryState query={sessionsQuery}>
-            {sessionEntries.length === 0 ? (
-              <EmptyState
-                title="No daemon sessions"
-                description="Create a run or post a session to the local daemon."
-              />
-            ) : (
-              <div className="du-run-list">
-                {sessionEntries.map(({ session, index, sessionId: catalogSessionId }) => (
-                  <article className="du-run-list-item" key={`${catalogSessionId}-${index}`}>
-                    <p className="du-kicker">{catalogSessionId}</p>
-                    <h3>
-                      {formatRecordValue(
-                        getRecordValue(session, "title") ?? "Untitled session"
-                      )}
-                    </h3>
-                    <p>
-                      {formatRecordValue(
-                        getRecordValue(session, "topic") ?? "No topic summary"
-                      )}
-                    </p>
-                    <KeyValueGrid
-                      items={[
-                        {
-                          label: "Events",
-                          value: formatRecordValue(getRecordValue(session, "eventCount"))
-                        },
-                        {
-                          label: "Latest event",
-                          value: formatRecordValue(
-                            getRecordValue(session, "latestEventRecordedAt")
-                          )
-                        },
-                        {
-                          label: "Topic contract event",
-                          value: formatRecordValue(
-                            getRecordValue(session, "topicContractEventId")
-                          )
-                        }
-                      ]}
-                    />
-                    <div className="du-action-row">
-                      <Link
-                        className="du-action-link"
-                        to="/sessions/$sessionId"
-                        params={{ sessionId: catalogSessionId }}
-                      >
-                        Open session
-                      </Link>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </QueryState>
-        </DataPanel>
       </section>
     </WorkspaceShell>
+  );
+}
+
+function QualityPathItem({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="du-readable-item">
+      <h4>{title}</h4>
+      <p>{detail}</p>
+    </div>
+  );
+}
+
+function QualityMapItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="du-quality-map-item">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 

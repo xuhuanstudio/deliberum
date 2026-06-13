@@ -120,41 +120,61 @@ export function RunNewPage() {
     <RunWorkspaceShell>
       <ViewFrame
         eyebrow="Run creation"
-        title="Create a daemon run"
-        description="Create a controlled orchestration job. The local preset is deterministic development material, not real provider output."
+        title="Start a deliberation run"
+        description="Create a ledger-backed run that exercises the core deliberation loop before reading raw daemon records."
       >
         <StatusBanner
           title="Local preset requires daemon opt-in"
           detail="To run the built-in preset pipeline, start the daemon with DELIBERUM_ENABLE_LOCAL_PRESET=true. Without it, the run can be created but start will report missing local components."
         />
-        <JsonInputForm
-          id="run-plan-json"
-          label="Advanced run plan JSON"
-          value={runPlanText}
-          onChange={setRunPlanText}
-          onSubmit={submitRunPlan}
-          submitLabel={createMutation.isPending ? "Creating" : "Create run"}
-          disabled={createMutation.isPending}
-          actions={
-            <>
-              <button
-                type="button"
-                className="du-secondary-button"
-                onClick={fillLocalPresetRunPlan}
-                disabled={createMutation.isPending}
-              >
-                Fill local preset run plan
-              </button>
-              <button
-                type="button"
-                onClick={createLocalPresetRun}
-                disabled={createMutation.isPending}
-              >
-                Create local preset run
-              </button>
-            </>
-          }
-        />
+        <DataPanel
+          title="Guided local preset"
+          description="Use this path to see Topic Contract, sealed divergence, Candidate Frontier, objections, obligations, and provisional outcome views with deterministic local components."
+        >
+          <div className="du-readable-list">
+            <ExplainerItem
+              title="No provider credentials"
+              detail="The preset does not call external models and is meant for product walkthroughs and local verification."
+            />
+            <ExplainerItem
+              title="Full quality loop"
+              detail="It creates traceable proposal material, reviewable candidate state, and a provisional compiled output."
+            />
+          </div>
+          <div className="du-action-row">
+            <button
+              type="button"
+              onClick={createLocalPresetRun}
+              disabled={createMutation.isPending}
+            >
+              Create local preset run
+            </button>
+          </div>
+        </DataPanel>
+        <details className="du-advanced-panel">
+          <summary>Advanced JSON plan</summary>
+          <JsonInputForm
+            id="run-plan-json"
+            label="Advanced JSON run plan"
+            value={runPlanText}
+            onChange={setRunPlanText}
+            onSubmit={submitRunPlan}
+            submitLabel={createMutation.isPending ? "Creating" : "Create run"}
+            disabled={createMutation.isPending}
+            actions={
+              <>
+                <button
+                  type="button"
+                  className="du-secondary-button"
+                  onClick={fillLocalPresetRunPlan}
+                  disabled={createMutation.isPending}
+                >
+                  Fill local preset run plan
+                </button>
+              </>
+            }
+          />
+        </details>
         {inputError ? <StatusBanner tone="error" title={inputError} /> : null}
         {createMutation.isError ? (
           <StatusBanner
