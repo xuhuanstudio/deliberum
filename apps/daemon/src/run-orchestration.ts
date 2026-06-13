@@ -1124,6 +1124,8 @@ function createStartRequestForAcceptedProcessProposal(
   }
 
   if (primitive === "red_team") {
+    resolveRedTeamTargetEventIds(proposalState, run);
+
     return {
       review: {}
     };
@@ -1164,6 +1166,8 @@ function createStartRequestForAcceptedProcessProposal(
   }
 
   if (primitive === "final_contest") {
+    resolveFinalContestTargetIds(proposalState, run, eventStore);
+
     return {
       finalization: {
         compileOutcome: true
@@ -1340,6 +1344,71 @@ function resolveEvidenceCheckTargetIds(
   }
 
   return targetEvidenceNeedIds;
+}
+
+function resolveRedTeamTargetEventIds(
+  proposalState: ProcessProposalExecutionState,
+  run: DeliberationRunRecord
+): string[] {
+  const targetEventIds = unique(proposalState.proposal.targetIds);
+
+  if (targetEventIds.length === 0) {
+    throw new DaemonRunOrchestrationError(
+      "process_proposal_target_invalid",
+      "Red team process proposal must target at least one extraction proposal event.",
+      409
+    );
+  }
+
+  const latestExtractionRound = run.extractionRounds?.at(-1);
+  const latestProposalEventIds = new Set(latestExtractionRound?.proposalEventIds ?? []);
+
+  for (const targetEventId of targetEventIds) {
+    if (!latestProposalEventIds.has(targetEventId)) {
+      throw new DaemonRunOrchestrationError(
+        "process_proposal_target_invalid",
+        "Red team process proposal targets must be current extraction proposal events.",
+        409
+      );
+    }
+  }
+
+  return targetEventIds;
+}
+
+function resolveFinalContestTargetIds(
+  proposalState: ProcessProposalExecutionState,
+  run: DeliberationRunRecord,
+  eventStore: EventStore
+): string[] {
+  const targetCandidateIds = unique(proposalState.proposal.targetIds);
+
+  if (targetCandidateIds.length === 0) {
+    throw new DaemonRunOrchestrationError(
+      "process_proposal_target_invalid",
+      "Final contest process proposal must target the active candidate frontier.",
+      409
+    );
+  }
+
+  const activeCandidateIds = projectCandidateFrontier({
+    events: eventStore.listEvents(run.sessionId),
+    sessionId: run.sessionId
+  }).candidates.map((candidate) => candidate.object.id);
+  const activeCandidateIdSet = new Set(activeCandidateIds);
+
+  if (
+    targetCandidateIds.length !== activeCandidateIds.length ||
+    targetCandidateIds.some((targetCandidateId) => !activeCandidateIdSet.has(targetCandidateId))
+  ) {
+    throw new DaemonRunOrchestrationError(
+      "process_proposal_target_invalid",
+      "Final contest process proposal targets must match the current active candidate frontier.",
+      409
+    );
+  }
+
+  return targetCandidateIds;
 }
 
 function resolveFinalAuditTargetEventId(

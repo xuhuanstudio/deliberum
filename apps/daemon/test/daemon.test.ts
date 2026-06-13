@@ -5448,6 +5448,168 @@ describe("daemon API", () => {
     }
   });
 
+  it("rejects accepted red-team process proposals with stale extraction targets", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const initialRunResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      {
+        sealedDivergence: {
+          autoCloseManual: true
+        },
+        extraction: {
+          generatorIds: ["fake-extractor"]
+        }
+      }
+    );
+
+    expect(initialRunResponse.status).toBe(200);
+
+    const extractionEvents = daemonApp.eventStore.listEventsByType(
+      created.run.sessionId,
+      "extraction_proposed"
+    );
+    expect(extractionEvents).toHaveLength(1);
+
+    const proposeResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals`,
+      {
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-red-team-stale",
+          primitive: "red_team",
+          targetIds: ["missing-extraction-event"],
+          expectedQualityGain: "Challenge the current extraction material.",
+          riskIfSkipped: "Extraction material may be accepted without review.",
+          requestedBudget: {
+            maxEvents: 1,
+            maxProviderCalls: 1
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: [extractionEvents[0]!.id]
+      }
+    );
+    const proposeBody = (await proposeResponse.json()) as {
+      event: { id: string };
+    };
+
+    await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+      {
+        authorId: "coordinator-1",
+        status: "accepted",
+        rationale: "Accept the process proposal but keep target validation strict."
+      }
+    );
+
+    const executeResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+      {}
+    );
+    const executeBody = (await executeResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(executeResponse.status).toBe(409);
+    expect(executeBody.error).toEqual({
+      code: "process_proposal_target_invalid",
+      message: "Red team process proposal targets must be current extraction proposal events."
+    });
+    expect(daemonApp.eventStore.listEventsByType(created.run.sessionId, "proposal_accepted")).toEqual(
+      []
+    );
+  });
+
+  it("rejects accepted final-contest process proposals outside the active frontier", async () => {
+    const daemonApp = createRunDaemon();
+    const created = await createRun(daemonApp);
+    const initialRunResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      {
+        sealedDivergence: {
+          autoCloseManual: true
+        },
+        extraction: {
+          generatorIds: ["fake-extractor"]
+        },
+        review: {
+          reviewerIds: ["fake-reviewer"],
+          acceptancePolicy: {
+            mode: "all_generated_unchallenged",
+            authorId: "review-coordinator",
+            rationale: "Accept generated unchallenged proposals for this local daemon run."
+          }
+        }
+      }
+    );
+
+    expect(initialRunResponse.status).toBe(200);
+    expect(
+      daemonApp.eventStore.listEventsByType(created.run.sessionId, "proposal_accepted")
+    ).toHaveLength(1);
+
+    const proposeResponse = await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals`,
+      {
+        authorId: "system",
+        proposal: {
+          id: "process-proposal-final-contest-stale",
+          primitive: "final_contest",
+          targetIds: ["missing-candidate"],
+          expectedQualityGain: "Generate final candidate material from the active frontier.",
+          riskIfSkipped: "The run may stop before final candidate material is proposed.",
+          requestedBudget: {
+            maxEvents: 1,
+            maxProviderCalls: 1
+          },
+          status: "proposed"
+        },
+        basedOnEventIds: daemonApp.eventStore
+          .listEventsByType(created.run.sessionId, "proposal_accepted")
+          .map((event) => event.id)
+      }
+    );
+    const proposeBody = (await proposeResponse.json()) as {
+      event: { id: string };
+    };
+
+    await postJson(
+      daemonApp.app,
+      `/sessions/${created.run.sessionId}/process-proposals/${proposeBody.event.id}/decisions`,
+      {
+        authorId: "coordinator-1",
+        status: "accepted",
+        rationale: "Accept the process proposal but require the target frontier to match."
+      }
+    );
+
+    const executeResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/process-proposals/${proposeBody.event.id}/execute`,
+      {}
+    );
+    const executeBody = (await executeResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(executeResponse.status).toBe(409);
+    expect(executeBody.error).toEqual({
+      code: "process_proposal_target_invalid",
+      message:
+        "Final contest process proposal targets must match the current active candidate frontier."
+    });
+    expect(
+      daemonApp.eventStore.listEventsByType(created.run.sessionId, "final_candidate_proposed")
+    ).toEqual([]);
+  });
+
   it("rejects accepted process proposals for unsupported daemon primitives", async () => {
     const daemonApp = createRunDaemon();
     const created = await createRun(daemonApp);
