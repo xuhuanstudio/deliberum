@@ -7,9 +7,13 @@ Thanks for your interest in Deliberum.
 Use English for issues, pull requests, code comments, commit messages, public
 documentation, examples, and repository metadata. Private clarification can
 happen outside the public repository, but any accepted requirement, rationale,
-or design decision should be summarized in English before it is committed. The
-repository CI runs `corepack pnpm lint:language` to reject tracked public files
-or paths that contain non-English Han characters.
+or design decision should be summarized in English before it is committed.
+
+Repository CI runs `corepack pnpm lint:language` and
+`corepack pnpm lint:public-files` to reject tracked public files or paths that
+contain non-English Han characters, local runtime data, generated build
+outputs, private workflow files, OS metadata, local databases, logs, or
+credential files.
 
 ## Project principles
 
