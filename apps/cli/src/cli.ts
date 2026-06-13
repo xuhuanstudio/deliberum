@@ -29,11 +29,12 @@ import {
   auditFinalCandidate,
   submitSealedContribution
 } from "@deliberum/core";
-import type {
-  JsonValue,
-  ProcessProposalDecisionStatus,
-  SealedBatchPurpose,
-  SealedBatchRevealPolicy
+import {
+  ProcessProposalDecisionStatusSchema,
+  type JsonValue,
+  type ProcessProposalDecisionStatus,
+  type SealedBatchPurpose,
+  type SealedBatchRevealPolicy
 } from "@deliberum/protocol";
 import type { EventStore } from "@deliberum/storage";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -622,7 +623,7 @@ async function executeCommand(parsedArgs: ParsedArgs, dependencies: ExecuteDepen
         sessionId: requireOption(parsedArgs, "session"),
         targetProcessProposalEventId: requireOption(parsedArgs, "proposal-event"),
         authorId: requireOption(parsedArgs, "author"),
-        status: requireOption(parsedArgs, "status") as ProcessProposalDecisionStatus,
+        status: parseProcessProposalDecisionStatus(requireOption(parsedArgs, "status")),
         rationale: requireOption(parsedArgs, "rationale"),
         idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
       },
@@ -1179,6 +1180,7 @@ async function executeRunCommand(
       restPositionals,
       "Usage: deliberum runs process-decide <runId> --proposal-event <eventId> --author <id> --status <accepted|deferred|rejected> --rationale <text>"
     );
+    const status = parseProcessProposalDecisionStatus(requireOption(parsedArgs, "status"));
     const run = await daemonClient.getRun(runId);
     const sessionId = extractSessionIdFromRunResponse(run);
 
@@ -1187,7 +1189,7 @@ async function executeRunCommand(
       requireOption(parsedArgs, "proposal-event"),
       {
         authorId: requireOption(parsedArgs, "author"),
-        status: requireOption(parsedArgs, "status") as ProcessProposalDecisionStatus,
+        status,
         rationale: requireOption(parsedArgs, "rationale"),
         idempotencyKey: getLastOption(parsedArgs, "idempotency-key")
       }
@@ -1424,6 +1426,16 @@ function parseOperationAuditFormat(values: string[] | undefined): "json" | "json
   }
 
   throw new CliUsageError("--format must be json or jsonl.");
+}
+
+function parseProcessProposalDecisionStatus(value: string): ProcessProposalDecisionStatus {
+  const parsed = ProcessProposalDecisionStatusSchema.safeParse(value.trim());
+
+  if (parsed.success) {
+    return parsed.data;
+  }
+
+  throw new CliUsageError("--status must be accepted, deferred, or rejected.");
 }
 
 function readJsonObjectInput(

@@ -879,6 +879,71 @@ describe("CLI command routing", () => {
     expect(createEventStore).toHaveBeenCalled();
   });
 
+  it("rejects invalid process decision statuses before lifecycle mutation calls", async () => {
+    const fakeStore = createFakeStore();
+    const decideProcessProposal = vi.fn(() => ({
+      decisionEvent: createFakeEvent({ type: "process_proposal_decided" })
+    }));
+    const createEventStore = vi.fn(() => fakeStore);
+    const localDecision = await runCli(
+      [
+        "process",
+        "decide",
+        "--session",
+        "session-1",
+        "--proposal-event",
+        "process-proposal-event-1",
+        "--author",
+        "coordinator-1",
+        "--status",
+        "approved",
+        "--rationale",
+        "Invalid status should be rejected.",
+        "--json"
+      ],
+      {
+        core: {
+          decideProcessProposal
+        },
+        createEventStore
+      }
+    );
+    const {
+      daemonClient,
+      createDaemonClient,
+      createEventStore: createRunEventStore,
+      dependencies
+    } = createRunCliDependencies();
+    const runDecision = await runCli(
+      [
+        "runs",
+        "process-decide",
+        "run-1",
+        "--proposal-event",
+        "process-proposal-event-1",
+        "--author",
+        "coordinator-1",
+        "--status",
+        "approved",
+        "--rationale",
+        "Invalid status should be rejected.",
+        "--json"
+      ],
+      dependencies
+    );
+
+    expect(localDecision.exitCode).toBe(1);
+    expect(localDecision.stdout).toContain("--status must be accepted, deferred, or rejected.");
+    expect(decideProcessProposal).not.toHaveBeenCalled();
+    expect(createEventStore).toHaveBeenCalled();
+    expect(runDecision.exitCode).toBe(1);
+    expect(runDecision.stdout).toContain("--status must be accepted, deferred, or rejected.");
+    expect(createDaemonClient).toHaveBeenCalledTimes(1);
+    expect(daemonClient.getRun).not.toHaveBeenCalled();
+    expect(daemonClient.decideProcessProposal).not.toHaveBeenCalled();
+    expect(createRunEventStore).not.toHaveBeenCalled();
+  });
+
   it("routes daemon profile commands through the daemon client without creating the local EventStore", async () => {
     const { daemonClient, createDaemonClient, createEventStore, dependencies } =
       createRunCliDependencies();
