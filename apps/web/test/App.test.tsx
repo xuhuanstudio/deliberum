@@ -1459,9 +1459,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Strong options stay visible without collapsing into one hidden authority.")).toBeTruthy();
     expect(screen.getByText("What this discussion status means")).toBeTruthy();
     expect(screen.getByText("Discussion progress")).toBeTruthy();
+    expect(screen.getByText("Risks and missing evidence")).toBeTruthy();
+    expect(screen.getByText("Evidence gap 1")).toBeTruthy();
     const defaultRunText = document.body.textContent ?? "";
     expect(defaultRunText).not.toContain("objection-1");
     expect(defaultRunText).not.toContain("quality-1");
+    expect(defaultRunText).not.toContain("evidence-need-1");
     const nextStepControls = screen
       .getByText("Advanced / Developer Mode: next-step proposal controls")
       .closest("details");

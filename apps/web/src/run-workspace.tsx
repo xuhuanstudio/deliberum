@@ -1945,6 +1945,10 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
     queryKey: ["run-obligations", sessionId],
     queryFn: () => client.getObligations(sessionId)
   });
+  const resourcesQuery = useQuery({
+    queryKey: ["run-resources", sessionId],
+    queryFn: () => client.getSessionResources(sessionId)
+  });
 
   return (
     <section className="du-projection-section" aria-label="Discussion detail panels">
@@ -1993,6 +1997,22 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
           />
           <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
             <ProjectionMetadata projection={obligationsQuery.data?.projection} />
+          </AdvancedDetails>
+        </QueryState>
+      </DataPanel>
+      <DataPanel
+        title="Risks and missing evidence"
+        description="Evidence gaps and verification needs that should be checked before relying on the conclusion."
+      >
+        <QueryState query={resourcesQuery}>
+          <ProjectionRecordList
+            records={asArray(resourcesQuery.data?.evidenceNeeds)}
+            emptyTitle="No missing evidence"
+            emptyDescription="No evidence gaps have been accepted into this discussion yet."
+            kind="evidence"
+          />
+          <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
+            <ProjectionMetadata projection={resourcesQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
       </DataPanel>
@@ -2776,6 +2796,8 @@ function ProcessProposalObservations({ observations }: { observations: unknown[]
   );
 }
 
+type ProjectionRecordKind = "candidate" | "objection" | "quality obligation" | "evidence";
+
 function ProjectionRecordList({
   records,
   emptyTitle,
@@ -2785,7 +2807,7 @@ function ProjectionRecordList({
   records: unknown[];
   emptyTitle: string;
   emptyDescription: string;
-  kind: "candidate" | "objection" | "quality obligation";
+  kind: ProjectionRecordKind;
 }) {
   if (records.length === 0) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
@@ -2812,13 +2834,14 @@ function ProjectionRecord({
 }: {
   record: unknown;
   index: number;
-  kind: "candidate" | "objection" | "quality obligation";
+  kind: ProjectionRecordKind;
 }) {
   const object = getRecordValue(record, "object") ?? record;
   const id = getStringRecordValue(object, "id") ?? `${kind}-${getProjectionRecordKey(record, 0)}`;
   const fallbackTitle = `${formatProjectionKind(kind)} ${index + 1}`;
   const title =
     getStringRecordValue(object, "title") ??
+    getStringRecordValue(object, "question") ??
     getStringRecordValue(object, "content") ??
     getStringRecordValue(object, "requirement") ??
     getStringRecordValue(object, "failureMode") ??
@@ -2827,6 +2850,7 @@ function ProjectionRecord({
   const description =
     getStringRecordValue(object, "description") ??
     getStringRecordValue(object, "consequence") ??
+    getStringRecordValue(object, "question") ??
     getStringRecordValue(object, "requirement") ??
     getStringRecordValue(object, "content");
   const proposalEventId = getRecordValue(record, "proposalEventId");
@@ -2860,13 +2884,17 @@ function ProjectionRecord({
   );
 }
 
-function formatProjectionKind(kind: "candidate" | "objection" | "quality obligation"): string {
+function formatProjectionKind(kind: ProjectionRecordKind): string {
   if (kind === "candidate") {
     return "Main perspective";
   }
 
   if (kind === "objection") {
     return "Open disagreement";
+  }
+
+  if (kind === "evidence") {
+    return "Evidence gap";
   }
 
   return "Requirement";
