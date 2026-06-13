@@ -1429,6 +1429,7 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
     expect(client.getRunEvents).not.toHaveBeenCalled();
     expect(client.getRunProcessProposals).not.toHaveBeenCalled();
     expect(client.getProcessProposalStates).not.toHaveBeenCalled();
@@ -1440,7 +1441,12 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByText("Advanced / Developer Mode"));
     expect(await screen.findByText("Ledger events")).toBeTruthy();
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
-    expect(screen.getByText("Discussion overview")).toBeTruthy();
+    expect(screen.getByText("Discussion dashboard")).toBeTruthy();
+    expect(screen.getByText("Next: review current conclusion")).toBeTruthy();
+    expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);
+    expect(screen.getByText("Ready")).toBeTruthy();
+    expect(screen.getByText("Evidence gaps")).toBeTruthy();
+    expect(screen.getAllByText("1/1").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
     expect(screen.getByText("Strong options stay visible without collapsing into one hidden authority.")).toBeTruthy();
     expect(screen.getByText("What this discussion status means")).toBeTruthy();

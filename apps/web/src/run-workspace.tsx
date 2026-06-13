@@ -331,7 +331,9 @@ export function RunDetailPage() {
       >
         <QueryState query={runQuery}>
           <RunSummary run={run} />
-          {sessionId ? <RunQualityOverview sessionId={sessionId} /> : null}
+          {sessionId ? (
+            <RunQualityOverview runId={runId} sessionId={sessionId} run={run} />
+          ) : null}
           <RunDetailGuide />
           <RunStageStatus run={run} />
           <StartRunForm runId={runId} sessionId={sessionId} run={run} />
@@ -1346,7 +1348,15 @@ function useOutcomeContextQueries(sessionId: string | undefined): {
   };
 }
 
-function RunQualityOverview({ sessionId }: { sessionId: string }) {
+function RunQualityOverview({
+  runId,
+  sessionId,
+  run
+}: {
+  runId: string;
+  sessionId: string;
+  run: unknown;
+}) {
   const { client } = useDaemonRuntime();
   const frontierQuery = useQuery({
     queryKey: ["run-frontier", sessionId],
@@ -1360,24 +1370,68 @@ function RunQualityOverview({ sessionId }: { sessionId: string }) {
     queryKey: ["run-obligations", sessionId],
     queryFn: () => client.getObligations(sessionId)
   });
+  const resourcesQuery = useQuery({
+    queryKey: ["run-resources", sessionId],
+    queryFn: () => client.getSessionResources(sessionId)
+  });
   const queryState = {
-    isLoading: frontierQuery.isLoading || objectionsQuery.isLoading || obligationsQuery.isLoading,
-    isError: frontierQuery.isError || objectionsQuery.isError || obligationsQuery.isError,
-    error: frontierQuery.error ?? objectionsQuery.error ?? obligationsQuery.error ?? null
+    isLoading:
+      frontierQuery.isLoading ||
+      objectionsQuery.isLoading ||
+      obligationsQuery.isLoading ||
+      resourcesQuery.isLoading,
+    isError:
+      frontierQuery.isError ||
+      objectionsQuery.isError ||
+      obligationsQuery.isError ||
+      resourcesQuery.isError,
+    error:
+      frontierQuery.error ??
+      objectionsQuery.error ??
+      obligationsQuery.error ??
+      resourcesQuery.error ??
+      null
   };
   const candidates = asArray(frontierQuery.data?.candidates);
   const objections = asArray(objectionsQuery.data?.objections);
   const obligations = asArray(obligationsQuery.data?.qualityObligations);
+  const evidenceNeeds = asArray(resourcesQuery.data?.evidenceNeeds);
   const unresolvedObjections = countRecordsWithoutStatus(objections, "resolved");
   const openObligations = countRecordsWithoutStatus(obligations, "satisfied");
+  const unresolvedEvidenceNeeds = evidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
+  const continuationView = describeDiscussionContinuation(run);
+  const nextActionTitle = continuationView.reviewReady
+    ? "Next: review current conclusion"
+    : "Next: continue guided discussion";
+  const nextActionDetail = continuationView.reviewReady
+    ? "Start with the conclusion, then inspect disagreements, requirements, and missing evidence before relying on it."
+    : "Continue the guided discussion so the main perspectives, disagreements, requirements, evidence, and conclusion can be produced.";
 
   return (
     <DataPanel
-      title="Discussion overview"
-      description="A user-facing map of the current perspectives, disagreements, and requirements."
+      title="Discussion dashboard"
+      description="The first screen for a human reviewer: what is ready, what still needs attention, and where to go next."
     >
       <QueryState query={queryState}>
-        <div className="du-quality-summary-grid">
+        <StatusBanner
+          tone={continuationView.reviewReady ? "ok" : "warning"}
+          title={nextActionTitle}
+          detail={nextActionDetail}
+        />
+        <div className="du-discussion-dashboard-grid">
+          <Link
+            className="du-quality-summary-item du-quality-summary-primary"
+            to="/runs/$runId/outcome"
+            params={{ runId }}
+          >
+            <span>{continuationView.reviewReady ? "Ready" : "Not ready"}</span>
+            <strong>Current conclusion</strong>
+            <p>
+              {continuationView.reviewReady
+                ? "A reviewable conclusion is available with risks, evidence gaps, and next actions."
+                : "The discussion needs more guided work before a conclusion is useful."}
+            </p>
+          </Link>
           <QualitySummaryLink
             title="Main perspectives"
             detail="Strong options stay visible without collapsing into one hidden authority."
@@ -1399,6 +1453,13 @@ function RunQualityOverview({ sessionId }: { sessionId: string }) {
             to="/sessions/$sessionId/obligations"
             sessionId={sessionId}
           />
+          <QualitySummaryLink
+            title="Evidence gaps"
+            detail="Missing or unchecked evidence that should be resolved before relying on the answer."
+            metric={`${unresolvedEvidenceNeeds}/${evidenceNeeds.length}`}
+            to="/sessions/$sessionId/resources"
+            sessionId={sessionId}
+          />
         </div>
       </QueryState>
     </DataPanel>
@@ -1418,7 +1479,8 @@ function QualitySummaryLink({
   to:
     | "/sessions/$sessionId/frontier"
     | "/sessions/$sessionId/objections"
-    | "/sessions/$sessionId/obligations";
+    | "/sessions/$sessionId/obligations"
+    | "/sessions/$sessionId/resources";
   sessionId: string;
 }) {
   return (

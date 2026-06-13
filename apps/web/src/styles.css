@@ -387,6 +387,14 @@ textarea:focus-visible {
   background: var(--du-line);
 }
 
+.du-discussion-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.35fr) repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 12px;
+  background: var(--du-line);
+}
+
 .du-quality-summary-item {
   display: grid;
   gap: 8px;
@@ -399,6 +407,10 @@ textarea:focus-visible {
 
 .du-quality-summary-item:hover {
   background: #edf5f2;
+}
+
+.du-quality-summary-primary {
+  background: #f8fff9;
 }
 
 .du-quality-summary-item span,
@@ -1021,6 +1033,7 @@ textarea:focus-visible {
   .du-follow-controls,
   .du-advanced-status-grid,
   .du-discussion-form-grid,
+  .du-discussion-dashboard-grid,
   .du-final-lifecycle-grid,
   .du-lifecycle-grid {
     grid-template-columns: 1fr;
