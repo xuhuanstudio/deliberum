@@ -1611,7 +1611,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
   });
 
   return (
-    <section className="du-projection-section" aria-label="Run projection panels">
+    <section className="du-projection-section" aria-label="Discussion detail panels">
       <DataPanel
         title="Main perspectives"
         description="Strongest current options accepted into the discussion so far."
@@ -1703,7 +1703,7 @@ function RunProcessProposals({ runId, sessionId }: { runId: string; sessionId?: 
               value: proposals.length
             },
             {
-              label: "Ready for explicit action",
+              label: "Ready to start",
               value: readyCount
             }
           ]}
@@ -1824,6 +1824,77 @@ function RunProcessGovernance({
   );
 }
 
+type ProcessPrimitiveUserView = {
+  title: string;
+  detail: string;
+  reason: string;
+  risk: string;
+};
+
+const PROCESS_PRIMITIVE_USER_VIEWS: Record<string, ProcessPrimitiveUserView> = {
+  sealed_divergence: {
+    title: "Collect independent first responses",
+    detail: "Ask participants to respond separately before one visible answer can anchor the discussion.",
+    reason: "Preserves independent perspectives at the start of the discussion.",
+    risk: "The discussion may converge too early around one framing."
+  },
+  relation_mapping: {
+    title: "Organize the responses",
+    detail:
+      "Turn revealed responses into main perspectives, supporting points, open disagreements, and answer requirements.",
+    reason: "Makes the discussion material easier to review and challenge.",
+    risk: "Important points may remain buried in raw responses."
+  },
+  red_team: {
+    title: "Review the new discussion material",
+    detail:
+      "Challenge weak options, unsupported points, and missing requirements before accepting the material.",
+    reason: "Keeps weak or incomplete material from shaping the conclusion too early.",
+    risk: "Problems may be accepted before they are visible."
+  },
+  evidence_check: {
+    title: "Check missing evidence",
+    detail: "Route unresolved evidence gaps through verification work before strengthening the conclusion.",
+    reason: "Separates what is still unverified from what the discussion can rely on.",
+    risk: "The conclusion may rely on claims that are still unchecked."
+  },
+  candidate_repair: {
+    title: "Improve current options",
+    detail:
+      "Use open disagreements and unfinished requirements to strengthen the strongest current options.",
+    reason: "Keeps known weaknesses from carrying forward unchanged.",
+    risk: "Current options may stay weaker than the discussion already knows they are."
+  },
+  final_audit: {
+    title: "Review conclusion risks",
+    detail: "Check the proposed conclusion for unresolved risks, limits, and audit findings.",
+    reason: "Makes the conclusion safer to review before anyone relies on it.",
+    risk: "The conclusion may omit important risks or limits."
+  },
+  omission_audit: {
+    title: "Check for missing coverage",
+    detail: "Look for important accepted material that the proposed conclusion may have left out.",
+    reason: "Reduces the chance that a neat conclusion hides relevant unresolved material.",
+    risk: "The conclusion may look coherent while omitting important context."
+  },
+  final_contest: {
+    title: "Prepare current conclusion",
+    detail: "Turn the strongest current options into reviewable conclusion material.",
+    reason:
+      "Creates a current conclusion that users can inspect with disagreements and risks still visible.",
+    risk: "The discussion may stop before a reviewable conclusion exists."
+  }
+};
+
+function describeProcessPrimitiveForUser(primitive: string): ProcessPrimitiveUserView {
+  return PROCESS_PRIMITIVE_USER_VIEWS[primitive] ?? {
+    title: "Review next discussion step",
+    detail: "Review the suggested next step before deciding whether to save or run it.",
+    reason: "Keeps next-step decisions visible instead of automatic.",
+    risk: "The discussion may miss a useful follow-up step."
+  };
+}
+
 function ProcessProposalList({
   proposals,
   renderActions
@@ -1853,6 +1924,66 @@ function ProcessProposalList({
   );
 }
 
+function formatProcessObservationForUser(observation: string): string {
+  if (observation === "No sealed divergence round is recorded for this run.") {
+    return "Independent first responses have not been collected yet.";
+  }
+
+  if (observation === "The sealed divergence round is failed.") {
+    return "The independent first-response step needs another attempt.";
+  }
+
+  if (observation === "The sealed divergence round is not revealed yet.") {
+    return "Independent first responses are not ready to review yet.";
+  }
+
+  if (observation === "No extraction proposal round with proposal events is available.") {
+    return (
+      "The first responses have not yet been organized into perspectives, " +
+      "disagreements, and requirements."
+    );
+  }
+
+  if (observation === "Extraction proposal material has not completed proposal review.") {
+    return "New discussion material still needs a review before it shapes the conclusion.";
+  }
+
+  if (observation === "Accepted proposal material contains open evidence needs.") {
+    return "Some missing evidence still needs checking.";
+  }
+
+  if (
+    observation ===
+    "Accepted proposal material contains unresolved objections or quality obligations."
+  ) {
+    return "Open disagreements or unfinished answer requirements still need work.";
+  }
+
+  if (observation === "A final candidate proposal exists without recorded final audit events.") {
+    return "The proposed conclusion still needs a risk review.";
+  }
+
+  if (
+    observation ===
+    "Audited final candidate material is available without an active omission audit proposal."
+  ) {
+    return "The risk-reviewed conclusion may still need a missing-coverage check.";
+  }
+
+  if (
+    observation ===
+    "Accepted active candidates are available without open evidence or repair targets."
+  ) {
+    return "Strong current options are ready to become a reviewable current conclusion.";
+  }
+
+  if (observation === "No explicit adaptive primitive gap was detected.") {
+    return "No immediate next step is suggested right now.";
+  }
+
+  return observation;
+}
+
 function ProcessProposalRecord({
   proposal,
   actions
@@ -1861,13 +1992,15 @@ function ProcessProposalRecord({
   actions?: ReactNode;
 }) {
   const primitive = getStringRecordValue(proposal, "primitive") ?? "Unknown primitive";
+  const actionView = describeProcessPrimitiveForUser(primitive);
   const targetIds = asArray(getRecordValue(proposal, "targetIds"));
   const requestedBudget = getRecordValue(proposal, "requestedBudget");
 
   return (
     <article className="du-readable-item">
-      <p className="du-kicker">Recommended action</p>
-      <h4>{formatOutcomeLabel(primitive)}</h4>
+      <p className="du-kicker">Recommended next step</p>
+      <h4>{actionView.title}</h4>
+      <p>{actionView.detail}</p>
       <KeyValueGrid
         items={[
           {
@@ -1875,12 +2008,12 @@ function ProcessProposalRecord({
             value: formatRecordValue(getRecordValue(proposal, "status"))
           },
           {
-            label: "Expected gain",
-            value: formatRecordValue(getRecordValue(proposal, "expectedQualityGain"))
+            label: "Why this helps",
+            value: actionView.reason
           },
           {
             label: "Risk if skipped",
-            value: formatRecordValue(getRecordValue(proposal, "riskIfSkipped"))
+            value: actionView.risk
           }
         ]}
       />
@@ -1892,8 +2025,16 @@ function ProcessProposalRecord({
               value: formatRecordValue(getRecordValue(proposal, "id"))
             },
             {
-              label: "Primitive",
+              label: "Raw primitive",
               value: primitive
+            },
+            {
+              label: "Raw expected gain",
+              value: formatRecordValue(getRecordValue(proposal, "expectedQualityGain"))
+            },
+            {
+              label: "Raw risk if skipped",
+              value: formatRecordValue(getRecordValue(proposal, "riskIfSkipped"))
             },
             {
               label: "Targets",
@@ -1947,25 +2088,25 @@ function RecordProcessSuggestionAction({
       <button
         type="button"
         onClick={() => recordMutation.mutate()}
-      disabled={recorded || recordMutation.isPending}
+        disabled={recorded || recordMutation.isPending}
       >
         {recorded
-          ? "Recorded for review"
+          ? "Saved for review"
           : recordMutation.isPending
-            ? "Recording suggestion"
-            : "Record suggestion for review"}
+            ? "Saving next step"
+            : "Save next step"}
       </button>
       {recordMutation.data ? (
         <StatusBanner
           tone="ok"
-          title="Recommended action recorded"
-          detail="The suggestion was appended as reviewable material only; no primitive was executed."
+          title="Next step saved"
+          detail="The recommendation was saved as reviewable material only; it did not run automatically."
         />
       ) : null}
       {recordMutation.isError ? (
         <StatusBanner
           tone="error"
-          title="Process proposal was not recorded"
+          title="Next step was not saved"
           detail={formatSafeErrorMessage(recordMutation.error)}
         />
       ) : null}
@@ -1987,8 +2128,8 @@ function ProcessProposalStateList({
   if (states.length === 0) {
     return (
       <EmptyState
-        title="No recorded process proposals"
-        description="Record a run suggestion to create a challengeable process proposal event."
+        title="No saved next steps"
+        description="Save a recommended next step to make it reviewable before execution."
       />
     );
   }
@@ -2278,8 +2419,8 @@ function ProcessProposalLifecycleControls({
 }
 
 function ProcessProposalObservations({ observations }: { observations: unknown[] }) {
-  const readableObservations = observations.filter(
-    (observation): observation is string => typeof observation === "string"
+  const readableObservations = observations.flatMap((observation) =>
+    typeof observation === "string" ? [formatProcessObservationForUser(observation)] : []
   );
 
   if (readableObservations.length === 0) {
@@ -2288,10 +2429,10 @@ function ProcessProposalObservations({ observations }: { observations: unknown[]
 
   return (
     <div className="du-readable-list">
-      <h4>Suggestion observations</h4>
+      <h4>Why now</h4>
       {readableObservations.map((observation, index) => (
         <article className="du-readable-item" key={`${index}:${observation}`}>
-          <p className="du-kicker">Observation {index + 1}</p>
+          <p className="du-kicker">Reason {index + 1}</p>
           <p>{observation}</p>
         </article>
       ))}

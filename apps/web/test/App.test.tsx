@@ -1228,7 +1228,7 @@ describe("@deliberum/web shell", () => {
     );
   });
 
-  it("renders run detail, stage status, and projection panels without raw event loading", async () => {
+  it("renders run detail, stage status, and discussion detail panels without raw event loading", async () => {
     const client = renderApp("/runs/run-1");
 
     await screen.findByText("Run Alpha");
@@ -1253,12 +1253,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("What this discussion status means")).toBeTruthy();
     expect(screen.getByText("Discussion progress")).toBeTruthy();
     expect(screen.getByText("Next recommended actions")).toBeTruthy();
-    expect(screen.getByText("Final contest")).toBeTruthy();
+    expect(screen.getByText("Prepare current conclusion")).toBeTruthy();
+    expect(screen.getByText("Strong current options are ready to become a reviewable current conclusion.")).toBeTruthy();
     expect(screen.getByText("Recommended actions")).toBeTruthy();
-    expect(screen.getByText("Suggestion observations")).toBeTruthy();
+    expect(screen.getByText("Why now")).toBeTruthy();
     expect(screen.getByText("Process governance ledger")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Record suggestion for review" })).toBeTruthy();
-    expect(screen.getByText("No recorded process proposals")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Save next step" })).toBeTruthy();
+    expect(screen.getByText("No saved next steps")).toBeTruthy();
     expect(screen.getAllByText("Main perspectives").length).toBeGreaterThan(0);
     expect(screen.getByText("Candidate A")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
@@ -1317,7 +1318,7 @@ describe("@deliberum/web shell", () => {
     );
 
     await screen.findByText("Next recommended actions");
-    fireEvent.click(await screen.findByRole("button", { name: "Record suggestion for review" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Save next step" }));
 
     await waitFor(() =>
       expect(proposeProcessProposal).toHaveBeenCalledWith("session-1", {
@@ -1330,7 +1331,7 @@ describe("@deliberum/web shell", () => {
         basedOnEventIds: ["event-1", "proposal-event-1"]
       })
     );
-    expect(await screen.findByText("Recommended action recorded")).toBeTruthy();
+    expect(await screen.findByText("Next step saved")).toBeTruthy();
     await waitFor(() => expect(getProcessProposalStates).toHaveBeenCalledTimes(2));
     expect(client.startRun).not.toHaveBeenCalled();
   });
@@ -1703,7 +1704,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
   });
 
-  it("refreshes run projection panels after a successful start without page reload", async () => {
+  it("refreshes discussion detail panels after a successful start without page reload", async () => {
     let started = false;
     const initialProjection = {
       version: "1" as const,
