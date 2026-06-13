@@ -797,6 +797,100 @@ describe("CLI command routing", () => {
     expect(daemonClient.getRuntimeProfiles).toHaveBeenCalledTimes(1);
   });
 
+  it("prints a safe daemon environment template from runtime profile metadata", async () => {
+    const daemonClient = createFakeRunDaemonClient({
+      getRuntimeProfiles: vi.fn(async () => ({
+        profiles: [
+          {
+            id: "openai-compatible",
+            name: "OpenAI-compatible",
+            enabled: true,
+            status: "ready_with_run_config",
+            components: [],
+            setup: {
+              enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+              envVars: [
+                {
+                  name: "DELIBERUM_OPENAI_API_KEY",
+                  configured: false,
+                  secret: true,
+                  required: false,
+                  purpose: "Default provider secret."
+                }
+              ],
+              missingRecommendedEnvVars: ["DELIBERUM_OPENAI_BASE_URL"],
+              notes: ["Provider values stay in daemon runtime env only."]
+            },
+            boundaries: ["Provider secrets are never returned."]
+          },
+          {
+            id: "mcp-tool",
+            name: "MCP tool",
+            enabled: true,
+            status: "ready",
+            components: [],
+            setup: {
+              enableEnvVar: "DELIBERUM_ENABLE_MCP_TOOL_PROFILE",
+              envVars: [
+                {
+                  name: "DELIBERUM_MCP_TOOL_AUTH_TOKEN",
+                  configured: true,
+                  secret: true,
+                  required: false,
+                  purpose: "Optional bearer token for the MCP-compatible endpoint."
+                },
+                {
+                  name: "DELIBERUM_MCP_TOOL_INCLUDE_CONTEXT",
+                  configured: false,
+                  secret: false,
+                  required: false,
+                  purpose: "Optional context-forwarding toggle."
+                }
+              ],
+              missingRecommendedEnvVars: [],
+              notes: []
+            },
+            boundaries: ["Only the participant adapter is installed by this profile."]
+          }
+        ]
+      }))
+    });
+    const { createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies({ client: daemonClient });
+
+    const raw = await runCli(
+      ["daemon", "env-template", "--profile", "mcp-tool"],
+      dependencies
+    );
+    const json = parseOutput<{ template: string }>(
+      await runCli(
+        ["daemon", "env-template", "--profile", "openai-compatible", "--json"],
+        dependencies
+      )
+    );
+    const missing = await runCli(
+      ["daemon", "env-template", "--profile", "missing-profile", "--json"],
+      dependencies
+    );
+
+    expect(raw.exitCode).toBe(0);
+    expect(raw.stdout).toContain("# Profile: MCP tool (mcp-tool)");
+    expect(raw.stdout).toContain("# DELIBERUM_ENABLE_MCP_TOOL_PROFILE=true");
+    expect(raw.stdout).toContain("# DELIBERUM_MCP_TOOL_AUTH_TOKEN=");
+    expect(raw.stdout).toContain("# required=false secret=true configured=true");
+    expect(raw.stdout).not.toContain("openai-compatible");
+    expect(raw.stdout).not.toContain("Bearer ");
+    expect(json.template).toContain("# Profile: OpenAI-compatible (openai-compatible)");
+    expect(json.template).toContain("# Missing recommended env vars: DELIBERUM_OPENAI_BASE_URL");
+    expect(json.template).toContain("# DELIBERUM_OPENAI_API_KEY=");
+    expect(json.template).not.toContain("sk-runtime-secret");
+    expect(missing.exitCode).toBe(1);
+    expect(missing.stdout).toContain("Runtime profile was not found");
+    expect(daemonClient.getRuntimeProfiles).toHaveBeenCalledTimes(3);
+    expect(createDaemonClient).toHaveBeenCalledTimes(3);
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
   it("routes daemon operation audit commands through the daemon client", async () => {
     const { daemonClient, createDaemonClient, createEventStore, dependencies } =
       createRunCliDependencies();

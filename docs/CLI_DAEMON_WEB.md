@@ -42,6 +42,7 @@ deliberum objections --session <id>
 deliberum obligations --session <id>
 deliberum events --session <id>
 deliberum daemon profiles [--daemon-url <local-url>]
+deliberum daemon env-template [--profile <id>] [--daemon-url <local-url>]
 deliberum daemon operation-audit [--limit <n>] [--format <json|jsonl>] [--daemon-url <local-url>]
 deliberum daemon resource-access revoke <access-id> [--daemon-url <local-url>]
 deliberum runs create --input <run-plan.json> [--daemon-url <local-url>]
@@ -66,6 +67,8 @@ CLI final commands also use the local JSON EventStore. `final propose` appends a
 CLI daemon and run commands are local daemon control commands. They require a running local daemon, call daemon endpoints through `@deliberum/client`, and do not use the CLI local JSON ledger for daemon profile status or run orchestration.
 
 `deliberum daemon profiles` reads `GET /runtime/profiles` and returns only safe daemon runtime profile setup metadata: profile ids, component ids, enabled/status flags, env var names, and configured/missing booleans. It does not return environment values, provider secrets, header/body templates, URLs, model ids, MCP tool names, or provider/tool request bodies.
+
+`deliberum daemon env-template` reads the same safe runtime profile metadata and prints a comment-only environment template for all profiles, or for one profile when `--profile <id>` is provided. With `--json`, it returns `{ "template": "..." }` for scripts. It does not read environment values, prompt for secrets, write `.env`, or store provider/tool configuration.
 
 `deliberum daemon operation-audit` reads `GET /runtime/operation-audit` and returns safe daemon control-plane operation metadata. The optional `--limit <n>` argument limits the returned entries. The optional `--format jsonl` mode exports one safe audit record per line for local archival workflows; the default `json` mode keeps the normal structured response. This command does not read the CLI local JSON ledger and does not expose request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, or output payloads.
 
@@ -227,7 +230,7 @@ DELIBERUM_OPENAI_THINKING=disabled
 
 The extraction prompt requests exactly one JSON object with no surrounding prose or Markdown, and the parser remains strict: it accepts only a raw JSON object or a single full fenced JSON object. If a provider response fails only this strict JSON shape check, the extractor may make one corrective retry without including the rejected response text. Additional non-secret request options are available for local compatibility testing: `DELIBERUM_OPENAI_TOP_P`, `DELIBERUM_OPENAI_STREAM=false`, `DELIBERUM_OPENAI_FREQUENCY_PENALTY`, and `DELIBERUM_OPENAI_PRESENCE_PENALTY`. Streaming output is not implemented, so `DELIBERUM_OPENAI_STREAM=true` is rejected as invalid provider configuration.
 
-CLI run commands do not include API key flags or fields. `deliberum daemon profiles` provides safe read-only profile setup status, while full interactive provider setup remains deferred. CLI run commands can read `DELIBERUM_DAEMON_AUTH_TOKEN` for daemon control-plane auth, read the daemon-redacted run event timeline, and follow the daemon-redacted run event stream. The Web run detail page reads the same non-stream timeline and can manually follow the same stream.
+CLI run commands do not include API key flags or fields. `deliberum daemon profiles` provides safe read-only profile setup status, and `deliberum daemon env-template` can print comment-only setup templates from that metadata, while full interactive provider setup remains deferred. CLI run commands can read `DELIBERUM_DAEMON_AUTH_TOKEN` for daemon control-plane auth, read the daemon-redacted run event timeline, and follow the daemon-redacted run event stream. The Web run detail page reads the same non-stream timeline and can manually follow the same stream.
 
 Experimental WebGET endpoints are local daemon endpoints:
 

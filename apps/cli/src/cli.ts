@@ -2,7 +2,8 @@ import {
   DEFAULT_DAEMON_BASE_URL,
   DaemonClientError,
   DeliberumDaemonClient,
-  type OperationAuditResponse
+  type OperationAuditResponse,
+  type RuntimeProfilesResponse
 } from "@deliberum/client";
 import {
   acceptProposal,
@@ -55,6 +56,7 @@ export const CLI_COMMANDS = [
   "obligations",
   "events",
   "daemon profiles",
+  "daemon env-template",
   "daemon operation-audit",
   "daemon resource-access revoke",
   "runs create",
@@ -652,6 +654,32 @@ async function executeDaemonCommand(
     return daemonClient.getRuntimeProfiles();
   }
 
+  if (action === "env-template") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon env-template [--profile <id>] [--daemon-url <local-url>]"
+    );
+
+    const profiles = await daemonClient.getRuntimeProfiles();
+    const template = createDaemonEnvTemplate(
+      profiles,
+      getLastOption(parsedArgs, "profile")
+    );
+
+    if (parsedArgs.flags.has("json")) {
+      return { template };
+    }
+
+    await dependencies.writeStdout(template);
+
+    return {
+      kind: "raw",
+      output: {
+        format: "env-template"
+      }
+    } satisfies RawCliOutput;
+  }
+
   if (action === "operation-audit") {
     requireNoPositionals(
       restPositionals,
@@ -694,7 +722,9 @@ async function executeDaemonCommand(
 }
 
 function assertKnownDaemonCommand(action: string): void {
-  if (["profiles", "operation-audit", "resource-access"].includes(action)) {
+  if (
+    ["profiles", "env-template", "operation-audit", "resource-access"].includes(action)
+  ) {
     return;
   }
 
@@ -704,6 +734,7 @@ function assertKnownDaemonCommand(action: string): void {
 function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): void {
   const allowedOptions = new Set([
     "daemon-url",
+    ...(action === "env-template" ? ["profile"] : []),
     ...(action === "operation-audit" ? ["limit", "format"] : [])
   ]);
 
@@ -1321,6 +1352,66 @@ async function writeOperationAuditJsonl(options: {
       events: options.events.length
     }
   };
+}
+
+function createDaemonEnvTemplate(
+  response: RuntimeProfilesResponse,
+  profileId: string | undefined
+): string {
+  const profiles = profileId
+    ? response.profiles.filter((profile) => profile.id === profileId)
+    : response.profiles;
+
+  if (profileId && profiles.length === 0) {
+    throw new CliUsageError(`Runtime profile was not found: ${profileId}`);
+  }
+
+  const lines = [
+    "# Deliberum daemon environment template",
+    "# Generated from safe /runtime/profiles metadata.",
+    "# Values are intentionally blank; uncomment and fill them in your shell or .env.",
+    "# Provider and tool secrets must stay in local runtime environment only.",
+    ""
+  ];
+
+  for (const profile of profiles) {
+    lines.push(
+      `# Profile: ${sanitizeEnvTemplateComment(profile.name)} (${profile.id})`,
+      `# Status: ${profile.status}`,
+      `# Enable with: ${profile.setup.enableEnvVar}=true`,
+      `# ${profile.setup.enableEnvVar}=true`
+    );
+
+    if (profile.setup.missingRecommendedEnvVars.length > 0) {
+      lines.push(
+        `# Missing recommended env vars: ${profile.setup.missingRecommendedEnvVars.join(", ")}`
+      );
+    }
+
+    for (const envVar of profile.setup.envVars) {
+      lines.push(
+        `# ${sanitizeEnvTemplateComment(envVar.purpose)}`,
+        `# required=${envVar.required} secret=${envVar.secret} configured=${envVar.configured}`,
+        `# ${envVar.name}=`
+      );
+    }
+
+    for (const note of profile.setup.notes) {
+      lines.push(`# Note: ${sanitizeEnvTemplateComment(note)}`);
+    }
+
+    for (const boundary of profile.boundaries) {
+      lines.push(`# Boundary: ${sanitizeEnvTemplateComment(boundary)}`);
+    }
+
+    lines.push("");
+  }
+
+  return `${lines.join("\n")}\n`;
+}
+
+function sanitizeEnvTemplateComment(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
 async function streamRunEvents(options: {
