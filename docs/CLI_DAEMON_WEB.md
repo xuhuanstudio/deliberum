@@ -80,7 +80,7 @@ CLI daemon and run commands are local daemon control commands. They require a ru
 
 `deliberum daemon operation-audit` reads `GET /runtime/operation-audit` and returns safe daemon control-plane operation metadata. The optional `--limit <n>` argument limits the returned entries. The optional `--format jsonl` mode exports one safe audit record per line for local archival workflows; the default `json` mode keeps the normal structured response. This command does not read the CLI local JSON ledger and does not expose request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, or output payloads.
 
-`deliberum daemon resource-access status` reads `GET /runtime/resource-access` and returns safe resource access posture metadata: whether the base URL and TTL are explicitly configured, the exposure class, the route pattern, the effective TTL limit, grant-store continuity class, and safety notes. It does not return the actual configured base URL, resource access ids, bearer tokens, source URLs, redirect targets, hosted content, or resource payloads.
+`deliberum daemon resource-access status` reads `GET /runtime/resource-access` and returns safe resource access posture metadata: whether the base URL and TTL are explicitly configured, the exposure class, the route pattern, the effective TTL limit, grant-store continuity class, hosted-content delivery preconditions, restart-continuity classes, production hosting blockers, and safety notes. It does not return the actual configured base URL, resource access ids, bearer tokens, source URLs, redirect targets, hosted content, or resource payloads.
 
 `deliberum daemon resource-access revoke <access-id>` calls `POST /resource-access/:accessId/revoke` on the local daemon and returns the safe revocation view. It is a local daemon control command and does not read the CLI local JSON ledger.
 
@@ -269,7 +269,7 @@ Allowed URL deliveries are wrapped in short-lived daemon resource access grants.
 
 `GET /sessions/:sessionId/resources` also returns the session's safe resource delivery audit history as `deliveryAudits` and safe resource access lifecycle history as `accessAudits`. Delivery audit entries are derived from public `resource_delivery_planned` ledger events and include event metadata, resource summary, participant id, policy summary, and delivery decision summary without exposing delivery material. Access audit entries are derived from public `resource_access_grant_created` and `resource_access_grant_revoked` ledger events and include event metadata, action, non-bearer `resourceAccessId`, resource id, participant id, token hash, TTL metadata, and safe hosted-content metadata when applicable.
 
-Deferred daemon work includes production multi-writer coordination for durable stores, broader primitive runner coverage and automated policy beyond read-only accepted process proposal readiness, production resource hosting posture, full interactive secret capture and config-file writing, production authorization, and multi-user deployment.
+Deferred daemon work includes production multi-writer coordination for durable stores, broader primitive runner coverage and automated policy beyond read-only accepted process proposal readiness, production public resource hosting and signed URL service implementation, full interactive secret capture and config-file writing, production authorization, and multi-user deployment.
 
 ## Web UI
 

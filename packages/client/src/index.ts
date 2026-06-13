@@ -310,6 +310,22 @@ export type ResourceAccessPostureResponse = {
     mode: "process_memory" | "configured_store";
     restartContinuity: "lost_on_restart" | "depends_on_configured_store";
   };
+  hostedContent: {
+    supported: true;
+    requiresExplicitPolicy: true;
+    requiresSizeLimit: true;
+    deliveryMaterial: "short_lived_access_url";
+    sensitiveDefault: "none";
+    brokerContentRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
+    grantRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
+  };
+  productionHosting: {
+    status: "not_production_hosting";
+    publicUrlHosting: false;
+    signedUrls: false;
+    arbitraryFileServing: false;
+    blockers: string[];
+  };
   safety: string[];
 };
 

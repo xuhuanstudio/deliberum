@@ -132,6 +132,22 @@ function createFakeRunDaemonClient(
         mode: "process_memory",
         restartContinuity: "lost_on_restart"
       },
+      hostedContent: {
+        supported: true,
+        requiresExplicitPolicy: true,
+        requiresSizeLimit: true,
+        deliveryMaterial: "short_lived_access_url",
+        sensitiveDefault: "none",
+        brokerContentRestartContinuity: "lost_on_restart",
+        grantRestartContinuity: "lost_on_restart"
+      },
+      productionHosting: {
+        status: "not_production_hosting",
+        publicUrlHosting: false,
+        signedUrls: false,
+        arbitraryFileServing: false,
+        blockers: ["Production public resource hosting is not implemented."]
+      },
       safety: ["No access ids are returned."]
     })),
     getDeploymentPosture: vi.fn(async () => ({
@@ -1524,6 +1540,13 @@ describe("CLI command routing", () => {
       grantStore: {
         mode: string;
       };
+      hostedContent: {
+        deliveryMaterial: string;
+      };
+      productionHosting: {
+        status: string;
+        publicUrlHosting: boolean;
+      };
     }>(
       await runCli(
         [
@@ -1556,6 +1579,13 @@ describe("CLI command routing", () => {
       },
       grantStore: {
         mode: "process_memory"
+      },
+      hostedContent: {
+        deliveryMaterial: "short_lived_access_url"
+      },
+      productionHosting: {
+        status: "not_production_hosting",
+        publicUrlHosting: false
       }
     });
     expect(JSON.stringify(posture)).not.toContain("http://");

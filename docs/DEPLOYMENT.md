@@ -74,7 +74,7 @@ The container sets `DELIBERUM_HOST=0.0.0.0` inside the container so Docker port 
 The following remain future work:
 
 - production multi-writer coordination;
-- production resource hosting posture;
+- production public resource hosting and signed URL service implementation;
 - production authorization;
 - multi-user deployment and SSH/remote deployment guidance beyond manual local port forwarding;
 - Postgres-backed team/server deployments.

@@ -70,7 +70,7 @@ The following are planned or possible future additions, not current implementati
 - React Flow / xyflow for structured graph projections;
 - tldraw for free-form canvas projections, never as semantic truth;
 - MCP server lifecycle management, broader external tool execution policy, and adapter sandboxing;
-- production resource hosting posture;
+- production public resource hosting and signed URL service implementation;
 - production multi-user authorization.
 
 ## Why not Next.js first?

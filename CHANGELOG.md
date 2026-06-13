@@ -11,6 +11,7 @@ This project follows a human-readable changelog. The initial public repository s
 - Added safe daemon setup-plan output derived from runtime profile metadata, including required and recommended local configuration steps without printing or storing secret values.
 - Added shared client-side setup-plan projection helpers and Web runtime profile setup summaries derived from safe daemon metadata.
 - Added safe daemon deployment posture diagnostics for local/pre-production binding, auth, CORS, persistence, resource access, and production-readiness blockers without exposing secrets, resource access URLs, or provider/tool endpoint values.
+- Added safe daemon resource access posture diagnostics for hosted-content preconditions, restart-continuity classes, and production resource hosting blockers without exposing resource material.
 - Added Web landing deployment posture summaries derived from the safe daemon posture endpoint.
 - Added optional daemon-served Web static assets for built local/pre-production Web shells with Accept-based SPA/API routing separation.
 - Added local/pre-production container packaging for daemon-served Web shells with localhost-bound Compose defaults and SQLite data volume persistence.

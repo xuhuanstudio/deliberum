@@ -202,6 +202,22 @@ export type ResourceAccessPostureResponse = {
     mode: "process_memory" | "configured_store";
     restartContinuity: "lost_on_restart" | "depends_on_configured_store";
   };
+  hostedContent: {
+    supported: true;
+    requiresExplicitPolicy: true;
+    requiresSizeLimit: true;
+    deliveryMaterial: "short_lived_access_url";
+    sensitiveDefault: "none";
+    brokerContentRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
+    grantRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
+  };
+  productionHosting: {
+    status: "not_production_hosting";
+    publicUrlHosting: false;
+    signedUrls: false;
+    arbitraryFileServing: false;
+    blockers: string[];
+  };
   safety: string[];
 };
 
@@ -672,6 +688,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         resourceAccessBaseUrl,
         resourceAccessBaseUrlConfigured: options.resourceAccessBaseUrl !== undefined,
         resourceAccessTtlMs: options.resourceAccessTtlMs,
+        resourceBrokerConfigured: options.resourceBroker !== undefined,
         resourceAccessStoreConfigured: options.resourceAccessStore !== undefined
       })
     )
@@ -1401,8 +1418,16 @@ function buildResourceAccessPosture(options: {
   resourceAccessBaseUrl: string;
   resourceAccessBaseUrlConfigured: boolean;
   resourceAccessTtlMs?: number;
+  resourceBrokerConfigured: boolean;
   resourceAccessStoreConfigured: boolean;
 }): ResourceAccessPostureResponse {
+  const grantRestartContinuity = options.resourceAccessStoreConfigured
+    ? "depends_on_configured_store"
+    : "lost_on_restart";
+  const brokerContentRestartContinuity = options.resourceBrokerConfigured
+    ? "depends_on_configured_store"
+    : "lost_on_restart";
+
   return {
     baseUrl: {
       configured: options.resourceAccessBaseUrlConfigured,
@@ -1417,15 +1442,36 @@ function buildResourceAccessPosture(options: {
     grantStore: options.resourceAccessStoreConfigured
       ? {
           mode: "configured_store",
-          restartContinuity: "depends_on_configured_store"
+          restartContinuity: grantRestartContinuity
         }
       : {
           mode: "process_memory",
-          restartContinuity: "lost_on_restart"
+          restartContinuity: grantRestartContinuity
         },
+    hostedContent: {
+      supported: true,
+      requiresExplicitPolicy: true,
+      requiresSizeLimit: true,
+      deliveryMaterial: "short_lived_access_url",
+      sensitiveDefault: "none",
+      brokerContentRestartContinuity,
+      grantRestartContinuity
+    },
+    productionHosting: {
+      status: "not_production_hosting",
+      publicUrlHosting: false,
+      signedUrls: false,
+      arbitraryFileServing: false,
+      blockers: [
+        "Production public resource hosting is not implemented.",
+        "Signed URL issuance is not implemented.",
+        "Daemon resource access grants do not replace production authorization or multi-user policy."
+      ]
+    },
     safety: [
       "This posture is derived from daemon configuration only.",
       "It does not expose resource access ids, bearer tokens, source URLs, redirected targets, hosted content, or resource payloads.",
+      "Hosted content delivery requires explicit per-request policy and a size limit; sensitive resources default to no delivery.",
       "Resource access grants remain scoped, revocable, short-lived delivery-layer material and are not semantic ledger authority."
     ]
   };

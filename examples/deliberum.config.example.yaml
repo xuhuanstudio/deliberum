@@ -126,6 +126,8 @@ resources:
   accessTtlMsEnv: DELIBERUM_RESOURCE_ACCESS_TTL_MS
   remoteAccessBaseUrl: explicit_opt_in_only
   publicAccessBaseUrl: https_only
+  postureEndpoint: /runtime/resource-access
+  hostedContentPreconditions: explicit_policy_and_size_limit
   publicUrlHosting: deferred
   signedUrls: deferred
   notes:
@@ -136,7 +138,7 @@ resources:
 
 deferred:
   productionMultiWriterCoordination: true
-  productionResourceHostingPosture: true
+  productionResourceHosting: true
   productionAuthorization: true
   signedUrlServer: true
   automatedPrimitiveExecutionPolicy: true

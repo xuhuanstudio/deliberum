@@ -318,6 +318,22 @@ describe("DeliberumDaemonClient", () => {
         mode: "process_memory",
         restartContinuity: "lost_on_restart"
       },
+      hostedContent: {
+        supported: true,
+        requiresExplicitPolicy: true,
+        requiresSizeLimit: true,
+        deliveryMaterial: "short_lived_access_url",
+        sensitiveDefault: "none",
+        brokerContentRestartContinuity: "lost_on_restart",
+        grantRestartContinuity: "lost_on_restart"
+      },
+      productionHosting: {
+        status: "not_production_hosting",
+        publicUrlHosting: false,
+        signedUrls: false,
+        arbitraryFileServing: false,
+        blockers: ["Production public resource hosting is not implemented."]
+      },
       safety: ["No access ids are returned."]
     });
     const daemonClient = new DeliberumDaemonClient({ fetch });

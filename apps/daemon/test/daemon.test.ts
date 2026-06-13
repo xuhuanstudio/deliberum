@@ -2350,6 +2350,22 @@ describe("daemon API", () => {
         mode: string;
         restartContinuity: string;
       };
+      hostedContent: {
+        supported: boolean;
+        requiresExplicitPolicy: boolean;
+        requiresSizeLimit: boolean;
+        deliveryMaterial: string;
+        sensitiveDefault: string;
+        brokerContentRestartContinuity: string;
+        grantRestartContinuity: string;
+      };
+      productionHosting: {
+        status: string;
+        publicUrlHosting: boolean;
+        signedUrls: boolean;
+        arbitraryFileServing: boolean;
+        blockers: string[];
+      };
       safety: string[];
     };
     const text = JSON.stringify(body);
@@ -2378,9 +2394,29 @@ describe("daemon API", () => {
       grantStore: {
         mode: "configured_store",
         restartContinuity: "depends_on_configured_store"
+      },
+      hostedContent: {
+        supported: true,
+        requiresExplicitPolicy: true,
+        requiresSizeLimit: true,
+        deliveryMaterial: "short_lived_access_url",
+        sensitiveDefault: "none",
+        brokerContentRestartContinuity: "lost_on_restart",
+        grantRestartContinuity: "depends_on_configured_store"
+      },
+      productionHosting: {
+        status: "not_production_hosting",
+        publicUrlHosting: false,
+        signedUrls: false,
+        arbitraryFileServing: false,
+        blockers: expect.arrayContaining([
+          "Production public resource hosting is not implemented.",
+          "Signed URL issuance is not implemented."
+        ])
       }
     });
     expect(body.safety.join(" ")).toContain("does not expose resource access ids");
+    expect(body.safety.join(" ")).toContain("explicit per-request policy");
     expect(text).not.toContain("https://access.example");
     expect(text).not.toContain("ZZZZ");
     expect(auditBody.events).toEqual(
