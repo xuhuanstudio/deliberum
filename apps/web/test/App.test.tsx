@@ -1011,6 +1011,71 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("topic_contract_published")).toBeTruthy();
   });
 
+  it("keeps empty session user-mode pages in reader-facing language", async () => {
+    const emptyClient = createClient({
+      listEvents: vi.fn(async () => ({
+        events: []
+      })),
+      getFrontier: vi.fn(async () => ({
+        basis: "accepted_active_candidates",
+        candidates: [],
+        projection
+      })),
+      getObjections: vi.fn(async () => ({
+        objections: [],
+        projection
+      })),
+      getObligations: vi.fn(async () => ({
+        qualityObligations: [],
+        projection
+      })),
+      getSessionResources: vi.fn(async () => ({
+        sessionId: "session-1",
+        plannedResources: [],
+        deliveryAudits: [],
+        accessAudits: [],
+        evidenceNeeds: [],
+        projection
+      }))
+    });
+
+    renderApp("/sessions/session-1", emptyClient);
+
+    expect(await screen.findByText("No discussion brief available yet")).toBeTruthy();
+    expect(screen.getByText("0 updates in this discussion so far.")).toBeTruthy();
+    expect(screen.getByText("No visible step available yet")).toBeTruthy();
+
+    cleanup();
+
+    const obligationsClient = createClient({
+      getObligations: vi.fn(async () => ({
+        qualityObligations: [],
+        projection
+      }))
+    });
+
+    renderApp("/sessions/session-1/obligations", obligationsClient);
+
+    expect(await screen.findByText("No requirements listed")).toBeTruthy();
+
+    cleanup();
+
+    const resourcesClient = createClient({
+      getSessionResources: vi.fn(async () => ({
+        sessionId: "session-1",
+        plannedResources: [],
+        deliveryAudits: [],
+        accessAudits: [],
+        evidenceNeeds: [],
+        projection
+      }))
+    });
+
+    renderApp("/sessions/session-1/resources", resourcesClient);
+
+    expect(await screen.findByText("No evidence gaps visible")).toBeTruthy();
+  });
+
   it("renders Candidate Frontier as a basis plus candidate list", async () => {
     const client = renderApp("/sessions/session-1/frontier");
 

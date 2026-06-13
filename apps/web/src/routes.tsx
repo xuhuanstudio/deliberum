@@ -931,7 +931,7 @@ function formatSessionEventTypeForUser(value: unknown): string {
     return formatReadableIdentifier(value);
   }
 
-  return "No visible step returned";
+  return "No visible step available yet";
 }
 
 function formatReadableStatus(value: unknown): string {
@@ -1284,7 +1284,7 @@ function SessionOverviewPage() {
     latestEvent;
   const topicContractPayload = getRecordValue(topicContractEvent, "payload");
   const discussionTopic = formatRecordValue(
-    getRecordValue(topicContractPayload, "topic") ?? "No discussion brief returned"
+    getRecordValue(topicContractPayload, "topic") ?? "No discussion brief available yet"
   );
 
   return (
@@ -1302,7 +1302,7 @@ function SessionOverviewPage() {
             <QualityPathItem title="Question or topic" detail={discussionTopic} />
             <QualityPathItem
               title="Current activity"
-              detail={`${events.length} update${events.length === 1 ? "" : "s"} recorded for this discussion.`}
+              detail={`${events.length} update${events.length === 1 ? "" : "s"} in this discussion so far.`}
             />
             <QualityPathItem
               title="Latest visible step"
@@ -1551,7 +1551,7 @@ function ObligationsPage() {
         >
           <ReadableSessionRecordList
             records={asArray(obligationsQuery.data?.qualityObligations)}
-            emptyTitle="No requirements returned"
+            emptyTitle="No requirements listed"
             emptyDescription="No explicit requirements have been accepted into this discussion yet."
             kind="requirement"
           />
@@ -1965,7 +1965,7 @@ function ResourcesPage() {
           title={
             evidenceNeeds.length > 0
               ? "Evidence gaps visible"
-              : "No evidence gaps returned"
+              : "No evidence gaps visible"
           }
           detail="This page focuses on what still needs to be checked. Technical access details remain in Advanced mode."
         />
