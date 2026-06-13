@@ -960,7 +960,15 @@ function formatSessionEventTypeForUser(value: unknown): string {
 
 function formatReadableStatus(value: unknown): string {
   if (value === "accepted_active") {
-    return "Accepted and active";
+    return "Visible in this discussion";
+  }
+
+  if (value === "open") {
+    return "Still open";
+  }
+
+  if (value === "unanswered") {
+    return "Needs an answer";
   }
 
   if (typeof value === "string" && value.length > 0) {

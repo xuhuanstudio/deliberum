@@ -696,7 +696,7 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
         items={[
           {
             label: "Discussion status",
-            value: describeDiscussionStatus(getRecordValue(run, "status"))
+            value: describeDiscussionStatus(run)
           },
           {
             label: "Updated",
@@ -749,7 +749,7 @@ function RunSummary({ run }: { run: unknown }) {
         items={[
           {
             label: "Discussion status",
-            value: describeDiscussionStatus(getRecordValue(run, "status"))
+            value: describeDiscussionStatus(run)
           },
           {
             label: "Created",
@@ -2874,7 +2874,15 @@ function formatProjectionKind(kind: "candidate" | "objection" | "quality obligat
 
 function formatReadableRecordStatus(value: unknown): string {
   if (value === "accepted_active") {
-    return "Accepted and active";
+    return "Visible in this discussion";
+  }
+
+  if (value === "open") {
+    return "Still open";
+  }
+
+  if (value === "unanswered") {
+    return "Needs an answer";
   }
 
   if (typeof value === "string" && value.length > 0) {
@@ -3113,12 +3121,36 @@ function describeRunFollowTone(status: RunFollowStatus): "neutral" | "ok" | "war
   return "neutral";
 }
 
-function describeDiscussionStatus(status: unknown): string {
+function describeDiscussionStatus(run: unknown): string {
+  const continuationView = describeDiscussionContinuation(run);
+  const status = getRecordValue(run, "status");
+  const completedStageCount = getDiscussionStageStatuses(run).filter(([, stageStatus]) =>
+    isCompletedDiscussionStage(stageStatus)
+  ).length;
+
+  if (continuationView.reviewReady) {
+    return "Ready to review: current conclusion is available.";
+  }
+
+  if (status === "running" && completedStageCount === 0) {
+    return "In progress: discussion steps are currently running.";
+  }
+
+  if (status === "running" || completedStageCount > 0) {
+    return `${completedStageCount} discussion step${
+      completedStageCount === 1 ? "" : "s"
+    } completed. Continue the discussion before relying on the conclusion.`;
+  }
+
   if (status === "created") {
     return "Created: discussion exists, deliberation steps have not started.";
   }
 
   return formatRecordValue(status);
+}
+
+function isCompletedDiscussionStage(status: unknown): boolean {
+  return status === "completed" || status === "revealed";
 }
 
 function describeDiscussionContinuation(run: unknown): DiscussionContinuationView {

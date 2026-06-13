@@ -1116,7 +1116,7 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Main perspectives")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText("Candidate A")).toBeTruthy();
-    expect(screen.getByText("Current state: Accepted and active")).toBeTruthy();
+    expect(screen.getByText("Current state: Visible in this discussion")).toBeTruthy();
 
     const renderedText = document.body.textContent ?? "";
     expect(renderedText).not.toContain("accepted_active_candidates");
@@ -1206,7 +1206,10 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("run-1");
     fireEvent.click(screen.getByText("Advanced / Developer Mode"));
     expect(await screen.findByText("run-1")).toBeTruthy();
-    expect(screen.getByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
+    expect(screen.getByText("Ready to review: current conclusion is available.")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain(
+      "Created: discussion exists, deliberation steps have not started."
+    );
     expect(screen.getAllByText("Completed").length).toBeGreaterThan(0);
   });
 
@@ -1491,7 +1494,7 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText(/quality-1/)).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Projection events").length).toBeGreaterThan(0);
     expect(client.listEvents).not.toHaveBeenCalled();
-    expect(screen.getByText("Current state: Accepted and active")).toBeTruthy();
+    expect(screen.getByText("Current state: Visible in this discussion")).toBeTruthy();
   });
 
   it("records a suggested process proposal into the session ledger", async () => {
