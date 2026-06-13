@@ -114,6 +114,15 @@ export type BaselineComparisonDimensionSummary = {
   counts: Record<BaselineComparisonFindingStatus, number>;
 };
 
+export type BaselineComparisonFindingSummary = {
+  dimension: EvaluationDimension;
+  baselineRunId: string;
+  status: BaselineComparisonFindingStatus;
+  evidence: string;
+  sourceRefs: string[];
+  notes: string[];
+};
+
 export type BaselineComparisonCaseSummary = {
   caseId: string;
   title: string;
@@ -123,6 +132,7 @@ export type BaselineComparisonCaseSummary = {
   missingFindingCount: number;
   unsupportedFindingCount: number;
   dimensionSummaries: BaselineComparisonDimensionSummary[];
+  findingSummaries: BaselineComparisonFindingSummary[];
 };
 
 export type BaselineComparisonCoverage = {
@@ -268,6 +278,7 @@ export function formatBaselineComparisonMarkdownReport(
       ""
     );
     lines.push(formatDimensionTable(caseSummary.dimensionSummaries), "");
+    lines.push(formatFindingSummaries(caseSummary.findingSummaries), "");
   }
 
   lines.push(
@@ -384,7 +395,15 @@ function createCaseSummary(testCase: BaselineComparisonCase): BaselineComparison
     unsupportedFindingCount,
     dimensionSummaries: testCase.dimensions.map((dimension) =>
       createDimensionSummary(dimension, testCase.findings)
-    )
+    ),
+    findingSummaries: testCase.findings.map((finding) => ({
+      dimension: finding.dimension,
+      baselineRunId: finding.baselineRunId,
+      status: finding.status,
+      evidence: finding.evidence,
+      sourceRefs: finding.sourceRefs,
+      notes: finding.notes ?? []
+    }))
   };
 }
 
@@ -436,6 +455,32 @@ function formatDimensionTable(
         `${summary.counts.not_applicable} |`
       ].join(" | ")
     );
+  }
+
+  return lines.join("\n");
+}
+
+function formatFindingSummaries(
+  summaries: readonly BaselineComparisonFindingSummary[]
+): string {
+  if (summaries.length === 0) {
+    return "#### Findings\n\nNo findings supplied.";
+  }
+
+  const lines = ["#### Findings", ""];
+
+  for (const summary of summaries) {
+    lines.push(
+      `- **${formatLabel(summary.dimension)}** vs \`${summary.baselineRunId}\` (${formatLabel(
+        summary.status
+      )})`,
+      `  - Evidence: ${summary.evidence}`,
+      `  - Source refs: ${formatList(summary.sourceRefs)}`
+    );
+
+    if (summary.notes.length > 0) {
+      lines.push(`  - Notes: ${summary.notes.join(" ")}`);
+    }
   }
 
   return lines.join("\n");

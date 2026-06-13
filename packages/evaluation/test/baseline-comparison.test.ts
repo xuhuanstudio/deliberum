@@ -154,6 +154,15 @@ describe("baseline comparison report", () => {
         baseline_stronger: 0
       })
     });
+    expect(report.caseSummaries[0]?.findingSummaries[0]).toMatchObject({
+      dimension: "critical_risk_discovery",
+      baselineRunId: "direct-answer-1",
+      status: "deliberum_stronger",
+      evidence:
+        "The Deliberum run preserved an authority-risk objection that the direct answer omitted.",
+      sourceRefs: ["ledger/session-1/events.json", "baseline/direct-answer.md"],
+      notes: []
+    });
     expect(report.provenance.sourceRefs).toEqual([
       "baseline/direct-answer.md",
       "baseline/judge.md",
@@ -236,6 +245,13 @@ describe("baseline comparison report", () => {
     expect(markdown).toContain("## Coverage");
     expect(markdown).toContain("### Local daemon resource access posture");
     expect(markdown).toContain("| Dimension | Deliberum stronger | Baseline stronger |");
+    expect(markdown).toContain("#### Findings");
+    expect(markdown).toContain(
+      "The Deliberum run preserved bearer access id leakage and non-local base URL opt-in as explicit risks"
+    );
+    expect(markdown).toContain(
+      "`examples/evaluation/sources/resource-access/direct-answer-baseline.md`"
+    );
     expect(markdown).toContain("## Limitations");
   });
 
