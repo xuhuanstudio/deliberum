@@ -6,6 +6,8 @@ import {
   type OperationAuditResponse,
   type RuntimeProfilesResponse
 } from "@deliberum/client";
+import { dirname } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import {
   acceptProposal,
   challengeProcessProposal,
@@ -58,6 +60,7 @@ export const CLI_COMMANDS = [
   "events",
   "daemon profiles",
   "daemon env-template",
+  "daemon env-write",
   "daemon profile-doctor",
   "daemon setup-plan",
   "daemon deployment-posture",
@@ -106,6 +109,9 @@ export type CliDependencies = {
   }) => CliRunDaemonClient;
   runEventStreamFetch?: CliRunEventStreamFetch;
   writeStdout?: (chunk: string) => void | Promise<void>;
+  readTextFile?: (filePath: string) => string;
+  writeTextFile?: (filePath: string, content: string) => void | Promise<void>;
+  fileExists?: (filePath: string) => boolean;
   idGenerator?: () => string;
   clock?: () => string;
   env?: Record<string, string | undefined>;
@@ -304,6 +310,15 @@ export async function runCli(args: string[], dependencies: CliDependencies = {})
         dependencies.runEventStreamFetch ??
         ((url, init) => getDefaultRunEventStreamFetch()(url, init)),
       writeStdout,
+      readTextFile:
+        dependencies.readTextFile ?? ((filePath) => readFileSync(filePath, "utf8")),
+      writeTextFile:
+        dependencies.writeTextFile ??
+        ((filePath, content) => {
+          mkdirSync(dirname(filePath), { recursive: true });
+          writeFileSync(filePath, content, "utf8");
+        }),
+      fileExists: dependencies.fileExists ?? existsSync,
       idGenerator: dependencies.idGenerator ?? (() => randomUUID()),
       clock: dependencies.clock,
       env: dependencies.env ?? process.env,
@@ -343,6 +358,9 @@ type ExecuteDependencies = {
   createDaemonClient: (options: { baseUrl: string; authToken?: string }) => CliRunDaemonClient;
   runEventStreamFetch: CliRunEventStreamFetch;
   writeStdout: (chunk: string) => void | Promise<void>;
+  readTextFile: (filePath: string) => string;
+  writeTextFile: (filePath: string, content: string) => void | Promise<void>;
+  fileExists: (filePath: string) => boolean;
   idGenerator: () => string;
   clock?: () => string;
   env: Record<string, string | undefined>;
@@ -728,6 +746,54 @@ async function executeDaemonCommand(
     } satisfies RawCliOutput;
   }
 
+  if (action === "env-write") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon env-write --output <path> [--profile <id>] [--set <NAME=value>] [--overwrite] [--dry-run] [--daemon-url <local-url>]"
+    );
+
+    const profiles = await daemonClient.getRuntimeProfiles();
+    const plan = createDaemonEnvWritePlan({
+      response: profiles,
+      profileId: getLastOption(parsedArgs, "profile"),
+      setOptions: getManyOptions(parsedArgs, "set")
+    });
+
+    if (parsedArgs.flags.has("dry-run")) {
+      if (parsedArgs.flags.has("json")) {
+        return {
+          ...plan.summary,
+          content: plan.block
+        };
+      }
+
+      await dependencies.writeStdout(plan.block);
+
+      return {
+        kind: "raw",
+        output: {
+          format: "env-write-dry-run"
+        }
+      } satisfies RawCliOutput;
+    }
+
+    const outputPath = requireOption(parsedArgs, "output");
+    const content = createDaemonEnvFileContent({
+      filePath: outputPath,
+      block: plan.block,
+      overwrite: parsedArgs.flags.has("overwrite"),
+      dependencies
+    });
+
+    await dependencies.writeTextFile(outputPath, content);
+
+    return {
+      ...plan.summary,
+      filePath: outputPath,
+      written: true
+    };
+  }
+
   if (action === "profile-doctor") {
     requireNoPositionals(
       restPositionals,
@@ -814,6 +880,7 @@ function assertKnownDaemonCommand(action: string): void {
     [
       "profiles",
       "env-template",
+      "env-write",
       "profile-doctor",
       "setup-plan",
       "deployment-posture",
@@ -830,10 +897,18 @@ function assertKnownDaemonCommand(action: string): void {
 function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): void {
   const allowedOptions = new Set([
     "daemon-url",
-    ...(action === "env-template" || action === "profile-doctor" || action === "setup-plan"
+    ...(action === "env-template" ||
+    action === "env-write" ||
+    action === "profile-doctor" ||
+    action === "setup-plan"
       ? ["profile"]
       : []),
+    ...(action === "env-write" ? ["output", "set"] : []),
     ...(action === "operation-audit" ? ["limit", "format"] : [])
+  ]);
+  const allowedFlags = new Set([
+    "json",
+    ...(action === "env-write" ? ["overwrite", "dry-run"] : [])
   ]);
 
   for (const optionName of parsedArgs.options.keys()) {
@@ -847,7 +922,7 @@ function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): voi
   }
 
   for (const flagName of parsedArgs.flags) {
-    if (flagName !== "json") {
+    if (!allowedFlags.has(flagName)) {
       if (isSecretLikeKey(flagName)) {
         throw new CliUsageError("Daemon commands do not accept provider secrets or credentials.");
       }
@@ -1506,6 +1581,205 @@ function createDaemonEnvTemplate(
   }
 
   return `${lines.join("\n")}\n`;
+}
+
+const DAEMON_ENV_WRITE_BEGIN = "# BEGIN DELIBERUM DAEMON ENV" as const;
+const DAEMON_ENV_WRITE_END = "# END DELIBERUM DAEMON ENV" as const;
+
+type DaemonEnvWritePlan = {
+  block: string;
+  summary: {
+    profileIds: string[];
+    enabledEnvVars: string[];
+    writtenEnvVars: string[];
+    placeholderEnvVars: string[];
+    manualSecretEnvVars: string[];
+    written: false;
+  };
+};
+
+function createDaemonEnvWritePlan(input: {
+  response: RuntimeProfilesResponse;
+  profileId: string | undefined;
+  setOptions: readonly string[];
+}): DaemonEnvWritePlan {
+  const profiles = input.profileId
+    ? input.response.profiles.filter((profile) => profile.id === input.profileId)
+    : input.response.profiles;
+
+  if (input.profileId && profiles.length === 0) {
+    throw new CliUsageError(`Runtime profile was not found: ${input.profileId}`);
+  }
+
+  const envMetadata = collectDaemonEnvWriteMetadata(profiles);
+  const explicitValues = parseDaemonEnvWriteSetOptions(input.setOptions, envMetadata);
+  const enabledEnvVars: string[] = [];
+  const writtenEnvVars: string[] = [];
+  const placeholderEnvVars: string[] = [];
+  const manualSecretEnvVars: string[] = [];
+  const emittedEnvVars = new Set<string>();
+  const lines = [
+    DAEMON_ENV_WRITE_BEGIN,
+    "# Deliberum daemon environment block",
+    "# Generated from safe /runtime/profiles metadata.",
+    "# Secret env vars are left as commented placeholders; fill them manually.",
+    ""
+  ];
+
+  for (const profile of profiles) {
+    lines.push(
+      `# Profile: ${sanitizeEnvTemplateComment(profile.name)} (${profile.id})`,
+      `${profile.setup.enableEnvVar}=true`
+    );
+    emittedEnvVars.add(profile.setup.enableEnvVar);
+    enabledEnvVars.push(profile.setup.enableEnvVar);
+    writtenEnvVars.push(profile.setup.enableEnvVar);
+
+    for (const envVar of profile.setup.envVars) {
+      if (emittedEnvVars.has(envVar.name)) {
+        continue;
+      }
+
+      lines.push(
+        `# ${sanitizeEnvTemplateComment(envVar.purpose)}`,
+        `# required=${envVar.required} secret=${envVar.secret} configured=${envVar.configured}`
+      );
+
+      if (envVar.secret) {
+        lines.push(`# ${envVar.name}=`);
+        manualSecretEnvVars.push(envVar.name);
+        placeholderEnvVars.push(envVar.name);
+      } else if (explicitValues.has(envVar.name)) {
+        lines.push(formatEnvAssignment(envVar.name, explicitValues.get(envVar.name) ?? ""));
+        writtenEnvVars.push(envVar.name);
+      } else {
+        lines.push(`# ${envVar.name}=`);
+        placeholderEnvVars.push(envVar.name);
+      }
+
+      emittedEnvVars.add(envVar.name);
+    }
+
+    lines.push("");
+  }
+
+  lines.push(DAEMON_ENV_WRITE_END);
+
+  return {
+    block: `${lines.join("\n")}\n`,
+    summary: {
+      profileIds: profiles.map((profile) => profile.id),
+      enabledEnvVars,
+      writtenEnvVars,
+      placeholderEnvVars,
+      manualSecretEnvVars,
+      written: false
+    }
+  };
+}
+
+function collectDaemonEnvWriteMetadata(
+  profiles: readonly RuntimeProfilesResponse["profiles"][number][]
+): Map<string, { secret: boolean }> {
+  const metadata = new Map<string, { secret: boolean }>();
+
+  for (const profile of profiles) {
+    metadata.set(profile.setup.enableEnvVar, { secret: false });
+
+    for (const envVar of profile.setup.envVars) {
+      const existing = metadata.get(envVar.name);
+      metadata.set(envVar.name, {
+        secret: existing?.secret === true || envVar.secret
+      });
+    }
+  }
+
+  return metadata;
+}
+
+function parseDaemonEnvWriteSetOptions(
+  values: readonly string[],
+  metadata: Map<string, { secret: boolean }>
+): Map<string, string> {
+  const parsed = new Map<string, string>();
+
+  for (const rawValue of values) {
+    const separatorIndex = rawValue.indexOf("=");
+    if (separatorIndex <= 0) {
+      throw new CliUsageError("--set must use NAME=value.");
+    }
+
+    const name = rawValue.slice(0, separatorIndex).trim();
+    const value = rawValue.slice(separatorIndex + 1);
+
+    validateEnvWriteName(name);
+    if (!metadata.has(name)) {
+      throw new CliUsageError(`--set env var is not declared by the selected profile: ${name}`);
+    }
+
+    if (metadata.get(name)?.secret || isSecretLikeEnvName(name)) {
+      throw new CliUsageError(`Refusing to write secret env var through --set: ${name}`);
+    }
+
+    if (/[\r\n]/.test(value) || containsSecretLikeValue(value)) {
+      throw new CliUsageError(`Refusing unsafe --set value for env var: ${name}`);
+    }
+
+    parsed.set(name, value);
+  }
+
+  return parsed;
+}
+
+function createDaemonEnvFileContent(input: {
+  filePath: string;
+  block: string;
+  overwrite: boolean;
+  dependencies: Pick<ExecuteDependencies, "fileExists" | "readTextFile">;
+}): string {
+  if (!input.dependencies.fileExists(input.filePath) || input.overwrite) {
+    return input.block;
+  }
+
+  const existing = input.dependencies.readTextFile(input.filePath);
+  if (existing.trim().length === 0) {
+    return input.block;
+  }
+
+  const startIndex = existing.indexOf(DAEMON_ENV_WRITE_BEGIN);
+  const endIndex = existing.indexOf(DAEMON_ENV_WRITE_END);
+
+  if (startIndex >= 0 && endIndex > startIndex) {
+    const afterEndIndex = endIndex + DAEMON_ENV_WRITE_END.length;
+    const trailing = existing.slice(afterEndIndex).replace(/^\r?\n/, "");
+    return `${existing.slice(0, startIndex)}${input.block}${trailing}`;
+  }
+
+  throw new CliUsageError(
+    "Refusing to modify an existing env file without a Deliberum env block; use --overwrite to replace it."
+  );
+}
+
+function validateEnvWriteName(name: string): void {
+  if (!/^[A-Z_][A-Z0-9_]*$/.test(name)) {
+    throw new CliUsageError(`Invalid env var name: ${name}`);
+  }
+}
+
+function formatEnvAssignment(name: string, value: string): string {
+  if (/^[A-Za-z0-9_./:@-]*$/.test(value)) {
+    return `${name}=${value}`;
+  }
+
+  return `${name}=${JSON.stringify(value)}`;
+}
+
+function isSecretLikeEnvName(name: string): boolean {
+  const normalized = name.replace(/[-_\s]/g, "").toLowerCase();
+
+  return [...SECRET_KEY_NAMES].some((secretName) =>
+    normalized.includes(secretName.replace(/[-_\s]/g, "").toLowerCase())
+  );
 }
 
 function createDaemonProfileDoctorReport(

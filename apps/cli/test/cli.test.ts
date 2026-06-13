@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync
+} from "node:fs";
 import { join } from "node:path";
 import { DaemonClientError } from "@deliberum/client";
 import type { EventStore } from "@deliberum/storage";
@@ -1377,6 +1384,159 @@ describe("CLI command routing", () => {
     expect(daemonClient.getRuntimeProfiles).toHaveBeenCalledTimes(3);
     expect(createDaemonClient).toHaveBeenCalledTimes(3);
     expect(createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("writes daemon env blocks without accepting secret values", async () => {
+    const dir = createTempDir();
+    const outputPath = join(dir, ".env");
+    const existingPath = join(dir, "existing.env");
+    const secretSetOption = ["DELIBERUM_OPENAI_API_KEY=sk", "runtime", "secret"].join("-");
+    const redactedSecret = ["sk", "runtime", "secret"].join("-");
+    const daemonClient = createFakeRunDaemonClient({
+      getRuntimeProfiles: vi.fn(async () => ({
+        profiles: [
+          {
+            id: "openai-compatible",
+            name: "OpenAI-compatible",
+            enabled: true,
+            status: "ready_with_run_config",
+            components: [],
+            setup: {
+              enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+              envVars: [
+                {
+                  name: "DELIBERUM_OPENAI_API_KEY",
+                  configured: false,
+                  secret: true,
+                  required: false,
+                  purpose: "Default provider secret."
+                },
+                {
+                  name: "DELIBERUM_OPENAI_BASE_URL",
+                  configured: false,
+                  secret: false,
+                  required: false,
+                  purpose: "Default provider base URL."
+                },
+                {
+                  name: "DELIBERUM_OPENAI_MODEL",
+                  configured: false,
+                  secret: false,
+                  required: false,
+                  purpose: "Default provider model."
+                }
+              ],
+              missingRecommendedEnvVars: [
+                "DELIBERUM_OPENAI_BASE_URL",
+                "DELIBERUM_OPENAI_MODEL"
+              ],
+              notes: []
+            },
+            boundaries: ["Provider secrets stay in daemon runtime env."]
+          }
+        ]
+      }))
+    });
+    const { createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies({ client: daemonClient });
+
+    const written = parseOutput<{
+      filePath: string;
+      written: boolean;
+      writtenEnvVars: string[];
+      manualSecretEnvVars: string[];
+      placeholderEnvVars: string[];
+    }>(
+      await runCli(
+        [
+          "daemon",
+          "env-write",
+          "--profile",
+          "openai-compatible",
+          "--output",
+          outputPath,
+          "--set",
+          "DELIBERUM_OPENAI_BASE_URL=https://api.example/v1",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const content = readFileSync(outputPath, "utf8");
+    const dryRun = await runCli(
+      [
+        "daemon",
+        "env-write",
+        "--profile",
+        "openai-compatible",
+        "--dry-run",
+        "--set",
+        "DELIBERUM_OPENAI_MODEL=mimo-v2.5-pro"
+      ],
+      dependencies
+    );
+    const rejectedSecret = await runCli(
+      [
+        "daemon",
+        "env-write",
+        "--profile",
+        "openai-compatible",
+        "--output",
+        join(dir, "secret.env"),
+        "--set",
+        secretSetOption,
+        "--json"
+      ],
+      dependencies
+    );
+    writeFileSync(existingPath, "EXISTING=1\n", "utf8");
+    const rejectedExisting = await runCli(
+      [
+        "daemon",
+        "env-write",
+        "--profile",
+        "openai-compatible",
+        "--output",
+        existingPath,
+        "--json"
+      ],
+      dependencies
+    );
+
+    expect(written).toEqual(
+      expect.objectContaining({
+        filePath: outputPath,
+        written: true,
+        writtenEnvVars: [
+          "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+          "DELIBERUM_OPENAI_BASE_URL"
+        ],
+        manualSecretEnvVars: ["DELIBERUM_OPENAI_API_KEY"],
+        placeholderEnvVars: expect.arrayContaining([
+          "DELIBERUM_OPENAI_API_KEY",
+          "DELIBERUM_OPENAI_MODEL"
+        ])
+      })
+    );
+    expect(content).toContain("# BEGIN DELIBERUM DAEMON ENV");
+    expect(content).toContain("DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE=true");
+    expect(content).toContain("DELIBERUM_OPENAI_BASE_URL=https://api.example/v1");
+    expect(content).toContain("# DELIBERUM_OPENAI_API_KEY=");
+    expect(content).toContain("# DELIBERUM_OPENAI_MODEL=");
+    expect(content).not.toContain(redactedSecret);
+    expect(dryRun.exitCode).toBe(0);
+    expect(dryRun.stdout).toContain("DELIBERUM_OPENAI_MODEL=mimo-v2.5-pro");
+    expect(dryRun.stdout).toContain("# DELIBERUM_OPENAI_API_KEY=");
+    expect(rejectedSecret.exitCode).toBe(1);
+    expect(rejectedSecret.stdout).toContain("Refusing to write secret env var");
+    expect(rejectedSecret.stdout).not.toContain(redactedSecret);
+    expect(rejectedExisting.exitCode).toBe(1);
+    expect(rejectedExisting.stdout).toContain("Refusing to modify an existing env file");
+    expect(readFileSync(existingPath, "utf8")).toBe("EXISTING=1\n");
+    expect(createDaemonClient).toHaveBeenCalledTimes(4);
+    expect(createEventStore).not.toHaveBeenCalled();
+
+    rmSync(dir, { recursive: true, force: true });
   });
 
   it("routes daemon deployment posture through the daemon client", async () => {
