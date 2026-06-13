@@ -14,6 +14,7 @@ This project follows a human-readable changelog. The initial public repository s
 - Added dry-run env block preview steps to shared setup-plan projections for CLI and Web setup summaries.
 - Added shared client-side setup-plan projection helpers and Web runtime profile setup summaries derived from safe daemon metadata.
 - Added safe daemon deployment posture diagnostics for local/pre-production binding, auth, CORS, persistence, resource access, and production-readiness blockers without exposing secrets, resource access URLs, or provider/tool endpoint values.
+- Added scoped daemon control-plane token registries with safe principal metadata, read/write/audit scopes, and posture/audit reporting that never returns token material.
 - Added remote/pre-production deployment hardening guidance for private daemon exposure, durable local state, audit export, daemon-served Web assets, resource access posture, and verification commands.
 - Added safe daemon resource access posture diagnostics for hosted-content preconditions, restart-continuity classes, and production resource hosting blockers without exposing resource material.
 - Added Web landing deployment posture summaries derived from the safe daemon posture endpoint.

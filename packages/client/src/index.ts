@@ -346,6 +346,8 @@ export type DeploymentPostureResponse = {
   controlPlane: {
     auth: "disabled" | "daemon_bearer";
     protected: boolean;
+    tokenMode: "disabled" | "single" | "registry";
+    principalCount: number;
   };
   cors: {
     originCount: number;
@@ -395,6 +397,9 @@ export type OperationAuditResponse = {
         | "resource_access_token"
         | "webget_token";
       present: boolean;
+      principalId?: string;
+      role?: string;
+      scopes?: string[];
     };
     target: {
       runId?: string;

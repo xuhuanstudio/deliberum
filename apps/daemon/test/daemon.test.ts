@@ -57,6 +57,7 @@ import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
   DAEMON_AUTH_TOKEN_ENV_VAR,
+  DAEMON_AUTH_TOKENS_JSON_ENV_VAR,
   DAEMON_CORS_ORIGINS_ENV_VAR,
   DAEMON_EVENT_STORE_PATH_ENV_VAR,
   DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR,
@@ -158,6 +159,7 @@ import {
   resolveStartDaemonHost,
   resolveStartDaemonPort,
   resolveStartDaemonAuthToken,
+  resolveStartDaemonAuthTokens,
   resolveStartDaemonResourceAccessBaseUrl,
   resolveStartDaemonResourceAccessAllowRemote,
   resolveStartDaemonResourceAccessTtlMs,
@@ -2030,6 +2032,129 @@ describe("daemon API", () => {
     expect(daemonApp.eventStore.listEvents("session-auth-test")).toEqual([]);
   });
 
+  it("supports scoped daemon auth token registries without exposing token material", async () => {
+    const observerToken = "observer-daemon-token-123";
+    const auditorToken = "auditor-daemon-token-123";
+    const operatorToken = "operator-daemon-token-123";
+    const daemonApp = createDaemonApp({
+      daemonAuthTokens: [
+        {
+          principalId: "observer-1",
+          token: observerToken,
+          role: "observer"
+        },
+        {
+          principalId: "auditor-1",
+          token: auditorToken,
+          role: "auditor"
+        },
+        {
+          principalId: "operator-1",
+          token: operatorToken,
+          role: "operator"
+        }
+      ],
+      idGenerator: createIds(),
+      operationAuditIdGenerator: createIds(),
+      clock
+    });
+
+    const readResponse = await daemonApp.app.request("/runtime/profiles", {
+      headers: {
+        Authorization: `Bearer ${observerToken}`
+      }
+    });
+    const forbiddenWrite = await daemonApp.app.request("/runs", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${observerToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ runPlan: localPresetRunPlan() })
+    });
+    const forbiddenAudit = await daemonApp.app.request("/runtime/operation-audit", {
+      headers: {
+        Authorization: `Bearer ${observerToken}`
+      }
+    });
+    const auditorAudit = await daemonApp.app.request("/runtime/operation-audit", {
+      headers: {
+        Authorization: `Bearer ${auditorToken}`
+      }
+    });
+    const operatorWrite = await daemonApp.app.request("/runs", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${operatorToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ runPlan: localPresetRunPlan() })
+    });
+    const forbiddenBody = (await forbiddenWrite.json()) as {
+      error: { code: string; message: string };
+    };
+    const auditEvents = daemonApp.operationAuditLog.list({ limit: 20 });
+    const serializedAudit = JSON.stringify(auditEvents);
+
+    expect(readResponse.status).toBe(200);
+    expectNoStore(readResponse);
+    expect(forbiddenWrite.status).toBe(403);
+    expectNoStore(forbiddenWrite);
+    expect(forbiddenBody.error).toEqual({
+      code: "daemon_auth_forbidden",
+      message: "Daemon authentication is not authorized for this operation."
+    });
+    expect(forbiddenAudit.status).toBe(403);
+    expectNoStore(forbiddenAudit);
+    expect(auditorAudit.status).toBe(200);
+    expectNoStore(auditorAudit);
+    expect(operatorWrite.status).toBe(201);
+    expect(auditEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "runtime_profiles_read",
+          statusCode: 200,
+          authorization: expect.objectContaining({
+            principalId: "observer-1",
+            role: "observer",
+            scopes: ["read"]
+          })
+        }),
+        expect.objectContaining({
+          action: "run_create",
+          statusCode: 403,
+          authorization: expect.objectContaining({
+            principalId: "observer-1",
+            role: "observer",
+            scopes: ["read"]
+          })
+        }),
+        expect.objectContaining({
+          action: "operation_audit_read",
+          statusCode: 200,
+          authorization: expect.objectContaining({
+            principalId: "auditor-1",
+            role: "auditor",
+            scopes: ["read", "audit"]
+          })
+        }),
+        expect.objectContaining({
+          action: "run_create",
+          statusCode: 201,
+          authorization: expect.objectContaining({
+            principalId: "operator-1",
+            role: "operator",
+            scopes: ["read", "write"]
+          })
+        })
+      ])
+    );
+    expect(serializedAudit).not.toContain(observerToken);
+    expect(serializedAudit).not.toContain(auditorToken);
+    expect(serializedAudit).not.toContain(operatorToken);
+    expect(serializedAudit).not.toContain("Authorization");
+  });
+
   it("returns safe runtime profile setup status without environment values", async () => {
     const openAISecret = "sk-openai-runtime-secret";
     const httpSecret = "http-template-runtime-secret";
@@ -2459,6 +2584,8 @@ describe("daemon API", () => {
       controlPlane: {
         auth: string;
         protected: boolean;
+        tokenMode: string;
+        principalCount: number;
       };
       persistence: {
         eventLedger: string;
@@ -2512,7 +2639,9 @@ describe("daemon API", () => {
         },
         controlPlane: {
           auth: "daemon_bearer",
-          protected: true
+          protected: true,
+          tokenMode: "single",
+          principalCount: 1
         },
         persistence: {
           eventLedger: "process_memory",
@@ -5510,10 +5639,13 @@ describe("daemon API", () => {
           route: "/runtime/operation-audit",
           statusCode: 200,
           outcome: "succeeded",
-          authorization: {
+          authorization: expect.objectContaining({
             mode: "daemon_bearer",
-            present: true
-          }
+            present: true,
+            principalId: "daemon-default",
+            role: "admin",
+            scopes: ["read", "write", "audit"]
+          })
         })
       ])
     );
@@ -6374,6 +6506,134 @@ describe("daemon API", () => {
         }
       )
     ).toThrow(`${DAEMON_AUTH_TOKEN_ENV_VAR} must be at least 16 non-whitespace characters.`);
+  });
+
+  it("resolves scoped daemon auth token registries from explicit options or env", () => {
+    expect(
+      resolveStartDaemonAuthTokens(
+        {},
+        {
+          [DAEMON_AUTH_TOKENS_JSON_ENV_VAR]: JSON.stringify([
+            {
+              principalId: "observer-1",
+              token: "observer-daemon-token-123",
+              role: "observer"
+            },
+            {
+              principalId: "operator-1",
+              token: "operator-daemon-token-123",
+              scopes: ["read", "write"]
+            }
+          ])
+        }
+      )
+    ).toEqual([
+      {
+        principalId: "observer-1",
+        token: "observer-daemon-token-123",
+        role: "observer"
+      },
+      {
+        principalId: "operator-1",
+        token: "operator-daemon-token-123",
+        scopes: ["read", "write"]
+      }
+    ]);
+    expect(resolveStartDaemonAuthTokens({}, {})).toEqual([]);
+    expect(
+      resolveStartDaemonAuthTokens(
+        {
+          daemonAuthTokens: [
+            {
+              principalId: "explicit-operator",
+              token: "explicit-daemon-token-123",
+              role: "operator"
+            }
+          ]
+        },
+        {
+          [DAEMON_AUTH_TOKENS_JSON_ENV_VAR]: JSON.stringify([
+            {
+              principalId: "ignored-observer",
+              token: "ignored-daemon-token-123",
+              role: "observer"
+            }
+          ])
+        }
+      )
+    ).toEqual([
+      {
+        principalId: "explicit-operator",
+        token: "explicit-daemon-token-123",
+        role: "operator"
+      }
+    ]);
+    expect(() =>
+      resolveStartDaemonAuthTokens(
+        {},
+        {
+          [DAEMON_AUTH_TOKENS_JSON_ENV_VAR]: JSON.stringify([
+            {
+              principalId: "bad-secret",
+              token: "registry-daemon-token-123",
+              role: "observer"
+            }
+          ])
+        }
+      )
+    ).toThrow(`${DAEMON_AUTH_TOKENS_JSON_ENV_VAR}[0].principalId must not contain secret-like material.`);
+    expect(() =>
+      resolveStartDaemonAuthTokens(
+        {},
+        {
+          [DAEMON_AUTH_TOKENS_JSON_ENV_VAR]: JSON.stringify([
+            {
+              principalId: "observer-1",
+              token: "registry-daemon-token-123",
+              scopes: ["read", "invalid"]
+            }
+          ])
+        }
+      )
+    ).toThrow(`${DAEMON_AUTH_TOKENS_JSON_ENV_VAR}[0].scopes[1] must be one of: read, write, audit.`);
+    expect(() =>
+      createDaemonApp({
+        daemonAuthTokens: [
+          {
+            principalId: "observer-1",
+            token: "duplicate-daemon-token-123",
+            role: "observer"
+          },
+          {
+            principalId: "operator-1",
+            token: "duplicate-daemon-token-123",
+            role: "operator"
+          }
+        ]
+      })
+    ).toThrow("Daemon auth tokens must be unique.");
+    expect(() =>
+      createDaemonApp({
+        daemonAuthTokens: [
+          {
+            principalId: "invalid-role",
+            token: "invalid-role-daemon-token-123",
+            role: "owner" as never
+          }
+        ]
+      })
+    ).toThrow("daemonAuthTokens[0].role must be one of: admin, operator, observer, auditor.");
+    expect(() =>
+      createDaemonApp({
+        daemonAuthTokens: [
+          {
+            principalId: "invalid-scope",
+            token: "invalid-scope-daemon-token-123",
+            scopes: ["read", "owner"] as never
+          }
+        ]
+      })
+    ).toThrow("daemonAuthTokens[0].scopes[1] must be one of: read, write, audit.");
   });
 
   it("resolves optional daemon SQLite path without overriding explicit stores", () => {

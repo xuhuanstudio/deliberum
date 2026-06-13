@@ -3,9 +3,11 @@ import type { ServerType } from "@hono/node-server";
 import {
   createDaemonApp,
   normalizeDaemonAuthToken,
+  parseDaemonAuthTokenRegistryJson,
   parseDaemonCorsOriginsFromEnv,
   type DaemonApp,
   type DaemonAppOptions,
+  type DaemonAuthTokenInput,
   type WebStaticAssetsOptions
 } from "./app";
 import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
@@ -65,6 +67,8 @@ export const DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP_ENV_VAR =
   "DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_ALLOW_INSECURE_HTTP" as const;
 export const DAEMON_WEB_ASSETS_PATH_ENV_VAR = "DELIBERUM_DAEMON_WEB_ASSETS_PATH" as const;
 export const DAEMON_AUTH_TOKEN_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
+export const DAEMON_AUTH_TOKENS_JSON_ENV_VAR =
+  "DELIBERUM_DAEMON_AUTH_TOKENS_JSON" as const;
 export const DAEMON_HOST_ENV_VAR = "DELIBERUM_HOST" as const;
 export const DAEMON_PORT_ENV_VAR = "DELIBERUM_PORT" as const;
 export const RESOURCE_ACCESS_BASE_URL_ENV_VAR = "DELIBERUM_RESOURCE_ACCESS_BASE_URL" as const;
@@ -131,6 +135,18 @@ export function resolveStartDaemonAuthToken(
     options.daemonAuthToken ?? env[DAEMON_AUTH_TOKEN_ENV_VAR],
     DAEMON_AUTH_TOKEN_ENV_VAR
   );
+}
+
+export function resolveStartDaemonAuthTokens(
+  options: Pick<StartDaemonOptions, "daemonAuthTokens"> = {},
+  env: Record<string, string | undefined> = process.env
+): DaemonAuthTokenInput[] {
+  return options.daemonAuthTokens
+    ? [...options.daemonAuthTokens]
+    : parseDaemonAuthTokenRegistryJson(
+        env[DAEMON_AUTH_TOKENS_JSON_ENV_VAR],
+        DAEMON_AUTH_TOKENS_JSON_ENV_VAR
+      );
 }
 
 export function resolveStartDaemonEventStorePath(
@@ -598,6 +614,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
   const resourceAccessBaseUrl = resolveStartDaemonResourceAccessBaseUrl(options);
   const resourceAccessTtlMs = resolveStartDaemonResourceAccessTtlMs(options);
   const daemonAuthToken = resolveStartDaemonAuthToken(options);
+  const daemonAuthTokens = resolveStartDaemonAuthTokens(options);
   const webStaticAssets = createStartDaemonWebStaticAssets(options, process.env);
   const resourceAccessStore = createStartDaemonResourceAccessStore(
     {
@@ -631,6 +648,7 @@ export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
     resourceAccessBaseUrl,
     resourceAccessTtlMs,
     daemonAuthToken,
+    daemonAuthTokens,
     webStaticAssets,
     corsOrigins: options.corsOrigins ?? parseDaemonCorsOriginsFromEnv(process.env),
     host,

@@ -39,11 +39,24 @@ local:
       productionMultiWriterCoordination: deferred
     auth:
       tokenEnv: DELIBERUM_DAEMON_AUTH_TOKEN
+      tokenRegistryJsonEnv: DELIBERUM_DAEMON_AUTH_TOKENS_JSON
+      tokenModes:
+        - single
+        - registry
+      registryRoles:
+        - admin
+        - operator
+        - observer
+        - auditor
+      registryScopes:
+        - read
+        - write
+        - audit
       healthEndpoint: public
       tokenScopedEndpoints:
         - webget
         - resourceAccessGet
-      productionAuthorization: deferred
+      productionIdentity: deferred
   cli:
     store: .deliberum/events.json
     setupWizard:

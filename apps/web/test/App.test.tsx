@@ -170,7 +170,9 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       },
       controlPlane: {
         auth: "daemon_bearer",
-        protected: true
+        protected: true,
+        tokenMode: "registry",
+        principalCount: 3
       },
       cors: {
         originCount: 2,
@@ -252,7 +254,10 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           outcome: "succeeded",
           authorization: {
             mode: "daemon_bearer",
-            present: true
+            present: true,
+            principalId: "observer-1",
+            role: "observer",
+            scopes: ["read"]
           },
           target: {
             sessionId: "session-1"
@@ -844,7 +849,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Bind exposure")).toBeTruthy();
     expect(screen.getByText("Localhost")).toBeTruthy();
     expect(screen.getByText("Control auth")).toBeTruthy();
-    expect(screen.getByText("Daemon bearer")).toBeTruthy();
+    expect(screen.getByText("Daemon bearer / registry / 3 principals")).toBeTruthy();
     expect(screen.getByText("Configured stores")).toBeTruthy();
     expect(screen.getByText("5/5")).toBeTruthy();
     expect(screen.getByText("Resource access")).toBeTruthy();
@@ -907,7 +912,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("runtime_resource_access_read")).toBeTruthy();
     expect(screen.getByText("GET /runtime/resource-access")).toBeTruthy();
     expect(screen.getByText("200 succeeded")).toBeTruthy();
-    expect(screen.getByText("daemon_bearer, present")).toBeTruthy();
+    expect(
+      screen.getByText("daemon_bearer, present, observer-1 (observer), scopes read")
+    ).toBeTruthy();
     expect(screen.getByText("session: session-1")).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain(
       ["local-daemon-auth", "token"].join("-")

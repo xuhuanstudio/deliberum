@@ -151,6 +151,7 @@ export type DaemonAppOptions = {
   mcpToolEnv?: Record<string, string | undefined>;
   mcpToolFetch?: McpToolProfileOptions["fetch"];
   daemonAuthToken?: string;
+  daemonAuthTokens?: readonly DaemonAuthTokenInput[];
   corsOrigins?: readonly string[];
   webStaticAssets?: WebStaticAssetsOptions;
   idGenerator?: IdGenerator;
@@ -231,6 +232,8 @@ export type DaemonDeploymentPostureResponse = {
   controlPlane: {
     auth: "disabled" | "daemon_bearer";
     protected: boolean;
+    tokenMode: "disabled" | "single" | "registry";
+    principalCount: number;
   };
   cors: {
     originCount: number;
@@ -269,6 +272,37 @@ export const DEFAULT_DAEMON_CORS_ORIGINS = [
   "http://localhost:5173"
 ] as const;
 
+export const DAEMON_AUTH_ROLES = ["admin", "operator", "observer", "auditor"] as const;
+export type DaemonAuthRole = (typeof DAEMON_AUTH_ROLES)[number];
+
+export const DAEMON_AUTH_SCOPES = ["read", "write", "audit"] as const;
+export type DaemonAuthScope = (typeof DAEMON_AUTH_SCOPES)[number];
+
+export type DaemonAuthTokenInput = {
+  principalId: string;
+  token: string;
+  role?: DaemonAuthRole;
+  scopes?: readonly DaemonAuthScope[];
+};
+
+type DaemonAuthPrincipal = {
+  principalId: string;
+  role: DaemonAuthRole;
+  scopes: DaemonAuthScope[];
+};
+
+type DaemonAuthTokenEntry = DaemonAuthPrincipal & {
+  tokenHash: Buffer;
+};
+
+type DaemonAuthPolicy = {
+  configured: boolean;
+  mode: "disabled" | "single" | "registry";
+  entries: DaemonAuthTokenEntry[];
+};
+
+const daemonAuthPrincipals = new WeakMap<Context, DaemonAuthPrincipal>();
+
 class DaemonHttpError extends Error {
   readonly code: string;
   readonly status: 400;
@@ -290,10 +324,11 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   const idGenerator = options.idGenerator ?? (() => randomUUID());
   const host = options.host ?? DEFAULT_DAEMON_HOST;
   const port = options.port ?? DEFAULT_DAEMON_PORT;
-  const daemonAuthToken = normalizeDaemonAuthToken(
-    options.daemonAuthToken,
-    "daemonAuthToken"
-  );
+  const daemonAuthPolicy = normalizeDaemonAuthPolicy({
+    legacyToken: options.daemonAuthToken,
+    tokens: options.daemonAuthTokens,
+    legacyName: "daemonAuthToken"
+  });
   const resourceBroker = options.resourceBroker ?? new InMemoryResourceBroker();
   const deliveryPlanner = options.deliveryPlanner ?? new DeliveryPlanner({ broker: resourceBroker });
   const resourceAccessBaseUrl =
@@ -454,7 +489,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
   });
 
   app.use("*", async (context, next) => {
-    const authError = authenticateDaemonRequest(context, daemonAuthToken);
+    const authError = authenticateDaemonRequest(context, daemonAuthPolicy);
 
     if (authError) {
       return authError;
@@ -700,7 +735,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       buildDeploymentPosture({
         host,
         port,
-        daemonAuthConfigured: daemonAuthToken !== undefined,
+        daemonAuthPolicy,
         corsOrigins,
         eventStoreConfigured: options.eventStore !== undefined,
         runStoreConfigured: options.runStore !== undefined,
@@ -1053,6 +1088,306 @@ export function normalizeDaemonAuthToken(
   }
 
   return trimmed;
+}
+
+export function parseDaemonAuthTokenRegistryJson(
+  value: string | undefined,
+  name: string
+): DaemonAuthTokenInput[] {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name} must be a JSON array of daemon auth token entries.`
+    );
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name} must be a JSON array of daemon auth token entries.`
+    );
+  }
+
+  return parsed.map((entry, index) => parseDaemonAuthTokenInput(entry, `${name}[${index}]`));
+}
+
+function normalizeDaemonAuthPolicy(input: {
+  legacyToken?: string;
+  tokens?: readonly DaemonAuthTokenInput[];
+  legacyName: string;
+}): DaemonAuthPolicy {
+  const entries: DaemonAuthTokenEntry[] = [];
+  const legacyToken = normalizeDaemonAuthToken(input.legacyToken, input.legacyName);
+
+  if (legacyToken) {
+    entries.push(
+      normalizeDaemonAuthTokenEntry({
+        principalId: "daemon-default",
+        token: legacyToken,
+        role: "admin"
+      }, input.legacyName)
+    );
+  }
+
+  for (const [index, tokenInput] of [...(input.tokens ?? [])].entries()) {
+    entries.push(normalizeDaemonAuthTokenEntry(tokenInput, `daemonAuthTokens[${index}]`));
+  }
+
+  rejectDuplicateDaemonAuthPrincipals(entries);
+  rejectDuplicateDaemonAuthTokenHashes(entries);
+
+  const hasRegistryTokens = input.tokens !== undefined && input.tokens.length > 0;
+  const mode: DaemonAuthPolicy["mode"] =
+    entries.length === 0 ? "disabled" : hasRegistryTokens ? "registry" : "single";
+
+  return {
+    configured: entries.length > 0,
+    mode,
+    entries
+  };
+}
+
+function parseDaemonAuthTokenInput(value: unknown, name: string): DaemonAuthTokenInput {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name} must be a JSON object.`
+    );
+  }
+
+  const input = value as {
+    principalId?: unknown;
+    token?: unknown;
+    role?: unknown;
+    scopes?: unknown;
+  };
+  const allowedKeys = new Set(["principalId", "token", "role", "scopes"]);
+  for (const key of Object.keys(input)) {
+    if (!allowedKeys.has(key)) {
+      throw new DaemonHttpError(
+        "daemon_auth_token_invalid",
+        `${name} contains an unknown daemon auth token field.`
+      );
+    }
+  }
+
+  const principalId = normalizeDaemonAuthPrincipalId(
+    requireDaemonAuthString(input.principalId, `${name}.principalId`),
+    `${name}.principalId`
+  );
+  const token = normalizeDaemonAuthToken(
+    requireDaemonAuthString(input.token, `${name}.token`),
+    `${name}.token`
+  );
+  if (!token) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name}.token must be at least 16 non-whitespace characters.`
+    );
+  }
+
+  return {
+    principalId,
+    token,
+    role:
+      input.role === undefined
+        ? undefined
+        : requireDaemonAuthRole(input.role, `${name}.role`),
+    scopes:
+      input.scopes === undefined
+        ? undefined
+        : requireDaemonAuthScopes(input.scopes, `${name}.scopes`)
+  };
+}
+
+function normalizeDaemonAuthTokenEntry(
+  input: DaemonAuthTokenInput,
+  name: string
+): DaemonAuthTokenEntry {
+  const principalId = normalizeDaemonAuthPrincipalId(
+    requireDaemonAuthString(input.principalId, `${name}.principalId`),
+    `${name}.principalId`
+  );
+  const token = normalizeDaemonAuthToken(
+    requireDaemonAuthString(input.token, `${name}.token`),
+    `${name}.token`
+  );
+  if (!token) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name}.token must be at least 16 non-whitespace characters.`
+    );
+  }
+
+  const role = requireDaemonAuthRole(input.role ?? "admin", `${name}.role`);
+  const scopes = normalizeDaemonAuthScopes(input.scopes ?? defaultDaemonAuthScopes(role), name);
+
+  return {
+    principalId,
+    role,
+    scopes,
+    tokenHash: hashDaemonAuthToken(token)
+  };
+}
+
+function normalizeDaemonAuthPrincipalId(value: string, name: string): string {
+  const trimmed = value.trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/.test(trimmed)) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name} must be a safe non-secret identifier.`
+    );
+  }
+
+  if (containsSecretLikeAuthMaterial(trimmed)) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name} must not contain secret-like material.`
+    );
+  }
+
+  return trimmed;
+}
+
+function normalizeDaemonAuthScopes(
+  scopes: readonly unknown[],
+  name: string
+): DaemonAuthScope[] {
+  if (!Array.isArray(scopes)) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name}.scopes must be an array.`
+    );
+  }
+
+  if (scopes.length === 0) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name}.scopes must contain at least one scope.`
+    );
+  }
+
+  const parsedScopes = scopes.map((scope, index) => {
+    if (typeof scope !== "string" || !isDaemonAuthScope(scope)) {
+      throw new DaemonHttpError(
+        "daemon_auth_token_invalid",
+        `${name}.scopes[${index}] must be one of: ${DAEMON_AUTH_SCOPES.join(", ")}.`
+      );
+    }
+
+    return scope;
+  });
+
+  return [...new Set(parsedScopes)];
+}
+
+function defaultDaemonAuthScopes(role: DaemonAuthRole): DaemonAuthScope[] {
+  if (role === "admin") {
+    return ["read", "write", "audit"];
+  }
+
+  if (role === "operator") {
+    return ["read", "write"];
+  }
+
+  if (role === "auditor") {
+    return ["read", "audit"];
+  }
+
+  return ["read"];
+}
+
+function rejectDuplicateDaemonAuthPrincipals(entries: readonly DaemonAuthTokenEntry[]): void {
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    if (seen.has(entry.principalId)) {
+      throw new DaemonHttpError(
+        "daemon_auth_token_invalid",
+        "Daemon auth principal ids must be unique."
+      );
+    }
+
+    seen.add(entry.principalId);
+  }
+}
+
+function rejectDuplicateDaemonAuthTokenHashes(entries: readonly DaemonAuthTokenEntry[]): void {
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    const tokenHash = entry.tokenHash.toString("hex");
+    if (seen.has(tokenHash)) {
+      throw new DaemonHttpError(
+        "daemon_auth_token_invalid",
+        "Daemon auth tokens must be unique."
+      );
+    }
+
+    seen.add(tokenHash);
+  }
+}
+
+function requireDaemonAuthString(value: unknown, name: string): string {
+  if (typeof value !== "string") {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name} must be a string.`
+    );
+  }
+
+  return value;
+}
+
+function requireDaemonAuthRole(value: unknown, name: string): DaemonAuthRole {
+  if (typeof value !== "string" || !isDaemonAuthRole(value)) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name} must be one of: ${DAEMON_AUTH_ROLES.join(", ")}.`
+    );
+  }
+
+  return value;
+}
+
+function requireDaemonAuthScopes(value: unknown, name: string): DaemonAuthScope[] {
+  if (!Array.isArray(value)) {
+    throw new DaemonHttpError(
+      "daemon_auth_token_invalid",
+      `${name} must be an array.`
+    );
+  }
+
+  return value.map((scope, index) => {
+    if (typeof scope !== "string" || !isDaemonAuthScope(scope)) {
+      throw new DaemonHttpError(
+        "daemon_auth_token_invalid",
+        `${name}[${index}] must be one of: ${DAEMON_AUTH_SCOPES.join(", ")}.`
+      );
+    }
+
+    return scope;
+  });
+}
+
+function isDaemonAuthRole(value: string): value is DaemonAuthRole {
+  return (DAEMON_AUTH_ROLES as readonly string[]).includes(value);
+}
+
+function isDaemonAuthScope(value: string): value is DaemonAuthScope {
+  return (DAEMON_AUTH_SCOPES as readonly string[]).includes(value);
+}
+
+function containsSecretLikeAuthMaterial(value: string): boolean {
+  return /api[_-]?key|secret|private[_-]?token|access[_-]?token|authorization|bearer|sk-[a-z0-9]/i.test(
+    value
+  );
 }
 
 function mergeAdapterRegistries(
@@ -1480,7 +1815,7 @@ function buildResourceAccessPosture(options: {
 function buildDeploymentPosture(options: {
   host: string;
   port: number;
-  daemonAuthConfigured: boolean;
+  daemonAuthPolicy: DaemonAuthPolicy;
   corsOrigins: readonly string[];
   eventStoreConfigured: boolean;
   runStoreConfigured: boolean;
@@ -1497,7 +1832,7 @@ function buildDeploymentPosture(options: {
   );
   const blockers = createDeploymentPostureBlockers({
     bindingExposure,
-    daemonAuthConfigured: options.daemonAuthConfigured,
+    daemonAuthConfigured: options.daemonAuthPolicy.configured,
     eventStoreConfigured: options.eventStoreConfigured,
     runStoreConfigured: options.runStoreConfigured,
     resourceBrokerConfigured: options.resourceBrokerConfigured,
@@ -1513,8 +1848,10 @@ function buildDeploymentPosture(options: {
       defaultLocalhost: options.host === DEFAULT_DAEMON_HOST
     },
     controlPlane: {
-      auth: options.daemonAuthConfigured ? "daemon_bearer" : "disabled",
-      protected: options.daemonAuthConfigured
+      auth: options.daemonAuthPolicy.configured ? "daemon_bearer" : "disabled",
+      protected: options.daemonAuthPolicy.configured,
+      tokenMode: options.daemonAuthPolicy.mode,
+      principalCount: options.daemonAuthPolicy.entries.length
     },
     cors: {
       originCount: options.corsOrigins.length,
@@ -1550,7 +1887,7 @@ function buildDeploymentPosture(options: {
       status:
         bindingExposure === "localhost"
           ? "local_only"
-          : options.daemonAuthConfigured
+          : options.daemonAuthPolicy.configured
             ? "preproduction_remote_hardened"
             : "not_production_ready",
       readyForProduction: false,
@@ -1845,29 +2182,75 @@ function isFileReadNotFound(error: unknown): boolean {
 
 function authenticateDaemonRequest(
   context: Context,
-  expectedToken: string | undefined
+  policy: DaemonAuthPolicy
 ): Response | undefined {
-  if (!expectedToken || isDaemonAuthExemptRequest(context)) {
+  if (!policy.configured || isDaemonAuthExemptRequest(context)) {
     return undefined;
   }
 
   const token =
     parseBearerAuthorizationHeader(context.req.header("Authorization")) ??
     parseDaemonAuthStreamQueryToken(context);
+  const principal = token ? findDaemonAuthPrincipal(policy, token) : undefined;
 
-  if (token && compareDaemonAuthToken(token, expectedToken)) {
+  if (principal) {
+    setDaemonAuthPrincipal(context, principal);
+    const requiredScope = requiredDaemonAuthScope(context);
+    if (principal.scopes.includes(requiredScope)) {
+      return undefined;
+    }
+
+    return daemonAuthError(
+      context,
+      403,
+      "daemon_auth_forbidden",
+      "Daemon authentication is not authorized for this operation."
+    );
+  }
+
+  return daemonAuthError(
+    context,
+    401,
+    "daemon_auth_required",
+    "Daemon authentication is required."
+  );
+}
+
+function daemonAuthError(
+  context: Context,
+  status: 401 | 403,
+  code: string,
+  message: string
+): Response {
+  const response = context.json(createErrorResponse(code, message), status);
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Pragma", "no-cache");
+  if (status === 401) {
+    response.headers.set("WWW-Authenticate", 'Bearer realm="deliberum-daemon"');
+  }
+
+  return response;
+}
+
+function setDaemonAuthPrincipal(context: Context, principal: DaemonAuthPrincipal): void {
+  daemonAuthPrincipals.set(context, {
+    principalId: principal.principalId,
+    role: principal.role,
+    scopes: [...principal.scopes]
+  });
+}
+
+function getDaemonAuthPrincipal(context: Context): DaemonAuthPrincipal | undefined {
+  const principal = daemonAuthPrincipals.get(context);
+  if (!principal) {
     return undefined;
   }
 
-  const response = context.json(createErrorResponse(
-    "daemon_auth_required",
-    "Daemon authentication is required."
-  ), 401);
-  response.headers.set("Cache-Control", "no-store");
-  response.headers.set("Pragma", "no-cache");
-  response.headers.set("WWW-Authenticate", 'Bearer realm="deliberum-daemon"');
-
-  return response;
+  return {
+    principalId: principal.principalId,
+    role: principal.role,
+    scopes: [...principal.scopes]
+  };
 }
 
 function isDaemonAuthExemptRequest(context: Context): boolean {
@@ -1909,11 +2292,44 @@ function parseDaemonAuthStreamQueryToken(context: Context): string | undefined {
   return token && token.length > 0 ? token : undefined;
 }
 
-function compareDaemonAuthToken(candidate: string, expected: string): boolean {
-  const candidateHash = createHash("sha256").update(candidate).digest();
-  const expectedHash = createHash("sha256").update(expected).digest();
+function requiredDaemonAuthScope(context: Context): DaemonAuthScope {
+  const method = context.req.method.toUpperCase();
+  const path = context.req.path;
+  const isReadMethod = method === "GET" || method === "HEAD";
 
-  return timingSafeEqual(candidateHash, expectedHash);
+  if (isReadMethod && path === "/runtime/operation-audit") {
+    return "audit";
+  }
+
+  if (isReadMethod) {
+    return "read";
+  }
+
+  return "write";
+}
+
+function findDaemonAuthPrincipal(
+  policy: DaemonAuthPolicy,
+  candidate: string
+): DaemonAuthPrincipal | undefined {
+  const candidateHash = hashDaemonAuthToken(candidate);
+  const entry = policy.entries.find((tokenEntry) =>
+    timingSafeEqual(candidateHash, tokenEntry.tokenHash)
+  );
+
+  if (!entry) {
+    return undefined;
+  }
+
+  return {
+    principalId: entry.principalId,
+    role: entry.role,
+    scopes: [...entry.scopes]
+  };
+}
+
+function hashDaemonAuthToken(token: string): Buffer {
+  return createHash("sha256").update(token).digest();
 }
 
 async function auditDaemonOperation(input: {
@@ -1923,12 +2339,6 @@ async function auditDaemonOperation(input: {
 }): Promise<void> {
   const method = input.context.req.method.toUpperCase();
   const path = input.context.req.path;
-  const authorization = createOperationAuditAuthorization({
-    method,
-    path,
-    authorizationHeader: input.context.req.header("Authorization"),
-    daemonAuthTokenQuery: input.context.req.query("daemonAuthToken")
-  });
 
   try {
     await input.next();
@@ -1937,7 +2347,13 @@ async function auditDaemonOperation(input: {
       method,
       path,
       statusCode: classifyThrownOperationStatus(path, error),
-      authorization
+      authorization: createOperationAuditAuthorization({
+        method,
+        path,
+        authorizationHeader: input.context.req.header("Authorization"),
+        daemonAuthTokenQuery: input.context.req.query("daemonAuthToken"),
+        principal: getDaemonAuthPrincipal(input.context)
+      })
     });
     throw error;
   }
@@ -1946,7 +2362,13 @@ async function auditDaemonOperation(input: {
     method,
     path,
     statusCode: input.context.res.status || 200,
-    authorization
+    authorization: createOperationAuditAuthorization({
+      method,
+      path,
+      authorizationHeader: input.context.req.header("Authorization"),
+      daemonAuthTokenQuery: input.context.req.query("daemonAuthToken"),
+      principal: getDaemonAuthPrincipal(input.context)
+    })
   });
 }
 

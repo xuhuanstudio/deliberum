@@ -703,7 +703,21 @@ function formatDeploymentExposure(
 function formatDeploymentAuth(
   value: DeploymentPostureResponse["controlPlane"]
 ): string {
-  return value.protected ? "Daemon bearer" : "Disabled";
+  if (!value.protected) {
+    return "Disabled";
+  }
+
+  if (value.tokenMode === "registry") {
+    const label = value.principalCount === 1 ? "principal" : "principals";
+
+    return `Daemon bearer / registry / ${value.principalCount} ${label}`;
+  }
+
+  if (value.tokenMode === "single") {
+    return "Daemon bearer / single token";
+  }
+
+  return "Daemon bearer";
 }
 
 function formatDeploymentPersistence(
@@ -817,8 +831,14 @@ function formatAuditAuthorization(
 ): string {
   const mode = formatRecordValue(value.mode);
   const presence = value.present ? "present" : "absent";
+  const principal = value.principalId ? `, ${value.principalId}` : "";
+  const role = value.role ? ` (${formatRecordValue(value.role)})` : "";
+  const scopes =
+    value.scopes && value.scopes.length > 0
+      ? `, scopes ${value.scopes.map((scope) => formatRecordValue(scope)).join(", ")}`
+      : "";
 
-  return `${mode}, ${presence}`;
+  return `${mode}, ${presence}${principal}${role}${scopes}`;
 }
 
 function formatAuditTarget(

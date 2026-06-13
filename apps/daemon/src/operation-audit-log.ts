@@ -41,6 +41,9 @@ export type OperationAuditAuthorizationMode =
 export type OperationAuditAuthorization = {
   mode: OperationAuditAuthorizationMode;
   present: boolean;
+  principalId?: string;
+  role?: string;
+  scopes?: string[];
 };
 
 export type OperationAuditTarget = {
@@ -666,7 +669,21 @@ export function createOperationAuditAuthorization(input: {
   path: string;
   authorizationHeader?: string;
   daemonAuthTokenQuery?: string;
+  principal?: {
+    principalId: string;
+    role: string;
+    scopes: readonly string[];
+  };
 }): OperationAuditAuthorization {
+  const principal =
+    input.principal === undefined
+      ? {}
+      : {
+          principalId: input.principal.principalId,
+          role: input.principal.role,
+          scopes: [...input.principal.scopes]
+        };
+
   if (input.path.startsWith("/resource-access/")) {
     return {
       mode: "resource_access_token",
@@ -688,13 +705,15 @@ export function createOperationAuditAuthorization(input: {
   ) {
     return {
       mode: "daemon_stream_query",
-      present: true
+      present: true,
+      ...principal
     };
   }
 
   return {
     mode: "daemon_bearer",
-    present: /^Bearer\s+\S+$/i.test(input.authorizationHeader ?? "")
+    present: /^Bearer\s+\S+$/i.test(input.authorizationHeader ?? ""),
+    ...principal
   };
 }
 
@@ -1174,11 +1193,10 @@ function parseOperationAuditAuthorization(value: unknown): OperationAuditAuthori
   const authorization = requireObject(value, "Operation audit authorization");
   rejectUnknownKeys(
     authorization,
-    ["mode", "present"],
+    ["mode", "present", "principalId", "role", "scopes"],
     "Operation audit authorization"
   );
-
-  return {
+  const parsed: OperationAuditAuthorization = {
     mode: requireEnum(
       authorization.mode,
       OPERATION_AUDIT_AUTHORIZATION_MODES,
@@ -1189,6 +1207,32 @@ function parseOperationAuditAuthorization(value: unknown): OperationAuditAuthori
       "Operation audit authorization present flag"
     )
   };
+
+  if (authorization.principalId !== undefined) {
+    parsed.principalId = requireNonEmptyString(
+      authorization.principalId,
+      "Operation audit authorization principal id"
+    );
+  }
+
+  if (authorization.role !== undefined) {
+    parsed.role = requireNonEmptyString(
+      authorization.role,
+      "Operation audit authorization role"
+    );
+  }
+
+  if (authorization.scopes !== undefined) {
+    if (!Array.isArray(authorization.scopes)) {
+      throw new OperationAuditLogError("Operation audit authorization scopes must be an array.");
+    }
+
+    parsed.scopes = authorization.scopes.map((scope) =>
+      requireNonEmptyString(scope, "Operation audit authorization scope")
+    );
+  }
+
+  return parsed;
 }
 
 function parseOperationAuditTarget(value: unknown): OperationAuditTarget {

@@ -167,7 +167,9 @@ function createFakeRunDaemonClient(
       },
       controlPlane: {
         auth: "daemon_bearer",
-        protected: true
+        protected: true,
+        tokenMode: "registry",
+        principalCount: 3
       },
       cors: {
         originCount: 2,
@@ -211,7 +213,10 @@ function createFakeRunDaemonClient(
           outcome: "succeeded",
           authorization: {
             mode: "daemon_bearer",
-            present: true
+            present: true,
+            principalId: "observer-1",
+            role: "observer",
+            scopes: ["read"]
           },
           target: {}
         }
@@ -1782,7 +1787,12 @@ describe("CLI command routing", () => {
 
     const posture = parseOutput<{
       binding: { exposure: string; defaultLocalhost: boolean };
-      controlPlane: { auth: string; protected: boolean };
+      controlPlane: {
+        auth: string;
+        protected: boolean;
+        tokenMode: string;
+        principalCount: number;
+      };
       persistence: { productionMultiWriterCoordination: boolean };
       webAssets: { configured: boolean; routeMode: string };
       productionReadiness: { readyForProduction: boolean; blockers: string[] };
@@ -1806,7 +1816,9 @@ describe("CLI command routing", () => {
         }),
         controlPlane: {
           auth: "daemon_bearer",
-          protected: true
+          protected: true,
+          tokenMode: "registry",
+          principalCount: 3
         },
         persistence: expect.objectContaining({
           productionMultiWriterCoordination: false
@@ -1893,10 +1905,13 @@ describe("CLI command routing", () => {
       expect.objectContaining({
         id: "operation-audit-1",
         action: "runtime_profiles_read",
-        authorization: {
+        authorization: expect.objectContaining({
           mode: "daemon_bearer",
-          present: true
-        }
+          present: true,
+          principalId: "observer-1",
+          role: "observer",
+          scopes: ["read"]
+        })
       })
     ]);
     expect(daemonClient.getOperationAudit).toHaveBeenCalledWith({ limit: 25 });

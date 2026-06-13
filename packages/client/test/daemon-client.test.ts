@@ -379,7 +379,9 @@ describe("DeliberumDaemonClient", () => {
       },
       controlPlane: {
         auth: "disabled",
-        protected: false
+        protected: false,
+        tokenMode: "disabled",
+        principalCount: 0
       },
       cors: {
         originCount: 2,
@@ -427,7 +429,9 @@ describe("DeliberumDaemonClient", () => {
       },
       controlPlane: {
         auth: "disabled",
-        protected: false
+        protected: false,
+        tokenMode: "disabled",
+        principalCount: 0
       },
       productionReadiness: {
         readyForProduction: false
@@ -451,7 +455,10 @@ describe("DeliberumDaemonClient", () => {
           outcome: "succeeded",
           authorization: {
             mode: "daemon_bearer",
-            present: true
+            present: true,
+            principalId: "observer-1",
+            role: "observer",
+            scopes: ["read"]
           },
           target: {}
         }
@@ -478,7 +485,10 @@ describe("DeliberumDaemonClient", () => {
         action: "runtime_profiles_read",
         authorization: {
           mode: "daemon_bearer",
-          present: true
+          present: true,
+          principalId: "observer-1",
+          role: "observer",
+          scopes: ["read"]
         }
       })
     );

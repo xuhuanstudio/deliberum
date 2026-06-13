@@ -5,7 +5,7 @@
 - Bind daemon to `127.0.0.1` by default.
 - Do not expose public network binding by default.
 - Do not enable wildcard CORS by default.
-- Remote access requires authentication or SSH tunneling. The local daemon can require `DELIBERUM_DAEMON_AUTH_TOKEN` for control-plane endpoints, while WebGET and resource-access grant URLs remain scoped bearer-token surfaces.
+- Remote access requires authentication or SSH tunneling. The local daemon can require a legacy single bearer token or `DELIBERUM_DAEMON_AUTH_TOKENS_JSON` scoped token registry for control-plane endpoints, while WebGET and resource-access grant URLs remain scoped bearer-token surfaces.
 - API keys must come from environment variables, OS keychain, or encrypted local config.
 - API keys and provider credentials must not be committed in repo files or examples.
 - Public resource URLs are disabled by default.
@@ -14,11 +14,17 @@
 - Sensitive resources default to `none` delivery unless an explicit safe policy allows another mode.
 - WebGET is experimental and must record read/access limitations.
 - WebGET tokens are short-lived, daemon-local, and scoped to one WebGET session.
-- Daemon operation audit records must store normalized control-plane metadata only, never request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, or output payloads.
+- Daemon operation audit records must store normalized control-plane metadata only. Safe principal id, role, and scopes are allowed; request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, and output payloads are not.
+
+## Control-plane bearer auth
+
+The daemon supports local/pre-production control-plane bearer auth in two modes. `DELIBERUM_DAEMON_AUTH_TOKEN` enables the legacy single-token mode with one admin principal. `DELIBERUM_DAEMON_AUTH_TOKENS_JSON` enables a scoped registry of token entries with non-secret `principalId`, runtime-only `token`, and optional `role` or `scopes`. The registry supports `read`, `write`, and `audit` scopes. `GET` and `HEAD` endpoints require `read`, `GET /runtime/operation-audit` requires `audit`, and mutation endpoints require `write`.
+
+The daemon hashes configured token values for request matching and never writes token values to event records, operation audit records, deployment posture, CLI output, or Web output. Principal ids must be non-secret identifiers because they can appear in safe audit metadata. This bearer registry is an operator hardening layer for local/pre-production control surfaces; it is not production identity, SSO, tenant authorization, or public multi-user access control.
 
 ## Operation audit security
 
-The daemon operation audit log is separate from the semantic event ledger. It records local control-plane action, method, normalized route, status code, outcome, auth mode/presence, and non-secret target ids for daemon requests. It does not make projections authoritative and does not become a source of deliberation truth.
+The daemon operation audit log is separate from the semantic event ledger. It records local control-plane action, method, normalized route, status code, outcome, auth mode/presence, safe principal id, role, scopes, and non-secret target ids for daemon requests. It does not make projections authoritative and does not become a source of deliberation truth.
 
 Operation audit persistence and export are optional. With `DELIBERUM_DAEMON_SQLITE_PATH`, audit records are stored in the local daemon SQLite database. Without SQLite, `DELIBERUM_DAEMON_OPERATION_AUDIT_PATH` can persist the same safe metadata to JSON for local development. If neither is configured, the audit log is process-local memory only. `DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES` caps retained records for all three local audit log backends. `DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_PATH` can mirror the same safe records to a local JSONL archive with optional size-based rotation. `DELIBERUM_DAEMON_OPERATION_AUDIT_EXPORT_URL` can POST the same safe record material to an HTTPS collector, with localhost HTTP allowed for local collectors and non-local HTTP requiring an explicit insecure opt-in.
 
