@@ -234,7 +234,7 @@ export function RunNewPage() {
           </form>
         </DataPanel>
         <AdvancedDetails
-          summary="Advanced / Developer Mode: JSON plan"
+          summary="Advanced / Developer Mode"
           description="Create a run from a raw JSON plan when testing low-level runtime behavior."
           lazy
         >
@@ -335,7 +335,7 @@ export function RunDetailPage() {
           <StartRunForm runId={runId} sessionId={sessionId} run={run} />
           {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
           <AdvancedDetails
-            summary="Advanced / Developer Mode: next-step proposal controls"
+            summary="Advanced / Developer Mode"
             description="Adaptive primitive suggestions, process proposal lifecycle, explicit execution readiness, and internal proposal ids for developer inspection."
             lazy
           >
@@ -343,7 +343,7 @@ export function RunDetailPage() {
             {sessionId ? <RunProcessGovernance runId={runId} sessionId={sessionId} /> : null}
           </AdvancedDetails>
           <AdvancedDetails
-            summary="Advanced / Developer Mode: run trace"
+            summary="Advanced / Developer Mode"
             description="Ledger trace, run plan, round metadata, and internal ids for developer inspection."
             lazy
           >
@@ -523,7 +523,7 @@ function AdvancedOutcomeUnavailableDetails({
 }) {
   return (
     <AdvancedDetails
-      summary="Advanced / Developer Mode: unavailable outcome"
+      summary="Advanced / Developer Mode"
       description="Raw unavailable status, internal ids, reason code, and daemon response for developer inspection."
       lazy
     >
@@ -1079,7 +1079,7 @@ function StartRunForm({
         </button>
       </div>
       <AdvancedDetails
-        summary="Advanced / Developer Mode: start request"
+        summary="Advanced / Developer Mode"
         description="Submit a raw start request when testing low-level runtime behavior."
         lazy
       >
@@ -1176,7 +1176,7 @@ function StartResult({ result, runId }: { result: unknown; runId: string }) {
         </Link>
       </div>
       <AdvancedDetails
-        summary="Advanced / Developer Mode: stage metadata"
+        summary="Advanced / Developer Mode"
         description="Raw execution stages, round ids, and event ids returned by the local runtime."
         lazy
       >
