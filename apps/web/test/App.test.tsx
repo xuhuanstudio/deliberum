@@ -1097,6 +1097,11 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Open disagreements")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
     expect(screen.getAllByText(/objection-1/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "This disagreement is tracked, but it does not have a plain-language summary yet."
+      )
+    ).toBeTruthy();
 
     cleanup();
 
@@ -1105,6 +1110,11 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(nextClient.getObligations).toHaveBeenCalledWith("session-1"));
     expect(screen.getAllByText(/quality-1/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/unanswered/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "This requirement is tracked, but it does not have a plain-language summary yet."
+      )
+    ).toBeTruthy();
   });
 
   it("renders append-only ledger entries without stripping arbitrary payload keys", async () => {
@@ -2062,6 +2072,9 @@ describe("@deliberum/web shell", () => {
     expect(readableConclusion).toContain("Candidate A");
     expect(readableConclusion).toContain("1 visible perspective listed");
     expect(readableConclusion).toContain("Open disagreement 1");
+    expect(readableConclusion).toContain(
+      "This disagreement is tracked, but it does not have a plain-language summary yet."
+    );
     expect(readableConclusion).toContain("Requirement 1");
     expect(readableConclusion).toContain("Missing evidence 1");
     expect(readableConclusion).toContain("No unresolved questions listed");
@@ -2072,6 +2085,7 @@ describe("@deliberum/web shell", () => {
     expect(readableConclusion).not.toContain("quality-1");
     expect(readableConclusion).not.toContain("evidence-need-1");
     expect(readableConclusion).not.toContain("returned");
+    expect(readableConclusion).not.toContain("Advanced outcome material");
   });
 
   it("compiles run output for a selected proposal event", async () => {
@@ -2322,6 +2336,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText(/resource-missing/).length).toBeGreaterThan(0);
     expect(screen.getByText("Risks and missing evidence")).toBeTruthy();
     expect(screen.getAllByText(/evidence-need-1/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "This evidence need is tracked, but it does not have a plain-language summary yet."
+      )
+    ).toBeTruthy();
     expect(screen.getByText("Resource projection JSON")).toBeTruthy();
     expect(client.getRunOutcome).not.toHaveBeenCalled();
     expect(

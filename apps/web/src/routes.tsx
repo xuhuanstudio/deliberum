@@ -852,7 +852,7 @@ function ReadableSessionRecord({
       "rationale",
       "consequence",
       "requirement"
-    ]) ?? "Detailed material is available in Advanced details.";
+    ]) ?? getReadableFallbackDetail(kind);
   const status = formatReadableStatus(getRecordValue(object, "status"));
   const proposalEventId = formatRecordValue(getRecordValue(record, "proposalEventId"));
   const sourceEventIds = formatRecordIdList(asArray(getRecordValue(object, "sourceEventIds")));
@@ -912,6 +912,22 @@ function formatReadableKind(kind: SessionReadableKind): string {
   }
 
   return "Missing evidence";
+}
+
+function getReadableFallbackDetail(kind: SessionReadableKind): string {
+  if (kind === "perspective") {
+    return "This perspective is tracked, but it does not have a plain-language summary yet.";
+  }
+
+  if (kind === "disagreement") {
+    return "This disagreement is tracked, but it does not have a plain-language summary yet.";
+  }
+
+  if (kind === "requirement") {
+    return "This requirement is tracked, but it does not have a plain-language summary yet.";
+  }
+
+  return "This evidence need is tracked, but it does not have a plain-language summary yet.";
 }
 
 function formatSessionEventTypeForUser(value: unknown): string {

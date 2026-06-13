@@ -1668,7 +1668,7 @@ function summarizeOpenObjection(item: unknown, index: number): OutcomeRecordSumm
     fallbackTitle: `Open disagreement ${index + 1}`,
     fallbackKicker: `Disagreement ${index + 1}`,
     fallbackDetail:
-      "Details are available in Advanced outcome material if this needs developer inspection.",
+      "This disagreement is tracked, but it does not have a plain-language summary yet.",
     titleKeys: ["title", "summary", "claim"],
     detailKeys: ["reason", "description", "text"]
   });
