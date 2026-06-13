@@ -797,6 +797,171 @@ describe("CLI command routing", () => {
     expect(daemonClient.getRuntimeProfiles).toHaveBeenCalledTimes(1);
   });
 
+  it("builds safe daemon profile doctor diagnostics from runtime profile metadata", async () => {
+    const daemonClient = createFakeRunDaemonClient({
+      getRuntimeProfiles: vi.fn(async () => ({
+        profiles: [
+          {
+            id: "openai-compatible",
+            name: "OpenAI-compatible",
+            enabled: true,
+            status: "ready_with_run_config",
+            components: [
+              {
+                id: "openai-compatible",
+                kind: "participant_adapter",
+                enabled: true
+              },
+              {
+                id: "openai-compatible-extractor",
+                kind: "extraction_generator",
+                enabled: false
+              }
+            ],
+            setup: {
+              enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+              envVars: [
+                {
+                  name: "DELIBERUM_OPENAI_API_KEY",
+                  configured: true,
+                  secret: true,
+                  required: false,
+                  purpose: "Default provider secret."
+                },
+                {
+                  name: "DELIBERUM_OPENAI_BASE_URL",
+                  configured: false,
+                  secret: false,
+                  required: false,
+                  purpose: "Default provider base URL."
+                }
+              ],
+              missingRecommendedEnvVars: [
+                "DELIBERUM_OPENAI_BASE_URL",
+                "DELIBERUM_OPENAI_MODEL"
+              ],
+              notes: ["Run plans may provide provider runtime config."]
+            },
+            boundaries: ["Provider secrets stay in daemon runtime env."]
+          },
+          {
+            id: "mcp-tool",
+            name: "MCP tool",
+            enabled: false,
+            status: "disabled",
+            components: [],
+            setup: {
+              enableEnvVar: "DELIBERUM_ENABLE_MCP_TOOL_PROFILE",
+              envVars: [],
+              missingRecommendedEnvVars: [],
+              notes: []
+            },
+            boundaries: ["Tool endpoints are not returned."]
+          }
+        ]
+      }))
+    });
+    const { createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies({ client: daemonClient });
+
+    const report = parseOutput<{
+      summary: {
+        profileCount: number;
+        enabledProfileCount: number;
+        readyWithRunConfigCount: number;
+        missingRecommendedEnvVars: string[];
+      };
+      profiles: Array<{
+        id: string;
+        enabled: boolean;
+        status: string;
+        readyForDaemonDefaults: boolean;
+        enabledComponentCount: number;
+        configuredEnvVarCount: number;
+        configuredSecretEnvVarCount: number;
+        missingRecommendedEnvVars: string[];
+        actions: Array<{
+          kind: string;
+          envVar?: string;
+          envVars?: string[];
+        }>;
+      }>;
+      safety: string[];
+    }>(
+      await runCli(
+        ["daemon", "profile-doctor", "--daemon-url", "http://localhost:4999", "--json"],
+        dependencies
+      )
+    );
+    const filtered = parseOutput<{ profiles: Array<{ id: string }> }>(
+      await runCli(
+        ["daemon", "profile-doctor", "--profile", "mcp-tool", "--json"],
+        dependencies
+      )
+    );
+    const missing = await runCli(
+      ["daemon", "profile-doctor", "--profile", "missing-profile", "--json"],
+      dependencies
+    );
+    const rejected = await runCli(
+      ["daemon", "profile-doctor", "--api-key", "runtime-secret-value", "--json"],
+      dependencies
+    );
+
+    expect(report.summary).toEqual(
+      expect.objectContaining({
+        profileCount: 2,
+        enabledProfileCount: 1,
+        readyWithRunConfigCount: 1,
+        missingRecommendedEnvVars: [
+          "DELIBERUM_OPENAI_BASE_URL",
+          "DELIBERUM_OPENAI_MODEL"
+        ]
+      })
+    );
+    expect(report.profiles[0]).toEqual(
+      expect.objectContaining({
+        id: "openai-compatible",
+        enabled: true,
+        status: "ready_with_run_config",
+        readyForDaemonDefaults: false,
+        enabledComponentCount: 1,
+        configuredEnvVarCount: 1,
+        configuredSecretEnvVarCount: 1,
+        missingRecommendedEnvVars: [
+          "DELIBERUM_OPENAI_BASE_URL",
+          "DELIBERUM_OPENAI_MODEL"
+        ]
+      })
+    );
+    expect(report.profiles[0]?.actions).toContainEqual({
+      kind: "set_recommended_env",
+      envVars: ["DELIBERUM_OPENAI_BASE_URL", "DELIBERUM_OPENAI_MODEL"],
+      reason: expect.any(String)
+    });
+    expect(report.profiles[0]?.actions).toContainEqual({
+      kind: "provide_run_config",
+      reason: expect.any(String)
+    });
+    expect(report.profiles[1]?.actions).toEqual([
+      {
+        kind: "enable_profile",
+        envVar: "DELIBERUM_ENABLE_MCP_TOOL_PROFILE",
+        reason: expect.any(String)
+      }
+    ]);
+    expect(report.safety.join(" ")).toContain("does not read or print provider secrets");
+    expect(JSON.stringify(report)).not.toContain("runtime-secret-value");
+    expect(filtered.profiles.map((profile) => profile.id)).toEqual(["mcp-tool"]);
+    expect(missing.exitCode).toBe(1);
+    expect(missing.stdout).toContain("Runtime profile was not found");
+    expect(rejected.exitCode).toBe(1);
+    expect(rejected.stdout).not.toContain("runtime-secret-value");
+    expect(daemonClient.getRuntimeProfiles).toHaveBeenCalledTimes(3);
+    expect(createDaemonClient).toHaveBeenCalledTimes(3);
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
   it("prints a safe daemon environment template from runtime profile metadata", async () => {
     const daemonClient = createFakeRunDaemonClient({
       getRuntimeProfiles: vi.fn(async () => ({

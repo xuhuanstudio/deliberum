@@ -57,6 +57,7 @@ export const CLI_COMMANDS = [
   "events",
   "daemon profiles",
   "daemon env-template",
+  "daemon profile-doctor",
   "daemon operation-audit",
   "daemon resource-access revoke",
   "runs create",
@@ -199,6 +200,47 @@ export type CliRunEventStreamFetch = (
 type RawCliOutput = {
   kind: "raw";
   output?: unknown;
+};
+
+type DaemonProfileDoctorStatus =
+  | "disabled"
+  | "ready"
+  | "ready_with_run_config"
+  | "needs_configuration";
+
+type DaemonProfileDoctorAction = {
+  kind: "enable_profile" | "set_recommended_env" | "provide_run_config";
+  envVar?: string;
+  envVars?: string[];
+  reason: string;
+};
+
+type DaemonProfileDoctorProfile = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  status: DaemonProfileDoctorStatus;
+  readyForDaemonDefaults: boolean;
+  enabledComponentCount: number;
+  configuredEnvVarCount: number;
+  configuredSecretEnvVarCount: number;
+  missingRecommendedEnvVars: string[];
+  actions: DaemonProfileDoctorAction[];
+  notes: string[];
+  boundaries: string[];
+};
+
+type DaemonProfileDoctorReport = {
+  summary: {
+    profileCount: number;
+    enabledProfileCount: number;
+    readyProfileCount: number;
+    readyWithRunConfigCount: number;
+    needsConfigurationCount: number;
+    missingRecommendedEnvVars: string[];
+  };
+  profiles: DaemonProfileDoctorProfile[];
+  safety: string[];
 };
 
 const defaultCoreApi: CliCoreApi = {
@@ -680,6 +722,17 @@ async function executeDaemonCommand(
     } satisfies RawCliOutput;
   }
 
+  if (action === "profile-doctor") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon profile-doctor [--profile <id>] [--daemon-url <local-url>]"
+    );
+
+    const profiles = await daemonClient.getRuntimeProfiles();
+
+    return createDaemonProfileDoctorReport(profiles, getLastOption(parsedArgs, "profile"));
+  }
+
   if (action === "operation-audit") {
     requireNoPositionals(
       restPositionals,
@@ -723,7 +776,7 @@ async function executeDaemonCommand(
 
 function assertKnownDaemonCommand(action: string): void {
   if (
-    ["profiles", "env-template", "operation-audit", "resource-access"].includes(action)
+    ["profiles", "env-template", "profile-doctor", "operation-audit", "resource-access"].includes(action)
   ) {
     return;
   }
@@ -734,7 +787,7 @@ function assertKnownDaemonCommand(action: string): void {
 function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): void {
   const allowedOptions = new Set([
     "daemon-url",
-    ...(action === "env-template" ? ["profile"] : []),
+    ...(action === "env-template" || action === "profile-doctor" ? ["profile"] : []),
     ...(action === "operation-audit" ? ["limit", "format"] : [])
   ]);
 
@@ -1408,6 +1461,97 @@ function createDaemonEnvTemplate(
   }
 
   return `${lines.join("\n")}\n`;
+}
+
+function createDaemonProfileDoctorReport(
+  response: RuntimeProfilesResponse,
+  profileId: string | undefined
+): DaemonProfileDoctorReport {
+  const profiles = profileId
+    ? response.profiles.filter((profile) => profile.id === profileId)
+    : response.profiles;
+
+  if (profileId && profiles.length === 0) {
+    throw new CliUsageError(`Runtime profile was not found: ${profileId}`);
+  }
+
+  const diagnostics = profiles.map((profile) => {
+    const configuredEnvVars = profile.setup.envVars.filter((envVar) => envVar.configured);
+    const enabledComponents = profile.components.filter((component) => component.enabled);
+    const actions = createDaemonProfileDoctorActions(profile);
+
+    return {
+      id: profile.id,
+      name: profile.name,
+      enabled: profile.enabled,
+      status: profile.status,
+      readyForDaemonDefaults: profile.enabled && profile.status === "ready",
+      enabledComponentCount: enabledComponents.length,
+      configuredEnvVarCount: configuredEnvVars.length,
+      configuredSecretEnvVarCount: configuredEnvVars.filter((envVar) => envVar.secret)
+        .length,
+      missingRecommendedEnvVars: [...profile.setup.missingRecommendedEnvVars],
+      actions,
+      notes: [...profile.setup.notes],
+      boundaries: [...profile.boundaries]
+    } satisfies DaemonProfileDoctorProfile;
+  });
+
+  return {
+    summary: {
+      profileCount: diagnostics.length,
+      enabledProfileCount: diagnostics.filter((profile) => profile.enabled).length,
+      readyProfileCount: diagnostics.filter((profile) => profile.status === "ready").length,
+      readyWithRunConfigCount: diagnostics.filter(
+        (profile) => profile.status === "ready_with_run_config"
+      ).length,
+      needsConfigurationCount: diagnostics.filter(
+        (profile) => profile.status === "needs_configuration"
+      ).length,
+      missingRecommendedEnvVars: [
+        ...new Set(diagnostics.flatMap((profile) => profile.missingRecommendedEnvVars))
+      ].sort()
+    },
+    profiles: diagnostics,
+    safety: [
+      "This report is derived from safe /runtime/profiles metadata.",
+      "It reports only env var names, booleans, notes, and boundaries.",
+      "It does not read or print provider secrets, URLs, model ids, request templates, run plans, or tool payloads.",
+      "It does not enable profiles, write .env files, start providers, or execute adapters."
+    ]
+  };
+}
+
+function createDaemonProfileDoctorActions(
+  profile: RuntimeProfilesResponse["profiles"][number]
+): DaemonProfileDoctorAction[] {
+  const actions: DaemonProfileDoctorAction[] = [];
+
+  if (!profile.enabled) {
+    actions.push({
+      kind: "enable_profile",
+      envVar: profile.setup.enableEnvVar,
+      reason: "Set the profile enable env var when this profile should be available to daemon runs."
+    });
+    return actions;
+  }
+
+  if (profile.setup.missingRecommendedEnvVars.length > 0) {
+    actions.push({
+      kind: "set_recommended_env",
+      envVars: [...profile.setup.missingRecommendedEnvVars],
+      reason: "Configure these env vars for daemon-wide defaults, or keep supplying equivalent run provider config where supported."
+    });
+  }
+
+  if (profile.status === "ready_with_run_config") {
+    actions.push({
+      kind: "provide_run_config",
+      reason: "This profile can be used when the run plan supplies the provider configuration that daemon defaults do not provide."
+    });
+  }
+
+  return actions;
 }
 
 function sanitizeEnvTemplateComment(value: string): string {
