@@ -9,7 +9,7 @@ This document describes the core protocol data model implemented in `packages/pr
 - Semantic updates use proposals instead of silent overwrites.
 - Every adapter-generated contribution must carry trace metadata.
 - Precise references must include enough context to avoid quote-mining.
-- Event stores assign `sequence` and `recordedAt`; append callers do not supply them.
+- Event stores assign `sequence`, `recordedAt`, and integrity hashes; append callers do not supply them.
 
 ## EventEnvelope
 
@@ -44,7 +44,7 @@ type EventEnvelope<TPayload> = {
 }
 ```
 
-`eventHash` and `previousEventHash` are reserved for future tamper-evident ledger support. Current in-memory and CLI JSON stores do not compute cryptographic event hashes and should not be described as tamper-evident.
+Event stores assign `integrity.eventHash` at append time using a stable SHA-256 hash of the event envelope without `integrity.eventHash`. Events after the first event in a session also include `integrity.previousEventHash`, which links to the previous event's stable hash. The JSON file store validates persisted hashed chains on load while still accepting older events that do not carry integrity metadata. These hashes are local tamper-evidence metadata; they are not distributed consensus, production notarization, or multi-writer coordination.
 
 ## TopicContract
 
