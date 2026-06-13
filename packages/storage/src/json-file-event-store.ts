@@ -9,6 +9,7 @@ import type {
   EventStore
 } from "./event-store";
 import { isCompatibleIdempotentEventInput } from "./idempotency";
+import { attachEventIntegrity, validateEventIntegrityChain } from "./integrity";
 import { cloneAndFreezeEvent, type StoredEvent } from "./immutable";
 import { dirname, resolve } from "node:path";
 import {
@@ -115,12 +116,17 @@ export class JsonFileEventStore implements EventStore {
     }
 
     const sequence = this.nextSequenceBySession.get(input.sessionId) ?? 0;
-    const event = {
+    const eventWithoutIntegrity = EventEnvelopeSchema.parse({
       ...input,
       sequence,
       recordedAt: this.clock()
-    } satisfies EventEnvelope<TPayload>;
-    const parsedEvent = EventEnvelopeSchema.parse(event) as EventEnvelope<TPayload>;
+    } satisfies EventEnvelope<TPayload>) as EventEnvelope<TPayload>;
+    const parsedEvent = EventEnvelopeSchema.parse(
+      attachEventIntegrity(
+        eventWithoutIntegrity,
+        this.getSessionEvents(eventWithoutIntegrity.sessionId).at(-1)
+      )
+    ) as EventEnvelope<TPayload>;
 
     this.storeEvent(parsedEvent);
     this.persist();
@@ -282,6 +288,10 @@ export class JsonFileEventStore implements EventStore {
     if ("recordedAt" in input) {
       throw new JsonFileEventStoreError("Event recordedAt is assigned by the store.");
     }
+
+    if ("integrity" in input) {
+      throw new JsonFileEventStoreError("Event integrity is assigned by the store.");
+    }
   }
 
   private createIdempotencyLookupKey(input: AppendEventInput): string | undefined {
@@ -354,5 +364,10 @@ function validatePersistedLedgerIntegrity(events: readonly EventEnvelope[]): voi
         );
       }
     }
+  }
+
+  const integrityError = validateEventIntegrityChain(events);
+  if (integrityError) {
+    throw new JsonFileEventStoreError(integrityError);
   }
 }

@@ -70,19 +70,32 @@ describe("InMemoryEventStore append behavior", () => {
     const store = createStore();
 
     const event = store.appendEvent(createInput());
+    const second = store.appendEvent(createInput({ id: "event-2" }));
     expect(event.recordedAt).toBe("2026-06-10T00:00:00.000Z");
+    expect(event.integrity?.eventHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(event.integrity?.previousEventHash).toBeUndefined();
+    expect(second.integrity?.previousEventHash).toBe(event.integrity?.eventHash);
 
     expect(() =>
       store.appendEvent({
-        ...createInput({ id: "event-2" }),
+        ...createInput({ id: "event-3" }),
         sequence: 99
       } as unknown as AppendEventInput<TestPayload>)
     ).toThrow(InvalidEventInputError);
 
     expect(() =>
       store.appendEvent({
-        ...createInput({ id: "event-3" }),
+        ...createInput({ id: "event-4" }),
         recordedAt: "2026-06-10T00:00:59.000Z"
+      } as unknown as AppendEventInput<TestPayload>)
+    ).toThrow(InvalidEventInputError);
+
+    expect(() =>
+      store.appendEvent({
+        ...createInput({ id: "event-5" }),
+        integrity: {
+          eventHash: "sha256:caller-provided"
+        }
       } as unknown as AppendEventInput<TestPayload>)
     ).toThrow(InvalidEventInputError);
   });

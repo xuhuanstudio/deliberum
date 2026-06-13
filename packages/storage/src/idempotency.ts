@@ -1,7 +1,7 @@
 import type { EventEnvelope } from "@deliberum/protocol";
 import type { AppendEventInput } from "./event-store";
 
-const GENERATED_EVENT_FIELDS = new Set(["id", "sequence", "recordedAt", "createdAt"]);
+const GENERATED_EVENT_FIELDS = new Set(["id", "sequence", "recordedAt", "createdAt", "integrity"]);
 const GENERATED_NESTED_FIELDS = new Set(["committedAt"]);
 const GENERATED_ROOT_PAYLOAD_FIELDS_BY_EVENT_TYPE = new Map<string, Set<string>>([
   ["sealed_batch_opened", new Set(["id", "openedAt"])],

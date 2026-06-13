@@ -10,6 +10,7 @@ import type {
   EventStore
 } from "./event-store";
 import { isCompatibleIdempotentEventInput } from "./idempotency";
+import { attachEventIntegrity } from "./integrity";
 import { cloneAndFreezeEvent, type StoredEvent } from "./immutable";
 import { dirname } from "node:path";
 import { mkdirSync } from "node:fs";
@@ -254,12 +255,14 @@ export class SQLiteEventStore implements EventStore {
     }
 
     const sequence = this.nextSequence(input.sessionId);
-    const event = {
+    const eventWithoutIntegrity = EventEnvelopeSchema.parse({
       ...input,
       sequence,
       recordedAt: this.clock()
-    } satisfies EventEnvelope<TPayload>;
-    const parsedEvent = EventEnvelopeSchema.parse(event) as EventEnvelope<TPayload>;
+    } satisfies EventEnvelope<TPayload>) as EventEnvelope<TPayload>;
+    const parsedEvent = EventEnvelopeSchema.parse(
+      attachEventIntegrity(eventWithoutIntegrity, this.latestEvent(input.sessionId))
+    ) as EventEnvelope<TPayload>;
 
     this.insertEvent(parsedEvent);
 
@@ -303,6 +306,21 @@ export class SQLiteEventStore implements EventStore {
       .get(sessionId);
 
     return row?.next_sequence ?? 0;
+  }
+
+  private latestEvent(sessionId: string): EventEnvelope | undefined {
+    const row = this.database
+      .prepare<[string], EventRow>(
+        [
+          "SELECT event_json FROM deliberum_events",
+          "WHERE session_id = ?",
+          "ORDER BY sequence DESC",
+          "LIMIT 1"
+        ].join(" ")
+      )
+      .get(sessionId);
+
+    return row ? this.parseEventEnvelope(row.event_json) : undefined;
   }
 
   private insertEvent(event: EventEnvelope): void {
@@ -356,6 +374,10 @@ export class SQLiteEventStore implements EventStore {
 
     if ("recordedAt" in input) {
       throw new SQLiteEventStoreError("Event recordedAt is assigned by the store.");
+    }
+
+    if ("integrity" in input) {
+      throw new SQLiteEventStoreError("Event integrity is assigned by the store.");
     }
   }
 

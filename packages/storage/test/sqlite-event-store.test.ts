@@ -111,6 +111,8 @@ describe("SQLiteEventStore", () => {
 
       expect(first.sequence).toBe(0);
       expect(second.sequence).toBe(1);
+      expect(first.integrity?.eventHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+      expect(second.integrity?.previousEventHash).toBe(first.integrity?.eventHash);
       expect(firstStore.listEvents("session-1")).toEqual([first, second]);
       expect(secondStore.listEvents("session-1")).toEqual([first, second]);
     } finally {

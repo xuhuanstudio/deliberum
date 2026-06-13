@@ -52,7 +52,14 @@ type EventEnvelope<TPayload> = {
 
 `trace` is required at the top level. Its nested fields may be empty when an event has no adapter/tool provenance.
 
-`integrity.previousEventHash` and `integrity.eventHash` are reserved for future tamper-evident ledger support. The current in-memory and CLI JSON stores assign `sequence` and `recordedAt` and validate ledger invariants, but they do not compute cryptographic event hashes and should not be described as tamper-evident stores.
+Event stores assign `integrity.eventHash` at append time using a stable
+SHA-256 hash of the event envelope without `integrity.eventHash`. Events after
+the first event in a session also include `integrity.previousEventHash`, which
+links to the previous event's stable hash. The JSON file store validates
+persisted hashed chains on load while still accepting older events that do not
+carry integrity metadata. These hashes are local tamper-evidence metadata; they
+are not distributed consensus, production notarization, or multi-writer
+coordination.
 
 ## Projection metadata
 

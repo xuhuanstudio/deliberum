@@ -121,6 +121,38 @@ describe("JsonFileEventStore", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("persists event integrity hashes and rejects tampered hashed ledgers", () => {
+    const dir = createTempDir();
+    const filePath = join(dir, ".deliberum", "events.json");
+    const store = new JsonFileEventStore({
+      filePath,
+      clock: () => "2026-06-10T00:00:01.000Z"
+    });
+
+    const first = store.appendEvent(createInput({ id: "event-1" }));
+    const second = store.appendEvent(createInput({ id: "event-2" }));
+    const reloaded = new JsonFileEventStore({ filePath });
+    const ledger = JSON.parse(realFs.readFileSync(filePath, "utf8")) as {
+      events: EventEnvelope[];
+    };
+
+    expect(first.integrity?.eventHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(second.integrity?.previousEventHash).toBe(first.integrity?.eventHash);
+    expect(reloaded.listEvents("session-1")).toEqual([first, second]);
+
+    ledger.events[0] = {
+      ...ledger.events[0],
+      payload: {
+        ok: false
+      }
+    } as EventEnvelope;
+    writePersistedLedger(filePath, ledger.events);
+
+    expect(() => new JsonFileEventStore({ filePath })).toThrow(JsonFileEventStoreError);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("rejects append result retries with different event inputs", () => {
     const dir = createTempDir();
     const filePath = join(dir, ".deliberum", "events.json");

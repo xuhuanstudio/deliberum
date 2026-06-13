@@ -3,10 +3,11 @@ import type { StoredEvent } from "./immutable";
 
 export type AppendEventInput<TPayload = unknown> = Omit<
   EventEnvelope<TPayload>,
-  "sequence" | "recordedAt"
+  "sequence" | "recordedAt" | "integrity"
 > & {
   sequence?: never;
   recordedAt?: never;
+  integrity?: never;
 };
 
 export type AppendEventResult<TPayload = unknown> = {

@@ -2,6 +2,7 @@ import { EventEnvelopeSchema, type EventEnvelope, type EventVisibility } from "@
 import { DuplicateEventIdError, InvalidEventInputError, InvalidEventRangeError } from "./errors";
 import type { AppendEventInput, AppendEventResult, EventStore } from "./event-store";
 import { isCompatibleIdempotentEventInput } from "./idempotency";
+import { attachEventIntegrity } from "./integrity";
 import { cloneAndFreezeEvent, type StoredEvent } from "./immutable";
 
 export type InMemoryEventStoreOptions = {
@@ -50,15 +51,16 @@ export class InMemoryEventStore implements EventStore {
     }
 
     const sequence = this.nextSequenceBySession.get(input.sessionId) ?? 0;
-    const event = {
+    const eventWithoutIntegrity = EventEnvelopeSchema.parse({
       ...input,
       sequence,
       recordedAt: this.clock()
-    } satisfies EventEnvelope<TPayload>;
-
-    const parsedEvent = EventEnvelopeSchema.parse(event) as EventEnvelope<TPayload>;
+    } satisfies EventEnvelope<TPayload>) as EventEnvelope<TPayload>;
+    const sessionEvents = this.eventsBySession.get(eventWithoutIntegrity.sessionId) ?? [];
+    const parsedEvent = EventEnvelopeSchema.parse(
+      attachEventIntegrity(eventWithoutIntegrity, sessionEvents.at(-1) as EventEnvelope | undefined)
+    ) as EventEnvelope<TPayload>;
     const storedEvent = cloneAndFreezeEvent(parsedEvent);
-    const sessionEvents = this.eventsBySession.get(storedEvent.sessionId) ?? [];
 
     sessionEvents.push(storedEvent);
     this.eventsBySession.set(storedEvent.sessionId, sessionEvents);
@@ -129,6 +131,10 @@ export class InMemoryEventStore implements EventStore {
 
     if ("recordedAt" in input) {
       throw new InvalidEventInputError("Event recordedAt is assigned by the store.");
+    }
+
+    if ("integrity" in input) {
+      throw new InvalidEventInputError("Event integrity is assigned by the store.");
     }
   }
 
