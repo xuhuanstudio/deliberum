@@ -20,6 +20,12 @@ local:
       optionalRunMetadataPathEnv: DELIBERUM_DAEMON_RUN_STORE_PATH
       optionalOperationAuditPathEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_PATH
       operationAuditMaxEntriesEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES
+      operationAuditJsonlMirror:
+        pathEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_PATH
+        maxBytesEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES
+        maxFilesEnv: DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES
+        material: normalized_control_plane_metadata_only
+        remoteShipping: deferred
       resourceBrokerState: explicit_registered_resources
       operationAuditMaterial: normalized_control_plane_metadata_only
       inMemoryFallback: true

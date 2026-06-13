@@ -1,9 +1,12 @@
 import { dirname } from "node:path";
 import {
+  appendFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
   renameSync,
+  rmSync,
+  statSync,
   writeFileSync
 } from "node:fs";
 import type { Clock, IdGenerator } from "@deliberum/core";
@@ -12,6 +15,9 @@ export const OPERATION_AUDIT_LOG_SCHEMA_VERSION = 1 as const;
 export const DEFAULT_OPERATION_AUDIT_LIMIT = 100 as const;
 export const MAX_OPERATION_AUDIT_LIMIT = 1000 as const;
 export const MAX_OPERATION_AUDIT_RETENTION_ENTRIES = 100_000 as const;
+export const DEFAULT_OPERATION_AUDIT_JSONL_MAX_FILES = 5 as const;
+export const MAX_OPERATION_AUDIT_JSONL_MAX_FILES = 100 as const;
+export const MAX_OPERATION_AUDIT_JSONL_MAX_BYTES = 1_073_741_824 as const;
 
 export const OPERATION_AUDIT_OUTCOMES = [
   "succeeded",
@@ -67,6 +73,10 @@ export type OperationAuditListOptions = {
 export interface OperationAuditLog {
   record(input: OperationAuditRecordInput): OperationAuditEntry;
   list(options?: OperationAuditListOptions): OperationAuditEntry[];
+}
+
+export interface OperationAuditExportSink {
+  write(entry: OperationAuditEntry): void;
 }
 
 export class OperationAuditLogError extends Error {
@@ -237,6 +247,124 @@ export class JsonFileOperationAuditLog implements OperationAuditLog {
   }
 }
 
+export type JsonlOperationAuditExportFileSystem = {
+  appendFileSync: typeof appendFileSync;
+  existsSync: typeof existsSync;
+  mkdirSync: typeof mkdirSync;
+  renameSync: typeof renameSync;
+  rmSync: typeof rmSync;
+  statSync: typeof statSync;
+};
+
+export type JsonlOperationAuditExportSinkOptions = {
+  filePath: string;
+  maxBytes?: number;
+  maxFiles?: number;
+  fileSystem?: Partial<JsonlOperationAuditExportFileSystem>;
+};
+
+const defaultJsonlExportFileSystem: JsonlOperationAuditExportFileSystem = {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  renameSync,
+  rmSync,
+  statSync
+};
+
+export class JsonlOperationAuditExportSink implements OperationAuditExportSink {
+  private readonly filePath: string;
+  private readonly maxBytes?: number;
+  private readonly maxFiles: number;
+  private readonly fileSystem: JsonlOperationAuditExportFileSystem;
+
+  constructor(options: JsonlOperationAuditExportSinkOptions) {
+    const filePath = options.filePath.trim();
+    if (filePath.length === 0) {
+      throw new OperationAuditLogError("Operation audit JSONL export path is required.");
+    }
+
+    this.filePath = filePath;
+    this.maxBytes = normalizeOperationAuditJsonlMaxBytes(options.maxBytes);
+    this.maxFiles = normalizeOperationAuditJsonlMaxFiles(options.maxFiles);
+    this.fileSystem = {
+      ...defaultJsonlExportFileSystem,
+      ...options.fileSystem
+    };
+  }
+
+  write(entry: OperationAuditEntry): void {
+    const line = `${JSON.stringify(cloneEntry(entry))}\n`;
+    const lineBytes = Buffer.byteLength(line, "utf8");
+    const directory = dirname(this.filePath);
+
+    this.fileSystem.mkdirSync(directory, { recursive: true });
+    if (this.shouldRotate(lineBytes)) {
+      this.rotate();
+    }
+
+    this.fileSystem.appendFileSync(this.filePath, line, "utf8");
+  }
+
+  private shouldRotate(lineBytes: number): boolean {
+    if (this.maxBytes === undefined || !this.fileSystem.existsSync(this.filePath)) {
+      return false;
+    }
+
+    const size = this.fileSystem.statSync(this.filePath).size;
+    return size > 0 && size + lineBytes > this.maxBytes;
+  }
+
+  private rotate(): void {
+    this.fileSystem.rmSync(`${this.filePath}.${this.maxFiles}`, { force: true });
+
+    for (let index = this.maxFiles - 1; index >= 1; index -= 1) {
+      const currentPath = `${this.filePath}.${index}`;
+      if (this.fileSystem.existsSync(currentPath)) {
+        this.fileSystem.renameSync(currentPath, `${this.filePath}.${index + 1}`);
+      }
+    }
+
+    if (this.fileSystem.existsSync(this.filePath)) {
+      this.fileSystem.renameSync(this.filePath, `${this.filePath}.1`);
+    }
+  }
+}
+
+export type MirroredOperationAuditLogOptions = {
+  primary: OperationAuditLog;
+  sink: OperationAuditExportSink;
+  onSinkError?: (error: unknown, entry: OperationAuditEntry) => void;
+};
+
+export class MirroredOperationAuditLog implements OperationAuditLog {
+  private readonly primary: OperationAuditLog;
+  private readonly sink: OperationAuditExportSink;
+  private readonly onSinkError?: (error: unknown, entry: OperationAuditEntry) => void;
+
+  constructor(options: MirroredOperationAuditLogOptions) {
+    this.primary = options.primary;
+    this.sink = options.sink;
+    this.onSinkError = options.onSinkError;
+  }
+
+  record(input: OperationAuditRecordInput): OperationAuditEntry {
+    const entry = this.primary.record(input);
+
+    try {
+      this.sink.write(entry);
+    } catch (error) {
+      this.onSinkError?.(error, cloneEntry(entry));
+    }
+
+    return cloneEntry(entry);
+  }
+
+  list(options: OperationAuditListOptions = {}): OperationAuditEntry[] {
+    return this.primary.list(options);
+  }
+}
+
 export function parseOperationAuditLimit(value: string | undefined): number {
   const trimmed = value?.trim();
 
@@ -293,6 +421,74 @@ export function normalizeOperationAuditMaxEntries(
   }
 
   return Math.min(value, MAX_OPERATION_AUDIT_RETENTION_ENTRIES);
+}
+
+export function parseOperationAuditJsonlMaxBytes(
+  value: string | undefined
+): number | undefined {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    throw new OperationAuditLogError(
+      "Operation audit JSONL max bytes must be a positive integer."
+    );
+  }
+
+  return normalizeOperationAuditJsonlMaxBytes(Number(trimmed));
+}
+
+export function normalizeOperationAuditJsonlMaxBytes(
+  value: number | undefined
+): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new OperationAuditLogError(
+      "Operation audit JSONL max bytes must be a positive integer."
+    );
+  }
+
+  return Math.min(value, MAX_OPERATION_AUDIT_JSONL_MAX_BYTES);
+}
+
+export function parseOperationAuditJsonlMaxFiles(
+  value: string | undefined
+): number | undefined {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    throw new OperationAuditLogError(
+      "Operation audit JSONL max files must be a positive integer."
+    );
+  }
+
+  return normalizeOperationAuditJsonlMaxFiles(Number(trimmed));
+}
+
+export function normalizeOperationAuditJsonlMaxFiles(
+  value: number | undefined
+): number {
+  if (value === undefined) {
+    return DEFAULT_OPERATION_AUDIT_JSONL_MAX_FILES;
+  }
+
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new OperationAuditLogError(
+      "Operation audit JSONL max files must be a positive integer."
+    );
+  }
+
+  return Math.min(value, MAX_OPERATION_AUDIT_JSONL_MAX_FILES);
 }
 
 export function createOperationAuditRecord(input: {

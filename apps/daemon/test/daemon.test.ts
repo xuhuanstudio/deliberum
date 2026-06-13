@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -114,6 +121,9 @@ import {
   OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
   OPENAI_COMPATIBLE_TOP_P_ENV_VAR,
   DAEMON_HOST_ENV_VAR,
+  DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR,
+  DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR,
+  DAEMON_OPERATION_AUDIT_JSONL_PATH_ENV_VAR,
   DAEMON_PORT_ENV_VAR,
   RESOURCE_ACCESS_ALLOW_REMOTE_ENV_VAR,
   RESOURCE_ACCESS_BASE_URL_ENV_VAR,
@@ -131,6 +141,9 @@ import {
   parseDaemonCorsOriginsFromEnv,
   resolveStartDaemonOperationAuditMaxEntries,
   resolveStartDaemonOperationAuditPath,
+  resolveStartDaemonOperationAuditJsonlMaxBytes,
+  resolveStartDaemonOperationAuditJsonlMaxFiles,
+  resolveStartDaemonOperationAuditJsonlPath,
   resolveStartDaemonWebAssetsPath,
   resolveStartDaemonEventStorePath,
   resolveStartDaemonRunStorePath,
@@ -150,6 +163,7 @@ import {
   resolveStartDaemonEnableLocalPreset,
   ResourceAccessGrantStore,
   JsonFileOperationAuditLog,
+  MirroredOperationAuditLog,
   SQLiteOperationAuditLog,
   SQLiteResourceAccessGrantStore,
   SQLiteRunStore,
@@ -184,6 +198,14 @@ function operationAuditInput(action: string) {
     },
     target: {}
   };
+}
+
+function readJsonlFile(filePath: string): unknown[] {
+  return readFileSync(filePath, "utf8")
+    .trim()
+    .split("\n")
+    .filter((line) => line.length > 0)
+    .map((line) => JSON.parse(line) as unknown);
 }
 
 function topicContract() {
@@ -5686,6 +5708,146 @@ describe("daemon API", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it("mirrors operation audit records to JSONL with local size rotation", () => {
+    const dir = mkdtempSync(join(tmpdir(), "deliberum-daemon-operation-audit-jsonl-"));
+    const filePath = join(dir, "operations.jsonl");
+
+    try {
+      const log = createStartDaemonOperationAuditLog(
+        {
+          operationAuditIdGenerator: createIds(),
+          operationAuditClock: clock
+        },
+        {
+          [DAEMON_OPERATION_AUDIT_JSONL_PATH_ENV_VAR]: ` ${filePath} `,
+          [DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR]: "1",
+          [DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR]: "2"
+        }
+      );
+
+      expect(log).toBeInstanceOf(MirroredOperationAuditLog);
+      expect(
+        resolveStartDaemonOperationAuditJsonlPath({
+          [DAEMON_OPERATION_AUDIT_JSONL_PATH_ENV_VAR]: ` ${filePath} `
+        })
+      ).toBe(filePath);
+      expect(resolveStartDaemonOperationAuditJsonlPath({})).toBeUndefined();
+      expect(
+        resolveStartDaemonOperationAuditJsonlPath({
+          [DAEMON_OPERATION_AUDIT_JSONL_PATH_ENV_VAR]: "   "
+        })
+      ).toBeUndefined();
+      expect(
+        resolveStartDaemonOperationAuditJsonlMaxBytes({
+          [DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR]: " 1 "
+        })
+      ).toBe(1);
+      expect(resolveStartDaemonOperationAuditJsonlMaxBytes({})).toBeUndefined();
+      expect(
+        resolveStartDaemonOperationAuditJsonlMaxFiles({
+          [DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR]: " 2 "
+        })
+      ).toBe(2);
+      expect(resolveStartDaemonOperationAuditJsonlMaxFiles({})).toBeUndefined();
+
+      log?.record(operationAuditInput("runtime_profiles_read"));
+      log?.record({
+        ...operationAuditInput("operation_audit_read"),
+        route: "/runtime/operation-audit"
+      });
+
+      expect(log?.list()).toEqual([
+        expect.objectContaining({
+          id: "id-1",
+          action: "runtime_profiles_read"
+        }),
+        expect.objectContaining({
+          id: "id-2",
+          action: "operation_audit_read"
+        })
+      ]);
+      expect(existsSync(filePath)).toBe(true);
+      expect(existsSync(`${filePath}.1`)).toBe(true);
+      expect(readJsonlFile(`${filePath}.1`)).toEqual([
+        expect.objectContaining({
+          id: "id-1",
+          action: "runtime_profiles_read",
+          authorization: {
+            mode: "daemon_bearer",
+            present: true
+          },
+          target: {}
+        })
+      ]);
+      expect(readJsonlFile(filePath)).toEqual([
+        expect.objectContaining({
+          id: "id-2",
+          action: "operation_audit_read",
+          route: "/runtime/operation-audit"
+        })
+      ]);
+
+      const serialized = `${readFileSync(filePath, "utf8")}\n${readFileSync(
+        `${filePath}.1`,
+        "utf8"
+      )}`;
+      expect(serialized).not.toContain("Authorization");
+      expect(serialized).not.toContain("Bearer ");
+      expect(serialized).not.toContain("/Users/");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps primary operation audit records when JSONL mirroring fails", () => {
+    const errors: unknown[] = [];
+    const log = new MirroredOperationAuditLog({
+      primary: new daemon.InMemoryOperationAuditLog({
+        idGenerator: createIds(),
+        clock
+      }),
+      sink: {
+        write: () => {
+          throw new Error("jsonl mirror unavailable");
+        }
+      },
+      onSinkError: (error) => errors.push(error)
+    });
+
+    const entry = log.record(operationAuditInput("runtime_profiles_read"));
+
+    expect(entry).toEqual(
+      expect.objectContaining({
+        id: "id-1",
+        action: "runtime_profiles_read"
+      })
+    );
+    expect(log.list()).toEqual([
+      expect.objectContaining({
+        id: "id-1",
+        action: "runtime_profiles_read"
+      })
+    ]);
+    expect(errors).toHaveLength(1);
+  });
+
+  it("rejects invalid operation audit JSONL rotation env values", () => {
+    expect(() =>
+      resolveStartDaemonOperationAuditJsonlMaxBytes({
+        [DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR]: "not-a-number"
+      })
+    ).toThrow(
+      `${DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR} must be a positive integer.`
+    );
+    expect(() =>
+      resolveStartDaemonOperationAuditJsonlMaxFiles({
+        [DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR]: "0"
+      })
+    ).toThrow(
+      `${DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR} must be a positive integer.`
+    );
   });
 
   it("resolves optional daemon Web asset path from env without overriding explicit assets", () => {

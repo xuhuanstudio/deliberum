@@ -20,7 +20,7 @@
 
 The daemon operation audit log is separate from the semantic event ledger. It records local control-plane action, method, normalized route, status code, outcome, auth mode/presence, and non-secret target ids for daemon requests. It does not make projections authoritative and does not become a source of deliberation truth.
 
-Operation audit persistence is optional. With `DELIBERUM_DAEMON_SQLITE_PATH`, audit records are stored in the local daemon SQLite database. Without SQLite, `DELIBERUM_DAEMON_OPERATION_AUDIT_PATH` can persist the same safe metadata to JSON for local development. If neither is configured, the audit log is process-local memory only. `DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES` caps retained records for all three local audit log backends.
+Operation audit persistence is optional. With `DELIBERUM_DAEMON_SQLITE_PATH`, audit records are stored in the local daemon SQLite database. Without SQLite, `DELIBERUM_DAEMON_OPERATION_AUDIT_PATH` can persist the same safe metadata to JSON for local development. If neither is configured, the audit log is process-local memory only. `DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES` caps retained records for all three local audit log backends. `DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_PATH` can mirror the same safe records to a local JSONL archive with optional size-based rotation; remote audit shipping remains outside the daemon.
 
 ## Resource security
 

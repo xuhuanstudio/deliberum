@@ -13,6 +13,11 @@ import { JsonFileEventStore, SQLiteEventStore, type EventStore } from "@deliberu
 import { JsonFileRunStore } from "./json-file-run-store";
 import {
   JsonFileOperationAuditLog,
+  JsonlOperationAuditExportSink,
+  MirroredOperationAuditLog,
+  InMemoryOperationAuditLog,
+  parseOperationAuditJsonlMaxBytes,
+  parseOperationAuditJsonlMaxFiles,
   parseOperationAuditMaxEntries
 } from "./operation-audit-log";
 import { isLocalPresetEnabledFromEnv } from "./local-preset";
@@ -39,6 +44,12 @@ export const DAEMON_OPERATION_AUDIT_PATH_ENV_VAR =
   "DELIBERUM_DAEMON_OPERATION_AUDIT_PATH" as const;
 export const DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR =
   "DELIBERUM_DAEMON_OPERATION_AUDIT_MAX_ENTRIES" as const;
+export const DAEMON_OPERATION_AUDIT_JSONL_PATH_ENV_VAR =
+  "DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_PATH" as const;
+export const DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR =
+  "DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES" as const;
+export const DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR =
+  "DELIBERUM_DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES" as const;
 export const DAEMON_WEB_ASSETS_PATH_ENV_VAR = "DELIBERUM_DAEMON_WEB_ASSETS_PATH" as const;
 export const DAEMON_AUTH_TOKEN_ENV_VAR = "DELIBERUM_DAEMON_AUTH_TOKEN" as const;
 export const DAEMON_HOST_ENV_VAR = "DELIBERUM_HOST" as const;
@@ -184,21 +195,40 @@ export function createStartDaemonOperationAuditLog(
     maxEntries:
       options.operationAuditMaxEntries ?? resolveStartDaemonOperationAuditMaxEntries(env)
   };
+  let operationAuditLog: StartDaemonOptions["operationAuditLog"];
   const sqlitePath = resolveStartDaemonSQLitePath(env);
   if (sqlitePath) {
-    return new SQLiteOperationAuditLog({
+    operationAuditLog = new SQLiteOperationAuditLog({
       filePath: sqlitePath,
       ...auditOptions
     });
+  } else {
+    const filePath = resolveStartDaemonOperationAuditPath(env);
+    operationAuditLog = filePath
+      ? new JsonFileOperationAuditLog({
+          filePath,
+          ...auditOptions
+        })
+      : undefined;
   }
 
-  const filePath = resolveStartDaemonOperationAuditPath(env);
-  return filePath
-    ? new JsonFileOperationAuditLog({
-        filePath,
+  const jsonlPath = resolveStartDaemonOperationAuditJsonlPath(env);
+  if (!jsonlPath) {
+    return operationAuditLog;
+  }
+
+  return new MirroredOperationAuditLog({
+    primary:
+      operationAuditLog ??
+      new InMemoryOperationAuditLog({
         ...auditOptions
-      })
-    : undefined;
+      }),
+    sink: new JsonlOperationAuditExportSink({
+      filePath: jsonlPath,
+      maxBytes: resolveStartDaemonOperationAuditJsonlMaxBytes(env),
+      maxFiles: resolveStartDaemonOperationAuditJsonlMaxFiles(env)
+    })
+  });
 }
 
 export function resolveStartDaemonOperationAuditMaxEntries(
@@ -209,6 +239,41 @@ export function resolveStartDaemonOperationAuditMaxEntries(
   } catch (error) {
     throw new Error(
       `${DAEMON_OPERATION_AUDIT_MAX_ENTRIES_ENV_VAR} must be a positive integer.`
+    );
+  }
+}
+
+export function resolveStartDaemonOperationAuditJsonlPath(
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  const value = env[DAEMON_OPERATION_AUDIT_JSONL_PATH_ENV_VAR]?.trim();
+  return value && value.length > 0 ? value : undefined;
+}
+
+export function resolveStartDaemonOperationAuditJsonlMaxBytes(
+  env: Record<string, string | undefined> = process.env
+): number | undefined {
+  try {
+    return parseOperationAuditJsonlMaxBytes(
+      env[DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR]
+    );
+  } catch (error) {
+    throw new Error(
+      `${DAEMON_OPERATION_AUDIT_JSONL_MAX_BYTES_ENV_VAR} must be a positive integer.`
+    );
+  }
+}
+
+export function resolveStartDaemonOperationAuditJsonlMaxFiles(
+  env: Record<string, string | undefined> = process.env
+): number | undefined {
+  try {
+    return parseOperationAuditJsonlMaxFiles(
+      env[DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR]
+    );
+  } catch (error) {
+    throw new Error(
+      `${DAEMON_OPERATION_AUDIT_JSONL_MAX_FILES_ENV_VAR} must be a positive integer.`
     );
   }
 }

@@ -14,6 +14,7 @@ This project follows a human-readable changelog. The initial public repository s
 - Added Web landing deployment posture summaries derived from the safe daemon posture endpoint.
 - Added optional daemon-served Web static assets for built local/pre-production Web shells with Accept-based SPA/API routing separation.
 - Added local/pre-production container packaging for daemon-served Web shells with localhost-bound Compose defaults and SQLite data volume persistence.
+- Added optional local operation audit JSONL mirroring with size-based rotation for safe control-plane metadata archival.
 - Added public project hygiene files, CI, security/governance documentation, deployment notes, and baseline evaluation harnesses.
 
 ## 0.0.0
