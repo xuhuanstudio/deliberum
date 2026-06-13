@@ -77,6 +77,22 @@ export type GuidedDiscussionRunPlanInput = {
   expectedOutcomeText: string;
 };
 
+export const LOCAL_PRESET_DISCUSSION_BRIEF: GuidedDiscussionRunPlanInput = {
+  question: "How should we review a proposed rollout before relying on it?",
+  goalsText: [
+    "Compare the strongest current options.",
+    "Keep unresolved disagreements and missing evidence visible."
+  ].join("\n"),
+  constraintsText: [
+    "Keep the walkthrough deterministic and reviewable.",
+    "Treat the conclusion as provisional until a human reviews it."
+  ].join("\n"),
+  expectedOutcomeText: [
+    "Show the current conclusion.",
+    "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions."
+  ].join("\n")
+};
+
 export function buildGuidedDiscussionRunPlan(
   input: GuidedDiscussionRunPlanInput
 ): Record<string, unknown> {
@@ -97,11 +113,11 @@ export function buildGuidedDiscussionRunPlan(
             "Compare the strongest current options.",
             "Keep open disagreements and missing evidence visible."
           ],
-    constraints: [
+    constraints: uniqueBriefLines([
       ...userConstraints,
       "Use deterministic local preset components only.",
       "Keep all output provisional until reviewed."
-    ],
+    ]),
     output: {
       language: "en",
       style: "clear",
@@ -121,6 +137,22 @@ export function parseBriefLines(value: string): string[] {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+}
+
+function uniqueBriefLines(lines: string[]): string[] {
+  const seen = new Set<string>();
+  const uniqueLines: string[] = [];
+
+  for (const line of lines) {
+    const key = line.toLocaleLowerCase();
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueLines.push(line);
+    }
+  }
+
+  return uniqueLines;
 }
 
 export function formatPresetJson(value: unknown): string {

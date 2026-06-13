@@ -1134,6 +1134,41 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Discussion created")).toBeTruthy();
   });
 
+  it("fills the sample brief with user-facing discussion text", async () => {
+    const client = renderApp("/runs/new");
+
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Use sample brief" }));
+
+    expect((screen.getByLabelText("Discussion question") as HTMLTextAreaElement).value).toBe(
+      "How should we review a proposed rollout before relying on it?"
+    );
+    expect((screen.getByLabelText("Goals") as HTMLTextAreaElement).value).toContain(
+      "Compare the strongest current options."
+    );
+    expect((screen.getByLabelText("Goals") as HTMLTextAreaElement).value).not.toContain(
+      "daemon run API"
+    );
+    expect((screen.getByLabelText("Goals") as HTMLTextAreaElement).value).not.toContain(
+      "Candidate Frontier"
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Create discussion" }));
+
+    await waitFor(() =>
+      expect(client.createRun).toHaveBeenCalledWith({
+        runPlan: expect.not.objectContaining({
+          topic: "Exercise the local Deliberum run workspace with deterministic preset components."
+        })
+      })
+    );
+    await waitFor(() =>
+      expect(JSON.stringify(vi.mocked(client.createRun).mock.calls[0]?.[0])).not.toContain(
+        "daemon run API"
+      )
+    );
+  });
+
   it("rejects invalid run plan JSON without calling the daemon", async () => {
     const client = renderApp("/runs/new");
 
@@ -1455,8 +1490,8 @@ describe("@deliberum/web shell", () => {
         "process-proposal-event-1"
       )
     );
-    expect(await screen.findByText("Discussion update completed")).toBeTruthy();
-    expect(screen.getByText("Stage results")).toBeTruthy();
+    expect(await screen.findByText("Discussion steps completed")).toBeTruthy();
+    expect(screen.getByText("Updated discussion steps")).toBeTruthy();
     expect(client.startRun).not.toHaveBeenCalled();
   });
 
@@ -1602,7 +1637,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("No work has been recorded for that part of the discussion.")).toBeTruthy();
   });
 
-  it("starts a run from a JSON start request and renders only stage metadata", async () => {
+  it("starts a run from a JSON start request and renders readable step metadata", async () => {
     const client = renderApp("/runs/run-1");
     const startRequest = {
       extraction: {
@@ -1620,8 +1655,12 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start run" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledWith("run-1", startRequest));
-    expect(await screen.findByText("Discussion update completed")).toBeTruthy();
-    expect(screen.getByText("Stage results")).toBeTruthy();
+    expect(await screen.findByText("Discussion steps completed")).toBeTruthy();
+    expect(screen.getByText("Updated discussion steps")).toBeTruthy();
+    expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("View current conclusion").length).toBeGreaterThan(0);
+    expect(screen.getByText("Advanced / Developer Mode: stage metadata")).toBeTruthy();
+    expect(screen.getByText("Raw stage metadata")).toBeTruthy();
     expect(screen.getByText(/sealed_divergence/)).toBeTruthy();
     expect(screen.getByText(/event-2/)).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("do not render this result payload");
@@ -1659,6 +1698,9 @@ describe("@deliberum/web shell", () => {
         })
       )
     );
+    expect(await screen.findByText("Discussion steps completed")).toBeTruthy();
+    expect(screen.getByText("Updated discussion steps")).toBeTruthy();
+    expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
   });
 
   it("refreshes run projection panels after a successful start without page reload", async () => {
@@ -1766,7 +1808,7 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue guided discussion" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalled());
-    expect(await screen.findByText("Discussion update completed")).toBeTruthy();
+    expect(await screen.findByText("Discussion steps completed")).toBeTruthy();
     expect(await screen.findByText("Projection refreshed after start")).toBeTruthy();
     expect(screen.getByText("Projection objection refreshed after start")).toBeTruthy();
     expect(screen.getByText("Projection obligation refreshed after start")).toBeTruthy();
@@ -1793,8 +1835,13 @@ describe("@deliberum/web shell", () => {
     await screen.findByText("Continue discussion");
     fireEvent.click(screen.getByRole("button", { name: "Continue guided discussion" }));
 
-    expect(await screen.findByText("Run start failed")).toBeTruthy();
-    expect(screen.getAllByText(/DELIBERUM_ENABLE_LOCAL_PRESET=true/).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Discussion could not continue")).toBeTruthy();
+    expect(
+      screen.getAllByText(
+        "The local sample discussion components are not available in this running workspace. Developers can inspect setup details in Advanced mode before retrying."
+      ).length
+    ).toBeGreaterThan(0);
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_ENABLE_LOCAL_PRESET");
     expect(document.body.textContent ?? "").not.toContain("stack");
   });
 

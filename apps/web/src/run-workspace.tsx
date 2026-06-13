@@ -28,6 +28,7 @@ import {
   sanitizeForDisplay
 } from "./view-components";
 import {
+  LOCAL_PRESET_DISCUSSION_BRIEF,
   LOCAL_PRESET_RUN_PLAN,
   LOCAL_PRESET_START_REQUEST,
   buildGuidedDiscussionRunPlan,
@@ -119,10 +120,10 @@ export function RunNewPage() {
 
   function fillSampleDiscussionBrief() {
     setInputError(null);
-    setDiscussionQuestion(LOCAL_PRESET_RUN_PLAN.topic);
-    setDiscussionGoals(LOCAL_PRESET_RUN_PLAN.goals.join("\n"));
-    setDiscussionConstraints(LOCAL_PRESET_RUN_PLAN.constraints.join("\n"));
-    setDiscussionExpectedOutcome(LOCAL_PRESET_RUN_PLAN.output.expectations.join("\n"));
+    setDiscussionQuestion(LOCAL_PRESET_DISCUSSION_BRIEF.question);
+    setDiscussionGoals(LOCAL_PRESET_DISCUSSION_BRIEF.goalsText);
+    setDiscussionConstraints(LOCAL_PRESET_DISCUSSION_BRIEF.constraintsText);
+    setDiscussionExpectedOutcome(LOCAL_PRESET_DISCUSSION_BRIEF.expectedOutcomeText);
   }
 
   function submitGuidedDiscussion(event: FormEvent<HTMLFormElement>) {
@@ -575,7 +576,7 @@ function RunDetailGuide() {
         />
         <ExplainerItem
           title="Missing local components"
-          detail="Restart the daemon with DELIBERUM_ENABLE_LOCAL_PRESET=true before using the local preset start request."
+          detail="The local sample discussion components are not available in this running workspace. Developers can inspect setup details in Advanced mode."
         />
       </div>
     </DataPanel>
@@ -935,12 +936,12 @@ function StartRunForm({ runId, sessionId }: { runId: string; sessionId?: string 
   return (
     <DataPanel
       title="Continue discussion"
-      description="Run the guided local discussion steps so perspectives, disagreements, requirements, evidence gaps, risk review, and conclusion can appear."
+      description="Continue the guided discussion so perspectives, disagreements, requirements, evidence gaps, risk review, and conclusion can appear."
     >
       <div className="du-readable-list">
         <ExplainerItem
-          title="Run the full guided discussion"
-          detail="Executes independent first responses, option extraction, review, evidence checks, and finalization through deterministic local components."
+          title="Continue the full guided discussion"
+          detail="Collects independent first responses, organizes main perspectives, reviews requirements, checks evidence needs, and compiles a provisional conclusion."
         />
       </div>
       <div className="du-action-row">
@@ -982,11 +983,11 @@ function StartRunForm({ runId, sessionId }: { runId: string; sessionId?: string 
       {startMutation.isError ? (
         <StatusBanner
           tone="error"
-          title="Run start failed"
+          title="Discussion could not continue"
           detail={formatRunStartErrorMessage(startMutation.error)}
         />
       ) : null}
-      {startMutation.data ? <StartResult result={startMutation.data} /> : null}
+      {startMutation.data ? <StartResult result={startMutation.data} runId={runId} /> : null}
     </DataPanel>
   );
 }
@@ -1019,29 +1020,180 @@ async function invalidateRunWorkspaceQueries(
   await Promise.all(invalidations);
 }
 
-function StartResult({ result }: { result: unknown }) {
+function StartResult({ result, runId }: { result: unknown; runId: string }) {
   const stages = asArray(getRecordValue(result, "stages")).map(toStageMetadata);
   const stopped = getRecordValue(result, "stopped");
+  const readableStages = stages.map(toReadableStageResult);
 
   return (
     <div className="du-start-result">
       <StatusBanner
         tone={stopped === true ? "warning" : "ok"}
-        title={stopped === true ? "Discussion stopped" : "Discussion update completed"}
+        title={stopped === true ? "Discussion paused" : "Discussion steps completed"}
         detail={
           stopped === true
-            ? `Reason: ${formatRecordValue(getRecordValue(result, "stopReason"))}`
-            : "Daemon returned stage metadata for the requested run stages."
+            ? "The discussion stopped before every requested step finished. Review the visible steps below or open Advanced details for the technical reason."
+            : "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
         }
       />
-      <RecordCollection
-        title="Stage results"
-        records={stages}
-        emptyTitle="No stages returned"
-        emptyDescription="The daemon did not report executed stages for this request."
-      />
+      {stopped === true ? (
+        <StatusBanner
+          tone="warning"
+          title="Stop reason"
+          detail={formatRecordValue(getRecordValue(result, "stopReason"))}
+        />
+      ) : null}
+      <ReadableStageResultList stages={readableStages} />
+      <div className="du-action-row">
+        <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
+          View current conclusion
+        </Link>
+      </div>
+      <AdvancedDetails
+        summary="Advanced / Developer Mode: stage metadata"
+        description="Raw execution stages, round ids, and event ids returned by the local runtime."
+      >
+        <RecordCollection
+          title="Raw stage metadata"
+          records={stages}
+          emptyTitle="No stages returned"
+          emptyDescription="No stage metadata was returned for this request."
+        />
+      </AdvancedDetails>
     </div>
   );
+}
+
+type ReadableStageResult = {
+  label: string;
+  status: string;
+  detail: string;
+};
+
+function ReadableStageResultList({ stages }: { stages: ReadableStageResult[] }) {
+  if (stages.length === 0) {
+    return (
+      <EmptyState
+        title="No visible discussion steps"
+        description="No user-facing step updates were returned for this request."
+      />
+    );
+  }
+
+  return (
+    <section className="du-readable-stage-result" aria-label="Updated discussion steps">
+      <div className="du-section-label">
+        <p className="du-kicker">Updated discussion steps</p>
+        <h4>What changed</h4>
+        <p>Readable summary of the discussion work that just ran.</p>
+      </div>
+      <div className="du-stage-grid">
+        {stages.map((stage, index) => (
+          <div className="du-stage-pill" key={`${stage.label}-${index}`}>
+            <span>{stage.label}</span>
+            <strong>{stage.status}</strong>
+            <span>{stage.detail}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function toReadableStageResult(stage: Record<string, unknown>): ReadableStageResult {
+  const stageName = getRecordValue(stage, "stage");
+  const executionStatus = getRecordValue(stage, "executionStatus");
+  const roundStatus = getRecordValue(stage, "status");
+  const stageCopy = describeReadableStage(stageName);
+
+  return {
+    ...stageCopy,
+    status: describeReadableExecutionStatus(executionStatus, roundStatus)
+  };
+}
+
+function describeReadableStage(stageName: unknown): Pick<ReadableStageResult, "label" | "detail"> {
+  if (stageName === "sealed_divergence") {
+    return {
+      label: "Independent first responses",
+      detail: "Initial perspectives were collected before any single answer could anchor the discussion."
+    };
+  }
+
+  if (stageName === "extraction") {
+    return {
+      label: "Main perspectives",
+      detail: "The discussion material was organized into options, disagreements, requirements, and evidence needs."
+    };
+  }
+
+  if (stageName === "proposal_review") {
+    return {
+      label: "Requirements review",
+      detail: "Candidate material was checked against open disagreements and answer requirements."
+    };
+  }
+
+  if (stageName === "evidence_check") {
+    return {
+      label: "Evidence and verification",
+      detail: "Open evidence needs were routed to reported checks without implying verified truth."
+    };
+  }
+
+  if (stageName === "candidate_repair") {
+    return {
+      label: "Option repair",
+      detail: "Known weaknesses were used to improve current options before conclusion work."
+    };
+  }
+
+  if (stageName === "finalization") {
+    return {
+      label: "Current conclusion",
+      detail: "A provisional conclusion and risk review were compiled for review."
+    };
+  }
+
+  return {
+    label: "Discussion step",
+    detail: "A discussion step was updated. Advanced details include the raw stage name."
+  };
+}
+
+function describeReadableExecutionStatus(
+  executionStatus: unknown,
+  roundStatus: unknown
+): string {
+  if (executionStatus === "executed" && roundStatus === "completed") {
+    return "Completed";
+  }
+
+  if (executionStatus === "executed") {
+    return "Updated";
+  }
+
+  if (executionStatus === "already_running") {
+    return "Already in progress";
+  }
+
+  if (typeof executionStatus === "string" && executionStatus.length > 0) {
+    return humanizeIdentifier(executionStatus);
+  }
+
+  if (typeof roundStatus === "string" && roundStatus.length > 0) {
+    return humanizeIdentifier(roundStatus);
+  }
+
+  return "Updated";
+}
+
+function humanizeIdentifier(value: string): string {
+  return value
+    .split(/[_-]+/)
+    .filter((part) => part.length > 0)
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
 }
 
 function RunQualityOverview({ sessionId }: { sessionId: string }) {
@@ -2124,7 +2276,9 @@ function ProcessProposalLifecycleControls({
             ) : null}
           </>
         )}
-        {executionMutation.data ? <StartResult result={executionMutation.data} /> : null}
+        {executionMutation.data ? (
+          <StartResult result={executionMutation.data} runId={runId} />
+        ) : null}
         {executionMutation.isError ? (
           <StatusBanner
             tone="error"
@@ -2556,7 +2710,7 @@ function describeOutcomeUnavailableReason(reason: unknown): string {
 
 function formatRunStartErrorMessage(error: Error | null | undefined): string {
   if (getErrorCode(error) === "orchestration_component_unavailable") {
-    return "The daemon does not have the requested local preset components. Restart the local daemon with DELIBERUM_ENABLE_LOCAL_PRESET=true, then retry the local preset run.";
+    return "The local sample discussion components are not available in this running workspace. Developers can inspect setup details in Advanced mode before retrying.";
   }
 
   return formatSafeErrorMessage(error);

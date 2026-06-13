@@ -766,6 +766,11 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.du-readable-stage-result {
+  display: grid;
+  gap: 12px;
+}
+
 .du-start-result,
 .du-projection-section {
   display: grid;
