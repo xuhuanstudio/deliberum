@@ -962,6 +962,33 @@ function createOpenAICompatibleFetch(output = "provider sealed contribution"): M
   })) as unknown as MockedFetchLike;
 }
 
+function createOpenAICompatibleStreamingFetch(
+  output = "provider streamed contribution"
+): MockedFetchLike {
+  return vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: vi.fn(async () => {
+      throw new Error("Streaming response should not be parsed as JSON.");
+    }),
+    text: vi.fn(async () =>
+      [
+        'data: {"choices":[{"delta":{"role":"assistant"}}]}',
+        `data: ${JSON.stringify({
+          choices: [
+            {
+              delta: {
+                content: output
+              }
+            }
+          ]
+        })}`,
+        "data: [DONE]"
+      ].join("\n\n")
+    )
+  })) as unknown as MockedFetchLike;
+}
+
 function createHttpTemplateFetch(
   output: Record<string, unknown> = {
     model: "provider-http-model",
@@ -8325,6 +8352,54 @@ describe("daemon API", () => {
     expectSafeRunApiPayload(detailBody, secret);
   });
 
+  it("supports OpenAI-compatible streaming provider output from env configuration", async () => {
+    const secret = "sk-openai-runtime-secret";
+    const fetch = createOpenAICompatibleStreamingFetch(
+      "provider-backed streamed sealed contribution"
+    );
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableOpenAICompatibleProfile: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: secret,
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model",
+        [OPENAI_COMPATIBLE_STREAM_ENV_VAR]: "true"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleRunPlan());
+    const startResponse = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+      sealedDivergence: {
+        autoCloseManual: true
+      }
+    });
+    const startBody = await startResponse.json();
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const [url, init] = getOpenAICompatibleFetchCall(fetch);
+    const requestBody = JSON.parse(init.body) as {
+      stream?: boolean;
+    };
+    const events = daemonApp.eventStore.listEvents(created.run.sessionId);
+    const serializedSafeState = JSON.stringify({
+      start: startBody,
+      detail: detailBody,
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      events
+    });
+
+    expect(startResponse.status).toBe(200);
+    expect(url).toBe("https://runtime.example/api/chat/completions");
+    expect(requestBody.stream).toBe(true);
+    expect(JSON.stringify(events)).toContain("provider-backed streamed sealed contribution");
+    expect(serializedSafeState).not.toContain(secret);
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expectSafeRunApiPayload(startBody, secret);
+    expectSafeRunApiPayload(detailBody, secret);
+  });
+
   it("rejects invalid OpenAI-compatible request option env values before fetch", () => {
     const fetch = createOpenAICompatibleFetch();
     let thrown: unknown;
@@ -8338,7 +8413,7 @@ describe("daemon API", () => {
           [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
           [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
           [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model",
-          [OPENAI_COMPATIBLE_STREAM_ENV_VAR]: "true"
+          [OPENAI_COMPATIBLE_STREAM_ENV_VAR]: "yes"
         },
         openAICompatibleFetch: fetch
       });

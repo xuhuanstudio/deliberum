@@ -251,7 +251,7 @@ function buildOpenAICompatibleProfile(
       env,
       false,
       false,
-      "Optional streaming compatibility setting; only false is supported."
+      "Optional Chat Completions streaming compatibility setting."
     ),
     envVar(
       OPENAI_COMPATIBLE_FREQUENCY_PENALTY_ENV_VAR,

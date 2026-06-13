@@ -354,11 +354,11 @@ function createOpenAICompatibleRequestOptionsFromEnv(
   }
 
   if (stream !== undefined) {
-    if (stream !== "false") {
+    if (stream !== "true" && stream !== "false") {
       throwInvalidOpenAICompatibleRequestOption();
     }
 
-    requestOptions.stream = false;
+    requestOptions.stream = stream === "true";
   }
 
   if (frequencyPenalty !== undefined) {

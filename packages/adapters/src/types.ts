@@ -74,7 +74,7 @@ export type OpenAICompatibleRequestOptions = {
   maxCompletionTokens?: number;
   temperature?: number;
   topP?: number;
-  stream?: false;
+  stream?: boolean;
   frequencyPenalty?: number;
   presencePenalty?: number;
   thinking?: "disabled";

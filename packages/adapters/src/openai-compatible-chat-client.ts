@@ -17,6 +17,8 @@ export type OpenAICompatibleFetchResponse = {
   ok: boolean;
   status: number;
   json: () => Promise<unknown>;
+  text?: () => Promise<string>;
+  body?: ReadableStream<Uint8Array> | null;
 };
 
 export type FetchLike = (
@@ -36,7 +38,7 @@ export type OpenAICompatibleChatRequest = {
   max_completion_tokens?: number;
   temperature?: number;
   top_p?: number;
-  stream?: false;
+  stream?: boolean;
   frequency_penalty?: number;
   presence_penalty?: number;
   thinking?: {
@@ -96,9 +98,16 @@ export async function completeOpenAICompatibleRequest(input: {
     customHeaders: effectiveConfig.headers,
     request
   });
-  const response = await performRequest(requestBody, sensitiveValues, effectiveConfig);
+  const response = await performRequest(
+    requestBody,
+    sensitiveValues,
+    effectiveConfig,
+    request.stream === true
+  );
 
-  return extractMessageContent(response);
+  return request.stream === true
+    ? extractStreamingMessageContent(response)
+    : extractMessageContent(response);
 }
 
 export function normalizeOpenAICompatibleRequestOptions(
@@ -144,11 +153,11 @@ export function normalizeOpenAICompatibleRequestOptions(
   }
 
   if (requestOptions.stream !== undefined) {
-    if (requestOptions.stream !== false) {
+    if (typeof requestOptions.stream !== "boolean") {
       throwInvalidRequestOption();
     }
 
-    normalized.stream = false;
+    normalized.stream = requestOptions.stream;
   }
 
   if (requestOptions.frequencyPenalty !== undefined) {
@@ -347,7 +356,8 @@ function requireMaxCompletionTokens(requestOptions: OpenAICompatibleRequestOptio
 async function performRequest(
   requestBody: string,
   sensitiveValues: readonly string[],
-  effectiveConfig: EffectiveOpenAICompatibleConfig
+  effectiveConfig: EffectiveOpenAICompatibleConfig,
+  parseStreamingResponse: boolean
 ): Promise<unknown> {
   const controller = effectiveConfig.timeoutMs ? new AbortController() : undefined;
   const timeout = controller
@@ -374,6 +384,10 @@ async function performRequest(
         getHttpSafeCategory(httpStatus),
         httpStatus === undefined ? {} : { httpStatus }
       );
+    }
+
+    if (parseStreamingResponse) {
+      return response;
     }
 
     try {
@@ -467,6 +481,169 @@ function extractMessageContent(response: unknown): string {
   return content;
 }
 
+async function extractStreamingMessageContent(response: unknown): Promise<string> {
+  if (typeof response !== "object" || response === null) {
+    throw new OpenAICompatibleAdapterError(
+      "Malformed OpenAI-compatible provider streaming response.",
+      "provider_malformed_response"
+    );
+  }
+
+  const streamText = await readStreamingResponseText(response as OpenAICompatibleFetchResponse);
+  const dataBlocks = parseServerSentEventDataBlocks(streamText);
+  let content = "";
+  let sawContent = false;
+
+  if (dataBlocks.length === 0) {
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible provider streaming response was malformed.",
+      "provider_malformed_response"
+    );
+  }
+
+  for (const dataBlock of dataBlocks) {
+    const trimmed = dataBlock.trim();
+
+    if (trimmed === "[DONE]") {
+      continue;
+    }
+
+    const parsed = parseStreamingJsonEvent(trimmed);
+    const deltaContent = extractStreamingDeltaContent(parsed);
+
+    if (deltaContent !== undefined) {
+      sawContent = true;
+      content += deltaContent;
+    }
+  }
+
+  if (!sawContent) {
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible provider streaming response did not include message content.",
+      "provider_response_missing_content"
+    );
+  }
+
+  if (content.trim().length === 0) {
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible provider streaming response was empty.",
+      "provider_response_empty"
+    );
+  }
+
+  return content;
+}
+
+async function readStreamingResponseText(
+  response: OpenAICompatibleFetchResponse
+): Promise<string> {
+  if (response.body) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let text = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      text += decoder.decode(value, { stream: true });
+    }
+
+    return text + decoder.decode();
+  }
+
+  if (response.text) {
+    return await response.text();
+  }
+
+  throw new OpenAICompatibleAdapterError(
+    "OpenAI-compatible provider streaming response was malformed.",
+    "provider_malformed_response"
+  );
+}
+
+function parseServerSentEventDataBlocks(streamText: string): string[] {
+  return streamText
+    .split(/\r?\n\r?\n/)
+    .flatMap((eventBlock) => {
+      const dataLines = eventBlock
+        .split(/\r?\n/)
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice("data:".length).trimStart());
+
+      return dataLines.length > 0 ? [dataLines.join("\n")] : [];
+    });
+}
+
+function parseStreamingJsonEvent(dataBlock: string): unknown {
+  try {
+    return JSON.parse(dataBlock);
+  } catch {
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible provider streaming response included malformed JSON.",
+      "provider_malformed_response"
+    );
+  }
+}
+
+function extractStreamingDeltaContent(event: unknown): string | undefined {
+  if (typeof event !== "object" || event === null) {
+    throw new OpenAICompatibleAdapterError(
+      "Malformed OpenAI-compatible provider streaming response.",
+      "provider_malformed_response"
+    );
+  }
+
+  const choices = (event as { choices?: unknown }).choices;
+  if (!Array.isArray(choices)) {
+    throw new OpenAICompatibleAdapterError(
+      "Malformed OpenAI-compatible provider streaming response.",
+      "provider_malformed_response"
+    );
+  }
+
+  const firstChoice = choices[0];
+  if (firstChoice === undefined) {
+    return undefined;
+  }
+
+  if (typeof firstChoice !== "object" || firstChoice === null) {
+    throw new OpenAICompatibleAdapterError(
+      "Malformed OpenAI-compatible provider streaming response.",
+      "provider_malformed_response"
+    );
+  }
+
+  const delta = (firstChoice as { delta?: unknown }).delta;
+  if (delta === undefined) {
+    return undefined;
+  }
+
+  if (typeof delta !== "object" || delta === null) {
+    throw new OpenAICompatibleAdapterError(
+      "Malformed OpenAI-compatible provider streaming response.",
+      "provider_malformed_response"
+    );
+  }
+
+  const content = (delta as { content?: unknown }).content;
+  if (content === undefined || content === null) {
+    return undefined;
+  }
+
+  if (typeof content !== "string") {
+    throw new OpenAICompatibleAdapterError(
+      "OpenAI-compatible provider streaming response did not include message content.",
+      "provider_response_missing_content"
+    );
+  }
+
+  return content;
+}
+
 function createRequestUrl(baseUrl: string, endpointPath: string): string {
   const normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   const normalizedEndpointPath = endpointPath.startsWith("/")
@@ -515,7 +692,9 @@ function getDefaultFetch(): FetchLike {
     globalThis.fetch(url, init).then((response) => ({
       ok: response.ok,
       status: response.status,
-      json: () => response.json() as Promise<unknown>
+      json: () => response.json() as Promise<unknown>,
+      text: () => response.text(),
+      body: response.body
     }));
 }
 

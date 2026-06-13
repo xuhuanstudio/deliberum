@@ -37,6 +37,17 @@ function createSuccessfulFetch(output = "provider output") {
   ) as unknown as ReturnType<typeof vi.fn> & FetchLike;
 }
 
+function createStreamingFetch(streamText: string) {
+  return vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: vi.fn(async () => {
+      throw new Error("Streaming response should not be parsed as JSON.");
+    }),
+    text: vi.fn(async () => streamText)
+  })) as unknown as ReturnType<typeof vi.fn> & FetchLike;
+}
+
 function getFetchCall(fetch: ReturnType<typeof vi.fn> & FetchLike) {
   const call = fetch.mock.calls[0] as [string, OpenAICompatibleFetchInit] | undefined;
   if (!call) {
@@ -298,6 +309,34 @@ describe("OpenAICompatibleParticipantAdapter", () => {
     });
   });
 
+  it("assembles streamed Chat Completions deltas when stream is enabled", async () => {
+    const fetch = createStreamingFetch(
+      [
+        'data: {"choices":[{"delta":{"role":"assistant"}}]}',
+        'data: {"choices":[{"delta":{"content":"streamed "}}]}',
+        'data: {"choices":[{"delta":{"content":"provider output"}}]}',
+        "data: [DONE]"
+      ].join("\n\n")
+    );
+    const adapter = new OpenAICompatibleParticipantAdapter({
+      baseUrl: "https://provider.example",
+      model: "model-1",
+      requestOptions: {
+        stream: true
+      },
+      fetch
+    });
+
+    const result = await adapter.prepareContribution({ payload: "safe prompt" }, context);
+    const [, init] = getFetchCall(fetch);
+    const body = JSON.parse(init.body) as {
+      stream?: boolean;
+    };
+
+    expect(body.stream).toBe(true);
+    expect(result.payload).toBe("streamed provider output");
+  });
+
   it("emits JSON object response format only when configured", async () => {
     const fetch = createSuccessfulFetch();
     const adapter = new OpenAICompatibleParticipantAdapter({
@@ -330,30 +369,6 @@ describe("OpenAICompatibleParticipantAdapter", () => {
         model: "model-1",
         requestOptions: {
           responseFormat: "json_schema"
-        } as never,
-        fetch
-      });
-    } catch (error) {
-      thrown = error;
-    }
-
-    expect(thrown).toBeInstanceOf(OpenAICompatibleAdapterError);
-    expect((thrown as OpenAICompatibleAdapterError).safeCategory).toBe(
-      "provider_config_invalid"
-    );
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it("rejects unsupported stream true before fetch", async () => {
-    const fetch = createSuccessfulFetch();
-    let thrown: unknown;
-
-    try {
-      new OpenAICompatibleParticipantAdapter({
-        baseUrl: "https://provider.example",
-        model: "model-1",
-        requestOptions: {
-          stream: true
         } as never,
         fetch
       });
