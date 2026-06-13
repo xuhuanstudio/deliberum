@@ -9,11 +9,11 @@ documentation, examples, and repository metadata. Private clarification can
 happen outside the public repository, but any accepted requirement, rationale,
 or design decision should be summarized in English before it is committed.
 
-Repository CI runs `corepack pnpm lint:language` and
-`corepack pnpm lint:public-files` to reject tracked public files or paths that
-contain non-English Han characters, local runtime data, generated build
-outputs, private workflow files, OS metadata, local databases, logs, or
-credential files.
+Repository CI runs `corepack pnpm lint:language`,
+`corepack pnpm lint:public-files`, and `corepack pnpm lint:docs` to reject
+tracked public files or paths that contain non-English Han characters, local
+runtime data, generated build outputs, private workflow files, OS metadata,
+local databases, logs, credential files, or broken local Markdown links.
 
 ## Project principles
 
