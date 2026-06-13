@@ -8,7 +8,7 @@ Deliberum is not an MVP-first project. The implementation is staged, but each st
 
 Implemented today:
 
-- TypeScript monorepo with protocol, core, storage, adapters, resources, client, UI, CLI, daemon, and Web packages.
+- TypeScript monorepo with protocol, core, evaluation, storage, adapters, resources, client, orchestrator, UI, CLI, daemon, and Web workspaces.
 - Runtime-validated protocol schemas for events, Topic Contracts, participants, sealed batches, deliberation objects, proposals, references, resources, final audit, and outcome compilation.
 - Runtime-validated evaluation schemas plus a baseline comparison report harness and public sample fixture for externally supplied findings.
 - Append-only event storage with store-assigned `sequence` and `recordedAt`; in-memory storage for package/core tests, shared JSON file persistence for the local CLI, optional JSON daemon event ledger and operation audit log persistence, optional local rotated JSONL operation audit mirroring, optional HTTP operation audit export, and optional SQLite daemon event ledger, run metadata, resource broker, resource access grant, and operation audit log persistence with local connection-level writer serialization.

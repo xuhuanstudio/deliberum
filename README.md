@@ -83,6 +83,7 @@ packages/
   adapters/
   resources/
   client/
+  orchestrator/
   ui/
 docs/
 examples/
