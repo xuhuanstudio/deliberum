@@ -8,6 +8,8 @@ import {
 } from "@deliberum/client";
 import { dirname } from "node:path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { stderr as defaultStderr, stdin as defaultStdin } from "node:process";
+import { createInterface } from "node:readline/promises";
 import {
   acceptProposal,
   challengeProcessProposal,
@@ -61,6 +63,7 @@ export const CLI_COMMANDS = [
   "daemon profiles",
   "daemon env-template",
   "daemon env-write",
+  "daemon setup-wizard",
   "daemon profile-doctor",
   "daemon setup-plan",
   "daemon deployment-posture",
@@ -112,10 +115,20 @@ export type CliDependencies = {
   readTextFile?: (filePath: string) => string;
   writeTextFile?: (filePath: string, content: string) => void | Promise<void>;
   fileExists?: (filePath: string) => boolean;
+  promptForEnvValue?: (input: CliEnvPromptInput) => string | undefined | Promise<string | undefined>;
   idGenerator?: () => string;
   clock?: () => string;
   env?: Record<string, string | undefined>;
   readJsonFile?: (filePath: string) => unknown;
+};
+
+export type CliEnvPromptInput = {
+  name: string;
+  secret: boolean;
+  required: boolean;
+  recommended: boolean;
+  purpose: string;
+  profileIds: string[];
 };
 
 export type CliRunResult = {
@@ -319,6 +332,7 @@ export async function runCli(args: string[], dependencies: CliDependencies = {})
           writeFileSync(filePath, content, "utf8");
         }),
       fileExists: dependencies.fileExists ?? existsSync,
+      promptForEnvValue: dependencies.promptForEnvValue ?? defaultPromptForEnvValue,
       idGenerator: dependencies.idGenerator ?? (() => randomUUID()),
       clock: dependencies.clock,
       env: dependencies.env ?? process.env,
@@ -361,6 +375,7 @@ type ExecuteDependencies = {
   readTextFile: (filePath: string) => string;
   writeTextFile: (filePath: string, content: string) => void | Promise<void>;
   fileExists: (filePath: string) => boolean;
+  promptForEnvValue: (input: CliEnvPromptInput) => string | undefined | Promise<string | undefined>;
   idGenerator: () => string;
   clock?: () => string;
   env: Record<string, string | undefined>;
@@ -794,6 +809,45 @@ async function executeDaemonCommand(
     };
   }
 
+  if (action === "setup-wizard") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon setup-wizard --output <path> [--profile <id>] [--overwrite] [--skip-optional] [--daemon-url <local-url>]"
+    );
+
+    const profiles = await daemonClient.getRuntimeProfiles();
+    const selectedProfiles = selectRuntimeProfiles(profiles, getLastOption(parsedArgs, "profile"));
+    const promptResult = await collectDaemonSetupWizardValues({
+      profiles: selectedProfiles,
+      skipOptional: parsedArgs.flags.has("skip-optional"),
+      promptForEnvValue: dependencies.promptForEnvValue
+    });
+    const plan = createDaemonEnvWritePlan({
+      response: { profiles: selectedProfiles },
+      profileId: undefined,
+      setOptions: [],
+      promptedValues: promptResult.values
+    });
+    const outputPath = requireOption(parsedArgs, "output");
+    const content = createDaemonEnvFileContent({
+      filePath: outputPath,
+      block: plan.block,
+      overwrite: parsedArgs.flags.has("overwrite"),
+      dependencies
+    });
+
+    await dependencies.writeTextFile(outputPath, content);
+
+    return {
+      ...plan.summary,
+      filePath: outputPath,
+      promptedEnvVars: promptResult.promptedEnvVars,
+      promptedSecretEnvVars: promptResult.promptedSecretEnvVars,
+      skippedEnvVars: promptResult.skippedEnvVars,
+      written: true
+    };
+  }
+
   if (action === "profile-doctor") {
     requireNoPositionals(
       restPositionals,
@@ -881,6 +935,7 @@ function assertKnownDaemonCommand(action: string): void {
       "profiles",
       "env-template",
       "env-write",
+      "setup-wizard",
       "profile-doctor",
       "setup-plan",
       "deployment-posture",
@@ -899,16 +954,19 @@ function assertDaemonCommandOptions(action: string, parsedArgs: ParsedArgs): voi
     "daemon-url",
     ...(action === "env-template" ||
     action === "env-write" ||
+    action === "setup-wizard" ||
     action === "profile-doctor" ||
     action === "setup-plan"
       ? ["profile"]
       : []),
     ...(action === "env-write" ? ["output", "set"] : []),
+    ...(action === "setup-wizard" ? ["output"] : []),
     ...(action === "operation-audit" ? ["limit", "format"] : [])
   ]);
   const allowedFlags = new Set([
     "json",
-    ...(action === "env-write" ? ["overwrite", "dry-run"] : [])
+    ...(action === "env-write" ? ["overwrite", "dry-run"] : []),
+    ...(action === "setup-wizard" ? ["overwrite", "skip-optional"] : [])
   ]);
 
   for (const optionName of parsedArgs.options.keys()) {
@@ -1444,6 +1502,80 @@ function sanitizeErrorDetail(detail: string): string {
     .replace(/~\/\.ssh\/[^\s"']*/g, "[redacted_path]");
 }
 
+async function defaultPromptForEnvValue(input: CliEnvPromptInput): Promise<string | undefined> {
+  const requirement = input.required
+    ? "required"
+    : input.recommended
+      ? "recommended"
+      : "optional";
+  const prompt = `Enter ${input.name} (${requirement}${input.secret ? ", secret input hidden" : ""}; leave blank to skip): `;
+  const value = input.secret
+    ? await readHiddenLineFromTty(prompt)
+    : await readVisibleLineFromStdin(prompt);
+
+  return value === "" ? undefined : value;
+}
+
+async function readVisibleLineFromStdin(prompt: string): Promise<string> {
+  const readline = createInterface({
+    input: defaultStdin,
+    output: defaultStderr
+  });
+
+  try {
+    return await readline.question(prompt);
+  } finally {
+    readline.close();
+  }
+}
+
+function readHiddenLineFromTty(prompt: string): Promise<string> {
+  if (!defaultStdin.isTTY || typeof defaultStdin.setRawMode !== "function") {
+    throw new CliUsageError("Interactive secret prompts require a TTY.");
+  }
+
+  const wasRaw = defaultStdin.isRaw;
+  defaultStderr.write(prompt);
+  defaultStdin.setRawMode(true);
+  defaultStdin.resume();
+
+  return new Promise((resolve, reject) => {
+    let value = "";
+
+    const cleanup = () => {
+      defaultStdin.off("data", onData);
+      defaultStdin.setRawMode(wasRaw);
+      defaultStdin.pause();
+      defaultStderr.write("\n");
+    };
+
+    const onData = (chunk: Buffer) => {
+      for (const char of Array.from(chunk.toString("utf8"))) {
+        if (char === "\u0003" || char === "\u0004") {
+          cleanup();
+          reject(new CliUsageError("Interactive setup was cancelled."));
+          return;
+        }
+
+        if (char === "\r" || char === "\n") {
+          cleanup();
+          resolve(value);
+          return;
+        }
+
+        if (char === "\u007f" || char === "\b") {
+          value = value.slice(0, -1);
+          continue;
+        }
+
+        value += char;
+      }
+    };
+
+    defaultStdin.on("data", onData);
+  });
+}
+
 const SECRET_KEY_NAMES = new Set([
   "apikey",
   "api_key",
@@ -1594,29 +1726,39 @@ type DaemonEnvWritePlan = {
     writtenEnvVars: string[];
     placeholderEnvVars: string[];
     manualSecretEnvVars: string[];
+    promptedEnvVars: string[];
+    promptedSecretEnvVars: string[];
     written: false;
   };
 };
+
+type DaemonEnvWriteValue = {
+  value: string;
+  secret: boolean;
+  source: "set" | "prompt";
+};
+
+type DaemonSetupWizardPromptTarget = CliEnvPromptInput;
 
 function createDaemonEnvWritePlan(input: {
   response: RuntimeProfilesResponse;
   profileId: string | undefined;
   setOptions: readonly string[];
+  promptedValues?: ReadonlyMap<string, DaemonEnvWriteValue>;
 }): DaemonEnvWritePlan {
-  const profiles = input.profileId
-    ? input.response.profiles.filter((profile) => profile.id === input.profileId)
-    : input.response.profiles;
-
-  if (input.profileId && profiles.length === 0) {
-    throw new CliUsageError(`Runtime profile was not found: ${input.profileId}`);
-  }
-
+  const profiles = selectRuntimeProfiles(input.response, input.profileId);
   const envMetadata = collectDaemonEnvWriteMetadata(profiles);
   const explicitValues = parseDaemonEnvWriteSetOptions(input.setOptions, envMetadata);
+  const promptedValues = validateDaemonPromptedEnvValues(
+    input.promptedValues ?? new Map(),
+    envMetadata
+  );
   const enabledEnvVars: string[] = [];
   const writtenEnvVars: string[] = [];
   const placeholderEnvVars: string[] = [];
   const manualSecretEnvVars: string[] = [];
+  const promptedEnvVars: string[] = [];
+  const promptedSecretEnvVars: string[] = [];
   const emittedEnvVars = new Set<string>();
   const lines = [
     DAEMON_ENV_WRITE_BEGIN,
@@ -1645,13 +1787,20 @@ function createDaemonEnvWritePlan(input: {
         `# required=${envVar.required} secret=${envVar.secret} configured=${envVar.configured}`
       );
 
-      if (envVar.secret) {
+      const value = explicitValues.get(envVar.name) ?? promptedValues.get(envVar.name);
+      if (value) {
+        lines.push(formatEnvAssignment(envVar.name, value.value));
+        writtenEnvVars.push(envVar.name);
+        if (value.source === "prompt") {
+          promptedEnvVars.push(envVar.name);
+        }
+        if (value.source === "prompt" && value.secret) {
+          promptedSecretEnvVars.push(envVar.name);
+        }
+      } else if (envVar.secret) {
         lines.push(`# ${envVar.name}=`);
         manualSecretEnvVars.push(envVar.name);
         placeholderEnvVars.push(envVar.name);
-      } else if (explicitValues.has(envVar.name)) {
-        lines.push(formatEnvAssignment(envVar.name, explicitValues.get(envVar.name) ?? ""));
-        writtenEnvVars.push(envVar.name);
       } else {
         lines.push(`# ${envVar.name}=`);
         placeholderEnvVars.push(envVar.name);
@@ -1673,9 +1822,26 @@ function createDaemonEnvWritePlan(input: {
       writtenEnvVars,
       placeholderEnvVars,
       manualSecretEnvVars,
+      promptedEnvVars,
+      promptedSecretEnvVars,
       written: false
     }
   };
+}
+
+function selectRuntimeProfiles(
+  response: RuntimeProfilesResponse,
+  profileId: string | undefined
+): RuntimeProfilesResponse["profiles"] {
+  const profiles = profileId
+    ? response.profiles.filter((profile) => profile.id === profileId)
+    : response.profiles;
+
+  if (profileId && profiles.length === 0) {
+    throw new CliUsageError(`Runtime profile was not found: ${profileId}`);
+  }
+
+  return profiles;
 }
 
 function collectDaemonEnvWriteMetadata(
@@ -1700,8 +1866,8 @@ function collectDaemonEnvWriteMetadata(
 function parseDaemonEnvWriteSetOptions(
   values: readonly string[],
   metadata: Map<string, { secret: boolean }>
-): Map<string, string> {
-  const parsed = new Map<string, string>();
+): Map<string, DaemonEnvWriteValue> {
+  const parsed = new Map<string, DaemonEnvWriteValue>();
 
   for (const rawValue of values) {
     const separatorIndex = rawValue.indexOf("=");
@@ -1725,10 +1891,128 @@ function parseDaemonEnvWriteSetOptions(
       throw new CliUsageError(`Refusing unsafe --set value for env var: ${name}`);
     }
 
-    parsed.set(name, value);
+    parsed.set(name, {
+      value,
+      secret: false,
+      source: "set"
+    });
   }
 
   return parsed;
+}
+
+function validateDaemonPromptedEnvValues(
+  values: ReadonlyMap<string, DaemonEnvWriteValue>,
+  metadata: Map<string, { secret: boolean }>
+): Map<string, DaemonEnvWriteValue> {
+  const validated = new Map<string, DaemonEnvWriteValue>();
+
+  for (const [name, inputValue] of values) {
+    validateEnvWriteName(name);
+    const envMetadata = metadata.get(name);
+    if (!envMetadata) {
+      throw new CliUsageError(`Prompted env var is not declared by the selected profile: ${name}`);
+    }
+
+    if (/[\r\n]/.test(inputValue.value)) {
+      throw new CliUsageError(`Refusing multiline interactive value for env var: ${name}`);
+    }
+
+    if (!envMetadata.secret && containsSecretLikeValue(inputValue.value)) {
+      throw new CliUsageError(`Refusing secret-like interactive value for non-secret env var: ${name}`);
+    }
+
+    validated.set(name, {
+      value: inputValue.value,
+      secret: envMetadata.secret,
+      source: inputValue.source
+    });
+  }
+
+  return validated;
+}
+
+async function collectDaemonSetupWizardValues(input: {
+  profiles: RuntimeProfilesResponse["profiles"];
+  skipOptional: boolean;
+  promptForEnvValue: ExecuteDependencies["promptForEnvValue"];
+}): Promise<{
+  values: Map<string, DaemonEnvWriteValue>;
+  promptedEnvVars: string[];
+  promptedSecretEnvVars: string[];
+  skippedEnvVars: string[];
+}> {
+  const targets = collectDaemonSetupWizardPromptTargets(input.profiles, input.skipOptional);
+  const values = new Map<string, DaemonEnvWriteValue>();
+  const promptedEnvVars: string[] = [];
+  const promptedSecretEnvVars: string[] = [];
+  const skippedEnvVars: string[] = [];
+
+  for (const target of targets) {
+    const value = await input.promptForEnvValue(target);
+    if (value === undefined || value === "") {
+      if (target.required) {
+        throw new CliUsageError(`Required env var cannot be empty: ${target.name}`);
+      }
+      skippedEnvVars.push(target.name);
+      continue;
+    }
+
+    if (/[\r\n]/.test(value)) {
+      throw new CliUsageError(`Refusing multiline interactive value for env var: ${target.name}`);
+    }
+
+    values.set(target.name, {
+      value,
+      secret: target.secret,
+      source: "prompt"
+    });
+    promptedEnvVars.push(target.name);
+    if (target.secret) {
+      promptedSecretEnvVars.push(target.name);
+    }
+  }
+
+  return {
+    values,
+    promptedEnvVars,
+    promptedSecretEnvVars,
+    skippedEnvVars
+  };
+}
+
+function collectDaemonSetupWizardPromptTargets(
+  profiles: RuntimeProfilesResponse["profiles"],
+  skipOptional: boolean
+): DaemonSetupWizardPromptTarget[] {
+  const targets = new Map<string, DaemonSetupWizardPromptTarget>();
+
+  for (const profile of profiles) {
+    for (const envVar of profile.setup.envVars) {
+      if (envVar.configured) {
+        continue;
+      }
+
+      const recommended = profile.setup.missingRecommendedEnvVars.includes(envVar.name);
+      const shouldPrompt =
+        envVar.required || (!skipOptional && (recommended || envVar.secret));
+      if (!shouldPrompt) {
+        continue;
+      }
+
+      const existing = targets.get(envVar.name);
+      targets.set(envVar.name, {
+        name: envVar.name,
+        secret: existing?.secret === true || envVar.secret,
+        required: existing?.required === true || envVar.required,
+        recommended: existing?.recommended === true || recommended,
+        purpose: existing?.purpose ?? envVar.purpose,
+        profileIds: [...new Set([...(existing?.profileIds ?? []), profile.id])]
+      });
+    }
+  }
+
+  return [...targets.values()];
 }
 
 function createDaemonEnvFileContent(input: {

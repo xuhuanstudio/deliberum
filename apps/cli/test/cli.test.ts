@@ -14,6 +14,7 @@ import {
   CLI_COMMANDS,
   JsonFileEventStore,
   runCli,
+  type CliDependencies,
   type CliCoreApi,
   type CliRunDaemonClient,
   type CliRunResult
@@ -389,6 +390,7 @@ function createFakeRunDaemonClient(
 function createRunCliDependencies(options: {
   client?: CliRunDaemonClient;
   env?: Record<string, string | undefined>;
+  promptForEnvValue?: CliDependencies["promptForEnvValue"];
   readJsonFile?: (filePath: string) => unknown;
 } = {}) {
   const daemonClient = options.client ?? createFakeRunDaemonClient();
@@ -405,6 +407,7 @@ function createRunCliDependencies(options: {
       createDaemonClient,
       createEventStore,
       env: options.env ?? {},
+      promptForEnvValue: options.promptForEnvValue,
       readJsonFile: options.readJsonFile ?? (() => ({}))
     }
   };
@@ -1539,6 +1542,235 @@ describe("CLI command routing", () => {
     expect(rejectedExisting.stdout).toContain("Refusing to modify an existing env file");
     expect(readFileSync(existingPath, "utf8")).toBe("EXISTING=1\n");
     expect(createDaemonClient).toHaveBeenCalledTimes(4);
+    expect(createEventStore).not.toHaveBeenCalled();
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("runs a local daemon setup wizard without printing captured secrets", async () => {
+    const dir = createTempDir();
+    const outputPath = join(dir, ".env");
+    const capturedSecret = ["sk", "interactive", "provider"].join("-");
+    const promptForEnvValue = vi.fn(async ({ name }: { name: string }) => {
+      if (name === "DELIBERUM_OPENAI_API_KEY") {
+        return capturedSecret;
+      }
+      if (name === "DELIBERUM_OPENAI_BASE_URL") {
+        return "https://api.example/v1";
+      }
+
+      return undefined;
+    });
+    const daemonClient = createFakeRunDaemonClient({
+      getRuntimeProfiles: vi.fn(async () => ({
+        profiles: [
+          {
+            id: "openai-compatible",
+            name: "OpenAI-compatible",
+            enabled: true,
+            status: "needs_configuration",
+            components: [],
+            setup: {
+              enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+              envVars: [
+                {
+                  name: "DELIBERUM_OPENAI_API_KEY",
+                  configured: false,
+                  secret: true,
+                  required: false,
+                  purpose: "Default provider secret."
+                },
+                {
+                  name: "DELIBERUM_OPENAI_BASE_URL",
+                  configured: false,
+                  secret: false,
+                  required: false,
+                  purpose: "Default provider base URL."
+                },
+                {
+                  name: "DELIBERUM_OPENAI_MODEL",
+                  configured: false,
+                  secret: false,
+                  required: false,
+                  purpose: "Default provider model."
+                }
+              ],
+              missingRecommendedEnvVars: ["DELIBERUM_OPENAI_BASE_URL"],
+              notes: []
+            },
+            boundaries: ["Provider secrets stay in daemon runtime env."]
+          }
+        ]
+      }))
+    });
+    const { createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies({
+        client: daemonClient,
+        promptForEnvValue
+      });
+
+    const result = parseOutput<{
+      filePath: string;
+      written: boolean;
+      writtenEnvVars: string[];
+      promptedEnvVars: string[];
+      promptedSecretEnvVars: string[];
+      placeholderEnvVars: string[];
+    }>(
+      await runCli(
+        [
+          "daemon",
+          "setup-wizard",
+          "--profile",
+          "openai-compatible",
+          "--output",
+          outputPath,
+          "--json"
+        ],
+        dependencies
+      )
+    );
+    const content = readFileSync(outputPath, "utf8");
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        filePath: outputPath,
+        written: true,
+        writtenEnvVars: [
+          "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+          "DELIBERUM_OPENAI_API_KEY",
+          "DELIBERUM_OPENAI_BASE_URL"
+        ],
+        promptedEnvVars: [
+          "DELIBERUM_OPENAI_API_KEY",
+          "DELIBERUM_OPENAI_BASE_URL"
+        ],
+        promptedSecretEnvVars: ["DELIBERUM_OPENAI_API_KEY"],
+        placeholderEnvVars: ["DELIBERUM_OPENAI_MODEL"]
+      })
+    );
+    expect(content).toContain("DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE=true");
+    expect(content).toContain(`DELIBERUM_OPENAI_API_KEY=${capturedSecret}`);
+    expect(content).toContain("DELIBERUM_OPENAI_BASE_URL=https://api.example/v1");
+    expect(content).toContain("# DELIBERUM_OPENAI_MODEL=");
+    expect(JSON.stringify(result)).not.toContain(capturedSecret);
+    expect(promptForEnvValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "DELIBERUM_OPENAI_API_KEY",
+        secret: true
+      })
+    );
+    expect(promptForEnvValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "DELIBERUM_OPENAI_BASE_URL",
+        recommended: true,
+        secret: false
+      })
+    );
+    promptForEnvValue.mockClear();
+    const skippedOptional = parseOutput<{
+      skippedEnvVars: string[];
+      promptedEnvVars: string[];
+      placeholderEnvVars: string[];
+    }>(
+      await runCli(
+        [
+          "daemon",
+          "setup-wizard",
+          "--profile",
+          "openai-compatible",
+          "--output",
+          join(dir, "skip.env"),
+          "--skip-optional",
+          "--json"
+        ],
+        dependencies
+      )
+    );
+
+    expect(skippedOptional).toEqual(
+      expect.objectContaining({
+        skippedEnvVars: [],
+        promptedEnvVars: [],
+        placeholderEnvVars: [
+          "DELIBERUM_OPENAI_API_KEY",
+          "DELIBERUM_OPENAI_BASE_URL",
+          "DELIBERUM_OPENAI_MODEL"
+        ]
+      })
+    );
+    expect(readFileSync(join(dir, "skip.env"), "utf8")).toContain(
+      "# DELIBERUM_OPENAI_API_KEY="
+    );
+    expect(promptForEnvValue).not.toHaveBeenCalled();
+    expect(createDaemonClient).toHaveBeenCalledTimes(2);
+    expect(createEventStore).not.toHaveBeenCalled();
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects empty required daemon setup wizard values", async () => {
+    const dir = createTempDir();
+    const outputPath = join(dir, ".env");
+    const promptForEnvValue = vi.fn(async () => undefined);
+    const daemonClient = createFakeRunDaemonClient({
+      getRuntimeProfiles: vi.fn(async () => ({
+        profiles: [
+          {
+            id: "mcp-tool",
+            name: "MCP tool",
+            enabled: true,
+            status: "needs_configuration",
+            components: [],
+            setup: {
+              enableEnvVar: "DELIBERUM_ENABLE_MCP_TOOL_PROFILE",
+              envVars: [
+                {
+                  name: "DELIBERUM_MCP_TOOL_URL",
+                  configured: false,
+                  secret: false,
+                  required: true,
+                  purpose: "Required MCP-compatible JSON-RPC endpoint URL."
+                }
+              ],
+              missingRecommendedEnvVars: ["DELIBERUM_MCP_TOOL_URL"],
+              notes: []
+            },
+            boundaries: ["Tool endpoint details are not returned."]
+          }
+        ]
+      }))
+    });
+    const { createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies({
+        client: daemonClient,
+        promptForEnvValue
+      });
+
+    const result = await runCli(
+      [
+        "daemon",
+        "setup-wizard",
+        "--profile",
+        "mcp-tool",
+        "--output",
+        outputPath,
+        "--json"
+      ],
+      dependencies
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toContain("Required env var cannot be empty");
+    expect(result.stdout).not.toContain(outputPath);
+    expect(() => readFileSync(outputPath, "utf8")).toThrow();
+    expect(promptForEnvValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "DELIBERUM_MCP_TOOL_URL",
+        required: true
+      })
+    );
+    expect(createDaemonClient).toHaveBeenCalledTimes(1);
     expect(createEventStore).not.toHaveBeenCalled();
 
     rmSync(dir, { recursive: true, force: true });

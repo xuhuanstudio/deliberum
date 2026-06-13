@@ -10,6 +10,7 @@ This project follows a human-readable changelog. The initial public repository s
 - Added OpenAI-compatible, HTTP-template, MCP-compatible tool, manual, fake, and WebGET adapter surfaces with safe secret handling boundaries.
 - Added safe daemon setup-plan output derived from runtime profile metadata, including required and recommended local configuration steps without printing or storing secret values.
 - Added safe daemon env file block writing from runtime profile metadata, with secret env vars left as manual placeholders.
+- Added a local interactive daemon setup wizard that captures missing setup values and hidden secret values without printing or sending them to the daemon.
 - Added dry-run env block preview steps to shared setup-plan projections for CLI and Web setup summaries.
 - Added shared client-side setup-plan projection helpers and Web runtime profile setup summaries derived from safe daemon metadata.
 - Added safe daemon deployment posture diagnostics for local/pre-production binding, auth, CORS, persistence, resource access, and production-readiness blockers without exposing secrets, resource access URLs, or provider/tool endpoint values.
