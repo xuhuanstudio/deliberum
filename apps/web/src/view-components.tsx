@@ -218,7 +218,15 @@ export function formatSafeErrorMessage(error: Error | null | undefined): string 
     return "The service did not return a usable response.";
   }
 
-  return redactUnsafeText(error.message.split("\n")[0] ?? error.message);
+  return formatUserVisibleError(redactUnsafeText(error.message.split("\n")[0] ?? error.message));
+}
+
+function formatUserVisibleError(message: string): string {
+  if (/^daemon is unavailable\.?$/i.test(message)) {
+    return "The discussion service is unavailable.";
+  }
+
+  return message.replace(/\bdaemon\b/gi, "discussion service");
 }
 
 function getRecordKey(record: unknown, fallback: number): string {

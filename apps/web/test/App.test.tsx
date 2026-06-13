@@ -2434,6 +2434,20 @@ describe("@deliberum/web shell", () => {
     expect(renderedText).not.toContain("privateStack");
   });
 
+  it("keeps default service errors user facing", async () => {
+    const client = createClient({
+      getRun: vi.fn(async () => {
+        throw new Error("Daemon is unavailable.");
+      })
+    });
+
+    renderApp("/runs/run-1", client);
+
+    expect(await screen.findByText("Could not load discussion data")).toBeTruthy();
+    expect(screen.getByText("The discussion service is unavailable.")).toBeTruthy();
+    expect(screen.queryByText("Daemon is unavailable.")).toBeNull();
+  });
+
   it("renders session resources and evidence needs from the daemon endpoint", async () => {
     const client = renderApp("/sessions/session-1/resources");
 
