@@ -233,22 +233,26 @@ export function RunDetailPage() {
       >
         <QueryState query={runQuery}>
           <RunSummary run={run} />
+          {sessionId ? <RunQualityOverview sessionId={sessionId} /> : null}
           <RunDetailGuide />
           <RunStageStatus run={run} />
+          <StartRunForm runId={runId} sessionId={sessionId} />
           <RunProcessProposals runId={runId} sessionId={sessionId} />
           {sessionId ? <RunProcessGovernance runId={runId} sessionId={sessionId} /> : null}
-          <RunEventTimeline runId={runId} />
-          <StartRunForm runId={runId} sessionId={sessionId} />
-          <DataPanel title="Run plan view">
-            <JsonBlock value={sanitizeForDisplay(getRecordValue(run, "plan") ?? {})} />
-          </DataPanel>
-          <DataPanel
-            title="Round metadata"
-            description="Operational state from the daemon run view."
-          >
-            <JsonBlock value={sanitizeForDisplay(getRecordValue(run, "rounds") ?? {})} />
-          </DataPanel>
           {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
+          <details className="du-advanced-panel">
+            <summary>Ledger trace and advanced run records</summary>
+            <RunEventTimeline runId={runId} />
+            <DataPanel title="Run plan view">
+              <JsonBlock value={sanitizeForDisplay(getRecordValue(run, "plan") ?? {})} />
+            </DataPanel>
+            <DataPanel
+              title="Round metadata"
+              description="Operational state from the daemon run view."
+            >
+              <JsonBlock value={sanitizeForDisplay(getRecordValue(run, "rounds") ?? {})} />
+            </DataPanel>
+          </details>
         </QueryState>
       </ViewFrame>
     </RunWorkspaceShell>
@@ -362,11 +366,15 @@ export function RunOutcomePage() {
                 ]}
               />
               <DataPanel
-                title="Provisional outcome"
-                description="Rendered from the daemon outcome endpoint as provisional material."
+                title="Outcome brief"
+                description="Readable projection of the compiled outcome. The full daemon material remains available below for traceability."
               >
-                <JsonBlock value={sanitizeForDisplay(outcome.outcome)} />
+                <OutcomeBrief outcome={outcome.outcome} />
               </DataPanel>
+              <details className="du-advanced-panel">
+                <summary>Raw outcome material</summary>
+                <JsonBlock value={sanitizeForDisplay(outcome.outcome)} />
+              </details>
             </>
           ) : (
             <StatusBanner
@@ -825,34 +833,45 @@ function StartRunForm({ runId, sessionId }: { runId: string; sessionId?: string 
       title="Start orchestration"
       description="Start requested stages through the daemon. The local preset pipeline requires the daemon preset flag."
     >
-      <JsonInputForm
-        id="start-request-json"
-        label="Advanced start request JSON"
-        value={startRequestText}
-        onChange={setStartRequestText}
-        onSubmit={submitStartRequest}
-        submitLabel={startMutation.isPending ? "Starting" : "Start run"}
-        disabled={startMutation.isPending}
-        actions={
-          <>
-            <button
-              type="button"
-              className="du-secondary-button"
-              onClick={fillLocalPresetStartRequest}
-              disabled={startMutation.isPending}
-            >
-              Fill local preset start request
-            </button>
-            <button
-              type="button"
-              onClick={startLocalPresetPipeline}
-              disabled={startMutation.isPending}
-            >
-              Start full local preset pipeline
-            </button>
-          </>
-        }
-      />
+      <div className="du-readable-list">
+        <ExplainerItem
+          title="Run the full local preset"
+          detail="Executes sealed divergence, extraction, review, and finalization through deterministic local components."
+        />
+      </div>
+      <div className="du-action-row">
+        <button
+          type="button"
+          onClick={startLocalPresetPipeline}
+          disabled={startMutation.isPending}
+        >
+          Start full local preset pipeline
+        </button>
+      </div>
+      <details className="du-advanced-panel">
+        <summary>Advanced start request</summary>
+        <JsonInputForm
+          id="start-request-json"
+          label="Advanced start request JSON"
+          value={startRequestText}
+          onChange={setStartRequestText}
+          onSubmit={submitStartRequest}
+          submitLabel={startMutation.isPending ? "Starting" : "Start run"}
+          disabled={startMutation.isPending}
+          actions={
+            <>
+              <button
+                type="button"
+                className="du-secondary-button"
+                onClick={fillLocalPresetStartRequest}
+                disabled={startMutation.isPending}
+              >
+                Fill local preset start request
+              </button>
+            </>
+          }
+        />
+      </details>
       {inputError ? <StatusBanner tone="error" title={inputError} /> : null}
       {startMutation.isError ? (
         <StatusBanner
@@ -915,6 +934,184 @@ function StartResult({ result }: { result: unknown }) {
         emptyTitle="No stages returned"
         emptyDescription="The daemon did not report executed stages for this request."
       />
+    </div>
+  );
+}
+
+function RunQualityOverview({ sessionId }: { sessionId: string }) {
+  const { client } = useDaemonRuntime();
+  const frontierQuery = useQuery({
+    queryKey: ["run-frontier", sessionId],
+    queryFn: () => client.getFrontier(sessionId)
+  });
+  const objectionsQuery = useQuery({
+    queryKey: ["run-objections", sessionId],
+    queryFn: () => client.getObjections(sessionId)
+  });
+  const obligationsQuery = useQuery({
+    queryKey: ["run-obligations", sessionId],
+    queryFn: () => client.getObligations(sessionId)
+  });
+  const queryState = {
+    isLoading: frontierQuery.isLoading || objectionsQuery.isLoading || obligationsQuery.isLoading,
+    isError: frontierQuery.isError || objectionsQuery.isError || obligationsQuery.isError,
+    error: frontierQuery.error ?? objectionsQuery.error ?? obligationsQuery.error ?? null
+  };
+  const candidates = asArray(frontierQuery.data?.candidates);
+  const objections = asArray(objectionsQuery.data?.objections);
+  const obligations = asArray(obligationsQuery.data?.qualityObligations);
+  const unresolvedObjections = countRecordsWithoutStatus(objections, "resolved");
+  const openObligations = countRecordsWithoutStatus(obligations, "satisfied");
+
+  return (
+    <DataPanel
+      title="Deliberation quality overview"
+      description="A product-level map of the current run state from daemon projections."
+    >
+      <QueryState query={queryState}>
+        <div className="du-quality-summary-grid">
+          <QualitySummaryLink
+            title="Candidate Frontier"
+            detail="Accepted active candidate material, without collapsing the frontier into one hidden authority."
+            metric={String(candidates.length)}
+            to="/sessions/$sessionId/frontier"
+            sessionId={sessionId}
+          />
+          <QualitySummaryLink
+            title="Open pressure"
+            detail="Unresolved objection records that still constrain the outcome."
+            metric={String(unresolvedObjections)}
+            to="/sessions/$sessionId/objections"
+            sessionId={sessionId}
+          />
+          <QualitySummaryLink
+            title="Quality obligations"
+            detail="Explicit duties that keep the output correct, complete, and bounded."
+            metric={`${openObligations}/${obligations.length}`}
+            to="/sessions/$sessionId/obligations"
+            sessionId={sessionId}
+          />
+        </div>
+      </QueryState>
+    </DataPanel>
+  );
+}
+
+function QualitySummaryLink({
+  title,
+  detail,
+  metric,
+  to,
+  sessionId
+}: {
+  title: string;
+  detail: string;
+  metric: string;
+  to:
+    | "/sessions/$sessionId/frontier"
+    | "/sessions/$sessionId/objections"
+    | "/sessions/$sessionId/obligations";
+  sessionId: string;
+}) {
+  return (
+    <Link className="du-quality-summary-item" to={to} params={{ sessionId }}>
+      <span>{metric}</span>
+      <strong>{title}</strong>
+      <p>{detail}</p>
+    </Link>
+  );
+}
+
+function OutcomeBrief({ outcome }: { outcome: unknown }) {
+  const recommendation =
+    getStringRecordValue(outcome, "recommendation") ??
+    getStringRecordValue(outcome, "summary") ??
+    "The daemon did not return a readable recommendation.";
+  const unresolvedQuestions = getStringArray(getRecordValue(outcome, "unresolvedQuestions"));
+  const limitations = getStringArray(getRecordValue(outcome, "limitations"));
+  const continuationSuggestions = getStringArray(
+    getRecordValue(outcome, "continuationSuggestions")
+  );
+  const alternatives = asArray(getRecordValue(outcome, "alternatives"));
+  const unresolvedObjections = asArray(getRecordValue(outcome, "unresolvedObjections"));
+  const qualityObligations = asArray(getRecordValue(outcome, "qualityObligations"));
+  const evidenceNeeds = asArray(
+    getRecordValue(getRecordValue(outcome, "evidenceStatus"), "evidenceNeeds")
+  );
+  const uncheckedEvidenceNeeds = evidenceNeeds.filter(
+    (entry) => getRecordValue(entry, "status") === "unchecked"
+  ).length;
+
+  return (
+    <div className="du-outcome-brief">
+      <article className="du-readable-item">
+        <p className="du-kicker">Recommendation</p>
+        <h4>{recommendation}</h4>
+      </article>
+      <KeyValueGrid
+        items={[
+          {
+            label: "Alternatives",
+            value: alternatives.length
+          },
+          {
+            label: "Unresolved objections",
+            value: unresolvedObjections.length
+          },
+          {
+            label: "Quality obligations",
+            value: qualityObligations.length
+          },
+          {
+            label: "Evidence needs",
+            value:
+              evidenceNeeds.length === 0
+                ? "0"
+                : `${uncheckedEvidenceNeeds}/${evidenceNeeds.length} unchecked`
+          }
+        ]}
+      />
+      <ReadableStringList
+        title="Unresolved questions"
+        items={unresolvedQuestions}
+        emptyTitle="No unresolved questions returned"
+      />
+      <ReadableStringList
+        title="Limitations"
+        items={limitations}
+        emptyTitle="No limitations returned"
+      />
+      <ReadableStringList
+        title="Continuation suggestions"
+        items={continuationSuggestions}
+        emptyTitle="No continuation suggestions returned"
+      />
+    </div>
+  );
+}
+
+function ReadableStringList({
+  title,
+  items,
+  emptyTitle
+}: {
+  title: string;
+  items: string[];
+  emptyTitle: string;
+}) {
+  return (
+    <div className="du-readable-list">
+      <h4>{title}</h4>
+      {items.length === 0 ? (
+        <EmptyState title={emptyTitle} description="The compiled projection did not include items for this section." />
+      ) : (
+        items.map((item, index) => (
+          <article className="du-readable-item" key={`${title}:${index}:${item}`}>
+            <p className="du-kicker">{`${title} ${index + 1}`}</p>
+            <p>{item}</p>
+          </article>
+        ))
+      )}
     </div>
   );
 }
@@ -1205,7 +1402,18 @@ function ProcessProposalRecord({
           }
         ]}
       />
-      <JsonBlock value={sanitizeForDisplay(requestedBudget ?? {})} />
+      <KeyValueGrid
+        items={[
+          {
+            label: "Max events",
+            value: formatRecordValue(getRecordValue(requestedBudget, "maxEvents"))
+          },
+          {
+            label: "Max provider calls",
+            value: formatRecordValue(getRecordValue(requestedBudget, "maxProviderCalls"))
+          }
+        ]}
+      />
       {actions ? <div className="du-process-actions">{actions}</div> : null}
     </article>
   );
@@ -1999,6 +2207,14 @@ function formatEventIds(eventIds: unknown[]): string {
 
 function getStringArray(value: unknown): string[] {
   return asArray(value).filter((entry): entry is string => typeof entry === "string");
+}
+
+function countRecordsWithoutStatus(records: unknown[], settledStatus: string): number {
+  return records.filter((record) => {
+    const object = getRecordValue(record, "object") ?? record;
+
+    return getRecordValue(object, "status") !== settledStatus;
+  }).length;
 }
 
 function formatEventRange(eventRange: unknown): string {

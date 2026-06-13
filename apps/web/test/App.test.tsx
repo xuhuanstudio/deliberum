@@ -1118,6 +1118,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Run status")).toBeTruthy();
     expect(screen.getByText("Ledger events")).toBeTruthy();
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
+    expect(screen.getByText("Deliberation quality overview")).toBeTruthy();
+    expect(screen.getByText("Open pressure")).toBeTruthy();
+    expect(screen.getByText("Accepted active candidate material, without collapsing the frontier into one hidden authority.")).toBeTruthy();
     expect(screen.getByText("Run ledger timeline")).toBeTruthy();
     expect(screen.getByText("Event entries")).toBeTruthy();
     expect(screen.getByText(/topic_contract_published/)).toBeTruthy();
@@ -1518,6 +1521,7 @@ describe("@deliberum/web shell", () => {
     };
 
     await screen.findByText("Start orchestration");
+    fireEvent.click(screen.getByText("Advanced start request"));
     fireEvent.change(screen.getByLabelText("Advanced start request JSON"), {
       target: {
         value: JSON.stringify(startRequest)
@@ -1537,6 +1541,7 @@ describe("@deliberum/web shell", () => {
     const client = renderApp("/runs/run-1");
 
     await screen.findByText("Start orchestration");
+    fireEvent.click(screen.getByText("Advanced start request"));
     fireEvent.change(screen.getByLabelText("Advanced start request JSON"), {
       target: {
         value: "{}"
@@ -1710,7 +1715,10 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
     expect(screen.getByText("Draft status")).toBeTruthy();
     expect(screen.getAllByText(/provisional/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Provisional compiled material/)).toBeTruthy();
+    expect(screen.getByText("Outcome brief")).toBeTruthy();
+    expect(screen.getByText("Limitations")).toBeTruthy();
+    expect(screen.getByText("Raw outcome material")).toBeTruthy();
+    expect(screen.getAllByText(/Provisional compiled material/).length).toBeGreaterThan(0);
   });
 
   it("compiles run output for a selected proposal event", async () => {

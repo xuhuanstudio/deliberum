@@ -331,6 +331,55 @@ a {
   font-size: 1.08rem;
 }
 
+.du-quality-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--du-line);
+}
+
+.du-quality-summary-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  background: var(--du-surface);
+  color: var(--du-ink);
+  padding: 18px;
+  text-decoration: none;
+}
+
+.du-quality-summary-item:hover {
+  background: #edf5f2;
+}
+
+.du-quality-summary-item span,
+.du-quality-summary-item strong,
+.du-quality-summary-item p {
+  display: block;
+}
+
+.du-quality-summary-item span {
+  color: var(--du-accent-strong);
+  font-size: 1.85rem;
+  font-weight: 800;
+}
+
+.du-quality-summary-item strong {
+  font-size: 1rem;
+}
+
+.du-quality-summary-item p {
+  margin: 0;
+  color: var(--du-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.du-outcome-brief {
+  display: grid;
+  gap: 12px;
+}
+
 .du-section-label {
   border-top: 1px solid var(--du-line);
   padding-top: 24px;
@@ -751,14 +800,15 @@ a {
     display: block;
   }
 
-  .du-session-form-row,
-  .du-inline-form-row,
-  .du-key-value-grid,
-  .du-explainer-grid,
-  .du-quality-map,
-  .du-stage-grid,
-  .du-follow-controls,
-  .du-final-lifecycle-grid,
+.du-session-form-row,
+.du-inline-form-row,
+.du-key-value-grid,
+.du-explainer-grid,
+.du-quality-map,
+.du-quality-summary-grid,
+.du-stage-grid,
+.du-follow-controls,
+.du-final-lifecycle-grid,
   .du-lifecycle-grid {
     grid-template-columns: 1fr;
   }
