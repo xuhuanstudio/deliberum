@@ -853,7 +853,7 @@ function ReadableSessionRecord({
       "consequence",
       "requirement"
     ]) ?? "Detailed material is available in Advanced details.";
-  const status = formatRecordValue(getRecordValue(object, "status"));
+  const status = formatReadableStatus(getRecordValue(object, "status"));
   const proposalEventId = formatRecordValue(getRecordValue(record, "proposalEventId"));
   const sourceEventIds = formatRecordIdList(asArray(getRecordValue(object, "sourceEventIds")));
 
@@ -862,7 +862,7 @@ function ReadableSessionRecord({
       <p className="du-kicker">{formatReadableKind(kind)} {index + 1}</p>
       <h4>{title}</h4>
       {detail !== title ? <p>{detail}</p> : null}
-      <p className="du-readable-meta">Status: {status}</p>
+      <p className="du-readable-meta">Current state: {status}</p>
       <AdvancedDetails summary="Advanced / Developer Mode: source details">
         <KeyValueGrid
           items={[
@@ -928,14 +928,30 @@ function formatSessionEventTypeForUser(value: unknown): string {
   }
 
   if (typeof value === "string" && value.length > 0) {
-    return value
-      .replace(/[_-]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/^./, (character) => character.toUpperCase());
+    return formatReadableIdentifier(value);
   }
 
   return "No visible step returned";
+}
+
+function formatReadableStatus(value: unknown): string {
+  if (value === "accepted_active") {
+    return "Accepted and active";
+  }
+
+  if (typeof value === "string" && value.length > 0) {
+    return formatReadableIdentifier(value);
+  }
+
+  return formatRecordValue(value);
+}
+
+function formatReadableIdentifier(value: string): string {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (character) => character.toUpperCase());
 }
 
 function formatRecordIdList(values: unknown[]): string {

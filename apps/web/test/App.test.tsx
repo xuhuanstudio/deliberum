@@ -679,7 +679,7 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           object: {
             id: "candidate-1",
             title: "Candidate A",
-            status: "active"
+            status: "accepted_active"
           },
           proposalEventId: "proposal-event-1",
           sourceEventIds: ["event-1"]
@@ -1018,6 +1018,7 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText(/accepted_active_candidates/)).toBeTruthy();
     expect(screen.getAllByText(/candidate-1/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Current state: Accepted and active")).toBeTruthy();
 
     const renderedText = document.body.textContent ?? "";
     for (const forbiddenField of ["currentBest", "winner", "rank", "score", "vote"]) {
