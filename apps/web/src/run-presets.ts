@@ -1,13 +1,13 @@
 export const LOCAL_PRESET_RUN_PLAN = {
-  title: "Local preset run",
-  topic: "Exercise the local Deliberum run workspace with deterministic preset components.",
+  title: "Guided sample discussion",
+  topic: "Review a proposed rollout before relying on it.",
   goals: [
-    "Create traceable proposal material through the daemon run API.",
-    "Show Candidate Frontier, objections, quality obligations, and provisional outcome views."
+    "Create traceable discussion material through the guided workflow.",
+    "Show main perspectives, open disagreements, answer requirements, and the current conclusion."
   ],
   constraints: [
-    "Use deterministic local preset components only.",
-    "Keep all output provisional and labeled as local development material."
+    "Use deterministic sample participants only.",
+    "Keep all output provisional and labeled as sample material."
   ],
   participants: [
     {
@@ -36,7 +36,7 @@ export const LOCAL_PRESET_RUN_PLAN = {
     language: "en",
     style: "concise",
     expectations: [
-      "Render only local preset material.",
+      "Render only deterministic sample material.",
       "Preserve limitations and unresolved issues."
     ]
   },
@@ -60,7 +60,7 @@ export const LOCAL_PRESET_START_REQUEST = {
       mode: "all_generated_unchallenged",
       authorId: "local-preset-review-coordinator",
       rationale:
-        "Accept unchallenged deterministic local preset proposals for this development run."
+        "Accept unchallenged deterministic sample proposals for this development walkthrough."
     }
   },
   finalization: {

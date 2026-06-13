@@ -383,7 +383,7 @@ export function RunOutcomePage() {
       <ViewFrame
         eyebrow="User Mode"
         title="Current conclusion"
-        description="Outcome Compilation shown as a readable current conclusion with disagreements, risks, missing evidence, and next actions."
+        description="Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions."
         actions={
           <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
             Back to discussion
@@ -395,7 +395,7 @@ export function RunOutcomePage() {
             <>
               <DataPanel
                 title="Current conclusion"
-                description="Readable projection of the compiled outcome. Full daemon material remains in Advanced details for traceability."
+                description="A readable summary of the current result. Advanced details keep the underlying runtime response for developers."
               >
                 <OutcomeBrief outcome={outcome.outcome} />
               </DataPanel>
@@ -1284,7 +1284,7 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
   const recommendation =
     getStringRecordValue(outcome, "recommendation") ??
     getStringRecordValue(outcome, "summary") ??
-    "The daemon did not return a readable recommendation.";
+    "No readable current conclusion was returned.";
   const unresolvedQuestions = getStringArray(getRecordValue(outcome, "unresolvedQuestions"));
   const limitations = getStringArray(getRecordValue(outcome, "limitations"));
   const continuationSuggestions = getStringArray(
@@ -1302,7 +1302,7 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
 
   return (
     <div className="du-outcome-brief">
-      <section className="du-outcome-hero" aria-label="Outcome snapshot">
+      <section className="du-outcome-hero" aria-label="Current conclusion snapshot">
         <article className="du-outcome-recommendation">
           <p className="du-kicker">Current recommendation</p>
           <h4>{recommendation}</h4>
@@ -1314,17 +1314,17 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
             detail={describeOutcomeCount(alternatives.length, "explored option", "explored options")}
           />
           <OutcomeStatusItem
-            title="Open objections"
+            title="Open disagreements"
             value={String(unresolvedObjections.length)}
             detail={describeOutcomeCount(
               unresolvedObjections.length,
-              "unresolved constraint",
-              "unresolved constraints"
+              "open disagreement",
+              "open disagreements"
             )}
             tone={unresolvedObjections.length > 0 ? "warning" : "ok"}
           />
           <OutcomeStatusItem
-            title="Evidence needs"
+            title="Missing evidence"
             value={
               evidenceNeeds.length === 0
                 ? "0"
@@ -1332,17 +1332,21 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
             }
             detail={
               evidenceNeeds.length === 0
-                ? "No evidence need returned"
-                : `${uncheckedEvidenceNeeds} unchecked need${
+                ? "No evidence gaps listed"
+                : `${uncheckedEvidenceNeeds} unchecked evidence gap${
                     uncheckedEvidenceNeeds === 1 ? "" : "s"
                   }`
             }
             tone={uncheckedEvidenceNeeds > 0 ? "warning" : "ok"}
           />
           <OutcomeStatusItem
-            title="Risks and limits"
+            title="Risks and boundaries"
             value={String(limitations.length)}
-            detail={describeOutcomeCount(limitations.length, "known boundary", "known boundaries")}
+            detail={describeOutcomeCount(
+              limitations.length,
+              "risk or boundary",
+              "risks or boundaries"
+            )}
             tone={limitations.length > 0 ? "warning" : "neutral"}
           />
         </div>
@@ -1354,9 +1358,9 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
           emptyTitle="No unresolved questions returned"
         />
         <ReadableStringList
-          title="Limitations"
+          title="Risks and boundaries"
           items={limitations}
-          emptyTitle="No limitations returned"
+          emptyTitle="No risks or boundaries returned"
         />
       </div>
       <ReadableRecordList
@@ -1366,21 +1370,21 @@ export function OutcomeBrief({ outcome }: { outcome: unknown }) {
         summarizeItem={summarizeAlternative}
       />
       <ReadableRecordList
-        title="Open objections"
+        title="Open disagreements"
         items={unresolvedObjections}
-        emptyTitle="No unresolved objections returned"
+        emptyTitle="No open disagreements returned"
         summarizeItem={summarizeOpenObjection}
       />
       <ReadableRecordList
-        title="Evidence needs"
+        title="Missing evidence"
         items={evidenceNeeds}
-        emptyTitle="No evidence needs returned"
+        emptyTitle="No missing evidence returned"
         summarizeItem={summarizeEvidenceNeed}
       />
       <ReadableRecordList
-        title="Quality obligations"
+        title="Requirements this answer must satisfy"
         items={qualityObligations}
-        emptyTitle="No quality obligations returned"
+        emptyTitle="No answer requirements returned"
         summarizeItem={summarizeQualityObligation}
       />
       <ReadableStringList
@@ -1425,7 +1429,10 @@ function ReadableStringList({
     <div className="du-readable-list">
       <h4>{title}</h4>
       {items.length === 0 ? (
-        <EmptyState title={emptyTitle} description="The compiled projection did not include items for this section." />
+        <EmptyState
+          title={emptyTitle}
+          description="This discussion did not return items for this section."
+        />
       ) : (
         items.map((item, index) => (
           <article className="du-readable-item" key={`${title}:${index}:${item}`}>
@@ -1462,7 +1469,7 @@ function ReadableRecordList({
       {items.length === 0 ? (
         <EmptyState
           title={emptyTitle}
-          description="The compiled projection did not include records for this section."
+          description="This discussion did not return records for this section."
         />
       ) : (
         items.map((item, index) => {
@@ -1487,41 +1494,42 @@ function ReadableRecordList({
 
 function summarizeAlternative(item: unknown, index: number): OutcomeRecordSummary {
   return summarizeOutcomeRecord(item, index, {
-    fallbackTitle: `Alternative ${index + 1}`,
-    fallbackKicker: `Alternative ${index + 1}`,
-    titleKeys: ["title", "name", "id", "candidateId"],
-    detailKeys: ["summary", "rationale", "description", "text", "claim"],
-    metaKeys: ["status", "sourceEventId", "candidateId"]
+    fallbackTitle: `Perspective ${index + 1}`,
+    fallbackKicker: `Perspective ${index + 1}`,
+    fallbackDetail: "This perspective is included in the current discussion material.",
+    titleKeys: ["title", "name"],
+    detailKeys: ["summary", "rationale", "description", "text", "claim"]
   });
 }
 
 function summarizeOpenObjection(item: unknown, index: number): OutcomeRecordSummary {
   return summarizeOutcomeRecord(item, index, {
-    fallbackTitle: `Open objection ${index + 1}`,
-    fallbackKicker: `Objection ${index + 1}`,
-    titleKeys: ["title", "id", "objectionId", "status"],
-    detailKeys: ["summary", "reason", "description", "text", "claim"],
-    metaKeys: ["severity", "sourceEventId", "targetId"]
+    fallbackTitle: `Open disagreement ${index + 1}`,
+    fallbackKicker: `Disagreement ${index + 1}`,
+    fallbackDetail:
+      "Details are available in Advanced outcome material if this needs developer inspection.",
+    titleKeys: ["title", "summary", "claim"],
+    detailKeys: ["reason", "description", "text"]
   });
 }
 
 function summarizeEvidenceNeed(item: unknown, index: number): OutcomeRecordSummary {
   return summarizeOutcomeRecord(item, index, {
-    fallbackTitle: `Evidence need ${index + 1}`,
-    fallbackKicker: `Evidence ${index + 1}`,
-    titleKeys: ["question", "title", "id", "needId", "status"],
-    detailKeys: ["description", "summary", "rationale", "text", "claim"],
-    metaKeys: ["status", "sourceEventId", "targetId"]
+    fallbackTitle: `Missing evidence ${index + 1}`,
+    fallbackKicker: `Evidence gap ${index + 1}`,
+    fallbackDetail: "This evidence gap still needs verification.",
+    titleKeys: ["question", "title", "summary"],
+    detailKeys: ["description", "summary", "rationale", "text", "claim"]
   });
 }
 
 function summarizeQualityObligation(item: unknown, index: number): OutcomeRecordSummary {
   return summarizeOutcomeRecord(item, index, {
-    fallbackTitle: `Quality obligation ${index + 1}`,
-    fallbackKicker: `Obligation ${index + 1}`,
-    titleKeys: ["title", "id", "obligationId", "status"],
-    detailKeys: ["description", "summary", "requirement", "text", "claim"],
-    metaKeys: ["status", "sourceEventId", "targetId"]
+    fallbackTitle: `Requirement ${index + 1}`,
+    fallbackKicker: `Requirement ${index + 1}`,
+    fallbackDetail: "This requirement should remain visible while reviewing the conclusion.",
+    titleKeys: ["requirement", "title", "summary"],
+    detailKeys: ["description", "rationale", "text", "claim"]
   });
 }
 
@@ -1531,9 +1539,9 @@ function summarizeOutcomeRecord(
   options: {
     fallbackTitle: string;
     fallbackKicker: string;
+    fallbackDetail: string;
     titleKeys: readonly string[];
     detailKeys: readonly string[];
-    metaKeys: readonly string[];
   }
 ): OutcomeRecordSummary {
   if (typeof item === "string") {
@@ -1551,12 +1559,10 @@ function summarizeOutcomeRecord(
     kicker: status ? formatOutcomeLabel(status) : options.fallbackKicker,
     title:
       getFirstStringRecordValue(object, options.titleKeys) ??
-      getStringRecordValue(item, "id") ??
       options.fallbackTitle,
     detail:
       getFirstStringRecordValue(object, options.detailKeys) ??
-      describeOpaqueOutcomeRecord(item, index),
-    meta: formatOutcomeRecordMeta(object, options.metaKeys)
+      options.fallbackDetail
   };
 }
 
@@ -1572,18 +1578,6 @@ function getFirstStringRecordValue(record: unknown, keys: readonly string[]): st
   return undefined;
 }
 
-function formatOutcomeRecordMeta(record: unknown, keys: readonly string[]): string | undefined {
-  const parts = keys
-    .map((key) => {
-      const value = getStringRecordValue(record, key);
-
-      return value ? `${formatOutcomeLabel(key)}: ${value}` : undefined;
-    })
-    .filter((value): value is string => Boolean(value));
-
-  return parts.length > 0 ? parts.join(" | ") : undefined;
-}
-
 function formatOutcomeLabel(value: string): string {
   return value
     .replace(/([a-z])([A-Z])/g, "$1 $2")
@@ -1591,14 +1585,6 @@ function formatOutcomeLabel(value: string): string {
     .replace(/\s+/g, " ")
     .trim()
     .replace(/^./, (character) => character.toUpperCase());
-}
-
-function describeOpaqueOutcomeRecord(item: unknown, index: number): string {
-  if (typeof item === "number" || typeof item === "boolean") {
-    return String(item);
-  }
-
-  return `Record ${index + 1} is available in the raw outcome material.`;
 }
 
 function describeOutcomeCount(count: number, singular: string, plural: string): string {
@@ -2334,6 +2320,7 @@ function ProjectionRecordList({
         <ProjectionRecord
           key={getProjectionRecordKey(record, index)}
           record={record}
+          index={index}
           kind={kind}
         />
       ))}
@@ -2343,19 +2330,22 @@ function ProjectionRecordList({
 
 function ProjectionRecord({
   record,
+  index,
   kind
 }: {
   record: unknown;
+  index: number;
   kind: "candidate" | "objection" | "quality obligation";
 }) {
   const object = getRecordValue(record, "object") ?? record;
   const id = getStringRecordValue(object, "id") ?? `${kind}-${getProjectionRecordKey(record, 0)}`;
+  const fallbackTitle = `${formatProjectionKind(kind)} ${index + 1}`;
   const title =
     getStringRecordValue(object, "title") ??
     getStringRecordValue(object, "content") ??
     getStringRecordValue(object, "requirement") ??
     getStringRecordValue(object, "failureMode") ??
-    id;
+    fallbackTitle;
   const status = getRecordValue(object, "status");
   const description =
     getStringRecordValue(object, "description") ??

@@ -340,7 +340,12 @@ function LandingPage() {
               <QualityMapItem label="Sealed Divergence" value="Independent first responses" />
               <QualityMapItem label="Candidate Frontier" value="Strongest current options" />
               <QualityMapItem label="Objections" value="Open disagreements" />
-              <QualityMapItem label="Quality Obligations" value="Requirements to satisfy" />
+              <QualityMapItem
+                label="Quality Obligations"
+                value="Requirements this answer must satisfy"
+              />
+              <QualityMapItem label="Evidence Checks" value="Evidence and verification" />
+              <QualityMapItem label="Final Audit" value="Risk review" />
               <QualityMapItem label="Outcome Compilation" value="Current conclusion" />
             </div>
           </DataPanel>
@@ -795,9 +800,10 @@ function ReadableSessionRecord({
 }) {
   const object = getRecordValue(record, "object") ?? record;
   const id = getStringRecordValue(object, "id") ?? `${kind}-${index + 1}`;
+  const fallbackTitle = `${formatReadableKind(kind)} ${index + 1}`;
   const title =
     getFirstDisplayValue(object, ["title", "name", "question", "requirement", "failureMode"]) ??
-    id;
+    fallbackTitle;
   const detail =
     getFirstDisplayValue(object, [
       "summary",
@@ -865,7 +871,7 @@ function formatReadableKind(kind: SessionReadableKind): string {
     return "Requirement";
   }
 
-  return "Evidence need";
+  return "Missing evidence";
 }
 
 function formatSessionEventTypeForUser(value: unknown): string {
@@ -1573,7 +1579,7 @@ function FinalPage() {
     <ViewFrame
       eyebrow="User Mode"
       title="Current conclusion"
-      description="Outcome Compilation is shown as a readable current conclusion with alternatives, disagreements, risks, missing evidence, and next steps."
+      description="Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions."
     >
       <QueryState query={finalQuery}>
         <StatusBanner
@@ -1587,7 +1593,7 @@ function FinalPage() {
         />
         <DataPanel
           title="Current conclusion"
-          description="Readable projection of the compiled outcome. Raw provenance remains in Advanced details."
+          description="A readable summary of the current result. Advanced details keep provenance, raw JSON, and developer controls."
         >
           <OutcomeBrief outcome={outcome} />
         </DataPanel>
@@ -1769,12 +1775,12 @@ function ResourcesPage() {
         />
         <DataPanel
           title="Risks and missing evidence"
-          description="Evidence needs are user-facing verification work, not raw resource access state."
+          description="Missing evidence items are user-facing verification work, not raw resource access state."
         >
           <ReadableSessionRecordList
             records={evidenceNeeds}
-            emptyTitle="No accepted evidence needs"
-            emptyDescription="No evidence needs have been accepted into this discussion yet."
+            emptyTitle="No accepted missing evidence"
+            emptyDescription="No missing evidence items have been accepted into this discussion yet."
             kind="evidence"
           />
         </DataPanel>

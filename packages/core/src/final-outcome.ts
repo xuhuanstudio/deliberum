@@ -353,7 +353,7 @@ export function compileOutcome(input: CompileOutcomeInput): OutcomeCompilationRe
   return {
     recommendation:
       selectedProposalEvent?.payload.recommendation ??
-      "No final candidate proposal selected for this compiled draft.",
+      "No proposed conclusion has been selected yet.",
     applicabilityConditions: [...(selectedProposalEvent?.payload.applicabilityConditions ?? [])],
     candidateFrontierSummary: clonePlain(frontier),
     alternatives: clonePlain(alternatives),
@@ -762,15 +762,15 @@ function buildContinuationSuggestions(
   }
 
   if (unresolvedObjections.length > 0) {
-    suggestions.add("Continue deliberation on unresolved objections before treating the draft as settled.");
+    suggestions.add("Continue deliberation on open disagreements before treating the conclusion as settled.");
   }
 
   if (unfinishedQualityObligations.length > 0) {
-    suggestions.add("Address challenged or unfinished quality obligations explicitly.");
+    suggestions.add("Address challenged or unfinished answer requirements explicitly.");
   }
 
   if (evidenceStatus.evidenceNeeds.some((needStatus) => needStatus.status === "unchecked")) {
-    suggestions.add("Run evidence checks for unchecked evidence needs before strengthening claims.");
+    suggestions.add("Run evidence checks for unchecked missing evidence before strengthening claims.");
   }
 
   return [...suggestions];
@@ -792,15 +792,15 @@ function buildLimitations(
   }
 
   if (unresolvedObjections.length > 0) {
-    limitations.add("Unresolved objections remain visible in this compiled draft.");
+    limitations.add("Open disagreements remain visible in this current conclusion.");
   }
 
   if (unfinishedQualityObligations.length > 0) {
-    limitations.add("Some quality obligations remain unfinished or challenged.");
+    limitations.add("Some answer requirements remain unfinished or challenged.");
   }
 
   if (evidenceStatus.evidenceNeeds.some((needStatus) => needStatus.status === "unchecked")) {
-    limitations.add("Some evidence needs are unchecked; no verification is implied.");
+    limitations.add("Some missing evidence is unchecked; no verification is implied.");
   }
 
   return [...limitations];

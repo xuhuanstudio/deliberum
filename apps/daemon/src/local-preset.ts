@@ -60,15 +60,15 @@ export function createLocalPresetRunRegistries(): Required<LocalPresetRunRegistr
     adapterRegistry: new AdapterRegistry([
       createLocalPresetParticipantAdapter(LOCAL_PRESET_IDS.alphaAdapter, {
         position:
-          "Deterministic local preset participant Alpha proposes a guarded local run workspace path.",
+          "Deterministic sample participant Alpha proposes a guarded review path.",
         reason:
-          "This local preset material exists for development and testing; it is not real provider output."
+          "This sample material exists for guided testing; it is canned, not real deliberation input."
       }),
       createLocalPresetParticipantAdapter(LOCAL_PRESET_IDS.betaAdapter, {
         position:
-          "Deterministic local preset participant Beta keeps unresolved issues visible.",
+          "Deterministic sample participant Beta keeps unresolved issues visible.",
         reason:
-          "The run should stay a control/view workflow with provisional output and explicit limitations."
+          "The discussion should keep provisional output and explicit limitations visible."
       })
     ]),
     extractionGeneratorRegistry: new ExtractionGeneratorRegistry([
@@ -94,15 +94,15 @@ export function createLocalPresetRunRegistries(): Required<LocalPresetRunRegistr
 
 export function localPresetRunPlan() {
   return {
-    title: "Local preset run",
-    topic: "Exercise the local Deliberum run workspace with deterministic preset components.",
+    title: "Guided sample discussion",
+    topic: "Review a proposed rollout before relying on it.",
     goals: [
-      "Create traceable proposal material through the daemon run API.",
-      "Show Candidate Frontier, objections, quality obligations, and provisional outcome views."
+      "Create traceable discussion material through the guided workflow.",
+      "Show main perspectives, open disagreements, answer requirements, and the current conclusion."
     ],
     constraints: [
-      "Use deterministic local preset components only.",
-      "Keep all output provisional and labeled as local development material."
+      "Use deterministic sample participants only.",
+      "Keep all output provisional and labeled as sample material."
     ],
     participants: [
       {
@@ -131,7 +131,7 @@ export function localPresetRunPlan() {
       language: "en",
       style: "concise",
       expectations: [
-        "Render only local preset material.",
+        "Render only deterministic sample material.",
         "Preserve limitations and unresolved issues."
       ]
     },
@@ -157,7 +157,7 @@ export function localPresetStartRequest(): DaemonRunStartRequest {
         mode: "all_generated_unchallenged",
         authorId: "local-preset-review-coordinator",
         rationale:
-          "Accept unchallenged deterministic local preset proposals for this development run."
+          "Accept unchallenged deterministic sample proposals for this development walkthrough."
       }
     },
     finalization: {
@@ -200,7 +200,7 @@ function createLocalPresetParticipantAdapter(
       return {
         payload: {
           localPreset: true,
-          label: "deterministic local preset material",
+          label: "deterministic sample material",
           ...payload,
           participantId: context.participantId
         },
@@ -209,9 +209,9 @@ function createLocalPresetParticipantAdapter(
         capabilities,
         contextCompleteness: {
           status: "complete",
-          notes: ["Deterministic local preset context for development and testing."]
+          notes: ["Deterministic sample context for development and testing."]
         },
-        warnings: ["Local preset output is not real provider output."]
+        warnings: ["Sample output is canned, not real deliberation input."]
       };
     }
   };
@@ -235,23 +235,23 @@ function createLocalPresetExtractionResult(
     candidates: [
       {
         id: "local-preset-candidate-run-workspace",
-        title: "Local runnable run workspace",
+        title: "Guided rollout review",
         description:
-          "Use the daemon run API with deterministic local preset components to exercise the Web workspace.",
+          "Use deterministic sample participants to exercise the discussion workflow.",
         sourceEventIds,
         status: "active",
         supportedBy: ["local-preset-claim-control-surface"],
         attackedBy: ["local-preset-objection-preset-scope"],
         qualityObligationIds: ["local-preset-quality-labeling"],
-        assumptions: ["The daemon remains the local transport and control surface."],
-        tradeoffs: ["The preset does not represent real provider behavior."]
+        assumptions: ["The workflow remains a deterministic sample."],
+        tradeoffs: ["The sample does not represent real deliberation input."]
       }
     ],
     claims: [
       {
         id: "local-preset-claim-control-surface",
         content:
-          "A local preset can make the workspace runnable while preserving daemon and core lifecycle boundaries.",
+          "A deterministic sample can make the discussion workflow runnable while preserving deliberation boundaries.",
         scope: "design",
         sourceEventIds,
         supports: ["local-preset-candidate-run-workspace"]
@@ -261,8 +261,8 @@ function createLocalPresetExtractionResult(
       {
         id: "local-preset-objection-preset-scope",
         targetId: "local-preset-candidate-run-workspace",
-        failureMode: "Users could mistake deterministic local preset material for real provider output.",
-        consequence: "The UI and generated material must label preset output and limitations clearly.",
+        failureMode: "Users could mistake deterministic sample material for real deliberation input.",
+        consequence: "The UI and generated material must label sample output and limitations clearly.",
         severityClaim: "major",
         status: "open",
         sourceEventIds,
@@ -275,7 +275,7 @@ function createLocalPresetExtractionResult(
         scope: "candidate",
         targetCandidateId: "local-preset-candidate-run-workspace",
         requirement:
-          "Clearly label local preset output as deterministic development material.",
+          "Clearly label sample output as deterministic review material.",
         status: "unanswered",
         sourceEventIds,
         supportingRefIds: ["local-preset-claim-control-surface"],
@@ -283,7 +283,7 @@ function createLocalPresetExtractionResult(
       }
     ],
     rationale:
-      "Extract traceable local preset proposal material from revealed deterministic contributions."
+      "Extract traceable sample proposal material from revealed deterministic contributions."
   };
 }
 
@@ -316,18 +316,18 @@ function createLocalPresetCandidateRepairResult(
         id: repairedCandidateId,
         title: `${targetCandidate.object.title} repair`,
         description:
-          "A deterministic local preset repair alternative that keeps preset scope and limitations explicit.",
+          "A deterministic sample repair alternative that keeps sample scope and limitations explicit.",
         sourceEventIds,
         status: "active",
         supportedBy: [repairClaimId],
         attackedBy: [],
         qualityObligationIds: [answeredQualityId],
         assumptions: [
-          "The repair remains deterministic development material.",
+          "The repair remains deterministic sample material.",
           "Acceptance still requires explicit proposal review."
         ],
         tradeoffs: [
-          "The repaired alternative improves traceable labeling but does not represent real provider judgment."
+          "The repaired alternative improves traceable labeling but does not represent real deliberation judgment."
         ]
       }
     ],
@@ -335,7 +335,7 @@ function createLocalPresetCandidateRepairResult(
       {
         id: repairClaimId,
         content:
-          "The repaired local preset candidate explicitly answers preset-scope objections by preserving development-only labeling.",
+          "The repaired sample perspective explicitly answers sample-scope objections by preserving deterministic labeling.",
         scope: "design",
         sourceEventIds,
         supports: [repairedCandidateId]
@@ -349,7 +349,7 @@ function createLocalPresetCandidateRepairResult(
         scope: "candidate",
         targetCandidateId: repairedCandidateId,
         requirement:
-          "State that the repaired local preset candidate remains provisional development material.",
+          "State that the repaired sample perspective remains provisional review material.",
         status: "answered",
         sourceEventIds,
         supportingRefIds: [repairClaimId],
@@ -376,9 +376,9 @@ function createLocalPresetEvidenceCheckResult(
   return {
     results: context.targetEvidenceNeeds.map((evidenceNeed) => ({
       evidenceNeedId: evidenceNeed.object.id,
-      source: "Deterministic local preset evidence source",
-      summary: `Reported local preset evidence result for ${evidenceNeed.object.id}; this is development material, not independent verification.`,
-      limitations: ["Deterministic local preset evidence is not independent verification."]
+      source: "Deterministic sample evidence source",
+      summary: `Reported sample evidence result for ${evidenceNeed.object.id}; this is not independent verification.`,
+      limitations: ["Deterministic sample evidence is not independent verification."]
     })),
     rationale:
       "Record reported evidence check material for local development without claiming verification."
@@ -392,7 +392,7 @@ function createLocalPresetProposalReviewer(): ProposalReviewGenerator {
       return {
         challenges: [],
         notes: [
-          "Deterministic local preset review leaves generated proposals unchallenged for development flow coverage."
+          "Deterministic sample review leaves generated proposals unchallenged for walkthrough coverage."
         ]
       };
     }
@@ -412,16 +412,16 @@ function createLocalPresetFinalCandidateGenerator(): FinalCandidateGenerator {
       return {
         candidateIds: [candidateId],
         recommendation:
-          "Use the local daemon preset to exercise the Web run workspace as provisional development material.",
+          "Use the guided sample discussion only as provisional review material.",
         applicabilityConditions: [
-          "Only when the daemon is started with the local preset enabled.",
-          "Only for local development and testing."
+          "Only in the deterministic sample walkthrough.",
+          "Only for local review and testing."
         ],
         rationale:
-          "The preset keeps execution on the daemon/orchestrator/core path while avoiding real provider calls.",
+          "The sample exercises the full discussion path without relying on real participant or model input.",
         limitations: [
-          "Deterministic local preset output is not real provider output.",
-          "Persistent daemon storage and provider setup remain outside this profile."
+          "Deterministic sample output is canned, not real deliberation input.",
+          "The sample does not prove production readiness or real-world answer quality."
         ]
       };
     }
@@ -433,19 +433,19 @@ function createLocalPresetFinalAuditGenerator(): FinalAuditGenerator {
     auditorId: LOCAL_PRESET_IDS.auditor,
     auditFinalCandidate(_input, context: FinalizationContext): FinalAuditGeneratorResult {
       return {
-        findings: ["The local preset run produced traceable provisional material."],
+        findings: ["The guided sample discussion produced traceable provisional material."],
         risks: [
-          "Local preset material can only validate local workflow behavior, not real provider quality."
+          "Sample material can only validate the walkthrough, not real-world answer quality."
         ],
         unresolvedObjectionIds: context.unresolvedObjectionIds,
         qualityObligationIds: context.qualityObligations.qualityObligations.map(
           (entry) => entry.object.id
         ),
         evidenceNeedIds: context.evidenceNeedIds,
-        omissions: ["No provider setup, persistent storage, public hosting, or authentication is included."],
+        omissions: ["External provider setup, production hosting, and authentication were not part of this sample."],
         compressionProblems: [],
-        limitations: ["The compiled outcome remains provisional."],
-        continuationSuggestions: ["Use real provider configuration in a later explicit provider setup stage."]
+        limitations: ["The current conclusion remains provisional."],
+        continuationSuggestions: ["Review the same discussion with real participants or model connections when ready."]
       };
     }
   };

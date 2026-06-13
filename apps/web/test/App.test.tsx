@@ -393,7 +393,7 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         qualityObligations: [
           {
             id: "obligation-1",
-            requirement: "Keep unresolved objections visible in the compiled projection.",
+            requirement: "Keep open disagreements visible in the current conclusion.",
             status: "open"
           }
         ],
@@ -1216,7 +1216,7 @@ describe("@deliberum/web shell", () => {
     await waitFor(() =>
       expect(client.createRun).toHaveBeenCalledWith({
         runPlan: expect.objectContaining({
-          title: "Local preset run",
+          title: "Guided sample discussion",
           providerConfigs: [],
           participants: expect.arrayContaining([
             expect.objectContaining({
@@ -1853,14 +1853,21 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Draft status")).toBeTruthy();
     expect(screen.getAllByText(/provisional/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);
-    expect(screen.getByRole("region", { name: "Outcome snapshot" })).toBeTruthy();
-    expect(screen.getAllByText("Open objections").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Evidence needs").length).toBeGreaterThan(0);
+    expect(screen.getByRole("region", { name: "Current conclusion snapshot" })).toBeTruthy();
+    expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Missing evidence").length).toBeGreaterThan(0);
     expect(screen.getByText("Does the fixture cover all declared dimensions?")).toBeTruthy();
-    expect(screen.getByText("Keep unresolved objections visible in the compiled projection.")).toBeTruthy();
-    expect(screen.getByText("Limitations")).toBeTruthy();
+    expect(screen.getByText("Keep open disagreements visible in the current conclusion.")).toBeTruthy();
+    expect(screen.getAllByText("Risks and boundaries").length).toBeGreaterThan(0);
+    expect(screen.getByText("Requirements this answer must satisfy")).toBeTruthy();
     expect(screen.getByText("Raw outcome material")).toBeTruthy();
     expect(screen.getAllByText(/Provisional compiled material/).length).toBeGreaterThan(0);
+
+    const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
+    expect(readableConclusion).not.toContain("candidate-2");
+    expect(readableConclusion).not.toContain("objection-1");
+    expect(readableConclusion).not.toContain("obligation-1");
+    expect(readableConclusion).not.toContain("evidence-1");
   });
 
   it("compiles run output for a selected proposal event", async () => {
