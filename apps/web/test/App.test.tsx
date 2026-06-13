@@ -756,6 +756,43 @@ async function findAdvancedModeSummary(index = 0) {
   return summary as HTMLElement;
 }
 
+function getAdvancedModeSummaryByPanelText(text: string) {
+  const details = Array.from(document.querySelectorAll("details.du-advanced-panel")).find(
+    (element) => element.textContent?.includes(text)
+  );
+  expect(details).toBeTruthy();
+  const summary = details?.querySelector("summary");
+  expect(summary).toBeTruthy();
+
+  return summary as HTMLElement;
+}
+
+async function findAdvancedModeSummaryByPanelText(text: string) {
+  await waitFor(() => expect(getAdvancedModeSummaryByPanelText(text)).toBeTruthy());
+
+  return getAdvancedModeSummaryByPanelText(text);
+}
+
+function openAllClosedAdvancedModeDetails() {
+  for (let pass = 0; pass < 3; pass += 1) {
+    const closedSummaries = screen
+      .getAllByText("Advanced / Developer Mode")
+      .filter((summary) => {
+        const details = summary.closest("details") as HTMLDetailsElement | null;
+
+        return details ? !details.open : false;
+      });
+
+    if (closedSummaries.length === 0) {
+      return;
+    }
+
+    for (const summary of closedSummaries) {
+      fireEvent.click(summary);
+    }
+  }
+}
+
 class MockEventSource {
   static instances: MockEventSource[] = [];
 
@@ -867,9 +904,10 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(screen.getByText("What you can do")).toBeTruthy();
     expect(screen.getByText("What the discussion keeps visible")).toBeTruthy();
-    expect(screen.getByText("Advanced / Developer Mode: concept mapping")).toBeTruthy();
+    expect(screen.getAllByText("Advanced / Developer Mode").length).toBeGreaterThanOrEqual(2);
     expect(document.body.textContent ?? "").not.toContain("Topic Contract");
-    fireEvent.click(screen.getByText("Advanced / Developer Mode: concept mapping"));
+    expect(document.body.textContent ?? "").not.toContain("concept mapping");
+    fireEvent.click(getAdvancedModeSummary());
     expect(await screen.findByText("Core concept mapping")).toBeTruthy();
     expect(screen.getByText("Topic Contract")).toBeTruthy();
     expect(screen.getAllByText("1. Start a discussion").length).toBeGreaterThan(0);
@@ -885,7 +923,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByLabelText(/chat/i)).toBeNull();
     expect(screen.queryByPlaceholderText(/message/i)).toBeNull();
 
-    fireEvent.click(getAdvancedModeSummary());
+    fireEvent.click(getAdvancedModeSummary(1));
     fireEvent.change(await screen.findByLabelText("Session id"), {
       target: {
         value: "session-1"
@@ -917,7 +955,7 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(client.getRuntimeProfiles).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummary());
+    fireEvent.click(getAdvancedModeSummary(1));
     expect(await screen.findByText("Runtime profiles")).toBeTruthy();
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(screen.getByText("Local preset")).toBeTruthy();
@@ -944,7 +982,7 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(client.getDeploymentPosture).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    fireEvent.click(getAdvancedModeSummary(1));
     expect(await screen.findByText("Deployment posture")).toBeTruthy();
     await waitFor(() => expect(client.getDeploymentPosture).toHaveBeenCalled());
     expect(screen.getByText("Bind exposure")).toBeTruthy();
@@ -974,7 +1012,7 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(client.getResourceAccessPosture).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    fireEvent.click(getAdvancedModeSummary(1));
     expect(await screen.findByText("Resource access posture")).toBeTruthy();
     await waitFor(() => expect(client.getResourceAccessPosture).toHaveBeenCalled());
     expect(screen.getByText("Base URL posture")).toBeTruthy();
@@ -1014,7 +1052,7 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(client.getOperationAudit).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    fireEvent.click(getAdvancedModeSummary(1));
     expect(await screen.findByText("Operation audit")).toBeTruthy();
     await waitFor(() =>
       expect(client.getOperationAudit).toHaveBeenCalledWith({ limit: 10 })
@@ -1140,9 +1178,9 @@ describe("@deliberum/web shell", () => {
       expect(renderedText).not.toContain(forbiddenField);
     }
 
-    fireEvent.click(screen.getByText("Advanced / Developer Mode: source details"));
+    fireEvent.click(getAdvancedModeSummary());
     expect((await screen.findAllByText(/candidate-1/)).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    fireEvent.click(getAdvancedModeSummary(1));
     expect(await screen.findByText(/accepted_active_candidates/)).toBeTruthy();
   });
 
@@ -1157,7 +1195,7 @@ describe("@deliberum/web shell", () => {
         "This disagreement is tracked, but it does not have a plain-language summary yet."
       )
     ).toBeTruthy();
-    fireEvent.click(screen.getByText("Advanced / Developer Mode: source details"));
+    fireEvent.click(getAdvancedModeSummary());
     expect((await screen.findAllByText(/objection-1/)).length).toBeGreaterThan(0);
 
     cleanup();
@@ -1172,7 +1210,7 @@ describe("@deliberum/web shell", () => {
         "This requirement is tracked, but it does not have a plain-language summary yet."
       )
     ).toBeTruthy();
-    fireEvent.click(screen.getByText("Advanced / Developer Mode: source details"));
+    fireEvent.click(getAdvancedModeSummary());
     expect((await screen.findAllByText(/quality-1/)).length).toBeGreaterThan(0);
   });
 
@@ -1482,9 +1520,11 @@ describe("@deliberum/web shell", () => {
     expect(defaultRunText).not.toContain("objection-1");
     expect(defaultRunText).not.toContain("quality-1");
     expect(defaultRunText).not.toContain("evidence-need-1");
-    const nextStepControls = getAdvancedModeSummary(2).closest("details");
+    const nextStepControls = getAdvancedModeSummaryByPanelText(
+      "Adaptive primitive suggestions"
+    ).closest("details");
     expect((nextStepControls as HTMLDetailsElement | null)?.open).toBe(false);
-    fireEvent.click(getAdvancedModeSummary(2));
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Adaptive primitive suggestions"));
     await waitFor(() => expect(client.getRunProcessProposals).toHaveBeenCalledWith("run-1"));
     await waitFor(() => expect(client.getProcessProposalStates).toHaveBeenCalledWith("session-1"));
     expect((await screen.findAllByText("Next recommended actions")).length).toBeGreaterThan(1);
@@ -1495,7 +1535,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Process governance ledger")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save next step" })).toBeTruthy();
     expect(screen.getByText("No saved next steps")).toBeTruthy();
-    fireEvent.click(getAdvancedModeSummary(3));
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Ledger trace"));
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
     expect(await screen.findByText("Run ledger timeline")).toBeTruthy();
     expect(screen.getByText("Event entries")).toBeTruthy();
@@ -1504,9 +1544,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Main perspectives").length).toBeGreaterThan(0);
     expect(screen.getByText("Candidate A")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
-    for (const sourceDetails of screen.getAllByText("Advanced / Developer Mode: source details")) {
-      fireEvent.click(sourceDetails);
-    }
+    openAllClosedAdvancedModeDetails();
     expect((await screen.findAllByText(/objection-1/)).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Requirements this answer must satisfy").length).toBeGreaterThan(0);
     expect((await screen.findAllByText(/quality-1/)).length).toBeGreaterThan(0);
@@ -1562,7 +1600,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    fireEvent.click(await findAdvancedModeSummary(2));
+    fireEvent.click(await findAdvancedModeSummaryByPanelText("Adaptive primitive suggestions"));
     await screen.findByText("Next recommended actions");
     fireEvent.click(await screen.findByRole("button", { name: "Save next step" }));
 
@@ -1621,7 +1659,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    fireEvent.click(await findAdvancedModeSummary(2));
+    fireEvent.click(await findAdvancedModeSummaryByPanelText("Adaptive primitive suggestions"));
     await screen.findByText("Recorded process proposal");
     fireEvent.change(screen.getByLabelText("Challenge reason"), {
       target: {
@@ -1729,7 +1767,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    fireEvent.click(await findAdvancedModeSummary(2));
+    fireEvent.click(await findAdvancedModeSummaryByPanelText("Adaptive primitive suggestions"));
     await screen.findByText("Recorded process proposal");
     fireEvent.click(screen.getByRole("button", { name: "Execute accepted process proposal" }));
 
@@ -1802,7 +1840,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    fireEvent.click(await findAdvancedModeSummary(2));
+    fireEvent.click(await findAdvancedModeSummaryByPanelText("Adaptive primitive suggestions"));
     await screen.findByText("Recorded process proposal");
     expect(screen.getByText("unsupported_primitive")).toBeTruthy();
     expect(screen.getByText("Process proposal primitive is not executable by the daemon yet.")).toBeTruthy();
@@ -1819,7 +1857,7 @@ describe("@deliberum/web shell", () => {
     const EventSourceMock = installMockEventSource();
     const client = renderApp("/runs/run-1");
 
-    fireEvent.click(await findAdvancedModeSummary(3));
+    fireEvent.click(await findAdvancedModeSummaryByPanelText("Ledger trace"));
     await screen.findByText("Run ledger timeline");
     expect(EventSourceMock.instances).toHaveLength(0);
 
@@ -2485,9 +2523,9 @@ describe("@deliberum/web shell", () => {
     expect(defaultPageText).not.toContain("resource-missing");
     expect(defaultPageText).not.toContain("evidence-need-1");
 
-    fireEvent.click(screen.getByText("Advanced / Developer Mode: source details"));
+    fireEvent.click(getAdvancedModeSummary());
     expect((await screen.findAllByText(/evidence-need-1/)).length).toBeGreaterThan(0);
-    await ensureDetailsOpen("Advanced / Developer Mode");
+    fireEvent.click(getAdvancedModeSummary(1));
     expect(await screen.findByText("Registered resources")).toBeTruthy();
     expect(screen.getByText("1 of 2")).toBeTruthy();
     expect(screen.getByText("Delivery audits")).toBeTruthy();

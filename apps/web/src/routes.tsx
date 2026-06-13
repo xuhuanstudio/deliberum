@@ -359,7 +359,7 @@ function LandingPage() {
           </DataPanel>
         </div>
         <AdvancedDetails
-          summary="Advanced / Developer Mode: concept mapping"
+          summary="Advanced / Developer Mode"
           description="Core Deliberum concept names are preserved here for implementers and documentation readers."
           lazy
         >
@@ -893,7 +893,7 @@ function ReadableSessionRecord({
       <h4>{title}</h4>
       {detail !== title ? <p>{detail}</p> : null}
       <p className="du-readable-meta">Current state: {status}</p>
-      <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
+      <AdvancedDetails summary="Advanced / Developer Mode" lazy>
         <KeyValueGrid
           items={[
             {

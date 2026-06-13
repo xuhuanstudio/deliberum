@@ -1988,7 +1988,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No main perspectives have been accepted into this discussion yet."
             kind="candidate"
           />
-          <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
+          <AdvancedDetails summary="Advanced / Developer Mode" lazy>
             <ProjectionMetadata projection={frontierQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
@@ -2004,7 +2004,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No open disagreements have been accepted into this discussion yet."
             kind="objection"
           />
-          <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
+          <AdvancedDetails summary="Advanced / Developer Mode" lazy>
             <ProjectionMetadata projection={objectionsQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
@@ -2020,7 +2020,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No explicit requirements have been accepted into this discussion yet."
             kind="quality obligation"
           />
-          <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
+          <AdvancedDetails summary="Advanced / Developer Mode" lazy>
             <ProjectionMetadata projection={obligationsQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
@@ -2036,7 +2036,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No evidence gaps have been accepted into this discussion yet."
             kind="evidence"
           />
-          <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
+          <AdvancedDetails summary="Advanced / Developer Mode" lazy>
             <ProjectionMetadata projection={resourcesQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
@@ -2887,7 +2887,7 @@ function ProjectionRecord({
       <h4>{title}</h4>
       {description && description !== title ? <p>{description}</p> : null}
       <p className="du-readable-meta">Current state: {status}</p>
-      <AdvancedDetails summary="Advanced / Developer Mode: source details" lazy>
+      <AdvancedDetails summary="Advanced / Developer Mode" lazy>
         <KeyValueGrid
           items={[
             {
