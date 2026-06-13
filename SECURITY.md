@@ -4,7 +4,12 @@ Deliberum may handle API keys, local files, private discussion logs, temporary r
 
 ## Report a vulnerability
 
-Please open a private security advisory or contact the maintainers through the security contact listed in the repository once available.
+Please use GitHub private vulnerability reporting or open a private security
+advisory for the repository when available. If private reporting is not
+available in your copy of the project, open a public issue with only a short,
+non-sensitive description and request a private contact path. Do not post
+exploit details, secrets, private logs, local file paths, resource access ids,
+WebGET tokens, or provider responses in public issues.
 
 ## Security principles
 

@@ -42,14 +42,16 @@ A pull request should explain:
 
 ## Development
 
-This project is planned as a TypeScript monorepo using pnpm workspaces.
+This project is a TypeScript monorepo using pnpm workspaces. Use Node.js 24+
+and pnpm 11+ through Corepack.
 
 ```bash
-pnpm install
-pnpm test
-pnpm lint
-pnpm typecheck
+corepack pnpm install
+corepack pnpm run ci
 ```
+
+For narrower local checks, use `corepack pnpm test`,
+`corepack pnpm lint`, and `corepack pnpm typecheck`.
 
 Do not commit local sessions, API keys, resource caches, Codex/private workflow files, context capsules, or generated local databases.
 
@@ -59,7 +61,10 @@ By contributing, you agree that your contributions are licensed under the Apache
 
 ## Commit style
 
-Use clear English commit messages. Conventional Commits are encouraged but not required before the first implementation release.
+Use English Conventional Commit messages. Keep commits narrow: one coherent
+runtime, protocol, docs, test, or tooling concern per commit. Do not mix
+unrelated behavior changes, generated local artifacts, or private workflow
+files into the same commit.
 
 ## Architectural changes
 
