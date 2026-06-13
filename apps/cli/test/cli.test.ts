@@ -3227,6 +3227,49 @@ describe("CLI integration", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("opens quorum batches with explicit quorum metadata", async () => {
+    const dir = createTempDir();
+    const storePath = join(dir, "events.json");
+    await runWithStore(storePath, ["new", "Evaluate quorum metadata"], [
+      "topic-contract-1",
+      "session-1",
+      "topic-event-1"
+    ]);
+    const opened = parseOutput<{
+      batchId: string;
+      event: { payload: Record<string, unknown> };
+    }>(
+      await runWithStore(
+        storePath,
+        [
+          "batch",
+          "open",
+          "--session",
+          "session-1",
+          "--purpose",
+          "initial_divergence",
+          "--participant",
+          "participant-1",
+          "--participant",
+          "participant-2",
+          "--reveal-policy",
+          "quorum",
+          "--quorum-count",
+          "1"
+        ],
+        ["batch-1", "batch-open-event-1"]
+      )
+    );
+
+    expect(opened.batchId).toBe("batch-1");
+    expect(opened.event.payload).toMatchObject({
+      revealPolicy: "quorum",
+      quorumCount: 1
+    });
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("proposes, challenges, accepts extraction, and renders projection-derived views", async () => {
     const dir = createTempDir();
     const storePath = join(dir, "events.json");

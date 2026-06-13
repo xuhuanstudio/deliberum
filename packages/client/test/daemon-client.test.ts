@@ -522,7 +522,8 @@ describe("DeliberumDaemonClient", () => {
 
     await daemonClient.openBatch("session/1", {
       purpose: "initial_divergence",
-      revealPolicy: "manual"
+      revealPolicy: "quorum",
+      quorumCount: 1
     });
     await daemonClient.addContribution("session/1", "batch/1", {
       authorId: "participant-1",
@@ -626,6 +627,11 @@ describe("DeliberumDaemonClient", () => {
       "http://127.0.0.1:3877/sessions/session%2F1/resources",
       "http://127.0.0.1:3877/sessions/session%2F1/resources/resource%2F1/deliveries"
     ]);
+    expect(JSON.parse(fetch.mock.calls[0]?.[1]?.body ?? "{}")).toEqual({
+      purpose: "initial_divergence",
+      revealPolicy: "quorum",
+      quorumCount: 1
+    });
     expect(JSON.parse(fetch.mock.calls[11]?.[1]?.body ?? "{}")).toEqual({
       authorId: "system",
       proposal: {

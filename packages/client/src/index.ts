@@ -432,6 +432,8 @@ export type OpenBatchRequest = {
   purpose: string;
   participantIds?: string[];
   revealPolicy?: string;
+  quorumCount?: number;
+  deadlineAt?: string;
   idempotencyKey?: string;
 };
 

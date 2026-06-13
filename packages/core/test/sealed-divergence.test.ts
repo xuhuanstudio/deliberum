@@ -3,6 +3,7 @@ import { InMemoryEventStore } from "@deliberum/storage";
 import {
   DuplicateSealedContributionError,
   IncompleteSealedBatchError,
+  InvalidSealedBatchInputError,
   SEALED_BATCH_OPENED_EVENT_TYPE,
   SEALED_BATCH_REVEALED_EVENT_TYPE,
   SEALED_CONTRIBUTION_SUBMITTED_EVENT_TYPE,
@@ -10,7 +11,6 @@ import {
   SealedBatchNotFoundError,
   SealedDivergenceService,
   UnauthorizedSealedContributionError,
-  UnsupportedRevealPolicyError,
   closeSealedBatch,
   openSealedBatch,
   submitSealedContribution
@@ -417,34 +417,187 @@ describe("sealed divergence lifecycle", () => {
     expect(result.revealedEvent.payload.revealPolicy).toBe("manual");
   });
 
-  it("rejects quorum and deadline close attempts as unsupported in Stage 4", () => {
-    for (const revealPolicy of ["quorum", "deadline"] as const) {
-      const eventStore = createStore();
+  it("requires matching metadata for quorum and deadline reveal policies", () => {
+    const eventStore = createStore();
+
+    expect(() =>
       openSealedBatch(
         {
           sessionId: "session-1",
           purpose: "initial_divergence",
-          revealPolicy
+          revealPolicy: "quorum"
         },
         {
           eventStore,
           idGenerator: createDeterministicIds(["batch-1", "open-event-1"])
         }
-      );
+      )
+    ).toThrow(InvalidSealedBatchInputError);
 
-      expect(() =>
-        closeSealedBatch(
-          {
-            sessionId: "session-1",
-            batchId: "batch-1"
-          },
-          {
-            eventStore,
-            idGenerator: createDeterministicIds(["reveal-event-1"])
-          }
-        )
-      ).toThrow(UnsupportedRevealPolicyError);
-    }
+    expect(() =>
+      openSealedBatch(
+        {
+          sessionId: "session-1",
+          purpose: "initial_divergence",
+          participantIds: ["participant-1"],
+          revealPolicy: "quorum",
+          quorumCount: 2
+        },
+        {
+          eventStore,
+          idGenerator: createDeterministicIds(["batch-2", "open-event-2"])
+        }
+      )
+    ).toThrow(InvalidSealedBatchInputError);
+
+    expect(() =>
+      openSealedBatch(
+        {
+          sessionId: "session-1",
+          purpose: "initial_divergence",
+          revealPolicy: "deadline",
+          deadlineAt: "not-a-timestamp"
+        },
+        {
+          eventStore,
+          idGenerator: createDeterministicIds(["batch-3", "open-event-3"])
+        }
+      )
+    ).toThrow(InvalidSealedBatchInputError);
+
+    expect(() =>
+      openSealedBatch(
+        {
+          sessionId: "session-1",
+          purpose: "initial_divergence",
+          revealPolicy: "manual",
+          quorumCount: 1
+        },
+        {
+          eventStore,
+          idGenerator: createDeterministicIds(["batch-4", "open-event-4"])
+        }
+      )
+    ).toThrow(InvalidSealedBatchInputError);
+  });
+
+  it("closes quorum batches after enough unique participants contribute", () => {
+    const eventStore = createStore();
+    openSealedBatch(
+      {
+        sessionId: "session-1",
+        purpose: "initial_divergence",
+        participantIds: ["participant-1", "participant-2", "participant-3"],
+        revealPolicy: "quorum",
+        quorumCount: 2
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["batch-1", "open-event-1"])
+      }
+    );
+    submitSealedContribution(
+      {
+        sessionId: "session-1",
+        batchId: "batch-1",
+        authorId: "participant-1",
+        visibility: "sealed",
+        payload: "first"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["contribution-event-1"])
+      }
+    );
+
+    expect(() =>
+      closeSealedBatch(
+        {
+          sessionId: "session-1",
+          batchId: "batch-1"
+        },
+        {
+          eventStore,
+          idGenerator: createDeterministicIds(["reveal-event-1"])
+        }
+      )
+    ).toThrow(IncompleteSealedBatchError);
+
+    submitSealedContribution(
+      {
+        sessionId: "session-1",
+        batchId: "batch-1",
+        authorId: "participant-3",
+        visibility: "sealed",
+        payload: "third"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["contribution-event-2"])
+      }
+    );
+    const result = closeSealedBatch(
+      {
+        sessionId: "session-1",
+        batchId: "batch-1"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["reveal-event-1"])
+      }
+    );
+
+    expect(result.revealedEvent.payload.status).toBe("revealed");
+    expect(result.revealedEvent.payload.revealPolicy).toBe("quorum");
+    expect(result.revealedEvent.payload.quorumCount).toBe(2);
+  });
+
+  it("closes deadline batches only after the configured deadline", () => {
+    const eventStore = createStore();
+    openSealedBatch(
+      {
+        sessionId: "session-1",
+        purpose: "initial_divergence",
+        participantIds: ["participant-1", "participant-2"],
+        revealPolicy: "deadline",
+        deadlineAt: "2026-06-10T00:00:10.000Z"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["batch-1", "open-event-1"]),
+        clock: () => "2026-06-10T00:00:00.000Z"
+      }
+    );
+
+    expect(() =>
+      closeSealedBatch(
+        {
+          sessionId: "session-1",
+          batchId: "batch-1"
+        },
+        {
+          eventStore,
+          idGenerator: createDeterministicIds(["reveal-event-1"]),
+          clock: () => "2026-06-10T00:00:09.000Z"
+        }
+      )
+    ).toThrow(IncompleteSealedBatchError);
+
+    const result = closeSealedBatch(
+      {
+        sessionId: "session-1",
+        batchId: "batch-1"
+      },
+      {
+        eventStore,
+        idGenerator: createDeterministicIds(["reveal-event-1"]),
+        clock: () => "2026-06-10T00:00:10.000Z"
+      }
+    );
+
+    expect(result.revealedEvent.payload.status).toBe("revealed");
+    expect(result.revealedEvent.payload.revealPolicy).toBe("deadline");
+    expect(result.revealedEvent.payload.deadlineAt).toBe("2026-06-10T00:00:10.000Z");
   });
 
   it("keeps sealed contribution events unchanged after reveal", () => {

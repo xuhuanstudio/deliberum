@@ -172,9 +172,59 @@ export const SealedBatchSchema = z
     participantIds: z.array(IdSchema),
     openedAt: TimestampStringSchema,
     revealedAt: TimestampStringSchema.optional(),
-    revealPolicy: SealedBatchRevealPolicySchema
+    revealPolicy: SealedBatchRevealPolicySchema,
+    quorumCount: PositiveIntegerSchema.optional(),
+    deadlineAt: TimestampStringSchema.optional()
   })
-  .strict();
+  .strict()
+  .superRefine((batch, context) => {
+    if (batch.revealPolicy === "quorum") {
+      if (batch.quorumCount === undefined) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["quorumCount"],
+          message: "quorumCount is required when revealPolicy is quorum."
+        });
+      } else if (
+        batch.participantIds.length > 0 &&
+        batch.quorumCount > batch.participantIds.length
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["quorumCount"],
+          message: "quorumCount cannot exceed participantIds length."
+        });
+      }
+    } else if (batch.quorumCount !== undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["quorumCount"],
+        message: "quorumCount is only valid when revealPolicy is quorum."
+      });
+    }
+
+    if (batch.revealPolicy === "deadline") {
+      if (batch.deadlineAt === undefined) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["deadlineAt"],
+          message: "deadlineAt is required when revealPolicy is deadline."
+        });
+      } else if (!Number.isFinite(Date.parse(batch.deadlineAt))) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["deadlineAt"],
+          message: "deadlineAt must be a valid timestamp."
+        });
+      }
+    } else if (batch.deadlineAt !== undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["deadlineAt"],
+        message: "deadlineAt is only valid when revealPolicy is deadline."
+      });
+    }
+  });
 export type SealedBatch = z.infer<typeof SealedBatchSchema>;
 
 export const SessionLifecycleStateValues = [

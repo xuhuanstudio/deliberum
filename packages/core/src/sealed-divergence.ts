@@ -15,8 +15,7 @@ import {
   MissingSessionDependencyError,
   SealedBatchAlreadyClosedError,
   SealedBatchNotFoundError,
-  UnauthorizedSealedContributionError,
-  UnsupportedRevealPolicyError
+  UnauthorizedSealedContributionError
 } from "./errors";
 import { DEFAULT_SCHEMA_VERSION, type Clock, type IdGenerator } from "./session";
 
@@ -30,6 +29,8 @@ export type OpenSealedBatchInput = {
   purpose: SealedBatchPurpose;
   participantIds?: string[];
   revealPolicy?: SealedBatchRevealPolicy;
+  quorumCount?: number;
+  deadlineAt?: string;
   idempotencyKey?: string;
 };
 
@@ -87,14 +88,16 @@ export function openSealedBatch(
   const batchId = options.idGenerator();
   const eventId = options.idGenerator();
   const openedAt = getClock(options)();
-  const openedBatch = SealedBatchSchema.parse({
+  const openedBatch = parseSealedBatch({
     id: batchId,
     sessionId: input.sessionId,
     purpose: input.purpose,
     status: "open",
     participantIds: input.participantIds ?? [],
     openedAt,
-    revealPolicy: input.revealPolicy ?? "all_completed"
+    revealPolicy: input.revealPolicy ?? "all_completed",
+    ...(input.quorumCount !== undefined ? { quorumCount: input.quorumCount } : {}),
+    ...(input.deadlineAt !== undefined ? { deadlineAt: input.deadlineAt } : {})
   });
 
   const appendResult = options.eventStore.appendEventResult<SealedBatch>({
@@ -168,10 +171,14 @@ export function closeSealedBatch(
   assertOptions(options);
 
   const batchState = getOpenBatchState(options.eventStore, input.sessionId, input.batchId);
-  assertRevealPolicyCanClose(batchState.openedBatch, batchState.contributionEvents);
-
   const revealedAt = getClock(options)();
-  const revealedBatch = SealedBatchSchema.parse({
+  assertRevealPolicyCanClose(
+    batchState.openedBatch,
+    batchState.contributionEvents,
+    revealedAt
+  );
+
+  const revealedBatch = parseSealedBatch({
     ...batchState.openedBatch,
     status: "revealed",
     revealedAt
@@ -258,6 +265,15 @@ function getSchemaVersion(options: SealedDivergenceOptions): string {
   return options.schemaVersion ?? DEFAULT_SCHEMA_VERSION;
 }
 
+function parseSealedBatch(input: unknown): SealedBatch {
+  const parsed = SealedBatchSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new InvalidSealedBatchInputError(parsed.error.message);
+  }
+
+  return parsed.data;
+}
+
 function getOpenBatchState(
   eventStore: EventStore,
   sessionId: string,
@@ -320,17 +336,51 @@ function assertNoDuplicateContribution<TPayload>(
 
 function assertRevealPolicyCanClose(
   batch: SealedBatch,
-  contributionEvents: readonly StoredEvent<JsonValue>[]
+  contributionEvents: readonly StoredEvent<JsonValue>[],
+  revealedAt: string
 ): void {
-  if (batch.revealPolicy === "quorum" || batch.revealPolicy === "deadline") {
-    throw new UnsupportedRevealPolicyError(batch.revealPolicy);
-  }
-
-  if (batch.revealPolicy === "manual" || batch.participantIds.length === 0) {
+  if (batch.revealPolicy === "manual") {
     return;
   }
 
   const contributedAuthorIds = new Set(contributionEvents.map((event) => event.authorId));
+
+  if (batch.revealPolicy === "quorum") {
+    const quorumCount = batch.quorumCount;
+    if (quorumCount === undefined) {
+      throw new InvalidSealedBatchInputError("quorumCount is required for quorum reveal policy.");
+    }
+
+    if (contributedAuthorIds.size < quorumCount) {
+      throw new IncompleteSealedBatchError(batch.id);
+    }
+
+    return;
+  }
+
+  if (batch.revealPolicy === "deadline") {
+    const deadlineAt = batch.deadlineAt;
+    if (deadlineAt === undefined) {
+      throw new InvalidSealedBatchInputError("deadlineAt is required for deadline reveal policy.");
+    }
+
+    const revealedAtMs = Date.parse(revealedAt);
+    const deadlineAtMs = Date.parse(deadlineAt);
+    if (!Number.isFinite(revealedAtMs) || !Number.isFinite(deadlineAtMs)) {
+      throw new InvalidSealedBatchInputError("Deadline reveal policy requires valid timestamps.");
+    }
+
+    if (revealedAtMs < deadlineAtMs) {
+      throw new IncompleteSealedBatchError(batch.id);
+    }
+
+    return;
+  }
+
+  if (batch.participantIds.length === 0) {
+    return;
+  }
+
   const allParticipantsSubmitted = batch.participantIds.every((participantId) =>
     contributedAuthorIds.has(participantId)
   );

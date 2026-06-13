@@ -16,6 +16,7 @@ import type {
   RoundExecutionClaim,
   RunErrorCategory,
   RunSafeDiagnostics,
+  RunSealedDivergenceConfig,
   RunSealedDivergenceRoundInput,
   RunSealedDivergenceRoundOptions,
   RunSealedDivergenceRoundResult,
@@ -134,7 +135,13 @@ async function executeClaimedSealedDivergenceRound(
       round: existingRound,
       participantsToExecute,
       eventCount: options.eventStore.listEvents(run.sessionId).length,
-      willAttemptReveal: canAttemptRevealAfterDispatch(run, existingRound, participantsToExecute, input)
+      willAttemptReveal: canAttemptRevealAfterDispatch(
+        run,
+        existingRound,
+        participantsToExecute,
+        input,
+        getClock(options)()
+      )
     });
   } catch (error) {
     if (error instanceof RunSealedDivergenceRoundError) {
@@ -168,6 +175,8 @@ async function executeClaimedSealedDivergenceRound(
           purpose: run.plan.sealedDivergence.purpose,
           participantIds,
           revealPolicy: run.plan.sealedDivergence.revealPolicy,
+          quorumCount: run.plan.sealedDivergence.quorumCount,
+          deadlineAt: run.plan.sealedDivergence.deadlineAt,
           idempotencyKey: createRoundIdempotencyKey(run.id, roundId, "open")
         },
         options
@@ -255,8 +264,16 @@ async function executeClaimedSealedDivergenceRound(
     )
   );
   const lastErrorCategory = getLastErrorCategory(updatedDispatches);
+  const submittedParticipantIds = getSubmittedParticipantIds(updatedDispatches);
+  const revealPolicyAllowsClose = canRevealWithPolicy(
+    run.plan.sealedDivergence,
+    participantIds,
+    submittedParticipantIds,
+    input,
+    getClock(options)()
+  );
 
-  if (!allParticipantsSubmitted) {
+  if (!allParticipantsSubmitted && !revealPolicyAllowsClose) {
     const finalRun = setRoundState(workingRun, options, {
       ...workingRun.sealedDivergenceRound!,
       status: "waiting_for_participants",
@@ -276,9 +293,7 @@ async function executeClaimedSealedDivergenceRound(
     };
   }
 
-  const shouldReveal =
-    run.plan.sealedDivergence.revealPolicy === "all_completed" ||
-    (run.plan.sealedDivergence.revealPolicy === "manual" && input.autoCloseManual === true);
+  const shouldReveal = revealPolicyAllowsClose;
 
   if (!shouldReveal) {
     const finalRun = setRoundState(workingRun, options, {
@@ -726,16 +741,10 @@ function canAttemptRevealAfterDispatch(
   run: DeliberationRunRecord,
   existingRound: SealedDivergenceRoundState | undefined,
   participantsToExecute: readonly string[],
-  input: RunSealedDivergenceRoundInput
+  input: RunSealedDivergenceRoundInput,
+  now: string
 ): boolean {
   if (existingRound?.revealedEventId) {
-    return false;
-  }
-
-  if (
-    run.plan.sealedDivergence.revealPolicy === "manual" &&
-    input.autoCloseManual !== true
-  ) {
     return false;
   }
 
@@ -750,7 +759,57 @@ function canAttemptRevealAfterDispatch(
     submitted.add(participantId);
   }
 
-  return participantIds.every((participantId) => submitted.has(participantId));
+  return canRevealWithPolicy(
+    run.plan.sealedDivergence,
+    participantIds,
+    submitted,
+    input,
+    now
+  );
+}
+
+function canRevealWithPolicy(
+  config: RunSealedDivergenceConfig,
+  participantIds: readonly string[],
+  submittedParticipantIds: ReadonlySet<string>,
+  input: RunSealedDivergenceRoundInput,
+  now: string
+): boolean {
+  if (config.revealPolicy === "all_completed") {
+    return participantIds.every((participantId) => submittedParticipantIds.has(participantId));
+  }
+
+  if (config.revealPolicy === "manual") {
+    return (
+      input.autoCloseManual === true &&
+      participantIds.every((participantId) => submittedParticipantIds.has(participantId))
+    );
+  }
+
+  if (config.revealPolicy === "quorum") {
+    return (
+      config.quorumCount !== undefined &&
+      submittedParticipantIds.size >= config.quorumCount
+    );
+  }
+
+  if (config.deadlineAt === undefined) {
+    return false;
+  }
+
+  const nowMs = Date.parse(now);
+  const deadlineAtMs = Date.parse(config.deadlineAt);
+  return Number.isFinite(nowMs) && Number.isFinite(deadlineAtMs) && nowMs >= deadlineAtMs;
+}
+
+function getSubmittedParticipantIds(
+  dispatches: readonly ParticipantDispatchState[]
+): Set<string> {
+  return new Set(
+    dispatches
+      .filter((dispatch) => dispatch.status === "submitted" && dispatch.contributionEventId)
+      .map((dispatch) => dispatch.participantId)
+  );
 }
 
 function assertBudgetAllowsRound(input: {

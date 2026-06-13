@@ -820,6 +820,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         purpose: body.purpose as SealedBatchPurpose,
         participantIds: body.participantIds as string[] | undefined,
         revealPolicy: body.revealPolicy as SealedBatchRevealPolicy | undefined,
+        quorumCount: body.quorumCount as number | undefined,
+        deadlineAt: body.deadlineAt as string | undefined,
         idempotencyKey: body.idempotencyKey as string | undefined
       },
       coreOptions

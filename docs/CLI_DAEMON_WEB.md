@@ -24,7 +24,7 @@ Implemented commands:
 
 ```bash
 deliberum new <topic>
-deliberum batch open --session <id> --purpose <purpose>
+deliberum batch open --session <id> --purpose <purpose> [--reveal-policy <policy>] [--quorum-count <count>] [--deadline-at <timestamp>]
 deliberum contribution add --session <id> --batch <id> --author <id> --payload-json <json>
 deliberum batch close --session <id> --batch <id>
 deliberum extraction propose --session <id> --author <id> --rationale <text> --input <json-file>

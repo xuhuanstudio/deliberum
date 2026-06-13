@@ -592,19 +592,82 @@ describe("session lifecycle", () => {
 });
 
 describe("sealed batch reveal policy", () => {
-  it("accepts manual, quorum, and deadline reveal policy values", () => {
-    for (const revealPolicy of ["manual", "quorum", "deadline"] as const) {
-      expect(
-        protocol.SealedBatchSchema.safeParse({
-          id: `batch-${revealPolicy}`,
-          sessionId: "session-1",
-          purpose: "initial_divergence",
-          status: "open",
-          participantIds: [],
-          openedAt: "2026-06-10T00:00:00.000Z",
-          revealPolicy
-        }).success
-      ).toBe(true);
-    }
+  it("accepts manual, quorum, and deadline reveal policy payloads", () => {
+    const baseBatch = {
+      sessionId: "session-1",
+      purpose: "initial_divergence",
+      status: "open",
+      participantIds: [],
+      openedAt: "2026-06-10T00:00:00.000Z"
+    } as const;
+
+    expect(
+      protocol.SealedBatchSchema.safeParse({
+        ...baseBatch,
+        id: "batch-manual",
+        revealPolicy: "manual"
+      }).success
+    ).toBe(true);
+    expect(
+      protocol.SealedBatchSchema.safeParse({
+        ...baseBatch,
+        id: "batch-quorum",
+        revealPolicy: "quorum",
+        quorumCount: 2
+      }).success
+    ).toBe(true);
+    expect(
+      protocol.SealedBatchSchema.safeParse({
+        ...baseBatch,
+        id: "batch-deadline",
+        revealPolicy: "deadline",
+        deadlineAt: "2026-06-10T00:10:00.000Z"
+      }).success
+    ).toBe(true);
+  });
+
+  it("requires reveal policy metadata only for matching policy kinds", () => {
+    const baseBatch = {
+      id: "batch-1",
+      sessionId: "session-1",
+      purpose: "initial_divergence",
+      status: "open",
+      participantIds: ["participant-1", "participant-2"],
+      openedAt: "2026-06-10T00:00:00.000Z"
+    } as const;
+
+    expect(
+      protocol.SealedBatchSchema.safeParse({
+        ...baseBatch,
+        revealPolicy: "quorum"
+      }).success
+    ).toBe(false);
+    expect(
+      protocol.SealedBatchSchema.safeParse({
+        ...baseBatch,
+        revealPolicy: "quorum",
+        quorumCount: 3
+      }).success
+    ).toBe(false);
+    expect(
+      protocol.SealedBatchSchema.safeParse({
+        ...baseBatch,
+        revealPolicy: "deadline"
+      }).success
+    ).toBe(false);
+    expect(
+      protocol.SealedBatchSchema.safeParse({
+        ...baseBatch,
+        revealPolicy: "deadline",
+        deadlineAt: "not-a-timestamp"
+      }).success
+    ).toBe(false);
+    expect(
+      protocol.SealedBatchSchema.safeParse({
+        ...baseBatch,
+        revealPolicy: "manual",
+        quorumCount: 1
+      }).success
+    ).toBe(false);
   });
 });

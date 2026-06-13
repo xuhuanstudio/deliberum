@@ -115,10 +115,17 @@ type SealedBatch = {
   openedAt: string
   revealedAt?: string
   revealPolicy: 'all_completed' | 'manual' | 'quorum' | 'deadline'
+  quorumCount?: number
+  deadlineAt?: string
 }
 ```
 
-`all_completed` and `manual` close behavior is implemented today. `quorum` and `deadline` are accepted protocol values but close attempts using them are rejected as unsupported in the current core lifecycle.
+Reveal policy metadata is explicit. `all_completed` closes after every listed
+participant contributes, `manual` closes on an explicit close request,
+`quorum` closes after `quorumCount` unique contributors have submitted, and
+`deadline` closes at or after `deadlineAt`. When `participantIds` is non-empty,
+only listed participants may submit. When it is empty, any participant-authored
+sealed contribution can count toward a quorum.
 
 ## Candidate
 

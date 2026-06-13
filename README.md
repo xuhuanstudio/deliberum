@@ -98,7 +98,7 @@ Implemented today:
 - TypeScript + zod protocol and evaluation schemas;
 - append-only event store with in-memory storage, shared JSON file persistence for local CLI and optional daemon event ledgers, optional JSON daemon operation audit log persistence, optional local rotated JSONL operation audit mirroring, optional HTTP operation audit export, and optional SQLite daemon event ledger, run metadata, resource broker, resource access grant, and operation audit log persistence with local connection-level writer serialization;
 - Topic Contract session lifecycle;
-- Sealed Divergence batch lifecycle;
+- Sealed Divergence batch lifecycle with all-completed, manual, quorum, and deadline reveal policies;
 - Extraction Proposals and challenge/accept lifecycle events;
 - Candidate Frontier, objection, quality obligation, and accepted-object projections with projection metadata;
 - Evidence Result recording plus Final Audit and Outcome Compiler in core as proposal/derived output, not final truth;

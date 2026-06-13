@@ -12,6 +12,8 @@ import {
   ParticipantCapabilitiesSchema,
   ParticipantKindSchema,
   SealedBatchPurposeSchema,
+  SealedBatchRevealPolicySchema,
+  TimestampStringSchema,
   type EventTrace,
   type EventVisibility,
   type ExtractionCandidate,
@@ -145,10 +147,60 @@ export type RunOutputPreferences = z.infer<typeof RunOutputPreferencesSchema>;
 export const RunSealedDivergenceConfigSchema = z
   .object({
     purpose: SealedBatchPurposeSchema,
-    revealPolicy: z.enum(["all_completed", "manual"]),
-    participantIds: z.array(IdSchema).optional()
+    revealPolicy: SealedBatchRevealPolicySchema,
+    participantIds: z.array(IdSchema).optional(),
+    quorumCount: z.number().int().positive().optional(),
+    deadlineAt: TimestampStringSchema.optional()
   })
-  .strict();
+  .strict()
+  .superRefine((config, context) => {
+    if (config.revealPolicy === "quorum") {
+      if (config.quorumCount === undefined) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["quorumCount"],
+          message: "quorumCount is required when revealPolicy is quorum."
+        });
+      } else if (
+        config.participantIds !== undefined &&
+        config.quorumCount > config.participantIds.length
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["quorumCount"],
+          message: "quorumCount cannot exceed participantIds length."
+        });
+      }
+    } else if (config.quorumCount !== undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["quorumCount"],
+        message: "quorumCount is only valid when revealPolicy is quorum."
+      });
+    }
+
+    if (config.revealPolicy === "deadline") {
+      if (config.deadlineAt === undefined) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["deadlineAt"],
+          message: "deadlineAt is required when revealPolicy is deadline."
+        });
+      } else if (!Number.isFinite(Date.parse(config.deadlineAt))) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["deadlineAt"],
+          message: "deadlineAt must be a valid timestamp."
+        });
+      }
+    } else if (config.deadlineAt !== undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["deadlineAt"],
+        message: "deadlineAt is only valid when revealPolicy is deadline."
+      });
+    }
+  });
 export type RunSealedDivergenceConfig = z.infer<typeof RunSealedDivergenceConfigSchema>;
 
 export const RunResourceReferenceSchema = z

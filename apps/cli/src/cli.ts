@@ -474,7 +474,12 @@ async function executeCommand(parsedArgs: ParsedArgs, dependencies: ExecuteDepen
         participantIds: getManyOptions(parsedArgs, "participant"),
         revealPolicy: getLastOption(parsedArgs, "reveal-policy") as
           | SealedBatchRevealPolicy
-          | undefined
+          | undefined,
+        quorumCount: parseOptionalPositiveIntegerOption(
+          parsedArgs.options.get("quorum-count"),
+          "--quorum-count"
+        ),
+        deadlineAt: getLastOption(parsedArgs, "deadline-at")
       },
       coreOptions
     );

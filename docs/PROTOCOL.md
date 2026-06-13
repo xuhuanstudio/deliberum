@@ -51,6 +51,11 @@ The initial divergence round is sealed:
 - contributions are revealed as a batch;
 - the batch is preserved as independent evidence of initial views.
 
+Supported reveal policies are explicit: `all_completed`, `manual`, `quorum`,
+and `deadline`. `quorum` batches must carry `quorumCount`; `deadline` batches
+must carry `deadlineAt`. These policies decide when sealed contributions become
+visible as a batch; they do not rank, vote on, or authorize participant content.
+
 Sealed divergence is used whenever diversity matters more than convergence, including initial proposals, blind reframes, relation mapping, and final contests.
 
 ## Structuring phase

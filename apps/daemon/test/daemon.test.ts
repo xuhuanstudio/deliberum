@@ -11324,6 +11324,28 @@ describe("daemon API", () => {
     expect(closeBody.event.type).toBe("sealed_batch_revealed");
   });
 
+  it("opens deadline batches through the daemon core route", async () => {
+    const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
+    const { sessionId } = await createSession(daemonApp);
+    const response = await postJson(daemonApp.app, `/sessions/${sessionId}/batches`, {
+      purpose: "initial_divergence",
+      revealPolicy: "deadline",
+      deadlineAt: "2026-06-10T00:10:00.000Z"
+    });
+    const body = (await response.json()) as {
+      batchId: string;
+      event: { type: string; payload: Record<string, unknown> };
+    };
+
+    expect(response.status).toBe(201);
+    expect(body.batchId).toBeTruthy();
+    expect(body.event.type).toBe("sealed_batch_opened");
+    expect(body.event.payload).toMatchObject({
+      revealPolicy: "deadline",
+      deadlineAt: "2026-06-10T00:10:00.000Z"
+    });
+  });
+
   it("runs extraction proposal lifecycle and derives projection views", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
     const { sessionId } = await createSession(daemonApp);

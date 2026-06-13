@@ -27,6 +27,8 @@ import type {
 function createRunPlan(
   options: {
     revealPolicy?: SealedBatchRevealPolicy;
+    quorumCount?: number;
+    deadlineAt?: string;
     participantMs?: number;
     providerConfig?: boolean;
     providerRequestOptions?: OpenAICompatibleRequestOptions;
@@ -81,7 +83,9 @@ function createRunPlan(
     sealedDivergence: {
       purpose: "initial_divergence",
       revealPolicy: options.revealPolicy ?? "all_completed",
-      participantIds: ["participant-cli", "participant-web"]
+      participantIds: ["participant-cli", "participant-web"],
+      ...(options.quorumCount !== undefined ? { quorumCount: options.quorumCount } : {}),
+      ...(options.deadlineAt !== undefined ? { deadlineAt: options.deadlineAt } : {})
     }
   };
 }
@@ -95,6 +99,8 @@ function createIds(ids: string[]) {
 function createFixture(
   options: {
     revealPolicy?: SealedBatchRevealPolicy;
+    quorumCount?: number;
+    deadlineAt?: string;
     participantMs?: number;
     providerConfig?: boolean;
     providerRequestOptions?: OpenAICompatibleRequestOptions;
@@ -502,7 +508,7 @@ describe("runSealedDivergenceRound", () => {
         eventStore,
         runStore,
         adapterRegistry: createRegistry(),
-        idGenerator: runIds()
+        idGenerator: createIds(["batch-1", "opened-event-1", "contribution-1", "reveal-1"])
       }
     );
 
@@ -614,7 +620,7 @@ describe("runSealedDivergenceRound", () => {
             fail: true
           })
         ]),
-        idGenerator: runIds()
+        idGenerator: createIds(["batch-1", "opened-event-1", "contribution-1", "reveal-1"])
       }
     );
 
@@ -626,6 +632,88 @@ describe("runSealedDivergenceRound", () => {
     expect(JSON.stringify(runStore.getRun(run.id))).not.toContain(
       "raw adapter failure must not be stored"
     );
+  });
+
+  it("reveals quorum policy when the required submitted participant count is reached", async () => {
+    const { eventStore, runStore, run } = createFixture({
+      revealPolicy: "quorum",
+      quorumCount: 1
+    });
+    const result = await runSealedDivergenceRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: createRegistry([
+          createAdapter({
+            adapterId: "adapter-cli"
+          }),
+          createAdapter({
+            adapterId: "adapter-web",
+            fail: true
+          })
+        ]),
+        idGenerator: createIds(["batch-1", "opened-event-1", "contribution-1", "reveal-1"])
+      }
+    );
+    const events = eventStore.listEvents(run.sessionId);
+
+    expect(result.run.status).toBe("revealed");
+    expect(result.revealedEventId).toBe("reveal-1");
+    expect(events.map((event) => event.type)).toContain("sealed_batch_revealed");
+    expect(events.find((event) => event.type === "sealed_batch_opened")?.payload).toMatchObject({
+      revealPolicy: "quorum",
+      quorumCount: 1
+    });
+    expect(result.run.sealedDivergenceRound?.participantDispatches).toEqual([
+      expect.objectContaining({
+        participantId: "participant-cli",
+        status: "submitted"
+      }),
+      expect.objectContaining({
+        participantId: "participant-web",
+        status: "failed",
+        errorCategory: "adapter_failed"
+      })
+    ]);
+  });
+
+  it("reveals deadline policy once the configured deadline has passed", async () => {
+    const { eventStore, runStore, run } = createFixture({
+      revealPolicy: "deadline",
+      deadlineAt: "2026-06-10T00:00:01.000Z"
+    });
+    const result = await runSealedDivergenceRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: createRegistry([
+          createAdapter({
+            adapterId: "adapter-cli"
+          }),
+          createAdapter({
+            adapterId: "adapter-web",
+            fail: true
+          })
+        ]),
+        idGenerator: createIds(["batch-1", "opened-event-1", "contribution-1", "reveal-1"]),
+        clock: () => "2026-06-10T00:00:02.000Z"
+      }
+    );
+    const events = eventStore.listEvents(run.sessionId);
+
+    expect(result.run.status).toBe("revealed");
+    expect(result.revealedEventId).toBe("reveal-1");
+    expect(events.map((event) => event.type)).toContain("sealed_batch_revealed");
+    expect(events.find((event) => event.type === "sealed_batch_opened")?.payload).toMatchObject({
+      revealPolicy: "deadline",
+      deadlineAt: "2026-06-10T00:00:01.000Z"
+    });
   });
 
   it("preserves safe provider adapter failure categories without storing raw errors", async () => {
