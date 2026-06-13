@@ -141,6 +141,29 @@ function parseStructuredJsonObject<TCategory extends string>(
     );
   }
 
+  const validJsonNonObjectShape = classifyValidJsonNonObjectShape(trimmed, false);
+  if (validJsonNonObjectShape) {
+    throw createStructuredGeneratorError(
+      `OpenAI-compatible ${outputDescription} was not a JSON object.`,
+      malformedResponseCategory,
+      {
+        providerResponseShape: validJsonNonObjectShape
+      },
+      createError
+    );
+  }
+
+  const embeddedJsonObjectSource = extractSingleEmbeddedJsonObjectSource(trimmed);
+  if (embeddedJsonObjectSource) {
+    return parseJsonObjectSource(
+      embeddedJsonObjectSource,
+      "prose_with_json_object",
+      malformedResponseCategory,
+      outputDescription,
+      createError
+    );
+  }
+
   throw createStructuredGeneratorError(
     `OpenAI-compatible ${outputDescription} was not a JSON object.`,
     malformedResponseCategory,
@@ -214,6 +237,74 @@ function extractSingleFencedSource(trimmedContent: string): string | undefined {
   return match?.[1];
 }
 
+function extractSingleEmbeddedJsonObjectSource(trimmedContent: string): string | undefined {
+  const sources: string[] = [];
+  let objectStart: number | undefined;
+  let depth = 0;
+  let bracketDepth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < trimmedContent.length; index += 1) {
+    const character = trimmedContent[index];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (character === "\\") {
+        escaped = true;
+        continue;
+      }
+
+      if (character === "\"") {
+        inString = false;
+      }
+
+      continue;
+    }
+
+    if (character === "\"") {
+      inString = true;
+      continue;
+    }
+
+    if (depth === 0 && character === "[") {
+      bracketDepth += 1;
+      continue;
+    }
+
+    if (depth === 0 && character === "]") {
+      bracketDepth = Math.max(0, bracketDepth - 1);
+      continue;
+    }
+
+    if (character === "{") {
+      if (depth === 0 && bracketDepth === 0) {
+        objectStart = index;
+      }
+      depth += 1;
+      continue;
+    }
+
+    if (character === "}") {
+      if (depth === 0) {
+        continue;
+      }
+
+      depth -= 1;
+      if (depth === 0 && objectStart !== undefined) {
+        sources.push(trimmedContent.slice(objectStart, index + 1));
+        objectStart = undefined;
+      }
+    }
+  }
+
+  return sources.length === 1 ? sources[0] : undefined;
+}
+
 function classifyProviderResponseShape(
   trimmedContent: string,
   isSingleFenced: boolean
@@ -227,12 +318,15 @@ function classifyProviderResponseShape(
     return parsedShape;
   }
 
-  if (!isSingleFenced && containsJsonObjectDelimiterPair(trimmedContent)) {
-    return "prose_with_json_object";
+  if (
+    trimmedContent.startsWith("{") ||
+    (isSingleFenced && trimmedContent.endsWith("}"))
+  ) {
+    return isSingleFenced ? "single_fenced_invalid_json" : "invalid_json_object";
   }
 
-  if (trimmedContent.startsWith("{") || trimmedContent.endsWith("}")) {
-    return isSingleFenced ? "single_fenced_invalid_json" : "invalid_json_object";
+  if (!isSingleFenced && containsJsonObjectDelimiterPair(trimmedContent)) {
+    return "prose_with_json_object";
   }
 
   return isSingleFenced ? "single_fenced_other_text" : "other_text";

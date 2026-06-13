@@ -9809,11 +9809,65 @@ describe("daemon API", () => {
     );
   });
 
+  it("accepts one embedded JSON object from provider extraction prose", async () => {
+    const fetch = createOpenAICompatibleExtractionFetch({
+      contentTransform: (content) => `Here is the extraction JSON:\n${content}\nEnd.`
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleExtraction: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleExtractionStartRequest()
+    );
+    const body = (await response.json()) as {
+      stages: Array<{
+        stage: string;
+        status?: string;
+        result: {
+          proposalResults?: Array<{
+            generatorId: string;
+            status: string;
+          }>;
+        };
+      }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(body.stages.find((stage) => stage.stage === "extraction")).toMatchObject({
+      status: "completed",
+      result: {
+        proposalResults: [
+          expect.objectContaining({
+            generatorId: OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+            status: "proposed"
+          })
+        ]
+      }
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId).map((event) => event.type)).toContain(
+      "extraction_proposed"
+    );
+  });
+
   it("retries malformed provider extraction shape once and succeeds without storing the rejected response", async () => {
-    const rejectedResponseMarker = "MIMO_REJECTED_PROSE_WRAPPER";
+    const rejectedResponseMarker = "MIMO_REJECTED_NON_JSON_TEXT";
     const fetch = createOpenAICompatibleExtractionFetch({
       contentTransforms: [
-        (content) => `${rejectedResponseMarker}\n${content}`,
+        () => rejectedResponseMarker,
         (content) => content
       ]
     });
@@ -9965,12 +10019,18 @@ describe("daemon API", () => {
         errorCategory: "extraction_output_invalid"
       },
       {
-        contentTransform: (content: string) => `Here is the extraction JSON:\n${content}`,
+        contentTransform: (content: string) =>
+          `Here is the extraction JSON:\n${content}\nRepeated object:\n${content}`,
         errorCategory: "provider_malformed_response",
         providerResponseShape: "prose_with_json_object"
       },
       {
         content: "[]",
+        errorCategory: "provider_malformed_response",
+        providerResponseShape: "json_array"
+      },
+      {
+        contentTransform: (content: string) => `[${content}]`,
         errorCategory: "provider_malformed_response",
         providerResponseShape: "json_array"
       },
@@ -10359,10 +10419,10 @@ describe("daemon API", () => {
   });
 
   it("retries malformed provider review shape once and succeeds without storing the rejected response", async () => {
-    const rejectedResponseMarker = "REVIEW_REJECTED_PROSE_WRAPPER";
+    const rejectedResponseMarker = "REVIEW_REJECTED_NON_JSON_TEXT";
     const fetch = createOpenAICompatibleReviewFetch({
       contentTransforms: [
-        (content) => `${rejectedResponseMarker}\n${content}`,
+        () => rejectedResponseMarker,
         (content) => content
       ]
     });
@@ -10443,7 +10503,7 @@ describe("daemon API", () => {
   it("surfaces safe provider review parse and contract failures", async () => {
     const cases = [
       {
-        contentTransform: (content: string) => `Review JSON:\n${content}`,
+        contentTransform: (content: string) => `Review JSON:\n${content}\nRepeated object:\n${content}`,
         expectedCalls: 2,
         errorCategory: "provider_malformed_response",
         providerResponseShape: "prose_with_json_object"
@@ -10789,9 +10849,9 @@ describe("daemon API", () => {
   it("retries malformed provider finalization output once without storing rejected text", async () => {
     const cases = [
       {
-        rejectedResponseMarker: "FINAL_CANDIDATE_REJECTED_PROSE_WRAPPER",
+        rejectedResponseMarker: "FINAL_CANDIDATE_REJECTED_NON_JSON_TEXT",
         contentTransforms: [
-          (content: string) => `FINAL_CANDIDATE_REJECTED_PROSE_WRAPPER\n${content}`,
+          () => "FINAL_CANDIDATE_REJECTED_NON_JSON_TEXT",
           (content: string) => content,
           (content: string) => content
         ],
@@ -10799,10 +10859,10 @@ describe("daemon API", () => {
         retryCallIndex: 1
       },
       {
-        rejectedResponseMarker: "FINAL_AUDIT_REJECTED_PROSE_WRAPPER",
+        rejectedResponseMarker: "FINAL_AUDIT_REJECTED_NON_JSON_TEXT",
         contentTransforms: [
           (content: string) => content,
-          (content: string) => `FINAL_AUDIT_REJECTED_PROSE_WRAPPER\n${content}`,
+          () => "FINAL_AUDIT_REJECTED_NON_JSON_TEXT",
           (content: string) => content
         ],
         expectedCalls: 3,
