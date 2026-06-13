@@ -196,6 +196,42 @@ export type ResourceAccessPostureResponse = {
   safety: string[];
 };
 
+export type DaemonDeploymentPostureResponse = {
+  binding: {
+    host: string;
+    port: number;
+    exposure: "localhost" | "lan" | "public";
+    defaultLocalhost: boolean;
+  };
+  controlPlane: {
+    auth: "disabled" | "daemon_bearer";
+    protected: boolean;
+  };
+  cors: {
+    originCount: number;
+    defaultLocalDevelopmentOrigins: boolean;
+  };
+  persistence: {
+    eventLedger: "process_memory" | "configured_store";
+    runMetadata: "process_memory" | "configured_store";
+    resourceBroker: "process_memory" | "configured_store";
+    resourceAccessGrants: "process_memory" | "configured_store";
+    operationAudit: "process_memory" | "configured_store";
+    productionMultiWriterCoordination: false;
+  };
+  resourceAccess: {
+    baseUrlConfigured: boolean;
+    baseUrlExposure: "localhost" | "lan" | "public";
+    grantStoreRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
+  };
+  productionReadiness: {
+    status: "local_only" | "preproduction_remote_hardened" | "not_production_ready";
+    readyForProduction: false;
+    blockers: string[];
+  };
+  safety: string[];
+};
+
 export const DAEMON_CORS_ORIGINS_ENV_VAR = "DELIBERUM_DAEMON_CORS_ORIGINS" as const;
 export const DEFAULT_DAEMON_CORS_ORIGINS = [
   "http://127.0.0.1:5173",
@@ -612,6 +648,25 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         resourceAccessBaseUrlConfigured: options.resourceAccessBaseUrl !== undefined,
         resourceAccessTtlMs: options.resourceAccessTtlMs,
         resourceAccessStoreConfigured: options.resourceAccessStore !== undefined
+      })
+    )
+  );
+
+  app.get("/runtime/deployment-posture", (context) =>
+    noStoreJson(
+      context,
+      buildDeploymentPosture({
+        host,
+        port,
+        daemonAuthConfigured: daemonAuthToken !== undefined,
+        corsOrigins,
+        eventStoreConfigured: options.eventStore !== undefined,
+        runStoreConfigured: options.runStore !== undefined,
+        resourceBrokerConfigured: options.resourceBroker !== undefined,
+        resourceAccessStoreConfigured: options.resourceAccessStore !== undefined,
+        operationAuditLogConfigured: options.operationAuditLog !== undefined,
+        resourceAccessBaseUrl,
+        resourceAccessBaseUrlConfigured: options.resourceAccessBaseUrl !== undefined
       })
     )
   );
@@ -1348,6 +1403,156 @@ function buildResourceAccessPosture(options: {
       "Resource access grants remain scoped, revocable, short-lived delivery-layer material and are not semantic ledger authority."
     ]
   };
+}
+
+function buildDeploymentPosture(options: {
+  host: string;
+  port: number;
+  daemonAuthConfigured: boolean;
+  corsOrigins: readonly string[];
+  eventStoreConfigured: boolean;
+  runStoreConfigured: boolean;
+  resourceBrokerConfigured: boolean;
+  resourceAccessStoreConfigured: boolean;
+  operationAuditLogConfigured: boolean;
+  resourceAccessBaseUrl: string;
+  resourceAccessBaseUrlConfigured: boolean;
+}): DaemonDeploymentPostureResponse {
+  const bindingExposure = classifyDaemonBindHost(options.host);
+  const resourceAccessBaseUrlExposure = classifyResourceAccessBaseUrl(
+    options.resourceAccessBaseUrl
+  );
+  const blockers = createDeploymentPostureBlockers({
+    bindingExposure,
+    daemonAuthConfigured: options.daemonAuthConfigured,
+    eventStoreConfigured: options.eventStoreConfigured,
+    runStoreConfigured: options.runStoreConfigured,
+    resourceBrokerConfigured: options.resourceBrokerConfigured,
+    resourceAccessStoreConfigured: options.resourceAccessStoreConfigured,
+    operationAuditLogConfigured: options.operationAuditLogConfigured
+  });
+
+  return {
+    binding: {
+      host: options.host,
+      port: options.port,
+      exposure: bindingExposure,
+      defaultLocalhost: options.host === DEFAULT_DAEMON_HOST
+    },
+    controlPlane: {
+      auth: options.daemonAuthConfigured ? "daemon_bearer" : "disabled",
+      protected: options.daemonAuthConfigured
+    },
+    cors: {
+      originCount: options.corsOrigins.length,
+      defaultLocalDevelopmentOrigins: arraysEqual(
+        [...options.corsOrigins],
+        [...DEFAULT_DAEMON_CORS_ORIGINS]
+      )
+    },
+    persistence: {
+      eventLedger: configuredStore(options.eventStoreConfigured),
+      runMetadata: configuredStore(options.runStoreConfigured),
+      resourceBroker: configuredStore(options.resourceBrokerConfigured),
+      resourceAccessGrants: configuredStore(options.resourceAccessStoreConfigured),
+      operationAudit: configuredStore(options.operationAuditLogConfigured),
+      productionMultiWriterCoordination: false
+    },
+    resourceAccess: {
+      baseUrlConfigured: options.resourceAccessBaseUrlConfigured,
+      baseUrlExposure: resourceAccessBaseUrlExposure,
+      grantStoreRestartContinuity: options.resourceAccessStoreConfigured
+        ? "depends_on_configured_store"
+        : "lost_on_restart"
+    },
+    productionReadiness: {
+      status:
+        bindingExposure === "localhost"
+          ? "local_only"
+          : options.daemonAuthConfigured
+            ? "preproduction_remote_hardened"
+            : "not_production_ready",
+      readyForProduction: false,
+      blockers
+    },
+    safety: [
+      "This posture is derived from safe daemon configuration state only.",
+      "It does not expose bearer tokens, CORS origin values, resource access ids, resource URLs, provider secrets, request bodies, or payloads.",
+      "A non-local binding or public resource access base URL is not production authorization.",
+      "Production deployment still requires an external authorization layer, multi-user policy, and production-grade multi-writer coordination."
+    ]
+  };
+}
+
+function createDeploymentPostureBlockers(input: {
+  bindingExposure: "localhost" | "lan" | "public";
+  daemonAuthConfigured: boolean;
+  eventStoreConfigured: boolean;
+  runStoreConfigured: boolean;
+  resourceBrokerConfigured: boolean;
+  resourceAccessStoreConfigured: boolean;
+  operationAuditLogConfigured: boolean;
+}): string[] {
+  const blockers = [
+    "Production multi-user authorization is not implemented by the daemon.",
+    "Production multi-writer coordination is not implemented for durable stores."
+  ];
+
+  if (input.bindingExposure !== "localhost" && !input.daemonAuthConfigured) {
+    blockers.push("Non-local daemon bindings should not be exposed without daemon bearer auth.");
+  }
+
+  if (
+    !input.eventStoreConfigured ||
+    !input.runStoreConfigured ||
+    !input.resourceBrokerConfigured ||
+    !input.resourceAccessStoreConfigured ||
+    !input.operationAuditLogConfigured
+  ) {
+    blockers.push("One or more daemon stores are process-memory only and lose continuity on restart.");
+  }
+
+  return blockers;
+}
+
+function classifyDaemonBindHost(host: string): "localhost" | "lan" | "public" {
+  const normalized = host.trim().toLowerCase();
+
+  if (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "::1" ||
+    normalized === "[::1]" ||
+    normalized.startsWith("127.")
+  ) {
+    return "localhost";
+  }
+
+  if (
+    normalized.startsWith("10.") ||
+    normalized.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(normalized) ||
+    normalized.startsWith("fc") ||
+    normalized.startsWith("fd") ||
+    normalized.startsWith("fe80:") ||
+    normalized.startsWith("169.254.")
+  ) {
+    return "lan";
+  }
+
+  return "public";
+}
+
+function configuredStore(configured: boolean): "process_memory" | "configured_store" {
+  return configured ? "configured_store" : "process_memory";
+}
+
+function arraysEqual(left: readonly string[], right: readonly string[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
 }
 
 function authenticateDaemonRequest(

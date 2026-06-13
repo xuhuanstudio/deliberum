@@ -134,6 +134,41 @@ function createFakeRunDaemonClient(
       },
       safety: ["No access ids are returned."]
     })),
+    getDeploymentPosture: vi.fn(async () => ({
+      binding: {
+        host: "127.0.0.1",
+        port: 3877,
+        exposure: "localhost",
+        defaultLocalhost: true
+      },
+      controlPlane: {
+        auth: "daemon_bearer",
+        protected: true
+      },
+      cors: {
+        originCount: 2,
+        defaultLocalDevelopmentOrigins: true
+      },
+      persistence: {
+        eventLedger: "configured_store",
+        runMetadata: "configured_store",
+        resourceBroker: "configured_store",
+        resourceAccessGrants: "configured_store",
+        operationAudit: "configured_store",
+        productionMultiWriterCoordination: false
+      },
+      resourceAccess: {
+        baseUrlConfigured: false,
+        baseUrlExposure: "localhost",
+        grantStoreRestartContinuity: "depends_on_configured_store"
+      },
+      productionReadiness: {
+        status: "local_only",
+        readyForProduction: false,
+        blockers: ["Production multi-user authorization is not implemented by the daemon."]
+      },
+      safety: ["No secrets are returned."]
+    })),
     getOperationAudit: vi.fn(async () => ({
       events: [
         {
@@ -1319,6 +1354,56 @@ describe("CLI command routing", () => {
     expect(missing.stdout).toContain("Runtime profile was not found");
     expect(daemonClient.getRuntimeProfiles).toHaveBeenCalledTimes(3);
     expect(createDaemonClient).toHaveBeenCalledTimes(3);
+    expect(createEventStore).not.toHaveBeenCalled();
+  });
+
+  it("routes daemon deployment posture through the daemon client", async () => {
+    const { daemonClient, createDaemonClient, createEventStore, dependencies } =
+      createRunCliDependencies();
+
+    const posture = parseOutput<{
+      binding: { exposure: string; defaultLocalhost: boolean };
+      controlPlane: { auth: string; protected: boolean };
+      persistence: { productionMultiWriterCoordination: boolean };
+      productionReadiness: { readyForProduction: boolean; blockers: string[] };
+      safety: string[];
+    }>(
+      await runCli(
+        ["daemon", "deployment-posture", "--daemon-url", "http://localhost:4999", "--json"],
+        dependencies
+      )
+    );
+    const rejected = await runCli(
+      ["daemon", "deployment-posture", "--secret", "redacted-input-value", "--json"],
+      dependencies
+    );
+
+    expect(posture).toEqual(
+      expect.objectContaining({
+        binding: expect.objectContaining({
+          exposure: "localhost",
+          defaultLocalhost: true
+        }),
+        controlPlane: {
+          auth: "daemon_bearer",
+          protected: true
+        },
+        persistence: expect.objectContaining({
+          productionMultiWriterCoordination: false
+        }),
+        productionReadiness: expect.objectContaining({
+          readyForProduction: false,
+          blockers: ["Production multi-user authorization is not implemented by the daemon."]
+        })
+      })
+    );
+    expect(posture.safety.join(" ")).toContain("No secrets are returned");
+    expect(rejected.exitCode).toBe(1);
+    expect(rejected.stdout).not.toContain("redacted-input-value");
+    expect(daemonClient.getDeploymentPosture).toHaveBeenCalledTimes(1);
+    expect(createDaemonClient).toHaveBeenCalledWith({
+      baseUrl: "http://localhost:4999"
+    });
     expect(createEventStore).not.toHaveBeenCalled();
   });
 

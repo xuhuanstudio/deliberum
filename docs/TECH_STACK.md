@@ -25,11 +25,12 @@ Node.js 20 is no longer an acceptable baseline for new development because it re
 - shared Node `JsonFileEventStore` for CLI persistence and optional local daemon event ledger persistence;
 - daemon-local `JsonFileRunStore` for optional local run metadata persistence;
 - daemon-local operation audit log with in-memory defaults, optional JSON persistence, optional SQLite persistence, local retention caps, and CLI JSONL export for safe control-plane operation metadata;
-- CLI daemon runtime profile status, comment-only env-template output, safe profile-doctor diagnostics, safe setup-plan output, and resource access posture reads for local setup assistance;
-- shared `@deliberum/client` setup-plan projection helpers for CLI/Web local setup summaries derived from safe runtime profile metadata;
+- CLI daemon runtime profile status, comment-only env-template output, safe profile-doctor diagnostics, safe setup-plan output, deployment posture reads, and resource access posture reads for local setup assistance;
+- shared `@deliberum/client` setup-plan projection helpers for CLI/Web local setup summaries derived from safe runtime profile metadata, plus daemon deployment posture response types and reads;
 - Server-Sent Events for daemon event streaming;
 - daemon-local session-scoped resource delivery planning through the Resource Broker and Delivery Planner, with safe ledger audit events for delivery decisions and short-lived access grants for allowed URL and hosted in-memory content deliveries;
 - daemon resource access base URL validation and safe posture reporting with explicit opt-in for env-configured non-local access URLs and HTTPS-only public access URLs;
+- daemon deployment posture reporting for bind exposure, control-plane auth mode, CORS origin count, persistence classes, resource access continuity, production-readiness blockers, and safety notes without exposing secrets, resource access URLs, or provider/tool endpoint values;
 - package-level HTTP-template participant adapter and opt-in daemon participant profile for non-OpenAI HTTP providers;
 - package-level MCP-compatible tool participant adapter with injected client lifecycle, execution policy controls, and an opt-in daemon MCP tool participant profile;
 - read-only adaptive primitive suggestion in `@deliberum/orchestrator`, surfaced by the daemon as process proposal material;

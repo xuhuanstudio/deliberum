@@ -313,6 +313,42 @@ export type ResourceAccessPostureResponse = {
   safety: string[];
 };
 
+export type DeploymentPostureResponse = {
+  binding: {
+    host: string;
+    port: number;
+    exposure: "localhost" | "lan" | "public";
+    defaultLocalhost: boolean;
+  };
+  controlPlane: {
+    auth: "disabled" | "daemon_bearer";
+    protected: boolean;
+  };
+  cors: {
+    originCount: number;
+    defaultLocalDevelopmentOrigins: boolean;
+  };
+  persistence: {
+    eventLedger: "process_memory" | "configured_store";
+    runMetadata: "process_memory" | "configured_store";
+    resourceBroker: "process_memory" | "configured_store";
+    resourceAccessGrants: "process_memory" | "configured_store";
+    operationAudit: "process_memory" | "configured_store";
+    productionMultiWriterCoordination: false;
+  };
+  resourceAccess: {
+    baseUrlConfigured: boolean;
+    baseUrlExposure: "localhost" | "lan" | "public";
+    grantStoreRestartContinuity: "lost_on_restart" | "depends_on_configured_store";
+  };
+  productionReadiness: {
+    status: "local_only" | "preproduction_remote_hardened" | "not_production_ready";
+    readyForProduction: false;
+    blockers: string[];
+  };
+  safety: string[];
+};
+
 export type OperationAuditResponse = {
   events: Array<{
     id: string;
@@ -729,6 +765,10 @@ export class DeliberumDaemonClient {
 
   getResourceAccessPosture(): Promise<ResourceAccessPostureResponse> {
     return this.request("GET", "/runtime/resource-access");
+  }
+
+  getDeploymentPosture(): Promise<DeploymentPostureResponse> {
+    return this.request("GET", "/runtime/deployment-posture");
   }
 
   getOperationAudit(options: { limit?: number } = {}): Promise<OperationAuditResponse> {

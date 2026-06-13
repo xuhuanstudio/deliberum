@@ -476,6 +476,10 @@ function normalizeOperationAuditRoute(path: string): string {
     return "/runtime/resource-access";
   }
 
+  if (segments[0] === "runtime" && segments[1] === "deployment-posture") {
+    return "/runtime/deployment-posture";
+  }
+
   if (segments[0] === "runtime" && segments[1] === "profiles") {
     return "/runtime/profiles";
   }
@@ -692,6 +696,9 @@ function classifyOperationAuditAction(method: string, route: string): string {
   }
   if (method === "GET" && route === "/runtime/resource-access") {
     return "resource_access_posture_read";
+  }
+  if (method === "GET" && route === "/runtime/deployment-posture") {
+    return "deployment_posture_read";
   }
   if (method === "GET" && route === "/runtime/operation-audit") {
     return "operation_audit_read";

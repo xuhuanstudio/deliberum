@@ -340,6 +340,66 @@ describe("DeliberumDaemonClient", () => {
     });
   });
 
+  it("reads safe daemon deployment posture", async () => {
+    const fetch = createFetch({
+      binding: {
+        host: "127.0.0.1",
+        port: 3877,
+        exposure: "localhost",
+        defaultLocalhost: true
+      },
+      controlPlane: {
+        auth: "disabled",
+        protected: false
+      },
+      cors: {
+        originCount: 2,
+        defaultLocalDevelopmentOrigins: true
+      },
+      persistence: {
+        eventLedger: "process_memory",
+        runMetadata: "process_memory",
+        resourceBroker: "process_memory",
+        resourceAccessGrants: "process_memory",
+        operationAudit: "process_memory",
+        productionMultiWriterCoordination: false
+      },
+      resourceAccess: {
+        baseUrlConfigured: false,
+        baseUrlExposure: "localhost",
+        grantStoreRestartContinuity: "lost_on_restart"
+      },
+      productionReadiness: {
+        status: "local_only",
+        readyForProduction: false,
+        blockers: ["Production multi-user authorization is not implemented by the daemon."]
+      },
+      safety: ["No secrets are returned."]
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    const result = await daemonClient.getDeploymentPosture();
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:3877/runtime/deployment-posture");
+    expect(init).toEqual({
+      method: "GET"
+    });
+    expect(result).toMatchObject({
+      binding: {
+        exposure: "localhost",
+        defaultLocalhost: true
+      },
+      controlPlane: {
+        auth: "disabled",
+        protected: false
+      },
+      productionReadiness: {
+        readyForProduction: false
+      }
+    });
+  });
+
   it("reads safe daemon operation audit metadata with an optional limit", async () => {
     const fetch = createFetch({
       events: [

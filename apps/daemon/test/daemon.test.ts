@@ -2280,6 +2280,115 @@ describe("daemon API", () => {
     );
   });
 
+  it("reports safe deployment posture without exposing deployment secrets", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      daemonAuthToken: "local-daemon-auth-token"
+    });
+
+    const response = await daemonApp.app.request("/runtime/deployment-posture", {
+      headers: {
+        Authorization: "Bearer local-daemon-auth-token"
+      }
+    });
+    const body = (await response.json()) as {
+      binding: {
+        host: string;
+        port: number;
+        exposure: string;
+        defaultLocalhost: boolean;
+      };
+      controlPlane: {
+        auth: string;
+        protected: boolean;
+      };
+      persistence: {
+        eventLedger: string;
+        runMetadata: string;
+        resourceBroker: string;
+        resourceAccessGrants: string;
+        operationAudit: string;
+        productionMultiWriterCoordination: boolean;
+      };
+      resourceAccess: {
+        baseUrlConfigured: boolean;
+        baseUrlExposure: string;
+        grantStoreRestartContinuity: string;
+      };
+      productionReadiness: {
+        status: string;
+        readyForProduction: boolean;
+        blockers: string[];
+      };
+      safety: string[];
+    };
+    const text = JSON.stringify(body);
+    const auditBody = (await (
+      await daemonApp.app.request("/runtime/operation-audit?limit=5", {
+        headers: {
+          Authorization: "Bearer local-daemon-auth-token"
+        }
+      })
+    ).json()) as {
+      events: Array<{
+        action: string;
+        route: string;
+      }>;
+    };
+
+    expect(response.status).toBe(200);
+    expectNoStore(response);
+    expect(body).toEqual(
+      expect.objectContaining({
+        binding: {
+          host: "127.0.0.1",
+          port: 3877,
+          exposure: "localhost",
+          defaultLocalhost: true
+        },
+        controlPlane: {
+          auth: "daemon_bearer",
+          protected: true
+        },
+        persistence: {
+          eventLedger: "process_memory",
+          runMetadata: "process_memory",
+          resourceBroker: "process_memory",
+          resourceAccessGrants: "process_memory",
+          operationAudit: "process_memory",
+          productionMultiWriterCoordination: false
+        },
+        resourceAccess: {
+          baseUrlConfigured: false,
+          baseUrlExposure: "localhost",
+          grantStoreRestartContinuity: "lost_on_restart"
+        },
+        productionReadiness: expect.objectContaining({
+          status: "local_only",
+          readyForProduction: false
+        })
+      })
+    );
+    expect(body.productionReadiness.blockers).toContain(
+      "Production multi-user authorization is not implemented by the daemon."
+    );
+    expect(body.productionReadiness.blockers).toContain(
+      "One or more daemon stores are process-memory only and lose continuity on restart."
+    );
+    expect(body.safety.join(" ")).toContain("safe daemon configuration state");
+    expect(text).not.toContain("local-daemon-auth-token");
+    expect(text).not.toContain("Bearer ");
+    expect(auditBody.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "deployment_posture_read",
+          route: "/runtime/deployment-posture"
+        })
+      ])
+    );
+  });
+
   it("allows only explicit local Web dev origins for CORS", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
     const loopbackResponse = await daemonApp.app.request("/runs", {

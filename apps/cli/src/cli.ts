@@ -60,6 +60,7 @@ export const CLI_COMMANDS = [
   "daemon env-template",
   "daemon profile-doctor",
   "daemon setup-plan",
+  "daemon deployment-posture",
   "daemon operation-audit",
   "daemon resource-access status",
   "daemon resource-access revoke",
@@ -156,6 +157,7 @@ export type CliRunDaemonClient = Pick<
   DeliberumDaemonClient,
   | "getRuntimeProfiles"
   | "getResourceAccessPosture"
+  | "getDeploymentPosture"
   | "getOperationAudit"
   | "createRun"
   | "listRuns"
@@ -748,6 +750,15 @@ async function executeDaemonCommand(
     return buildRuntimeSetupPlan(profiles, getLastOption(parsedArgs, "profile"));
   }
 
+  if (action === "deployment-posture") {
+    requireNoPositionals(
+      restPositionals,
+      "Usage: deliberum daemon deployment-posture [--daemon-url <local-url>]"
+    );
+
+    return daemonClient.getDeploymentPosture();
+  }
+
   if (action === "operation-audit") {
     requireNoPositionals(
       restPositionals,
@@ -805,6 +816,7 @@ function assertKnownDaemonCommand(action: string): void {
       "env-template",
       "profile-doctor",
       "setup-plan",
+      "deployment-posture",
       "operation-audit",
       "resource-access"
     ].includes(action)

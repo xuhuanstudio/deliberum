@@ -10,6 +10,8 @@ Deliberum is currently a local-first, pre-production implementation. The support
 
 The daemon binds to `127.0.0.1` by default and does not provide production authorization or multi-user deployment yet.
 
+Use `deliberum daemon deployment-posture` or `GET /runtime/deployment-posture` against a running daemon to inspect safe local/pre-production deployment posture. The diagnostic returns exposure classes, auth mode, persistence classes, resource access continuity, production-readiness blockers, and safety notes without exposing daemon tokens, CORS origin values, configured resource access URLs, provider secrets, request bodies, or payloads.
+
 ## Local CLI
 
 The CLI uses the shared JSON EventStore for local persistence. It stores events in a local JSON file under `.deliberum/` by default, with explicit `--store` / `DELIBERUM_STORE` overrides for local use and tests.
@@ -19,6 +21,8 @@ The CLI does not create hidden current-session state and does not bypass EventSt
 ## Local daemon API
 
 The daemon exposes the current local HTTP API, session-scoped resource delivery planning endpoint, short-lived resource access grant routes for allowed URL and hosted in-memory content deliveries, and WebGET endpoints. It uses in-memory state by default.
+
+The daemon also exposes `GET /runtime/deployment-posture` as a no-store safe diagnostic. It is useful for checking whether a local/pre-production daemon is still bound to localhost, whether control-plane bearer auth is enabled, which store classes are process-memory versus configured, whether resource access grants survive restarts, and which production-readiness blockers still apply. It does not change daemon configuration and is not a production authorization or multi-user deployment system.
 
 For local/pre-production durable storage, set `DELIBERUM_DAEMON_SQLITE_PATH=<path>`. The daemon will use SQLite-backed stores for session ledger events, run metadata, explicitly registered resource broker metadata/content, resource access grant state, and safe operation audit metadata in that database, with WAL mode, a busy timeout, and local connection-level writer serialization.
 
@@ -44,6 +48,6 @@ The following remain future work:
 - daemon-served Web UI assets;
 - production resource hosting posture;
 - production authorization;
-- SSH/remote deployment guidance beyond manual local port forwarding;
+- multi-user deployment and SSH/remote deployment guidance beyond manual local port forwarding;
 - Postgres-backed team/server deployments;
 - container packaging.

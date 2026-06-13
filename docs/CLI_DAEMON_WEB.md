@@ -45,6 +45,7 @@ deliberum daemon profiles [--daemon-url <local-url>]
 deliberum daemon env-template [--profile <id>] [--daemon-url <local-url>]
 deliberum daemon profile-doctor [--profile <id>] [--daemon-url <local-url>]
 deliberum daemon setup-plan [--profile <id>] [--daemon-url <local-url>]
+deliberum daemon deployment-posture [--daemon-url <local-url>]
 deliberum daemon operation-audit [--limit <n>] [--format <json|jsonl>] [--daemon-url <local-url>]
 deliberum daemon resource-access status [--daemon-url <local-url>]
 deliberum daemon resource-access revoke <access-id> [--daemon-url <local-url>]
@@ -74,6 +75,8 @@ CLI daemon and run commands are local daemon control commands. They require a ru
 `deliberum daemon env-template` reads the same safe runtime profile metadata and prints a comment-only environment template for all profiles, or for one profile when `--profile <id>` is provided. With `--json`, it returns `{ "template": "..." }` for scripts. It does not read environment values, prompt for secrets, write `.env`, or store provider/tool configuration.
 
 `deliberum daemon profile-doctor` reads the same safe runtime profile metadata and returns local setup diagnostics: enabled profile counts, ready and needs-configuration counts, missing recommended env var names, enabled component counts, and safe next actions such as enabling a profile or supplying daemon defaults/run config. It accepts `--profile <id>` to inspect one profile. `deliberum daemon setup-plan` uses the same metadata to return an ordered, script-friendly local setup plan with profile enable env vars, missing required env var names, missing recommended default env var names, safe verification commands, notes, and boundaries. It also accepts `--profile <id>`. These commands do not read environment values beyond daemon-reported configured booleans, prompt for secrets, write `.env`, mutate daemon config, start providers, start MCP servers, execute adapters, or store provider/tool configuration.
+
+`deliberum daemon deployment-posture` reads `GET /runtime/deployment-posture` and returns safe daemon deployment posture metadata: bind host/port exposure class, control-plane auth mode, CORS origin count, persistence mode classes, resource access continuity class, production-readiness blockers, and safety notes. It does not return daemon auth tokens, CORS origin values, configured resource access URLs, provider/tool endpoint values, provider/tool secrets, request bodies, or payloads. This command is a read-only diagnostic for local/pre-production hardening; it does not implement production authorization, multi-user policy, production resource hosting, or multi-writer coordination.
 
 `deliberum daemon operation-audit` reads `GET /runtime/operation-audit` and returns safe daemon control-plane operation metadata. The optional `--limit <n>` argument limits the returned entries. The optional `--format jsonl` mode exports one safe audit record per line for local archival workflows; the default `json` mode keeps the normal structured response. This command does not read the CLI local JSON ledger and does not expose request bodies, headers, bearer tokens, raw WebGET tokens, raw resource access ids, provider secrets, or output payloads.
 
@@ -110,6 +113,7 @@ Implemented endpoints:
 ```text
 GET  /health
 GET  /runtime/profiles
+GET  /runtime/deployment-posture
 GET  /runtime/resource-access
 GET  /runtime/operation-audit
 GET  /runs
@@ -238,7 +242,7 @@ DELIBERUM_OPENAI_THINKING=disabled
 
 The extraction prompt requests exactly one JSON object with no surrounding prose or Markdown, and the parser remains strict: it accepts only a raw JSON object or a single full fenced JSON object. If a provider response fails only this strict JSON shape check, the extractor may make one corrective retry without including the rejected response text. Additional non-secret request options are available for local compatibility testing: `DELIBERUM_OPENAI_TOP_P`, `DELIBERUM_OPENAI_STREAM=false`, `DELIBERUM_OPENAI_FREQUENCY_PENALTY`, and `DELIBERUM_OPENAI_PRESENCE_PENALTY`. Streaming output is not implemented, so `DELIBERUM_OPENAI_STREAM=true` is rejected as invalid provider configuration.
 
-CLI run commands do not include API key flags or fields. `deliberum daemon profiles` provides safe read-only profile setup status, `deliberum daemon env-template` can print comment-only setup templates from that metadata, `deliberum daemon profile-doctor` can summarize safe local configuration gaps and next actions, and `deliberum daemon setup-plan` can produce an ordered local setup plan without printing or storing secret values. The CLI and Web UI use the same client-side setup-plan projection helper, so Web runtime profile summaries show required env var names, recommended env var names, secret env var names, and setup step counts derived from daemon metadata without exposing values. Full interactive secret capture and config-file writing remain deferred. CLI run commands can read `DELIBERUM_DAEMON_AUTH_TOKEN` for daemon control-plane auth, read the daemon-redacted run event timeline, and follow the daemon-redacted run event stream. The Web run detail page reads the same non-stream timeline and can manually follow the same stream.
+CLI run commands do not include API key flags or fields. `deliberum daemon profiles` provides safe read-only profile setup status, `deliberum daemon env-template` can print comment-only setup templates from that metadata, `deliberum daemon profile-doctor` can summarize safe local configuration gaps and next actions, and `deliberum daemon setup-plan` can produce an ordered local setup plan without printing or storing secret values. `deliberum daemon deployment-posture` can summarize safe local/pre-production deployment posture and production-readiness blockers without exposing tokens, origins, configured resource URLs, provider secrets, request bodies, or payloads. The CLI and Web UI use the same client-side setup-plan projection helper, so Web runtime profile summaries show required env var names, recommended env var names, secret env var names, and setup step counts derived from daemon metadata without exposing values. Full interactive secret capture, config-file writing, production authorization, and multi-user deployment remain deferred. CLI run commands can read `DELIBERUM_DAEMON_AUTH_TOKEN` for daemon control-plane auth, read the daemon-redacted run event timeline, and follow the daemon-redacted run event stream. The Web run detail page reads the same non-stream timeline and can manually follow the same stream.
 
 Experimental WebGET endpoints are local daemon endpoints:
 
@@ -257,7 +261,7 @@ Allowed URL deliveries are wrapped in short-lived daemon resource access grants.
 
 `GET /sessions/:sessionId/resources` also returns the session's safe resource delivery audit history as `deliveryAudits` and safe resource access lifecycle history as `accessAudits`. Delivery audit entries are derived from public `resource_delivery_planned` ledger events and include event metadata, resource summary, participant id, policy summary, and delivery decision summary without exposing delivery material. Access audit entries are derived from public `resource_access_grant_created` and `resource_access_grant_revoked` ledger events and include event metadata, action, non-bearer `resourceAccessId`, resource id, participant id, token hash, TTL metadata, and safe hosted-content metadata when applicable.
 
-Deferred daemon work includes production multi-writer coordination for durable stores, broader primitive runner coverage and automated policy beyond read-only accepted process proposal readiness, production resource hosting posture, full interactive secret capture and config-file writing, production authorization, and remote/multi-user deployment.
+Deferred daemon work includes production multi-writer coordination for durable stores, broader primitive runner coverage and automated policy beyond read-only accepted process proposal readiness, production resource hosting posture, full interactive secret capture and config-file writing, production authorization, and multi-user deployment.
 
 ## Web UI
 
