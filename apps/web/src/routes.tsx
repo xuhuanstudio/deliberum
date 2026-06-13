@@ -223,6 +223,7 @@ function RootRoute() {
 function LandingPage() {
   const { daemonBaseUrl, client } = useDaemonRuntime();
   const [sessionId, setSessionId] = useState("");
+  const [operatorDetailsOpen, setOperatorDetailsOpen] = useState(false);
   const navigate = useNavigate({ from: "/" });
   const trimmedSessionId = sessionId.trim();
   const sessionsQuery = useQuery({
@@ -231,19 +232,23 @@ function LandingPage() {
   });
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
-    queryFn: () => client.getRuntimeProfiles()
+    queryFn: () => client.getRuntimeProfiles(),
+    enabled: operatorDetailsOpen
   });
   const deploymentPostureQuery = useQuery({
     queryKey: ["deployment-posture"],
-    queryFn: () => client.getDeploymentPosture()
+    queryFn: () => client.getDeploymentPosture(),
+    enabled: operatorDetailsOpen
   });
   const resourceAccessPostureQuery = useQuery({
     queryKey: ["resource-access-posture"],
-    queryFn: () => client.getResourceAccessPosture()
+    queryFn: () => client.getResourceAccessPosture(),
+    enabled: operatorDetailsOpen
   });
   const operationAuditQuery = useQuery({
     queryKey: ["operation-audit", "landing", 10],
-    queryFn: () => client.getOperationAudit({ limit: 10 })
+    queryFn: () => client.getOperationAudit({ limit: 10 }),
+    enabled: operatorDetailsOpen
   });
   const sessions = asArray(sessionsQuery.data?.sessions);
   const runtimeProfiles = asArray(runtimeProfilesQuery.data?.profiles);
@@ -435,6 +440,8 @@ function LandingPage() {
         </DataPanel>
         <AdvancedDetails
           description="Runtime, daemon, resource, audit, deployment, raw session ids, and other operator details stay available here without leading the product experience."
+          lazy
+          onOpen={() => setOperatorDetailsOpen(true)}
         >
           <DataPanel title="Daemon status" description="Local daemon connection used by the Web UI.">
             <div className="du-advanced-status-grid">

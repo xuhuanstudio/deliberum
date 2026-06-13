@@ -848,10 +848,15 @@ describe("@deliberum/web shell", () => {
         "The current conclusion keeps open disagreements, risks, missing evidence, and recommended next actions together."
       )
     ).toBeTruthy();
+    expect(client.getRuntimeProfiles).not.toHaveBeenCalled();
+    expect(client.getDeploymentPosture).not.toHaveBeenCalled();
+    expect(client.getResourceAccessPosture).not.toHaveBeenCalled();
+    expect(client.getOperationAudit).not.toHaveBeenCalled();
     expect(screen.queryByLabelText(/chat/i)).toBeNull();
     expect(screen.queryByPlaceholderText(/message/i)).toBeNull();
 
-    fireEvent.change(screen.getByLabelText("Session id"), {
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    fireEvent.change(await screen.findByLabelText("Session id"), {
       target: {
         value: "session-1"
       }
@@ -880,6 +885,9 @@ describe("@deliberum/web shell", () => {
   it("renders daemon runtime profile status without environment values", async () => {
     const client = renderApp("/");
 
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    expect(client.getRuntimeProfiles).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
     expect(await screen.findByText("Runtime profiles")).toBeTruthy();
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(screen.getByText("Local preset")).toBeTruthy();
@@ -904,6 +912,9 @@ describe("@deliberum/web shell", () => {
   it("renders safe daemon deployment posture without configured URLs or tokens", async () => {
     const client = renderApp("/");
 
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    expect(client.getDeploymentPosture).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
     expect(await screen.findByText("Deployment posture")).toBeTruthy();
     await waitFor(() => expect(client.getDeploymentPosture).toHaveBeenCalled());
     expect(screen.getByText("Bind exposure")).toBeTruthy();
@@ -931,6 +942,9 @@ describe("@deliberum/web shell", () => {
   it("renders safe daemon resource access posture without access material", async () => {
     const client = renderApp("/");
 
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    expect(client.getResourceAccessPosture).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
     expect(await screen.findByText("Resource access posture")).toBeTruthy();
     await waitFor(() => expect(client.getResourceAccessPosture).toHaveBeenCalled());
     expect(screen.getByText("Base URL posture")).toBeTruthy();
@@ -968,6 +982,9 @@ describe("@deliberum/web shell", () => {
   it("renders safe daemon operation audit metadata without request material", async () => {
     const client = renderApp("/");
 
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    expect(client.getOperationAudit).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
     expect(await screen.findByText("Operation audit")).toBeTruthy();
     await waitFor(() =>
       expect(client.getOperationAudit).toHaveBeenCalledWith({ limit: 10 })

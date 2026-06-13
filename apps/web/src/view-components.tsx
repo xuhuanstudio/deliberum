@@ -21,6 +21,7 @@ export type AdvancedDetailsProps = {
   summary?: string;
   description?: string;
   lazy?: boolean;
+  onOpen?: () => void;
   children: ReactNode;
 };
 
@@ -48,6 +49,7 @@ export function AdvancedDetails({
   summary = "Advanced / Developer Mode",
   description,
   lazy = false,
+  onOpen,
   children
 }: AdvancedDetailsProps) {
   const [hasOpened, setHasOpened] = useState(false);
@@ -59,6 +61,7 @@ export function AdvancedDetails({
       onToggle={(event) => {
         if (event.currentTarget.open) {
           setHasOpened(true);
+          onOpen?.();
         }
       }}
     >
