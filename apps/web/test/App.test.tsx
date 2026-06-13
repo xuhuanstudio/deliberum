@@ -1278,7 +1278,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
     expect(screen.getByText("Discussion overview")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
-    expect(screen.getByText("Accepted active options stay visible without collapsing into one hidden authority.")).toBeTruthy();
+    expect(screen.getByText("Strong options stay visible without collapsing into one hidden authority.")).toBeTruthy();
     expect(screen.getByText("Run ledger timeline")).toBeTruthy();
     expect(screen.getByText("Event entries")).toBeTruthy();
     expect(screen.getByText(/topic_contract_published/)).toBeTruthy();
@@ -2086,7 +2086,7 @@ describe("@deliberum/web shell", () => {
     renderApp("/sessions/session-1/final", client);
 
     await screen.findByText("Final lifecycle controls");
-    await screen.findByText("No accepted active candidates");
+    await screen.findByText("No main perspectives ready");
     expect(screen.getByText("No final proposal event selected")).toBeTruthy();
 
     const proposeButton = screen.getByRole("button", {
@@ -2115,7 +2115,7 @@ describe("@deliberum/web shell", () => {
 
     renderApp("/runs/run-1", client);
 
-    expect(await screen.findByText("Daemon request failed")).toBeTruthy();
+    expect(await screen.findByText("Could not load discussion data")).toBeTruthy();
     const renderedText = document.body.textContent ?? "";
     expect(renderedText).not.toContain("/Users/alice");
     expect(renderedText).not.toContain("Bearer secret-token");

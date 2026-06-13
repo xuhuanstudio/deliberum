@@ -306,7 +306,7 @@ function LandingPage() {
         <div className="du-product-grid">
           <DataPanel
             title="What you can do"
-            description="The default path is for people who need a clear decision surface, not runtime records."
+            description="The default path is for people who need a clear decision surface, not system records."
           >
             <div className="du-readable-list">
               <QualityPathItem
@@ -1312,7 +1312,7 @@ function FrontierPage() {
       <QueryState query={frontierQuery}>
         <DataPanel
           title="Strongest current options"
-          description="These are accepted active perspectives that remain open to challenge."
+          description="These are the strongest currently visible perspectives. They remain open to challenge while the discussion continues."
         >
           <ReadableSessionRecordList
             records={asArray(frontierQuery.data?.candidates)}
@@ -1784,7 +1784,7 @@ function ResourcesPage() {
     <ViewFrame
       eyebrow="User Mode"
       title="Evidence and verification"
-      description="Evidence Checks are shown as missing evidence, verification needs, and risks that should be resolved before relying on the conclusion."
+      description="Missing evidence, verification needs, and risks are shown together so they can be resolved before relying on the conclusion."
     >
       <QueryState query={resourcesQuery}>
         <StatusBanner
@@ -1794,11 +1794,11 @@ function ResourcesPage() {
               ? "Evidence gaps visible"
               : "No evidence gaps returned"
           }
-          detail="This page focuses on what still needs to be checked. Resource access details remain in Advanced mode."
+          detail="This page focuses on what still needs to be checked. Technical access details remain in Advanced mode."
         />
         <DataPanel
           title="Risks and missing evidence"
-          description="Missing evidence items are user-facing verification work, not raw resource access state."
+          description="Missing evidence items are user-facing verification work, not low-level access state."
         >
           <ReadableSessionRecordList
             records={evidenceNeeds}
@@ -1946,24 +1946,24 @@ function describeFinalCandidateReadiness(input: {
   if (input.frontierLoading) {
     return {
       tone: "neutral",
-      title: "Loading accepted candidates",
-      detail: "The candidate proposal control enables after the daemon frontier projection loads."
+      title: "Loading main perspectives",
+      detail: "The final-candidate control enables after the strongest current options load."
     };
   }
 
   if (input.frontierError) {
     return {
       tone: "error",
-      title: "Candidate frontier unavailable",
-      detail: "The candidate proposal control requires the daemon frontier projection."
+      title: "Strongest current options unavailable",
+      detail: "The final-candidate control requires the strongest current options."
     };
   }
 
   if (input.candidateCount === 0) {
     return {
       tone: "warning",
-      title: "No accepted active candidates",
-      detail: "Record or accept candidate material before proposing a final candidate."
+      title: "No main perspectives ready",
+      detail: "Accept at least one perspective before proposing a final candidate."
     };
   }
 

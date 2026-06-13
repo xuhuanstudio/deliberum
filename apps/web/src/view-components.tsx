@@ -103,14 +103,14 @@ export type QueryStateProps = {
 
 export function QueryState({ query, children }: QueryStateProps) {
   if (query.isLoading) {
-    return <StatusBanner title="Loading daemon view" />;
+    return <StatusBanner title="Loading discussion data" />;
   }
 
   if (query.isError) {
     return (
       <StatusBanner
         tone="error"
-        title="Daemon request failed"
+        title="Could not load discussion data"
         detail={formatSafeErrorMessage(query.error)}
       />
     );
@@ -200,7 +200,7 @@ export function sanitizeForDisplay(value: unknown): unknown {
 
 export function formatSafeErrorMessage(error: Error | null | undefined): string {
   if (!error?.message) {
-    return "The daemon did not return a usable response.";
+    return "The service did not return a usable response.";
   }
 
   return redactUnsafeText(error.message.split("\n")[0] ?? error.message);

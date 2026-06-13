@@ -151,7 +151,7 @@ export function RunNewPage() {
       <ViewFrame
         eyebrow="User Mode"
         title="Start a discussion"
-        description="Create a local deliberation that shows the discussion brief, independent first responses, strongest options, disagreements, requirements, evidence checks, risk review, and current conclusion."
+        description="Create a local deliberation that shows the discussion brief, independent first responses, strongest options, disagreements, requirements, evidence and verification, risk review, and current conclusion."
       >
         <StatusBanner
           title="Start from a question"
@@ -395,7 +395,7 @@ export function RunOutcomePage() {
             <>
               <DataPanel
                 title="Current conclusion"
-                description="A readable summary of the current result. Advanced details keep the underlying runtime response for developers."
+                description="A readable summary of the current result. Advanced details keep the underlying technical response for developers."
               >
                 <OutcomeBrief outcome={outcome.outcome} />
               </DataPanel>
@@ -1275,7 +1275,7 @@ function RunQualityOverview({ sessionId }: { sessionId: string }) {
         <div className="du-quality-summary-grid">
           <QualitySummaryLink
             title="Main perspectives"
-            detail="Accepted active options stay visible without collapsing into one hidden authority."
+            detail="Strong options stay visible without collapsing into one hidden authority."
             metric={String(candidates.length)}
             to="/sessions/$sessionId/frontier"
             sessionId={sessionId}
@@ -1668,7 +1668,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No main perspectives have been accepted into this discussion yet."
             kind="candidate"
           />
-          <AdvancedDetails summary="Advanced projection details">
+          <AdvancedDetails summary="Advanced / Developer Mode: source details">
             <ProjectionMetadata projection={frontierQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
@@ -1684,7 +1684,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No open disagreements have been accepted into this discussion yet."
             kind="objection"
           />
-          <AdvancedDetails summary="Advanced projection details">
+          <AdvancedDetails summary="Advanced / Developer Mode: source details">
             <ProjectionMetadata projection={objectionsQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
@@ -1700,7 +1700,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             emptyDescription="No explicit requirements have been accepted into this discussion yet."
             kind="quality obligation"
           />
-          <AdvancedDetails summary="Advanced projection details">
+          <AdvancedDetails summary="Advanced / Developer Mode: source details">
             <ProjectionMetadata projection={obligationsQuery.data?.projection} />
           </AdvancedDetails>
         </QueryState>
