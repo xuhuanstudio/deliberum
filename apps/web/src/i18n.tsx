@@ -72,6 +72,60 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5f53\u6a21\u578b\u63d0\u4f9b\u65b9\u5c31\u7eea\u540e\uff0c\u5f00\u59cb\u8ba8\u8bba\u5e76\u4f7f\u7528\u5df2\u914d\u7f6e\u7684\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u8ba1\u5212\u3002",
   "Open Advanced / Developer Mode for exact environment variable names, setup-plan metadata, and diagnostic commands.":
     "\u6253\u5f00\u9ad8\u7ea7 / \u5f00\u53d1\u8005\u6a21\u5f0f\u67e5\u770b\u786e\u5207\u73af\u5883\u53d8\u91cf\u540d\u79f0\u3001\u8bbe\u7f6e\u8ba1\u5212\u5143\u6570\u636e\u548c\u8bca\u65ad\u547d\u4ee4\u3002",
+  "Real provider setup": "\u771f\u5b9e\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
+  "Provider setup checklist": "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u68c0\u67e5\u6e05\u5355",
+  "This summarizes what Web can safely know from daemon setup status. It never shows API key values or environment variable names.":
+    "\u8fd9\u4f1a\u6c47\u603b Web \u53ef\u4ee5\u4ece\u5b88\u62a4\u8fdb\u7a0b\u8bbe\u7f6e\u72b6\u6001\u4e2d\u5b89\u5168\u77e5\u9053\u7684\u5185\u5bb9\u3002\u5b83\u6c38\u8fdc\u4e0d\u663e\u793a API key \u503c\u6216\u73af\u5883\u53d8\u91cf\u540d\u79f0\u3002",
+  "Ready for model-backed discussions.": "\u5df2\u53ef\u7528\u4e8e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
+  "Enabled, but base URL, model, or request details still need local setup.":
+    "\u5df2\u542f\u7528\uff0c\u4f46 base URL\u3001model \u6216\u8bf7\u6c42\u7ec6\u8282\u4ecd\u9700\u8981\u672c\u5730\u8bbe\u7f6e\u3002",
+  "Configuration is missing before this provider can be used.":
+    "\u4f7f\u7528\u6b64\u63d0\u4f9b\u65b9\u4e4b\u524d\u8fd8\u9700\u8865\u5145\u914d\u7f6e\u3002",
+  "Enable this provider locally before it can be used.":
+    "\u8bf7\u5148\u5728\u672c\u5730\u542f\u7528\u6b64\u63d0\u4f9b\u65b9\uff0c\u7136\u540e\u624d\u80fd\u4f7f\u7528\u3002",
+  Provider: "\u63d0\u4f9b\u65b9",
+  "Enabled locally": "\u672c\u5730\u5df2\u542f\u7528",
+  "The daemon reports this provider as available for local setup.":
+    "\u5b88\u62a4\u8fdb\u7a0b\u62a5\u544a\u6b64\u63d0\u4f9b\u65b9\u5df2\u53ef\u7528\u4e8e\u672c\u5730\u8bbe\u7f6e\u3002",
+  "Enable this provider in local setup before configuring model details.":
+    "\u5148\u5728\u672c\u5730\u8bbe\u7f6e\u4e2d\u542f\u7528\u6b64\u63d0\u4f9b\u65b9\uff0c\u518d\u914d\u7f6e\u6a21\u578b\u7ec6\u8282\u3002",
+  "API key": "API key",
+  "No API key reported": "\u672a\u62a5\u544a API key",
+  "This provider did not report a secret setup field through safe daemon status.":
+    "\u6b64\u63d0\u4f9b\u65b9\u6ca1\u6709\u901a\u8fc7\u5b89\u5168\u5b88\u62a4\u8fdb\u7a0b\u72b6\u6001\u62a5\u544a\u5bc6\u94a5\u8bbe\u7f6e\u5b57\u6bb5\u3002",
+  "Configured locally": "\u672c\u5730\u5df2\u914d\u7f6e",
+  "The daemon reports that a provider secret is present without exposing its value.":
+    "\u5b88\u62a4\u8fdb\u7a0b\u62a5\u544a\u63d0\u4f9b\u65b9\u5bc6\u94a5\u5df2\u5b58\u5728\uff0c\u4f46\u4e0d\u66b4\u9732\u5176\u503c\u3002",
+  "API key required": "\u9700\u8981 API key",
+  "Add the provider API key through local setup; Web will not ask for or store it.":
+    "\u901a\u8fc7\u672c\u5730\u8bbe\u7f6e\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\uff1bWeb \u4e0d\u4f1a\u8be2\u95ee\u6216\u5b58\u50a8\u5b83\u3002",
+  "Base URL": "Base URL",
+  "Not checked yet": "\u5c1a\u672a\u68c0\u67e5",
+  "Enable the provider locally before Web can summarize request target readiness.":
+    "\u5148\u5728\u672c\u5730\u542f\u7528\u63d0\u4f9b\u65b9\uff0cWeb \u624d\u80fd\u6c47\u603b\u8bf7\u6c42\u76ee\u6807\u5c31\u7eea\u72b6\u6001\u3002",
+  "Base URL needed": "\u9700\u8981 Base URL",
+  "Add the provider base URL or request target locally, then restart the daemon.":
+    "\u5728\u672c\u5730\u6dfb\u52a0\u63d0\u4f9b\u65b9 base URL \u6216\u8bf7\u6c42\u76ee\u6807\uff0c\u7136\u540e\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\u3002",
+  "The daemon reports that provider request routing is available.":
+    "\u5b88\u62a4\u8fdb\u7a0b\u62a5\u544a\u63d0\u4f9b\u65b9\u8bf7\u6c42\u8def\u7531\u5df2\u53ef\u7528\u3002",
+  Model: "\u6a21\u578b",
+  "Enable the provider locally before Web can summarize model readiness.":
+    "\u5148\u5728\u672c\u5730\u542f\u7528\u63d0\u4f9b\u65b9\uff0cWeb \u624d\u80fd\u6c47\u603b\u6a21\u578b\u5c31\u7eea\u72b6\u6001\u3002",
+  "Model needed": "\u9700\u8981\u6a21\u578b",
+  "Add the provider model in local setup before relying on model-backed discussions.":
+    "\u5728\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u5728\u672c\u5730\u8bbe\u7f6e\u4e2d\u6dfb\u52a0\u63d0\u4f9b\u65b9\u6a21\u578b\u3002",
+  "The daemon reports that a model choice is available for this provider.":
+    "\u5b88\u62a4\u8fdb\u7a0b\u62a5\u544a\u6b64\u63d0\u4f9b\u65b9\u5df2\u6709\u53ef\u7528\u7684\u6a21\u578b\u9009\u62e9\u3002",
+  "Ready to verify": "\u53ef\u4ee5\u9a8c\u8bc1",
+  "Start a small discussion or run the local setup check after daemon restart.":
+    "\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\u540e\uff0c\u53ef\u4ee5\u5f00\u59cb\u4e00\u4e2a\u5c0f\u8ba8\u8bba\u6216\u8fd0\u884c\u672c\u5730\u8bbe\u7f6e\u68c0\u67e5\u3002",
+  "Verify after setup": "\u8bbe\u7f6e\u540e\u9a8c\u8bc1",
+  "After changing local setup, restart the daemon and use the local setup check.":
+    "\u66f4\u6539\u672c\u5730\u8bbe\u7f6e\u540e\uff0c\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\u5e76\u4f7f\u7528\u672c\u5730\u8bbe\u7f6e\u68c0\u67e5\u3002",
+  "Enable provider first": "\u5148\u542f\u7528\u63d0\u4f9b\u65b9",
+  "Connection verification is available after this provider is enabled locally.":
+    "\u6b64\u63d0\u4f9b\u65b9\u5728\u672c\u5730\u542f\u7528\u540e\u624d\u53ef\u8fdb\u884c\u8fde\u63a5\u9a8c\u8bc1\u3002",
+  "View setup steps": "\u67e5\u770b\u8bbe\u7f6e\u6b65\u9aa4",
   "Local demo model": "\u672c\u5730\u6f14\u793a\u6a21\u578b",
   "Model provider": "\u6a21\u578b\u63d0\u4f9b\u65b9",
   "Local preset": "\u672c\u5730\u9884\u8bbe",

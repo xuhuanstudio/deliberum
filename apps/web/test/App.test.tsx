@@ -1139,6 +1139,14 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Daemon online")).toBeTruthy();
     expect(screen.getByText("Model providers")).toBeTruthy();
     expect(screen.getByText("Configure provider locally")).toBeTruthy();
+    expect(screen.getByText("Provider setup checklist")).toBeTruthy();
+    expect(screen.getByText("Real provider setup")).toBeTruthy();
+    expect(screen.getByText("API key")).toBeTruthy();
+    expect(screen.getAllByText("Configured locally").length).toBeGreaterThan(0);
+    expect(screen.getByText("Base URL needed")).toBeTruthy();
+    expect(screen.getByText("Model needed")).toBeTruthy();
+    expect(screen.getByText("Verify after setup")).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "View setup steps" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Start a discussion" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Continue discussions" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Setup / Models" })).toBeTruthy();
@@ -1148,6 +1156,25 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(getAdvancedModeSummaryByPanelText("Setup diagnostics"));
     expect(await screen.findByText("Runtime profile setup details")).toBeTruthy();
     expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
+  });
+
+  it("localizes the setup provider checklist without exposing setup internals", async () => {
+    const client = renderApp("/setup/models", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect(await screen.findByRole("heading", { name: "\u8bbe\u7f6e / \u6a21\u578b" })).toBeTruthy();
+    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
+    expect(screen.getByText("\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u68c0\u67e5\u6e05\u5355")).toBeTruthy();
+    expect(screen.getByText("API key")).toBeTruthy();
+    expect(screen.getAllByText("\u672c\u5730\u5df2\u914d\u7f6e").length).toBeGreaterThan(0);
+    expect(screen.getByText("\u9700\u8981 Base URL")).toBeTruthy();
+    expect(screen.getByText("\u9700\u8981\u6a21\u578b")).toBeTruthy();
+    expect(screen.getByText("\u8bbe\u7f6e\u540e\u9a8c\u8bc1")).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "\u67e5\u770b\u8bbe\u7f6e\u6b65\u9aa4" }).length).toBeGreaterThan(0);
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
+    expect(document.body.textContent ?? "").not.toContain("runtime profile");
   });
 
   it("localizes known sample discussion titles on the landing catalog", async () => {

@@ -950,7 +950,7 @@ function SetupModelsPage() {
               detail={formatSafeErrorMessage(runtimeProfilesQuery.error)}
             />
           ) : runtimeSetupPlan ? (
-            <SetupModelsPanel setupPlan={runtimeSetupPlan} />
+            <SetupModelsPanel setupPlan={runtimeSetupPlan} full />
           ) : (
             <EmptyState
               title={t("No model setup returned")}
@@ -989,10 +989,17 @@ function SetupModelsPage() {
   );
 }
 
-function SetupModelsPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
+function SetupModelsPanel({
+  setupPlan,
+  full = false
+}: {
+  setupPlan: RuntimeSetupPlan;
+  full?: boolean;
+}) {
   const { t } = useI18n();
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const providerProfiles = setupPlan.profiles.filter((profile) => profile.id !== "local-preset");
+  const modelProviderProfiles = providerProfiles.filter(isUserFacingModelProviderProfile);
   const readyProviderCount = providerProfiles.filter((profile) => profile.status === "ready")
     .length;
   const providerNeedsSetup = providerProfiles.some(
@@ -1026,6 +1033,9 @@ function SetupModelsPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
           <SetupModelCard key={profile.id} profile={profile} kind="provider" />
         ))}
       </div>
+      {full && modelProviderProfiles.length > 0 ? (
+        <ProviderSetupChecklist profiles={modelProviderProfiles} />
+      ) : null}
       <section
         id="setup-local-instructions"
         className={`du-setup-next-step du-status du-status-${nextAction.tone}`}
@@ -1041,7 +1051,7 @@ function SetupModelsPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
           ) : null}
         </div>
       </section>
-      <details className="du-user-details">
+      <details className="du-user-details" open={full}>
         <summary>
           <span>{t("Where to configure API key, base URL, and model")}</span>
           <small>
@@ -1086,6 +1096,288 @@ function SetupModelsPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
       </details>
     </div>
   );
+}
+
+type ProviderSetupCheck = {
+  label: string;
+  value: string;
+  detail: string;
+  tone: "ok" | "warning" | "neutral";
+};
+
+function ProviderSetupChecklist({ profiles }: { profiles: RuntimeSetupPlanProfile[] }) {
+  const { t } = useI18n();
+
+  return (
+    <section className="du-provider-checklist" aria-labelledby="provider-setup-checklist">
+      <div className="du-provider-checklist-heading">
+        <p className="du-kicker">{t("Real provider setup")}</p>
+        <h4 id="provider-setup-checklist">{t("Provider setup checklist")}</h4>
+        <p>
+          {t(
+            "This summarizes what Web can safely know from daemon setup status. It never shows API key values or environment variable names."
+          )}
+        </p>
+      </div>
+      <div className="du-provider-check-card-grid">
+        {profiles.map((profile) => (
+          <ProviderSetupChecklistCard key={profile.id} profile={profile} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ProviderSetupChecklistCard({ profile }: { profile: RuntimeSetupPlanProfile }) {
+  const { t } = useI18n();
+  const checks = createProviderSetupChecks(profile);
+  const ready = profile.status === "ready";
+
+  return (
+    <article className="du-provider-check-card">
+      <div className="du-provider-check-card-header">
+        <p className="du-kicker">{t("Model provider")}</p>
+        <h5>{t(profile.name)}</h5>
+        <p>{t(getProviderChecklistSummary(profile))}</p>
+      </div>
+      <div className="du-provider-check-grid">
+        {checks.map((check) => (
+          <div className={`du-provider-check-item du-provider-check-${check.tone}`} key={check.label}>
+            <span>{t(check.label)}</span>
+            <strong>{t(check.value)}</strong>
+            <p>{t(check.detail)}</p>
+          </div>
+        ))}
+      </div>
+      <div className="du-action-row">
+        {ready ? (
+          <Link className="du-action-link" to="/runs/new">
+            {t("Start a discussion")}
+          </Link>
+        ) : (
+          <a className="du-action-link du-secondary-link" href="#setup-local-instructions">
+            {t("View setup steps")}
+          </a>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function createProviderSetupChecks(profile: RuntimeSetupPlanProfile): ProviderSetupCheck[] {
+  const checks: ProviderSetupCheck[] = [
+    describeProviderEnabledCheck(profile),
+    describeProviderApiKeyCheck(profile)
+  ];
+  const requestTargetCheck = describeProviderRequestTargetCheck(profile);
+  const modelCheck = describeProviderModelCheck(profile);
+
+  if (requestTargetCheck) {
+    checks.push(requestTargetCheck);
+  }
+
+  if (modelCheck) {
+    checks.push(modelCheck);
+  }
+
+  checks.push(describeProviderConnectionCheck(profile));
+
+  return checks;
+}
+
+function describeProviderEnabledCheck(profile: RuntimeSetupPlanProfile): ProviderSetupCheck {
+  if (profile.enabled) {
+    return {
+      label: "Provider",
+      value: "Enabled locally",
+      detail: "The daemon reports this provider as available for local setup.",
+      tone: "ok"
+    };
+  }
+
+  return {
+    label: "Provider",
+    value: "Not enabled",
+    detail: "Enable this provider in local setup before configuring model details.",
+    tone: "neutral"
+  };
+}
+
+function describeProviderApiKeyCheck(profile: RuntimeSetupPlanProfile): ProviderSetupCheck {
+  if (profile.secretEnvVarNames.length === 0) {
+    return {
+      label: "API key",
+      value: "No API key reported",
+      detail: "This provider did not report a secret setup field through safe daemon status.",
+      tone: "neutral"
+    };
+  }
+
+  if (profile.configuredSecretEnvVarCount > 0) {
+    return {
+      label: "API key",
+      value: "Configured locally",
+      detail: "The daemon reports that a provider secret is present without exposing its value.",
+      tone: "ok"
+    };
+  }
+
+  return {
+    label: "API key",
+    value: "API key required",
+    detail: "Add the provider API key through local setup; Web will not ask for or store it.",
+    tone: profile.enabled ? "warning" : "neutral"
+  };
+}
+
+function describeProviderRequestTargetCheck(
+  profile: RuntimeSetupPlanProfile
+): ProviderSetupCheck | undefined {
+  if (!hasAnySetupName(profile, isRequestTargetSetupName)) {
+    return undefined;
+  }
+
+  if (!profile.enabled) {
+    return {
+      label: "Base URL",
+      value: "Not checked yet",
+      detail: "Enable the provider locally before Web can summarize request target readiness.",
+      tone: "neutral"
+    };
+  }
+
+  if (isAnySetupNameMissing(profile, isRequestTargetSetupName)) {
+    return {
+      label: "Base URL",
+      value: "Base URL needed",
+      detail: "Add the provider base URL or request target locally, then restart the daemon.",
+      tone: "warning"
+    };
+  }
+
+  return {
+    label: "Base URL",
+    value: "Configured locally",
+    detail: "The daemon reports that provider request routing is available.",
+    tone: "ok"
+  };
+}
+
+function describeProviderModelCheck(
+  profile: RuntimeSetupPlanProfile
+): ProviderSetupCheck | undefined {
+  if (profile.id !== "openai-compatible") {
+    return undefined;
+  }
+
+  if (!hasAnySetupName(profile, isModelSetupName)) {
+    return undefined;
+  }
+
+  if (!profile.enabled) {
+    return {
+      label: "Model",
+      value: "Not checked yet",
+      detail: "Enable the provider locally before Web can summarize model readiness.",
+      tone: "neutral"
+    };
+  }
+
+  if (isAnySetupNameMissing(profile, isModelSetupName)) {
+    return {
+      label: "Model",
+      value: "Model needed",
+      detail: "Add the provider model in local setup before relying on model-backed discussions.",
+      tone: "warning"
+    };
+  }
+
+  return {
+    label: "Model",
+    value: "Configured locally",
+    detail: "The daemon reports that a model choice is available for this provider.",
+    tone: "ok"
+  };
+}
+
+function describeProviderConnectionCheck(profile: RuntimeSetupPlanProfile): ProviderSetupCheck {
+  if (profile.status === "ready") {
+    return {
+      label: "Test connection",
+      value: "Ready to verify",
+      detail: "Start a small discussion or run the local setup check after daemon restart.",
+      tone: "ok"
+    };
+  }
+
+  if (profile.enabled) {
+    return {
+      label: "Test connection",
+      value: "Verify after setup",
+      detail: "After changing local setup, restart the daemon and use the local setup check.",
+      tone: "warning"
+    };
+  }
+
+  return {
+    label: "Test connection",
+    value: "Enable provider first",
+    detail: "Connection verification is available after this provider is enabled locally.",
+    tone: "neutral"
+  };
+}
+
+function getProviderChecklistSummary(profile: RuntimeSetupPlanProfile): string {
+  if (profile.status === "ready") {
+    return "Ready for model-backed discussions.";
+  }
+
+  if (profile.status === "ready_with_run_config") {
+    return "Enabled, but base URL, model, or request details still need local setup.";
+  }
+
+  if (profile.status === "needs_configuration") {
+    return "Configuration is missing before this provider can be used.";
+  }
+
+  return "Enable this provider locally before it can be used.";
+}
+
+function isUserFacingModelProviderProfile(profile: RuntimeSetupPlanProfile): boolean {
+  return profile.id === "openai-compatible" || profile.id === "http-template";
+}
+
+function hasAnySetupName(
+  profile: RuntimeSetupPlanProfile,
+  predicate: (name: string) => boolean
+): boolean {
+  return getKnownSetupNames(profile).some(predicate);
+}
+
+function isAnySetupNameMissing(
+  profile: RuntimeSetupPlanProfile,
+  predicate: (name: string) => boolean
+): boolean {
+  return [...profile.missingRequiredEnvVars, ...profile.missingRecommendedEnvVars].some(
+    predicate
+  );
+}
+
+function getKnownSetupNames(profile: RuntimeSetupPlanProfile): string[] {
+  return [
+    ...profile.missingRequiredEnvVars,
+    ...profile.missingRecommendedEnvVars,
+    ...profile.secretEnvVarNames,
+    ...profile.optionalEnvVarNames
+  ];
+}
+
+function isRequestTargetSetupName(name: string): boolean {
+  return name.includes("BASE_URL") || name.endsWith("_URL") || name.includes("ENDPOINT_PATH");
+}
+
+function isModelSetupName(name: string): boolean {
+  return name.endsWith("_MODEL") || name.includes("_MODEL_");
 }
 
 function SetupModelCard({
