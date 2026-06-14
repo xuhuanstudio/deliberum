@@ -1702,7 +1702,7 @@ textarea:focus-visible {
   }
 
   .du-room-focus {
-    order: 2;
+    order: 1;
     position: static;
   }
 
@@ -1719,7 +1719,7 @@ textarea:focus-visible {
   }
 
   .du-room-brief {
-    order: 1;
+    order: 2;
   }
 
   .du-room-section {
