@@ -1081,6 +1081,7 @@ function SetupModelsPanel({
           <SetupModelCard key={profile.id} profile={profile} kind="provider" />
         ))}
       </div>
+      {full ? <SetupDiscussionReadiness setupPlan={setupPlan} /> : null}
       {full && modelProviderProfiles.length > 0 ? (
         <ProviderSetupChecklist profiles={modelProviderProfiles} />
       ) : null}
@@ -1170,6 +1171,19 @@ type ProviderSetupCheck = {
   tone: "ok" | "warning" | "neutral";
 };
 
+type SetupDiscussionReadinessItem = {
+  title: string;
+  status: string;
+  detail: string;
+  tone: "ok" | "warning" | "neutral";
+};
+
+type SetupDiscussionReadinessView = {
+  canStartDiscussion: boolean;
+  needsModelSetup: boolean;
+  items: SetupDiscussionReadinessItem[];
+};
+
 type OpenAICompatibleSetupFormInput = {
   apiKey: string;
   baseUrl: string;
@@ -1194,6 +1208,49 @@ function ProviderSetupChecklist({ profiles }: { profiles: RuntimeSetupPlanProfil
         {profiles.map((profile) => (
           <ProviderSetupChecklistCard key={profile.id} profile={profile} />
         ))}
+      </div>
+    </section>
+  );
+}
+
+function SetupDiscussionReadiness({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
+  const { t } = useI18n();
+  const readiness = buildSetupDiscussionReadiness(setupPlan);
+
+  return (
+    <section className="du-setup-discussion-readiness" aria-labelledby="setup-discussion-readiness">
+      <div className="du-setup-readiness-heading">
+        <p className="du-kicker">{t("Discussion readiness")}</p>
+        <h4 id="setup-discussion-readiness">{t("What can run now")}</h4>
+        <p>
+          {t(
+            "This turns setup status into the discussion path: demo participants, real model participants, organizer roles, and the next step."
+          )}
+        </p>
+      </div>
+      <div className="du-setup-readiness-grid">
+        {readiness.items.map((item) => (
+          <article
+            className={`du-setup-readiness-item du-setup-readiness-${item.tone}`}
+            key={item.title}
+          >
+            <span>{t(item.title)}</span>
+            <strong>{t(item.status)}</strong>
+            <p>{t(item.detail)}</p>
+          </article>
+        ))}
+      </div>
+      <div className="du-action-row">
+        {readiness.canStartDiscussion ? (
+          <Link className="du-action-link" to="/runs/new">
+            {t("Start a discussion")}
+          </Link>
+        ) : null}
+        {readiness.needsModelSetup ? (
+          <a className="du-action-link du-secondary-link" href="#openai-setup-form">
+            {t("Add model setup")}
+          </a>
+        ) : null}
       </div>
     </section>
   );
@@ -1233,6 +1290,81 @@ function ProviderSetupChecklistCard({ profile }: { profile: RuntimeSetupPlanProf
       </div>
     </article>
   );
+}
+
+function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscussionReadinessView {
+  const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
+  const localPresetReady = localPreset?.status === "ready";
+  const modelProviderProfiles = setupPlan.profiles.filter(isUserFacingModelProviderProfile);
+  const readyModelProviders = modelProviderProfiles.filter((profile) => profile.status === "ready");
+  const needsModelSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
+  const modelProviderReady = readyModelProviders.length > 0;
+  const canStartDiscussion = localPresetReady || modelProviderReady;
+  const modelDetail = modelProviderReady
+    ? "Configured model participants can answer as independent perspectives."
+    : modelProviderProfiles.length > 0
+      ? "Save the provider API key, base URL, and model in Web setup, restart the daemon, then verify the connection."
+      : "The daemon did not report a Web-configurable model provider.";
+  const modelStatus = modelProviderReady
+    ? "Ready"
+    : modelProviderProfiles.length > 0
+      ? "Setup needed"
+      : "No provider reported";
+  const nextStep = modelProviderReady
+    ? {
+        status: "Start model-backed discussion",
+        detail:
+          "Start discussion will select configured model participants by default while keeping demo participants available.",
+        tone: "ok" as const
+      }
+    : localPresetReady
+      ? {
+          status: "Try a demo discussion",
+          detail:
+            "Use the sample flow now, then finish provider setup before relying on real model-backed perspectives.",
+          tone: "warning" as const
+        }
+      : {
+          status: "Finish setup first",
+          detail:
+            "Add a demo preset or a real model provider before starting a useful discussion.",
+          tone: "neutral" as const
+        };
+
+  return {
+    canStartDiscussion,
+    needsModelSetup,
+    items: [
+      {
+        title: "Demo walkthrough",
+        status: localPresetReady ? "Ready" : "Not ready",
+        detail: localPresetReady
+          ? "Built-in demo participants can run a deterministic walkthrough immediately."
+          : "Start the local preset or configure a real provider before trying the discussion flow.",
+        tone: localPresetReady ? "ok" : "neutral"
+      },
+      {
+        title: "Model participants",
+        status: modelStatus,
+        detail: modelDetail,
+        tone: modelProviderReady ? "ok" : modelProviderProfiles.length > 0 ? "warning" : "neutral"
+      },
+      {
+        title: "Organizer and conclusion",
+        status: localPresetReady ? "Ready" : "Organizer setup needed",
+        detail: localPresetReady
+          ? "Local organizers can compare options, review disagreements, evidence, and risks, then draft the current conclusion."
+          : "Discussions may collect first responses only until organizer roles are ready.",
+        tone: localPresetReady ? "ok" : "warning"
+      },
+      {
+        title: "Next step",
+        status: nextStep.status,
+        detail: nextStep.detail,
+        tone: nextStep.tone
+      }
+    ]
+  };
 }
 
 function OpenAICompatibleSetupForm({

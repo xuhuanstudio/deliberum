@@ -1151,6 +1151,14 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Daemon online")).toBeTruthy();
     expect(screen.getByText("Model providers")).toBeTruthy();
     expect(screen.getByText("Configure provider locally")).toBeTruthy();
+    expect(screen.getByText("Discussion readiness")).toBeTruthy();
+    expect(screen.getByText("What can run now")).toBeTruthy();
+    expect(screen.getByText("Demo walkthrough")).toBeTruthy();
+    expect(screen.getByText("Model participants")).toBeTruthy();
+    expect(screen.getByText("Setup needed")).toBeTruthy();
+    expect(screen.getByText("Organizer and conclusion")).toBeTruthy();
+    expect(screen.getByText("Try a demo discussion")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Add model setup" })).toBeTruthy();
     expect(screen.getByText("Provider setup checklist")).toBeTruthy();
     expect(screen.getByText("Configure OpenAI-compatible provider")).toBeTruthy();
     expect(screen.getByLabelText("Provider API key")).toBeTruthy();
@@ -1228,6 +1236,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u9700\u8981 Base URL")).toBeTruthy();
     expect(screen.getByText("\u9700\u8981\u6a21\u578b")).toBeTruthy();
     expect(screen.getByText("\u8bbe\u7f6e\u540e\u9a8c\u8bc1")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u5c31\u7eea\u72b6\u6001")).toBeTruthy();
+    expect(screen.getByText("\u73b0\u5728\u53ef\u4ee5\u8fd0\u884c\u4ec0\u4e48")).toBeTruthy();
+    expect(screen.getByText("\u6f14\u793a\u6d41\u7a0b")).toBeTruthy();
+    expect(screen.getByText("\u6a21\u578b\u53c2\u4e0e\u8005")).toBeTruthy();
+    expect(screen.getAllByText("\u9700\u8981\u914d\u7f6e").length).toBeGreaterThan(0);
+    expect(screen.getByText("\u7ec4\u7ec7\u4e0e\u7ed3\u8bba")).toBeTruthy();
+    expect(screen.getByText("\u8bd5\u7528\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "\u67e5\u770b\u8bbe\u7f6e\u6b65\u9aa4" }).length).toBeGreaterThan(0);
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
@@ -1299,6 +1314,16 @@ describe("@deliberum/web shell", () => {
     renderApp("/setup/models", client);
 
     expect(await screen.findByText("This provider is ready for model-backed discussions.")).toBeTruthy();
+    expect(screen.getByText("Discussion readiness")).toBeTruthy();
+    expect(screen.getByText("Start model-backed discussion")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Start discussion will select configured model participants by default while keeping demo participants available."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Configured model participants can answer as independent perspectives.")
+    ).toBeTruthy();
     expect(screen.getByText("Ready to test")).toBeTruthy();
     const verifyButton = screen.getByRole("button", {
       name: "Verify connection"

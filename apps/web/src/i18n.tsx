@@ -100,6 +100,38 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5f53\u6a21\u578b\u63d0\u4f9b\u65b9\u5c31\u7eea\u540e\uff0c\u5f00\u59cb\u8ba8\u8bba\u5e76\u4f7f\u7528\u5df2\u914d\u7f6e\u7684\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u8ba1\u5212\u3002",
   "Open Advanced / Developer Mode for exact environment variable names, setup-plan metadata, and diagnostic commands.":
     "\u6253\u5f00\u9ad8\u7ea7 / \u5f00\u53d1\u8005\u6a21\u5f0f\u67e5\u770b\u786e\u5207\u73af\u5883\u53d8\u91cf\u540d\u79f0\u3001\u8bbe\u7f6e\u8ba1\u5212\u5143\u6570\u636e\u548c\u8bca\u65ad\u547d\u4ee4\u3002",
+  "Discussion readiness": "\u8ba8\u8bba\u5c31\u7eea\u72b6\u6001",
+  "What can run now": "\u73b0\u5728\u53ef\u4ee5\u8fd0\u884c\u4ec0\u4e48",
+  "This turns setup status into the discussion path: demo participants, real model participants, organizer roles, and the next step.":
+    "\u8fd9\u4f1a\u628a\u8bbe\u7f6e\u72b6\u6001\u8f6c\u6210\u8ba8\u8bba\u8def\u5f84\uff1a\u6f14\u793a\u53c2\u4e0e\u8005\u3001\u771f\u5b9e\u6a21\u578b\u53c2\u4e0e\u8005\u3001\u7ec4\u7ec7\u89d2\u8272\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Demo walkthrough": "\u6f14\u793a\u6d41\u7a0b",
+  "Built-in demo participants can run a deterministic walkthrough immediately.":
+    "\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u4ee5\u7acb\u5373\u8fd0\u884c\u786e\u5b9a\u6027\u7684\u6f14\u793a\u6d41\u7a0b\u3002",
+  "Start the local preset or configure a real provider before trying the discussion flow.":
+    "\u8bf7\u5148\u542f\u52a8\u672c\u5730\u9884\u8bbe\u6216\u914d\u7f6e\u771f\u5b9e\u63d0\u4f9b\u65b9\uff0c\u518d\u8bd5\u7528\u8ba8\u8bba\u6d41\u7a0b\u3002",
+  "Model participants": "\u6a21\u578b\u53c2\u4e0e\u8005",
+  "Configured model participants can answer as independent perspectives.":
+    "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u53ef\u4ee5\u4f5c\u4e3a\u72ec\u7acb\u89c6\u89d2\u8fdb\u884c\u56de\u7b54\u3002",
+  "Save the provider API key, base URL, and model in Web setup, restart the daemon, then verify the connection.":
+    "\u5728 Web \u8bbe\u7f6e\u4e2d\u4fdd\u5b58\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\uff0c\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\uff0c\u7136\u540e\u9a8c\u8bc1\u8fde\u63a5\u3002",
+  "No provider reported": "\u672a\u62a5\u544a\u63d0\u4f9b\u65b9",
+  "The daemon did not report a Web-configurable model provider.":
+    "\u5b88\u62a4\u8fdb\u7a0b\u6ca1\u6709\u62a5\u544a\u53ef\u901a\u8fc7 Web \u914d\u7f6e\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
+  "Organizer and conclusion": "\u7ec4\u7ec7\u4e0e\u7ed3\u8bba",
+  "Local organizers can compare options, review disagreements, evidence, and risks, then draft the current conclusion.":
+    "\u672c\u5730\u7ec4\u7ec7\u5668\u53ef\u4ee5\u6bd4\u8f83\u9009\u9879\u3001\u5ba1\u67e5\u5206\u6b67\u3001\u8bc1\u636e\u548c\u98ce\u9669\uff0c\u7136\u540e\u8d77\u8349\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Discussions may collect first responses only until organizer roles are ready.":
+    "\u5728\u7ec4\u7ec7\u89d2\u8272\u5c31\u7eea\u524d\uff0c\u8ba8\u8bba\u53ef\u80fd\u53ea\u80fd\u6536\u96c6\u521d\u59cb\u56de\u5e94\u3002",
+  "Start model-backed discussion": "\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
+  "Start discussion will select configured model participants by default while keeping demo participants available.":
+    "\u5f00\u59cb\u8ba8\u8bba\u4f1a\u9ed8\u8ba4\u9009\u62e9\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\uff0c\u540c\u65f6\u4fdd\u7559\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u7528\u3002",
+  "Try a demo discussion": "\u8bd5\u7528\u6f14\u793a\u8ba8\u8bba",
+  "Use the sample flow now, then finish provider setup before relying on real model-backed perspectives.":
+    "\u73b0\u5728\u53ef\u4ee5\u5148\u4f7f\u7528\u793a\u4f8b\u6d41\u7a0b\uff1b\u5728\u4f9d\u8d56\u771f\u5b9e\u6a21\u578b\u89c6\u89d2\u524d\uff0c\u8bf7\u5b8c\u6210\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
+  "Finish setup first": "\u5148\u5b8c\u6210\u8bbe\u7f6e",
+  "Add a demo preset or a real model provider before starting a useful discussion.":
+    "\u8bf7\u5148\u6dfb\u52a0\u6f14\u793a\u9884\u8bbe\u6216\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\uff0c\u518d\u5f00\u59cb\u6709\u7528\u7684\u8ba8\u8bba\u3002",
+  "Add model setup": "\u6dfb\u52a0\u6a21\u578b\u8bbe\u7f6e",
   "Real provider setup": "\u771f\u5b9e\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
   "Provider setup checklist": "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u68c0\u67e5\u6e05\u5355",
   "This summarizes what Web can safely know from daemon setup status. It never shows API key values or environment variable names.":

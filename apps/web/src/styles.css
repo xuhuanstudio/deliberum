@@ -632,6 +632,77 @@ textarea:focus-visible {
   border-top-color: var(--du-warn);
 }
 
+.du-setup-discussion-readiness {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 16px;
+}
+
+.du-setup-readiness-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.du-setup-readiness-heading h4,
+.du-setup-readiness-heading p {
+  margin: 0;
+}
+
+.du-setup-readiness-heading p:not(.du-kicker) {
+  max-width: 780px;
+  color: var(--du-muted);
+  line-height: 1.45;
+}
+
+.du-setup-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-setup-readiness-item {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  min-width: 0;
+  border-top: 4px solid var(--du-muted);
+  background: var(--du-surface);
+  padding: 14px;
+}
+
+.du-setup-readiness-item span {
+  color: var(--du-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.du-setup-readiness-item strong {
+  line-height: 1.3;
+}
+
+.du-setup-readiness-item p {
+  margin: 0;
+  color: var(--du-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.du-setup-readiness-ok {
+  border-top-color: var(--du-accent);
+}
+
+.du-setup-readiness-warning {
+  border-top-color: var(--du-warn);
+}
+
 .du-setup-next-step .du-action-row {
   margin-top: 8px;
 }
@@ -2569,6 +2640,7 @@ textarea:focus-visible {
   .du-outcome-section-grid,
   .du-setup-status-grid,
   .du-setup-model-grid,
+  .du-setup-readiness-grid,
   .du-provider-setup-form-layout,
   .du-provider-check-grid,
   .du-discussion-setup-grid,
