@@ -1159,7 +1159,17 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Setup needed").length).toBeGreaterThan(0);
     expect(screen.getByText("Organizer and conclusion")).toBeTruthy();
     expect(screen.getByText("Try a demo discussion")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Add model setup" })).toBeTruthy();
+    expect(screen.getByText("Participant management")).toBeTruthy();
+    expect(screen.getByText("Discussion participants")).toBeTruthy();
+    expect(screen.getAllByText("Demo ready").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Built-in demo participant").length).toBeGreaterThan(1);
+    expect(screen.getByText("Broader review after model setup")).toBeTruthy();
+    expect(screen.getAllByText("Local organizer").length).toBeGreaterThan(1);
+    expect(screen.getByText("Perspective C")).toBeTruthy();
+    expect(screen.getByText("Reviewer")).toBeTruthy();
+    expect(screen.getByText("Evidence checker")).toBeTruthy();
+    expect(screen.getByText("Conclusion writer")).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Add model setup" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Provider setup checklist")).toBeTruthy();
     expect(screen.getByText("Configure OpenAI-compatible provider")).toBeTruthy();
     expect(screen.getByLabelText("Provider API key")).toBeTruthy();
@@ -1257,6 +1267,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("\u9700\u8981\u914d\u7f6e").length).toBeGreaterThan(0);
     expect(screen.getByText("\u7ec4\u7ec7\u4e0e\u7ed3\u8bba")).toBeTruthy();
     expect(screen.getByText("\u8bd5\u7528\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
+    expect(screen.getByText("\u53c2\u4e0e\u8005\u7ba1\u7406")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u53c2\u4e0e\u8005")).toBeTruthy();
+    expect(screen.getAllByText("\u6f14\u793a\u5df2\u5c31\u7eea").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005").length).toBeGreaterThan(1);
+    expect(screen.getByText("\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u540e\u53ef\u7528\u4e8e\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5")).toBeTruthy();
+    expect(screen.getAllByText("\u672c\u5730\u7ec4\u7ec7\u5668").length).toBeGreaterThan(1);
     expect(screen.getAllByRole("link", { name: "\u67e5\u770b\u8bbe\u7f6e\u6b65\u9aa4" }).length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText("\u63d0\u4f9b\u65b9 API key"), {
@@ -1371,13 +1387,24 @@ describe("@deliberum/web shell", () => {
       screen.getByText("Configured model participants can answer as independent perspectives.")
     ).toBeTruthy();
     expect(screen.getByText("Ready to test")).toBeTruthy();
+    expect(screen.getByText("Discussion participants")).toBeTruthy();
+    expect(screen.getAllByText("Model ready").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("OpenAI-compatible model").length).toBeGreaterThan(1);
+    expect(screen.getByText("Available in broader review")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Choose Broader review on the start page to add a third independent model perspective."
+      )
+    ).toBeTruthy();
     expect(screen.getByText("Ready to start with real model participants")).toBeTruthy();
     expect(
       screen.getByText(
         "The provider setup is available for new discussions. The start page will select model-backed participants by default while keeping demo participants available."
       )
     ).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Start model-backed discussion" })).toBeTruthy();
+    expect(
+      screen.getAllByRole("link", { name: "Start model-backed discussion" }).length
+    ).toBeGreaterThan(0);
     const verifyButton = screen.getByRole("button", {
       name: "Verify connection"
     }) as HTMLButtonElement;

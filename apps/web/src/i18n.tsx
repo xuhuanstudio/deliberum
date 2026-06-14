@@ -118,6 +118,32 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "What can run now": "\u73b0\u5728\u53ef\u4ee5\u8fd0\u884c\u4ec0\u4e48",
   "This turns setup status into the discussion path: demo participants, real model participants, organizer roles, and the next step.":
     "\u8fd9\u4f1a\u628a\u8bbe\u7f6e\u72b6\u6001\u8f6c\u6210\u8ba8\u8bba\u8def\u5f84\uff1a\u6f14\u793a\u53c2\u4e0e\u8005\u3001\u771f\u5b9e\u6a21\u578b\u53c2\u4e0e\u8005\u3001\u7ec4\u7ec7\u89d2\u8272\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Participant management": "\u53c2\u4e0e\u8005\u7ba1\u7406",
+  "Discussion participants": "\u8ba8\u8bba\u53c2\u4e0e\u8005",
+  "This shows which readable roles are ready before you start: first perspectives, reviewers, evidence checks, and conclusion writing.":
+    "\u8fd9\u4f1a\u5728\u5f00\u59cb\u524d\u663e\u793a\u54ea\u4e9b\u53ef\u7406\u89e3\u89d2\u8272\u5df2\u5c31\u7eea\uff1a\u521d\u59cb\u89c6\u89d2\u3001\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u548c\u7ed3\u8bba\u8d77\u8349\u3002",
+  "Model ready": "\u6a21\u578b\u5df2\u5c31\u7eea",
+  "Demo ready": "\u6f14\u793a\u5df2\u5c31\u7eea",
+  "Organizer ready": "\u7ec4\u7ec7\u5668\u5df2\u5c31\u7eea",
+  "Available in broader review": "\u53ef\u7528\u4e8e\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5",
+  "{provider} model": "{provider} \u6a21\u578b",
+  "Built-in demo participant": "\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005",
+  "No participant source ready": "\u5c1a\u65e0\u5c31\u7eea\u7684\u53c2\u4e0e\u8005\u6765\u6e90",
+  "Broader review after model setup": "\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u540e\u53ef\u7528\u4e8e\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5",
+  "Local organizer": "\u672c\u5730\u7ec4\u7ec7\u5668",
+  "No organizer ready": "\u5c1a\u65e0\u5c31\u7eea\u7684\u7ec4\u7ec7\u5668",
+  "New model-backed discussions can use this provider for independent first responses.":
+    "\u65b0\u7684\u6a21\u578b\u652f\u6301\u8ba8\u8bba\u53ef\u4ee5\u4f7f\u7528\u6b64\u63d0\u4f9b\u65b9\u4ea7\u751f\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002",
+  "Demo discussions can show the role, but real model perspectives still need provider setup.":
+    "\u6f14\u793a\u8ba8\u8bba\u53ef\u4ee5\u5c55\u793a\u8be5\u89d2\u8272\uff0c\u4f46\u771f\u5b9e\u6a21\u578b\u89c6\u89d2\u4ecd\u9700\u8981\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
+  "Add a model provider or local preset before starting a useful discussion.":
+    "\u5f00\u59cb\u6709\u7528\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u6a21\u578b\u63d0\u4f9b\u65b9\u6216\u672c\u5730\u9884\u8bbe\u3002",
+  "Choose Broader review on the start page to add a third independent model perspective.":
+    "\u5728\u5f00\u59cb\u9875\u9009\u62e9\u201c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u201d\u5373\u53ef\u6dfb\u52a0\u7b2c\u4e09\u4e2a\u72ec\u7acb\u6a21\u578b\u89c6\u89d2\u3002",
+  "Perspective C is only available for model-backed broader review.":
+    "\u89c6\u89d2 C \u4ec5\u5728\u6a21\u578b\u652f\u6301\u7684\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u4e2d\u53ef\u7528\u3002",
+  "Local organizers can compare options, review evidence and risks, and draft the current conclusion.":
+    "\u672c\u5730\u7ec4\u7ec7\u5668\u53ef\u4ee5\u6bd4\u8f83\u9009\u9879\u3001\u5ba1\u67e5\u8bc1\u636e\u548c\u98ce\u9669\uff0c\u5e76\u8d77\u8349\u5f53\u524d\u7ed3\u8bba\u3002",
   "Demo walkthrough": "\u6f14\u793a\u6d41\u7a0b",
   "Built-in demo participants can run a deterministic walkthrough immediately.":
     "\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u4ee5\u7acb\u5373\u8fd0\u884c\u786e\u5b9a\u6027\u7684\u6f14\u793a\u6d41\u7a0b\u3002",

@@ -1082,6 +1082,7 @@ function SetupModelsPanel({
         ))}
       </div>
       {full ? <SetupDiscussionReadiness setupPlan={setupPlan} /> : null}
+      {full ? <SetupParticipantReadiness setupPlan={setupPlan} /> : null}
       {full && modelProviderProfiles.length > 0 ? (
         <ProviderSetupChecklist profiles={modelProviderProfiles} />
       ) : null}
@@ -1185,6 +1186,21 @@ type SetupDiscussionReadinessView = {
   items: SetupDiscussionReadinessItem[];
 };
 
+type SetupParticipantReadinessItem = {
+  role: string;
+  source: string;
+  status: string;
+  detail: string;
+  tone: "ok" | "warning" | "neutral";
+  sourceValues?: Record<string, string>;
+};
+
+type SetupParticipantReadinessView = {
+  canStartModelBackedDiscussion: boolean;
+  needsModelSetup: boolean;
+  items: SetupParticipantReadinessItem[];
+};
+
 type OpenAICompatibleSetupFormInput = {
   apiKey: string;
   baseUrl: string;
@@ -1209,6 +1225,53 @@ function ProviderSetupChecklist({ profiles }: { profiles: RuntimeSetupPlanProfil
         {profiles.map((profile) => (
           <ProviderSetupChecklistCard key={profile.id} profile={profile} />
         ))}
+      </div>
+    </section>
+  );
+}
+
+function SetupParticipantReadiness({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
+  const { t } = useI18n();
+  const readiness = buildSetupParticipantReadiness(setupPlan);
+
+  return (
+    <section
+      className="du-setup-participants"
+      aria-labelledby="setup-participant-readiness"
+    >
+      <div className="du-setup-participants-heading">
+        <p className="du-kicker">{t("Participant management")}</p>
+        <h4 id="setup-participant-readiness">{t("Discussion participants")}</h4>
+        <p>
+          {t(
+            "This shows which readable roles are ready before you start: first perspectives, reviewers, evidence checks, and conclusion writing."
+          )}
+        </p>
+      </div>
+      <div className="du-setup-participant-grid">
+        {readiness.items.map((item) => (
+          <article
+            className={`du-setup-participant-item du-setup-participant-${item.tone}`}
+            key={item.role}
+          >
+            <span>{t(item.status)}</span>
+            <strong>{t(item.role)}</strong>
+            <small>{t(item.source, item.sourceValues)}</small>
+            <p>{t(item.detail)}</p>
+          </article>
+        ))}
+      </div>
+      <div className="du-action-row">
+        {readiness.canStartModelBackedDiscussion ? (
+          <Link className="du-action-link" to="/runs/new">
+            {t("Start model-backed discussion")}
+          </Link>
+        ) : null}
+        {readiness.needsModelSetup ? (
+          <a className="du-action-link du-secondary-link" href="#openai-setup-form">
+            {t("Add model setup")}
+          </a>
+        ) : null}
       </div>
     </section>
   );
@@ -1365,6 +1428,103 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
         tone: nextStep.tone
       }
     ]
+  };
+}
+
+function buildSetupParticipantReadiness(
+  setupPlan: RuntimeSetupPlan
+): SetupParticipantReadinessView {
+  const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
+  const localPresetReady = localPreset?.status === "ready";
+  const modelProviderProfiles = setupPlan.profiles.filter(isUserFacingModelProviderProfile);
+  const readyModelProvider = modelProviderProfiles.find((profile) => profile.status === "ready");
+  const providerName = readyModelProvider?.name ?? "Model provider";
+  const modelReady = readyModelProvider !== undefined;
+  const needsModelSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
+  const perspectiveStatus = modelReady
+    ? "Model ready"
+    : localPresetReady
+      ? "Demo ready"
+      : "Setup needed";
+  const perspectiveSource = modelReady
+    ? "{provider} model"
+    : localPresetReady
+      ? "Built-in demo participant"
+      : "No participant source ready";
+  const perspectiveDetail = modelReady
+    ? "New model-backed discussions can use this provider for independent first responses."
+    : localPresetReady
+      ? "Demo discussions can show the role, but real model perspectives still need provider setup."
+      : "Add a model provider or local preset before starting a useful discussion.";
+  const perspectiveTone: SetupParticipantReadinessItem["tone"] = modelReady
+    ? "ok"
+    : localPresetReady
+      ? "warning"
+      : "neutral";
+  const organizerStatus = localPresetReady ? "Organizer ready" : "Organizer setup needed";
+  const organizerSource = localPresetReady ? "Local organizer" : "No organizer ready";
+  const organizerDetail = localPresetReady
+    ? "Local organizers can compare options, review evidence and risks, and draft the current conclusion."
+    : "Discussions may collect first responses only until organizer roles are ready.";
+  const organizerTone: SetupParticipantReadinessItem["tone"] = localPresetReady
+    ? "ok"
+    : "warning";
+  const perspectiveItems: SetupParticipantReadinessItem[] = [
+    {
+      role: "Perspective A",
+      source: perspectiveSource,
+      sourceValues: modelReady ? { provider: providerName } : undefined,
+      status: perspectiveStatus,
+      detail: perspectiveDetail,
+      tone: perspectiveTone
+    },
+    {
+      role: "Perspective B",
+      source: perspectiveSource,
+      sourceValues: modelReady ? { provider: providerName } : undefined,
+      status: perspectiveStatus,
+      detail: perspectiveDetail,
+      tone: perspectiveTone
+    },
+    {
+      role: "Perspective C",
+      source: modelReady ? "{provider} model" : "Broader review after model setup",
+      sourceValues: modelReady ? { provider: providerName } : undefined,
+      status: modelReady ? "Available in broader review" : "Setup needed",
+      detail: modelReady
+        ? "Choose Broader review on the start page to add a third independent model perspective."
+        : "Perspective C is only available for model-backed broader review.",
+      tone: modelReady ? "ok" : "neutral"
+    }
+  ];
+  const organizerItems: SetupParticipantReadinessItem[] = [
+    {
+      role: "Reviewer",
+      source: organizerSource,
+      status: organizerStatus,
+      detail: organizerDetail,
+      tone: organizerTone
+    },
+    {
+      role: "Evidence checker",
+      source: organizerSource,
+      status: organizerStatus,
+      detail: organizerDetail,
+      tone: organizerTone
+    },
+    {
+      role: "Conclusion writer",
+      source: organizerSource,
+      status: organizerStatus,
+      detail: organizerDetail,
+      tone: organizerTone
+    }
+  ];
+
+  return {
+    canStartModelBackedDiscussion: modelReady,
+    needsModelSetup,
+    items: [...perspectiveItems, ...organizerItems]
   };
 }
 
