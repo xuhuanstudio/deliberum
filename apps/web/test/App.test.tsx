@@ -1579,7 +1579,7 @@ describe("@deliberum/web shell", () => {
 
     expect(screen.getAllByText("Discussion status").length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion is ready to review")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Run guided discussion again" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Refresh discussion steps" })).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("7 recorded lifecycle events");
     fireEvent.click(getAdvancedModeSummary());
     expect(await screen.findByText("Ledger events")).toBeTruthy();

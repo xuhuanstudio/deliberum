@@ -3332,7 +3332,7 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
       explainerTitle: "Review the current conclusion",
       explainerDetail:
         "Main perspectives, open disagreements, requirements, evidence and verification, risk review, and next recommended actions are available below and on the conclusion page.",
-      primaryLabel: "Run guided discussion again",
+      primaryLabel: "Refresh discussion steps",
       reviewReady
     };
   }
