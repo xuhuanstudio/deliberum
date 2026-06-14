@@ -89,6 +89,11 @@ export type ProviderBackedDiscussionPlanOptions = {
   perspectiveCount?: ProviderBackedPerspectiveCount;
 };
 
+const PROVIDER_BACKED_DISCUSSION_TIMEOUTS = {
+  participantMs: 90000,
+  overallMs: 240000
+} as const;
+
 const PROVIDER_BACKED_PERSPECTIVES = [
   {
     id: "provider-perspective-a",
@@ -209,6 +214,7 @@ export function buildProviderBackedDiscussionRunPlan(
       providerConfigId: provider.providerConfigId
     })),
     providerConfigs: [providerConfig],
+    timeouts: PROVIDER_BACKED_DISCUSSION_TIMEOUTS,
     output: {
       language: "en",
       style: "clear",

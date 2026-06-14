@@ -2729,7 +2729,11 @@ describe("@deliberum/web shell", () => {
             providerConfigId: "web-openai-compatible-discussion",
             apiKeyEnvVar: "DELIBERUM_OPENAI_API_KEY"
           })
-        ]
+        ],
+        timeouts: {
+          participantMs: 90000,
+          overallMs: 240000
+        }
       })
     );
     expect(JSON.stringify(runPlan)).not.toContain("sk-");
