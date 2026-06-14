@@ -1,0 +1,668 @@
+import { spawn } from "node:child_process";
+import { once } from "node:events";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { createServer as createHttpServer } from "node:http";
+import { createServer as createNetServer } from "node:net";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { chromium } from "@playwright/test";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const clientEntry = join(repoRoot, "packages", "client", "dist", "index.js");
+const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
+const dummyApiKey = "smoke-web-resilience-token";
+const modelName = "smoke-web-resilience-model";
+const pausedQuestion =
+  "Should Deliberum keep paused discussion updates readable and safe?";
+
+assertFile(clientEntry);
+assertFile(daemonEntry);
+
+const { DeliberumDaemonClient } = await import(pathToFileURL(clientEntry).href);
+const { localPresetRunPlan } = await import(pathToFileURL(daemonEntry).href);
+
+const daemonPort = await reserveLocalPort();
+const providerPort = await reserveLocalPort();
+const webPort = await reserveLocalPort();
+const tempDir = mkdtempSync(join(tmpdir(), "deliberum-web-resilience-"));
+const provider = await startOpenAICompatibleMockProvider(providerPort);
+const daemon = startDaemonProcess({
+  port: daemonPort,
+  cwd: tempDir,
+  webOrigin: `http://127.0.0.1:${webPort}`
+});
+const web = startWebProcess({
+  port: webPort,
+  daemonBaseUrl: `http://127.0.0.1:${daemonPort}`
+});
+
+let browser;
+let activePage;
+
+try {
+  await waitForHttpOk(`http://127.0.0.1:${daemonPort}/health`, () => daemon.exited);
+
+  const client = new DeliberumDaemonClient({
+    baseUrl: `http://127.0.0.1:${daemonPort}`
+  });
+  const providerBaseUrl = `http://127.0.0.1:${providerPort}/v1`;
+
+  await client.saveOpenAICompatibleSetup({
+    apiKey: dummyApiKey,
+    baseUrl: providerBaseUrl,
+    model: modelName
+  });
+  await client.verifyOpenAICompatibleSetup();
+
+  const pausedRun = await client.createRun({
+    runPlan: buildProviderBackedPausedRunPlan()
+  });
+  const pausedRunId = readString(pausedRun.run, "runId", "paused run id");
+  const pausedSessionId = readString(pausedRun.session, "sessionId", "paused session id");
+  const setupErrorRun = await client.createRun({
+    runPlan: localPresetRunPlan()
+  });
+  const setupErrorRunId = readString(setupErrorRun.run, "runId", "setup error run id");
+  const setupErrorSessionId = readString(
+    setupErrorRun.session,
+    "sessionId",
+    "setup error session id"
+  );
+
+  await waitForHttpOk(`http://127.0.0.1:${webPort}/`, () => web.exited);
+
+  browser = await chromium.launch();
+  const page = await browser.newPage({
+    viewport: {
+      width: 1280,
+      height: 900
+    }
+  });
+  activePage = page;
+  page.setDefaultTimeout(45_000);
+
+  await verifyPausedContinuation(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    providerBaseUrl,
+    runId: pausedRunId,
+    sessionId: pausedSessionId
+  });
+  await verifyRetryableSetupError(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    providerBaseUrl,
+    runId: setupErrorRunId,
+    sessionId: setupErrorSessionId
+  });
+} catch (error) {
+  if (daemon.exited) {
+    throw new Error(
+      `Web resilience daemon exited early: code=${daemon.exitCode} signal=${daemon.exitSignal}\n${formatProcessOutput(daemon.stdout, daemon.stderr, "daemon")}`,
+      { cause: error }
+    );
+  }
+
+  if (web.exited) {
+    throw new Error(
+      `Web resilience server exited early: code=${web.exitCode} signal=${web.exitSignal}\n${formatProcessOutput(web.stdout, web.stderr, "web")}`,
+      { cause: error }
+    );
+  }
+
+  throw new Error(
+    [
+      "Web resilience smoke failed.",
+      await formatPageDebug(activePage),
+      formatProcessOutput(daemon.stdout, daemon.stderr, "daemon"),
+      formatProcessOutput(web.stdout, web.stderr, "web")
+    ].join("\n"),
+    { cause: error }
+  );
+} finally {
+  if (browser) {
+    await browser.close();
+  }
+  await terminateChild(web.child, web.exitPromise);
+  await terminateChild(daemon.child, daemon.exitPromise);
+  await provider.close();
+  rmSync(tempDir, { recursive: true, force: true });
+}
+
+console.log("Web resilience smoke checks passed.");
+
+async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, runId, sessionId }) {
+  await page.goto(`${webBaseUrl}/runs/${encodeURIComponent(runId)}`, {
+    waitUntil: "networkidle"
+  });
+  await page.getByRole("heading", { name: pausedQuestion }).first().waitFor();
+  await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await assertNoHorizontalOverflow(page, "paused run before update");
+  await assertDefaultResilienceSafety(page, "paused run before update", {
+    providerBaseUrl,
+    runId,
+    sessionId
+  });
+
+  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByText("Discussion paused").waitFor();
+  await page.getByText("Stop reason", { exact: true }).waitFor();
+  await page
+    .getByText(
+      "A guided step is still waiting on model work. Review visible progress or try again after checking setup."
+    )
+    .waitFor();
+  await page.getByRole("region", { name: "Updated discussion steps" }).waitFor();
+  await page.getByText("Needs attention").first().waitFor();
+  await assertNoHorizontalOverflow(page, "paused continuation result");
+  await assertDefaultResilienceSafety(page, "paused continuation result", {
+    providerBaseUrl,
+    runId,
+    sessionId
+  });
+
+  await assertHiddenFromDefault(page, "Raw stage metadata", "paused continuation result");
+  await page.locator('details[data-advanced-panel="Raw stage metadata"] > summary').click();
+  await page.getByText("Raw stage metadata").waitFor();
+  await page.getByText("waiting_for_generators").first().waitFor();
+}
+
+async function verifyRetryableSetupError(page, { webBaseUrl, providerBaseUrl, runId, sessionId }) {
+  await page.goto(`${webBaseUrl}/runs/${encodeURIComponent(runId)}`, {
+    waitUntil: "networkidle"
+  });
+  await page
+    .getByRole("heading", { name: "Review a proposed rollout before relying on it." })
+    .first()
+    .waitFor();
+  await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await assertNoHorizontalOverflow(page, "retryable setup error before update");
+  await assertDefaultResilienceSafety(page, "retryable setup error before update", {
+    providerBaseUrl,
+    runId,
+    sessionId
+  });
+
+  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByText("Discussion could not continue").waitFor();
+  await page
+    .getByText(
+      "This discussion cannot continue because the required setup is unavailable. Open Advanced mode to inspect setup details before retrying."
+    )
+    .waitFor();
+  await assertDefaultResilienceSafety(page, "retryable setup error", {
+    providerBaseUrl,
+    runId,
+    sessionId
+  });
+
+  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByText("Discussion could not continue").waitFor();
+  await page
+    .getByText(
+      "This discussion cannot continue because the required setup is unavailable. Open Advanced mode to inspect setup details before retrying."
+    )
+    .waitFor();
+  await assertNoHorizontalOverflow(page, "retryable setup error retry");
+  await assertDefaultResilienceSafety(page, "retryable setup error retry", {
+    providerBaseUrl,
+    runId,
+    sessionId
+  });
+}
+
+async function assertHiddenFromDefault(page, snippet, label) {
+  const bodyText = await page.locator("body").innerText();
+
+  if (bodyText.includes(snippet)) {
+    throw new Error(`${label} exposed Advanced text before the user opened Advanced: ${snippet}`);
+  }
+}
+
+async function assertDefaultResilienceSafety(page, label, { providerBaseUrl, runId, sessionId }) {
+  const bodyText = await page.locator("body").innerText();
+  const forbiddenSnippets = [
+    dummyApiKey,
+    providerBaseUrl,
+    modelName,
+    runId,
+    sessionId,
+    "DELIBERUM_OPENAI_API_KEY",
+    "DELIBERUM_OPENAI_BASE_URL",
+    "DELIBERUM_ENABLE_LOCAL_PRESET",
+    "providerConfigId",
+    "openai-main",
+    "openai-compatible",
+    "local-preset-alpha",
+    "local-preset-beta",
+    "local-preset-extractor",
+    "Required orchestration component is unavailable.",
+    "orchestration_component_unavailable",
+    "waiting_for_generators",
+    "extraction_output_invalid",
+    "provider_http_error",
+    "raw JSON",
+    "Raw stage metadata",
+    "AdapterRegistry",
+    "stack"
+  ];
+
+  for (const snippet of forbiddenSnippets) {
+    if (bodyText.includes(snippet)) {
+      throw new Error(`${label} exposed forbidden default-view text: ${snippet}`);
+    }
+  }
+
+  if (
+    /\b(run|session|ledger|runtime|proposal|event|projection)\s*(id|ids)\b/i.test(bodyText) ||
+    /resource posture|operation audit/i.test(bodyText)
+  ) {
+    throw new Error(`${label} exposed low-level default-view language.`);
+  }
+}
+
+function buildProviderBackedPausedRunPlan() {
+  return {
+    title: `Discussion: ${pausedQuestion}`,
+    topic: pausedQuestion,
+    goals: [
+      "Confirm paused and retryable states stay readable for normal users.",
+      "Keep technical status details out of the default Web view."
+    ],
+    constraints: [
+      "Use configured model-backed participants from the local service.",
+      "Keep provider credentials saved locally and out of the discussion."
+    ],
+    participants: [
+      {
+        id: "provider-perspective-a",
+        kind: "model",
+        displayName: "Perspective A",
+        adapterId: "openai-compatible",
+        providerConfigId: "openai-main"
+      },
+      {
+        id: "provider-perspective-b",
+        kind: "model",
+        displayName: "Perspective B",
+        adapterId: "openai-compatible",
+        providerConfigId: "openai-main"
+      }
+    ],
+    providerConfigs: [
+      {
+        id: "openai-main",
+        adapterId: "openai-compatible",
+        providerConfigId: "openai-main"
+      }
+    ],
+    budget: {
+      maxEvents: 40,
+      maxProviderCalls: 10
+    },
+    timeouts: {
+      participantMs: 90000,
+      overallMs: 240000
+    },
+    output: {
+      language: "en",
+      style: "clear",
+      expectations: [
+        "Show paused discussion state in user-facing language.",
+        "Keep technical status details behind Advanced details."
+      ]
+    },
+    sealedDivergence: {
+      purpose: "initial_divergence",
+      revealPolicy: "all_completed",
+      participantIds: ["provider-perspective-a", "provider-perspective-b"]
+    }
+  };
+}
+
+async function startOpenAICompatibleMockProvider(port) {
+  const state = {
+    requestCount: 0
+  };
+  const server = createHttpServer(async (request, response) => {
+    if (request.method !== "POST" || request.url !== "/v1/chat/completions") {
+      response.writeHead(404, { "content-type": "application/json" });
+      response.end(JSON.stringify({ error: { message: "not found" } }));
+      return;
+    }
+
+    state.requestCount += 1;
+
+    try {
+      const body = await readRequestJson(request);
+      const content = createMockProviderContent(body);
+
+      response.writeHead(200, {
+        "content-type": "application/json"
+      });
+      response.end(
+        JSON.stringify({
+          id: `chatcmpl-resilience-${state.requestCount}`,
+          object: "chat.completion",
+          created: Math.floor(Date.now() / 1000),
+          model: modelName,
+          choices: [
+            {
+              index: 0,
+              finish_reason: "stop",
+              message: {
+                role: "assistant",
+                content
+              }
+            }
+          ]
+        })
+      );
+    } catch (error) {
+      response.writeHead(500, { "content-type": "application/json" });
+      response.end(JSON.stringify({ error: { message: error.message } }));
+    }
+  });
+
+  await new Promise((resolveListen, rejectListen) => {
+    server.once("error", rejectListen);
+    server.listen(port, "127.0.0.1", resolveListen);
+  });
+
+  return {
+    get requestCount() {
+      return state.requestCount;
+    },
+    close: () =>
+      new Promise((resolveClose, rejectClose) => {
+        server.close((error) => {
+          if (error) {
+            rejectClose(error);
+            return;
+          }
+
+          resolveClose();
+        });
+      })
+  };
+}
+
+function createMockProviderContent(body) {
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  const system = messages
+    .filter((message) => message?.role === "system")
+    .map((message) => String(message.content ?? ""))
+    .join("\n");
+
+  if (system.includes("verifying Deliberum's local model provider setup")) {
+    return "ready";
+  }
+
+  if (system.includes("Prepare Deliberum extraction proposal material only.")) {
+    return "This is deliberately not JSON so the Web paused-state path can be verified.";
+  }
+
+  return [
+    "This resilience perspective checks paused discussion states.",
+    "Keep the default page readable and move technical details to Advanced details."
+  ].join(" ");
+}
+
+function startDaemonProcess({ port, cwd, webOrigin }) {
+  return startChildProcess(process.execPath, [daemonEntry], {
+    cwd,
+    env: {
+      ...buildMinimalEnv(),
+      DELIBERUM_HOST: "127.0.0.1",
+      DELIBERUM_PORT: String(port),
+      DELIBERUM_DAEMON_CORS_ORIGINS: webOrigin
+    }
+  });
+}
+
+function startWebProcess({ port, daemonBaseUrl }) {
+  return startChildProcess(
+    "corepack",
+    [
+      "pnpm",
+      "--filter",
+      "@deliberum/web",
+      "exec",
+      "vite",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      String(port),
+      "--strictPort"
+    ],
+    {
+      cwd: repoRoot,
+      env: {
+        ...buildMinimalEnv(),
+        VITE_DELIBERUM_DAEMON_URL: daemonBaseUrl
+      }
+    }
+  );
+}
+
+function startChildProcess(command, args, { cwd = repoRoot, env }) {
+  const child = spawn(command, args, {
+    cwd,
+    env,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  const state = {
+    stdout: "",
+    stderr: "",
+    exited: false,
+    exitCode: null,
+    exitSignal: null
+  };
+  const exitPromise = once(child, "exit").then(([code, signal]) => {
+    state.exited = true;
+    state.exitCode = code;
+    state.exitSignal = signal;
+  });
+
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    state.stdout += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    state.stderr += chunk;
+  });
+
+  return {
+    child,
+    exitPromise,
+    get stdout() {
+      return state.stdout;
+    },
+    get stderr() {
+      return state.stderr;
+    },
+    get exited() {
+      return state.exited;
+    },
+    get exitCode() {
+      return state.exitCode;
+    },
+    get exitSignal() {
+      return state.exitSignal;
+    }
+  };
+}
+
+async function waitForHttpOk(url, hasExited) {
+  let lastError;
+
+  for (let attempt = 0; attempt < 150; attempt += 1) {
+    if (hasExited()) {
+      throw new Error(`Process exited before ${url} was available.`);
+    }
+
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return response;
+      }
+      lastError = new Error(`${url} returned HTTP ${response.status}.`);
+    } catch (error) {
+      lastError = error;
+    }
+
+    await delay(100);
+  }
+
+  throw new Error(`Timed out waiting for ${url}.`, {
+    cause: lastError
+  });
+}
+
+function readRequestJson(request) {
+  return new Promise((resolveRead, rejectRead) => {
+    let data = "";
+
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => {
+      data += chunk;
+    });
+    request.on("end", () => {
+      try {
+        resolveRead(JSON.parse(data));
+      } catch (error) {
+        rejectRead(error);
+      }
+    });
+    request.on("error", rejectRead);
+  });
+}
+
+async function reserveLocalPort() {
+  const server = createNetServer();
+
+  await new Promise((resolveListen, rejectListen) => {
+    server.once("error", rejectListen);
+    server.listen(0, "127.0.0.1", resolveListen);
+  });
+
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : undefined;
+
+  await new Promise((resolveClose, rejectClose) => {
+    server.close((error) => {
+      if (error) {
+        rejectClose(error);
+        return;
+      }
+
+      resolveClose();
+    });
+  });
+
+  if (!port) {
+    throw new Error("Could not reserve a local port for Web resilience smoke.");
+  }
+
+  return port;
+}
+
+async function terminateChild(child, exitPromise) {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    await exitPromise;
+    return;
+  }
+
+  child.kill("SIGTERM");
+
+  const exited = await Promise.race([exitPromise.then(() => true), delay(2000).then(() => false)]);
+  if (exited) {
+    return;
+  }
+
+  child.kill("SIGKILL");
+  await exitPromise;
+}
+
+async function formatPageDebug(page) {
+  if (!page) {
+    return "page output: none.";
+  }
+
+  try {
+    const text = await page.locator("body").innerText({ timeout: 1000 });
+    return [
+      `page url: ${page.url()}`,
+      `page text:\n${text.slice(0, 4000)}`
+    ].join("\n");
+  } catch (error) {
+    return `page output unavailable: ${error.message}`;
+  }
+}
+
+function formatProcessOutput(stdout, stderr, label = "process") {
+  const lines = [`${label} output:`];
+
+  if (stdout.trim().length > 0) {
+    lines.push(`stdout:\n${stdout.trim()}`);
+  }
+
+  if (stderr.trim().length > 0) {
+    lines.push(`stderr:\n${stderr.trim()}`);
+  }
+
+  return lines.length > 1 ? lines.join("\n") : `${label} output: none.`;
+}
+
+function readString(record, key, label) {
+  const value = record?.[key];
+
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`Missing ${label}.`);
+  }
+
+  return value;
+}
+
+async function assertNoHorizontalOverflow(page, label) {
+  const metrics = await page.evaluate(() => ({
+    width: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth
+  }));
+
+  if (metrics.scrollWidth > metrics.width + 2) {
+    throw new Error(
+      `${label} has horizontal overflow: width=${metrics.width}, scrollWidth=${metrics.scrollWidth}.`
+    );
+  }
+}
+
+function assertFile(filePath) {
+  if (!existsSync(filePath)) {
+    throw new Error(`Web resilience smoke requires built entrypoint: ${filePath}`);
+  }
+}
+
+function buildMinimalEnv() {
+  const names = [
+    "PATH",
+    "HOME",
+    "TMPDIR",
+    "TEMP",
+    "TMP",
+    "SystemRoot",
+    "WINDIR"
+  ];
+  const env = {
+    NODE_ENV: "test"
+  };
+
+  for (const name of names) {
+    if (process.env[name]) {
+      env[name] = process.env[name];
+    }
+  }
+
+  return env;
+}

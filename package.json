@@ -27,8 +27,9 @@
     "smoke:product-loop": "node scripts/smoke-product-loop.mjs",
     "smoke:web-entry": "node scripts/smoke-web-entry.mjs",
     "smoke:web-boundaries": "node scripts/smoke-web-boundaries.mjs",
+    "smoke:web-resilience": "node scripts/smoke-web-resilience.mjs",
     "smoke:web-product-loop": "node scripts/smoke-web-product-loop.mjs",
-    "ci": "corepack pnpm clean:dist && corepack pnpm lint:language && corepack pnpm lint:public-files && corepack pnpm lint:docs && corepack pnpm build:packages && corepack pnpm lint:evaluation && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built && corepack pnpm smoke:product-loop && corepack pnpm smoke:web-entry && corepack pnpm smoke:web-boundaries && corepack pnpm smoke:web-product-loop"
+    "ci": "corepack pnpm clean:dist && corepack pnpm lint:language && corepack pnpm lint:public-files && corepack pnpm lint:docs && corepack pnpm build:packages && corepack pnpm lint:evaluation && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built && corepack pnpm smoke:product-loop && corepack pnpm smoke:web-entry && corepack pnpm smoke:web-boundaries && corepack pnpm smoke:web-resilience && corepack pnpm smoke:web-product-loop"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
