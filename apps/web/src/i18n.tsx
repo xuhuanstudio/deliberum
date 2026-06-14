@@ -192,6 +192,50 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u6b64\u8ba8\u8bba\u5c1a\u672a\u663e\u793a\u53ef\u7528\u7684\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
   "Open Setup / Models before relying on this discussion.":
     "\u5728\u4f9d\u8d56\u6b64\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b\u3002",
+  "Continuation setup": "\u7ee7\u7eed\u8ba8\u8bba\u8bbe\u7f6e",
+  "Checking continuation setup": "\u6b63\u5728\u68c0\u67e5\u7ee7\u7eed\u8ba8\u8bba\u8bbe\u7f6e",
+  "Web is checking which local participant and organizer path is currently ready.":
+    "Web \u6b63\u5728\u68c0\u67e5\u5f53\u524d\u54ea\u4e2a\u672c\u5730\u53c2\u4e0e\u8005\u548c\u7ec4\u7ec7\u5668\u8def\u5f84\u5df2\u5c31\u7eea\u3002",
+  "The recommended request updates after the daemon returns safe setup status.":
+    "\u5b88\u62a4\u8fdb\u7a0b\u8fd4\u56de\u5b89\u5168\u8bbe\u7f6e\u72b6\u6001\u540e\uff0c\u63a8\u8350\u8bf7\u6c42\u4f1a\u66f4\u65b0\u3002",
+  "Setup readiness unavailable": "\u8bbe\u7f6e\u5c31\u7eea\u72b6\u6001\u4e0d\u53ef\u7528",
+  "Web could not confirm model setup, so the recommended request stays on the built-in guided path.":
+    "Web \u65e0\u6cd5\u786e\u8ba4\u6a21\u578b\u8bbe\u7f6e\uff0c\u56e0\u6b64\u63a8\u8350\u8bf7\u6c42\u4fdd\u6301\u5728\u5185\u7f6e\u5f15\u5bfc\u8def\u5f84\u3002",
+  "Open Setup / Models after the daemon is reachable to verify real provider readiness.":
+    "\u5b88\u62a4\u8fdb\u7a0b\u53ef\u8fde\u63a5\u540e\uff0c\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b\u4ee5\u9a8c\u8bc1\u771f\u5b9e\u63d0\u4f9b\u65b9\u5c31\u7eea\u72b6\u6001\u3002",
+  "Fill recommended continuation request": "\u586b\u5145\u63a8\u8350\u7684\u7ee7\u7eed\u8bf7\u6c42",
+  "Model responses with local discussion organizers":
+    "\u6a21\u578b\u56de\u5e94 + \u672c\u5730\u8ba8\u8bba\u7ec4\u7ec7\u5668",
+  "Continue discussion will ask configured model participants for independent first responses, then use local organizers to compare options, review risks, and draft the current conclusion.":
+    "\u7ee7\u7eed\u8ba8\u8bba\u4f1a\u5148\u8bf7\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u751f\u6210\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff0c\u7136\u540e\u4f7f\u7528\u672c\u5730\u7ec4\u7ec7\u5668\u6bd4\u8f83\u9009\u9879\u3001\u5ba1\u67e5\u98ce\u9669\u5e76\u8d77\u8349\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Provider credentials stay in local daemon setup; this is the safest available full path until provider organizer setup is aligned locally.":
+    "\u63d0\u4f9b\u65b9\u51ed\u636e\u4fdd\u7559\u5728\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u8bbe\u7f6e\u4e2d\uff1b\u5728\u672c\u5730\u63d0\u4f9b\u65b9\u7ec4\u7ec7\u5668\u8bbe\u7f6e\u5bf9\u9f50\u524d\uff0c\u8fd9\u662f\u5f53\u524d\u6700\u5b89\u5168\u7684\u5b8c\u6574\u8def\u5f84\u3002",
+  "Collect model first responses, then organize options, disagreements, risks, and the draft conclusion.":
+    "\u6536\u96c6\u6a21\u578b\u521d\u59cb\u56de\u5e94\uff0c\u7136\u540e\u6574\u7406\u9009\u9879\u3001\u5206\u6b67\u3001\u98ce\u9669\u548c\u7ed3\u8bba\u8349\u7a3f\u3002",
+  "Model-backed discussion continued": "\u5df2\u7ee7\u7eed\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
+  "Model participants answered first; local organizers updated the readable timeline and conclusion materials.":
+    "\u6a21\u578b\u53c2\u4e0e\u8005\u5148\u56de\u5e94\uff1b\u672c\u5730\u7ec4\u7ec7\u5668\u5df2\u66f4\u65b0\u53ef\u8bfb\u65f6\u95f4\u7ebf\u548c\u7ed3\u8bba\u6750\u6599\u3002",
+  "Model first responses ready": "\u6a21\u578b\u521d\u59cb\u56de\u5e94\u5df2\u5c31\u7eea",
+  "Configured model participants can answer first, but no full organizer path is ready in local setup.":
+    "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u53ef\u4ee5\u5148\u56de\u5e94\uff0c\u4f46\u672c\u5730\u8bbe\u7f6e\u4e2d\u5c1a\u65e0\u5b8c\u6574\u7ec4\u7ec7\u5668\u8def\u5f84\u5c31\u7eea\u3002",
+  "Continue discussion will collect independent first responses only until Setup / Models shows a complete organizer path.":
+    "\u5728\u8bbe\u7f6e / \u6a21\u578b\u663e\u793a\u5b8c\u6574\u7ec4\u7ec7\u5668\u8def\u5f84\u524d\uff0c\u7ee7\u7eed\u8ba8\u8bba\u53ea\u4f1a\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002",
+  "Fill first responses request": "\u586b\u5145\u521d\u59cb\u56de\u5e94\u8bf7\u6c42",
+  "Collect independent first responses only; complete Setup / Models before generating strongest options or a conclusion.":
+    "\u4ec5\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff1b\u751f\u6210\u6700\u5f3a\u9009\u9879\u6216\u7ed3\u8bba\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u8bbe\u7f6e / \u6a21\u578b\u3002",
+  "First responses collected": "\u5df2\u6536\u96c6\u521d\u59cb\u56de\u5e94",
+  "The discussion collected independent first responses. Complete setup before organizing options or drafting a conclusion.":
+    "\u8ba8\u8bba\u5df2\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u6574\u7406\u9009\u9879\u6216\u8d77\u8349\u7ed3\u8bba\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u8bbe\u7f6e\u3002",
+  "Full demo discussion path ready": "\u5b8c\u6574\u6f14\u793a\u8ba8\u8bba\u8def\u5f84\u5df2\u5c31\u7eea",
+  "Continue discussion can use built-in demo participants and local organizers for the full room flow without provider setup.":
+    "\u7ee7\u7eed\u8ba8\u8bba\u53ef\u4ee5\u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\u548c\u672c\u5730\u7ec4\u7ec7\u5668\uff0c\u65e0\u9700\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u4e5f\u80fd\u5b8c\u6210\u8ba8\u8bba\u5ba4\u6d41\u7a0b\u3002",
+  "Configure a model provider in Setup / Models before relying on real model-backed results.":
+    "\u5728\u4f9d\u8d56\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u7ed3\u679c\u524d\uff0c\u8bf7\u5148\u5728\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u914d\u7f6e\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
+  "First responses only": "\u4ec5\u521d\u59cb\u56de\u5e94",
+  "This discussion can only collect independent first responses until a local participant or provider organizer path is ready.":
+    "\u5728\u672c\u5730\u53c2\u4e0e\u8005\u6216\u63d0\u4f9b\u65b9\u7ec4\u7ec7\u5668\u8def\u5f84\u5c31\u7eea\u524d\uff0c\u6b64\u8ba8\u8bba\u53ea\u80fd\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002",
+  "Open Setup / Models to configure a demo preset or real model provider before relying on the discussion.":
+    "\u5728\u4f9d\u8d56\u8ba8\u8bba\u524d\uff0c\u8bf7\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b\u914d\u7f6e\u6f14\u793a\u9884\u8bbe\u6216\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
   "Provider-ready start": "\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea",
   "At least one real model provider is ready. The quick-start form still uses demo participants; use a model-backed discussion plan when you want provider-backed perspectives.":
     "\u81f3\u5c11\u4e00\u4e2a\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea\u3002\u5feb\u901f\u5f00\u59cb\u8868\u5355\u4ecd\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\uff1b\u9700\u8981\u63d0\u4f9b\u65b9\u652f\u6301\u7684\u89c6\u89d2\u65f6\uff0c\u8bf7\u4f7f\u7528\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u8ba1\u5212\u3002",

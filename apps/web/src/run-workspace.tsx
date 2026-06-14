@@ -47,7 +47,11 @@ import {
 } from "./run-presets";
 
 const DEFAULT_RUN_PLAN_TEXT = formatPresetJson(LOCAL_PRESET_RUN_PLAN);
-const DEFAULT_START_REQUEST_TEXT = formatPresetJson(LOCAL_PRESET_START_REQUEST);
+const FIRST_RESPONSES_ONLY_START_REQUEST = {
+  sealedDivergence: {
+    autoCloseManual: true
+  }
+};
 const DEFAULT_PROCESS_AUTHOR_ID = "system";
 const DEFAULT_PROCESS_REVIEWER_ID = "process-reviewer";
 const DEFAULT_PROCESS_COORDINATOR_ID = "process-coordinator";
@@ -79,6 +83,18 @@ type DiscussionContinuationView = {
   primaryResultDetail: string;
   reviewReady: boolean;
 };
+type DiscussionContinuationSetupView = {
+  title: string;
+  detail: string;
+  note: string;
+  tone: "ok" | "warning" | "neutral";
+  startRequest: Record<string, unknown>;
+  fillLabel: string;
+  primaryActionDetail?: string;
+  primaryResultTitle?: string;
+  primaryResultDetail?: string;
+};
+type DiscussionContinuationSetupStatus = "loading" | "ready" | "error";
 type DiscussionStartFeedback = {
   title: string;
   detail: string;
@@ -1682,6 +1698,23 @@ function DiscussionParticipantSourceSummary({ run }: { run: unknown }) {
   );
 }
 
+function DiscussionContinuationSetupSummary({
+  view
+}: {
+  view: DiscussionContinuationSetupView;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <article className={`du-discussion-source du-discussion-source-${view.tone}`}>
+      <p className="du-kicker">{t("Continuation setup")}</p>
+      <strong>{t(view.title)}</strong>
+      <span>{t(view.detail)}</span>
+      <small>{t(view.note)}</small>
+    </article>
+  );
+}
+
 function StartRunForm({
   runId,
   sessionId,
@@ -1695,8 +1728,22 @@ function StartRunForm({
   const { client } = useDaemonRuntime();
   const queryClient = useQueryClient();
   const continuationView = describeDiscussionContinuation(run);
+  const runtimeProfilesQuery = useQuery({
+    queryKey: ["runtime-profiles"],
+    queryFn: () => client.getRuntimeProfiles()
+  });
+  const runtimeSetupPlan = runtimeProfilesQuery.data
+    ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
+    : undefined;
+  const continuationSetup = describeDiscussionContinuationSetup(
+    run,
+    runtimeSetupPlan,
+    runtimeProfilesQuery.isError ? "error" : runtimeProfilesQuery.isLoading ? "loading" : "ready"
+  );
   const latestUpdateRef = useRef<HTMLElement | null>(null);
-  const [startRequestText, setStartRequestText] = useState(DEFAULT_START_REQUEST_TEXT);
+  const [startRequestText, setStartRequestText] = useState(
+    formatPresetJson(continuationSetup.startRequest)
+  );
   const [startFeedback, setStartFeedback] = useState<DiscussionStartFeedback | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
   const startMutation = useMutation({
@@ -1738,16 +1785,20 @@ function StartRunForm({
     startMutation.mutate(parsed.value);
   }
 
-  function fillLocalPresetStartRequest() {
+  useEffect(() => {
+    setStartRequestText(formatPresetJson(continuationSetup.startRequest));
+  }, [continuationSetup.startRequest]);
+
+  function fillRecommendedStartRequest() {
     setInputError(null);
-    setStartRequestText(formatPresetJson(LOCAL_PRESET_START_REQUEST));
+    setStartRequestText(formatPresetJson(continuationSetup.startRequest));
   }
 
-  function startLocalPresetPipeline(feedback: DiscussionStartFeedback) {
+  function startRecommendedPipeline(feedback: DiscussionStartFeedback) {
     setStartFeedback(feedback);
     setInputError(null);
-    setStartRequestText(formatPresetJson(LOCAL_PRESET_START_REQUEST));
-    startMutation.mutate(cloneJsonObject(LOCAL_PRESET_START_REQUEST));
+    setStartRequestText(formatPresetJson(continuationSetup.startRequest));
+    startMutation.mutate(cloneJsonObject(continuationSetup.startRequest));
   }
 
   const strongerOptionsFeedback = {
@@ -1755,6 +1806,12 @@ function StartRunForm({
     detail:
       "The guided update ran so the strongest current options can be compared again before relying on the conclusion."
   };
+  const primaryActionDetail =
+    continuationSetup.primaryActionDetail ?? continuationView.primaryActionDetail;
+  const primaryResultTitle =
+    continuationSetup.primaryResultTitle ?? continuationView.primaryResultTitle;
+  const primaryResultDetail =
+    continuationSetup.primaryResultDetail ?? continuationView.primaryResultDetail;
 
   return (
     <DataPanel
@@ -1768,6 +1825,7 @@ function StartRunForm({
         />
       </div>
       <DiscussionParticipantSourceSummary run={run} />
+      <DiscussionContinuationSetupSummary view={continuationSetup} />
       <GuidedDiscussionActionPath reviewReady={continuationView.reviewReady} />
       <div className="du-discussion-actions" aria-label={t("Discussion actions")}>
         <p className="du-kicker">{t("Discussion actions")}</p>
@@ -1777,9 +1835,9 @@ function StartRunForm({
             className="du-discussion-action-button"
             aria-label={t(continuationView.primaryLabel)}
             onClick={() =>
-              startLocalPresetPipeline({
-                title: continuationView.primaryResultTitle,
-                detail: continuationView.primaryResultDetail
+              startRecommendedPipeline({
+                title: primaryResultTitle,
+                detail: primaryResultDetail
               })
             }
             disabled={startMutation.isPending}
@@ -1789,7 +1847,7 @@ function StartRunForm({
               <span className="du-discussion-action-badge">{t("Updates discussion")}</span>
             </span>
             <strong>{t(continuationView.primaryLabel)}</strong>
-            <span>{t(continuationView.primaryActionDetail)}</span>
+            <span>{t(primaryActionDetail)}</span>
             <span className="du-discussion-action-result">
               {t("After it finishes, review the updated timeline and current conclusion.")}
             </span>
@@ -1798,7 +1856,7 @@ function StartRunForm({
             type="button"
             className="du-discussion-action-button du-discussion-action-secondary"
             aria-label={t("Ask for stronger options")}
-            onClick={() => startLocalPresetPipeline(strongerOptionsFeedback)}
+            onClick={() => startRecommendedPipeline(strongerOptionsFeedback)}
             disabled={startMutation.isPending}
           >
             <span className="du-discussion-action-badge-row">
@@ -1898,10 +1956,10 @@ function StartRunForm({
               <button
                 type="button"
                 className="du-secondary-button"
-                onClick={fillLocalPresetStartRequest}
+                onClick={fillRecommendedStartRequest}
                 disabled={startMutation.isPending}
               >
-                Fill local preset start request
+                {t(continuationSetup.fillLabel)}
               </button>
             </>
           }
@@ -1938,20 +1996,113 @@ function StartRunForm({
   );
 }
 
+function describeDiscussionContinuationSetup(
+  run: unknown,
+  runtimeSetupPlan: RuntimeSetupPlan | undefined,
+  setupStatus: DiscussionContinuationSetupStatus
+): DiscussionContinuationSetupView {
+  if (setupStatus === "loading") {
+    return {
+      title: "Checking continuation setup",
+      detail:
+        "Web is checking which local participant and organizer path is currently ready.",
+      note:
+        "The recommended request updates after the daemon returns safe setup status.",
+      tone: "neutral",
+      startRequest: LOCAL_PRESET_START_REQUEST,
+      fillLabel: "Fill recommended continuation request"
+    };
+  }
+
+  if (setupStatus === "error") {
+    return {
+      title: "Setup readiness unavailable",
+      detail:
+        "Web could not confirm model setup, so the recommended request stays on the built-in guided path.",
+      note:
+        "Open Setup / Models after the daemon is reachable to verify real provider readiness.",
+      tone: "warning",
+      startRequest: LOCAL_PRESET_START_REQUEST,
+      fillLabel: "Fill recommended continuation request"
+    };
+  }
+
+  const providerBacked = hasProviderBackedDiscussionSource(run);
+  const localOrganizerReady = isLocalPresetDiscussionPathReady(runtimeSetupPlan);
+
+  if (providerBacked && localOrganizerReady) {
+    return {
+      title: "Model responses with local discussion organizers",
+      detail:
+        "Continue discussion will ask configured model participants for independent first responses, then use local organizers to compare options, review risks, and draft the current conclusion.",
+      note:
+        "Provider credentials stay in local daemon setup; this is the safest available full path until provider organizer setup is aligned locally.",
+      tone: "ok",
+      startRequest: LOCAL_PRESET_START_REQUEST,
+      fillLabel: "Fill recommended continuation request",
+      primaryActionDetail:
+        "Collect model first responses, then organize options, disagreements, risks, and the draft conclusion.",
+      primaryResultTitle: "Model-backed discussion continued",
+      primaryResultDetail:
+        "Model participants answered first; local organizers updated the readable timeline and conclusion materials."
+    };
+  }
+
+  if (providerBacked) {
+    return {
+      title: "Model first responses ready",
+      detail:
+        "Configured model participants can answer first, but no full organizer path is ready in local setup.",
+      note:
+        "Continue discussion will collect independent first responses only until Setup / Models shows a complete organizer path.",
+      tone: "warning",
+      startRequest: FIRST_RESPONSES_ONLY_START_REQUEST,
+      fillLabel: "Fill first responses request",
+      primaryActionDetail:
+        "Collect independent first responses only; complete Setup / Models before generating strongest options or a conclusion.",
+      primaryResultTitle: "First responses collected",
+      primaryResultDetail:
+        "The discussion collected independent first responses. Complete setup before organizing options or drafting a conclusion."
+    };
+  }
+
+  if (localOrganizerReady) {
+    return {
+      title: "Full demo discussion path ready",
+      detail:
+        "Continue discussion can use built-in demo participants and local organizers for the full room flow without provider setup.",
+      note:
+        "Configure a model provider in Setup / Models before relying on real model-backed results.",
+      tone: "warning",
+      startRequest: LOCAL_PRESET_START_REQUEST,
+      fillLabel: "Fill recommended continuation request"
+    };
+  }
+
+  return {
+    title: "First responses only",
+    detail:
+      "This discussion can only collect independent first responses until a local participant or provider organizer path is ready.",
+    note:
+      "Open Setup / Models to configure a demo preset or real model provider before relying on the discussion.",
+    tone: "warning",
+    startRequest: FIRST_RESPONSES_ONLY_START_REQUEST,
+    fillLabel: "Fill first responses request",
+    primaryActionDetail:
+      "Collect independent first responses only; complete Setup / Models before generating strongest options or a conclusion.",
+    primaryResultTitle: "First responses collected",
+    primaryResultDetail:
+      "The discussion collected independent first responses. Complete setup before organizing options or drafting a conclusion."
+  };
+}
+
 function describeDiscussionParticipantSource(run: unknown): DiscussionParticipantSourceView {
   const plan = getRecordValue(run, "plan") ?? {};
   const participants = asArray(getRecordValue(plan, "participants"));
   const providerConfigs = asArray(getRecordValue(plan, "providerConfigs"));
-  const hasProviderBackedParticipant = participants.some((participant) =>
-    Boolean(getStringRecordValue(participant, "providerConfigId"))
-  );
+  const hasProviderBackedParticipant = hasProviderBackedDiscussionParticipant(participants);
   const hasProviderConfig = providerConfigs.length > 0;
-  const hasLocalPresetParticipant = participants.some((participant) => {
-    const id = getStringRecordValue(participant, "id") ?? "";
-    const adapterId = getStringRecordValue(participant, "adapterId") ?? "";
-
-    return id.startsWith("local-preset-") || adapterId.startsWith("local-preset-");
-  });
+  const hasLocalPresetParticipant = hasLocalPresetDiscussionParticipant(participants);
 
   if (hasProviderBackedParticipant || hasProviderConfig) {
     return {
@@ -1991,6 +2142,39 @@ function describeDiscussionParticipantSource(run: unknown): DiscussionParticipan
     note: "Open Setup / Models before relying on this discussion.",
     tone: "warning"
   };
+}
+
+function hasProviderBackedDiscussionSource(run: unknown): boolean {
+  const plan = getRecordValue(run, "plan") ?? {};
+  const participants = asArray(getRecordValue(plan, "participants"));
+  const providerConfigs = asArray(getRecordValue(plan, "providerConfigs"));
+
+  return hasProviderBackedDiscussionParticipant(participants) || providerConfigs.length > 0;
+}
+
+function hasProviderBackedDiscussionParticipant(participants: unknown[]): boolean {
+  return participants.some((participant) =>
+    Boolean(getStringRecordValue(participant, "providerConfigId"))
+  );
+}
+
+function hasLocalPresetDiscussionParticipant(participants: unknown[]): boolean {
+  return participants.some((participant) => {
+    const id = getStringRecordValue(participant, "id") ?? "";
+    const adapterId = getStringRecordValue(participant, "adapterId") ?? "";
+
+    return id.startsWith("local-preset-") || adapterId.startsWith("local-preset-");
+  });
+}
+
+function isLocalPresetDiscussionPathReady(
+  runtimeSetupPlan: RuntimeSetupPlan | undefined
+): boolean {
+  return Boolean(
+    runtimeSetupPlan?.profiles.some(
+      (profile) => profile.id === "local-preset" && profile.enabled && profile.status === "ready"
+    )
+  );
 }
 
 function GuidedDiscussionActionPath({ reviewReady }: { reviewReady: boolean }) {

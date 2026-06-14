@@ -3424,7 +3424,7 @@ describe("@deliberum/web shell", () => {
   });
 
   it("explains provider-backed discussion source without exposing provider internals", async () => {
-    renderApp(
+    const client = renderApp(
       "/runs/run-1",
       createClient({
         getRun: vi.fn(async () => ({
@@ -3435,6 +3435,9 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("Model-backed discussion")).toBeTruthy();
     expect(
+      await screen.findByText("Model responses with local discussion organizers")
+    ).toBeTruthy();
+    expect(
       screen.getByText(
         "Continue discussion will ask configured model participants for the independent first responses."
       )
@@ -3444,9 +3447,129 @@ describe("@deliberum/web shell", () => {
         "Provider credentials stay in local daemon setup; Web does not show or store API keys."
       )
     ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Continue discussion will ask configured model participants for independent first responses, then use local organizers to compare options, review risks, and draft the current conclusion."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Provider credentials stay in local daemon setup; this is the safest available full path until provider organizer setup is aligned locally."
+      )
+    ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("web-openai-compatible-discussion");
     expect(document.body.textContent ?? "").not.toContain("openai-compatible");
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() =>
+      expect(client.startRun).toHaveBeenCalledWith(
+        "run-1",
+        expect.objectContaining({
+          extraction: {
+            generatorIds: ["local-preset-extractor"]
+          },
+          finalization: expect.objectContaining({
+            finalCandidateGeneratorId: "local-preset-final-candidate",
+            compileOutcome: true
+          })
+        })
+      )
+    );
+    expect(await screen.findByText("Model-backed discussion continued")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Model participants answered first; local organizers updated the readable timeline and conclusion materials."
+      )
+    ).toBeTruthy();
+  });
+
+  it("degrades provider-backed continuation to first responses when organizers are not ready", async () => {
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: providerBackedRunDetail
+        })),
+        getRuntimeProfiles: vi.fn(async () => ({
+          profiles: [
+            {
+              id: "local-preset",
+              name: "Local preset",
+              enabled: false,
+              status: "disabled",
+              components: [],
+              setup: {
+                enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+                envVars: [],
+                missingRecommendedEnvVars: [],
+                notes: []
+              },
+              boundaries: []
+            },
+            {
+              id: "openai-compatible",
+              name: "OpenAI-compatible",
+              enabled: true,
+              status: "ready_with_run_config",
+              components: [
+                {
+                  id: "openai-compatible",
+                  kind: "participant_adapter",
+                  enabled: true
+                }
+              ],
+              setup: {
+                enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+                envVars: [
+                  {
+                    name: "DELIBERUM_OPENAI_API_KEY",
+                    configured: true,
+                    secret: true,
+                    required: false,
+                    purpose: "Default provider secret."
+                  }
+                ],
+                missingRecommendedEnvVars: [],
+                notes: []
+              },
+              boundaries: []
+            }
+          ]
+        }))
+      })
+    );
+
+    expect(await screen.findByText("Model first responses ready")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Configured model participants can answer first, but no full organizer path is ready in local setup."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Collect independent first responses only; complete Setup / Models before generating strongest options or a conclusion."
+      )
+    ).toBeTruthy();
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Fill first responses request" })
+    );
+    const firstResponsesRequestInput = (await screen.findByLabelText(
+      "Advanced start request JSON"
+    )) as HTMLTextAreaElement;
+    expect(firstResponsesRequestInput.value).toContain("sealedDivergence");
+    expect(firstResponsesRequestInput.value).not.toContain("local-preset-extractor");
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() =>
+      expect(client.startRun).toHaveBeenCalledWith("run-1", {
+        sealedDivergence: {
+          autoCloseManual: true
+        }
+      })
+    );
+    expect(await screen.findByText("First responses collected")).toBeTruthy();
   });
 
   it("renders the discussion source summary in Simplified Chinese", async () => {
@@ -3464,6 +3587,12 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u6765\u6e90")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "\u6a21\u578b\u56de\u5e94 + \u672c\u5730\u8ba8\u8bba\u7ec4\u7ec7\u5668"
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("\u7ee7\u7eed\u8ba8\u8bba\u8bbe\u7f6e")).toBeTruthy();
     expect(
       screen.getByText(
         "\u7ee7\u7eed\u8ba8\u8bba\u65f6\uff0c\u5c06\u8bf7\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u751f\u6210\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002"
@@ -3491,7 +3620,7 @@ describe("@deliberum/web shell", () => {
         value: "{}"
       }
     });
-    fireEvent.click(screen.getByRole("button", { name: "Fill local preset start request" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fill recommended continuation request" }));
 
     expect(
       (startRequestInput as HTMLTextAreaElement).value
