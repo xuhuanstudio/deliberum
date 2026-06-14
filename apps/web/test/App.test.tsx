@@ -1034,11 +1034,11 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(screen.getByText("Ready to use Deliberum")).toBeTruthy();
-    expect(await screen.findByText("Local service connected")).toBeTruthy();
+    expect((await screen.findAllByText("Local service connected")).length).toBeGreaterThan(0);
     expect(await screen.findByText("Demo discussion ready")).toBeTruthy();
     expect(await screen.findByText("1 existing discussion")).toBeTruthy();
     expect(screen.getByText("Recommended next step")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Start demo discussion" })).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Start demo discussion" }).length).toBeGreaterThan(0);
     expect(screen.getByText("What you can do")).toBeTruthy();
     expect(screen.getByText("What the discussion keeps visible")).toBeTruthy();
     expect(screen.getAllByText("Advanced / Developer Mode").length).toBeGreaterThanOrEqual(2);
@@ -1122,7 +1122,7 @@ describe("@deliberum/web shell", () => {
     const client = renderApp("/");
 
     expect((await screen.findAllByText("Setup / Models")).length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "Open Setup / Models" })).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Open Setup / Models" }).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(await screen.findByText("Daemon online")).toBeTruthy();
     expect(screen.getByText("Model providers")).toBeTruthy();
@@ -1134,6 +1134,26 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Ready for demo discussions")).toBeTruthy();
     expect(screen.getByText("Provider enabled; add model details")).toBeTruthy();
     expect(screen.getByText("Configuration required")).toBeTruthy();
+    expect(screen.getByText("First-use path")).toBeTruthy();
+    expect(screen.getByText("From setup to discussion room")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Follow the shortest usable path: connect the local service, confirm model and participant readiness, then start the discussion room."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Step 1")).toBeTruthy();
+    expect(screen.getByText("Step 2")).toBeTruthy();
+    expect(screen.getByText("Step 3")).toBeTruthy();
+    expect(screen.getByText("Step 4")).toBeTruthy();
+    expect(screen.getAllByText("Local service connected").length).toBeGreaterThan(0);
+    expect(screen.getByText("Demo ready, model setup still needed")).toBeTruthy();
+    expect(screen.getByText("Demo room roles ready")).toBeTruthy();
+    expect(screen.getAllByText("Start demo discussion").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Open the discussion room with built-in demo participants."
+      )
+    ).toBeTruthy();
     expect(screen.getByText("Configure provider locally")).toBeTruthy();
     expect(screen.getByText("How Web setup works locally")).toBeTruthy();
     expect(
@@ -1209,6 +1229,15 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText("Use configured model participants for the next discussion.")
     ).toBeTruthy();
+    expect(screen.getByText("First-use path")).toBeTruthy();
+    expect(screen.getByText("Model provider ready")).toBeTruthy();
+    expect(screen.getByText("Participants and organizers ready")).toBeTruthy();
+    expect(screen.getByText("Start the real discussion")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Open the discussion room with configured model participants selected."
+      )
+    ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
@@ -1221,9 +1250,9 @@ describe("@deliberum/web shell", () => {
 
     renderApp("/", client);
 
-    expect(await screen.findByText("Start the local service")).toBeTruthy();
+    expect((await screen.findAllByText("Start the local service")).length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Web cannot read setup or discussions until the local Deliberum service is running.")
+      await screen.findByText("Web cannot read setup or discussions until the local Deliberum service is running.")
     ).toBeTruthy();
     expect(
       screen.getByText("Open Setup / Models for the local start command and model setup steps.")
@@ -1743,13 +1772,18 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(screen.getByText("Deliberum \u4f7f\u7528\u5c31\u7eea")).toBeTruthy();
-    expect(screen.getByText("\u672c\u5730\u670d\u52a1\u5df2\u8fde\u63a5")).toBeTruthy();
+    expect(screen.getAllByText("\u672c\u5730\u670d\u52a1\u5df2\u8fde\u63a5").length).toBeGreaterThan(0);
     expect(screen.getByText("\u6f14\u793a\u8ba8\u8bba\u5df2\u5c31\u7eea")).toBeTruthy();
     expect(screen.getByText("1 \u4e2a\u5df2\u6709\u8ba8\u8bba")).toBeTruthy();
+    expect(screen.getByText("\u9996\u6b21\u4f7f\u7528\u8def\u5f84")).toBeTruthy();
+    expect(screen.getByText("\u4ece\u8bbe\u7f6e\u5230\u8ba8\u8bba\u5ba4")).toBeTruthy();
+    expect(screen.getByText("\u6b65\u9aa4 1")).toBeTruthy();
+    expect(screen.getByText("\u6f14\u793a\u5df2\u5c31\u7eea\uff0c\u4ecd\u9700\u6a21\u578b\u8bbe\u7f6e")).toBeTruthy();
+    expect(screen.getByText("\u6f14\u793a\u8ba8\u8bba\u5ba4\u89d2\u8272\u5df2\u5c31\u7eea")).toBeTruthy();
     expect(screen.getByText("\u5efa\u8bae\u7684\u4e0b\u4e00\u6b65")).toBeTruthy();
     expect(
-      screen.getByRole("link", { name: "\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba" })
-    ).toBeTruthy();
+      screen.getAllByRole("link", { name: "\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba" }).length
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("\u8bbe\u7f6e / \u6a21\u578b").length).toBeGreaterThan(0);
     expect(screen.getAllByText("\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b").length).toBeGreaterThan(0);
     expect(screen.getAllByText("\u6a21\u578b\u63d0\u4f9b\u65b9").length).toBeGreaterThan(0);

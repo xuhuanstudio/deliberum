@@ -640,6 +640,96 @@ textarea:focus-visible {
   border-top-color: var(--du-warn);
 }
 
+.du-first-use-path {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 16px;
+}
+
+.du-first-use-path-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.du-first-use-path-heading h4,
+.du-first-use-path-heading p {
+  margin: 0;
+}
+
+.du-first-use-path-heading p:not(.du-kicker) {
+  max-width: 780px;
+  color: var(--du-muted);
+  line-height: 1.45;
+}
+
+.du-first-use-path-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-first-use-step {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+  border-top: 4px solid var(--du-muted);
+  background: var(--du-surface);
+  padding: 14px;
+}
+
+.du-first-use-step span {
+  color: var(--du-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.du-first-use-step strong {
+  line-height: 1.3;
+}
+
+.du-first-use-step p {
+  margin: 0;
+  color: var(--du-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.du-first-use-step-ok {
+  border-top-color: var(--du-accent);
+}
+
+.du-first-use-step-warning {
+  border-top-color: var(--du-warn);
+}
+
+.du-inline-action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  min-height: 32px;
+  border: 1px solid var(--du-line);
+  border-radius: 6px;
+  background: var(--du-surface);
+  color: var(--du-ink);
+  padding: 0 10px;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.du-inline-action-link:hover {
+  background: var(--du-surface-muted);
+}
+
 .du-setup-discussion-readiness {
   display: grid;
   gap: 14px;
@@ -3069,6 +3159,7 @@ textarea:focus-visible {
   .du-outcome-section-grid,
   .du-setup-status-grid,
   .du-setup-model-grid,
+  .du-first-use-path-grid,
   .du-setup-readiness-grid,
   .du-setup-participant-grid,
   .du-current-model-setup-header,

@@ -924,7 +924,15 @@ type LandingReadinessAction = {
   detail: string;
   to: "/runs/new" | "/setup/models" | "/runs";
   tone: LandingReadinessTone;
-  participantSource?: "model-backed";
+  participantSource?: "demo" | "model-backed";
+};
+
+type LandingFirstUseStep = {
+  label: string;
+  title: string;
+  detail: string;
+  tone: LandingReadinessTone;
+  action?: LandingReadinessAction;
 };
 
 function parseRunStartSearch(search: Record<string, unknown>): {
@@ -939,13 +947,19 @@ function parseRunStartSearch(search: Record<string, unknown>): {
   return {};
 }
 
-function StartDiscussionActionLink({ action }: { action: LandingReadinessAction }) {
+function StartDiscussionActionLink({
+  action,
+  className = "du-action-link"
+}: {
+  action: LandingReadinessAction;
+  className?: string;
+}) {
   const { t } = useI18n();
 
   if (action.participantSource) {
     return (
       <Link
-        className="du-action-link"
+        className={className}
         to={action.to}
         search={{
           participants: action.participantSource
@@ -957,7 +971,7 @@ function StartDiscussionActionLink({ action }: { action: LandingReadinessAction 
   }
 
   return (
-    <Link className="du-action-link" to={action.to}>
+    <Link className={className} to={action.to}>
       {t(action.label)}
     </Link>
   );
@@ -1027,6 +1041,7 @@ function LandingReadinessOverview({
           </article>
         ))}
       </div>
+      <LandingFirstUsePath steps={readiness.firstUseSteps} />
       <section className={`du-setup-next-step du-status du-status-${readiness.action.tone}`}>
         <p className="du-kicker">{t("Recommended next step")}</p>
         <strong>{t(readiness.action.label)}</strong>
@@ -1049,6 +1064,36 @@ function LandingReadinessOverview({
   );
 }
 
+function LandingFirstUsePath({ steps }: { steps: LandingFirstUseStep[] }) {
+  const { t } = useI18n();
+
+  return (
+    <section className="du-first-use-path" aria-labelledby="first-use-path">
+      <div className="du-first-use-path-heading">
+        <p className="du-kicker">{t("First-use path")}</p>
+        <h4 id="first-use-path">{t("From setup to discussion room")}</h4>
+        <p>
+          {t(
+            "Follow the shortest usable path: connect the local service, confirm model and participant readiness, then start the discussion room."
+          )}
+        </p>
+      </div>
+      <div className="du-first-use-path-grid">
+        {steps.map((step) => (
+          <article className={`du-first-use-step du-first-use-step-${step.tone}`} key={step.label}>
+            <span>{t(step.label)}</span>
+            <strong>{t(step.title)}</strong>
+            <p>{t(step.detail)}</p>
+            {step.action ? (
+              <StartDiscussionActionLink action={step.action} className="du-inline-action-link" />
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function buildLandingReadiness(input: {
   runs: unknown[];
   runsLoading: boolean;
@@ -1059,6 +1104,7 @@ function buildLandingReadiness(input: {
 }): {
   items: LandingReadinessItem[];
   action: LandingReadinessAction;
+  firstUseSteps: LandingFirstUseStep[];
 } {
   const localService = describeLandingLocalService(input);
   const modelSetup = describeLandingModelSetup(input.setupPlan, input.setupLoading, input.setupError);
@@ -1071,10 +1117,163 @@ function buildLandingReadiness(input: {
     runs: input.runs,
     modelSetup
   });
+  const firstUseSteps = buildLandingFirstUseSteps({
+    localService,
+    modelSetup,
+    setupPlan: input.setupPlan,
+    action
+  });
 
   return {
     items: [localService, modelSetup.item, discussionHistory],
-    action
+    action,
+    firstUseSteps
+  };
+}
+
+function buildLandingFirstUseSteps(input: {
+  localService: LandingReadinessItem;
+  modelSetup: {
+    item: LandingReadinessItem;
+    canStartModelBacked: boolean;
+    canStartDemo: boolean;
+    needsSetup: boolean;
+  };
+  setupPlan: RuntimeSetupPlan | undefined;
+  action: LandingReadinessAction;
+}): LandingFirstUseStep[] {
+  const localServiceLoading = input.localService.title === "Checking local service";
+  const localServiceReady = input.localService.tone === "ok";
+  const modelSetupLoading = input.modelSetup.item.title === "Checking model setup";
+  const localPreset = input.setupPlan?.profiles.find((profile) => profile.id === "local-preset");
+  const localOrganizerReady = localPreset?.status === "ready";
+  const participantStep = modelSetupLoading
+    ? {
+        label: "Step 3",
+        title: "Checking participant readiness",
+        detail: "Participant readiness appears after model setup loads.",
+        tone: "neutral" as const
+      }
+    : describeLandingParticipantStep({
+        canStartModelBacked: input.modelSetup.canStartModelBacked,
+        canStartDemo: input.modelSetup.canStartDemo,
+        localOrganizerReady
+      });
+
+  return [
+    {
+      label: "Step 1",
+      title: localServiceLoading
+        ? "Checking local service"
+        : localServiceReady
+          ? "Local service connected"
+          : "Start the local service",
+      detail: localServiceLoading
+        ? "Web is checking whether the local system is reachable."
+        : localServiceReady
+          ? "Web can read setup, discussions, and model readiness from this machine."
+          : "Open Setup / Models for the local start command, then return here.",
+      tone: localServiceLoading ? "neutral" : localServiceReady ? "ok" : "warning",
+      action: localServiceReady || localServiceLoading
+        ? undefined
+        : {
+            label: "Open Setup / Models",
+            detail: "Start the local service before configuring models.",
+            to: "/setup/models",
+            tone: "warning"
+          }
+    },
+    {
+      label: "Step 2",
+      title: modelSetupLoading
+        ? "Checking model setup"
+        : input.modelSetup.canStartModelBacked
+        ? "Model provider ready"
+        : input.modelSetup.canStartDemo
+          ? "Demo ready, model setup still needed"
+          : "Add model setup",
+      detail: modelSetupLoading
+        ? "Web is checking whether demo or model-backed participants are ready."
+        : input.modelSetup.canStartModelBacked
+        ? "A real provider can answer with configured model participants."
+        : input.modelSetup.canStartDemo
+          ? "You can try the room now, then add a provider for real model responses."
+          : "Save an API key, base URL, and model before relying on real model perspectives.",
+      tone: modelSetupLoading
+        ? "neutral"
+        : input.modelSetup.canStartModelBacked
+        ? "ok"
+        : input.modelSetup.canStartDemo
+          ? "warning"
+          : "neutral",
+      action: modelSetupLoading || input.modelSetup.canStartModelBacked
+        ? undefined
+        : {
+            label: "Open Setup / Models",
+            detail: "Configure the model provider in Web.",
+            to: "/setup/models",
+            tone: "warning"
+          }
+    },
+    participantStep,
+    {
+      label: "Step 4",
+      title: input.modelSetup.canStartModelBacked
+        ? "Start the real discussion"
+        : input.modelSetup.canStartDemo
+          ? "Start a demo discussion"
+          : "Finish setup first",
+      detail: input.modelSetup.canStartModelBacked
+        ? "Open the discussion room with configured model participants selected."
+        : input.modelSetup.canStartDemo
+          ? "Open the discussion room with built-in demo participants."
+          : "Complete setup before creating useful discussion material.",
+      tone: input.action.tone,
+      action: input.action
+    }
+  ];
+}
+
+function describeLandingParticipantStep(input: {
+  canStartModelBacked: boolean;
+  canStartDemo: boolean;
+  localOrganizerReady: boolean;
+}): LandingFirstUseStep {
+  if (input.canStartModelBacked && input.localOrganizerReady) {
+    return {
+      label: "Step 3",
+      title: "Participants and organizers ready",
+      detail:
+        "Model perspectives can answer first, and local organizers can review disagreements, evidence, risks, and the conclusion.",
+      tone: "ok"
+    };
+  }
+
+  if (input.canStartModelBacked) {
+    return {
+      label: "Step 3",
+      title: "Model participants ready",
+      detail:
+        "Model perspectives can answer first; finish organizer setup before relying on conclusions.",
+      tone: "warning"
+    };
+  }
+
+  if (input.canStartDemo && input.localOrganizerReady) {
+    return {
+      label: "Step 3",
+      title: "Demo room roles ready",
+      detail:
+        "Built-in perspectives and local organizers can show the full room flow without provider calls.",
+      tone: "warning"
+    };
+  }
+
+  return {
+    label: "Step 3",
+    title: "Participants need setup",
+    detail: "Configure a participant source before starting a useful discussion room.",
+    tone: "neutral"
   };
 }
 

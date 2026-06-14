@@ -46,6 +46,13 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "One place to see whether the local service, model setup, and discussion history are ready.":
     "\u5728\u4e00\u4e2a\u5730\u65b9\u67e5\u770b\u672c\u5730\u670d\u52a1\u3001\u6a21\u578b\u8bbe\u7f6e\u548c\u8ba8\u8bba\u5386\u53f2\u662f\u5426\u5df2\u5c31\u7eea\u3002",
   "Product readiness": "\u4ea7\u54c1\u5c31\u7eea\u72b6\u6001",
+  "First-use path": "\u9996\u6b21\u4f7f\u7528\u8def\u5f84",
+  "From setup to discussion room": "\u4ece\u8bbe\u7f6e\u5230\u8ba8\u8bba\u5ba4",
+  "Follow the shortest usable path: connect the local service, confirm model and participant readiness, then start the discussion room.":
+    "\u6309\u6700\u77ed\u53ef\u7528\u8def\u5f84\u64cd\u4f5c\uff1a\u8fde\u63a5\u672c\u5730\u670d\u52a1\u3001\u786e\u8ba4\u6a21\u578b\u548c\u53c2\u4e0e\u8005\u5c31\u7eea\uff0c\u7136\u540e\u5f00\u59cb\u8ba8\u8bba\u5ba4\u3002",
+  "Step 2": "\u6b65\u9aa4 2",
+  "Step 3": "\u6b65\u9aa4 3",
+  "Step 4": "\u6b65\u9aa4 4",
   "Local service": "\u672c\u5730\u670d\u52a1",
   "Checking local service": "\u6b63\u5728\u68c0\u67e5\u672c\u5730\u670d\u52a1",
   "Web is checking whether the local system is reachable.":
@@ -56,20 +63,61 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Local service connected": "\u672c\u5730\u670d\u52a1\u5df2\u8fde\u63a5",
   "Web can read setup status from the local system.":
     "Web \u53ef\u4ee5\u4ece\u672c\u5730\u7cfb\u7edf\u8bfb\u53d6\u8bbe\u7f6e\u72b6\u6001\u3002",
+  "Web can read setup, discussions, and model readiness from this machine.":
+    "Web \u53ef\u4ee5\u4ece\u8fd9\u53f0\u673a\u5668\u8bfb\u53d6\u8bbe\u7f6e\u3001\u8ba8\u8bba\u548c\u6a21\u578b\u5c31\u7eea\u72b6\u6001\u3002",
+  "Open Setup / Models for the local start command, then return here.":
+    "\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b\u67e5\u770b\u672c\u5730\u542f\u52a8\u547d\u4ee4\uff0c\u7136\u540e\u56de\u5230\u8fd9\u91cc\u3002",
+  "Start the local service before configuring models.":
+    "\u914d\u7f6e\u6a21\u578b\u524d\uff0c\u8bf7\u5148\u542f\u52a8\u672c\u5730\u670d\u52a1\u3002",
   "Model setup unavailable": "\u6a21\u578b\u8bbe\u7f6e\u4e0d\u53ef\u7528",
   "Web is checking whether demo or model-backed participants are ready.":
     "Web \u6b63\u5728\u68c0\u67e5\u6f14\u793a\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u662f\u5426\u5df2\u5c31\u7eea\u3002",
   "Real model provider ready": "\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea",
+  "Model provider ready": "\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea",
+  "Demo ready, model setup still needed":
+    "\u6f14\u793a\u5df2\u5c31\u7eea\uff0c\u4ecd\u9700\u6a21\u578b\u8bbe\u7f6e",
   "Configured model participants can answer new discussions.":
     "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u53ef\u4ee5\u56de\u7b54\u65b0\u7684\u8ba8\u8bba\u3002",
+  "A real provider can answer with configured model participants.":
+    "\u771f\u5b9e\u63d0\u4f9b\u65b9\u53ef\u4ee5\u7528\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u56de\u7b54\u3002",
   "Demo discussion ready": "\u6f14\u793a\u8ba8\u8bba\u5df2\u5c31\u7eea",
   "Demo participants can start now; finish provider setup before relying on real model perspectives.":
     "\u6f14\u793a\u53c2\u4e0e\u8005\u73b0\u5728\u53ef\u4ee5\u5f00\u59cb\uff1b\u4f9d\u8d56\u771f\u5b9e\u6a21\u578b\u89c6\u89d2\u524d\u8bf7\u5148\u5b8c\u6210\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
+  "You can try the room now, then add a provider for real model responses.":
+    "\u73b0\u5728\u53ef\u4ee5\u8bd5\u7528\u8ba8\u8bba\u5ba4\uff0c\u7136\u540e\u6dfb\u52a0\u63d0\u4f9b\u65b9\u4ee5\u83b7\u5f97\u771f\u5b9e\u6a21\u578b\u56de\u7b54\u3002",
   "Built-in demo participants can start a walkthrough immediately.":
     "\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u4ee5\u7acb\u5373\u5f00\u59cb\u6f14\u793a\u6d41\u7a0b\u3002",
   "Provider setup needed": "\u9700\u8981\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
   "Save API key, base URL, and model before relying on real model participants.":
     "\u4f9d\u8d56\u771f\u5b9e\u6a21\u578b\u53c2\u4e0e\u8005\u524d\uff0c\u8bf7\u5148\u4fdd\u5b58 API key\u3001base URL \u548c\u6a21\u578b\u3002",
+  "Save an API key, base URL, and model before relying on real model perspectives.":
+    "\u4f9d\u8d56\u771f\u5b9e\u6a21\u578b\u89c6\u89d2\u524d\uff0c\u8bf7\u5148\u4fdd\u5b58 API key\u3001Base URL \u548c\u6a21\u578b\u3002",
+  "Configure the model provider in Web.":
+    "\u5728 Web \u4e2d\u914d\u7f6e\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
+  "Participants and organizers ready":
+    "\u53c2\u4e0e\u8005\u548c\u7ec4\u7ec7\u5668\u5df2\u5c31\u7eea",
+  "Model perspectives can answer first, and local organizers can review disagreements, evidence, risks, and the conclusion.":
+    "\u6a21\u578b\u89c6\u89d2\u53ef\u4ee5\u5148\u56de\u7b54\uff0c\u672c\u5730\u7ec4\u7ec7\u5668\u53ef\u4ee5\u5ba1\u67e5\u5206\u6b67\u3001\u8bc1\u636e\u3001\u98ce\u9669\u548c\u7ed3\u8bba\u3002",
+  "Model participants ready": "\u6a21\u578b\u53c2\u4e0e\u8005\u5df2\u5c31\u7eea",
+  "Model perspectives can answer first; finish organizer setup before relying on conclusions.":
+    "\u6a21\u578b\u89c6\u89d2\u53ef\u4ee5\u5148\u56de\u7b54\uff1b\u4f9d\u8d56\u7ed3\u8bba\u524d\u8bf7\u5b8c\u6210\u7ec4\u7ec7\u5668\u8bbe\u7f6e\u3002",
+  "Demo room roles ready": "\u6f14\u793a\u8ba8\u8bba\u5ba4\u89d2\u8272\u5df2\u5c31\u7eea",
+  "Built-in perspectives and local organizers can show the full room flow without provider calls.":
+    "\u5185\u7f6e\u89c6\u89d2\u548c\u672c\u5730\u7ec4\u7ec7\u5668\u53ef\u4ee5\u5728\u4e0d\u8c03\u7528\u63d0\u4f9b\u65b9\u7684\u60c5\u51b5\u4e0b\u5c55\u793a\u5b8c\u6574\u8ba8\u8bba\u5ba4\u6d41\u7a0b\u3002",
+  "Participants need setup": "\u53c2\u4e0e\u8005\u9700\u8981\u8bbe\u7f6e",
+  "Configure a participant source before starting a useful discussion room.":
+    "\u5f00\u59cb\u6709\u7528\u7684\u8ba8\u8bba\u5ba4\u524d\uff0c\u8bf7\u5148\u914d\u7f6e\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
+  "Checking participant readiness":
+    "\u6b63\u5728\u68c0\u67e5\u53c2\u4e0e\u8005\u5c31\u7eea\u72b6\u6001",
+  "Participant readiness appears after model setup loads.":
+    "\u6a21\u578b\u8bbe\u7f6e\u52a0\u8f7d\u540e\u4f1a\u663e\u793a\u53c2\u4e0e\u8005\u5c31\u7eea\u72b6\u6001\u3002",
+  "Start the real discussion": "\u5f00\u59cb\u771f\u5b9e\u8ba8\u8bba",
+  "Open the discussion room with configured model participants selected.":
+    "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u5e76\u9009\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
+  "Open the discussion room with built-in demo participants.":
+    "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u5e76\u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\u3002",
+  "Complete setup before creating useful discussion material.":
+    "\u521b\u5efa\u6709\u7528\u7684\u8ba8\u8bba\u6750\u6599\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u8bbe\u7f6e\u3002",
   "Discussion source unavailable": "\u8ba8\u8bba\u6765\u6e90\u4e0d\u53ef\u7528",
   "Complete model setup before starting useful discussions.":
     "\u5f00\u59cb\u6709\u7528\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u3002",
