@@ -102,6 +102,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u53c2\u4e0e\u8005\u548c\u7ec4\u7ec7\u5668\u5df2\u5c31\u7eea",
   "Model perspectives can answer first, and local organizers can review disagreements, evidence, risks, and the conclusion.":
     "\u6a21\u578b\u89c6\u89d2\u53ef\u4ee5\u5148\u56de\u7b54\uff0c\u672c\u5730\u7ec4\u7ec7\u5668\u53ef\u4ee5\u5ba1\u67e5\u5206\u6b67\u3001\u8bc1\u636e\u3001\u98ce\u9669\u548c\u7ed3\u8bba\u3002",
+  "Model perspectives can answer first, and model organizer roles can review disagreements, evidence, risks, and the conclusion.":
+    "\u6a21\u578b\u89c6\u89d2\u53ef\u4ee5\u5148\u56de\u7b54\uff0c\u6a21\u578b\u7ec4\u7ec7\u89d2\u8272\u53ef\u4ee5\u5ba1\u67e5\u5206\u6b67\u3001\u8bc1\u636e\u3001\u98ce\u9669\u548c\u7ed3\u8bba\u3002",
   "Model participants ready": "\u6a21\u578b\u53c2\u4e0e\u8005\u5df2\u5c31\u7eea",
   "Model perspectives can answer first; finish organizer setup before relying on conclusions.":
     "\u6a21\u578b\u89c6\u89d2\u53ef\u4ee5\u5148\u56de\u7b54\uff1b\u4f9d\u8d56\u7ed3\u8bba\u524d\u8bf7\u5b8c\u6210\u7ec4\u7ec7\u5668\u8bbe\u7f6e\u3002",
@@ -337,6 +339,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Disagreement and evidence review": "\u5206\u6b67\u4e0e\u8bc1\u636e\u5ba1\u67e5",
   "Reviewer, Evidence checker, and Risk reviewer use the local organizer.":
     "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u672c\u5730\u7ec4\u7ec7\u5668\u3002",
+  "Reviewer, Evidence checker, and Risk reviewer use the model organizer.":
+    "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u6a21\u578b\u7ec4\u7ec7\u5668\u3002",
   "Reviewer, Evidence checker, and Risk reviewer are not ready yet.":
     "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u5c1a\u672a\u5c31\u7eea\u3002",
   "These roles keep open disagreements, missing evidence, and risks visible before the conclusion is trusted.":
@@ -350,6 +354,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Conclusion writer setup needed": "\u9700\u8981\u8bbe\u7f6e\u7ed3\u8bba\u8d77\u8349\u8005",
   "Conclusion writer uses the local organizer.":
     "\u7ed3\u8bba\u8d77\u8349\u8005\u4f7f\u7528\u672c\u5730\u7ec4\u7ec7\u5668\u3002",
+  "Conclusion writer uses the model organizer.":
+    "\u7ed3\u8bba\u8d77\u8349\u8005\u4f7f\u7528\u6a21\u578b\u7ec4\u7ec7\u5668\u3002",
   "Conclusion writer is not ready yet.": "\u7ed3\u8bba\u8d77\u8349\u8005\u5c1a\u672a\u5c31\u7eea\u3002",
   "This role turns the current discussion state into a reviewable conclusion with recommended next actions.":
     "\u8be5\u89d2\u8272\u4f1a\u5c06\u5f53\u524d\u8ba8\u8bba\u72b6\u6001\u8f6c\u6210\u5e26\u5efa\u8bae\u4e0b\u4e00\u6b65\u7684\u53ef\u5ba1\u9605\u7ed3\u8bba\u3002",

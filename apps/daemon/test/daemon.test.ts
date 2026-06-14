@@ -98,6 +98,7 @@ import {
   OPENAI_COMPATIBLE_ENDPOINT_PATH_ENV_VAR,
   OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR,
   OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+  OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR,
   OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR,
   OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR,
   OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR,
@@ -979,6 +980,75 @@ function createOpenAICompatibleFetch(output = "provider sealed contribution"): M
       ]
     }))
   })) as unknown as MockedFetchLike;
+}
+
+function createOpenAICompatibleFullLoopFetch(): MockedFetchLike {
+  return vi.fn(async (_url, init) => {
+    const request = JSON.parse(init.body) as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    const systemPrompt =
+      request.messages.find((message) => message.role === "system")?.content ?? "";
+    let content = "provider-backed saved setup contribution";
+
+    if (systemPrompt.includes("Prepare Deliberum extraction proposal material only.")) {
+      const contextPayload = findExtractionContextPayload(request.messages);
+      const sourceEventId = contextPayload?.allowedSourceEventIds[0] ?? "missing-source";
+
+      content = JSON.stringify({
+        candidates: [
+          {
+            id: "provider-setup-candidate",
+            title: "Provider setup candidate",
+            description: "Use the Web-saved provider setup for the full discussion loop.",
+            sourceEventIds: [sourceEventId],
+            status: "active",
+            supportedBy: ["provider-setup-claim"],
+            attackedBy: [],
+            qualityObligationIds: [],
+            assumptions: ["The provider setup was saved from Web."],
+            tradeoffs: ["The local test still uses mocked provider calls."]
+          }
+        ],
+        claims: [
+          {
+            id: "provider-setup-claim",
+            content: "Web-saved provider setup can support full organizer roles.",
+            scope: "design",
+            sourceEventIds: [sourceEventId],
+            supports: ["provider-setup-candidate"]
+          }
+        ],
+        objections: [],
+        evidenceNeeds: [],
+        qualityObligations: [],
+        rationale: "Extract provider-backed proposal material from Web-saved setup."
+      });
+    } else if (systemPrompt.includes("Prepare Deliberum proposal review material only.")) {
+      content = JSON.stringify({
+        challenges: [],
+        notes: ["Provider-backed review leaves this mocked setup proposal unchallenged."]
+      });
+    } else if (systemPrompt.includes("Prepare Deliberum final candidate proposal material only.")) {
+      content = createOpenAICompatibleFinalCandidateContent(request.messages);
+    } else if (systemPrompt.includes("Prepare Deliberum final audit material only.")) {
+      content = createOpenAICompatibleFinalAuditContent(request.messages);
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      json: vi.fn(async () => ({
+        choices: [
+          {
+            message: {
+              content
+            }
+          }
+        ]
+      }))
+    };
+  }) as unknown as MockedFetchLike;
 }
 
 function createOpenAICompatibleStreamingFetch(
@@ -2585,6 +2655,21 @@ describe("daemon API", () => {
       expect(responseText).not.toContain("https://api.example.test");
       expect(envContent).toContain("# BEGIN DELIBERUM OPENAI-COMPATIBLE WEB SETUP");
       expect(envContent).toContain(`${OPENAI_COMPATIBLE_PROFILE_ENV_VAR}=true`);
+      expect(envContent).toContain(`${OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR}=true`);
+      expect(envContent).toContain(`${OPENAI_COMPATIBLE_REVIEW_ENV_VAR}=true`);
+      expect(envContent).toContain(`${OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR}=true`);
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`
+      );
       expect(envContent).toContain(
         `${OPENAI_COMPATIBLE_BASE_URL_ENV_VAR}=https://api.example.test`
       );
@@ -2611,6 +2696,10 @@ describe("daemon API", () => {
           id: string;
           enabled: boolean;
           status: string;
+          components: Array<{
+            id: string;
+            enabled: boolean;
+          }>;
           setup: {
             missingRecommendedEnvVars: string[];
           };
@@ -2629,6 +2718,30 @@ describe("daemon API", () => {
           })
         })
       );
+      expect(openAI?.components).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: OPENAI_COMPATIBLE_ADAPTER_ID,
+            enabled: true
+          }),
+          expect.objectContaining({
+            id: OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+            enabled: true
+          }),
+          expect.objectContaining({
+            id: OPENAI_COMPATIBLE_REVIEWER_ID,
+            enabled: true
+          }),
+          expect.objectContaining({
+            id: OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID,
+            enabled: true
+          }),
+          expect.objectContaining({
+            id: OPENAI_COMPATIBLE_FINAL_AUDITOR_ID,
+            enabled: true
+          })
+        ])
+      );
     } finally {
       rmSync(tempDir, {
         recursive: true,
@@ -2642,6 +2755,13 @@ describe("daemon API", () => {
     const envFilePath = join(tempDir, ".env");
     const previousEnv = preserveEnvVars([
       OPENAI_COMPATIBLE_PROFILE_ENV_VAR,
+      OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR,
+      OPENAI_COMPATIBLE_REVIEW_ENV_VAR,
+      OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR,
+      OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR,
+      OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR,
+      OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR,
+      OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR,
       OPENAI_COMPATIBLE_API_KEY_ENV_VAR,
       OPENAI_COMPATIBLE_BASE_URL_ENV_VAR,
       OPENAI_COMPATIBLE_MODEL_ENV_VAR
@@ -2658,6 +2778,13 @@ describe("daemon API", () => {
         OPENAI_COMPATIBLE_SETUP_ENV_BEGIN,
         "# Generated by local Web setup.",
         `${OPENAI_COMPATIBLE_PROFILE_ENV_VAR}=true`,
+        `${OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR}=true`,
+        `${OPENAI_COMPATIBLE_REVIEW_ENV_VAR}=true`,
+        `${OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR}=true`,
+        `${OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`,
+        `${OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`,
+        `${OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`,
+        `${OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`,
         `${OPENAI_COMPATIBLE_BASE_URL_ENV_VAR}=https://api.example.test/v1`,
         `${OPENAI_COMPATIBLE_MODEL_ENV_VAR}=model-for-web-setup`,
         `${OPENAI_COMPATIBLE_API_KEY_ENV_VAR}=sk-local-web-setup-secret`,
@@ -2667,6 +2794,13 @@ describe("daemon API", () => {
       "utf8"
     );
     delete process.env[OPENAI_COMPATIBLE_PROFILE_ENV_VAR];
+    delete process.env[OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR];
+    delete process.env[OPENAI_COMPATIBLE_REVIEW_ENV_VAR];
+    delete process.env[OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR];
+    delete process.env[OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR];
+    delete process.env[OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR];
+    delete process.env[OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR];
+    delete process.env[OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR];
     delete process.env[OPENAI_COMPATIBLE_API_KEY_ENV_VAR];
     delete process.env[OPENAI_COMPATIBLE_BASE_URL_ENV_VAR];
     delete process.env[OPENAI_COMPATIBLE_MODEL_ENV_VAR];
@@ -2687,6 +2821,10 @@ describe("daemon API", () => {
           id: string;
           enabled: boolean;
           status: string;
+          components: Array<{
+            id: string;
+            enabled: boolean;
+          }>;
           setup: {
             envVars: Array<{
               name: string;
@@ -2703,6 +2841,26 @@ describe("daemon API", () => {
           enabled: true,
           status: "ready"
         })
+      );
+      expect(openAI?.components).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+            enabled: true
+          }),
+          expect.objectContaining({
+            id: OPENAI_COMPATIBLE_REVIEWER_ID,
+            enabled: true
+          }),
+          expect.objectContaining({
+            id: OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID,
+            enabled: true
+          }),
+          expect.objectContaining({
+            id: OPENAI_COMPATIBLE_FINAL_AUDITOR_ID,
+            enabled: true
+          })
+        ])
       );
       expect(openAI?.setup.missingRecommendedEnvVars).not.toContain(
         OPENAI_COMPATIBLE_BASE_URL_ENV_VAR
@@ -2824,7 +2982,7 @@ describe("daemon API", () => {
     const tempDir = mkdtempSync(join(tmpdir(), "deliberum-setup-"));
     const envFilePath = join(tempDir, ".env");
     const apiKey = "sk-local-web-setup-secret";
-    const fetch = createOpenAICompatibleFetch("provider-backed saved setup contribution");
+    const fetch = createOpenAICompatibleFullLoopFetch();
     const daemonApp = createDaemonApp({
       idGenerator: createIds(),
       clock,
@@ -2849,27 +3007,54 @@ describe("daemon API", () => {
         activeInCurrentDaemon: boolean;
       };
       const runPlan = JSON.parse(JSON.stringify(openAICompatibleRunPlan())) as {
+        participants: Array<Record<string, unknown>>;
         providerConfigs: Array<Record<string, unknown>>;
+        budget: Record<string, unknown>;
       };
+      runPlan.participants = runPlan.participants.map((participant) => ({
+        ...participant,
+        providerConfigId: OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID
+      }));
 
       runPlan.providerConfigs = [
         {
-          id: "provider-openai-compatible",
+          id: OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
           adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
-          providerConfigId: "provider-openai-compatible",
+          providerConfigId: OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
           apiKeyEnvVar: OPENAI_COMPATIBLE_API_KEY_ENV_VAR
         }
       ];
+      runPlan.budget = {
+        ...runPlan.budget,
+        maxProviderCalls: 8
+      };
 
       const created = await createRun(daemonApp, runPlan);
       const startResponse = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
         sealedDivergence: {
           autoCloseManual: true
+        },
+        extraction: {
+          generatorIds: [OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID]
+        },
+        review: {
+          reviewerIds: [OPENAI_COMPATIBLE_REVIEWER_ID],
+          acceptancePolicy: {
+            mode: "all_generated_unchallenged",
+            authorId: "web-setup-review-coordinator",
+            rationale: "Accept unchallenged provider organizer proposals in this setup test."
+          }
+        },
+        finalization: {
+          finalCandidateGeneratorId: OPENAI_COMPATIBLE_FINAL_CANDIDATE_GENERATOR_ID,
+          auditGeneratorIds: [OPENAI_COMPATIBLE_FINAL_AUDITOR_ID],
+          compileOutcome: true
         }
       });
       const startBody = (await startResponse.json()) as {
         stopped: boolean;
         stages: Array<{
+          stage: string;
           executionStatus: string;
           result: { participantResults?: Array<{ status: string }> };
         }>;
@@ -2890,8 +3075,15 @@ describe("daemon API", () => {
       });
       expect(startResponse.status).toBe(200);
       expect(startBody.stopped).toBe(false);
+      expect(startBody.stages.map((stage) => stage.stage)).toEqual([
+        "sealed_divergence",
+        "extraction",
+        "proposal_review",
+        "finalization"
+      ]);
       expect(startBody.stages[0]?.executionStatus).toBe("executed");
       expect(startBody.stages[0]?.result.participantResults?.[0]?.status).toBe("submitted");
+      expect(startBody.stages.at(-1)?.executionStatus).toBe("executed");
       expect(url).toBe("https://api.example.test/v1/chat/completions");
       expect(init.headers.Authorization).toBe(`Bearer ${apiKey}`);
       expect(request.model).toBe("model-for-web-setup");

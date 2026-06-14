@@ -1146,7 +1146,14 @@ function buildLandingFirstUseSteps(input: {
   const localServiceReady = input.localService.tone === "ok";
   const modelSetupLoading = input.modelSetup.item.title === "Checking model setup";
   const localPreset = input.setupPlan?.profiles.find((profile) => profile.id === "local-preset");
-  const localOrganizerReady = localPreset?.status === "ready";
+  const modelOrganizerReady = input.setupPlan
+    ? hasReadyModelOrganizerProfile(input.setupPlan.profiles)
+    : false;
+  const organizerMode = modelOrganizerReady
+    ? "model"
+    : localPreset?.status === "ready"
+      ? "local"
+      : undefined;
   const participantStep = modelSetupLoading
     ? {
         label: "Step 3",
@@ -1157,7 +1164,7 @@ function buildLandingFirstUseSteps(input: {
     : describeLandingParticipantStep({
         canStartModelBacked: input.modelSetup.canStartModelBacked,
         canStartDemo: input.modelSetup.canStartDemo,
-        localOrganizerReady
+        organizerMode
       });
 
   return [
@@ -1237,14 +1244,15 @@ function buildLandingFirstUseSteps(input: {
 function describeLandingParticipantStep(input: {
   canStartModelBacked: boolean;
   canStartDemo: boolean;
-  localOrganizerReady: boolean;
+  organizerMode?: "local" | "model";
 }): LandingFirstUseStep {
-  if (input.canStartModelBacked && input.localOrganizerReady) {
+  if (input.canStartModelBacked && input.organizerMode) {
     return {
       label: "Step 3",
       title: "Participants and organizers ready",
-      detail:
-        "Model perspectives can answer first, and local organizers can review disagreements, evidence, risks, and the conclusion.",
+      detail: input.organizerMode === "model"
+        ? "Model perspectives can answer first, and model organizer roles can review disagreements, evidence, risks, and the conclusion."
+        : "Model perspectives can answer first, and local organizers can review disagreements, evidence, risks, and the conclusion.",
       tone: "ok"
     };
   }
@@ -1259,7 +1267,7 @@ function describeLandingParticipantStep(input: {
     };
   }
 
-  if (input.canStartDemo && input.localOrganizerReady) {
+  if (input.canStartDemo && input.organizerMode) {
     return {
       label: "Step 3",
       title: "Demo room roles ready",
@@ -2015,6 +2023,12 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
   const readyModelProviders = modelProviderProfiles.filter((profile) => profile.status === "ready");
   const needsModelSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
   const modelProviderReady = readyModelProviders.length > 0;
+  const modelOrganizerReady = readyModelProviders.some(isReadyModelOrganizerProfile);
+  const organizerMode = modelOrganizerReady
+    ? "model"
+    : localPresetReady
+      ? "local"
+      : undefined;
   const canStartDiscussion = localPresetReady || modelProviderReady;
   const modelDetail = modelProviderReady
     ? "Configured model participants can answer as independent perspectives."
@@ -2067,11 +2081,13 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
       },
       {
         title: "Organizer and conclusion",
-        status: localPresetReady ? "Ready" : "Organizer setup needed",
-        detail: localPresetReady
-          ? "Local organizers can compare options, review disagreements, evidence, and risks, then draft the current conclusion."
-          : "Discussions may collect first responses only until organizer roles are ready.",
-        tone: localPresetReady ? "ok" : "warning"
+        status: organizerMode ? "Ready" : "Organizer setup needed",
+        detail: organizerMode === "model"
+          ? "Model organizer roles can compare options, review evidence and risks, and draft the current conclusion after first responses."
+          : organizerMode === "local"
+            ? "Local organizers can compare options, review disagreements, evidence, and risks, then draft the current conclusion."
+            : "Discussions may collect first responses only until organizer roles are ready.",
+        tone: organizerMode ? "ok" : "warning"
       },
       {
         title: "Next step",
@@ -2094,6 +2110,13 @@ function buildSetupParticipantReadiness(
   const readyModelProvider = modelProviderProfiles.find((profile) => profile.status === "ready");
   const providerName = readyModelProvider?.name ?? "Model provider";
   const modelReady = readyModelProvider !== undefined;
+  const modelOrganizerReady =
+    readyModelProvider !== undefined && isReadyModelOrganizerProfile(readyModelProvider);
+  const organizerMode = modelOrganizerReady
+    ? "model"
+    : localPresetReady
+      ? "local"
+      : undefined;
   const needsModelSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
   const perspectiveStatus = modelReady
     ? "Model ready"
@@ -2115,12 +2138,18 @@ function buildSetupParticipantReadiness(
     : localPresetReady
       ? "warning"
       : "neutral";
-  const organizerStatus = localPresetReady ? "Organizer ready" : "Organizer setup needed";
-  const organizerSource = localPresetReady ? "Local organizer" : "No organizer ready";
-  const organizerDetail = localPresetReady
-    ? "Local organizers can compare options, review evidence and risks, and draft the current conclusion."
-    : "Discussions may collect first responses only until organizer roles are ready.";
-  const organizerTone: SetupParticipantReadinessItem["tone"] = localPresetReady
+  const organizerStatus = organizerMode ? "Organizer ready" : "Organizer setup needed";
+  const organizerSource = organizerMode === "model"
+    ? "Model organizer"
+    : organizerMode === "local"
+      ? "Local organizer"
+      : "No organizer ready";
+  const organizerDetail = organizerMode === "model"
+    ? "Model organizer roles can compare options, review evidence and risks, and draft the current conclusion after first responses."
+    : organizerMode === "local"
+      ? "Local organizers can compare options, review evidence and risks, and draft the current conclusion."
+      : "Discussions may collect first responses only until organizer roles are ready.";
+  const organizerTone: SetupParticipantReadinessItem["tone"] = organizerMode
     ? "ok"
     : "warning";
   const planItems: SetupParticipantPlanItem[] = [
@@ -2162,26 +2191,30 @@ function buildSetupParticipantReadiness(
     },
     {
       title: "Disagreement and evidence review",
-      status: localPresetReady ? "Organizer ready" : "Organizer setup needed",
-      uses: localPresetReady
-        ? "Reviewer, Evidence checker, and Risk reviewer use the local organizer."
-        : "Reviewer, Evidence checker, and Risk reviewer are not ready yet.",
+      status: organizerMode ? "Organizer ready" : "Organizer setup needed",
+      uses: organizerMode === "model"
+        ? "Reviewer, Evidence checker, and Risk reviewer use the model organizer."
+        : organizerMode === "local"
+          ? "Reviewer, Evidence checker, and Risk reviewer use the local organizer."
+          : "Reviewer, Evidence checker, and Risk reviewer are not ready yet.",
       detail:
         "These roles keep open disagreements, missing evidence, and risks visible before the conclusion is trusted.",
-      action: localPresetReady
+      action: organizerMode
         ? "Start the room and continue review when the first responses are ready."
         : "Enable the local organizer before relying on review steps.",
       tone: organizerTone
     },
     {
       title: "Conclusion and next actions",
-      status: localPresetReady ? "Conclusion writer ready" : "Conclusion writer setup needed",
-      uses: localPresetReady
-        ? "Conclusion writer uses the local organizer."
-        : "Conclusion writer is not ready yet.",
+      status: organizerMode ? "Conclusion writer ready" : "Conclusion writer setup needed",
+      uses: organizerMode === "model"
+        ? "Conclusion writer uses the model organizer."
+        : organizerMode === "local"
+          ? "Conclusion writer uses the local organizer."
+          : "Conclusion writer is not ready yet.",
       detail:
         "This role turns the current discussion state into a reviewable conclusion with recommended next actions.",
-      action: localPresetReady
+      action: organizerMode
         ? "Review the conclusion panel after the room has enough discussion material."
         : "Finish organizer setup before relying on generated conclusions.",
       tone: organizerTone
@@ -2817,6 +2850,18 @@ function getProviderChecklistSummary(profile: RuntimeSetupPlanProfile): string {
 
 function isWebConfigurableModelProviderProfile(profile: RuntimeSetupPlanProfile): boolean {
   return profile.id === "openai-compatible";
+}
+
+function isReadyModelOrganizerProfile(profile: RuntimeSetupPlanProfile): boolean {
+  return (
+    profile.id === "openai-compatible" &&
+    profile.status === "ready" &&
+    profile.enabledComponentCount >= 5
+  );
+}
+
+function hasReadyModelOrganizerProfile(profiles: RuntimeSetupPlanProfile[]): boolean {
+  return profiles.some(isReadyModelOrganizerProfile);
 }
 
 function hasAnySetupName(

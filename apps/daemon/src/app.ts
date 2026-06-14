@@ -409,10 +409,10 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     });
   const openAICompatibleEnv = options.openAICompatibleEnv ?? {};
   let enableOpenAICompatibleProfile = options.enableOpenAICompatibleProfile === true;
-  const enableOpenAICompatibleExtraction =
+  let enableOpenAICompatibleExtraction =
     options.enableOpenAICompatibleExtraction === true;
-  const enableOpenAICompatibleReview = options.enableOpenAICompatibleReview === true;
-  const enableOpenAICompatibleFinalization =
+  let enableOpenAICompatibleReview = options.enableOpenAICompatibleReview === true;
+  let enableOpenAICompatibleFinalization =
     options.enableOpenAICompatibleFinalization === true;
   const localPresetRegistries = options.enableLocalPreset
     ? createLocalPresetRunRegistries()
@@ -794,10 +794,16 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       });
 
       enableOpenAICompatibleProfile = true;
+      enableOpenAICompatibleExtraction = true;
+      enableOpenAICompatibleReview = true;
+      enableOpenAICompatibleFinalization = true;
       runService.applyRuntimeEnv(createOpenAICompatibleRuntimeEnv(openAICompatibleEnv));
       const openAICompatibleSetupRegistries = createOpenAICompatibleRunRegistries({
         env: openAICompatibleEnv,
-        fetch: options.openAICompatibleFetch
+        fetch: options.openAICompatibleFetch,
+        enableExtraction: true,
+        enableReview: true,
+        enableFinalization: true
       });
 
       if (openAICompatibleSetupRegistries.adapterRegistry) {
@@ -806,6 +812,40 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
             OPENAI_COMPATIBLE_ADAPTER_ID
           )
         );
+      }
+      const extractionGeneratorRegistry =
+        openAICompatibleSetupRegistries.extractionGeneratorRegistry;
+      if (extractionGeneratorRegistry) {
+        for (const entry of extractionGeneratorRegistry.list()) {
+          runService.installExtractionGenerator(
+            extractionGeneratorRegistry.require(entry.generatorId)
+          );
+        }
+      }
+      const proposalReviewGeneratorRegistry =
+        openAICompatibleSetupRegistries.proposalReviewGeneratorRegistry;
+      if (proposalReviewGeneratorRegistry) {
+        for (const entry of proposalReviewGeneratorRegistry.list()) {
+          runService.installProposalReviewer(
+            proposalReviewGeneratorRegistry.require(entry.reviewerId)
+          );
+        }
+      }
+      const finalCandidateGeneratorRegistry =
+        openAICompatibleSetupRegistries.finalCandidateGeneratorRegistry;
+      if (finalCandidateGeneratorRegistry) {
+        for (const entry of finalCandidateGeneratorRegistry.list()) {
+          runService.installFinalCandidateGenerator(
+            finalCandidateGeneratorRegistry.require(entry.generatorId)
+          );
+        }
+      }
+      const finalAuditGeneratorRegistry =
+        openAICompatibleSetupRegistries.finalAuditGeneratorRegistry;
+      if (finalAuditGeneratorRegistry) {
+        for (const entry of finalAuditGeneratorRegistry.list()) {
+          runService.installFinalAuditor(finalAuditGeneratorRegistry.require(entry.auditorId));
+        }
       }
 
       return noStoreJson(

@@ -12,6 +12,10 @@ import {
 import {
   InMemoryRunStore,
   AdapterRegistry,
+  ExtractionGeneratorRegistry,
+  FinalAuditGeneratorRegistry,
+  FinalCandidateGeneratorRegistry,
+  ProposalReviewGeneratorRegistry,
   createDeliberationRun,
   runCandidateRepairRound,
   runEvidenceCheckRound,
@@ -23,10 +27,14 @@ import {
   type AdaptivePrimitiveSchedulerResult,
   type DeliberationRunRecord,
   type ExtractionAcceptancePolicy,
+  type ExtractionGenerator,
   type ExtractionGeneratorRegistryEntry,
   type ExplicitFinalCandidateDraft,
+  type FinalAuditGenerator,
   type FinalAuditGeneratorRegistryEntry,
+  type FinalCandidateGenerator,
   type FinalCandidateGeneratorRegistryEntry,
+  type ProposalReviewGenerator,
   type ProposalReviewGeneratorRegistryEntry,
   type RunExtractionProposalRoundOptions,
   type RunCandidateRepairRoundOptions,
@@ -64,6 +72,30 @@ type MutableParticipantAdapterRegistry = {
   get?(adapterId: string): RegisteredParticipantAdapter | undefined;
   register?(adapter: RegisteredParticipantAdapter): void;
   replace?(adapter: RegisteredParticipantAdapter): void;
+};
+
+type MutableExtractionGeneratorRegistry = NonNullable<
+  DaemonRunOrchestrationOptions["extractionGeneratorRegistry"]
+> & {
+  register?(generator: ExtractionGenerator): void;
+};
+
+type MutableProposalReviewGeneratorRegistry = NonNullable<
+  DaemonRunOrchestrationOptions["proposalReviewGeneratorRegistry"]
+> & {
+  register?(generator: ProposalReviewGenerator): void;
+};
+
+type MutableFinalCandidateGeneratorRegistry = NonNullable<
+  DaemonRunOrchestrationOptions["finalCandidateGeneratorRegistry"]
+> & {
+  register?(generator: FinalCandidateGenerator): void;
+};
+
+type MutableFinalAuditGeneratorRegistry = NonNullable<
+  DaemonRunOrchestrationOptions["finalAuditGeneratorRegistry"]
+> & {
+  register?(generator: FinalAuditGenerator): void;
 };
 
 export type DaemonRunPlanView = {
@@ -273,12 +305,12 @@ export class DaemonRunOrchestrationService {
   private readonly idGenerator: IdGenerator;
   private readonly clock?: Clock;
   private adapterRegistry?: MutableParticipantAdapterRegistry;
-  private readonly extractionGeneratorRegistry?: DaemonRunOrchestrationOptions["extractionGeneratorRegistry"];
+  private extractionGeneratorRegistry?: MutableExtractionGeneratorRegistry;
   private readonly candidateRepairGeneratorRegistry?: DaemonRunOrchestrationOptions["candidateRepairGeneratorRegistry"];
   private readonly evidenceCheckGeneratorRegistry?: DaemonRunOrchestrationOptions["evidenceCheckGeneratorRegistry"];
-  private readonly proposalReviewGeneratorRegistry?: DaemonRunOrchestrationOptions["proposalReviewGeneratorRegistry"];
-  private readonly finalCandidateGeneratorRegistry?: DaemonRunOrchestrationOptions["finalCandidateGeneratorRegistry"];
-  private readonly finalAuditGeneratorRegistry?: DaemonRunOrchestrationOptions["finalAuditGeneratorRegistry"];
+  private proposalReviewGeneratorRegistry?: MutableProposalReviewGeneratorRegistry;
+  private finalCandidateGeneratorRegistry?: MutableFinalCandidateGeneratorRegistry;
+  private finalAuditGeneratorRegistry?: MutableFinalAuditGeneratorRegistry;
   private env?: Record<string, string | undefined>;
   private readonly executionClaimTtlMs?: number;
   private readonly executionClaimOwnerIdGenerator?: () => string;
@@ -319,6 +351,94 @@ export class DaemonRunOrchestrationService {
     if (typeof this.adapterRegistry.register === "function") {
       this.adapterRegistry.register(adapter);
     }
+  }
+
+  installExtractionGenerator(generator: ExtractionGenerator): void {
+    if (!this.extractionGeneratorRegistry) {
+      this.extractionGeneratorRegistry = new ExtractionGeneratorRegistry([generator]);
+      return;
+    }
+
+    const registry = this.extractionGeneratorRegistry;
+    if (registry.list().some((entry) => entry.generatorId === generator.generatorId)) {
+      return;
+    }
+
+    if (typeof registry.register === "function") {
+      registry.register(generator);
+      return;
+    }
+
+    this.extractionGeneratorRegistry = new ExtractionGeneratorRegistry([
+      ...registry.list().map((entry) => registry.require(entry.generatorId)),
+      generator
+    ]);
+  }
+
+  installProposalReviewer(generator: ProposalReviewGenerator): void {
+    if (!this.proposalReviewGeneratorRegistry) {
+      this.proposalReviewGeneratorRegistry = new ProposalReviewGeneratorRegistry([generator]);
+      return;
+    }
+
+    const registry = this.proposalReviewGeneratorRegistry;
+    if (registry.list().some((entry) => entry.reviewerId === generator.reviewerId)) {
+      return;
+    }
+
+    if (typeof registry.register === "function") {
+      registry.register(generator);
+      return;
+    }
+
+    this.proposalReviewGeneratorRegistry = new ProposalReviewGeneratorRegistry([
+      ...registry.list().map((entry) => registry.require(entry.reviewerId)),
+      generator
+    ]);
+  }
+
+  installFinalCandidateGenerator(generator: FinalCandidateGenerator): void {
+    if (!this.finalCandidateGeneratorRegistry) {
+      this.finalCandidateGeneratorRegistry = new FinalCandidateGeneratorRegistry([generator]);
+      return;
+    }
+
+    const registry = this.finalCandidateGeneratorRegistry;
+    if (registry.list().some((entry) => entry.generatorId === generator.generatorId)) {
+      return;
+    }
+
+    if (typeof registry.register === "function") {
+      registry.register(generator);
+      return;
+    }
+
+    this.finalCandidateGeneratorRegistry = new FinalCandidateGeneratorRegistry([
+      ...registry.list().map((entry) => registry.require(entry.generatorId)),
+      generator
+    ]);
+  }
+
+  installFinalAuditor(generator: FinalAuditGenerator): void {
+    if (!this.finalAuditGeneratorRegistry) {
+      this.finalAuditGeneratorRegistry = new FinalAuditGeneratorRegistry([generator]);
+      return;
+    }
+
+    const registry = this.finalAuditGeneratorRegistry;
+    if (registry.list().some((entry) => entry.auditorId === generator.auditorId)) {
+      return;
+    }
+
+    if (typeof registry.register === "function") {
+      registry.register(generator);
+      return;
+    }
+
+    this.finalAuditGeneratorRegistry = new FinalAuditGeneratorRegistry([
+      ...registry.list().map((entry) => registry.require(entry.auditorId)),
+      generator
+    ]);
   }
 
   applyRuntimeEnv(values: Record<string, string | undefined>): void {

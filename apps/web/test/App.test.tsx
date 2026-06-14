@@ -1622,12 +1622,32 @@ describe("@deliberum/web shell", () => {
           enabled: true,
           status: "ready",
           components: [
-            {
-              id: "openai-compatible",
-              kind: "participant_adapter",
-              enabled: true
-            }
-          ],
+              {
+                id: "openai-compatible",
+                kind: "participant_adapter",
+                enabled: true
+              },
+              {
+                id: "openai-compatible-extractor",
+                kind: "extraction_generator",
+                enabled: true
+              },
+              {
+                id: "openai-compatible-reviewer",
+                kind: "proposal_reviewer",
+                enabled: true
+              },
+              {
+                id: "openai-compatible-final-candidate",
+                kind: "final_candidate_generator",
+                enabled: true
+              },
+              {
+                id: "openai-compatible-final-auditor",
+                kind: "final_auditor",
+                enabled: true
+              }
+            ],
           setup: {
             enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
             envVars: [
@@ -1697,6 +1717,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Model ready").length).toBeGreaterThan(1);
     expect(screen.getAllByText("OpenAI-compatible model").length).toBeGreaterThan(1);
     expect(screen.getByText("Available in broader review")).toBeTruthy();
+    expect(screen.getAllByText("Model organizer").length).toBeGreaterThan(1);
+    expect(
+      screen.getByText("Reviewer, Evidence checker, and Risk reviewer use the model organizer.")
+    ).toBeTruthy();
+    expect(screen.getByText("Conclusion writer uses the model organizer.")).toBeTruthy();
     expect(
       screen.getByText(
         "Choose Broader review on the start page to add a third independent model perspective."
