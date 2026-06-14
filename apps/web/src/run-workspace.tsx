@@ -720,7 +720,7 @@ function DiscussionModelSetupPanel({
             <small>
               {providerSource
                 ? t(
-                    "{provider} is ready. This discussion will use configured model participants from the local daemon.",
+                    "{provider} is ready. This discussion will use configured model participants from the local service.",
                     { provider: t(providerSource.name) }
                   )
                 : t(
@@ -1010,7 +1010,7 @@ function buildDiscussionParticipantLineup(input: {
   const perspectiveRoles = getDiscussionPerspectiveRoles(input);
   const perspectiveDetail =
     input.selectedSource === "model-backed" && input.providerSource
-      ? "{provider} will answer through the configured local daemon setup."
+      ? "{provider} will answer through the configured local setup."
       : input.demoAvailable
         ? "Uses built-in demo material for a deterministic walkthrough."
         : "No ready participant source is available yet.";

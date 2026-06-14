@@ -80,7 +80,7 @@ export function AdvancedDetails({
   );
 }
 
-export function DaemonStatus() {
+export function DaemonStatus({ mode = "user" }: { mode?: "user" | "advanced" } = {}) {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const healthQuery = useQuery({
@@ -90,28 +90,50 @@ export function DaemonStatus() {
   });
 
   if (healthQuery.isLoading) {
-    return <StatusBanner title={t("Checking daemon")} />;
+    return (
+      <StatusBanner title={t(mode === "advanced" ? "Checking daemon" : "Checking local service")} />
+    );
   }
 
   if (healthQuery.isError) {
     return (
       <StatusBanner
         tone="warning"
-        title={t("Daemon unavailable")}
-        detail={t("Views will retry when routes request data.")}
+        title={t(mode === "advanced" ? "Daemon unavailable" : "Local service unavailable")}
+        detail={t(
+          mode === "advanced"
+            ? "Views will retry when routes request data."
+            : "Start the local service, then check again."
+        )}
       />
     );
   }
 
   if (!healthQuery.data) {
-    return <StatusBanner title={t("Daemon status unavailable")} />;
+    return (
+      <StatusBanner
+        title={t(
+          mode === "advanced" ? "Daemon status unavailable" : "Local service status unavailable"
+        )}
+      />
+    );
+  }
+
+  if (mode === "advanced") {
+    return (
+      <StatusBanner
+        tone="ok"
+        title={t("Daemon online")}
+        detail={`${healthQuery.data.service} on ${healthQuery.data.host}:${healthQuery.data.port}`}
+      />
+    );
   }
 
   return (
     <StatusBanner
       tone="ok"
-      title={t("Daemon online")}
-      detail={`${healthQuery.data.service} on ${healthQuery.data.host}:${healthQuery.data.port}`}
+      title={t("Local service connected")}
+      detail={t("Web can read setup, discussions, and model readiness from this machine.")}
     />
   );
 }

@@ -194,11 +194,11 @@ export function buildProviderBackedDiscussionRunPlan(
           ],
     constraints: uniqueBriefLines([
       ...userConstraints,
-      "Use configured model-backed participants from the local daemon.",
+      "Use configured model-backed participants from the local service.",
       perspectiveCount === 3
-        ? "Use three independent model-backed perspectives from the local daemon."
-        : "Use two independent model-backed perspectives from the local daemon.",
-      "Keep provider credentials in the local daemon environment only.",
+        ? "Use three independent model-backed perspectives from the local service."
+        : "Use two independent model-backed perspectives from the local service.",
+      "Keep provider credentials saved locally and out of the discussion.",
       "Keep the conclusion provisional until reviewed."
     ]),
     participants: perspectives.map((perspective) => ({

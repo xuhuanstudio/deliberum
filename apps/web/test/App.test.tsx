@@ -97,8 +97,8 @@ const providerBackedRunDetail = {
     topic: "Should we use a configured provider?",
     goals: ["Compare provider-backed perspectives"],
     constraints: [
-      "Use configured model-backed participants from the local daemon.",
-      "Keep provider credentials in the local daemon environment only."
+      "Use configured model-backed participants from the local service.",
+      "Keep provider credentials saved locally and out of the discussion."
     ],
     participants: [
       {
@@ -192,6 +192,34 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
               "DELIBERUM_OPENAI_BASE_URL",
               "DELIBERUM_OPENAI_MODEL"
             ],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "http-template",
+          name: "HTTP-template",
+          enabled: false,
+          status: "needs_configuration",
+          components: [
+            {
+              id: "http-template",
+              kind: "participant_adapter",
+              enabled: false
+            }
+          ],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_HTTP_TEMPLATE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_HTTP_TEMPLATE_URL",
+                configured: false,
+                secret: false,
+                required: true,
+                purpose: "Required HTTP template endpoint URL."
+              }
+            ],
+            missingRecommendedEnvVars: ["DELIBERUM_HTTP_TEMPLATE_URL"],
             notes: []
           },
           boundaries: []
@@ -1124,7 +1152,7 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Setup / Models")).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Open Setup / Models" }).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
-    expect(await screen.findByText("Daemon online")).toBeTruthy();
+    expect((await screen.findAllByText("Local service connected")).length).toBeGreaterThan(0);
     expect(screen.getByText("Model providers")).toBeTruthy();
     expect(
       screen.getByText(
@@ -1133,7 +1161,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("Ready for demo discussions")).toBeTruthy();
     expect(screen.getByText("Provider enabled; add model details")).toBeTruthy();
-    expect(screen.getByText("Configuration required")).toBeTruthy();
+    expect(screen.queryByText("Configuration required")).toBeNull();
     expect(screen.getByText("First-use path")).toBeTruthy();
     expect(screen.getByText("From setup to discussion room")).toBeTruthy();
     expect(
@@ -1158,7 +1186,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("How Web setup works locally")).toBeTruthy();
     expect(
       screen.getByText(
-        "Web saves provider setup to the local daemon configuration file and applies it to the current daemon when possible."
+        "Web saves provider setup to the local service configuration and applies it to the current local service when possible."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
@@ -1268,7 +1296,7 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByRole("heading", { name: "Setup / Models" })).toBeTruthy();
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(screen.getByText("Model setup status")).toBeTruthy();
-    expect(await screen.findByText("Daemon online")).toBeTruthy();
+    expect(await screen.findByText("Local service connected")).toBeTruthy();
     expect(screen.getByText("Model providers")).toBeTruthy();
     expect(screen.getByText("Configure provider locally")).toBeTruthy();
     expect(screen.getByText("Discussion readiness")).toBeTruthy();
@@ -1343,6 +1371,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByRole("link", { name: "Start a discussion" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Continue discussions" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Setup / Models" })).toBeTruthy();
+    expect(screen.queryByText("HTTP-template")).toBeNull();
+    expect(screen.queryByText("MCP tool")).toBeNull();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_HTTP_TEMPLATE_URL");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_MCP_TOOL_URL");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
 
@@ -1372,7 +1404,7 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Model setup saved locally")).toBeTruthy();
     expect(
       screen.getByText(
-        "The current daemon can use this setup now. Check readiness, verify connection, then start a real model-backed discussion."
+        "The current local service can use this setup now. Check readiness, verify connection, then start a real model-backed discussion."
       )
     ).toBeTruthy();
     expect(screen.getByText("Ready in this session")).toBeTruthy();
@@ -1388,7 +1420,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Verify the provider before starting")).toBeTruthy();
     expect(
       screen.getByText(
-        "The saved setup is active in this daemon. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion."
+        "The saved setup is active in this local service. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion."
       )
     ).toBeTruthy();
     expect(screen.getByRole("link", { name: "Start model-backed discussion" })).toBeTruthy();
@@ -1401,6 +1433,10 @@ describe("@deliberum/web shell", () => {
 
     fireEvent.click(getAdvancedModeSummaryByPanelText("Setup diagnostics"));
     expect(await screen.findByText("Runtime profile setup details")).toBeTruthy();
+    expect(screen.getByText("HTTP-template")).toBeTruthy();
+    expect(screen.getByText("MCP tool")).toBeTruthy();
+    expect(screen.getByText("DELIBERUM_HTTP_TEMPLATE_URL")).toBeTruthy();
+    expect(screen.getByText("DELIBERUM_MCP_TOOL_URL, DELIBERUM_MCP_TOOL_NAME")).toBeTruthy();
     expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
   });
 
@@ -1498,6 +1534,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u540e\u53ef\u7528\u4e8e\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5")).toBeTruthy();
     expect(screen.getAllByText("\u672c\u5730\u7ec4\u7ec7\u5668").length).toBeGreaterThan(1);
     expect(screen.getAllByRole("link", { name: "\u67e5\u770b\u8bbe\u7f6e\u6b65\u9aa4" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText("HTTP-template")).toBeNull();
+    expect(screen.queryByText("MCP tool")).toBeNull();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_HTTP_TEMPLATE_URL");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_MCP_TOOL_URL");
 
     fireEvent.change(screen.getByLabelText("\u63d0\u4f9b\u65b9 API key"), {
       target: {
@@ -1522,7 +1562,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u53ef\u4ee5\u9a8c\u8bc1")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u5f53\u524d\u5b88\u62a4\u8fdb\u7a0b\u73b0\u5728\u5df2\u53ef\u4ee5\u4f7f\u7528\u8fd9\u4e2a\u8bbe\u7f6e\u3002\u8bf7\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u3001\u9a8c\u8bc1\u8fde\u63a5\uff0c\u7136\u540e\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002"
+        "\u5f53\u524d\u672c\u5730\u670d\u52a1\u73b0\u5728\u5df2\u53ef\u4ee5\u4f7f\u7528\u8fd9\u4e2a\u8bbe\u7f6e\u3002\u8bf7\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u3001\u9a8c\u8bc1\u8fde\u63a5\uff0c\u7136\u540e\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002"
       )
     ).toBeTruthy();
     expect(screen.getByText("\u8bbe\u7f6e\u8def\u5f84")).toBeTruthy();
@@ -1915,7 +1955,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("MCP tool").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Ready").length).toBeGreaterThan(0);
     expect(screen.getByText("Ready with run config")).toBeTruthy();
-    expect(screen.getByText("Needs configuration")).toBeTruthy();
+    expect(screen.getAllByText("Needs configuration").length).toBeGreaterThan(0);
     expect(screen.getByText("Setup steps")).toBeTruthy();
     expect(screen.getByText("Required env vars")).toBeTruthy();
     expect(screen.getByText("Secret env names")).toBeTruthy();
@@ -2576,7 +2616,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(
       screen.getAllByText(
-        "OpenAI-compatible will answer through the configured local daemon setup."
+        "OpenAI-compatible will answer through the configured local setup."
       ).length
     ).toBeGreaterThan(1);
     expect(
@@ -2658,9 +2698,9 @@ describe("@deliberum/web shell", () => {
       expect.objectContaining({
         topic: "Should we use the configured provider for this review?",
         constraints: expect.arrayContaining([
-          "Use configured model-backed participants from the local daemon.",
-          "Use three independent model-backed perspectives from the local daemon.",
-          "Keep provider credentials in the local daemon environment only."
+          "Use configured model-backed participants from the local service.",
+          "Use three independent model-backed perspectives from the local service.",
+          "Keep provider credentials saved locally and out of the discussion."
         ]),
         participants: expect.arrayContaining([
           expect.objectContaining({

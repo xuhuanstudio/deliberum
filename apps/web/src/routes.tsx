@@ -479,7 +479,7 @@ function LandingPage() {
           ) : (
             <EmptyState
               title={t("No model setup returned")}
-              description={t("The daemon did not return safe model setup status.")}
+              description={t("The local service did not return safe model setup status.")}
             />
           )}
           <div className="du-action-row">
@@ -534,7 +534,7 @@ function LandingPage() {
         >
           <DataPanel title="Daemon status" description="Local daemon connection used by the Web UI.">
             <div className="du-advanced-status-grid">
-              <DaemonStatus />
+              <DaemonStatus mode="advanced" />
               <KeyValueGrid
                 items={[
                   {
@@ -1348,7 +1348,9 @@ function describeLandingModelSetup(
 
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const localPresetReady = localPreset?.status === "ready";
-  const modelProviderProfiles = setupPlan.profiles.filter(isUserFacingModelProviderProfile);
+  const modelProviderProfiles = setupPlan.profiles.filter(
+    isWebConfigurableModelProviderProfile
+  );
   const modelProviderReady = modelProviderProfiles.some((profile) => profile.status === "ready");
   const needsSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
 
@@ -1534,7 +1536,7 @@ function SetupModelsPage() {
         <DataPanel
           title={t("Model setup status")}
           description={t(
-            "See daemon connection, local demo readiness, provider readiness, and the safest next setup action in user language."
+            "See local service connection, local demo readiness, provider readiness, and the safest next setup action in user language."
           )}
         >
           {runtimeProfilesQuery.isLoading ? (
@@ -1551,7 +1553,7 @@ function SetupModelsPage() {
           ) : (
             <EmptyState
               title={t("No model setup returned")}
-              description={t("The daemon did not return safe model setup status.")}
+              description={t("The local service did not return safe model setup status.")}
             />
           )}
         </DataPanel>
@@ -1603,13 +1605,13 @@ function SetupModelsPanel({
   });
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const providerProfiles = setupPlan.profiles.filter((profile) => profile.id !== "local-preset");
-  const modelProviderProfiles = providerProfiles.filter(isUserFacingModelProviderProfile);
+  const modelProviderProfiles = providerProfiles.filter(isWebConfigurableModelProviderProfile);
   const openAICompatibleProfile = modelProviderProfiles.find(
     (profile) => profile.id === "openai-compatible"
   );
-  const readyProviderCount = providerProfiles.filter((profile) => profile.status === "ready")
+  const readyProviderCount = modelProviderProfiles.filter((profile) => profile.status === "ready")
     .length;
-  const providerNeedsSetup = providerProfiles.some(
+  const providerNeedsSetup = modelProviderProfiles.some(
     (profile) =>
       profile.status === "ready_with_run_config" ||
       profile.status === "needs_configuration" ||
@@ -1618,7 +1620,7 @@ function SetupModelsPanel({
   const canStartDiscussion =
     localPreset?.status === "ready" ||
     readyProviderCount > 0 ||
-    providerProfiles.some((profile) => profile.status === "ready_with_run_config");
+    modelProviderProfiles.some((profile) => profile.status === "ready_with_run_config");
   const nextAction = describeSetupNextAction({
     canStartDiscussion,
     providerNeedsSetup,
@@ -1663,12 +1665,12 @@ function SetupModelsPanel({
         <DaemonStatus />
         <article className="du-status du-status-neutral">
           <strong>{t("Model providers")}</strong>
-          <span>{t(describeModelProviderSummary(providerProfiles, localPreset))}</span>
+          <span>{t(describeModelProviderSummary(modelProviderProfiles, localPreset))}</span>
         </article>
       </div>
       <div className="du-setup-model-grid">
         {localPreset ? <SetupModelCard profile={localPreset} kind="local" /> : null}
-        {providerProfiles.map((profile) => (
+        {modelProviderProfiles.map((profile) => (
           <SetupModelCard key={profile.id} profile={profile} kind="provider" />
         ))}
       </div>
@@ -1717,7 +1719,7 @@ function SetupModelsPanel({
           <span>{t("How Web setup works locally")}</span>
           <small>
             {t(
-              "Web saves provider setup to the local daemon configuration file and applies it to the current daemon when possible."
+              "Web saves provider setup to the local service configuration and applies it to the current local service when possible."
             )}
           </small>
         </summary>
@@ -1732,7 +1734,7 @@ function SetupModelsPanel({
             <SetupInstructionStep
               title={t("Configure provider")}
               detail={t(
-                "Web writes a local daemon configuration block and does not show the API key again after saving."
+                "Web writes local service configuration and does not show the API key again after saving."
               )}
             />
             <SetupInstructionStep
@@ -1834,7 +1836,7 @@ function ProviderSetupChecklist({ profiles }: { profiles: RuntimeSetupPlanProfil
         <h4 id="provider-setup-checklist">{t("Provider setup checklist")}</h4>
         <p>
           {t(
-            "This summarizes what Web can safely know from daemon setup status. It never shows API key values or environment variable names."
+            "This summarizes what Web can safely know from local service setup status. It never shows API key values or environment variable names."
           )}
         </p>
       </div>
@@ -2007,7 +2009,9 @@ function ProviderSetupChecklistCard({ profile }: { profile: RuntimeSetupPlanProf
 function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscussionReadinessView {
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const localPresetReady = localPreset?.status === "ready";
-  const modelProviderProfiles = setupPlan.profiles.filter(isUserFacingModelProviderProfile);
+  const modelProviderProfiles = setupPlan.profiles.filter(
+    isWebConfigurableModelProviderProfile
+  );
   const readyModelProviders = modelProviderProfiles.filter((profile) => profile.status === "ready");
   const needsModelSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
   const modelProviderReady = readyModelProviders.length > 0;
@@ -2016,7 +2020,7 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
     ? "Configured model participants can answer as independent perspectives."
     : modelProviderProfiles.length > 0
       ? "Save the provider API key, base URL, and model in Web setup, check readiness, then verify the connection."
-      : "The daemon did not report a Web-configurable model provider.";
+      : "The local service did not report a Web-configurable model provider.";
   const modelStatus = modelProviderReady
     ? "Ready"
     : modelProviderProfiles.length > 0
@@ -2084,7 +2088,9 @@ function buildSetupParticipantReadiness(
 ): SetupParticipantReadinessView {
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const localPresetReady = localPreset?.status === "ready";
-  const modelProviderProfiles = setupPlan.profiles.filter(isUserFacingModelProviderProfile);
+  const modelProviderProfiles = setupPlan.profiles.filter(
+    isWebConfigurableModelProviderProfile
+  );
   const readyModelProvider = modelProviderProfiles.find((profile) => profile.status === "ready");
   const providerName = readyModelProvider?.name ?? "Model provider";
   const modelReady = readyModelProvider !== undefined;
@@ -2285,7 +2291,7 @@ function OpenAICompatibleSetupForm({
       ? {
           title: "Ready in this session",
           detail:
-            "The saved setup is active in the current daemon. Check readiness, verify connection, then start a discussion.",
+            "The saved setup is active in the current local service. Check readiness, verify connection, then start a discussion.",
           tone: "ok" as const
         }
       : {
@@ -2378,7 +2384,7 @@ function OpenAICompatibleSetupForm({
           </article>
           <p className="du-readable-meta">
             {t(
-              "The API key is submitted only to your local daemon. Web clears the key field after saving and never shows the saved value."
+              "The API key is submitted only to your local service. Web clears the key field after saving and never shows the saved value."
             )}
           </p>
           <p className="du-readable-meta">
@@ -2386,7 +2392,7 @@ function OpenAICompatibleSetupForm({
               ready
                 ? "Use Verify connection to send one minimal provider request before starting a model-backed discussion."
                 : activeInCurrentDaemon
-                  ? "Verify connection is available now because the saved setup is active in this daemon."
+                  ? "Verify connection is available now because the saved setup is active in this local service."
                   : "Verify connection becomes available after Web confirms this provider is ready."
             )}
           </p>
@@ -2404,8 +2410,8 @@ function OpenAICompatibleSetupForm({
           title={t("Model setup saved locally")}
           detail={t(
             activeInCurrentDaemon
-              ? "The current daemon can use this setup now. Check readiness, verify connection, then start a real model-backed discussion."
-              : "Restart the local daemon, then return here and check readiness before starting a real model-backed discussion."
+              ? "The current local service can use this setup now. Check readiness, verify connection, then start a real model-backed discussion."
+              : "Restart the local service, then return here and check readiness before starting a real model-backed discussion."
           )}
         />
       ) : null}
@@ -2607,7 +2613,7 @@ function ProviderSetupCompletion({
     : "Verify the provider before starting";
   const detail = startReady
     ? "The provider setup is available for new discussions. The start page will select model-backed participants by default while keeping demo participants available."
-    : "The saved setup is active in this daemon. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion.";
+    : "The saved setup is active in this local service. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion.";
 
   return (
     <section
@@ -2656,7 +2662,7 @@ function describeProviderEnabledCheck(profile: RuntimeSetupPlanProfile): Provide
     return {
       label: "Provider",
       value: "Enabled locally",
-      detail: "The daemon reports this provider as available for setup.",
+      detail: "The local service reports this provider as available for setup.",
       tone: "ok"
     };
   }
@@ -2674,7 +2680,7 @@ function describeProviderApiKeyCheck(profile: RuntimeSetupPlanProfile): Provider
     return {
       label: "API key",
       value: "No API key reported",
-      detail: "This provider did not report a secret setup field through safe daemon status.",
+      detail: "This provider did not report a secret setup field through safe local service status.",
       tone: "neutral"
     };
   }
@@ -2683,7 +2689,7 @@ function describeProviderApiKeyCheck(profile: RuntimeSetupPlanProfile): Provider
     return {
       label: "API key",
       value: "Configured locally",
-      detail: "The daemon reports that a provider secret is present without exposing its value.",
+      detail: "The local service reports that a provider secret is present without exposing its value.",
       tone: "ok"
     };
   }
@@ -2724,7 +2730,7 @@ function describeProviderRequestTargetCheck(
   return {
     label: "Base URL",
     value: "Configured locally",
-    detail: "The daemon reports that provider request routing is available.",
+    detail: "The local service reports that provider request routing is available.",
     tone: "ok"
   };
 }
@@ -2761,7 +2767,7 @@ function describeProviderModelCheck(
   return {
     label: "Model",
     value: "Configured locally",
-    detail: "The daemon reports that a model choice is available for this provider.",
+    detail: "The local service reports that a model choice is available for this provider.",
     tone: "ok"
   };
 }
@@ -2809,8 +2815,8 @@ function getProviderChecklistSummary(profile: RuntimeSetupPlanProfile): string {
   return "Enable this provider locally before it can be used.";
 }
 
-function isUserFacingModelProviderProfile(profile: RuntimeSetupPlanProfile): boolean {
-  return profile.id === "openai-compatible" || profile.id === "http-template";
+function isWebConfigurableModelProviderProfile(profile: RuntimeSetupPlanProfile): boolean {
+  return profile.id === "openai-compatible";
 }
 
 function hasAnySetupName(
@@ -3001,7 +3007,7 @@ function describeSetupProfileStatus(
   if (profile.status === "ready") {
     return {
       title: "Ready for model-backed discussions",
-      detail: "This provider can support configured model-backed participants from the daemon.",
+      detail: "This provider can support configured model-backed participants from the local service.",
       tone: "ok"
     };
   }
