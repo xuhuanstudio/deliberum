@@ -652,10 +652,65 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
+.du-brief-primary {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fffefa;
+  padding: 14px;
+}
+
+.du-field-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.du-field-badge {
+  border: 1px solid #b8d8d2;
+  border-radius: 999px;
+  background: #edf8f4;
+  color: var(--du-accent-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+}
+
 .du-discussion-form textarea {
   min-height: 96px;
   font-family: inherit;
   font-size: 0.95rem;
+}
+
+.du-discussion-form textarea.du-brief-question {
+  min-height: 82px;
+  font-size: 1rem;
+}
+
+.du-brief-options {
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: rgba(255, 254, 250, 0.72);
+}
+
+.du-brief-options summary {
+  cursor: pointer;
+  color: var(--du-ink);
+  font-weight: 700;
+  padding: 12px 14px;
+}
+
+.du-brief-options summary:hover {
+  background: var(--du-surface-muted);
+}
+
+.du-brief-options-body {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--du-line);
+  padding: 14px;
 }
 
 .du-discussion-form-grid {

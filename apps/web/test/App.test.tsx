@@ -796,6 +796,17 @@ function openAllClosedAdvancedModeDetails() {
   }
 }
 
+function openBriefOptions() {
+  const summary = screen.getByText("Add goals, constraints, and expected result");
+  const details = summary.closest("details") as HTMLDetailsElement | null;
+
+  expect(details).toBeTruthy();
+
+  if (!details?.open) {
+    fireEvent.click(summary);
+  }
+}
+
 class MockEventSource {
   static instances: MockEventSource[] = [];
 
@@ -1328,11 +1339,21 @@ describe("@deliberum/web shell", () => {
     const client = renderApp("/runs/new");
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Add goals, constraints, and expected result")).toBeTruthy();
+    expect(
+      (screen.getByRole("button", { name: "Create discussion" }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
     fireEvent.change(screen.getByLabelText("Discussion question"), {
       target: {
         value: "Should we adopt a staged provider rollout?"
       }
     });
+    expect(
+      (screen.getByRole("button", { name: "Create discussion" }) as HTMLButtonElement)
+        .disabled
+    ).toBe(false);
+    openBriefOptions();
     fireEvent.change(screen.getByLabelText("Goals"), {
       target: {
         value: "Compare staged rollout\nSurface migration risk"
@@ -1343,7 +1364,7 @@ describe("@deliberum/web shell", () => {
         value: "Keep the recommendation reversible"
       }
     });
-    fireEvent.change(screen.getByLabelText("Expected conclusion"), {
+    fireEvent.change(screen.getByLabelText("Expected result"), {
       target: {
         value: "Summarize the conclusion, disagreements, risks, and next steps."
       }
@@ -1395,6 +1416,7 @@ describe("@deliberum/web shell", () => {
     expect((screen.getByLabelText("Discussion question") as HTMLTextAreaElement).value).toBe(
       "How should we review a proposed rollout before relying on it?"
     );
+    openBriefOptions();
     expect((screen.getByLabelText("Goals") as HTMLTextAreaElement).value).toContain(
       "Compare the strongest current options."
     );

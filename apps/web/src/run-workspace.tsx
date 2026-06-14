@@ -174,40 +174,66 @@ export function RunNewPage() {
           description="Describe what you need to decide or clarify. Deliberum will structure the discussion so the conclusion, disagreements, risks, evidence gaps, and next actions stay visible."
         >
           <form className="du-discussion-form" onSubmit={submitGuidedDiscussion}>
-            <label htmlFor="discussion-question">Discussion question</label>
-            <textarea
-              id="discussion-question"
-              value={discussionQuestion}
-              onChange={(event) => setDiscussionQuestion(event.currentTarget.value)}
-              placeholder="What should we decide, compare, or clarify?"
-            />
-            <div className="du-discussion-form-grid">
-              <div>
-                <label htmlFor="discussion-goals">Goals</label>
-                <textarea
-                  id="discussion-goals"
-                  value={discussionGoals}
-                  onChange={(event) => setDiscussionGoals(event.currentTarget.value)}
-                  placeholder="One goal per line"
-                />
+            <div className="du-brief-primary">
+              <div className="du-field-heading">
+                <label htmlFor="discussion-question">Discussion question</label>
+                <span aria-hidden="true" className="du-field-badge">
+                  Required
+                </span>
               </div>
-              <div>
-                <label htmlFor="discussion-constraints">Constraints</label>
-                <textarea
-                  id="discussion-constraints"
-                  value={discussionConstraints}
-                  onChange={(event) => setDiscussionConstraints(event.currentTarget.value)}
-                  placeholder="One constraint per line"
-                />
+              <textarea
+                id="discussion-question"
+                className="du-brief-question"
+                value={discussionQuestion}
+                onChange={(event) => setDiscussionQuestion(event.currentTarget.value)}
+                placeholder="What should we decide, compare, or clarify?"
+              />
+              <div className="du-action-row">
+                <button type="submit" disabled={!canCreateDiscussion}>
+                  {createMutation.isPending ? "Creating discussion" : "Create discussion"}
+                </button>
+                <button
+                  type="button"
+                  className="du-secondary-button"
+                  onClick={fillSampleDiscussionBrief}
+                  disabled={createMutation.isPending}
+                >
+                  Use sample brief
+                </button>
               </div>
             </div>
-            <label htmlFor="discussion-expected-outcome">Expected conclusion</label>
-            <textarea
-              id="discussion-expected-outcome"
-              value={discussionExpectedOutcome}
-              onChange={(event) => setDiscussionExpectedOutcome(event.currentTarget.value)}
-              placeholder="What should the current conclusion include?"
-            />
+            <details className="du-brief-options">
+              <summary>Add goals, constraints, and expected result</summary>
+              <div className="du-brief-options-body">
+                <div className="du-discussion-form-grid">
+                  <div>
+                    <label htmlFor="discussion-goals">Goals</label>
+                    <textarea
+                      id="discussion-goals"
+                      value={discussionGoals}
+                      onChange={(event) => setDiscussionGoals(event.currentTarget.value)}
+                      placeholder="One goal per line"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="discussion-constraints">Constraints</label>
+                    <textarea
+                      id="discussion-constraints"
+                      value={discussionConstraints}
+                      onChange={(event) => setDiscussionConstraints(event.currentTarget.value)}
+                      placeholder="One constraint per line"
+                    />
+                  </div>
+                </div>
+                <label htmlFor="discussion-expected-outcome">Expected result</label>
+                <textarea
+                  id="discussion-expected-outcome"
+                  value={discussionExpectedOutcome}
+                  onChange={(event) => setDiscussionExpectedOutcome(event.currentTarget.value)}
+                  placeholder="What should the current conclusion include?"
+                />
+              </div>
+            </details>
             <div className="du-readable-list">
               <ExplainerItem
                 title="Works without setup"
@@ -217,19 +243,6 @@ export function RunNewPage() {
                 title="Complete discussion loop"
                 detail="It creates a discussion brief, independent first responses, strongest options, disagreements, requirements, evidence needs, risk review, and current conclusion."
               />
-            </div>
-            <div className="du-action-row">
-              <button type="submit" disabled={!canCreateDiscussion}>
-                {createMutation.isPending ? "Creating discussion" : "Create discussion"}
-              </button>
-              <button
-                type="button"
-                className="du-secondary-button"
-                onClick={fillSampleDiscussionBrief}
-                disabled={createMutation.isPending}
-              >
-                Use sample brief
-              </button>
             </div>
           </form>
         </DataPanel>
