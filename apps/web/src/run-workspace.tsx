@@ -2313,82 +2313,106 @@ function StartRunForm({
               {t("After it finishes, review the updated timeline and current conclusion.")}
             </span>
           </button>
-          <button
-            type="button"
-            className="du-discussion-action-button du-discussion-action-secondary"
-            aria-label={t("Ask for stronger options")}
-            onClick={() => startRecommendedPipeline(strongerOptionsFeedback)}
-            disabled={startMutation.isPending}
-          >
-            <span className="du-discussion-action-badge-row">
-              <span className="du-discussion-action-badge">{t("Updates discussion")}</span>
-            </span>
-            <strong>{t("Ask for stronger options")}</strong>
-            <span>
-              {t(
-                "Refresh the discussion so the strongest current options can be compared and improved."
-              )}
-            </span>
-            <span className="du-discussion-action-result">
-              {t("After it finishes, compare the refreshed strongest options.")}
-            </span>
-          </button>
-          <a
-            className="du-discussion-action-button du-discussion-action-secondary"
-            href="#open-disagreements"
-            aria-label={t("Review disagreements")}
-          >
-            <span className="du-discussion-action-badge-row">
-              <span className="du-discussion-action-badge du-discussion-action-badge-muted">
-                {t("Review only")}
+          {continuationView.reviewReady ? (
+            <>
+              <button
+                type="button"
+                className="du-discussion-action-button du-discussion-action-secondary"
+                aria-label={t("Ask for stronger options")}
+                onClick={() => startRecommendedPipeline(strongerOptionsFeedback)}
+                disabled={startMutation.isPending}
+              >
+                <span className="du-discussion-action-badge-row">
+                  <span className="du-discussion-action-badge">{t("Updates discussion")}</span>
+                </span>
+                <strong>{t("Ask for stronger options")}</strong>
+                <span>
+                  {t(
+                    "Refresh the discussion so the strongest current options can be compared and improved."
+                  )}
+                </span>
+                <span className="du-discussion-action-result">
+                  {t("After it finishes, compare the refreshed strongest options.")}
+                </span>
+              </button>
+              <a
+                className="du-discussion-action-button du-discussion-action-secondary"
+                href="#open-disagreements"
+                aria-label={t("Review disagreements")}
+              >
+                <span className="du-discussion-action-badge-row">
+                  <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                    {t("Review only")}
+                  </span>
+                </span>
+                <strong>{t("Review disagreements")}</strong>
+                <span>
+                  {t("Jump to unresolved objections that still constrain the conclusion.")}
+                </span>
+                <span className="du-discussion-action-result">
+                  {t("Jump only; this does not change the discussion.")}
+                </span>
+              </a>
+              <a
+                className="du-discussion-action-button du-discussion-action-secondary"
+                href="#answer-requirements"
+                aria-label={t("Confirm answer requirements")}
+              >
+                <span className="du-discussion-action-badge-row">
+                  <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                    {t("Review only")}
+                  </span>
+                </span>
+                <strong>{t("Confirm answer requirements")}</strong>
+                <span>
+                  {t(
+                    "Review requirements that must be satisfied or acknowledged before relying on the conclusion."
+                  )}
+                </span>
+                <span className="du-discussion-action-result">
+                  {t("Jump only; this does not change the discussion.")}
+                </span>
+              </a>
+              <a
+                className="du-discussion-action-button du-discussion-action-secondary"
+                href="#evidence-gaps"
+                aria-label={t("Check evidence")}
+              >
+                <span className="du-discussion-action-badge-row">
+                  <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                    {t("Review only")}
+                  </span>
+                </span>
+                <strong>{t("Check evidence")}</strong>
+                <span>
+                  {t("Review missing or unchecked evidence before relying on the answer.")}
+                </span>
+                <span className="du-discussion-action-result">
+                  {t("Jump only; this does not change the discussion.")}
+                </span>
+              </a>
+            </>
+          ) : (
+            <article
+              className="du-discussion-action-button du-discussion-action-secondary du-discussion-action-note"
+              aria-label={t("Review actions unlock later")}
+            >
+              <span className="du-discussion-action-badge-row">
+                <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                  {t("Available after first update")}
+                </span>
               </span>
-            </span>
-            <strong>{t("Review disagreements")}</strong>
-            <span>
-              {t("Jump to unresolved objections that still constrain the conclusion.")}
-            </span>
-            <span className="du-discussion-action-result">
-              {t("Jump only; this does not change the discussion.")}
-            </span>
-          </a>
-          <a
-            className="du-discussion-action-button du-discussion-action-secondary"
-            href="#answer-requirements"
-            aria-label={t("Confirm answer requirements")}
-          >
-            <span className="du-discussion-action-badge-row">
-              <span className="du-discussion-action-badge du-discussion-action-badge-muted">
-                {t("Review only")}
+              <strong>{t("Review actions unlock later")}</strong>
+              <span>
+                {t(
+                  "After the room has perspectives, disagreements, evidence gaps, risks, and a draft conclusion, review actions will appear here."
+                )}
               </span>
-            </span>
-            <strong>{t("Confirm answer requirements")}</strong>
-            <span>
-              {t(
-                "Review requirements that must be satisfied or acknowledged before relying on the conclusion."
-              )}
-            </span>
-            <span className="du-discussion-action-result">
-              {t("Jump only; this does not change the discussion.")}
-            </span>
-          </a>
-          <a
-            className="du-discussion-action-button du-discussion-action-secondary"
-            href="#evidence-gaps"
-            aria-label={t("Check evidence")}
-          >
-            <span className="du-discussion-action-badge-row">
-              <span className="du-discussion-action-badge du-discussion-action-badge-muted">
-                {t("Review only")}
+              <span className="du-discussion-action-result">
+                {t("For now, continue the discussion to create those materials.")}
               </span>
-            </span>
-            <strong>{t("Check evidence")}</strong>
-            <span>
-              {t("Review missing or unchecked evidence before relying on the answer.")}
-            </span>
-            <span className="du-discussion-action-result">
-              {t("Jump only; this does not change the discussion.")}
-            </span>
-          </a>
+            </article>
+          )}
         </div>
       </div>
       <div className="du-action-row">

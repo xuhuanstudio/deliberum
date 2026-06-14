@@ -490,6 +490,14 @@ textarea:focus-visible {
   background: var(--du-surface-muted);
 }
 
+.du-discussion-action-note {
+  cursor: default;
+}
+
+.du-discussion-action-note:hover {
+  background: var(--du-surface);
+}
+
 .du-discussion-action-button strong,
 .du-discussion-action-button span {
   display: block;

@@ -3813,6 +3813,16 @@ describe("@deliberum/web shell", () => {
     expect(primaryDiscussionActions.textContent ?? "").not.toContain(
       "Review current conclusion"
     );
+    expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Confirm answer requirements" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Check evidence" })).toBeNull();
+    expect(screen.getByText("Review actions unlock later")).toBeTruthy();
+    expect(screen.getByText("Available after first update")).toBeTruthy();
+    expect(
+      screen.getByText("For now, continue the discussion to create those materials.")
+    ).toBeTruthy();
     const pendingActionPath = screen.getByRole("region", {
       name: "Recommended action path"
     });
@@ -3855,10 +3865,16 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
     expect(screen.getByText("Discussion actions")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Review disagreements" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Confirm answer requirements" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Confirm answer requirements" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Check evidence" })).toBeNull();
+    expect(screen.getByText("Review actions unlock later")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "After the room has perspectives, disagreements, evidence gaps, risks, and a draft conclusion, review actions will appear here."
+      )
+    ).toBeTruthy();
     expect(screen.getByText("Participant source")).toBeTruthy();
     expect(screen.getByText("Demo participant discussion")).toBeTruthy();
     expect(
@@ -3872,8 +3888,8 @@ describe("@deliberum/web shell", () => {
     expect(pendingDiscussionActionsText).toContain(
       "After it finishes, review the updated timeline and current conclusion."
     );
-    expect(pendingDiscussionActionsText).toContain("Review only");
-    expect(pendingDiscussionActionsText).toContain(
+    expect(pendingDiscussionActionsText).not.toContain("Review only");
+    expect(pendingDiscussionActionsText).not.toContain(
       "Jump only; this does not change the discussion."
     );
     fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
@@ -3932,6 +3948,8 @@ describe("@deliberum/web shell", () => {
         "Provider credentials stay on this machine; this is the safest available full path until provider organizer setup is aligned locally."
       )
     ).toBeTruthy();
+    expect(screen.getByText("Review actions unlock later")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("web-openai-compatible-discussion");
     expect(document.body.textContent ?? "").not.toContain("openai-compatible");
@@ -4073,6 +4091,8 @@ describe("@deliberum/web shell", () => {
         "\u7ee7\u7eed\u8ba8\u8bba\u65f6\uff0c\u5c06\u8bf7\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u751f\u6210\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002"
       )
     ).toBeTruthy();
+    expect(screen.getByText("\u5ba1\u9605\u52a8\u4f5c\u7a0d\u540e\u89e3\u9501")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "\u8981\u6c42\u66f4\u5f3a\u9009\u9879" })).toBeNull();
     expect(document.body.textContent ?? "").not.toContain("Model-backed discussion");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });

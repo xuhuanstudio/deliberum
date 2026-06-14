@@ -1079,6 +1079,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Check evidence": "\u68c0\u67e5\u8bc1\u636e",
   "Review missing or unchecked evidence before relying on the answer.":
     "\u5728\u4f9d\u8d56\u7b54\u6848\u524d\u5ba1\u9605\u7f3a\u5931\u6216\u672a\u6838\u67e5\u7684\u8bc1\u636e\u3002",
+  "Review actions unlock later": "\u5ba1\u9605\u52a8\u4f5c\u7a0d\u540e\u89e3\u9501",
+  "Available after first update": "\u9996\u6b21\u66f4\u65b0\u540e\u53ef\u7528",
+  "After the room has perspectives, disagreements, evidence gaps, risks, and a draft conclusion, review actions will appear here.":
+    "\u5f53\u8ba8\u8bba\u5ba4\u5df2\u6709\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u548c\u7ed3\u8bba\u8349\u7a3f\u540e\uff0c\u5ba1\u9605\u52a8\u4f5c\u4f1a\u663e\u793a\u5728\u8fd9\u91cc\u3002",
+  "For now, continue the discussion to create those materials.":
+    "\u73b0\u5728\u8bf7\u5148\u7ee7\u7eed\u8ba8\u8bba\uff0c\u521b\u5efa\u8fd9\u4e9b\u6750\u6599\u3002",
   "Participant first responses": "\u53c2\u4e0e\u8005\u521d\u59cb\u56de\u5e94",
   "What participants said first": "\u53c2\u4e0e\u8005\u6700\u521d\u8bf4\u4e86\u4ec0\u4e48",
   "These are the separate first responses before the room organized options, disagreements, and evidence needs.":
