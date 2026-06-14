@@ -1237,13 +1237,32 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Configure provider locally")).toBeTruthy();
     expect(screen.getByText("Discussion readiness")).toBeTruthy();
     expect(screen.getByText("What can run now")).toBeTruthy();
-    expect(screen.getByText("Demo walkthrough")).toBeTruthy();
+    expect(screen.getAllByText("Demo walkthrough").length).toBeGreaterThan(0);
     expect(screen.getByText("Model participants")).toBeTruthy();
     expect(screen.getAllByText("Setup needed").length).toBeGreaterThan(0);
     expect(screen.getByText("Organizer and conclusion")).toBeTruthy();
     expect(screen.getByText("Try a demo discussion")).toBeTruthy();
     expect(screen.getByText("Participant management")).toBeTruthy();
     expect(screen.getByText("Discussion participants")).toBeTruthy();
+    expect(screen.getByText("Who joins the discussion")).toBeTruthy();
+    expect(screen.getByText("First responses")).toBeTruthy();
+    expect(
+      screen.getByText("Perspective A and Perspective B use built-in demo material.")
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Use the demo now or add a provider for real model responses.")
+    ).toBeTruthy();
+    expect(screen.getByText("Broader review")).toBeTruthy();
+    expect(
+      screen.getByText("Add a provider to unlock Perspective C and real model-backed broader review.")
+    ).toBeTruthy();
+    expect(screen.getByText("Disagreement and evidence review")).toBeTruthy();
+    expect(
+      screen.getByText("Reviewer, Evidence checker, and Risk reviewer use the local organizer.")
+    ).toBeTruthy();
+    expect(screen.getByText("Conclusion and next actions")).toBeTruthy();
+    expect(screen.getAllByText("Uses").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Next action").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Demo ready").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Built-in demo participant").length).toBeGreaterThan(1);
     expect(screen.getByText("Broader review after model setup")).toBeTruthy();
@@ -1378,13 +1397,31 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u8bbe\u7f6e\u540e\u9a8c\u8bc1")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u5c31\u7eea\u72b6\u6001")).toBeTruthy();
     expect(screen.getByText("\u73b0\u5728\u53ef\u4ee5\u8fd0\u884c\u4ec0\u4e48")).toBeTruthy();
-    expect(screen.getByText("\u6f14\u793a\u6d41\u7a0b")).toBeTruthy();
+    expect(screen.getAllByText("\u6f14\u793a\u6d41\u7a0b").length).toBeGreaterThan(0);
     expect(screen.getByText("\u6a21\u578b\u53c2\u4e0e\u8005")).toBeTruthy();
     expect(screen.getAllByText("\u9700\u8981\u914d\u7f6e").length).toBeGreaterThan(0);
     expect(screen.getByText("\u7ec4\u7ec7\u4e0e\u7ed3\u8bba")).toBeTruthy();
     expect(screen.getByText("\u8bd5\u7528\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u7ba1\u7406")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u53c2\u4e0e\u8005")).toBeTruthy();
+    expect(screen.getByText("\u8c01\u4f1a\u52a0\u5165\u8ba8\u8bba")).toBeTruthy();
+    expect(screen.getByText("\u521d\u59cb\u56de\u5e94")).toBeTruthy();
+    expect(
+      screen.getByText("\u89c6\u89d2 A \u548c\u89c6\u89d2 B \u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u6750\u6599\u3002")
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u6f14\u793a\uff0c\u6216\u6dfb\u52a0\u63d0\u4f9b\u65b9\u4ee5\u83b7\u5f97\u771f\u5b9e\u6a21\u578b\u56de\u5e94\u3002"
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("\u5206\u6b67\u4e0e\u8bc1\u636e\u5ba1\u67e5")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u672c\u5730\u7ec4\u7ec7\u5668\u3002"
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("\u7ed3\u8bba\u4e0e\u4e0b\u4e00\u6b65")).toBeTruthy();
+    expect(screen.getAllByText("\u4f7f\u7528").length).toBeGreaterThan(0);
     expect(screen.getAllByText("\u6f14\u793a\u5df2\u5c31\u7eea").length).toBeGreaterThan(1);
     expect(screen.getAllByText("\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005").length).toBeGreaterThan(1);
     expect(screen.getByText("\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u540e\u53ef\u7528\u4e8e\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5")).toBeTruthy();
@@ -1524,6 +1561,15 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("Ready to test")).toBeTruthy();
     expect(screen.getByText("Discussion participants")).toBeTruthy();
+    expect(screen.getByText("Who joins the discussion")).toBeTruthy();
+    expect(
+      screen.getByText("Perspective A and Perspective B use OpenAI-compatible.")
+    ).toBeTruthy();
+    expect(screen.getByText("Perspective C can use OpenAI-compatible.")).toBeTruthy();
+    expect(
+      screen.getByText("Choose Broader review on the start page to include Perspective C.")
+    ).toBeTruthy();
+    expect(screen.getByText("Conclusion writer ready")).toBeTruthy();
     expect(screen.getAllByText("Model ready").length).toBeGreaterThan(1);
     expect(screen.getAllByText("OpenAI-compatible model").length).toBeGreaterThan(1);
     expect(screen.getByText("Available in broader review")).toBeTruthy();

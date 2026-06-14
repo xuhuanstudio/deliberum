@@ -197,6 +197,62 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion participants": "\u8ba8\u8bba\u53c2\u4e0e\u8005",
   "This shows which readable roles are ready before you start: first perspectives, reviewers, evidence checks, and conclusion writing.":
     "\u8fd9\u4f1a\u5728\u5f00\u59cb\u524d\u663e\u793a\u54ea\u4e9b\u53ef\u7406\u89e3\u89d2\u8272\u5df2\u5c31\u7eea\uff1a\u521d\u59cb\u89c6\u89d2\u3001\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u548c\u7ed3\u8bba\u8d77\u8349\u3002",
+  "Participant plan": "\u53c2\u4e0e\u8005\u8ba1\u5212",
+  "Who joins the discussion": "\u8c01\u4f1a\u52a0\u5165\u8ba8\u8bba",
+  "This maps the current setup to the roles a normal user will see in the discussion room.":
+    "\u8fd9\u4f1a\u628a\u5f53\u524d\u8bbe\u7f6e\u5bf9\u5e94\u5230\u666e\u901a\u7528\u6237\u5728\u8ba8\u8bba\u5ba4\u4e2d\u4f1a\u770b\u5230\u7684\u89d2\u8272\u3002",
+  Uses: "\u4f7f\u7528",
+  "First responses": "\u521d\u59cb\u56de\u5e94",
+  "Model-backed": "\u6a21\u578b\u652f\u6301",
+  "Needs setup": "\u9700\u8981\u8bbe\u7f6e",
+  "Perspective A and Perspective B use {provider}.":
+    "\u89c6\u89d2 A \u548c\u89c6\u89d2 B \u4f7f\u7528 {provider}\u3002",
+  "Perspective A and Perspective B use built-in demo material.":
+    "\u89c6\u89d2 A \u548c\u89c6\u89d2 B \u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u6750\u6599\u3002",
+  "No first-response participants are ready yet.":
+    "\u521d\u59cb\u56de\u5e94\u53c2\u4e0e\u8005\u5c1a\u672a\u5c31\u7eea\u3002",
+  "These independent first responses become the main perspectives users compare in the room.":
+    "\u8fd9\u4e9b\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u4f1a\u6210\u4e3a\u7528\u6237\u5728\u8ba8\u8bba\u5ba4\u4e2d\u6bd4\u8f83\u7684\u4e3b\u8981\u89c6\u89d2\u3002",
+  "Start discussion will use model participants by default.":
+    "\u5f00\u59cb\u8ba8\u8bba\u5c06\u9ed8\u8ba4\u4f7f\u7528\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
+  "Use the demo now or add a provider for real model responses.":
+    "\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u6f14\u793a\uff0c\u6216\u6dfb\u52a0\u63d0\u4f9b\u65b9\u4ee5\u83b7\u5f97\u771f\u5b9e\u6a21\u578b\u56de\u5e94\u3002",
+  "Add a model provider before starting.":
+    "\u5f00\u59cb\u524d\u8bf7\u5148\u6dfb\u52a0\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
+  "Third perspective available": "\u7b2c\u4e09\u4e2a\u89c6\u89d2\u53ef\u7528",
+  "Provider required": "\u9700\u8981\u63d0\u4f9b\u65b9",
+  "Perspective C can use {provider}.": "\u89c6\u89d2 C \u53ef\u4ee5\u4f7f\u7528 {provider}\u3002",
+  "Perspective C is not available until a model provider is ready.":
+    "\u5728\u6a21\u578b\u63d0\u4f9b\u65b9\u5c31\u7eea\u4e4b\u524d\uff0c\u89c6\u89d2 C \u4e0d\u53ef\u7528\u3002",
+  "Broader review adds one more independent model response when the question needs more comparison material.":
+    "\u5f53\u95ee\u9898\u9700\u8981\u66f4\u591a\u6bd4\u8f83\u6750\u6599\u65f6\uff0c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u4f1a\u589e\u52a0\u4e00\u4e2a\u72ec\u7acb\u6a21\u578b\u56de\u5e94\u3002",
+  "Choose Broader review on the start page to include Perspective C.":
+    "\u5728\u5f00\u59cb\u9875\u9009\u62e9\u201c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u201d\u4ee5\u5305\u542b\u89c6\u89d2 C\u3002",
+  "Add a provider to unlock Perspective C and real model-backed broader review.":
+    "\u6dfb\u52a0\u63d0\u4f9b\u65b9\u5373\u53ef\u89e3\u9501\u89c6\u89d2 C \u548c\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u3002",
+  "Disagreement and evidence review": "\u5206\u6b67\u4e0e\u8bc1\u636e\u5ba1\u67e5",
+  "Reviewer, Evidence checker, and Risk reviewer use the local organizer.":
+    "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u672c\u5730\u7ec4\u7ec7\u5668\u3002",
+  "Reviewer, Evidence checker, and Risk reviewer are not ready yet.":
+    "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u5c1a\u672a\u5c31\u7eea\u3002",
+  "These roles keep open disagreements, missing evidence, and risks visible before the conclusion is trusted.":
+    "\u8fd9\u4e9b\u89d2\u8272\u4f1a\u5728\u7ed3\u8bba\u88ab\u4fe1\u4efb\u4e4b\u524d\uff0c\u6301\u7eed\u663e\u793a\u672a\u89e3\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u98ce\u9669\u3002",
+  "Start the room and continue review when the first responses are ready.":
+    "\u542f\u52a8\u8ba8\u8bba\u5ba4\uff0c\u5e76\u5728\u521d\u59cb\u56de\u5e94\u5c31\u7eea\u540e\u7ee7\u7eed\u5ba1\u67e5\u3002",
+  "Enable the local organizer before relying on review steps.":
+    "\u4f9d\u8d56\u5ba1\u67e5\u6b65\u9aa4\u524d\uff0c\u8bf7\u5148\u542f\u7528\u672c\u5730\u7ec4\u7ec7\u5668\u3002",
+  "Conclusion and next actions": "\u7ed3\u8bba\u4e0e\u4e0b\u4e00\u6b65",
+  "Conclusion writer ready": "\u7ed3\u8bba\u8d77\u8349\u8005\u5df2\u5c31\u7eea",
+  "Conclusion writer setup needed": "\u9700\u8981\u8bbe\u7f6e\u7ed3\u8bba\u8d77\u8349\u8005",
+  "Conclusion writer uses the local organizer.":
+    "\u7ed3\u8bba\u8d77\u8349\u8005\u4f7f\u7528\u672c\u5730\u7ec4\u7ec7\u5668\u3002",
+  "Conclusion writer is not ready yet.": "\u7ed3\u8bba\u8d77\u8349\u8005\u5c1a\u672a\u5c31\u7eea\u3002",
+  "This role turns the current discussion state into a reviewable conclusion with recommended next actions.":
+    "\u8be5\u89d2\u8272\u4f1a\u5c06\u5f53\u524d\u8ba8\u8bba\u72b6\u6001\u8f6c\u6210\u5e26\u5efa\u8bae\u4e0b\u4e00\u6b65\u7684\u53ef\u5ba1\u9605\u7ed3\u8bba\u3002",
+  "Review the conclusion panel after the room has enough discussion material.":
+    "\u8ba8\u8bba\u5ba4\u79ef\u7d2f\u8db3\u591f\u8ba8\u8bba\u6750\u6599\u540e\uff0c\u5ba1\u9605\u7ed3\u8bba\u9762\u677f\u3002",
+  "Finish organizer setup before relying on generated conclusions.":
+    "\u4f9d\u8d56\u751f\u6210\u7684\u7ed3\u8bba\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u7ec4\u7ec7\u5668\u8bbe\u7f6e\u3002",
   "Model ready": "\u6a21\u578b\u5df2\u5c31\u7eea",
   "Demo ready": "\u6f14\u793a\u5df2\u5c31\u7eea",
   "Organizer ready": "\u7ec4\u7ec7\u5668\u5df2\u5c31\u7eea",

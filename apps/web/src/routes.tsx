@@ -1597,9 +1597,20 @@ type SetupParticipantReadinessItem = {
   sourceValues?: Record<string, string>;
 };
 
+type SetupParticipantPlanItem = {
+  title: string;
+  status: string;
+  uses: string;
+  detail: string;
+  action: string;
+  tone: "ok" | "warning" | "neutral";
+  usesValues?: Record<string, string>;
+};
+
 type SetupParticipantReadinessView = {
   canStartModelBackedDiscussion: boolean;
   needsModelSetup: boolean;
+  plan: SetupParticipantPlanItem[];
   items: SetupParticipantReadinessItem[];
 };
 
@@ -1649,6 +1660,39 @@ function SetupParticipantReadiness({ setupPlan }: { setupPlan: RuntimeSetupPlan 
             "This shows which readable roles are ready before you start: first perspectives, reviewers, evidence checks, and conclusion writing."
           )}
         </p>
+      </div>
+      <div className="du-setup-participant-plan" aria-label={t("Who joins the discussion")}>
+        <div className="du-section-label">
+          <p className="du-kicker">{t("Participant plan")}</p>
+          <h5>{t("Who joins the discussion")}</h5>
+          <p>
+            {t(
+              "This maps the current setup to the roles a normal user will see in the discussion room."
+            )}
+          </p>
+        </div>
+        <div className="du-setup-participant-plan-grid">
+          {readiness.plan.map((item) => (
+            <article
+              className={`du-setup-participant-plan-card du-setup-participant-plan-${item.tone}`}
+              key={item.title}
+            >
+              <span>{t(item.status)}</span>
+              <strong>{t(item.title)}</strong>
+              <dl>
+                <div>
+                  <dt>{t("Uses")}</dt>
+                  <dd>{t(item.uses, item.usesValues)}</dd>
+                </div>
+                <div>
+                  <dt>{t("Next action")}</dt>
+                  <dd>{t(item.action)}</dd>
+                </div>
+              </dl>
+              <p>{t(item.detail)}</p>
+            </article>
+          ))}
+        </div>
       </div>
       <div className="du-setup-participant-grid">
         {readiness.items.map((item) => (
@@ -1871,6 +1915,70 @@ function buildSetupParticipantReadiness(
   const organizerTone: SetupParticipantReadinessItem["tone"] = localPresetReady
     ? "ok"
     : "warning";
+  const planItems: SetupParticipantPlanItem[] = [
+    {
+      title: "First responses",
+      status: modelReady
+        ? "Model-backed"
+        : localPresetReady
+          ? "Demo walkthrough"
+          : "Needs setup",
+      uses: modelReady
+        ? "Perspective A and Perspective B use {provider}."
+        : localPresetReady
+          ? "Perspective A and Perspective B use built-in demo material."
+          : "No first-response participants are ready yet.",
+      usesValues: modelReady ? { provider: providerName } : undefined,
+      detail:
+        "These independent first responses become the main perspectives users compare in the room.",
+      action: modelReady
+        ? "Start discussion will use model participants by default."
+        : localPresetReady
+          ? "Use the demo now or add a provider for real model responses."
+          : "Add a model provider before starting.",
+      tone: modelReady ? "ok" : localPresetReady ? "warning" : "neutral"
+    },
+    {
+      title: "Broader review",
+      status: modelReady ? "Third perspective available" : "Provider required",
+      uses: modelReady
+        ? "Perspective C can use {provider}."
+        : "Perspective C is not available until a model provider is ready.",
+      usesValues: modelReady ? { provider: providerName } : undefined,
+      detail:
+        "Broader review adds one more independent model response when the question needs more comparison material.",
+      action: modelReady
+        ? "Choose Broader review on the start page to include Perspective C."
+        : "Add a provider to unlock Perspective C and real model-backed broader review.",
+      tone: modelReady ? "ok" : "neutral"
+    },
+    {
+      title: "Disagreement and evidence review",
+      status: localPresetReady ? "Organizer ready" : "Organizer setup needed",
+      uses: localPresetReady
+        ? "Reviewer, Evidence checker, and Risk reviewer use the local organizer."
+        : "Reviewer, Evidence checker, and Risk reviewer are not ready yet.",
+      detail:
+        "These roles keep open disagreements, missing evidence, and risks visible before the conclusion is trusted.",
+      action: localPresetReady
+        ? "Start the room and continue review when the first responses are ready."
+        : "Enable the local organizer before relying on review steps.",
+      tone: organizerTone
+    },
+    {
+      title: "Conclusion and next actions",
+      status: localPresetReady ? "Conclusion writer ready" : "Conclusion writer setup needed",
+      uses: localPresetReady
+        ? "Conclusion writer uses the local organizer."
+        : "Conclusion writer is not ready yet.",
+      detail:
+        "This role turns the current discussion state into a reviewable conclusion with recommended next actions.",
+      action: localPresetReady
+        ? "Review the conclusion panel after the room has enough discussion material."
+        : "Finish organizer setup before relying on generated conclusions.",
+      tone: organizerTone
+    }
+  ];
   const perspectiveItems: SetupParticipantReadinessItem[] = [
     {
       role: "Perspective A",
@@ -1926,6 +2034,7 @@ function buildSetupParticipantReadiness(
   return {
     canStartModelBackedDiscussion: modelReady,
     needsModelSetup,
+    plan: planItems,
     items: [...perspectiveItems, ...organizerItems]
   };
 }
