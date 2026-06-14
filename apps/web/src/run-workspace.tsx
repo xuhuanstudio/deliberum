@@ -65,7 +65,13 @@ type DiscussionContinuationView = {
   explainerDetail: string;
   primaryLabel: string;
   primaryActionDetail: string;
+  primaryResultTitle: string;
+  primaryResultDetail: string;
   reviewReady: boolean;
+};
+type DiscussionStartFeedback = {
+  title: string;
+  detail: string;
 };
 type DiscussionNextStepView = {
   title: string;
@@ -1272,6 +1278,7 @@ function StartRunForm({
   const queryClient = useQueryClient();
   const continuationView = describeDiscussionContinuation(run);
   const [startRequestText, setStartRequestText] = useState(DEFAULT_START_REQUEST_TEXT);
+  const [startFeedback, setStartFeedback] = useState<DiscussionStartFeedback | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
   const startMutation = useMutation({
     mutationFn: (startRequest: Record<string, unknown>) => client.startRun(runId, startRequest),
@@ -1292,6 +1299,7 @@ function StartRunForm({
       return;
     }
 
+    setStartFeedback(null);
     setInputError(null);
     startMutation.mutate(parsed.value);
   }
@@ -1301,11 +1309,18 @@ function StartRunForm({
     setStartRequestText(formatPresetJson(LOCAL_PRESET_START_REQUEST));
   }
 
-  function startLocalPresetPipeline() {
+  function startLocalPresetPipeline(feedback: DiscussionStartFeedback) {
+    setStartFeedback(feedback);
     setInputError(null);
     setStartRequestText(formatPresetJson(LOCAL_PRESET_START_REQUEST));
     startMutation.mutate(cloneJsonObject(LOCAL_PRESET_START_REQUEST));
   }
+
+  const strongerOptionsFeedback = {
+    title: "Stronger options requested",
+    detail:
+      "The guided update ran so the strongest current options can be compared again before relying on the conclusion."
+  };
 
   return (
     <DataPanel
@@ -1325,7 +1340,12 @@ function StartRunForm({
             type="button"
             className="du-discussion-action-button"
             aria-label={t(continuationView.primaryLabel)}
-            onClick={startLocalPresetPipeline}
+            onClick={() =>
+              startLocalPresetPipeline({
+                title: continuationView.primaryResultTitle,
+                detail: continuationView.primaryResultDetail
+              })
+            }
             disabled={startMutation.isPending}
           >
             <strong>{t(continuationView.primaryLabel)}</strong>
@@ -1335,7 +1355,7 @@ function StartRunForm({
             type="button"
             className="du-discussion-action-button du-discussion-action-secondary"
             aria-label={t("Ask for stronger options")}
-            onClick={startLocalPresetPipeline}
+            onClick={() => startLocalPresetPipeline(strongerOptionsFeedback)}
             disabled={startMutation.isPending}
           >
             <strong>{t("Ask for stronger options")}</strong>
@@ -1422,7 +1442,9 @@ function StartRunForm({
           detail={formatRunStartErrorMessage(startMutation.error)}
         />
       ) : null}
-      {startMutation.data ? <StartResult result={startMutation.data} runId={runId} /> : null}
+      {startMutation.data ? (
+        <StartResult result={startMutation.data} runId={runId} feedback={startFeedback} />
+      ) : null}
     </DataPanel>
   );
 }
@@ -1455,7 +1477,15 @@ async function invalidateRunWorkspaceQueries(
   await Promise.all(invalidations);
 }
 
-function StartResult({ result, runId }: { result: unknown; runId: string }) {
+function StartResult({
+  result,
+  runId,
+  feedback
+}: {
+  result: unknown;
+  runId: string;
+  feedback?: DiscussionStartFeedback | null;
+}) {
   const { t } = useI18n();
   const stages = asArray(getRecordValue(result, "stages")).map(toStageMetadata);
   const stopped = getRecordValue(result, "stopped");
@@ -1466,7 +1496,9 @@ function StartResult({ result, runId }: { result: unknown; runId: string }) {
       <StatusBanner
         tone={stopped === true ? "warning" : "ok"}
         title={
-          stopped === true ? t("Discussion paused") : t("Discussion steps completed")
+          stopped === true
+            ? t("Discussion paused")
+            : t(feedback?.title ?? "Discussion steps completed")
         }
         detail={
           stopped === true
@@ -1474,7 +1506,8 @@ function StartResult({ result, runId }: { result: unknown; runId: string }) {
                 "The discussion stopped before every requested step finished. Review the visible steps below or open Advanced details for the technical reason."
               )
             : t(
-                "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
+                feedback?.detail ??
+                  "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
               )
         }
       />
@@ -4710,6 +4743,9 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
       primaryLabel: "Update conclusion",
       primaryActionDetail:
         "Run the guided update again after reviewing disagreements, evidence gaps, and requirements.",
+      primaryResultTitle: "Discussion update completed",
+      primaryResultDetail:
+        "The guided update ran with the current brief. Review the updated conclusion, disagreements, requirements, and evidence before relying on it.",
       reviewReady
     };
   }
@@ -4724,6 +4760,9 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
     primaryLabel: "Continue discussion",
     primaryActionDetail:
       "Collect perspectives, organize strongest options, check evidence needs, and draft a conclusion.",
+    primaryResultTitle: "Discussion steps completed",
+    primaryResultDetail:
+      "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion.",
     reviewReady
   };
 }

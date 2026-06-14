@@ -2241,6 +2241,32 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Needs an answer before relying on the conclusion.").length).toBeGreaterThan(0);
   });
 
+  it("shows action-specific feedback after guided discussion actions", async () => {
+    const client = renderApp("/runs/run-1");
+
+    expect(await screen.findByRole("button", { name: "Update conclusion" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Update conclusion" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Discussion update completed")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The guided update ran with the current brief. Review the updated conclusion, disagreements, requirements, and evidence before relying on it."
+      )
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ask for stronger options" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Stronger options requested")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The guided update ran so the strongest current options can be compared again before relying on the conclusion."
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("event-2");
+  });
+
   it("renders revealed participant responses as readable room activity", async () => {
     const runWithParticipants = {
       ...runDetail,

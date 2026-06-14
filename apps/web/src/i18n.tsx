@@ -496,10 +496,16 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion could not continue": "\u8ba8\u8bba\u65e0\u6cd5\u7ee7\u7eed",
   "Discussion paused": "\u8ba8\u8bba\u5df2\u6682\u505c",
   "Discussion steps completed": "\u8ba8\u8bba\u6b65\u9aa4\u5df2\u5b8c\u6210",
+  "Discussion update completed": "\u8ba8\u8bba\u66f4\u65b0\u5df2\u5b8c\u6210",
+  "Stronger options requested": "\u5df2\u8981\u6c42\u66f4\u5f3a\u9009\u9879",
   "The discussion stopped before every requested step finished. Review the visible steps below or open Advanced details for the technical reason.":
     "\u8ba8\u8bba\u5728\u6240\u6709\u8bf7\u6c42\u6b65\u9aa4\u5b8c\u6210\u524d\u505c\u6b62\u3002\u8bf7\u67e5\u770b\u4e0b\u65b9\u53ef\u89c1\u6b65\u9aa4\uff0c\u6216\u6253\u5f00\u9ad8\u7ea7\u8be6\u60c5\u67e5\u770b\u6280\u672f\u539f\u56e0\u3002",
   "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion.":
     "\u5df2\u8bb0\u5f55\u5f15\u5bfc\u5f0f\u8ba8\u8bba\u6b65\u9aa4\u3002\u8bf7\u67e5\u770b\u66f4\u65b0\u540e\u7684\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
+  "The guided update ran with the current brief. Review the updated conclusion, disagreements, requirements, and evidence before relying on it.":
+    "\u5df2\u57fa\u4e8e\u5f53\u524d\u7b80\u62a5\u8fd0\u884c\u5f15\u5bfc\u5f0f\u66f4\u65b0\u3002\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u8bf7\u5ba1\u9605\u66f4\u65b0\u540e\u7684\u7ed3\u8bba\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u3002",
+  "The guided update ran so the strongest current options can be compared again before relying on the conclusion.":
+    "\u5df2\u8fd0\u884c\u5f15\u5bfc\u5f0f\u66f4\u65b0\uff0c\u4ee5\u4fbf\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u518d\u6b21\u6bd4\u8f83\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",
   "Stop reason": "\u505c\u6b62\u539f\u56e0",
   "No visible discussion steps": "\u6ca1\u6709\u53ef\u89c1\u8ba8\u8bba\u6b65\u9aa4",
   "No user-facing step updates were returned for this request.":
