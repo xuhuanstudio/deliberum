@@ -1557,6 +1557,555 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
   });
 
+  it("walks model-backed setup through discussion review without default internals", async () => {
+    const completedProviderRunDetail = {
+      ...providerBackedRunDetail,
+      status: "completed",
+      sealedDivergenceStatus: "completed",
+      latestExtractionStatus: "completed",
+      latestProposalReviewStatus: "completed",
+      latestFinalizationStatus: "completed",
+      ledger: {
+        eventCount: 9
+      }
+    };
+    const modelReadyProfiles = [
+      {
+        id: "local-preset",
+        name: "Local preset",
+        enabled: true,
+        status: "ready",
+        components: [
+          {
+            id: "local-preset-alpha",
+            kind: "participant_adapter",
+            enabled: true
+          }
+        ],
+        setup: {
+          enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+          envVars: [],
+          missingRecommendedEnvVars: [],
+          notes: []
+        },
+        boundaries: []
+      },
+      {
+        id: "openai-compatible",
+        name: "OpenAI-compatible",
+        enabled: true,
+        status: "ready",
+        components: [
+          {
+            id: "openai-compatible",
+            kind: "participant_adapter",
+            enabled: true
+          },
+          {
+            id: "openai-compatible-extractor",
+            kind: "extraction_generator",
+            enabled: true
+          },
+          {
+            id: "openai-compatible-reviewer",
+            kind: "proposal_reviewer",
+            enabled: true
+          },
+          {
+            id: "openai-compatible-final-candidate",
+            kind: "final_candidate_generator",
+            enabled: true
+          },
+          {
+            id: "openai-compatible-final-auditor",
+            kind: "final_auditor",
+            enabled: true
+          }
+        ],
+        setup: {
+          enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+          envVars: [
+            {
+              name: "DELIBERUM_OPENAI_API_KEY",
+              configured: true,
+              secret: true,
+              required: false,
+              purpose: "Default provider secret."
+            },
+            {
+              name: "DELIBERUM_OPENAI_BASE_URL",
+              configured: true,
+              secret: false,
+              required: false,
+              purpose: "Default provider base URL."
+            },
+            {
+              name: "DELIBERUM_OPENAI_MODEL",
+              configured: true,
+              secret: false,
+              required: false,
+              purpose: "Default model id."
+            }
+          ],
+          missingRecommendedEnvVars: [],
+          notes: []
+        },
+        boundaries: []
+      }
+    ];
+    const initialRunEvents = [
+      {
+        id: "product-loop-topic-event",
+        type: "topic_contract_published",
+        sequence: 0,
+        visibility: "public",
+        authorId: "system",
+        createdAt: "2026-06-15T00:00:00.000Z",
+        payload: {
+          topic: "Should we use the configured provider for this product loop?"
+        },
+        basedOnEventIds: [],
+        trace: {}
+      }
+    ];
+    const completedRunEvents = [
+      ...initialRunEvents,
+      {
+        id: "product-loop-opened-event",
+        type: "sealed_batch_opened",
+        sequence: 1,
+        visibility: "public",
+        authorId: "system",
+        createdAt: "2026-06-15T00:00:01.000Z",
+        payload: {
+          participantIds: ["provider-perspective-a", "provider-perspective-b"]
+        },
+        basedOnEventIds: ["product-loop-topic-event"],
+        trace: {}
+      },
+      {
+        id: "product-loop-perspective-a-event",
+        type: "sealed_contribution_submitted",
+        sequence: 2,
+        visibility: "sealed",
+        authorId: "provider-perspective-a",
+        createdAt: "2026-06-15T00:00:02.000Z",
+        payload: {
+          position:
+            "Use the configured provider only after verification and visible review material are ready."
+        },
+        basedOnEventIds: ["product-loop-opened-event"],
+        trace: {}
+      },
+      {
+        id: "product-loop-perspective-b-event",
+        type: "sealed_contribution_submitted",
+        sequence: 3,
+        visibility: "sealed",
+        authorId: "provider-perspective-b",
+        createdAt: "2026-06-15T00:00:03.000Z",
+        payload: {
+          position:
+            "Keep demo fallback visible until real provider discussions can be reviewed end to end."
+        },
+        basedOnEventIds: ["product-loop-opened-event"],
+        trace: {}
+      },
+      {
+        id: "product-loop-revealed-event",
+        type: "sealed_batch_revealed",
+        sequence: 4,
+        visibility: "public",
+        authorId: "system",
+        createdAt: "2026-06-15T00:00:04.000Z",
+        payload: {
+          status: "revealed"
+        },
+        basedOnEventIds: [
+          "product-loop-opened-event",
+          "product-loop-perspective-a-event",
+          "product-loop-perspective-b-event"
+        ],
+        trace: {}
+      },
+      {
+        id: "product-loop-extraction-event",
+        type: "extraction_proposed",
+        sequence: 5,
+        visibility: "public",
+        authorId: "openai-compatible-extractor",
+        createdAt: "2026-06-15T00:00:05.000Z",
+        payload: {
+          rationale:
+            "Organized provider-backed responses into strongest options, disagreements, requirements, and evidence gaps."
+        },
+        basedOnEventIds: ["product-loop-perspective-a-event", "product-loop-perspective-b-event"],
+        trace: {}
+      },
+      {
+        id: "product-loop-review-event",
+        type: "proposal_accepted",
+        sequence: 6,
+        visibility: "public",
+        authorId: "openai-compatible-reviewer",
+        createdAt: "2026-06-15T00:00:06.000Z",
+        payload: {
+          rationale:
+            "Accepted the review material so the room can show options, open disagreements, and requirements."
+        },
+        basedOnEventIds: ["product-loop-extraction-event"],
+        trace: {}
+      },
+      {
+        id: "product-loop-final-event",
+        type: "final_candidate_proposed",
+        sequence: 7,
+        visibility: "public",
+        authorId: "openai-compatible-final-candidate",
+        createdAt: "2026-06-15T00:00:07.000Z",
+        payload: {
+          recommendation:
+            "Proceed only after the user reviews the visible conclusion, disagreements, evidence, risks, and next actions."
+        },
+        basedOnEventIds: ["product-loop-review-event"],
+        trace: {}
+      },
+      {
+        id: "product-loop-audit-event",
+        type: "final_audit_recorded",
+        sequence: 8,
+        visibility: "public",
+        authorId: "openai-compatible-final-auditor",
+        createdAt: "2026-06-15T00:00:08.000Z",
+        payload: {
+          summary: "Provider-backed conclusions remain provisional until risks are reviewed."
+        },
+        basedOnEventIds: ["product-loop-final-event"],
+        trace: {}
+      }
+    ];
+    let discussionStarted = false;
+    const emptyProjection = {
+      ...projection,
+      eventIds: ["product-loop-topic-event"]
+    };
+    const client = createClient({
+      getRuntimeProfiles: vi.fn(async () => ({
+        profiles: modelReadyProfiles
+      })),
+      createRun: vi.fn(async (input) => ({
+        run: providerBackedRunDetail,
+        session: {
+          sessionId: providerBackedRunDetail.sessionId
+        },
+        event: {
+          id: "product-loop-topic-event",
+          type: "topic_contract_published",
+          payload: input.runPlan
+        }
+      })),
+      getRun: vi.fn(async () => ({
+        run: discussionStarted ? completedProviderRunDetail : providerBackedRunDetail
+      })),
+      getRunEvents: vi.fn(async () => ({
+        runId: providerBackedRunDetail.runId,
+        sessionId: providerBackedRunDetail.sessionId,
+        events: discussionStarted ? completedRunEvents : initialRunEvents
+      })),
+      startRun: vi.fn(async () => {
+        discussionStarted = true;
+
+        return {
+          run: completedProviderRunDetail,
+          stages: [
+            {
+              stage: "sealed_divergence",
+              executionStatus: "executed",
+              roundId: "product-loop-sealed-round",
+              status: "completed",
+              eventIds: [
+                "product-loop-opened-event",
+                "product-loop-perspective-a-event",
+                "product-loop-perspective-b-event"
+              ],
+              result: {}
+            },
+            {
+              stage: "extraction",
+              executionStatus: "executed",
+              roundId: "product-loop-extraction-round",
+              status: "completed",
+              eventIds: ["product-loop-extraction-event"],
+              result: {}
+            },
+            {
+              stage: "proposal_review",
+              executionStatus: "executed",
+              roundId: "product-loop-review-round",
+              status: "completed",
+              eventIds: ["product-loop-review-event"],
+              result: {}
+            },
+            {
+              stage: "finalization",
+              executionStatus: "executed",
+              roundId: "product-loop-final-round",
+              status: "completed",
+              eventIds: ["product-loop-final-event", "product-loop-audit-event"],
+              result: {}
+            }
+          ],
+          stopped: false
+        };
+      }),
+      getFrontier: vi.fn(async () =>
+        discussionStarted
+          ? {
+              basis: "accepted_active_candidates",
+              candidates: [
+                {
+                  object: {
+                    id: "product-loop-candidate",
+                    title: "Use the verified provider for reviewable discussions",
+                    status: "accepted_active"
+                  },
+                  proposalEventId: "product-loop-extraction-event",
+                  sourceEventIds: ["product-loop-review-event"]
+                }
+              ],
+              projection
+            }
+          : {
+              basis: "accepted_active_candidates",
+              candidates: [],
+              projection: emptyProjection
+            }
+      ),
+      getObjections: vi.fn(async () =>
+        discussionStarted
+          ? {
+              objections: [
+                {
+                  object: {
+                    id: "product-loop-objection",
+                    summary:
+                      "Provider-backed results still need a visible evidence review before users rely on them.",
+                    status: "open"
+                  },
+                  proposalEventId: "product-loop-review-event"
+                }
+              ],
+              projection
+            }
+          : {
+              objections: [],
+              projection: emptyProjection
+            }
+      ),
+      getSessionResources: vi.fn(async () =>
+        discussionStarted
+          ? {
+              sessionId: providerBackedRunDetail.sessionId,
+              source: {
+                kind: "run_plan",
+                runId: providerBackedRunDetail.runId
+              },
+              plannedResources: [],
+              deliveryAudits: [],
+              accessAudits: [],
+              evidenceNeeds: [
+                {
+                  object: {
+                    id: "product-loop-evidence",
+                    reason:
+                      "The product loop needs browser evidence that users can review missing evidence before relying on the conclusion.",
+                    status: "open"
+                  },
+                  proposalEventId: "product-loop-review-event"
+                }
+              ],
+              projection
+            }
+          : {
+              sessionId: providerBackedRunDetail.sessionId,
+              source: {
+                kind: "run_plan",
+                runId: providerBackedRunDetail.runId
+              },
+              plannedResources: [],
+              deliveryAudits: [],
+              accessAudits: [],
+              evidenceNeeds: [],
+              projection: emptyProjection
+            }
+      ),
+      getObligations: vi.fn(async () =>
+        discussionStarted
+          ? {
+              qualityObligations: [
+                {
+                  object: {
+                    id: "product-loop-quality",
+                    requirement:
+                      "Confirm the conclusion names options, disagreements, evidence gaps, risks, and next actions.",
+                    status: "unanswered"
+                  },
+                  proposalEventId: "product-loop-review-event"
+                }
+              ],
+              projection
+            }
+          : {
+              qualityObligations: [],
+              projection: emptyProjection
+            }
+      )
+    });
+
+    renderApp("/setup/models", client);
+
+    expect(await screen.findByRole("heading", { name: "Setup / Models" })).toBeTruthy();
+    expect(await screen.findByText("Local service connected")).toBeTruthy();
+    expect(screen.getByText("Configure OpenAI-compatible provider")).toBeTruthy();
+    expect(screen.getByLabelText("Provider API key")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Provider API key"), {
+      target: {
+        value: "sk-product-loop-secret"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Base URL"), {
+      target: {
+        value: "https://api.product-loop.test/v1"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Model"), {
+      target: {
+        value: "product-loop-model"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save model setup" }));
+    await waitFor(() =>
+      expect(client.saveOpenAICompatibleSetup).toHaveBeenCalledWith({
+        apiKey: "sk-product-loop-secret",
+        baseUrl: "https://api.product-loop.test/v1",
+        model: "product-loop-model"
+      })
+    );
+    expect(await screen.findByText("Model setup saved locally")).toBeTruthy();
+    expect((screen.getByLabelText("Provider API key") as HTMLInputElement).value).toBe("");
+    expect(document.body.textContent ?? "").not.toContain("sk-product-loop-secret");
+
+    fireEvent.click(screen.getByRole("button", { name: "Verify connection" }));
+    await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Provider connection verified")).toBeTruthy();
+
+    const startModelBackedLinks = screen.getAllByRole("link", {
+      name: "Start model-backed discussion"
+    });
+    expect(startModelBackedLinks.length).toBeGreaterThan(1);
+    fireEvent.click(startModelBackedLinks[0]!);
+
+    expect(await screen.findByText("Start a discussion")).toBeTruthy();
+    expect(await screen.findByText("Model-backed discussion selected")).toBeTruthy();
+    expect(screen.getByText("Ready to create a model-backed discussion")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Discussion question"), {
+      target: {
+        value: "Should we use the configured provider for this product loop?"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create discussion" }));
+
+    await waitFor(() => expect(client.createRun).toHaveBeenCalled());
+    expect(await screen.findByText("Discussion room")).toBeTruthy();
+    expect(await screen.findByText("Model-backed discussion")).toBeTruthy();
+    expect(screen.getByText("What is being discussed")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    expect(screen.queryByText("Use the verified provider for reviewable discussions")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() =>
+      expect(client.startRun).toHaveBeenCalledWith(
+        providerBackedRunDetail.runId,
+        expect.objectContaining({
+          sealedDivergence: {
+            autoCloseManual: true
+          },
+          extraction: {
+            generatorIds: ["openai-compatible-extractor"]
+          },
+          review: expect.objectContaining({
+            reviewerIds: ["openai-compatible-reviewer"]
+          }),
+          finalization: expect.objectContaining({
+            finalCandidateGeneratorId: "openai-compatible-final-candidate",
+            auditGeneratorIds: ["openai-compatible-final-auditor"],
+            compileOutcome: true
+          })
+        })
+      )
+    );
+    expect(await screen.findByText("Model-backed discussion continued")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Model participants and review roles updated the readable timeline and conclusion materials."
+      )
+    ).toBeTruthy();
+    expect(await screen.findByText("Participant first responses")).toBeTruthy();
+    expect(
+      screen.getAllByText(
+        "Use the configured provider only after verification and visible review material are ready."
+      ).length
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(
+        "Keep demo fallback visible until real provider discussions can be reviewed end to end."
+      ).length
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Use the verified provider for reviewable discussions").length
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "The product loop needs browser evidence that users can review missing evidence before relying on the conclusion."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Confirm the conclusion names options, disagreements, evidence gaps, risks, and next actions."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Provider-backed conclusions remain provisional until risks are reviewed.")
+    ).toBeTruthy();
+    const discussionOutputs = screen.getByRole("region", { name: "Discussion outputs" });
+    expect(discussionOutputs.textContent ?? "").toContain("1 option ready to compare");
+    expect(discussionOutputs.textContent ?? "").toContain("1 open disagreement to review");
+    expect(discussionOutputs.textContent ?? "").toContain("1 evidence gap to check");
+    expect(screen.getByText("Current conclusion: Ready to review")).toBeTruthy();
+    expect(screen.getByText("Next recommended actions")).toBeTruthy();
+    expect(screen.getByText("Open conclusion")).toBeTruthy();
+    expect(screen.getByText("Review evidence")).toBeTruthy();
+    expect(screen.getByText("View disagreements")).toBeTruthy();
+    expect(screen.getByText("Review disagreements")).toBeTruthy();
+    expect(screen.getByText("Check evidence")).toBeTruthy();
+    expect(screen.getAllByText("Update conclusion").length).toBeGreaterThan(0);
+
+    const defaultPageText = document.body.textContent ?? "";
+    expect(defaultPageText).not.toContain("sk-product-loop-secret");
+    expect(defaultPageText).not.toContain("https://api.product-loop.test/v1");
+    expect(defaultPageText).not.toContain("product-loop-model");
+    expect(defaultPageText).not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(defaultPageText).not.toContain("providerConfigId");
+    expect(defaultPageText).not.toContain("openai-main");
+    expect(defaultPageText).not.toContain("product-loop-topic-event");
+    expect(defaultPageText).not.toContain("product-loop-review-event");
+    expect(defaultPageText).not.toContain("product-loop-candidate");
+    expect(defaultPageText).not.toContain("product-loop-objection");
+    expect(defaultPageText).not.toContain("product-loop-evidence");
+  });
+
   it("guides setup users when the local service is unavailable", async () => {
     const getRuntimeProfiles = vi
       .fn()
