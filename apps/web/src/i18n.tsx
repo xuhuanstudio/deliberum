@@ -581,6 +581,23 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Conversation transcript": "\u5bf9\u8bdd\u8bb0\u5f55",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",
   "Readable discussion flow": "\u53ef\u8bfb\u8ba8\u8bba\u6d41\u7a0b",
+  "Discussion brief updates": "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0",
+  "The room starts by making the question, goals, and constraints visible.":
+    "\u8ba8\u8bba\u5ba4\u4f1a\u5148\u8ba9\u95ee\u9898\u3001\u76ee\u6807\u548c\u7ea6\u675f\u4fdd\u6301\u53ef\u89c1\u3002",
+  "Independent first response updates": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u66f4\u65b0",
+  "Participants respond separately before comparing answers.":
+    "\u53c2\u4e0e\u8005\u4f1a\u5148\u5206\u522b\u56de\u5e94\uff0c\u7136\u540e\u518d\u6bd4\u8f83\u7b54\u6848\u3002",
+  "Main perspectives and disagreements": "\u4e3b\u8981\u89c2\u70b9\u4e0e\u5206\u6b67",
+  "The room organizes strongest options and keeps challenges visible.":
+    "\u8ba8\u8bba\u5ba4\u4f1a\u6574\u7406\u6700\u5f3a\u9009\u9879\uff0c\u5e76\u4fdd\u6301\u6311\u6218\u610f\u89c1\u53ef\u89c1\u3002",
+  "Main perspective and disagreement updates": "\u4e3b\u8981\u89c2\u70b9\u4e0e\u5206\u6b67\u66f4\u65b0",
+  "Evidence and verification updates": "\u8bc1\u636e\u4e0e\u6838\u67e5\u66f4\u65b0",
+  "Evidence checks and missing information are kept visible before relying on a conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u8bc1\u636e\u6838\u67e5\u548c\u7f3a\u5931\u4fe1\u606f\u4f1a\u4fdd\u6301\u53ef\u89c1\u3002",
+  "Current conclusion and risk review": "\u5f53\u524d\u7ed3\u8bba\u4e0e\u98ce\u9669\u5ba1\u67e5",
+  "The room drafts a conclusion and records risks or boundaries for review.":
+    "\u8ba8\u8bba\u5ba4\u4f1a\u8d77\u8349\u7ed3\u8bba\uff0c\u5e76\u8bb0\u5f55\u98ce\u9669\u6216\u8fb9\u754c\u4ee5\u4f9b\u5ba1\u67e5\u3002",
+  "Current conclusion and risk review updates": "\u5f53\u524d\u7ed3\u8bba\u4e0e\u98ce\u9669\u5ba1\u67e5\u66f4\u65b0",
   "Room progress summary": "\u8ba8\u8bba\u5ba4\u8fdb\u5ea6\u6458\u8981",
   "Current phase": "\u5f53\u524d\u9636\u6bb5",
   "Current conclusion ready": "\u5f53\u524d\u7ed3\u8bba\u53ef\u5ba1\u9605",

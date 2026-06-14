@@ -85,6 +85,22 @@ type RoomActivityItem = {
   title: string;
   detail: string;
   tone: "neutral" | "ok" | "warning";
+  phase: RoomActivityPhaseId;
+};
+type RoomActivityPhaseId =
+  | "brief"
+  | "first-responses"
+  | "perspectives"
+  | "evidence"
+  | "conclusion";
+type RoomActivityPhaseView = {
+  label: string;
+  detail: string;
+  updatesLabel: string;
+};
+type RoomActivityGroup = {
+  phase: RoomActivityPhaseId;
+  activities: RoomActivityItem[];
 };
 type DiscussionRoomProgressView = {
   tone: "ready" | "active" | "pending";
@@ -2111,6 +2127,7 @@ function DiscussionRoomTimeline({
   const mainPerspectives = describeStageStatus(getRecordValue(run, "latestExtractionStatus"));
   const conclusion = describeStageStatus(getRecordValue(run, "latestFinalizationStatus"));
   const participantResponses = getParticipantFirstResponses(activities);
+  const activityGroups = groupRoomActivitiesByPhase(activities);
   const progressView = describeDiscussionRoomProgress({
     run,
     mainPerspectiveCount,
@@ -2209,28 +2226,57 @@ function DiscussionRoomTimeline({
             )}
           />
         ) : (
-          <ol className="du-room-activity" aria-label={t("Conversation transcript")}>
-            {activities.map((activity, index) => (
-              <li
-                className="du-room-activity-item"
-                data-speaker={isRoomSpeaker(activity.speaker) ? "room" : "participant"}
-                data-tone={activity.tone}
-                key={`${activity.title}:${index}`}
-              >
-                <span className="du-room-activity-avatar" aria-hidden="true">
-                  {formatSpeakerInitials(t(activity.speaker))}
-                </span>
-                <div className="du-room-activity-bubble">
-                  <div className="du-room-activity-meta">
-                    <p className="du-kicker">{t(activity.speaker)}</p>
-                    <span>{t("Discussion update")}</span>
+          <div
+            className="du-room-activity-groups"
+            role="region"
+            aria-label={t("Conversation transcript")}
+          >
+            {activityGroups.map((group) => {
+              const phaseView = describeRoomActivityPhase(group.phase);
+
+              return (
+                <section
+                  className="du-room-activity-group"
+                  data-phase={group.phase}
+                  aria-label={t(phaseView.updatesLabel)}
+                  key={group.phase}
+                >
+                  <div className="du-room-activity-group-header">
+                    <p className="du-kicker">{t(phaseView.label)}</p>
+                    <p>{t(phaseView.detail)}</p>
                   </div>
-                  <h5>{t(activity.title)}</h5>
-                  <p>{t(activity.detail)}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+                  <ol className="du-room-activity" aria-label={t(phaseView.updatesLabel)}>
+                    {group.activities.map((activity, index) => {
+                      const activityPhaseView = describeRoomActivityPhase(activity.phase);
+
+                      return (
+                        <li
+                          className="du-room-activity-item"
+                          data-speaker={
+                            isRoomSpeaker(activity.speaker) ? "room" : "participant"
+                          }
+                          data-tone={activity.tone}
+                          key={`${activity.title}:${index}`}
+                        >
+                          <span className="du-room-activity-avatar" aria-hidden="true">
+                            {formatSpeakerInitials(t(activity.speaker))}
+                          </span>
+                          <div className="du-room-activity-bubble">
+                            <div className="du-room-activity-meta">
+                              <p className="du-kicker">{t(activity.speaker)}</p>
+                              <span>{t(activityPhaseView.label)}</span>
+                            </div>
+                            <h5>{t(activity.title)}</h5>
+                            <p>{t(activity.detail)}</p>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </section>
+              );
+            })}
+          </div>
         )}
       </div>
       <div className="du-room-stage-wrap">
@@ -2387,11 +2433,83 @@ function getParticipantFirstResponses(activities: RoomActivityItem[]): RoomActiv
   );
 }
 
+const ROOM_ACTIVITY_PHASE_ORDER: readonly RoomActivityPhaseId[] = [
+  "brief",
+  "first-responses",
+  "perspectives",
+  "evidence",
+  "conclusion"
+];
+
 function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityItem[] {
   return [...events]
     .sort(compareRunEvents)
     .map((event) => createRoomActivityItem(event, run))
     .filter((activity): activity is RoomActivityItem => Boolean(activity));
+}
+
+function groupRoomActivitiesByPhase(activities: RoomActivityItem[]): RoomActivityGroup[] {
+  const grouped = new Map<RoomActivityPhaseId, RoomActivityItem[]>(
+    ROOM_ACTIVITY_PHASE_ORDER.map((phase) => [phase, []])
+  );
+
+  for (const activity of activities) {
+    grouped.get(activity.phase)?.push(activity);
+  }
+
+  return ROOM_ACTIVITY_PHASE_ORDER.flatMap((phase) => {
+    const groupActivities = grouped.get(phase) ?? [];
+
+    return groupActivities.length > 0
+      ? [
+          {
+            phase,
+            activities: groupActivities
+          }
+        ]
+      : [];
+  });
+}
+
+function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhaseView {
+  if (phase === "brief") {
+    return {
+      label: "Discussion brief",
+      detail: "The room starts by making the question, goals, and constraints visible.",
+      updatesLabel: "Discussion brief updates"
+    };
+  }
+
+  if (phase === "first-responses") {
+    return {
+      label: "Independent first responses",
+      detail: "Participants respond separately before comparing answers.",
+      updatesLabel: "Independent first response updates"
+    };
+  }
+
+  if (phase === "perspectives") {
+    return {
+      label: "Main perspectives and disagreements",
+      detail: "The room organizes strongest options and keeps challenges visible.",
+      updatesLabel: "Main perspective and disagreement updates"
+    };
+  }
+
+  if (phase === "evidence") {
+    return {
+      label: "Evidence and verification",
+      detail:
+        "Evidence checks and missing information are kept visible before relying on a conclusion.",
+      updatesLabel: "Evidence and verification updates"
+    };
+  }
+
+  return {
+    label: "Current conclusion and risk review",
+    detail: "The room drafts a conclusion and records risks or boundaries for review.",
+    updatesLabel: "Current conclusion and risk review updates"
+  };
 }
 
 function isRoomSpeaker(speaker: string): boolean {
@@ -2428,7 +2546,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       detail:
         getFirstStringRecordValue(payload, ["topic", "question", "summary"]) ??
         "The discussion brief is available for everyone in the room.",
-      tone: "ok"
+      tone: "ok",
+      phase: "brief"
     };
   }
 
@@ -2438,7 +2557,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       title: "Independent first responses opened",
       detail:
         "Participants can respond separately before seeing one another's answers.",
-      tone: "neutral"
+      tone: "neutral",
+      phase: "first-responses"
     };
   }
 
@@ -2449,7 +2569,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       detail: isRedactedPayload(payload)
         ? "This response is sealed until the independent first responses are revealed."
         : describeContributionPayload(payload),
-      tone: isRedactedPayload(payload) ? "warning" : "ok"
+      tone: isRedactedPayload(payload) ? "warning" : "ok",
+      phase: "first-responses"
     };
   }
 
@@ -2458,7 +2579,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       speaker: "Discussion room",
       title: "Independent first responses revealed",
       detail: "The independent responses are now available for review.",
-      tone: "ok"
+      tone: "ok",
+      phase: "first-responses"
     };
   }
 
@@ -2469,7 +2591,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       detail:
         getStringRecordValue(payload, "rationale") ??
         "The revealed responses were organized into options, disagreements, requirements, and evidence needs.",
-      tone: "ok"
+      tone: "ok",
+      phase: "perspectives"
     };
   }
 
@@ -2480,7 +2603,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       detail:
         getStringRecordValue(payload, "rationale") ??
         "The room accepted this discussion material as part of the current working view.",
-      tone: "ok"
+      tone: "ok",
+      phase: "perspectives"
     };
   }
 
@@ -2491,7 +2615,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       detail:
         getStringRecordValue(payload, "reason") ??
         "A challenge was recorded against the current discussion material.",
-      tone: "warning"
+      tone: "warning",
+      phase: "perspectives"
     };
   }
 
@@ -2502,7 +2627,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       detail:
         getFirstStringRecordValue(payload, ["summary", "result", "status"]) ??
         "An evidence check result was added to the discussion.",
-      tone: "ok"
+      tone: "ok",
+      phase: "evidence"
     };
   }
 
@@ -2513,7 +2639,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       detail:
         getStringRecordValue(payload, "recommendation") ??
         "A reviewable conclusion draft was prepared from the current discussion material.",
-      tone: "ok"
+      tone: "ok",
+      phase: "conclusion"
     };
   }
 
@@ -2524,7 +2651,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       detail:
         getFirstStringRecordValue(payload, ["summary", "rationale"]) ??
         "A risk review was recorded for the current conclusion.",
-      tone: "warning"
+      tone: "warning",
+      phase: "conclusion"
     };
   }
 

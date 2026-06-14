@@ -1613,6 +1613,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u6b63\u5728\u8ba8\u8bba\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u65f6\u95f4\u7ebf")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u5ba4\u4e2d\u53d1\u751f\u4e86\u4ec0\u4e48")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "\u5bf9\u8bdd\u8bb0\u5f55" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u66f4\u65b0" })).toBeTruthy();
     expect(
       screen.getByRole("region", { name: "\u8ba8\u8bba\u5ba4\u8fdb\u5ea6\u6458\u8981" })
     ).toBeTruthy();
@@ -2158,7 +2161,13 @@ describe("@deliberum/web shell", () => {
     expect(roomProgressSummary.textContent ?? "").toContain("Requirements to satisfy");
     expect(screen.getByText("Room activity")).toBeTruthy();
     expect(screen.getByText("Readable discussion flow")).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Conversation transcript" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Discussion brief updates" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
+    expect(
+      screen.getByText("The room starts by making the question, goals, and constraints visible.")
+    ).toBeTruthy();
+    expect(screen.getByText("Participants respond separately before comparing answers.")).toBeTruthy();
     expect(screen.getByText("Discussion brief published")).toBeTruthy();
     expect(screen.getByText("Independent response submitted")).toBeTruthy();
     expect(
@@ -2409,7 +2418,13 @@ describe("@deliberum/web shell", () => {
     ).toBeNull();
     expect(screen.getByText("Independent first responses revealed")).toBeTruthy();
     expect(screen.getByText("Main perspectives organized")).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Conversation transcript" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Main perspective and disagreement updates" })).toBeTruthy();
+    expect(screen.getAllByText("Main perspectives and disagreements").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText("The room organizes strongest options and keeps challenges visible.")
+    ).toBeTruthy();
     expect(document.querySelector('.du-room-activity-item[data-speaker="room"]')).toBeTruthy();
     expect(
       document.querySelector('.du-room-activity-item[data-speaker="participant"]')

@@ -742,6 +742,43 @@ textarea:focus-visible {
   list-style: none;
 }
 
+.du-room-activity-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.du-room-activity-group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.du-room-activity-group-header {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px;
+  background: #f6efe3;
+  border: 1px solid #e4d6bd;
+  border-radius: 8px;
+}
+
+.du-room-activity-group[data-phase="brief"] .du-room-activity-group-header,
+.du-room-activity-group[data-phase="conclusion"] .du-room-activity-group-header {
+  background: #f8fff9;
+  border-color: #cfe7dd;
+}
+
+.du-room-activity-group-header p {
+  margin: 0;
+}
+
+.du-room-activity-group-header p:not(.du-kicker) {
+  color: var(--du-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .du-room-activity-item {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
