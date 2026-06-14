@@ -693,14 +693,15 @@ textarea:focus-visible {
   position: sticky;
   top: 16px;
   display: grid;
-  gap: 14px;
+  gap: 0;
   min-width: 0;
   background: #fffefa;
   border: 1px solid var(--du-line);
-  padding: 16px;
+  padding: 0;
 }
 
 .du-room-focus h4,
+.du-room-focus h5,
 .du-room-focus p {
   margin: 0;
 }
@@ -709,38 +710,83 @@ textarea:focus-visible {
   font-size: 1.08rem;
 }
 
+.du-room-focus h5 {
+  font-size: 0.94rem;
+}
+
 .du-room-focus p:not(.du-kicker) {
   margin-top: 8px;
   color: var(--du-muted);
   line-height: 1.45;
 }
 
-.du-room-focus-list {
+.du-room-focus-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border-bottom: 1px solid var(--du-line);
+}
+
+.du-room-focus-section:last-child {
+  border-bottom: 0;
+}
+
+.du-room-focus[data-state="ready"] .du-room-focus-section:first-child {
+  border-left: 4px solid var(--du-accent);
+}
+
+.du-room-focus-next strong {
+  font-size: 1.02rem;
+}
+
+.du-room-focus-next .du-action-row {
+  margin-top: 2px;
+}
+
+.du-room-focus-checklist {
   display: grid;
   gap: 1px;
+  padding: 0;
   background: var(--du-line);
 }
 
-.du-room-focus-list a,
-.du-room-focus-list div {
+.du-room-focus-checklist h5 {
+  background: #fffefa;
+  padding: 14px 16px;
+}
+
+.du-room-focus-checklist a,
+.du-room-focus-checklist div {
   display: grid;
   gap: 5px;
   min-width: 0;
   background: var(--du-surface);
   color: var(--du-ink);
-  padding: 12px;
+  padding: 12px 16px;
   text-decoration: none;
 }
 
-.du-room-focus-list span {
+.du-room-focus-checklist a[data-state="needs-review"],
+.du-room-focus-checklist div[data-state="needs-review"] {
+  border-left: 4px solid #b7791f;
+}
+
+.du-room-focus-checklist span {
   color: var(--du-muted);
   font-size: 0.76rem;
   font-weight: 700;
   text-transform: uppercase;
 }
 
-.du-room-focus-list strong {
+.du-room-focus-checklist strong {
   overflow-wrap: anywhere;
+}
+
+.du-room-focus-checklist p {
+  color: var(--du-muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
 }
 
 .du-workbench-anchor {

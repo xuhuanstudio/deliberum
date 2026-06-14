@@ -1606,6 +1606,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u8ba8\u8bba\u5ba4\u4e2d\u53d1\u751f\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByText("\u4e0d\u540c\u53c2\u4e0e\u8005\u8d21\u732e\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
+    expect(screen.getByText("\u51b3\u7b56\u5de5\u4f5c\u533a")).toBeTruthy();
+    expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\uff1a\u53ef\u5ba1\u9605")).toBeTruthy();
+    expect(screen.getByText("\u4e0b\u4e00\u6b65\u52a8\u4f5c")).toBeTruthy();
+    expect(screen.getByText("\u9700\u8981\u5ba1\u9605\u7684\u5185\u5bb9")).toBeTruthy();
     expect(screen.getByText("\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba")).toBeTruthy();
     expect(screen.getAllByText("\u5f53\u524d\u7ed3\u8bba").length).toBeGreaterThan(0);
     expect(await screen.findByText("\u98ce\u9669\u4e0e\u7f3a\u5931\u8bc1\u636e")).toBeTruthy();
@@ -2120,8 +2124,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Core discussion stages")).toBeTruthy();
     expect(screen.getByText("What different participants contributed")).toBeTruthy();
     expect(screen.getByText("Perspective 1")).toBeTruthy();
-    expect(screen.getByText("Ready to review")).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "Current room summary" })).toBeTruthy();
+    expect(screen.getByText("Decision workspace")).toBeTruthy();
+    expect(screen.getByText("Current conclusion: Ready to review")).toBeTruthy();
+    expect(screen.getByText("Next action")).toBeTruthy();
+    expect(screen.getByText("What to review")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Open items remain visible here so the conclusion is not treated as final."
+      )
+    ).toBeTruthy();
     expect(screen.getByText("Next: review current conclusion")).toBeTruthy();
     expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Ready").length).toBeGreaterThan(0);

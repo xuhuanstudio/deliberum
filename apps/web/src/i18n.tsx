@@ -158,17 +158,29 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Continue the guided discussion so independent first responses can become readable perspectives in the room.":
     "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u8ba9\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u8f6c\u5316\u4e3a\u8ba8\u8bba\u5ba4\u4e2d\u7684\u53ef\u8bfb\u89c6\u89d2\u3002",
   "Current room summary": "\u5f53\u524d\u8ba8\u8bba\u6458\u8981",
+  "Decision workspace": "\u51b3\u7b56\u5de5\u4f5c\u533a",
+  "Current conclusion: {status}": "\u5f53\u524d\u7ed3\u8bba\uff1a{status}",
   "Ready to review": "\u53ef\u5ba1\u9605",
   "Not ready yet": "\u5c1a\u672a\u5c31\u7eea",
   "Review the conclusion together with disagreements, evidence gaps, risks, and next actions.":
     "\u5c06\u7ed3\u8bba\u4e0e\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u4e00\u8d77\u5ba1\u9605\u3002",
   "Continue the discussion before treating any answer as a conclusion.":
     "\u5728\u628a\u4efb\u4f55\u7b54\u6848\u5f53\u4f5c\u7ed3\u8bba\u524d\uff0c\u5148\u7ee7\u7eed\u8ba8\u8bba\u3002",
+  "Next action": "\u4e0b\u4e00\u6b65\u52a8\u4f5c",
+  "Open the conclusion, then check disagreements, evidence, risks, and requirements before relying on it.":
+    "\u6253\u5f00\u7ed3\u8bba\uff0c\u518d\u5728\u4f9d\u8d56\u5b83\u4e4b\u524d\u68c0\u67e5\u5206\u6b67\u3001\u8bc1\u636e\u3001\u98ce\u9669\u548c\u8981\u6c42\u3002",
+  "Continue the guided flow to produce perspectives, disagreements, evidence checks, risks, and a conclusion.":
+    "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u6d41\u7a0b\uff0c\u4ee5\u751f\u6210\u89c6\u89d2\u3001\u5206\u6b67\u3001\u8bc1\u636e\u6838\u67e5\u3001\u98ce\u9669\u548c\u7ed3\u8bba\u3002",
+  "What to review": "\u9700\u8981\u5ba1\u9605\u7684\u5185\u5bb9",
   "Missing evidence": "\u7f3a\u5931\u8bc1\u636e",
   "Requirements to satisfy": "\u9700\u8981\u6ee1\u8db3\u7684\u8981\u6c42",
   Risks: "\u98ce\u9669",
   "Review needed": "\u9700\u8981\u5ba1\u9605",
   "No open blockers visible": "\u6682\u65e0\u53ef\u89c1\u963b\u585e\u9879",
+  "Open items remain visible here so the conclusion is not treated as final.":
+    "\u672a\u89e3\u51b3\u4e8b\u9879\u4f1a\u6301\u7eed\u5728\u8fd9\u91cc\u53ef\u89c1\uff0c\u907f\u514d\u5c06\u7ed3\u8bba\u5f53\u4f5c\u6700\u7ec8\u7b54\u6848\u3002",
+  "No unresolved blockers are visible in the room summary.":
+    "\u8ba8\u8bba\u6458\u8981\u4e2d\u6682\u65e0\u53ef\u89c1\u672a\u89e3\u51b3\u963b\u585e\u9879\u3002",
   "Review current conclusion": "\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba",
   "Continue discussion": "\u7ee7\u7eed\u8ba8\u8bba",
   "A reviewable conclusion is available with risks, evidence gaps, and next actions.":
