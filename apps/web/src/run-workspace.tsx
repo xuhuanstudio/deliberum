@@ -1544,29 +1544,25 @@ function RunQualityOverview({
             title="Main perspectives"
             detail="Strong options stay visible without collapsing into one hidden authority."
             metric={String(candidates.length)}
-            to="/sessions/$sessionId/frontier"
-            sessionId={sessionId}
+            targetId="main-perspectives"
           />
           <QualitySummaryLink
             title="Open disagreements"
             detail="Unresolved objections that still constrain the current conclusion."
             metric={String(unresolvedObjections)}
-            to="/sessions/$sessionId/objections"
-            sessionId={sessionId}
+            targetId="open-disagreements"
           />
           <QualitySummaryLink
             title="Requirements to satisfy"
             detail="Explicit obligations that keep the output correct, complete, and bounded."
             metric={`${openObligations}/${obligations.length}`}
-            to="/sessions/$sessionId/obligations"
-            sessionId={sessionId}
+            targetId="answer-requirements"
           />
           <QualitySummaryLink
             title="Evidence gaps"
             detail="Missing or unchecked evidence that should be resolved before relying on the answer."
             metric={`${unresolvedEvidenceNeeds}/${evidenceNeeds.length}`}
-            to="/sessions/$sessionId/resources"
-            sessionId={sessionId}
+            targetId="evidence-gaps"
           />
         </div>
         <div className="du-readable-list du-discussion-next-actions" aria-label="Next recommended actions">
@@ -1603,13 +1599,9 @@ function RunQualityOverview({
                 There are unresolved disagreements that still constrain the current conclusion.
               </p>
               <div className="du-action-row">
-                <Link
-                  className="du-action-link du-secondary-link"
-                  to="/sessions/$sessionId/objections"
-                  params={{ sessionId }}
-                >
+                <a className="du-action-link du-secondary-link" href="#open-disagreements">
                   View disagreements
-                </Link>
+                </a>
               </div>
             </article>
           ) : null}
@@ -1622,13 +1614,9 @@ function RunQualityOverview({
                 as reliable.
               </p>
               <div className="du-action-row">
-                <Link
-                  className="du-action-link du-secondary-link"
-                  to="/sessions/$sessionId/resources"
-                  params={{ sessionId }}
-                >
+                <a className="du-action-link du-secondary-link" href="#evidence-gaps">
                   Review evidence
-                </Link>
+                </a>
               </div>
             </article>
           ) : null}
@@ -1641,13 +1629,9 @@ function RunQualityOverview({
                 acknowledged in the conclusion.
               </p>
               <div className="du-action-row">
-                <Link
-                  className="du-action-link du-secondary-link"
-                  to="/sessions/$sessionId/obligations"
-                  params={{ sessionId }}
-                >
+                <a className="du-action-link du-secondary-link" href="#answer-requirements">
                   View requirements
-                </Link>
+                </a>
               </div>
             </article>
           ) : null}
@@ -1671,25 +1655,19 @@ function QualitySummaryLink({
   title,
   detail,
   metric,
-  to,
-  sessionId
+  targetId
 }: {
   title: string;
   detail: string;
   metric: string;
-  to:
-    | "/sessions/$sessionId/frontier"
-    | "/sessions/$sessionId/objections"
-    | "/sessions/$sessionId/obligations"
-    | "/sessions/$sessionId/resources";
-  sessionId: string;
+  targetId: string;
 }) {
   return (
-    <Link className="du-quality-summary-item" to={to} params={{ sessionId }}>
+    <a className="du-quality-summary-item" href={`#${targetId}`}>
       <span>{metric}</span>
       <strong>{title}</strong>
       <p>{detail}</p>
-    </Link>
+    </a>
   );
 }
 
@@ -2146,70 +2124,78 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
 
   return (
     <section className="du-projection-section" aria-label="Discussion detail panels">
-      <DataPanel
-        title="Main perspectives"
-        description="Strongest current options accepted into the discussion so far."
-      >
-        <QueryState query={frontierQuery}>
-          <ProjectionRecordList
-            records={asArray(frontierQuery.data?.candidates)}
-            emptyTitle="No main perspectives"
-            emptyDescription="No main perspectives have been accepted into this discussion yet."
-            kind="candidate"
-          />
-          <AdvancedDetails summary="Advanced / Developer Mode" lazy>
-            <ProjectionMetadata projection={frontierQuery.data?.projection} />
-          </AdvancedDetails>
-        </QueryState>
-      </DataPanel>
-      <DataPanel
-        title="Open disagreements"
-        description="Unresolved objections and challenges that still constrain the discussion."
-      >
-        <QueryState query={objectionsQuery}>
-          <ProjectionRecordList
-            records={asArray(objectionsQuery.data?.objections)}
-            emptyTitle="No open disagreements"
-            emptyDescription="No open disagreements have been accepted into this discussion yet."
-            kind="objection"
-          />
-          <AdvancedDetails summary="Advanced / Developer Mode" lazy>
-            <ProjectionMetadata projection={objectionsQuery.data?.projection} />
-          </AdvancedDetails>
-        </QueryState>
-      </DataPanel>
-      <DataPanel
-        title="Requirements this answer must satisfy"
-        description="Explicit requirements for the current conclusion."
-      >
-        <QueryState query={obligationsQuery}>
-          <ProjectionRecordList
-            records={asArray(obligationsQuery.data?.qualityObligations)}
-            emptyTitle="No requirements"
-            emptyDescription="No explicit requirements have been accepted into this discussion yet."
-            kind="quality obligation"
-          />
-          <AdvancedDetails summary="Advanced / Developer Mode" lazy>
-            <ProjectionMetadata projection={obligationsQuery.data?.projection} />
-          </AdvancedDetails>
-        </QueryState>
-      </DataPanel>
-      <DataPanel
-        title="Risks and missing evidence"
-        description="Evidence gaps and verification needs that should be checked before relying on the conclusion."
-      >
-        <QueryState query={resourcesQuery}>
-          <ProjectionRecordList
-            records={asArray(resourcesQuery.data?.evidenceNeeds)}
-            emptyTitle="No missing evidence"
-            emptyDescription="No evidence gaps have been accepted into this discussion yet."
-            kind="evidence"
-          />
-          <AdvancedDetails summary="Advanced / Developer Mode" lazy>
-            <ProjectionMetadata projection={resourcesQuery.data?.projection} />
-          </AdvancedDetails>
-        </QueryState>
-      </DataPanel>
+      <div id="main-perspectives" className="du-workbench-anchor">
+        <DataPanel
+          title="Main perspectives"
+          description="Strongest current options accepted into the discussion so far."
+        >
+          <QueryState query={frontierQuery}>
+            <ProjectionRecordList
+              records={asArray(frontierQuery.data?.candidates)}
+              emptyTitle="No main perspectives"
+              emptyDescription="No main perspectives have been accepted into this discussion yet."
+              kind="candidate"
+            />
+            <AdvancedDetails summary="Advanced / Developer Mode" lazy>
+              <ProjectionMetadata projection={frontierQuery.data?.projection} />
+            </AdvancedDetails>
+          </QueryState>
+        </DataPanel>
+      </div>
+      <div id="open-disagreements" className="du-workbench-anchor">
+        <DataPanel
+          title="Open disagreements"
+          description="Unresolved objections and challenges that still constrain the discussion."
+        >
+          <QueryState query={objectionsQuery}>
+            <ProjectionRecordList
+              records={asArray(objectionsQuery.data?.objections)}
+              emptyTitle="No open disagreements"
+              emptyDescription="No open disagreements have been accepted into this discussion yet."
+              kind="objection"
+            />
+            <AdvancedDetails summary="Advanced / Developer Mode" lazy>
+              <ProjectionMetadata projection={objectionsQuery.data?.projection} />
+            </AdvancedDetails>
+          </QueryState>
+        </DataPanel>
+      </div>
+      <div id="answer-requirements" className="du-workbench-anchor">
+        <DataPanel
+          title="Requirements this answer must satisfy"
+          description="Explicit requirements for the current conclusion."
+        >
+          <QueryState query={obligationsQuery}>
+            <ProjectionRecordList
+              records={asArray(obligationsQuery.data?.qualityObligations)}
+              emptyTitle="No requirements"
+              emptyDescription="No explicit requirements have been accepted into this discussion yet."
+              kind="quality obligation"
+            />
+            <AdvancedDetails summary="Advanced / Developer Mode" lazy>
+              <ProjectionMetadata projection={obligationsQuery.data?.projection} />
+            </AdvancedDetails>
+          </QueryState>
+        </DataPanel>
+      </div>
+      <div id="evidence-gaps" className="du-workbench-anchor">
+        <DataPanel
+          title="Risks and missing evidence"
+          description="Evidence gaps and verification needs that should be checked before relying on the conclusion."
+        >
+          <QueryState query={resourcesQuery}>
+            <ProjectionRecordList
+              records={asArray(resourcesQuery.data?.evidenceNeeds)}
+              emptyTitle="No missing evidence"
+              emptyDescription="No evidence gaps have been accepted into this discussion yet."
+              kind="evidence"
+            />
+            <AdvancedDetails summary="Advanced / Developer Mode" lazy>
+              <ProjectionMetadata projection={resourcesQuery.data?.projection} />
+            </AdvancedDetails>
+          </QueryState>
+        </DataPanel>
+      </div>
     </section>
   );
 }

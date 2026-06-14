@@ -421,6 +421,10 @@ textarea:focus-visible {
   margin-top: 12px;
 }
 
+.du-workbench-anchor {
+  scroll-margin-top: 24px;
+}
+
 .du-quality-summary-item span,
 .du-quality-summary-item strong,
 .du-quality-summary-item p {

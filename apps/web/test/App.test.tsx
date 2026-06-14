@@ -1658,6 +1658,18 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Review evidence")).toBeTruthy();
     expect(screen.getByText("View disagreements")).toBeTruthy();
     expect(screen.getByText("View requirements")).toBeTruthy();
+    const defaultRunLinks = Array.from(document.querySelectorAll("a")).map((link) =>
+      link.getAttribute("href")
+    );
+    expect(defaultRunLinks).toEqual(
+      expect.arrayContaining([
+        "#main-perspectives",
+        "#open-disagreements",
+        "#answer-requirements",
+        "#evidence-gaps"
+      ])
+    );
+    expect(defaultRunLinks.some((href) => href?.includes("/sessions/session-1"))).toBe(false);
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
     expect(screen.getByText("Strong options stay visible without collapsing into one hidden authority.")).toBeTruthy();
     expect(screen.getByText("How progress is tracked")).toBeTruthy();
