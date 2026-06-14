@@ -71,6 +71,48 @@ The default Web path is designed for a first-time user, not for a daemon operato
 
 English is the default Web language. Simplified Chinese is supported through the Web localization table.
 
+## Quickstart: local Web product loop
+
+This path is for a normal local user who wants to try the product through Web, not inspect the runtime first.
+
+1. Install dependencies and build the local packages.
+
+   ```bash
+   corepack pnpm install
+   corepack pnpm build
+   ```
+
+2. Start the local Deliberum service in one terminal.
+
+   ```bash
+   mkdir -p .deliberum
+   DELIBERUM_ENABLE_LOCAL_PRESET=true \
+   DELIBERUM_DAEMON_SQLITE_PATH=.deliberum/deliberum.sqlite \
+   node apps/daemon/dist/index.js
+   ```
+
+   The local preset keeps a demo discussion path available while you configure a real model provider. The SQLite file keeps local discussion metadata across service restarts.
+
+3. Start the Web UI in another terminal.
+
+   ```bash
+   corepack pnpm --filter @deliberum/web dev
+   ```
+
+   Open `http://127.0.0.1:5173/`. The home page should show whether the local service is connected and whether model-backed discussions are ready.
+
+4. Configure a real model provider from Web.
+
+   Open `/setup/models`, then use **Configure OpenAI-compatible provider** to enter the provider API key, base URL, and model. Save the setup, check readiness, and use **Verify connection** before relying on a real model-backed discussion.
+
+   Saved API keys stay on this machine. The default Web UI does not show saved secrets, env var names, provider config ids, raw JSON, or runtime details; those remain behind Advanced / Developer Mode.
+
+5. Start and continue a model-backed discussion.
+
+   When setup is ready, use **Start model-backed discussion** or open `/runs/new?participants=model-backed`. Write the discussion question, create the discussion, open the room, then use **Continue discussion** to collect participant perspectives and review strongest options, open disagreements, evidence gaps, risks, the current conclusion, and next recommended actions.
+
+If you do not have a provider ready yet, use the demo discussion path first. The demo is useful for learning the room flow, but real decisions should use configured model-backed participants and verified provider setup.
+
 ## Documentation
 
 - [Project Charter](docs/PROJECT_CHARTER.md)
