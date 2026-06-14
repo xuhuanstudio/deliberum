@@ -56,7 +56,7 @@ Updated: 2026-06-15.
 | 13 | See the current conclusion. | `verified` | Outcome pages render user-facing conclusion summaries and hide internal projection/event terms. The integrated Web product-loop test confirms the room reaches `Current conclusion: Ready to review`. `smoke:product-loop` verifies the daemon compiles a provider-backed current conclusion. `smoke:web-product-loop` opens the current conclusion page from the browser room and verifies the recommendation. | Keep covered; future work should improve conclusion readability only when it improves the main loop. |
 | 14 | See next recommended actions. | `verified` | Outcome and room tests render next recommended actions. The integrated Web product-loop test confirms user-facing action labels. `smoke:product-loop` verifies continuation suggestions in the provider-backed outcome. `smoke:web-product-loop` confirms the room links and outcome next recommended actions are visible from the browser path. | Keep covered; future actions should stay user-facing. |
 | 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion in the browser and reaches reviewable conclusion material. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
-| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `partial` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, and low-level id labels during the primary browser path. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. | Needs broad browser audit across paused, retry, error, legacy, and Advanced boundary states. |
+| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `partial` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, and low-level id labels during the primary browser path. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. | Needs broad browser audit across paused, retry, and error states. |
 
 ## Batch Gate
 
@@ -102,9 +102,7 @@ fix. After adding browser-level evidence for rows 1 through 15, the next gate is
 to broaden row 16's default-path safety audit:
 
 1. verify paused and retry states do not expose internal ids or raw system data;
-2. verify error states use user-facing recovery language;
-3. verify legacy `/sessions/*` and Advanced / Developer Mode remain available
-   without becoming the normal user's default path.
+2. verify error states use user-facing recovery language.
 
 If those walkthroughs fail, fix the first blocking row with the smallest
 verifiable change.
@@ -259,6 +257,50 @@ Limit:
   provider.
 
 ## Recent Browser Evidence
+
+### 2026-06-15 Default And Advanced Boundary Walkthrough
+
+Scope: row 16, with focused evidence for the default path, Advanced / Developer
+Mode, and legacy `/sessions/*` pages.
+
+Automated browser smoke:
+
+- `corepack pnpm smoke:web-boundaries`
+
+Setup:
+
+- isolated local daemon with the built-in local preset enabled;
+- Web dev server pointed at the isolated daemon;
+- a local preset discussion created and continued through the daemon before
+  browser inspection.
+
+Path verified in the browser:
+
+1. Opened the default landing page with one existing discussion.
+2. Confirmed the default landing offered `Open discussion` without showing run
+   ids, session ids, daemon base URL, runtime profiles, operation audit, or the
+   underlying session catalog.
+3. Opened `Advanced operator details` and confirmed developer-only diagnostics,
+   `Open by session id`, the underlying session catalog, daemon base URL,
+   runtime profiles, operation audit, and the low-level session link were still
+   available there.
+4. Opened the legacy `/sessions/*` discussion brief page directly.
+5. Confirmed the legacy user-mode view showed the discussion brief, review
+   summary, and next recommended actions without showing the session id, raw
+   ledger entry, event type, or internal local-preset object ids.
+6. Opened the session `Ledger position` Advanced panel and confirmed the raw
+   latest ledger entry and event type appeared only after Advanced was opened.
+7. Opened the `Ledger events` route through the Advanced navigation and
+   confirmed append-only event records remain available for developers.
+
+Default-view safety checks:
+
+- did not show run or session ids;
+- did not show env var names or provider config ids;
+- did not show internal local preset object ids;
+- did not show raw ledger entry details before Advanced was opened;
+- kept ledger/event inspection behind Advanced or the explicit ledger events
+  route.
 
 ### 2026-06-15 Non-Empty Disagreement And Evidence Walkthrough
 
