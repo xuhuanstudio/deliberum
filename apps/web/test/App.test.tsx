@@ -987,6 +987,38 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("link", { name: "Open session view" })).toBeTruthy();
   });
 
+  it("does not send incomplete discussions to unavailable conclusions from catalogs", async () => {
+    const client = createClient({
+      listRuns: vi.fn(async () => ({
+        runs: [notStartedRunDetail]
+      }))
+    });
+
+    renderApp("/", client);
+
+    expect((await screen.findAllByText("Continue existing discussions")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    expect(screen.getByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();
+
+    cleanup();
+
+    const runsClient = createClient({
+      listRuns: vi.fn(async () => ({
+        runs: [notStartedRunDetail]
+      }))
+    });
+
+    renderApp("/runs", runsClient);
+
+    expect((await screen.findAllByText("Discussions")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(runsClient.listRuns).toHaveBeenCalled());
+    expect(screen.getByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();
+  });
+
   it("renders daemon runtime profile status without environment values", async () => {
     const client = renderApp("/");
 
@@ -1410,7 +1442,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("internal run id");
     expect(screen.getByRole("link", { name: "Open discussion workbench" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Review discussion brief" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Review discussion brief" })).toBeNull();
     expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
   });
 
@@ -1483,7 +1515,7 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByRole("link", { name: "Open discussion workbench" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Review discussion brief" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Review discussion brief" })).toBeNull();
     expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
   });
 

@@ -106,9 +106,6 @@ export function RunNewPage() {
     mutationFn: (runPlan: Record<string, unknown>) => client.createRun({ runPlan })
   });
   const createdRunId = getStringRecordValue(createMutation.data?.run, "runId");
-  const createdSessionId =
-    getStringRecordValue(createMutation.data?.session, "sessionId") ??
-    getStringRecordValue(createMutation.data?.run, "sessionId");
   const canCreateDiscussion =
     discussionQuestion.trim().length > 0 && !createMutation.isPending;
 
@@ -293,15 +290,6 @@ export function RunNewPage() {
             <Link className="du-action-link" to="/runs/$runId" params={{ runId: createdRunId }}>
               Open discussion workbench
             </Link>
-            {createdSessionId ? (
-              <Link
-                className="du-action-link du-secondary-link"
-                to="/sessions/$sessionId"
-                params={{ sessionId: createdSessionId }}
-              >
-                Review discussion brief
-              </Link>
-            ) : null}
           </div>
         ) : null}
       </ViewFrame>
@@ -791,6 +779,7 @@ function isTechnicalRunTitle(value: string): boolean {
 
 function RunListItem({ run, index }: { run: unknown; index: number }) {
   const runId = getStringRecordValue(run, "runId");
+  const reviewReady = isDiscussionReviewReady(run);
 
   return (
     <article className="du-run-list-item">
@@ -837,9 +826,11 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
           <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
             Open discussion
           </Link>
-          <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-            Current conclusion
-          </Link>
+          {reviewReady ? (
+            <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
+              Current conclusion
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </article>
@@ -3363,10 +3354,15 @@ function isCompletedDiscussionStage(status: unknown): boolean {
   return status === "completed" || status === "revealed";
 }
 
-function describeDiscussionContinuation(run: unknown): DiscussionContinuationView {
+export function isDiscussionReviewReady(run: unknown): boolean {
   const status = getRecordValue(run, "status");
   const finalizationStatus = getRecordValue(run, "latestFinalizationStatus");
-  const reviewReady = status === "revealed" || finalizationStatus === "completed";
+
+  return status === "revealed" || finalizationStatus === "completed";
+}
+
+function describeDiscussionContinuation(run: unknown): DiscussionContinuationView {
+  const reviewReady = isDiscussionReviewReady(run);
 
   if (reviewReady) {
     return {

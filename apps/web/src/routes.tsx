@@ -33,6 +33,7 @@ import {
   describeDiscussionStatus,
   formatRunDisplaySummary,
   formatRunDisplayTitle,
+  isDiscussionReviewReady,
   OutcomeBrief,
   RunDetailPage,
   RunNewPage,
@@ -430,13 +431,15 @@ function LandingPage() {
                       >
                         Open discussion
                       </Link>
-                      <Link
-                        className="du-action-link du-secondary-link"
-                        to="/runs/$runId/outcome"
-                        params={{ runId: catalogRunId }}
-                      >
-                        Current conclusion
-                      </Link>
+                      {isDiscussionReviewReady(run) ? (
+                        <Link
+                          className="du-action-link du-secondary-link"
+                          to="/runs/$runId/outcome"
+                          params={{ runId: catalogRunId }}
+                        >
+                          Current conclusion
+                        </Link>
+                      ) : null}
                     </div>
                   </article>
                 ))}
