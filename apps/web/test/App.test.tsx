@@ -1386,11 +1386,11 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Discussion created")).toBeTruthy();
     expect(
       screen.getByText(
-        "Next, continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
+        "Next, open the discussion workbench and continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("internal run id");
-    expect(screen.getByRole("link", { name: "Continue guided discussion" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open discussion workbench" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review discussion brief" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
   });
@@ -1460,10 +1460,10 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Discussion created")).toBeTruthy();
     expect(
       screen.getByText(
-        "Next, continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
+        "Next, open the discussion workbench and continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
       )
     ).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Continue guided discussion" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open discussion workbench" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review discussion brief" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
   });
