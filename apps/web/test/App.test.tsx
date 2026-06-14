@@ -1031,6 +1031,39 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("link", { name: "Open session view" })).toBeTruthy();
   });
 
+  it("localizes known sample discussion titles on the landing catalog", async () => {
+    const client = createClient({
+      listRuns: vi.fn(async () => ({
+        runs: [
+          {
+            ...runDetail,
+            title: "How should we review a proposed rollout before relying on it?",
+            topic: "How should we review a proposed rollout before relying on it?"
+          }
+        ]
+      }))
+    });
+
+    renderApp("/", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    expect((await screen.findAllByText("\u7ee7\u7eed\u5df2\u6709\u8ba8\u8bba")).length).toBeGreaterThan(
+      0
+    );
+    await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    const landingCatalogText =
+      screen.getByText("\u6211\u4eec\u5e94\u5982\u4f55\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5ba1\u67e5\u5b83\uff1f")
+        .closest(".du-run-list-item")?.textContent ?? "";
+
+    expect(landingCatalogText).toContain(
+      "\u6211\u4eec\u5e94\u5982\u4f55\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5ba1\u67e5\u5b83\uff1f"
+    );
+    expect(landingCatalogText).not.toContain(
+      "How should we review a proposed rollout before relying on it?"
+    );
+  });
+
   it("does not send incomplete discussions to unavailable conclusions from catalogs", async () => {
     const client = createClient({
       listRuns: vi.fn(async () => ({

@@ -447,7 +447,7 @@ function LandingPage() {
                 {runEntries.map(({ run, index, runId: catalogRunId }) => (
                   <article className="du-run-list-item" key={`${catalogRunId}-${index}`}>
                     <p className="du-kicker">{t("Discussion {number}", { number: index + 1 })}</p>
-                    <h3>{formatRunDisplayTitle(run, index)}</h3>
+                    <h3>{t(formatRunDisplayTitle(run, index))}</h3>
                     <p>{t(formatRunDisplaySummary(run))}</p>
                     <KeyValueGrid
                       items={[
