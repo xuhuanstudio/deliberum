@@ -1976,16 +1976,25 @@ function DiscussionRoomTimeline({
             )}
           />
         ) : (
-          <ol className="du-room-activity">
+          <ol className="du-room-activity" aria-label={t("Conversation transcript")}>
             {activities.map((activity, index) => (
               <li
                 className="du-room-activity-item"
+                data-speaker={isRoomSpeaker(activity.speaker) ? "room" : "participant"}
                 data-tone={activity.tone}
                 key={`${activity.title}:${index}`}
               >
-                <p className="du-kicker">{t(activity.speaker)}</p>
-                <h5>{t(activity.title)}</h5>
-                <p>{t(activity.detail)}</p>
+                <span className="du-room-activity-avatar" aria-hidden="true">
+                  {formatSpeakerInitials(t(activity.speaker))}
+                </span>
+                <div className="du-room-activity-bubble">
+                  <div className="du-room-activity-meta">
+                    <p className="du-kicker">{t(activity.speaker)}</p>
+                    <span>{t("Discussion update")}</span>
+                  </div>
+                  <h5>{t(activity.title)}</h5>
+                  <p>{t(activity.detail)}</p>
+                </div>
               </li>
             ))}
           </ol>
@@ -2054,6 +2063,28 @@ function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityI
     .sort(compareRunEvents)
     .map((event) => createRoomActivityItem(event, run))
     .filter((activity): activity is RoomActivityItem => Boolean(activity));
+}
+
+function isRoomSpeaker(speaker: string): boolean {
+  return normalizeActorLabel(speaker) === "discussion-room";
+}
+
+function formatSpeakerInitials(speaker: string): string {
+  const words = speaker.trim().split(/\s+/).filter((word) => word.length > 0);
+
+  if (words.length === 0) {
+    return "?";
+  }
+
+  const firstWord = words[0] ?? "?";
+
+  if (words.length === 1) {
+    return firstWord.slice(0, 2).toUpperCase();
+  }
+
+  const secondWord = words[1] ?? "";
+
+  return `${firstWord.slice(0, 1)}${secondWord.slice(0, 1)}`.toUpperCase();
 }
 
 function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem | null {

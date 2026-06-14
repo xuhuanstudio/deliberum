@@ -2109,6 +2109,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("What has happened in the room")).toBeTruthy();
     expect(screen.getByText("Room activity")).toBeTruthy();
     expect(screen.getByText("Readable discussion flow")).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByText("Discussion brief published")).toBeTruthy();
     expect(screen.getByText("Independent response submitted")).toBeTruthy();
     expect(
@@ -2304,6 +2305,12 @@ describe("@deliberum/web shell", () => {
     ).toBeNull();
     expect(screen.getByText("Independent first responses revealed")).toBeTruthy();
     expect(screen.getByText("Main perspectives organized")).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Conversation transcript" })).toBeTruthy();
+    expect(document.querySelector('.du-room-activity-item[data-speaker="room"]')).toBeTruthy();
+    expect(
+      document.querySelector('.du-room-activity-item[data-speaker="participant"]')
+    ).toBeTruthy();
+    expect(document.querySelectorAll(".du-room-activity-bubble").length).toBeGreaterThan(0);
     const roomText = document.querySelector(".du-room-layout")?.textContent ?? "";
     expect(roomText).not.toContain("contribution-event");
     expect(roomText).not.toContain("sealed_contribution_submitted");
