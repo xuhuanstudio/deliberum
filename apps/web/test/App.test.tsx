@@ -995,6 +995,7 @@ function readWebSource(): string {
     "src/App.tsx",
     "src/client.ts",
     "src/daemon-runtime.tsx",
+    "src/local-service-setup.tsx",
     "src/routes.tsx",
     "src/run-presets.ts",
     "src/run-workspace.tsx",
@@ -3080,6 +3081,78 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByRole("link", { name: "Open discussion room" })).toBeNull();
     expect(screen.queryByText("Discussion created")).toBeNull();
     expect(screen.queryByRole("link", { name: "Review discussion brief" })).toBeNull();
+  });
+
+  it("guides start discussion users when the local service is unavailable", async () => {
+    const client = createClient({
+      getRuntimeProfiles: vi.fn(async () => {
+        throw new Error("ECONNREFUSED 127.0.0.1:3877");
+      })
+    });
+
+    renderApp("/runs/new", client);
+
+    expect(await screen.findByText("Start the local service")).toBeTruthy();
+    expect(screen.getByText("Local service command")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js"
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Web cannot read setup or discussions until the local Deliberum service is running."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "After the service responds, open Setup / Models to add the provider API key, base URL, and model."
+      )
+    ).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Discussion question"), {
+      target: {
+        value: "Should we use a model-backed discussion?"
+      }
+    });
+    expect(
+      (screen.getByRole("button", { name: "Create discussion" }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+    expect(document.body.textContent ?? "").not.toContain("ECONNREFUSED");
+    expect(document.body.textContent ?? "").not.toContain("127.0.0.1:3877");
+    expect(client.createRun).not.toHaveBeenCalled();
+  });
+
+  it("localizes the start discussion local service guide", async () => {
+    const client = createClient({
+      getRuntimeProfiles: vi.fn(async () => {
+        throw new Error("ECONNREFUSED 127.0.0.1:3877");
+      })
+    });
+
+    renderApp("/runs/new", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    expect(await screen.findByText("\u542f\u52a8\u672c\u5730\u670d\u52a1")).toBeTruthy();
+    expect(screen.getByText("\u672c\u5730\u670d\u52a1\u547d\u4ee4")).toBeTruthy();
+    expect(screen.getByText("3. \u5728 Web \u4e2d\u914d\u7f6e\u6a21\u578b")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u670d\u52a1\u54cd\u5e94\u540e\uff0c\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\u3002"
+      )
+    ).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898"), {
+      target: {
+        value: "\u662f\u5426\u5e94\u8be5\u542f\u52a8\u4e00\u4e2a\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\uff1f"
+      }
+    });
+    expect(
+      (screen.getByRole("button", { name: "\u521b\u5efa\u8ba8\u8bba" }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+    expect(document.body.textContent ?? "").not.toContain("ECONNREFUSED");
+    expect(document.body.textContent ?? "").not.toContain("127.0.0.1:3877");
   });
 
   it("fills the sample brief with user-facing discussion text", async () => {

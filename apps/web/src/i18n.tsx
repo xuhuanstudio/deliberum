@@ -119,8 +119,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Keep this page open, then use Check again after the service starts.":
     "\u4fdd\u6301\u6b64\u9875\u6253\u5f00\uff0c\u670d\u52a1\u542f\u52a8\u540e\u4f7f\u7528\u201c\u518d\u6b21\u68c0\u67e5\u201d\u3002",
   "3. Configure models in Web": "3. \u5728 Web \u4e2d\u914d\u7f6e\u6a21\u578b",
-  "After the service responds, add the provider API key, base URL, and model from this page.":
-    "\u670d\u52a1\u54cd\u5e94\u540e\uff0c\u4ece\u6b64\u9875\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\u3002",
+  "After the service responds, open Setup / Models to add the provider API key, base URL, and model.":
+    "\u670d\u52a1\u54cd\u5e94\u540e\uff0c\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\u3002",
   "Check again": "\u518d\u6b21\u68c0\u67e5",
   "Advanced details keep diagnostics and low-level connection values out of the default setup path.":
     "\u9ad8\u7ea7\u8be6\u60c5\u4f1a\u5c06\u8bca\u65ad\u4fe1\u606f\u548c\u5e95\u5c42\u8fde\u63a5\u503c\u653e\u5728\u9ed8\u8ba4\u8bbe\u7f6e\u8def\u5f84\u4e4b\u5916\u3002",

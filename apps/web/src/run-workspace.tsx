@@ -24,6 +24,7 @@ import {
 } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
 import { LanguageSwitcher, useI18n } from "./i18n";
+import { LocalServiceSetupGuide } from "./local-service-setup";
 import {
   AdvancedDetails,
   QueryState,
@@ -226,6 +227,7 @@ export function RunNewPage() {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [runPlanText, setRunPlanText] = useState(DEFAULT_RUN_PLAN_TEXT);
   const [discussionQuestion, setDiscussionQuestion] = useState("");
   const [discussionGoals, setDiscussionGoals] = useState("");
@@ -248,7 +250,9 @@ export function RunNewPage() {
     ? findProviderBackedDiscussionSource(runtimeSetupPlan)
     : undefined;
   const providerBackedDiscussionAvailable = Boolean(providerBackedDiscussionSource);
-  const demoDiscussionAvailable = isDemoDiscussionSourceAvailable(runtimeSetupPlan);
+  const demoDiscussionAvailable = runtimeSetupPlan
+    ? isDemoDiscussionSourceAvailable(runtimeSetupPlan)
+    : false;
   const localOrganizerReady = runtimeSetupPlan
     ? isLocalPresetDiscussionPathReady(runtimeSetupPlan)
     : false;
@@ -278,6 +282,7 @@ export function RunNewPage() {
   const canCreateDiscussion =
     discussionQuestion.trim().length > 0 &&
     !createMutation.isPending &&
+    Boolean(runtimeSetupPlan) &&
     selectedParticipantSourceAvailable;
 
   useEffect(() => {
@@ -303,6 +308,10 @@ export function RunNewPage() {
   function chooseParticipantSource(source: DiscussionParticipantSource) {
     setParticipantSourceTouched(true);
     setParticipantSource(source);
+  }
+
+  function retryModelSetup() {
+    void queryClient.invalidateQueries({ queryKey: ["runtime-profiles"] });
   }
 
   function submitRunPlan(event: FormEvent<HTMLFormElement>) {
@@ -386,11 +395,7 @@ export function RunNewPage() {
         {runtimeProfilesQuery.isLoading ? (
           <StatusBanner title={t("Checking model setup")} />
         ) : runtimeProfilesQuery.isError ? (
-          <StatusBanner
-            tone="warning"
-            title={t("Could not load model setup")}
-            detail={formatSafeErrorMessage(runtimeProfilesQuery.error)}
-          />
+          <LocalServiceSetupGuide onRetry={retryModelSetup} />
         ) : runtimeSetupPlan ? (
           <DiscussionModelSetupPanel
             setupPlan={runtimeSetupPlan}
