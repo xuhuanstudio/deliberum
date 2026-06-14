@@ -24,7 +24,8 @@
     "typecheck:workspace": "corepack pnpm -r typecheck",
     "format": "corepack pnpm -r --if-present format",
     "smoke:built": "node scripts/smoke-built-runtime.mjs",
-    "ci": "corepack pnpm clean:dist && corepack pnpm lint:language && corepack pnpm lint:public-files && corepack pnpm lint:docs && corepack pnpm build:packages && corepack pnpm lint:evaluation && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built"
+    "smoke:product-loop": "node scripts/smoke-product-loop.mjs",
+    "ci": "corepack pnpm clean:dist && corepack pnpm lint:language && corepack pnpm lint:public-files && corepack pnpm lint:docs && corepack pnpm build:packages && corepack pnpm lint:evaluation && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built && corepack pnpm smoke:product-loop"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
