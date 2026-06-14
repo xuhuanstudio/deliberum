@@ -376,10 +376,19 @@ export function RunDetailPage() {
         )}
         actions={
           reviewReady ? (
-            <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-              {t("View current conclusion")}
-            </Link>
-          ) : null
+            <>
+              <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
+                {t("View current conclusion")}
+              </Link>
+              <a className="du-action-link du-secondary-link" href="#continue-discussion">
+                {t("Update conclusion")}
+              </a>
+            </>
+          ) : (
+            <a className="du-action-link" href="#continue-discussion">
+              {t("Continue discussion")}
+            </a>
+          )
         }
       >
         <QueryState query={runQuery}>
@@ -1725,6 +1734,7 @@ function RunQualityOverview({
       )}
     >
       <QueryState query={queryState}>
+        <DiscussionRoomActionBar runId={runId} reviewReady={continuationView.reviewReady} />
         <StatusBanner
           tone={continuationView.reviewReady ? "ok" : "warning"}
           title={nextActionTitle}
@@ -1901,6 +1911,35 @@ function RunQualityOverview({
         </div>
       </QueryState>
     </DataPanel>
+  );
+}
+
+function DiscussionRoomActionBar({
+  runId,
+  reviewReady
+}: {
+  runId: string;
+  reviewReady: boolean;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <nav className="du-room-action-bar" aria-label={t("Primary discussion actions")}>
+      {reviewReady ? (
+        <>
+          <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
+            {t("Review current conclusion")}
+          </Link>
+          <a className="du-action-link du-secondary-link" href="#continue-discussion">
+            {t("Update conclusion")}
+          </a>
+        </>
+      ) : (
+        <a className="du-action-link" href="#continue-discussion">
+          {t("Continue discussion")}
+        </a>
+      )}
+    </nav>
   );
 }
 

@@ -183,6 +183,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u8ba8\u8bba\u6458\u8981\u4e2d\u6682\u65e0\u53ef\u89c1\u672a\u89e3\u51b3\u963b\u585e\u9879\u3002",
   "Review current conclusion": "\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba",
   "Continue discussion": "\u7ee7\u7eed\u8ba8\u8bba",
+  "Primary discussion actions": "\u4e3b\u8981\u8ba8\u8bba\u52a8\u4f5c",
   "Continue guided discussion": "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba",
   "A reviewable conclusion is available with risks, evidence gaps, and next actions.":
     "\u5df2\u6709\u53ef\u5ba1\u9605\u7ed3\u8bba\uff0c\u5e76\u5305\u542b\u98ce\u9669\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u3002",

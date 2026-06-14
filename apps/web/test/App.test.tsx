@@ -2095,6 +2095,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Not specified")).toBeTruthy();
     expect(screen.getAllByText("Discussion status").length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion is ready to review")).toBeTruthy();
+    const pageActionsText = document.querySelector(".du-page-actions")?.textContent ?? "";
+    expect(pageActionsText).toContain("View current conclusion");
+    expect(pageActionsText).toContain("Update conclusion");
+    const primaryDiscussionActions = screen.getByRole("navigation", {
+      name: "Primary discussion actions"
+    });
+    expect(primaryDiscussionActions.textContent ?? "").toContain(
+      "Review current conclusion"
+    );
+    expect(primaryDiscussionActions.textContent ?? "").toContain("Update conclusion");
     expect(screen.getByText("Discussion actions")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Update conclusion" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
@@ -2761,6 +2771,16 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
     expect(await screen.findByText("Next: continue guided discussion")).toBeTruthy();
+    expect(document.querySelector(".du-page-actions")?.textContent ?? "").toContain(
+      "Continue discussion"
+    );
+    const primaryDiscussionActions = screen.getByRole("navigation", {
+      name: "Primary discussion actions"
+    });
+    expect(primaryDiscussionActions.textContent ?? "").toContain("Continue discussion");
+    expect(primaryDiscussionActions.textContent ?? "").not.toContain(
+      "Review current conclusion"
+    );
     expect(await screen.findByRole("status", { name: "Current conclusion not ready" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();

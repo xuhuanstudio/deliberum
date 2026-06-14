@@ -748,6 +748,18 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 
+.du-room-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: -2px 0 2px;
+}
+
+.du-room-action-bar .du-action-link {
+  min-height: 42px;
+}
+
 .du-room-focus {
   position: sticky;
   top: 16px;
@@ -1692,6 +1704,14 @@ textarea:focus-visible {
   .du-room-focus {
     order: 2;
     position: static;
+  }
+
+  .du-room-action-bar {
+    align-items: stretch;
+  }
+
+  .du-room-action-bar .du-action-link {
+    width: 100%;
   }
 
   .du-room-main {
