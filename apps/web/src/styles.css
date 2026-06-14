@@ -1690,6 +1690,23 @@ textarea:focus-visible {
   }
 
   .du-room-focus {
+    order: 2;
     position: static;
+  }
+
+  .du-room-main {
+    display: contents;
+  }
+
+  .du-room-brief {
+    order: 1;
+  }
+
+  .du-room-section {
+    order: 3;
+  }
+
+  .du-room-contributions {
+    order: 4;
   }
 }
