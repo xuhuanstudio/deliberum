@@ -1504,6 +1504,7 @@ function SessionOverviewPage() {
         </DataPanel>
         <AdvancedDetails
           description="Ledger position and raw latest entry are available for debugging without leading the user experience."
+          panelLabel="Ledger position"
           lazy
         >
           <KeyValueGrid

@@ -349,6 +349,7 @@ export function RunDetailPage() {
           <AdvancedDetails
             summary="Advanced / Developer Mode"
             description="Adaptive primitive suggestions, process proposal lifecycle, explicit execution readiness, and internal proposal ids for developer inspection."
+            panelLabel="Adaptive primitive suggestions"
             lazy
           >
             <RunProcessProposals runId={runId} sessionId={sessionId} />
@@ -357,6 +358,7 @@ export function RunDetailPage() {
           <AdvancedDetails
             summary="Advanced / Developer Mode"
             description="Ledger trace, run plan, round metadata, and internal ids for developer inspection."
+            panelLabel="Ledger trace"
             lazy
           >
             <RunEventTimeline runId={runId} />

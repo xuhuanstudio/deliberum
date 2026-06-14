@@ -20,6 +20,7 @@ export type ViewFrameProps = {
 export type AdvancedDetailsProps = {
   summary?: string;
   description?: string;
+  panelLabel?: string;
   lazy?: boolean;
   onOpen?: () => void;
   children: ReactNode;
@@ -48,16 +49,18 @@ export function ViewFrame({
 export function AdvancedDetails({
   summary = "Advanced / Developer Mode",
   description,
-  lazy = false,
+  panelLabel,
+  lazy = true,
   onOpen,
   children
 }: AdvancedDetailsProps) {
   const [hasOpened, setHasOpened] = useState(false);
-  const shouldRenderChildren = !lazy || hasOpened;
+  const shouldRenderBody = !lazy || hasOpened;
 
   return (
     <details
       className="du-advanced-panel"
+      data-advanced-panel={panelLabel}
       onToggle={(event) => {
         if (event.currentTarget.open) {
           setHasOpened(true);
@@ -66,8 +69,10 @@ export function AdvancedDetails({
       }}
     >
       <summary>{summary}</summary>
-      {description ? <p className="du-advanced-description">{description}</p> : null}
-      {shouldRenderChildren ? <div className="du-advanced-stack">{children}</div> : null}
+      {shouldRenderBody && description ? (
+        <p className="du-advanced-description">{description}</p>
+      ) : null}
+      {shouldRenderBody ? <div className="du-advanced-stack">{children}</div> : null}
     </details>
   );
 }

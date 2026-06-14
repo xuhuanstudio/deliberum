@@ -761,7 +761,9 @@ async function findAdvancedModeSummary(index = 0) {
 
 function getAdvancedModeSummaryByPanelText(text: string) {
   const details = Array.from(document.querySelectorAll("details.du-advanced-panel")).find(
-    (element) => element.textContent?.includes(text)
+    (element) =>
+      element.getAttribute("data-advanced-panel") === text ||
+      element.textContent?.includes(text)
   );
   expect(details).toBeTruthy();
   const summary = details?.querySelector("summary");
@@ -921,6 +923,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Advanced / Developer Mode").length).toBeGreaterThanOrEqual(2);
     expect(document.body.textContent ?? "").not.toContain("Topic Contract");
     expect(document.body.textContent ?? "").not.toContain("concept mapping");
+    expect(document.body.textContent ?? "").not.toContain("Runtime, daemon, resource");
+    expect(document.body.textContent ?? "").not.toContain("raw session ids");
     fireEvent.click(getAdvancedModeSummary());
     expect(await screen.findByText("Core concept mapping")).toBeTruthy();
     expect(screen.getByText("Topic Contract")).toBeTruthy();
@@ -1109,7 +1113,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("link", { name: "Review risks and evidence" })).toBeTruthy();
     expect(screen.getAllByText("Advanced / Developer Mode").length).toBeGreaterThanOrEqual(2);
     expect(document.body.textContent ?? "").not.toContain("topic_contract_published");
+    expect(document.body.textContent ?? "").not.toContain("Ledger position and raw latest entry");
     fireEvent.click(getAdvancedModeSummaryByPanelText("Ledger position"));
+    expect(
+      await screen.findByText(
+        "Ledger position and raw latest entry are available for debugging without leading the user experience."
+      )
+    ).toBeTruthy();
     expect(await screen.findByText("topic_contract_published")).toBeTruthy();
   });
 
@@ -1596,6 +1606,8 @@ describe("@deliberum/web shell", () => {
     expect(defaultRunText).not.toContain("objection-1");
     expect(defaultRunText).not.toContain("quality-1");
     expect(defaultRunText).not.toContain("evidence-need-1");
+    expect(defaultRunText).not.toContain("Adaptive primitive suggestions");
+    expect(defaultRunText).not.toContain("Ledger trace");
     const nextStepControls = getAdvancedModeSummaryByPanelText(
       "Adaptive primitive suggestions"
     ).closest("details");
