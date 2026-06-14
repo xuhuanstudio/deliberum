@@ -3943,6 +3943,60 @@ describe("@deliberum/web shell", () => {
               },
               basedOnEventIds: ["contribution-event"],
               trace: {}
+            },
+            {
+              id: "provider-extraction-event",
+              type: "extraction_proposed",
+              sequence: 5,
+              visibility: "public",
+              authorId: "openai-compatible-extractor",
+              createdAt: "2026-06-10T00:00:05.000Z",
+              payload: {
+                rationale:
+                  "Provider-organized discussion materials are visible without provider role ids."
+              },
+              basedOnEventIds: ["contribution-event"],
+              trace: {}
+            },
+            {
+              id: "provider-review-event",
+              type: "proposal_accepted",
+              sequence: 6,
+              visibility: "public",
+              authorId: "provider-review-coordinator",
+              createdAt: "2026-06-10T00:00:06.000Z",
+              payload: {
+                rationale:
+                  "Provider-reviewed discussion materials are accepted for the current room view."
+              },
+              basedOnEventIds: ["provider-extraction-event"],
+              trace: {}
+            },
+            {
+              id: "provider-final-candidate-event",
+              type: "final_candidate_proposed",
+              sequence: 7,
+              visibility: "public",
+              authorId: "openai-compatible-final-candidate",
+              createdAt: "2026-06-10T00:00:07.000Z",
+              payload: {
+                recommendation: "Keep the provider-backed product loop reviewable."
+              },
+              basedOnEventIds: ["provider-review-event"],
+              trace: {}
+            },
+            {
+              id: "provider-final-audit-event",
+              type: "final_audit_recorded",
+              sequence: 8,
+              visibility: "public",
+              authorId: "openai-compatible-final-auditor",
+              createdAt: "2026-06-10T00:00:08.000Z",
+              payload: {
+                summary: "Provider-backed conclusions remain provisional until reviewed."
+              },
+              basedOnEventIds: ["provider-final-candidate-event"],
+              trace: {}
             }
           ]
         }))
@@ -3951,7 +4005,7 @@ describe("@deliberum/web shell", () => {
 
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
     expect((await screen.findAllByText("Perspective A")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Discussion organizer")).toBeTruthy();
+    expect(screen.getAllByText("Discussion organizer").length).toBeGreaterThan(1);
     expect(
       screen.getAllByText("CLI-first validation exercises the lifecycle directly.").length
     ).toBeGreaterThan(0);
@@ -3973,7 +4027,10 @@ describe("@deliberum/web shell", () => {
       screen.queryByText("This participant response is available for review in the room.")
     ).toBeNull();
     expect(screen.getByText("Independent first responses revealed")).toBeTruthy();
-    expect(screen.getByText("Main perspectives organized")).toBeTruthy();
+    expect(screen.getAllByText("Main perspectives organized").length).toBeGreaterThan(1);
+    expect(screen.getByText("Review coordinator")).toBeTruthy();
+    expect(screen.getByText("Conclusion writer")).toBeTruthy();
+    expect(screen.getByText("Risk reviewer")).toBeTruthy();
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Main perspective and disagreement updates" })).toBeTruthy();
@@ -3992,6 +4049,10 @@ describe("@deliberum/web shell", () => {
     expect(roomText).not.toContain("extraction_proposed");
     expect(roomText).not.toContain("Local Preset Extractor");
     expect(roomText).not.toContain("local-preset-extractor");
+    expect(roomText).not.toContain("Openai Compatible");
+    expect(roomText).not.toContain("openai-compatible");
+    expect(roomText).not.toContain("Provider Review Coordinator");
+    expect(roomText).not.toContain("provider-review-coordinator");
   });
 
   it("localizes discussion room actor labels in Simplified Chinese", async () => {
@@ -4040,6 +4101,19 @@ describe("@deliberum/web shell", () => {
               },
               basedOnEventIds: ["contribution-event"],
               trace: {}
+            },
+            {
+              id: "provider-final-candidate-event",
+              type: "final_candidate_proposed",
+              sequence: 3,
+              visibility: "public",
+              authorId: "openai-compatible-final-candidate",
+              createdAt: "2026-06-10T00:00:03.000Z",
+              payload: {
+                recommendation: "Keep the provider-backed product loop reviewable."
+              },
+              basedOnEventIds: ["extraction-event"],
+              trace: {}
             }
           ]
         }))
@@ -4054,9 +4128,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u53c2\u4e0e\u8005\u521d\u59cb\u56de\u5e94")).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u6700\u521d\u8bf4\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7ec4\u7ec7\u8005")).toBeTruthy();
+    expect(screen.getByText("\u7ed3\u8bba\u8d77\u8349\u8005")).toBeTruthy();
     const roomText = document.querySelector(".du-room-layout")?.textContent ?? "";
     expect(roomText).not.toContain("local-preset-alpha");
     expect(roomText).not.toContain("local-preset-extractor");
+    expect(roomText).not.toContain("openai-compatible-final-candidate");
   });
 
   it("records a suggested process proposal into the session ledger", async () => {
