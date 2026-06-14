@@ -2310,7 +2310,11 @@ function StartRunForm({
             <strong>{t(continuationView.primaryLabel)}</strong>
             <span>{t(primaryActionDetail)}</span>
             <span className="du-discussion-action-result">
-              {t("After it finishes, review the updated timeline and current conclusion.")}
+              {t(
+                continuationView.reviewReady
+                  ? "After it finishes, review the updated timeline and current conclusion."
+                  : "After it finishes, review the updated timeline and next recommended action."
+              )}
             </span>
           </button>
           {continuationView.reviewReady ? (
@@ -2470,11 +2474,16 @@ function StartRunForm({
             <h4>{t("What just changed")}</h4>
             <p>
               {t(
-                "Review this result first, then return to the timeline, outputs, or current conclusion."
+                "Review this result first, then return to the timeline, outputs, or next recommended action."
               )}
             </p>
           </div>
-          <StartResult result={startMutation.data} runId={runId} feedback={startFeedback} />
+          <StartResult
+            result={startMutation.data}
+            runId={runId}
+            feedback={startFeedback}
+            reviewReadyBeforeUpdate={continuationView.reviewReady}
+          />
         </section>
       ) : null}
     </DataPanel>
@@ -2756,16 +2765,20 @@ async function invalidateRunWorkspaceQueries(
 function StartResult({
   result,
   runId,
-  feedback
+  feedback,
+  reviewReadyBeforeUpdate
 }: {
   result: unknown;
   runId: string;
   feedback?: DiscussionStartFeedback | null;
+  reviewReadyBeforeUpdate: boolean;
 }) {
   const { t } = useI18n();
   const stages = asArray(getRecordValue(result, "stages")).map(toStageMetadata);
   const stopped = getRecordValue(result, "stopped");
   const readableStages = stages.map(toReadableStageResult);
+  const conclusionReviewReady =
+    reviewReadyBeforeUpdate || isStartResultConclusionReviewReady(result, stages);
 
   return (
     <div className="du-start-result">
@@ -2783,7 +2796,9 @@ function StartResult({
               )
             : t(
                 feedback?.detail ??
-                  "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
+                  (conclusionReviewReady
+                    ? "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
+                    : "The guided discussion update was recorded. Review the visible steps and continue the discussion before relying on a conclusion.")
               )
         }
       />
@@ -2794,7 +2809,10 @@ function StartResult({
           detail={formatRecordValue(getRecordValue(result, "stopReason"))}
         />
       ) : null}
-      <DiscussionResultHandoff runId={runId} />
+      <DiscussionResultHandoff
+        runId={runId}
+        conclusionReviewReady={conclusionReviewReady}
+      />
       <ReadableStageResultList stages={readableStages} />
       <AdvancedDetails
         summary="Advanced / Developer Mode"
@@ -2813,7 +2831,13 @@ function StartResult({
   );
 }
 
-function DiscussionResultHandoff({ runId }: { runId: string }) {
+function DiscussionResultHandoff({
+  runId,
+  conclusionReviewReady
+}: {
+  runId: string;
+  conclusionReviewReady: boolean;
+}) {
   const { t } = useI18n();
 
   return (
@@ -2846,19 +2870,51 @@ function DiscussionResultHandoff({ runId }: { runId: string }) {
             )}
           </p>
         </a>
-        <Link
-          className="du-result-handoff-card du-result-handoff-primary"
-          to="/runs/$runId/outcome"
-          params={{ runId }}
-          aria-label={t("View current conclusion")}
-        >
-          <span>{t("Finally")}</span>
-          <strong>{t("View current conclusion")}</strong>
-          <p>{t("Review the conclusion with risks and next actions.")}</p>
-        </Link>
+        {conclusionReviewReady ? (
+          <Link
+            className="du-result-handoff-card du-result-handoff-primary"
+            to="/runs/$runId/outcome"
+            params={{ runId }}
+            aria-label={t("View current conclusion")}
+          >
+            <span>{t("Finally")}</span>
+            <strong>{t("View current conclusion")}</strong>
+            <p>{t("Review the conclusion with risks and next actions.")}</p>
+          </Link>
+        ) : (
+          <a
+            className="du-result-handoff-card du-result-handoff-primary"
+            href="#continue-discussion"
+            aria-label={t("Continue discussion")}
+          >
+            <span>{t("Next")}</span>
+            <strong>{t("Continue discussion")}</strong>
+            <p>{t("Current conclusion appears after the room produces conclusion material.")}</p>
+          </a>
+        )}
       </div>
     </section>
   );
+}
+
+function isStartResultConclusionReviewReady(
+  result: unknown,
+  stages: Array<Record<string, unknown>>
+): boolean {
+  if (isDiscussionReviewReady(getRecordValue(result, "run"))) {
+    return true;
+  }
+
+  return stages.some((stage) => {
+    const stageName = getRecordValue(stage, "stage");
+    const executionStatus = getRecordValue(stage, "executionStatus");
+    const status = getRecordValue(stage, "status");
+
+    return (
+      stageName === "finalization" &&
+      (executionStatus === "executed" || status === "completed")
+    );
+  });
 }
 
 type ReadableStageResult = {
@@ -5986,7 +6042,11 @@ function ProcessProposalLifecycleControls({
           </>
         )}
         {executionMutation.data ? (
-          <StartResult result={executionMutation.data} runId={runId} />
+          <StartResult
+            result={executionMutation.data}
+            runId={runId}
+            reviewReadyBeforeUpdate={false}
+          />
         ) : null}
         {executionMutation.isError ? (
           <StatusBanner

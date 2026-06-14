@@ -637,6 +637,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review only": "\u4ec5\u67e5\u770b",
   "After it finishes, review the updated timeline and current conclusion.":
     "\u5b8c\u6210\u540e\uff0c\u8bf7\u67e5\u770b\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
+  "After it finishes, review the updated timeline and next recommended action.":
+    "\u5b8c\u6210\u540e\uff0c\u8bf7\u67e5\u770b\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf\u548c\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
   "After it finishes, compare the refreshed strongest options.":
     "\u5b8c\u6210\u540e\uff0c\u8bf7\u6bd4\u8f83\u5237\u65b0\u540e\u7684\u6700\u5f3a\u9009\u9879\u3002",
   "Jump only; this does not change the discussion.":
@@ -968,6 +970,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u8ba8\u8bba\u5728\u6240\u6709\u8bf7\u6c42\u6b65\u9aa4\u5b8c\u6210\u524d\u505c\u6b62\u3002\u8bf7\u67e5\u770b\u4e0b\u65b9\u53ef\u89c1\u6b65\u9aa4\uff0c\u6216\u6253\u5f00\u9ad8\u7ea7\u8be6\u60c5\u67e5\u770b\u6280\u672f\u539f\u56e0\u3002",
   "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion.":
     "\u5df2\u8bb0\u5f55\u5f15\u5bfc\u5f0f\u8ba8\u8bba\u6b65\u9aa4\u3002\u8bf7\u67e5\u770b\u66f4\u65b0\u540e\u7684\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
+  "The guided discussion update was recorded. Review the visible steps and continue the discussion before relying on a conclusion.":
+    "\u5df2\u8bb0\u5f55\u5f15\u5bfc\u5f0f\u8ba8\u8bba\u66f4\u65b0\u3002\u8bf7\u67e5\u770b\u53ef\u89c1\u6b65\u9aa4\uff0c\u5e76\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u7ee7\u7eed\u63a8\u8fdb\u8ba8\u8bba\u3002",
   "The guided update ran with the current brief. Review the updated conclusion, disagreements, requirements, and evidence before relying on it.":
     "\u5df2\u57fa\u4e8e\u5f53\u524d\u7b80\u62a5\u8fd0\u884c\u5f15\u5bfc\u5f0f\u66f4\u65b0\u3002\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u8bf7\u5ba1\u9605\u66f4\u65b0\u540e\u7684\u7ed3\u8bba\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u3002",
   "The guided update ran so the strongest current options can be compared again before relying on the conclusion.":
@@ -979,6 +983,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Latest discussion update": "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0",
   "Review this result first, then return to the timeline, outputs, or current conclusion.":
     "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Review this result first, then return to the timeline, outputs, or next recommended action.":
+    "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
   "Updated discussion steps": "\u5df2\u66f4\u65b0\u7684\u8ba8\u8bba\u6b65\u9aa4",
   "What changed": "\u53d1\u751f\u4e86\u4ec0\u4e48\u53d8\u5316",
   "Readable summary of the discussion work that just ran.":
@@ -989,6 +995,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u7528\u8fd9\u4e9b\u94fe\u63a5\u4ece\u5df2\u5b8c\u6210\u7684\u52a8\u4f5c\u56de\u5230\u8ba8\u8bba\u5ba4\u89c6\u56fe\u3002",
   First: "\u9996\u5148",
   Finally: "\u6700\u540e",
+  Next: "\u4e0b\u4e00\u6b65",
   "Review updated timeline": "\u5ba1\u9605\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf",
   "See where the new steps landed in the discussion flow.":
     "\u67e5\u770b\u65b0\u6b65\u9aa4\u5728\u8ba8\u8bba\u6d41\u7a0b\u4e2d\u843d\u5728\u4ec0\u4e48\u4f4d\u7f6e\u3002",
@@ -997,6 +1004,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u6bd4\u8f83\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8981\u6c42\u548c\u7f3a\u5931\u8bc1\u636e\u3002",
   "Review the conclusion with risks and next actions.":
     "\u5c06\u7ed3\u8bba\u4e0e\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u4e00\u8d77\u5ba1\u9605\u3002",
+  "Current conclusion appears after the room produces conclusion material.":
+    "\u8ba8\u8bba\u5ba4\u751f\u6210\u7ed3\u8bba\u6750\u6599\u540e\uff0c\u5f53\u524d\u7ed3\u8bba\u624d\u4f1a\u663e\u793a\u3002",
   "Initial perspectives were collected before any single answer could anchor the discussion.":
     "\u5728\u4efb\u4f55\u5355\u4e00\u7b54\u6848\u951a\u5b9a\u8ba8\u8bba\u4e4b\u524d\uff0c\u5df2\u6536\u96c6\u521d\u59cb\u89c6\u89d2\u3002",
   "The discussion material was organized into options, disagreements, requirements, and evidence needs.":

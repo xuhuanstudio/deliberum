@@ -2496,7 +2496,7 @@ describe("@deliberum/web shell", () => {
     expect(latestUpdate).toBeTruthy();
     expect(latestUpdate.textContent ?? "").toContain("\u53d1\u751f\u4e86\u4ec0\u4e48\u53d8\u5316");
     expect(latestUpdate.textContent ?? "").toContain(
-      "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u5f53\u524d\u7ed3\u8bba\u3002"
+      "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002"
     );
     const resultHandoff = await screen.findByRole("region", {
       name: "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84"
@@ -2509,6 +2509,49 @@ describe("@deliberum/web shell", () => {
     );
     expect(resultHandoff.textContent ?? "").toContain("\u5ba1\u9605\u8ba8\u8bba\u4ea7\u51fa");
     expect(resultHandoff.textContent ?? "").toContain("\u67e5\u770b\u5f53\u524d\u7ed3\u8bba");
+  });
+
+  it("localizes the post-action handoff before a conclusion is ready", async () => {
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: localPresetNotStartedRunDetail
+        })),
+        startRun: vi.fn(async () => ({
+          run: {
+            ...localPresetNotStartedRunDetail,
+            status: "running",
+            sealedDivergenceStatus: "completed"
+          },
+          stages: [
+            {
+              stage: "sealed_divergence",
+              executionStatus: "executed",
+              roundId: "sealed-round-1",
+              status: "completed",
+              eventIds: ["event-2", "event-3"]
+            }
+          ],
+          stopped: false
+        }))
+      }),
+      {
+        initialLanguage: "zh-CN"
+      }
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "\u7ee7\u7eed\u8ba8\u8bba" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    const resultHandoff = await screen.findByRole("region", {
+      name: "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84"
+    });
+    expect(resultHandoff.textContent ?? "").toContain("\u7ee7\u7eed\u8ba8\u8bba");
+    expect(resultHandoff.textContent ?? "").toContain(
+      "\u8ba8\u8bba\u5ba4\u751f\u6210\u7ed3\u8bba\u6750\u6599\u540e\uff0c\u5f53\u524d\u7ed3\u8bba\u624d\u4f1a\u663e\u793a\u3002"
+    );
+    expect(resultHandoff.textContent ?? "").not.toContain("\u67e5\u770b\u5f53\u524d\u7ed3\u8bba");
   });
 
   it("localizes known sample discussion brief content in Simplified Chinese", async () => {
@@ -3185,7 +3228,7 @@ describe("@deliberum/web shell", () => {
     expect(latestUpdate.getAttribute("id")).toBe("latest-discussion-update");
     expect(latestUpdate.textContent ?? "").toContain("What just changed");
     expect(latestUpdate.textContent ?? "").toContain(
-      "Review this result first, then return to the timeline, outputs, or current conclusion."
+      "Review this result first, then return to the timeline, outputs, or next recommended action."
     );
     expect(await screen.findByText("Discussion update completed")).toBeTruthy();
     expect(
@@ -3854,6 +3897,26 @@ describe("@deliberum/web shell", () => {
       createClient({
         getRun: vi.fn(async () => ({
           run: localPresetNotStartedRunDetail
+        })),
+        startRun: vi.fn(async () => ({
+          run: {
+            ...localPresetNotStartedRunDetail,
+            status: "running",
+            sealedDivergenceStatus: "completed"
+          },
+          stages: [
+            {
+              stage: "sealed_divergence",
+              executionStatus: "executed",
+              roundId: "sealed-round-1",
+              status: "completed",
+              eventIds: ["event-2", "event-3"],
+              result: {
+                hiddenPayload: "do not render this result payload"
+              }
+            }
+          ],
+          stopped: false
         }))
       })
     );
@@ -3886,7 +3949,7 @@ describe("@deliberum/web shell", () => {
       document.querySelector(".du-discussion-actions")?.textContent ?? "";
     expect(pendingDiscussionActionsText).toContain("Updates discussion");
     expect(pendingDiscussionActionsText).toContain(
-      "After it finishes, review the updated timeline and current conclusion."
+      "After it finishes, review the updated timeline and next recommended action."
     );
     expect(pendingDiscussionActionsText).not.toContain("Review only");
     expect(pendingDiscussionActionsText).not.toContain(
@@ -3904,7 +3967,13 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Discussion steps completed")).toBeTruthy();
     expect(screen.getByText("Updated discussion steps")).toBeTruthy();
     expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("View current conclusion").length).toBeGreaterThan(0);
+    const resultHandoff = screen.getByRole("region", { name: "Post-update review path" });
+    expect(resultHandoff.textContent ?? "").toContain("Continue discussion");
+    expect(resultHandoff.textContent ?? "").toContain(
+      "Current conclusion appears after the room produces conclusion material."
+    );
+    expect(resultHandoff.textContent ?? "").not.toContain("View current conclusion");
+    expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
     expect(screen.getAllByText("Advanced / Developer Mode").length).toBeGreaterThanOrEqual(3);
     expect(document.body.textContent ?? "").not.toContain("event-2");
     fireEvent.click(getAdvancedModeSummaryByPanelText("Raw stage metadata"));
@@ -3983,6 +4052,23 @@ describe("@deliberum/web shell", () => {
       createClient({
         getRun: vi.fn(async () => ({
           run: providerBackedRunDetail
+        })),
+        startRun: vi.fn(async () => ({
+          run: {
+            ...providerBackedRunDetail,
+            status: "running",
+            sealedDivergenceStatus: "completed"
+          },
+          stages: [
+            {
+              stage: "sealed_divergence",
+              executionStatus: "executed",
+              roundId: "sealed-round-1",
+              status: "completed",
+              eventIds: ["event-2", "event-3"]
+            }
+          ],
+          stopped: false
         })),
         getRuntimeProfiles: vi.fn(async () => ({
           profiles: [
@@ -4063,6 +4149,12 @@ describe("@deliberum/web shell", () => {
       })
     );
     expect(await screen.findByText("First responses collected")).toBeTruthy();
+    const resultHandoff = screen.getByRole("region", { name: "Post-update review path" });
+    expect(resultHandoff.textContent ?? "").toContain("Continue discussion");
+    expect(resultHandoff.textContent ?? "").toContain(
+      "Current conclusion appears after the room produces conclusion material."
+    );
+    expect(resultHandoff.textContent ?? "").not.toContain("View current conclusion");
   });
 
   it("renders the discussion source summary in Simplified Chinese", async () => {
