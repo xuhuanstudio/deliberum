@@ -2365,6 +2365,27 @@ function DiscussionRoomTimeline({
                   <div className="du-room-activity-group-header">
                     <p className="du-kicker">{t(phaseView.label)}</p>
                     <p>{t(phaseView.detail)}</p>
+                    <div
+                      className="du-room-activity-group-meta"
+                      aria-label={t("Stage activity summary")}
+                    >
+                      <span>
+                        {describeOutputCount(
+                          t,
+                          group.activities.length,
+                          "update",
+                          "updates"
+                        )}
+                      </span>
+                      <span>
+                        {describeOutputCount(
+                          t,
+                          countParticipantActivities(group.activities),
+                          "participant contribution",
+                          "participant contributions"
+                        )}
+                      </span>
+                    </div>
                   </div>
                   <ol className="du-room-activity" aria-label={t(phaseView.updatesLabel)}>
                     {group.activities.map((activity, index) => {
@@ -2590,6 +2611,10 @@ function groupRoomActivitiesByPhase(activities: RoomActivityItem[]): RoomActivit
         ]
       : [];
   });
+}
+
+function countParticipantActivities(activities: RoomActivityItem[]): number {
+  return activities.filter((activity) => !isRoomSpeaker(activity.speaker)).length;
 }
 
 function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhaseView {

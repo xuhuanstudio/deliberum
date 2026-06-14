@@ -158,6 +158,11 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u53ef\u5ba1\u9605\u7ed3\u8bba\u5df2\u5c31\u7eea\uff0c\u5e76\u5305\u542b\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002",
   "Continue the discussion before relying on a conclusion.":
     "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u8bf7\u7ee7\u7eed\u63a8\u8fdb\u8ba8\u8bba\u3002",
+  "Stage activity summary": "\u9636\u6bb5\u6d3b\u52a8\u6458\u8981",
+  update: "\u66f4\u65b0",
+  updates: "\u66f4\u65b0",
+  "participant contribution": "\u53c2\u4e0e\u8005\u8d21\u732e",
+  "participant contributions": "\u53c2\u4e0e\u8005\u8d21\u732e",
   Ready: "\u5df2\u5c31\u7eea",
   "Not started yet": "\u5c1a\u672a\u5f00\u59cb",
   "Needs review": "\u9700\u8981\u5ba1\u9605",

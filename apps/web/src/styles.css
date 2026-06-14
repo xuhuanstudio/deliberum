@@ -856,6 +856,29 @@ textarea:focus-visible {
   line-height: 1.45;
 }
 
+.du-room-activity-group-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.du-room-activity-group-meta span {
+  border: 1px solid #e4d6bd;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.55);
+  color: var(--du-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  padding: 5px 8px;
+}
+
+.du-room-activity-group[data-phase="brief"] .du-room-activity-group-meta span,
+.du-room-activity-group[data-phase="conclusion"] .du-room-activity-group-meta span {
+  border-color: #cfe7dd;
+}
+
 .du-room-activity-item {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);

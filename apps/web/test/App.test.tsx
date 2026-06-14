@@ -1616,6 +1616,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("region", { name: "\u5bf9\u8bdd\u8bb0\u5f55" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u66f4\u65b0" })).toBeTruthy();
+    const localizedStageSummaries = Array.from(
+      document.querySelectorAll('[aria-label="\u9636\u6bb5\u6d3b\u52a8\u6458\u8981"]')
+    ).map((summary) => summary.textContent ?? "");
+    expect(localizedStageSummaries.join(" ")).toContain("1 \u4e2a\u66f4\u65b0");
+    expect(localizedStageSummaries.join(" ")).toContain("\u6ca1\u6709\u53c2\u4e0e\u8005\u8d21\u732e");
+    expect(localizedStageSummaries.join(" ")).toContain("1 \u4e2a\u53c2\u4e0e\u8005\u8d21\u732e");
     expect(
       screen.getByRole("region", { name: "\u8ba8\u8bba\u5ba4\u8fdb\u5ea6\u6458\u8981" })
     ).toBeTruthy();
@@ -2212,6 +2218,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Discussion brief updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
+    const stageSummaries = Array.from(
+      document.querySelectorAll('[aria-label="Stage activity summary"]')
+    ).map((summary) => summary.textContent ?? "");
+    expect(stageSummaries.join(" ")).toContain("1 update");
+    expect(stageSummaries.join(" ")).toContain("No participant contributions");
+    expect(stageSummaries.join(" ")).toContain("1 participant contribution");
     expect(
       screen.getByText("The room starts by making the question, goals, and constraints visible.")
     ).toBeTruthy();
