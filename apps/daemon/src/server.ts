@@ -50,6 +50,7 @@ import {
   classifyResourceAccessBaseUrl,
   parseResourceAccessSigningSecret
 } from "./resource-access-store";
+import { loadManagedDaemonSetupEnvFile } from "./setup-env";
 
 export { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT };
 
@@ -740,6 +741,8 @@ function normalizeStartDaemonResourceAccessBaseUrl(
 }
 
 export function startDaemon(options: StartDaemonOptions = {}): StartedDaemon {
+  loadManagedDaemonSetupEnvFile({ envFilePath: options.setupEnvFilePath });
+
   const host = resolveStartDaemonHost(options);
   const port = resolveStartDaemonPort(options);
   const sqliteProcessLock = createStartDaemonSQLiteProcessLock(options, process.env);

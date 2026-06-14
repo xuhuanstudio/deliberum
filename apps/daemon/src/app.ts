@@ -112,6 +112,10 @@ import {
   type WebGETSessionPublicView,
   type WebGETTokenGenerator
 } from "./webget-session-store";
+import {
+  SetupEnvError,
+  writeOpenAICompatibleSetupEnv
+} from "./setup-env";
 import { readFile, stat } from "node:fs/promises";
 import { extname, relative, resolve, sep } from "node:path";
 
@@ -163,6 +167,7 @@ export type DaemonAppOptions = {
   daemonAuthTokens?: readonly DaemonAuthTokenInput[];
   corsOrigins?: readonly string[];
   webStaticAssets?: WebStaticAssetsOptions;
+  setupEnvFilePath?: string;
   idGenerator?: IdGenerator;
   clock?: Clock;
   host?: string;
@@ -760,6 +765,31 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       })
     )
   );
+
+  app.post("/runtime/setup/openai-compatible", async (context) => {
+    const body = await readJsonObject(context);
+
+    try {
+      return noStoreJson(
+        context,
+        await writeOpenAICompatibleSetupEnv({
+          envFilePath: options.setupEnvFilePath,
+          setup: {
+            apiKey: body.apiKey,
+            baseUrl: body.baseUrl,
+            model: body.model
+          }
+        }),
+        201
+      );
+    } catch (error) {
+      if (error instanceof SetupEnvError) {
+        throw new DaemonHttpError(error.code, error.message);
+      }
+
+      throw error;
+    }
+  });
 
   app.get("/runtime/resource-access", (context) =>
     noStoreJson(

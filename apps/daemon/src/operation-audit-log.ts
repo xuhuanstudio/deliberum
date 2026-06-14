@@ -850,6 +850,12 @@ function normalizeOperationAuditRoute(path: string): string {
     return "/runtime/profiles";
   }
 
+  if (segments[0] === "runtime" && segments[1] === "setup") {
+    return segments[2] === "openai-compatible"
+      ? "/runtime/setup/openai-compatible"
+      : "/runtime/setup/:profileId";
+  }
+
   if (segments[0] === "runs") {
     return normalizeRunsRoute(segments);
   }
@@ -1063,6 +1069,9 @@ function extractOperationAuditTarget(route: string, path: string): OperationAudi
 function classifyOperationAuditAction(method: string, route: string): string {
   if (method === "GET" && route === "/runtime/profiles") {
     return "runtime_profiles_read";
+  }
+  if (method === "POST" && route === "/runtime/setup/openai-compatible") {
+    return "runtime_openai_compatible_setup_save";
   }
   if (method === "GET" && route === "/runtime/resource-access") {
     return "resource_access_posture_read";

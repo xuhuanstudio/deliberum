@@ -64,6 +64,21 @@ export type RuntimeProfilesResponse = {
   }>;
 };
 
+export type OpenAICompatibleSetupRequest = {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+};
+
+export type OpenAICompatibleSetupResponse = {
+  profileId: "openai-compatible";
+  status: "saved";
+  managedEnvFile: "local-daemon-env";
+  configuredFields: Array<"apiKey" | "baseUrl" | "model">;
+  restartRequired: true;
+  safety: string[];
+};
+
 export type RuntimeSetupPlanStepKind =
   | "render_env_template"
   | "write_env_block"
@@ -828,6 +843,12 @@ export class DeliberumDaemonClient {
 
   getRuntimeProfiles(): Promise<RuntimeProfilesResponse> {
     return this.request("GET", "/runtime/profiles");
+  }
+
+  saveOpenAICompatibleSetup(
+    input: OpenAICompatibleSetupRequest
+  ): Promise<OpenAICompatibleSetupResponse> {
+    return this.request("POST", "/runtime/setup/openai-compatible", input);
   }
 
   getResourceAccessPosture(): Promise<ResourceAccessPostureResponse> {

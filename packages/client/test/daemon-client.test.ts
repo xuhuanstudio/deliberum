@@ -139,6 +139,41 @@ describe("DeliberumDaemonClient", () => {
     });
   });
 
+  it("posts OpenAI-compatible setup to the local daemon setup route", async () => {
+    const fetch = createFetch({
+      profileId: "openai-compatible",
+      status: "saved",
+      managedEnvFile: "local-daemon-env",
+      configuredFields: ["apiKey", "baseUrl", "model"],
+      restartRequired: true,
+      safety: ["The daemon loads the managed local setup block at startup."]
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+    const input = {
+      apiKey: "sk-client-test-secret",
+      baseUrl: "https://api.example.test/v1",
+      model: "client-test-model"
+    };
+
+    const result = await daemonClient.saveOpenAICompatibleSetup(input);
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:3877/runtime/setup/openai-compatible");
+    expect(init.method).toBe("POST");
+    expect(init.headers).toEqual({
+      "Content-Type": "application/json"
+    });
+    expect(JSON.parse(init.body ?? "{}")).toEqual(input);
+    expect(result).toEqual({
+      profileId: "openai-compatible",
+      status: "saved",
+      managedEnvFile: "local-daemon-env",
+      configuredFields: ["apiKey", "baseUrl", "model"],
+      restartRequired: true,
+      safety: ["The daemon loads the managed local setup block at startup."]
+    });
+  });
+
   it("builds a safe runtime setup plan from profile metadata", () => {
     const plan = client.buildRuntimeSetupPlan({
       profiles: [
