@@ -1037,7 +1037,7 @@ describe("@deliberum/web shell", () => {
         runs: [
           {
             ...runDetail,
-            title: "How should we review a proposed rollout before relying on it?",
+            title: "Discussion: How should we review a proposed rollout before relying on it?",
             topic: "How should we review a proposed rollout before relying on it?"
           }
         ]
@@ -1061,6 +1061,9 @@ describe("@deliberum/web shell", () => {
     );
     expect(landingCatalogText).not.toContain(
       "How should we review a proposed rollout before relying on it?"
+    );
+    expect(landingCatalogText).not.toContain(
+      "Discussion: How should we review a proposed rollout before relying on it?"
     );
   });
 

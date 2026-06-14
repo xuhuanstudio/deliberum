@@ -908,7 +908,12 @@ export function formatRunDisplaySummary(run: unknown): string {
   const topic = getStringRecordValue(run, "topic");
   const title = getStringRecordValue(run, "title");
 
-  if (title && title !== topic && !isTechnicalRunTitle(title)) {
+  if (
+    title &&
+    title !== topic &&
+    !isTechnicalRunTitle(title) &&
+    !isTopicPrefixedTitle(title, topic)
+  ) {
     return title;
   }
 
@@ -917,6 +922,14 @@ export function formatRunDisplaySummary(run: unknown): string {
 
 function isTechnicalRunTitle(value: string): boolean {
   return /^run\s+[a-z0-9_-]+$/i.test(value.trim());
+}
+
+function isTopicPrefixedTitle(title: string, topic: string | undefined): boolean {
+  if (!topic) {
+    return false;
+  }
+
+  return title.trim().toLowerCase() === `discussion: ${topic.trim()}`.toLowerCase();
 }
 
 function RunListItem({ run, index }: { run: unknown; index: number }) {
@@ -931,20 +944,42 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
         <h3>{t(formatRunDisplayTitle(run, index))}</h3>
         <p>{t(formatRunDisplaySummary(run))}</p>
       </div>
-      <KeyValueGrid
-        items={[
-          {
-            label: t("Discussion status"),
-            value: t(describeDiscussionStatus(run))
-          },
-          {
-            label: t("Updated"),
-            value: formatRecordValue(getRecordValue(run, "updatedAt"))
-          }
-        ]}
-      />
+      <div className="du-run-list-meta" aria-label={t("Discussion status")}>
+        <article>
+          <span>{t("Discussion status")}</span>
+          <strong>{t(describeDiscussionStatus(run))}</strong>
+        </article>
+        <article>
+          <span>{t("Updated")}</span>
+          <strong>{formatRecordValue(getRecordValue(run, "updatedAt"))}</strong>
+        </article>
+      </div>
       <DiscussionNextStepCard run={run} />
-      <StageStatusList stages={getDiscussionStageStatuses(run)} />
+      {runId ? (
+        <div className="du-action-row du-run-list-actions">
+          <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
+            {t("Open discussion")}
+          </Link>
+          {reviewReady ? (
+            <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
+              {t("Current conclusion")}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+      <details className="du-user-details">
+        <summary>
+          <span>{t("Discussion progress")}</span>
+          <small>
+            {t(
+              "Each step corresponds to a core Deliberum concept, presented in user language."
+            )}
+          </small>
+        </summary>
+        <div className="du-user-details-stack">
+          <StageStatusList stages={getDiscussionStageStatuses(run)} />
+        </div>
+      </details>
       <AdvancedDetails
         summary="Advanced / Developer Mode"
         panelLabel="Discussion status details"
@@ -969,18 +1004,6 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
           ]}
         />
       </AdvancedDetails>
-      {runId ? (
-        <div className="du-action-row">
-          <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
-            {t("Open discussion")}
-          </Link>
-          {reviewReady ? (
-            <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-              {t("Current conclusion")}
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
     </article>
   );
 }

@@ -1376,6 +1376,40 @@ textarea:focus-visible {
   color: var(--du-muted);
 }
 
+.du-run-list-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(180px, 0.7fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-run-list-meta article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  background: var(--du-surface);
+  padding: 12px 14px;
+}
+
+.du-run-list-meta span {
+  color: var(--du-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.du-run-list-meta strong {
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.du-run-list-actions {
+  padding-top: 0;
+}
+
 .du-next-step-card {
   display: grid;
   gap: 6px;
@@ -1694,6 +1728,7 @@ textarea:focus-visible {
   .du-discussion-dashboard-grid,
   .du-room-layout,
   .du-room-brief,
+  .du-run-list-meta,
   .du-projection-developer-grid,
   .du-final-lifecycle-grid,
   .du-lifecycle-grid,
