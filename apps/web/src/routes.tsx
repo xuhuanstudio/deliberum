@@ -2740,11 +2740,13 @@ function createCurrentModelSetupItems(
   const apiKeySaved = profile.configuredSecretEnvVarCount > 0 || activeInCurrentDaemon;
   const baseUrlSaved =
     activeInCurrentDaemon ||
-    (hasAnySetupName(profile, isRequestTargetSetupName) &&
+    (profile.status === "ready" &&
+      hasAnySetupName(profile, isRequestTargetSetupName) &&
       !isAnySetupNameMissing(profile, isRequestTargetSetupName));
   const modelSaved =
     activeInCurrentDaemon ||
-    (hasAnySetupName(profile, isModelSetupName) &&
+    (profile.status === "ready" &&
+      hasAnySetupName(profile, isModelSetupName) &&
       !isAnySetupNameMissing(profile, isModelSetupName));
   const canVerify = profile.status === "ready" || activeInCurrentDaemon;
 

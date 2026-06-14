@@ -1442,8 +1442,14 @@ describe("@deliberum/web shell", () => {
         "Add or replace the API key, base URL, and model below. Saved secrets stay on this machine and are not displayed again."
       )
     ).toBeTruthy();
-    expect(screen.getAllByText("Saved locally").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Required").length).toBeGreaterThan(1);
+    const currentModelSetupItems = [
+      ...document.querySelectorAll(".du-current-model-setup-item")
+    ].map((item) => item.textContent ?? "");
+    expect(currentModelSetupItems).toContain(
+      "API keySaved locallySaved without showing the value."
+    );
+    expect(currentModelSetupItems).toContain("Base URLRequiredEnter this in the form below.");
+    expect(currentModelSetupItems).toContain("ModelRequiredEnter this in the form below.");
     expect(screen.getByText("Needs saved setup")).toBeTruthy();
     expect(
       screen.getByText(
