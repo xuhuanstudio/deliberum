@@ -1,4 +1,4 @@
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   useMutation,
   useQuery,
@@ -131,6 +131,7 @@ export function RunsListPage() {
 export function RunNewPage() {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
+  const navigate = useNavigate();
   const [runPlanText, setRunPlanText] = useState(DEFAULT_RUN_PLAN_TEXT);
   const [discussionQuestion, setDiscussionQuestion] = useState("");
   const [discussionGoals, setDiscussionGoals] = useState("");
@@ -138,7 +139,14 @@ export function RunNewPage() {
   const [discussionExpectedOutcome, setDiscussionExpectedOutcome] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
   const createMutation = useMutation({
-    mutationFn: (runPlan: Record<string, unknown>) => client.createRun({ runPlan })
+    mutationFn: (runPlan: Record<string, unknown>) => client.createRun({ runPlan }),
+    onSuccess: (result) => {
+      const runId = getStringRecordValue(result?.run, "runId");
+
+      if (runId) {
+        void navigate({ to: "/runs/$runId", params: { runId } });
+      }
+    }
   });
   const createdRunId = getStringRecordValue(createMutation.data?.run, "runId");
   const canCreateDiscussion =

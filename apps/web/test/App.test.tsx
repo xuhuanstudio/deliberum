@@ -1886,16 +1886,13 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create run" }));
 
     await waitFor(() => expect(client.createRun).toHaveBeenCalledWith({ runPlan }));
-    expect(await screen.findByText("Discussion created")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Next, open the discussion room and continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
-      )
-    ).toBeTruthy();
+    await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
+    expect(await screen.findByText("What is being discussed")).toBeTruthy();
+    expect(screen.getAllByText("Discussion room").length).toBeGreaterThan(0);
     expect(document.body.textContent ?? "").not.toContain("internal run id");
-    expect(screen.getByRole("link", { name: "Open discussion room" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Open discussion room" })).toBeNull();
+    expect(screen.queryByText("Discussion created")).toBeNull();
     expect(screen.queryByRole("link", { name: "Review discussion brief" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
   });
 
   it("creates a guided discussion from a plain-language brief", async () => {
@@ -1961,15 +1958,12 @@ describe("@deliberum/web shell", () => {
         })
       })
     );
-    expect(await screen.findByText("Discussion created")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Next, open the discussion room and continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
-      )
-    ).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Open discussion room" })).toBeTruthy();
+    await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
+    expect(await screen.findByText("What is being discussed")).toBeTruthy();
+    expect(screen.getAllByText("Discussion room").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Open discussion room" })).toBeNull();
+    expect(screen.queryByText("Discussion created")).toBeNull();
     expect(screen.queryByRole("link", { name: "Review discussion brief" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
   });
 
   it("fills the sample brief with user-facing discussion text", async () => {
