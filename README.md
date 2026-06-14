@@ -1,10 +1,10 @@
 # Deliberum
 
-**Deliberum** is a terminal-first, quality-centered peer deliberation runtime for humans, models, tools, and web-only participants.
+**Deliberum** is a human-first, quality-centered peer deliberation product and runtime for humans, models, tools, and web-only participants.
 
 It is not a role-agent chat demo, not a voting system, not a central-Judge workflow, and not an MCP wrapper. Deliberum is designed to help multiple heterogeneous participants deliberate around a topic and produce a higher-quality outcome through structured divergence, objections, quality obligations, evidence checks, audits, and final compilation.
 
-> Working tagline: **Quality-centered peer deliberation runtime for humans, models, and tools.**
+> Working tagline: **Human-first peer deliberation for higher-quality decisions.**
 
 ## Why Deliberum exists
 
@@ -18,6 +18,8 @@ Most multi-agent systems rely on fixed roles, fixed order, supervisor routing, m
 - overly rigid workflows cannot adapt to the real shape of a problem.
 
 Deliberum treats deliberation as a quality-centered process. It starts with a system-issued **Topic Contract**, runs **sealed divergence** to preserve independent perspectives, builds a **Candidate Frontier**, tracks **Objections**, enforces **Quality Obligations**, dynamically selects deliberation primitives, performs evidence checks where needed, and compiles an outcome with unresolved boundaries instead of pretending that every disagreement disappeared.
+
+The Web UI presents those concepts as a Discussion Room for normal users: a discussion brief, independent first responses, readable participant perspectives, strongest current options, open disagreements, evidence gaps, risks, current conclusion, and next recommended actions. Low-level daemon, ledger, runtime, resource, proposal, event, run, and session details remain available in Advanced / Developer Mode.
 
 ## Core ideas
 
@@ -54,6 +56,20 @@ Audits: bias, omission, compression, final
 Outcome Compilation
 ```
 
+## Web Discussion Room
+
+The default Web path is designed for a first-time user, not for a daemon operator.
+
+- Start a discussion from `/runs/new`.
+- Continue existing discussions from `/runs`.
+- Read participant/model perspectives as discussion contributions.
+- Follow the room timeline by deliberation stage.
+- Keep the current conclusion, open disagreements, missing evidence, risks, and next recommended actions visible.
+- Use user-facing actions such as Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion when ready.
+- Open Advanced / Developer Mode only when low-level runtime, ledger, raw JSON, resource, audit, or internal identifier details are needed.
+
+English is the default Web language. Simplified Chinese is supported through the Web localization table.
+
 ## Documentation
 
 - [Project Charter](docs/PROJECT_CHARTER.md)
@@ -66,6 +82,8 @@ Outcome Compilation
 - [Security Model](docs/SECURITY_MODEL.md)
 - [Threat Model](docs/THREAT_MODEL.md)
 - [Technology Stack](docs/TECH_STACK.md)
+- [Web UI Spec](docs/WEB_UI_SPEC.md)
+- [Web Discussion Room Walkthrough](docs/WEB_DISCUSSION_ROOM_WALKTHROUGH.md)
 - [Roadmap](ROADMAP.md)
 
 ## Repository shape
@@ -91,7 +109,7 @@ examples/
 
 ## Status
 
-Deliberum is a pre-production local-first codebase with the core deliberation ledger, local daemon, CLI, Web projection workspace, local deterministic run profile, opt-in OpenAI-compatible provider profile, opt-in HTTP-template participant profile, and opt-in MCP tool participant profile implemented. It is not a production deployment or public hosted service.
+Deliberum is a pre-production local-first codebase with the core deliberation ledger, local daemon, CLI, human-first Web Discussion Room, local deterministic run profile, opt-in OpenAI-compatible provider profile, opt-in HTTP-template participant profile, and opt-in MCP tool participant profile implemented. It is not a production deployment or public hosted service.
 
 Implemented today:
 
@@ -105,7 +123,7 @@ Implemented today:
 - baseline comparison report harness with coverage metadata, a Markdown report command, and a public sample fixture for externally supplied evaluation findings, without ordering systems or selecting an authoritative outcome;
 - local CLI commands for sessions, batches, contributions, extraction proposals, process proposal lifecycle, final candidate/audit/outcome projection, projections, events, local ledger integrity verification, daemon runtime profile status, env-template output, safe env block writing, local interactive setup wizard secret capture, profile-doctor diagnostics, safe daemon setup-plan output, scoped daemon auth entry generation, daemon deployment posture reads, daemon ledger integrity reads, daemon operation audit reads and JSONL export, optional daemon control-plane bearer auth with single-token and scoped-registry modes, daemon resource access posture reads and revocation, daemon run orchestration, daemon resources/evidence projection reads with safe delivery and access audit history, daemon-backed final lifecycle submissions, and explicit accepted process proposal execution;
 - local Hono daemon API with in-memory defaults, optional control-plane bearer auth with single-token and scoped-registry modes, optional SQLite event ledger, run metadata, resource broker, resource access grant, and operation audit log persistence with retention limits, optional JSON event ledger, run metadata, and operation audit log persistence with retention limits, optional built Web static asset serving for local/pre-production shells, local/pre-production container packaging, safe runtime profile, deployment posture, ledger integrity, and resource access posture status, safe operation audit metadata with non-secret principal metadata, projection endpoints, mutation endpoints, session final lifecycle and projection endpoints, session resources projection endpoint, session-scoped resource delivery planning endpoint with safe ledger audit events, revocable and optionally HMAC-signed daemon resource access grants for allowed URL and hosted in-memory content deliveries, session process proposal lifecycle endpoints, run orchestration endpoints, explicit accepted process proposal execution, SSE, and WebGET status/context/resource/submission endpoints;
-- React/Vite Web UI shell with safe daemon runtime profile status, setup-plan summaries, deployment and resource access posture summaries, safe operation audit metadata including non-secret principal metadata, daemon-backed session catalog, session projections, daemon run workspace, run process proposal lifecycle, execution readiness, and accepted-proposal execution controls, run outcome view, session final lifecycle/projection page, and session resources/evidence projection page with safe resource delivery and access audit history;
+- React/Vite Web UI with a default Discussion Room path for starting and continuing discussions, reading participant contributions, reviewing the current conclusion, disagreements, missing evidence, risks, and next actions, plus Advanced / Developer Mode for safe daemon runtime profile status, setup-plan summaries, deployment and resource access posture summaries, safe operation audit metadata, daemon-backed session catalog, session projections, run process proposal lifecycle, execution readiness, accepted-proposal execution controls, raw outcome material, session final lifecycle/projection pages, and session resources/evidence projection pages;
 - participant adapter interface, fake/manual adapters, OpenAI-compatible adapter/profile, HTTP-template participant adapter/profile for sealed participant execution, package-level MCP-compatible tool participant adapter plus opt-in daemon MCP tool participant profile with execution policy controls, OpenAI-compatible extraction/review/finalization components, and experimental WebGET adapter;
 - Resource Broker and Delivery Planner support package integrated with daemon-local resource delivery planning and short-lived access grants for URL and hosted in-memory content delivery;
 - read-only adaptive process proposal suggestions and execution readiness for daemon runs, explicit ledger-backed process proposal lifecycle events exposed as challengeable `ProcessProposal` material, and operator-triggered execution of accepted proposals for supported daemon stages, including candidate repair proposal execution, evidence check execution that records reported evidence results, and final/omission audit execution against existing final candidate proposal events;
