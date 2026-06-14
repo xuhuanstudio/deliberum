@@ -21,6 +21,8 @@ import {
   type GetSessionFinalOptions,
   type ListSessionsResponse,
   type ListRunsResponse,
+  type OpenAICompatibleSetupRequest,
+  type OpenAICompatibleSetupResponse,
   type ProcessProposalResponse,
   type ProcessProposalStatesResponse,
   type ProposeFinalCandidateRequest,
@@ -45,6 +47,9 @@ export type WebRuntimeEnv = {
 export type WebDaemonClient = {
   health: () => Promise<DaemonHealthResponse>;
   getRuntimeProfiles: () => Promise<RuntimeProfilesResponse>;
+  saveOpenAICompatibleSetup: (
+    input: OpenAICompatibleSetupRequest
+  ) => Promise<OpenAICompatibleSetupResponse>;
   getDeploymentPosture: () => Promise<DeploymentPostureResponse>;
   getResourceAccessPosture: () => Promise<ResourceAccessPostureResponse>;
   getOperationAudit: (options?: { limit?: number }) => Promise<OperationAuditResponse>;

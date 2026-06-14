@@ -45,7 +45,7 @@ corepack pnpm --filter @deliberum/web build
 DELIBERUM_DAEMON_WEB_ASSETS_PATH=apps/web/dist node apps/daemon/dist/index.js
 ```
 
-When this path is set, the daemon serves Vite assets under `/assets/*` and serves the Web shell for browser navigation requests that accept `text/html`, including refreshed Web routes such as `/runs` and `/sessions/:sessionId`. JSON API callers that do not request `text/html` keep receiving the existing daemon API responses on the same paths. The shell index is returned with no-store headers, hashed assets use immutable cache headers, and file paths are constrained to the configured asset root. This is local/pre-production static serving only; it does not add public hosting, production authorization, multi-user sessions, or a Web-based secret-capturing provider setup flow.
+When this path is set, the daemon serves Vite assets under `/assets/*` and serves the Web shell for browser navigation requests that accept `text/html`, including refreshed Web routes such as `/runs` and `/sessions/:sessionId`. JSON API callers that do not request `text/html` keep receiving the existing daemon API responses on the same paths. The shell index is returned with no-store headers, hashed assets use immutable cache headers, and file paths are constrained to the configured asset root. This is local/pre-production static serving only; it does not add public hosting, production authorization, or multi-user sessions. The Web setup page can submit OpenAI-compatible API key, base URL, and model values to the local daemon so the daemon writes a marker-delimited local env block; saved secret values are not returned to Web, the daemon loads the managed block at startup, and a daemon restart is required before new values become active.
 
 ## Local/pre-production container
 
@@ -67,7 +67,7 @@ Or use Compose:
 docker compose up --build
 ```
 
-The container sets `DELIBERUM_HOST=0.0.0.0` inside the container so Docker port publishing can reach the daemon. The Compose file still binds the published host port to `127.0.0.1`. Keep that host-side localhost binding unless a separate fronting auth layer and network policy are in place. Use runtime environment injection for provider keys and daemon auth tokens; do not bake secrets into the image, Compose file, Dockerfile, or Web build.
+The container sets `DELIBERUM_HOST=0.0.0.0` inside the container so Docker port publishing can reach the daemon. The Compose file still binds the published host port to `127.0.0.1`. Keep that host-side localhost binding unless a separate fronting auth layer and network policy are in place. Use runtime environment injection, the local setup wizard, or the local Web setup page for provider keys and daemon auth tokens; do not bake secrets into the image, Compose file, Dockerfile, or Web build.
 
 ## Remote/pre-production hardening runbook
 

@@ -208,6 +208,7 @@ export function RunNewPage() {
   const [discussionExpectedOutcome, setDiscussionExpectedOutcome] = useState("");
   const [participantSource, setParticipantSource] =
     useState<DiscussionParticipantSource>("demo");
+  const [participantSourceTouched, setParticipantSourceTouched] = useState(false);
   const [inputError, setInputError] = useState<string | null>(null);
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
@@ -219,10 +220,11 @@ export function RunNewPage() {
   const providerBackedDiscussionSource = runtimeSetupPlan
     ? findProviderBackedDiscussionSource(runtimeSetupPlan)
     : undefined;
+  const providerBackedDiscussionAvailable = Boolean(providerBackedDiscussionSource);
   const selectedParticipantSourceAvailable =
     participantSource === "demo"
       ? isDemoDiscussionSourceAvailable(runtimeSetupPlan)
-      : Boolean(providerBackedDiscussionSource);
+      : providerBackedDiscussionAvailable;
   const createMutation = useMutation({
     mutationFn: (runPlan: Record<string, unknown>) => client.createRun({ runPlan }),
     onSuccess: (result) => {
@@ -240,10 +242,29 @@ export function RunNewPage() {
     selectedParticipantSourceAvailable;
 
   useEffect(() => {
-    if (participantSource === "model-backed" && runtimeSetupPlan && !providerBackedDiscussionSource) {
+    if (!runtimeSetupPlan) {
+      return;
+    }
+
+    if (providerBackedDiscussionAvailable && !participantSourceTouched) {
+      setParticipantSource("model-backed");
+      return;
+    }
+
+    if (participantSource === "model-backed" && !providerBackedDiscussionAvailable) {
       setParticipantSource("demo");
     }
-  }, [participantSource, providerBackedDiscussionSource, runtimeSetupPlan]);
+  }, [
+    participantSource,
+    participantSourceTouched,
+    providerBackedDiscussionAvailable,
+    runtimeSetupPlan
+  ]);
+
+  function chooseParticipantSource(source: DiscussionParticipantSource) {
+    setParticipantSourceTouched(true);
+    setParticipantSource(source);
+  }
 
   function submitRunPlan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -332,7 +353,7 @@ export function RunNewPage() {
           <DiscussionModelSetupPanel
             setupPlan={runtimeSetupPlan}
             selectedSource={participantSource}
-            onSelectedSourceChange={setParticipantSource}
+            onSelectedSourceChange={chooseParticipantSource}
           />
         ) : (
           <StatusBanner
@@ -568,7 +589,7 @@ function DiscussionModelSetupPanel({
       </fieldset>
       <p className="du-discussion-setup-note">
         {t(
-          "This page does not ask for API keys. Provider credentials stay in local daemon setup and are never stored by Web."
+          "This page does not show API keys. Use Setup / Models to save provider setup before starting real model-backed discussions."
         )}
       </p>
       <div className="du-action-row">
@@ -598,10 +619,10 @@ function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionMo
     return {
       title: "Model-backed start available",
       detail:
-        "Choose demo participants for an immediate walkthrough, or choose model-backed participants to use the configured local provider.",
+        "A ready model provider is available. Web selects model-backed participants by default; use demo participants only for walkthroughs.",
       quickStartDetail:
-        "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
-      providerDetail: "A configured model provider can be selected for this discussion.",
+        "Demo participants remain available when you want a deterministic walkthrough without provider calls.",
+      providerDetail: "A configured model provider is selected for this discussion by default.",
       providerTone: "ok",
       tone: "ok"
     };
@@ -611,7 +632,7 @@ function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionMo
     return {
       title: "Demo start, provider details needed",
       detail:
-        "The quick-start form can start now with demo participants. A provider is enabled, but model details still need local setup or per-discussion model settings.",
+        "The quick-start form can start now with demo participants. A provider is enabled, but model details still need Web setup or per-discussion model settings.",
       quickStartDetail:
         "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
       providerDetail:
@@ -2049,7 +2070,7 @@ function describeDiscussionContinuationSetup(
       detail:
         "Continue discussion will ask configured model participants for independent first responses, then use local organizers to compare options, review risks, and draft the current conclusion.",
       note:
-        "Provider credentials stay in local daemon setup; this is the safest available full path until provider organizer setup is aligned locally.",
+        "Provider credentials stay on this machine; this is the safest available full path until provider organizer setup is aligned locally.",
       tone: "ok",
       startRequest: LOCAL_PRESET_START_REQUEST,
       fillLabel: "Fill recommended continuation request",
@@ -2065,7 +2086,7 @@ function describeDiscussionContinuationSetup(
     return {
       title: "Model first responses ready",
       detail:
-        "Configured model participants can answer first, but no full organizer path is ready in local setup.",
+        "Configured model participants can answer first, but no full organizer path is ready in the current setup.",
       note:
         "Continue discussion will collect independent first responses only until Setup / Models shows a complete organizer path.",
       tone: "warning",
@@ -2123,7 +2144,7 @@ function describeDiscussionParticipantSource(run: unknown): DiscussionParticipan
       detail:
         "Continue discussion will ask configured model participants for the independent first responses.",
       note:
-        "Provider credentials stay in local daemon setup; Web does not show or store API keys.",
+        "Provider credentials stay on this machine; Web does not show saved API keys.",
       tone: "ok"
     };
   }

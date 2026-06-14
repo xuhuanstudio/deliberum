@@ -6,7 +6,7 @@
 - Do not expose public network binding by default.
 - Do not enable wildcard CORS by default.
 - Remote access requires authentication or SSH tunneling. The local daemon can require a legacy single bearer token or `DELIBERUM_DAEMON_AUTH_TOKENS_JSON` scoped token registry for control-plane endpoints, while WebGET and resource-access grant URLs remain scoped bearer-token surfaces.
-- API keys must come from environment variables, OS keychain, or encrypted local config.
+- API keys must come from environment variables, OS keychain, encrypted local config, or explicit local Web setup that writes a daemon-managed env block without returning saved secret values.
 - API keys and provider credentials must not be committed in repo files or examples.
 - Public resource URLs are disabled by default.
 - Public resource access grants are generated only after explicit delivery policy allows URL mode.

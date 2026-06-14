@@ -236,6 +236,14 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         }
       ]
     })),
+    saveOpenAICompatibleSetup: vi.fn(async () => ({
+      profileId: "openai-compatible",
+      status: "saved",
+      managedEnvFile: "local-daemon-env",
+      configuredFields: ["apiKey", "baseUrl", "model"],
+      restartRequired: true,
+      safety: ["The daemon loads the managed local setup block at startup."]
+    })),
     getDeploymentPosture: vi.fn(async () => ({
       binding: {
         host: "127.0.0.1",
@@ -1106,19 +1114,17 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Model providers")).toBeTruthy();
     expect(
       screen.getByText(
-        "A provider is enabled, but model details still need local setup or per-discussion model settings."
+        "A provider is enabled, but model details still need Web setup or per-discussion model settings."
       )
     ).toBeTruthy();
     expect(screen.getByText("Ready for demo discussions")).toBeTruthy();
     expect(screen.getByText("Provider enabled; add model details")).toBeTruthy();
     expect(screen.getByText("Configuration required")).toBeTruthy();
     expect(screen.getByText("Configure provider locally")).toBeTruthy();
-    expect(
-      screen.getByText("Where to configure API key, base URL, and model")
-    ).toBeTruthy();
+    expect(screen.getByText("How Web setup works locally")).toBeTruthy();
     expect(
       screen.getByText(
-        "Use local setup tools or local environment settings. Web shows readiness but does not store API keys."
+        "Web can save provider setup to the local daemon configuration file. The daemon must be restarted before the new values become active."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
@@ -1140,6 +1146,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Model providers")).toBeTruthy();
     expect(screen.getByText("Configure provider locally")).toBeTruthy();
     expect(screen.getByText("Provider setup checklist")).toBeTruthy();
+    expect(screen.getByText("Configure OpenAI-compatible provider")).toBeTruthy();
+    expect(screen.getByLabelText("Provider API key")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Save model setup" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Check readiness" })).toBeTruthy();
     expect(screen.getByText("Real provider setup")).toBeTruthy();
     expect(screen.getByText("API key")).toBeTruthy();
     expect(screen.getAllByText("Configured locally").length).toBeGreaterThan(0);
@@ -1152,6 +1162,38 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("link", { name: "Setup / Models" })).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
+
+    fireEvent.change(screen.getByLabelText("Provider API key"), {
+      target: {
+        value: "sk-web-setup-secret"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Base URL"), {
+      target: {
+        value: "https://api.example.test/v1"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Model"), {
+      target: {
+        value: "web-setup-model"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save model setup" }));
+    await waitFor(() =>
+      expect(client.saveOpenAICompatibleSetup).toHaveBeenCalledWith({
+        apiKey: "sk-web-setup-secret",
+        baseUrl: "https://api.example.test/v1",
+        model: "web-setup-model"
+      })
+    );
+    expect(await screen.findByText("Model setup saved locally")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Restart the local daemon, then return here and check readiness before starting a real model-backed discussion."
+      )
+    ).toBeTruthy();
+    expect((screen.getByLabelText("Provider API key") as HTMLInputElement).value).toBe("");
+    expect(document.body.textContent ?? "").not.toContain("sk-web-setup-secret");
 
     fireEvent.click(getAdvancedModeSummaryByPanelText("Setup diagnostics"));
     expect(await screen.findByText("Runtime profile setup details")).toBeTruthy();
@@ -1166,6 +1208,10 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByRole("heading", { name: "\u8bbe\u7f6e / \u6a21\u578b" })).toBeTruthy();
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(screen.getByText("\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u68c0\u67e5\u6e05\u5355")).toBeTruthy();
+    expect(screen.getByText("\u914d\u7f6e OpenAI-compatible \u63d0\u4f9b\u65b9")).toBeTruthy();
+    expect(screen.getByLabelText("\u63d0\u4f9b\u65b9 API key")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "\u4fdd\u5b58\u6a21\u578b\u8bbe\u7f6e" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "\u68c0\u67e5\u5c31\u7eea\u72b6\u6001" })).toBeTruthy();
     expect(screen.getByText("API key")).toBeTruthy();
     expect(screen.getAllByText("\u672c\u5730\u5df2\u914d\u7f6e").length).toBeGreaterThan(0);
     expect(screen.getByText("\u9700\u8981 Base URL")).toBeTruthy();
@@ -1205,9 +1251,7 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText("\u63d0\u4f9b\u65b9\u5df2\u542f\u7528\uff1b\u8bf7\u6dfb\u52a0\u6a21\u578b\u7ec6\u8282")
     ).toBeTruthy();
-    expect(
-      screen.getByText("\u5728\u54ea\u91cc\u914d\u7f6e API key\u3001base URL \u548c model")
-    ).toBeTruthy();
+    expect(screen.getByText("Web \u672c\u5730\u8bbe\u7f6e\u7684\u5de5\u4f5c\u65b9\u5f0f")).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(screen.getByText("\u7ee7\u7eed\u6700\u65b0\u8ba8\u8bba")).toBeTruthy();
     const landingCatalogText =
@@ -1792,12 +1836,12 @@ describe("@deliberum/web shell", () => {
     ).toBe(true);
     expect(
       screen.getByText(
-        "The quick-start form can start now with demo participants. A provider is enabled, but model details still need local setup or per-discussion model settings."
+        "The quick-start form can start now with demo participants. A provider is enabled, but model details still need Web setup or per-discussion model settings."
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "This page does not ask for API keys. Provider credentials stay in local daemon setup and are never stored by Web."
+        "This page does not show API keys. Use Setup / Models to save provider setup before starting real model-backed discussions."
       )
     ).toBeTruthy();
     expect(screen.getByRole("link", { name: "Open Setup / Models" })).toBeTruthy();
@@ -1806,7 +1850,7 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("runtime profile");
   });
 
-  it("creates a model-backed discussion when a ready provider source is selected", async () => {
+  it("creates a model-backed discussion by default when a provider source is ready", async () => {
     const client = createClient();
     vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
       profiles: [
@@ -1878,14 +1922,47 @@ describe("@deliberum/web shell", () => {
     renderApp("/runs/new", client);
 
     expect(await screen.findByText("Model-backed start available")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "A ready model provider is available. Web selects model-backed participants by default; use demo participants only for walkthroughs."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "A configured model provider is selected for this discussion by default."
+      )
+    ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
 
+    const demoSource = screen.getByRole("radio", {
+      name: /Demo participants/i
+    }) as HTMLInputElement;
     const modelBackedSource = screen.getByRole("radio", {
       name: /Model-backed participants/i
     }) as HTMLInputElement;
     expect(modelBackedSource.disabled).toBe(false);
+    await waitFor(() => expect(modelBackedSource.checked).toBe(true));
+
+    fireEvent.click(demoSource);
+    expect(demoSource.checked).toBe(true);
     fireEvent.click(modelBackedSource);
     expect(modelBackedSource.checked).toBe(true);
+
+    fireEvent.change(screen.getByLabelText("Language"), {
+      target: {
+        value: "zh-CN"
+      }
+    });
+    expect(
+      await screen.findByText(
+        "\u5df2\u6709\u5c31\u7eea\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u3002Web \u9ed8\u8ba4\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\uff1b\u4ec5\u5728\u9700\u8981\u6f14\u793a\u6d41\u7a0b\u65f6\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u3002"
+      )
+    ).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("\u8bed\u8a00"), {
+      target: {
+        value: "en"
+      }
+    });
 
     fireEvent.change(screen.getByLabelText("Discussion question"), {
       target: {
@@ -3495,7 +3572,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "Provider credentials stay in local daemon setup; Web does not show or store API keys."
+        "Provider credentials stay on this machine; Web does not show saved API keys."
       )
     ).toBeTruthy();
     expect(
@@ -3505,7 +3582,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "Provider credentials stay in local daemon setup; this is the safest available full path until provider organizer setup is aligned locally."
+        "Provider credentials stay on this machine; this is the safest available full path until provider organizer setup is aligned locally."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
@@ -3594,7 +3671,7 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Model first responses ready")).toBeTruthy();
     expect(
       screen.getByText(
-        "Configured model participants can answer first, but no full organizer path is ready in local setup."
+        "Configured model participants can answer first, but no full organizer path is ready in the current setup."
       )
     ).toBeTruthy();
     expect(

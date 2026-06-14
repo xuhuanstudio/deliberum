@@ -752,6 +752,66 @@ textarea:focus-visible {
   border-top-color: var(--du-warn);
 }
 
+.du-provider-setup-form-section {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fffdf6;
+  padding: 16px;
+}
+
+.du-provider-setup-form-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.du-provider-setup-form-heading h4,
+.du-provider-setup-form-heading p {
+  margin: 0;
+}
+
+.du-provider-setup-form-heading p:not(.du-kicker) {
+  max-width: 760px;
+  color: var(--du-muted);
+  line-height: 1.45;
+}
+
+.du-provider-setup-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.du-provider-setup-form {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.du-provider-setup-form label {
+  color: var(--du-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.du-provider-setup-form input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--du-line-strong);
+  border-radius: 8px;
+  background: var(--du-surface);
+  color: var(--du-ink);
+  padding: 11px 12px;
+}
+
+.du-provider-setup-form-note {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
 .du-discussion-dashboard-grid {
   display: grid;
   grid-template-columns: minmax(240px, 1.35fr) repeat(4, minmax(0, 1fr));
@@ -2446,6 +2506,7 @@ textarea:focus-visible {
   .du-outcome-section-grid,
   .du-setup-status-grid,
   .du-setup-model-grid,
+  .du-provider-setup-form-layout,
   .du-provider-check-grid,
   .du-discussion-setup-grid,
   .du-stage-grid,

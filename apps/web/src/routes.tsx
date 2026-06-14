@@ -19,7 +19,13 @@ import {
   StatusBanner,
   WorkspaceShell
 } from "@deliberum/ui";
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction
+} from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
 import { LanguageSwitcher, useI18n } from "./i18n";
 import { buildRuntimeSetupPlan } from "@deliberum/client";
@@ -997,9 +1003,19 @@ function SetupModelsPanel({
   full?: boolean;
 }) {
   const { t } = useI18n();
+  const { client } = useDaemonRuntime();
+  const queryClient = useQueryClient();
+  const [openAISetupInput, setOpenAISetupInput] = useState({
+    apiKey: "",
+    baseUrl: "",
+    model: ""
+  });
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const providerProfiles = setupPlan.profiles.filter((profile) => profile.id !== "local-preset");
   const modelProviderProfiles = providerProfiles.filter(isUserFacingModelProviderProfile);
+  const openAICompatibleProfile = modelProviderProfiles.find(
+    (profile) => profile.id === "openai-compatible"
+  );
   const readyProviderCount = providerProfiles.filter((profile) => profile.status === "ready")
     .length;
   const providerNeedsSetup = providerProfiles.some(
@@ -1017,6 +1033,35 @@ function SetupModelsPanel({
     providerNeedsSetup,
     readyProviderCount
   });
+  const openAISetupMutation = useMutation({
+    mutationFn: () => client.saveOpenAICompatibleSetup(openAISetupInput),
+    onSuccess: () => {
+      setOpenAISetupInput((current) => ({
+        ...current,
+        apiKey: ""
+      }));
+      queryClient.invalidateQueries({ queryKey: ["runtime-profiles"] });
+    }
+  });
+  const openAISetupCanSubmit =
+    openAISetupInput.apiKey.trim().length > 0 &&
+    openAISetupInput.baseUrl.trim().length > 0 &&
+    openAISetupInput.model.trim().length > 0 &&
+    !openAISetupMutation.isPending;
+
+  function submitOpenAICompatibleSetup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!openAISetupCanSubmit) {
+      return;
+    }
+
+    openAISetupMutation.mutate();
+  }
+
+  function checkReadiness() {
+    queryClient.invalidateQueries({ queryKey: ["runtime-profiles"] });
+  }
 
   return (
     <div className="du-setup-models">
@@ -1036,6 +1081,19 @@ function SetupModelsPanel({
       {full && modelProviderProfiles.length > 0 ? (
         <ProviderSetupChecklist profiles={modelProviderProfiles} />
       ) : null}
+      {full && openAICompatibleProfile ? (
+        <OpenAICompatibleSetupForm
+          profile={openAICompatibleProfile}
+          input={openAISetupInput}
+          onInputChange={setOpenAISetupInput}
+          onSubmit={submitOpenAICompatibleSetup}
+          canSubmit={openAISetupCanSubmit}
+          pending={openAISetupMutation.isPending}
+          error={openAISetupMutation.error}
+          saved={openAISetupMutation.isSuccess}
+          onCheckReadiness={checkReadiness}
+        />
+      ) : null}
       <section
         id="setup-local-instructions"
         className={`du-setup-next-step du-status du-status-${nextAction.tone}`}
@@ -1053,10 +1111,10 @@ function SetupModelsPanel({
       </section>
       <details className="du-user-details" open={full}>
         <summary>
-          <span>{t("Where to configure API key, base URL, and model")}</span>
+          <span>{t("How Web setup works locally")}</span>
           <small>
             {t(
-              "Use local setup tools or local environment settings. Web shows readiness but does not store API keys."
+              "Web can save provider setup to the local daemon configuration file. The daemon must be restarted before the new values become active."
             )}
           </small>
         </summary>
@@ -1065,19 +1123,19 @@ function SetupModelsPanel({
             <SetupInstructionStep
               title={t("Add model")}
               detail={t(
-                "Run the local setup wizard or edit local environment settings on this machine."
+                "Use the Web form above to add the provider API key, base URL, and model on this machine."
               )}
             />
             <SetupInstructionStep
               title={t("Configure provider")}
               detail={t(
-                "Add the provider API key, base URL, and model in local setup, then restart the daemon so it can read them."
+                "Web writes a local daemon configuration block and does not show the API key again after saving."
               )}
             />
             <SetupInstructionStep
               title={t("Test connection")}
               detail={t(
-                "Use the local setup check after restart to verify safe setup status. Web does not send provider secrets."
+                "Restart the daemon, then use Check readiness to verify that model-backed discussions are ready."
               )}
             />
             <SetupInstructionStep
@@ -1103,6 +1161,12 @@ type ProviderSetupCheck = {
   value: string;
   detail: string;
   tone: "ok" | "warning" | "neutral";
+};
+
+type OpenAICompatibleSetupFormInput = {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
 };
 
 function ProviderSetupChecklist({ profiles }: { profiles: RuntimeSetupPlanProfile[] }) {
@@ -1164,6 +1228,131 @@ function ProviderSetupChecklistCard({ profile }: { profile: RuntimeSetupPlanProf
   );
 }
 
+function OpenAICompatibleSetupForm({
+  profile,
+  input,
+  onInputChange,
+  onSubmit,
+  canSubmit,
+  pending,
+  error,
+  saved,
+  onCheckReadiness
+}: {
+  profile: RuntimeSetupPlanProfile;
+  input: OpenAICompatibleSetupFormInput;
+  onInputChange: Dispatch<SetStateAction<OpenAICompatibleSetupFormInput>>;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  canSubmit: boolean;
+  pending: boolean;
+  error: Error | null;
+  saved: boolean;
+  onCheckReadiness: () => void;
+}) {
+  const { t } = useI18n();
+  const ready = profile.status === "ready";
+
+  return (
+    <section className="du-provider-setup-form-section" aria-labelledby="openai-setup-form">
+      <div className="du-provider-setup-form-heading">
+        <p className="du-kicker">{t("Add model")}</p>
+        <h4 id="openai-setup-form">{t("Configure OpenAI-compatible provider")}</h4>
+        <p>
+          {t(
+            "Save the provider API key, base URL, and model to this machine so future discussions can use real model participants."
+          )}
+        </p>
+      </div>
+      <div className="du-provider-setup-form-layout">
+        <form className="du-provider-setup-form" onSubmit={onSubmit}>
+          <label htmlFor="openai-compatible-api-key">{t("Provider API key")}</label>
+          <input
+            id="openai-compatible-api-key"
+            type="password"
+            autoComplete="off"
+            value={input.apiKey}
+            onChange={(event) => {
+              const apiKey = event.currentTarget.value;
+              onInputChange((current) => ({
+                ...current,
+                apiKey
+              }));
+            }}
+            placeholder={t("Paste API key")}
+          />
+          <label htmlFor="openai-compatible-base-url">{t("Base URL")}</label>
+          <input
+            id="openai-compatible-base-url"
+            value={input.baseUrl}
+            onChange={(event) => {
+              const baseUrl = event.currentTarget.value;
+              onInputChange((current) => ({
+                ...current,
+                baseUrl
+              }));
+            }}
+            placeholder="https://api.openai.com/v1"
+          />
+          <label htmlFor="openai-compatible-model">{t("Model")}</label>
+          <input
+            id="openai-compatible-model"
+            value={input.model}
+            onChange={(event) => {
+              const model = event.currentTarget.value;
+              onInputChange((current) => ({
+                ...current,
+                model
+              }));
+            }}
+            placeholder="gpt-4.1-mini"
+          />
+          <div className="du-action-row">
+            <button type="submit" disabled={!canSubmit}>
+              {pending ? t("Saving setup") : t("Save model setup")}
+            </button>
+            <button type="button" className="du-secondary-button" onClick={onCheckReadiness}>
+              {t("Check readiness")}
+            </button>
+          </div>
+        </form>
+        <aside className="du-provider-setup-form-note">
+          <article className={`du-status du-status-${ready ? "ok" : "warning"}`}>
+            <strong>{ready ? t("Ready for discussions") : t("Restart daemon required")}</strong>
+            <span>
+              {ready
+                ? t("This provider is ready for model-backed discussions.")
+                : t(
+                    "After saving, restart the local daemon and check readiness so Web can confirm the provider is active."
+                  )}
+            </span>
+          </article>
+          <p className="du-readable-meta">
+            {t(
+              "The API key is submitted only to your local daemon. Web clears the key field after saving and never shows the saved value."
+            )}
+          </p>
+        </aside>
+      </div>
+      {saved ? (
+        <StatusBanner
+          tone="ok"
+          title={t("Model setup saved locally")}
+          detail={t(
+            "Restart the local daemon, then return here and check readiness before starting a real model-backed discussion."
+          )}
+        />
+      ) : null}
+      {error ? (
+        <StatusBanner
+          tone="error"
+          title={t("Model setup could not be saved")}
+          detail={formatSafeErrorMessage(error)}
+        />
+      ) : null}
+    </section>
+  );
+}
+
 function createProviderSetupChecks(profile: RuntimeSetupPlanProfile): ProviderSetupCheck[] {
   const checks: ProviderSetupCheck[] = [
     describeProviderEnabledCheck(profile),
@@ -1190,7 +1379,7 @@ function describeProviderEnabledCheck(profile: RuntimeSetupPlanProfile): Provide
     return {
       label: "Provider",
       value: "Enabled locally",
-      detail: "The daemon reports this provider as available for local setup.",
+      detail: "The daemon reports this provider as available for setup.",
       tone: "ok"
     };
   }
@@ -1198,7 +1387,7 @@ function describeProviderEnabledCheck(profile: RuntimeSetupPlanProfile): Provide
   return {
     label: "Provider",
     value: "Not enabled",
-    detail: "Enable this provider in local setup before configuring model details.",
+    detail: "Enable this provider before configuring model details.",
     tone: "neutral"
   };
 }
@@ -1222,13 +1411,13 @@ function describeProviderApiKeyCheck(profile: RuntimeSetupPlanProfile): Provider
     };
   }
 
-  return {
-    label: "API key",
-    value: "API key required",
-    detail: "Add the provider API key through local setup; Web will not ask for or store it.",
-    tone: profile.enabled ? "warning" : "neutral"
-  };
-}
+	  return {
+	    label: "API key",
+	    value: "API key required",
+	    detail: "Enter the provider API key in the Web setup form; the saved value is never shown.",
+	    tone: profile.enabled ? "warning" : "neutral"
+	  };
+	}
 
 function describeProviderRequestTargetCheck(
   profile: RuntimeSetupPlanProfile
@@ -1287,7 +1476,7 @@ function describeProviderModelCheck(
     return {
       label: "Model",
       value: "Model needed",
-      detail: "Add the provider model in local setup before relying on model-backed discussions.",
+      detail: "Add the provider model in Web setup or local setup before relying on model-backed discussions.",
       tone: "warning"
     };
   }
@@ -1305,7 +1494,7 @@ function describeProviderConnectionCheck(profile: RuntimeSetupPlanProfile): Prov
     return {
       label: "Test connection",
       value: "Ready to verify",
-      detail: "Start a small discussion or run the local setup check after daemon restart.",
+      detail: "Start a small discussion or use Check readiness after daemon restart.",
       tone: "ok"
     };
   }
@@ -1314,7 +1503,7 @@ function describeProviderConnectionCheck(profile: RuntimeSetupPlanProfile): Prov
     return {
       label: "Test connection",
       value: "Verify after setup",
-      detail: "After changing local setup, restart the daemon and use the local setup check.",
+      detail: "After saving setup, restart the daemon and use Check readiness.",
       tone: "warning"
     };
   }
@@ -1333,7 +1522,7 @@ function getProviderChecklistSummary(profile: RuntimeSetupPlanProfile): string {
   }
 
   if (profile.status === "ready_with_run_config") {
-    return "Enabled, but base URL, model, or request details still need local setup.";
+    return "Enabled, but base URL, model, or request details still need setup.";
   }
 
   if (profile.status === "needs_configuration") {
@@ -1510,7 +1699,7 @@ function describeModelProviderSummary(
   }
 
   if (providerProfiles.some((profile) => profile.status === "ready_with_run_config")) {
-    return "A provider is enabled, but model details still need local setup or per-discussion model settings.";
+    return "A provider is enabled, but model details still need Web setup or per-discussion model settings.";
   }
 
   if (localPreset?.status === "ready") {
@@ -1543,7 +1732,7 @@ function describeSetupProfileStatus(
   if (profile.status === "ready_with_run_config") {
     return {
       title: "Provider enabled; add model details",
-      detail: "Add a base URL and model in local setup, or provide equivalent per-discussion model settings.",
+      detail: "Add a base URL and model in Web setup when supported, or provide equivalent per-discussion model settings.",
       tone: "warning"
     };
   }
@@ -1551,7 +1740,7 @@ function describeSetupProfileStatus(
   if (profile.status === "needs_configuration") {
     return {
       title: "Configuration required",
-      detail: "Add the missing local setup before this participant source can be used.",
+      detail: "Add the missing setup before this participant source can be used.",
       tone: "warning"
     };
   }
@@ -1580,13 +1769,13 @@ function describeSetupNextAction({
     };
   }
 
-  if (providerNeedsSetup) {
-    return {
-      title: "Configure provider locally",
-      detail: "Use the local CLI setup wizard or local environment settings for API key, base URL, and model. Web does not store secrets.",
-      tone: "warning"
-    };
-  }
+	  if (providerNeedsSetup) {
+	    return {
+	      title: "Configure provider locally",
+	      detail: "Use the Web setup form for API key, base URL, and model, then restart the daemon so the provider becomes active.",
+	      tone: "warning"
+	    };
+	  }
 
   if (canStartDiscussion) {
     return {
