@@ -353,7 +353,17 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "No evidence gaps visible": "\u6682\u65e0\u53ef\u89c1\u8bc1\u636e\u7f3a\u53e3",
   "No missing evidence yet": "\u5c1a\u65e0\u7f3a\u5931\u8bc1\u636e",
   "{kind} {number}": "{kind} {number}",
-  "Current state: {status}": "\u5f53\u524d\u72b6\u6001\uff1a{status}",
+  "Included as a strongest current option.":
+    "\u5df2\u4f5c\u4e3a\u5f53\u524d\u6700\u5f3a\u9009\u9879\u7eb3\u5165\u8ba8\u8bba\u3002",
+  "Still constrains the current conclusion.":
+    "\u4ecd\u7136\u7ea6\u675f\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Needs an answer before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u4ecd\u9700\u56de\u7b54\u3002",
+  "Needs verification before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u4ecd\u9700\u6838\u67e5\u3002",
+  "Resolved for now.": "\u5f53\u524d\u5df2\u89e3\u51b3\u3002",
+  "Review this item before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u8bf7\u5148\u5ba1\u9605\u6b64\u9879\u3002",
   "Visible in this discussion": "\u5728\u672c\u6b21\u8ba8\u8bba\u4e2d\u53ef\u89c1",
   "Still open": "\u4ecd\u672a\u89e3\u51b3",
   "Needs an answer": "\u9700\u8981\u56de\u7b54",

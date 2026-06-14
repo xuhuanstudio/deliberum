@@ -1292,7 +1292,12 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("\u4e3b\u8981\u89c2\u70b9")).length).toBeGreaterThan(0);
     await waitFor(() => expect(frontierClient.getFrontier).toHaveBeenCalledWith("session-1"));
-    expect(screen.getByText("\u5f53\u524d\u72b6\u6001\uff1a\u5728\u672c\u6b21\u8ba8\u8bba\u4e2d\u53ef\u89c1")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u5df2\u4f5c\u4e3a\u5f53\u524d\u6700\u5f3a\u9009\u9879\u7eb3\u5165\u8ba8\u8bba\u3002"
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("\u5f53\u524d\u72b6\u6001");
     expect(document.body.textContent ?? "").not.toContain("candidate-1");
   });
 
@@ -1416,9 +1421,10 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Main perspectives")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText("Candidate A")).toBeTruthy();
-    expect(screen.getByText("Current state: Visible in this discussion")).toBeTruthy();
+    expect(screen.getByText("Included as a strongest current option.")).toBeTruthy();
 
     const renderedText = document.body.textContent ?? "";
+    expect(renderedText).not.toContain("Current state:");
     expect(renderedText).not.toContain("accepted_active_candidates");
     expect(renderedText).not.toContain("candidate-1");
     for (const forbiddenField of ["currentBest", "winner", "rank", "score", "vote"]) {
@@ -1618,7 +1624,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("\u5f53\u524d\u7ed3\u8bba").length).toBeGreaterThan(0);
     expect(await screen.findByText("\u98ce\u9669\u4e0e\u7f3a\u5931\u8bc1\u636e")).toBeTruthy();
     expect(
-      await screen.findByText("\u5f53\u524d\u72b6\u6001\uff1a\u5728\u672c\u6b21\u8ba8\u8bba\u4e2d\u53ef\u89c1")
+      await screen.findByText(
+        "\u5df2\u4f5c\u4e3a\u5f53\u524d\u6700\u5f3a\u9009\u9879\u7eb3\u5165\u8ba8\u8bba\u3002"
+      )
     ).toBeTruthy();
     const detailPanelsText =
       screen.getByRole("region", { name: "\u8ba8\u8bba\u8be6\u60c5\u9762\u677f" }).textContent ??
@@ -2224,7 +2232,9 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText(/quality-1/)).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Projection events").length).toBeGreaterThan(0);
     expect(client.listEvents).not.toHaveBeenCalled();
-    expect(screen.getByText("Current state: Visible in this discussion")).toBeTruthy();
+    expect(screen.getAllByText("Included as a strongest current option.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Still constrains the current conclusion.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Needs an answer before relying on the conclusion.").length).toBeGreaterThan(0);
   });
 
   it("renders revealed participant responses as readable room activity", async () => {

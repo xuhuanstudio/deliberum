@@ -998,7 +998,7 @@ function ReadableSessionRecord({
       "consequence",
       "requirement"
     ]) ?? getReadableFallbackDetail(kind);
-  const status = t(formatReadableStatus(getRecordValue(object, "status")));
+  const reviewCue = t(formatSessionRecordReviewCue(kind, getRecordValue(object, "status")));
   const proposalEventId = formatRecordValue(getRecordValue(record, "proposalEventId"));
   const sourceEventIds = formatRecordIdList(asArray(getRecordValue(object, "sourceEventIds")));
 
@@ -1007,11 +1007,7 @@ function ReadableSessionRecord({
       <p className="du-kicker">{fallbackTitle}</p>
       <h4>{t(title)}</h4>
       {detail !== title ? <p>{t(detail)}</p> : null}
-      <p className="du-readable-meta">
-        {t("Current state: {status}", {
-          status
-        })}
-      </p>
+      <p className="du-readable-meta">{reviewCue}</p>
       <AdvancedDetails summary="Advanced / Developer Mode" lazy>
         <KeyValueGrid
           items={[
@@ -1099,32 +1095,39 @@ function formatSessionEventTypeForUser(value: unknown): string {
   return "No visible step available yet";
 }
 
-function formatReadableStatus(value: unknown): string {
-  if (value === "accepted_active") {
-    return "Visible in this discussion";
-  }
-
-  if (value === "open") {
-    return "Still open";
-  }
-
-  if (value === "unanswered") {
-    return "Needs an answer";
-  }
-
-  if (typeof value === "string" && value.length > 0) {
-    return formatReadableIdentifier(value);
-  }
-
-  return formatRecordValue(value);
-}
-
 function formatReadableIdentifier(value: string): string {
   return value
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/^./, (character) => character.toUpperCase());
+}
+
+function formatSessionRecordReviewCue(
+  kind: SessionReadableKind,
+  status: unknown
+): string {
+  if (status === "checked" || status === "satisfied" || status === "resolved") {
+    return "Resolved for now.";
+  }
+
+  if (kind === "perspective" && (status === "accepted_active" || status === "active")) {
+    return "Included as a strongest current option.";
+  }
+
+  if (kind === "disagreement" && status === "open") {
+    return "Still constrains the current conclusion.";
+  }
+
+  if (kind === "requirement" && status === "unanswered") {
+    return "Needs an answer before relying on the conclusion.";
+  }
+
+  if (kind === "evidence") {
+    return "Needs verification before relying on the conclusion.";
+  }
+
+  return "Review this item before relying on the conclusion.";
 }
 
 function formatRecordIdList(values: unknown[]): string {

@@ -4276,7 +4276,7 @@ function ProjectionRecord({
     getStringRecordValue(object, "requirement") ??
     getStringRecordValue(object, "failureMode") ??
     fallbackTitle;
-  const status = t(formatReadableRecordStatus(getRecordValue(object, "status")));
+  const reviewCue = t(formatProjectionRecordReviewCue(kind, getRecordValue(object, "status")));
   const description =
     getStringRecordValue(object, "description") ??
     getStringRecordValue(object, "consequence") ??
@@ -4289,7 +4289,7 @@ function ProjectionRecord({
       <p className="du-kicker">{kindLabel}</p>
       <h4>{title}</h4>
       {description && description !== title ? <p>{description}</p> : null}
-      <p className="du-readable-meta">{t("Current state: {status}", { status })}</p>
+      <p className="du-readable-meta">{reviewCue}</p>
     </article>
   );
 }
@@ -4385,24 +4385,31 @@ function formatProjectionKind(kind: ProjectionRecordKind): string {
   return "Requirement";
 }
 
-function formatReadableRecordStatus(value: unknown): string {
-  if (value === "accepted_active" || value === "active") {
-    return "Visible in this discussion";
+function formatProjectionRecordReviewCue(
+  kind: ProjectionRecordKind,
+  status: unknown
+): string {
+  if (status === "checked" || status === "satisfied" || status === "resolved") {
+    return "Resolved for now.";
   }
 
-  if (value === "open") {
-    return "Still open";
+  if (kind === "candidate" && (status === "accepted_active" || status === "active")) {
+    return "Included as a strongest current option.";
   }
 
-  if (value === "unanswered") {
-    return "Needs an answer";
+  if (kind === "objection" && status === "open") {
+    return "Still constrains the current conclusion.";
   }
 
-  if (typeof value === "string" && value.length > 0) {
-    return formatOutcomeLabel(value);
+  if (kind === "quality obligation" && status === "unanswered") {
+    return "Needs an answer before relying on the conclusion.";
   }
 
-  return formatRecordValue(value);
+  if (kind === "evidence") {
+    return "Needs verification before relying on the conclusion.";
+  }
+
+  return "Review this item before relying on the conclusion.";
 }
 
 function ProjectionMetadata({ projection }: { projection: unknown }) {
