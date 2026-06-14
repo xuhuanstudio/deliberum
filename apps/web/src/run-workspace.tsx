@@ -331,7 +331,7 @@ export function RunDetailPage() {
       <ViewFrame
         eyebrow="User Mode"
         title={formatRunDisplayTitle(run)}
-        description="Review the discussion status, main perspectives, open disagreements, requirements, evidence gaps, and next recommended actions."
+        description="Start or continue a discussion, then review the current conclusion, main perspectives, open disagreements, risks, missing evidence, and next recommended actions."
         actions={
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
             View current conclusion
@@ -343,10 +343,9 @@ export function RunDetailPage() {
           {sessionId ? (
             <RunQualityOverview runId={runId} sessionId={sessionId} run={run} />
           ) : null}
-          <RunDetailGuide />
-          <RunStageStatus run={run} />
           <StartRunForm runId={runId} sessionId={sessionId} run={run} />
           {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
+          <RunProgressDetails run={run} />
           <AdvancedDetails
             summary="Advanced / Developer Mode"
             description="Adaptive primitive suggestions, process proposal lifecycle, explicit execution readiness, and internal proposal ids for developer inspection."
@@ -660,24 +659,48 @@ function RunConceptPanel() {
   );
 }
 
-function RunDetailGuide() {
+function RunProgressDetails({ run }: { run: unknown }) {
   return (
-    <DataPanel title="What this discussion status means">
-      <div className="du-explainer-grid">
-        <ExplainerItem
-          title="Created"
-          detail="The discussion exists, but the deliberation steps have not started yet."
-        />
-        <ExplainerItem
-          title="Not run yet"
-          detail="No work has been recorded for that part of the discussion."
-        />
-        <ExplainerItem
-          title="Setup needed"
-          detail="This discussion cannot continue until the required setup is available. Setup details stay in Advanced mode."
-        />
+    <details className="du-user-details">
+      <summary>
+        <span>How progress is tracked</span>
+        <small>
+          Optional status explanation for the visible discussion steps. Technical identifiers stay
+          in Advanced mode.
+        </small>
+      </summary>
+      <div className="du-user-details-stack">
+        <section aria-label="What this discussion status means">
+          <div className="du-section-label">
+            <p className="du-kicker">Status guide</p>
+            <h4>What this discussion status means</h4>
+            <p>Plain-language meanings for the status labels used in this page.</p>
+          </div>
+          <div className="du-explainer-grid">
+            <ExplainerItem
+              title="Created"
+              detail="The discussion exists, but the deliberation steps have not started yet."
+            />
+            <ExplainerItem
+              title="Not run yet"
+              detail="No work has been recorded for that part of the discussion."
+            />
+            <ExplainerItem
+              title="Setup needed"
+              detail="This discussion cannot continue until the required setup is available. Setup details stay in Advanced mode."
+            />
+          </div>
+        </section>
+        <section aria-label="Discussion progress">
+          <div className="du-section-label">
+            <p className="du-kicker">Progress</p>
+            <h4>Discussion progress</h4>
+            <p>Each step corresponds to a core Deliberum concept, presented in user language.</p>
+          </div>
+          <StageStatusList stages={getDiscussionStageStatuses(run)} />
+        </section>
       </div>
-    </DataPanel>
+    </details>
   );
 }
 
@@ -819,17 +842,6 @@ function RunSummary({ run }: { run: unknown }) {
           ]}
         />
       </AdvancedDetails>
-    </DataPanel>
-  );
-}
-
-function RunStageStatus({ run }: { run: unknown }) {
-  return (
-    <DataPanel
-      title="Discussion progress"
-      description="Each step corresponds to a core Deliberum concept, presented in user-facing language."
-    >
-      <StageStatusList stages={getDiscussionStageStatuses(run)} />
     </DataPanel>
   );
 }
@@ -1447,8 +1459,8 @@ function RunQualityOverview({
 
   return (
     <DataPanel
-      title="Discussion dashboard"
-      description="The first screen for a human reviewer: what is ready, what still needs attention, and where to go next."
+      title="Discussion workbench"
+      description="Start here: current conclusion, main perspectives, open disagreements, evidence gaps, answer requirements, and next steps."
     >
       <QueryState query={queryState}>
         <StatusBanner

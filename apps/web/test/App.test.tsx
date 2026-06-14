@@ -1525,7 +1525,7 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(getAdvancedModeSummary());
     expect(await screen.findByText("Ledger events")).toBeTruthy();
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
-    expect(screen.getByText("Discussion dashboard")).toBeTruthy();
+    expect(screen.getByText("Discussion workbench")).toBeTruthy();
     expect(screen.getByText("Next: review current conclusion")).toBeTruthy();
     expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);
     expect(screen.getByText("Ready")).toBeTruthy();
@@ -1538,6 +1538,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("View requirements")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
     expect(screen.getByText("Strong options stay visible without collapsing into one hidden authority.")).toBeTruthy();
+    expect(screen.getByText("How progress is tracked")).toBeTruthy();
     expect(screen.getByText("What this discussion status means")).toBeTruthy();
     expect(screen.getByText("Discussion progress")).toBeTruthy();
     expect(screen.getByText("Risks and missing evidence")).toBeTruthy();

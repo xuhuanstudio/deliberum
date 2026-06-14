@@ -590,12 +590,17 @@ textarea:focus-visible {
 }
 
 .du-section-label h3,
+.du-section-label h4,
 .du-section-label p {
   margin: 0;
 }
 
 .du-section-label h3 {
   font-size: 1.35rem;
+}
+
+.du-section-label h4 {
+  font-size: 1rem;
 }
 
 .du-section-label p:not(.du-kicker) {
@@ -824,6 +829,39 @@ textarea:focus-visible {
 .du-advanced-description + .du-advanced-stack {
   border-top: 0;
   padding-top: 0;
+}
+
+.du-user-details {
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: rgba(255, 254, 250, 0.72);
+}
+
+.du-user-details summary {
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--du-ink);
+  font-weight: 800;
+  padding: 14px 16px;
+}
+
+.du-user-details summary:hover {
+  background: var(--du-surface-muted);
+}
+
+.du-user-details summary small {
+  color: var(--du-muted);
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.du-user-details-stack {
+  display: grid;
+  gap: 18px;
+  border-top: 1px solid var(--du-line);
+  padding: 16px;
 }
 
 .du-advanced-status-grid {
