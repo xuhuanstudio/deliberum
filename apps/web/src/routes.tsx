@@ -1249,10 +1249,10 @@ function describeLandingParticipantStep(input: {
   if (input.canStartModelBacked && input.organizerMode) {
     return {
       label: "Step 3",
-      title: "Participants and organizers ready",
+      title: "Participants and review roles ready",
       detail: input.organizerMode === "model"
-        ? "Model perspectives can answer first, and model organizer roles can review disagreements, evidence, risks, and the conclusion."
-        : "Model perspectives can answer first, and local organizers can review disagreements, evidence, risks, and the conclusion.",
+        ? "Model perspectives can answer first, then Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the result."
+        : "Model perspectives can answer first, then local review roles can review disagreements, evidence, risks, and the conclusion.",
       tone: "ok"
     };
   }
@@ -1262,7 +1262,7 @@ function describeLandingParticipantStep(input: {
       label: "Step 3",
       title: "Model participants ready",
       detail:
-        "Model perspectives can answer first; finish organizer setup before relying on conclusions.",
+        "Model perspectives can answer first; finish review role setup before relying on conclusions.",
       tone: "warning"
     };
   }
@@ -1272,7 +1272,7 @@ function describeLandingParticipantStep(input: {
       label: "Step 3",
       title: "Demo room roles ready",
       detail:
-        "Built-in perspectives and local organizers can show the full room flow without provider calls.",
+        "Built-in perspectives and local review roles can show the full room flow without provider calls.",
       tone: "warning"
     };
   }
@@ -1946,7 +1946,7 @@ function SetupDiscussionReadiness({ setupPlan }: { setupPlan: RuntimeSetupPlan }
         <h4 id="setup-discussion-readiness">{t("What can run now")}</h4>
         <p>
           {t(
-            "This turns setup status into the discussion path: demo participants, real model participants, organizer roles, and the next step."
+            "This turns setup status into the discussion path: demo participants, real model participants, review roles, conclusion writing, and the next step."
           )}
         </p>
       </div>
@@ -2080,13 +2080,13 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
         tone: modelProviderReady ? "ok" : modelProviderProfiles.length > 0 ? "warning" : "neutral"
       },
       {
-        title: "Organizer and conclusion",
-        status: organizerMode ? "Ready" : "Organizer setup needed",
+        title: "Review roles and conclusion",
+        status: organizerMode ? "Ready" : "Review roles setup needed",
         detail: organizerMode === "model"
-          ? "Model organizer roles can compare options, review evidence and risks, and draft the current conclusion after first responses."
+          ? "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the discussion after first responses."
           : organizerMode === "local"
-            ? "Local organizers can compare options, review disagreements, evidence, and risks, then draft the current conclusion."
-            : "Discussions may collect first responses only until organizer roles are ready.",
+            ? "Local review roles can compare options, review disagreements, evidence, and risks, then draft the current conclusion."
+            : "Discussions may collect first responses only until review roles are ready.",
         tone: organizerMode ? "ok" : "warning"
       },
       {
@@ -2138,17 +2138,17 @@ function buildSetupParticipantReadiness(
     : localPresetReady
       ? "warning"
       : "neutral";
-  const organizerStatus = organizerMode ? "Organizer ready" : "Organizer setup needed";
+  const organizerStatus = organizerMode ? "Review roles ready" : "Review roles setup needed";
   const organizerSource = organizerMode === "model"
-    ? "Model organizer"
+    ? "Model review roles"
     : organizerMode === "local"
-      ? "Local organizer"
-      : "No organizer ready";
+      ? "Local review roles"
+      : "Review roles not ready";
   const organizerDetail = organizerMode === "model"
-    ? "Model organizer roles can compare options, review evidence and risks, and draft the current conclusion after first responses."
+    ? "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the discussion after first responses."
     : organizerMode === "local"
-      ? "Local organizers can compare options, review evidence and risks, and draft the current conclusion."
-      : "Discussions may collect first responses only until organizer roles are ready.";
+      ? "Local review roles can compare options, review evidence and risks, and draft the current conclusion."
+      : "Discussions may collect first responses only until review roles are ready.";
   const organizerTone: SetupParticipantReadinessItem["tone"] = organizerMode
     ? "ok"
     : "warning";
@@ -2191,32 +2191,32 @@ function buildSetupParticipantReadiness(
     },
     {
       title: "Disagreement and evidence review",
-      status: organizerMode ? "Organizer ready" : "Organizer setup needed",
+      status: organizerMode ? "Review roles ready" : "Review roles setup needed",
       uses: organizerMode === "model"
-        ? "Reviewer, Evidence checker, and Risk reviewer use the model organizer."
+        ? "Reviewer, Evidence checker, and Risk reviewer use the configured model provider."
         : organizerMode === "local"
-          ? "Reviewer, Evidence checker, and Risk reviewer use the local organizer."
+          ? "Reviewer, Evidence checker, and Risk reviewer use the local review flow."
           : "Reviewer, Evidence checker, and Risk reviewer are not ready yet.",
       detail:
         "These roles keep open disagreements, missing evidence, and risks visible before the conclusion is trusted.",
       action: organizerMode
         ? "Start the room and continue review when the first responses are ready."
-        : "Enable the local organizer before relying on review steps.",
+        : "Finish review role setup before relying on review steps.",
       tone: organizerTone
     },
     {
       title: "Conclusion and next actions",
       status: organizerMode ? "Conclusion writer ready" : "Conclusion writer setup needed",
       uses: organizerMode === "model"
-        ? "Conclusion writer uses the model organizer."
+        ? "Conclusion writer uses the configured model provider."
         : organizerMode === "local"
-          ? "Conclusion writer uses the local organizer."
+          ? "Conclusion writer uses the local review flow."
           : "Conclusion writer is not ready yet.",
       detail:
         "This role turns the current discussion state into a reviewable conclusion with recommended next actions.",
       action: organizerMode
         ? "Review the conclusion panel after the room has enough discussion material."
-        : "Finish organizer setup before relying on generated conclusions.",
+        : "Finish review role setup before relying on generated conclusions.",
       tone: organizerTone
     }
   ];

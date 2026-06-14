@@ -1259,7 +1259,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("First-use path")).toBeTruthy();
     expect(screen.getByText("Model provider ready")).toBeTruthy();
-    expect(screen.getByText("Participants and organizers ready")).toBeTruthy();
+    expect(screen.getByText("Participants and review roles ready")).toBeTruthy();
     expect(screen.getByText("Start the real discussion")).toBeTruthy();
     expect(
       screen.getByText(
@@ -1267,6 +1267,7 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("who will organize the result");
   });
 
   it("guides landing users to setup when the local service is unavailable", async () => {
@@ -1304,7 +1305,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Demo walkthrough").length).toBeGreaterThan(0);
     expect(screen.getByText("Model participants")).toBeTruthy();
     expect(screen.getAllByText("Setup needed").length).toBeGreaterThan(0);
-    expect(screen.getByText("Organizer and conclusion")).toBeTruthy();
+    expect(screen.getByText("Review roles and conclusion")).toBeTruthy();
     expect(screen.getByText("Try a demo discussion")).toBeTruthy();
     expect(screen.getByText("Participant management")).toBeTruthy();
     expect(screen.getByText("Discussion participants")).toBeTruthy();
@@ -1322,7 +1323,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("Disagreement and evidence review")).toBeTruthy();
     expect(
-      screen.getByText("Reviewer, Evidence checker, and Risk reviewer use the local organizer.")
+      screen.getByText("Reviewer, Evidence checker, and Risk reviewer use the local review flow.")
     ).toBeTruthy();
     expect(screen.getByText("Conclusion and next actions")).toBeTruthy();
     expect(screen.getAllByText("Uses").length).toBeGreaterThan(0);
@@ -1330,7 +1331,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Demo ready").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Built-in demo participant").length).toBeGreaterThan(1);
     expect(screen.getByText("Broader review after model setup")).toBeTruthy();
-    expect(screen.getAllByText("Local organizer").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Local review roles").length).toBeGreaterThan(1);
+    expect(document.body.textContent ?? "").not.toContain("local organizer");
     expect(screen.getByText("Perspective C")).toBeTruthy();
     expect(screen.getByText("Reviewer")).toBeTruthy();
     expect(screen.getByText("Evidence checker")).toBeTruthy();
@@ -1507,7 +1509,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("\u6f14\u793a\u6d41\u7a0b").length).toBeGreaterThan(0);
     expect(screen.getByText("\u6a21\u578b\u53c2\u4e0e\u8005")).toBeTruthy();
     expect(screen.getAllByText("\u9700\u8981\u914d\u7f6e").length).toBeGreaterThan(0);
-    expect(screen.getByText("\u7ec4\u7ec7\u4e0e\u7ed3\u8bba")).toBeTruthy();
+    expect(screen.getByText("\u5ba1\u67e5\u89d2\u8272\u4e0e\u7ed3\u8bba")).toBeTruthy();
     expect(screen.getByText("\u8bd5\u7528\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u7ba1\u7406")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u53c2\u4e0e\u8005")).toBeTruthy();
@@ -1524,7 +1526,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5206\u6b67\u4e0e\u8bc1\u636e\u5ba1\u67e5")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u672c\u5730\u7ec4\u7ec7\u5668\u3002"
+        "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u672c\u5730\u5ba1\u67e5\u6d41\u7a0b\u3002"
       )
     ).toBeTruthy();
     expect(screen.getByText("\u7ed3\u8bba\u4e0e\u4e0b\u4e00\u6b65")).toBeTruthy();
@@ -1532,7 +1534,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("\u6f14\u793a\u5df2\u5c31\u7eea").length).toBeGreaterThan(1);
     expect(screen.getAllByText("\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005").length).toBeGreaterThan(1);
     expect(screen.getByText("\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u540e\u53ef\u7528\u4e8e\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5")).toBeTruthy();
-    expect(screen.getAllByText("\u672c\u5730\u7ec4\u7ec7\u5668").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("\u672c\u5730\u5ba1\u67e5\u89d2\u8272").length).toBeGreaterThan(1);
+    expect(document.body.textContent ?? "").not.toContain("\u7ec4\u7ec7\u5668");
     expect(screen.getAllByRole("link", { name: "\u67e5\u770b\u8bbe\u7f6e\u6b65\u9aa4" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("HTTP-template")).toBeNull();
     expect(screen.queryByText("MCP tool")).toBeNull();
@@ -1717,11 +1720,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Model ready").length).toBeGreaterThan(1);
     expect(screen.getAllByText("OpenAI-compatible model").length).toBeGreaterThan(1);
     expect(screen.getByText("Available in broader review")).toBeTruthy();
-    expect(screen.getAllByText("Model organizer").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Model review roles").length).toBeGreaterThan(1);
     expect(
-      screen.getByText("Reviewer, Evidence checker, and Risk reviewer use the model organizer.")
+      screen.getByText("Reviewer, Evidence checker, and Risk reviewer use the configured model provider.")
     ).toBeTruthy();
-    expect(screen.getByText("Conclusion writer uses the model organizer.")).toBeTruthy();
+    expect(screen.getByText("Conclusion writer uses the configured model provider.")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("Model organizer");
     expect(
       screen.getByText(
         "Choose Broader review on the start page to add a third independent model perspective."
@@ -1757,6 +1761,7 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("who will organize the result");
   });
 
   it("shows a safe provider verification failure from setup and models", async () => {
@@ -2470,6 +2475,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u9009\u62e9\u53c2\u4e0e\u8005\u6765\u6e90")).toBeTruthy();
     expect(screen.getAllByText("\u6f14\u793a\u53c2\u4e0e\u8005").length).toBeGreaterThan(0);
     expect(screen.getByText("\u672c\u6b21\u8ba8\u8bba\u7684\u53c2\u4e0e\u8005")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u5148\u770b\u6e05\u8c01\u4f1a\u5148\u56de\u5e94\uff0c\u4ee5\u53ca\u8c01\u4f1a\u5ba1\u67e5\u7ed3\u679c\u3002"
+      )
+    ).toBeTruthy();
     expect(screen.getByText("\u89c6\u89d2 A")).toBeTruthy();
     expect(screen.getByText("\u8bc1\u636e\u6838\u67e5\u8005")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
@@ -2482,6 +2492,7 @@ describe("@deliberum/web shell", () => {
     expect((screen.getByLabelText("\u8bed\u8a00") as HTMLSelectElement).value).toBe("zh-CN");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("run / session");
+    expect(document.body.textContent ?? "").not.toContain("\u8c01\u4f1a\u6574\u7406\u7ed3\u679c");
   });
 
   it("shows model readiness on the start discussion path without setup internals", async () => {
@@ -2495,6 +2506,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Choose participant source")).toBeTruthy();
     expect(screen.getAllByText("Demo participants").length).toBeGreaterThan(0);
     expect(screen.getByText("Participants for this discussion")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Before creating the discussion, see who will answer first and who will review the result."
+      )
+    ).toBeTruthy();
     expect(screen.getAllByText("Perspective A").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Perspective B").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
@@ -2623,6 +2639,11 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByText("Participants for this discussion")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Before creating the discussion, see who will answer first and who will review the result."
+      )
+    ).toBeTruthy();
     expect(screen.getAllByText("Perspective A").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Perspective B").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
@@ -2633,7 +2654,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("OpenAI-compatible model")).toBeTruthy();
     expect(
       screen.getByText(
-        "Configured model participants can answer first, but organizer roles are not ready yet."
+        "Configured model participants can answer first, but review and conclusion roles are not ready yet."
       )
     ).toBeTruthy();
     expect(
@@ -2646,7 +2667,7 @@ describe("@deliberum/web shell", () => {
     ).toBeGreaterThan(1);
     expect(
       screen.getAllByText(
-        "Organizer roles are not ready yet; continuing the discussion may collect first responses only."
+        "Review roles are not ready yet; continuing the discussion may collect first responses only."
       ).length
     ).toBeGreaterThan(0);
     expect(screen.getByText("Choose discussion depth")).toBeTruthy();
@@ -4554,6 +4575,59 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("No work has been recorded for that part of the discussion.")).toBeTruthy();
   });
 
+  it("maps processing stage statuses to user-facing language before conclusion review", async () => {
+    const processingRun = {
+      ...runDetail,
+      status: "revealed",
+      sealedDivergenceStatus: "revealed",
+      latestExtractionStatus: "waiting_for_generators",
+      latestProposalReviewStatus: undefined,
+      latestFinalizationStatus: undefined,
+      ledger: {
+        eventCount: 5
+      }
+    };
+
+    renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: processingRun
+        }))
+      })
+    );
+
+    expect(await screen.findByText("In progress")).toBeTruthy();
+    expect(screen.getByText("This discussion step is still being processed.")).toBeTruthy();
+    expect(await screen.findByRole("complementary", { name: "Current room summary" })).toBeTruthy();
+    expect(screen.getByText("Current conclusion: Not ready yet")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
+    expect(document.body.textContent ?? "").not.toContain("waiting_for_generators");
+
+    cleanup();
+
+    renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: processingRun
+        }))
+      }),
+      {
+        initialLanguage: "zh-CN"
+      }
+    );
+
+    expect(await screen.findByText("\u8fdb\u884c\u4e2d")).toBeTruthy();
+    expect(
+      screen.getByText("\u6b64\u8ba8\u8bba\u6b65\u9aa4\u4ecd\u5728\u5904\u7406\u4e2d\u3002")
+    ).toBeTruthy();
+    expect(await screen.findByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
+    expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\uff1a\u5c1a\u672a\u5c31\u7eea")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "\u67e5\u770b\u5f53\u524d\u7ed3\u8bba" })).toBeNull();
+    expect(document.body.textContent ?? "").not.toContain("waiting_for_generators");
+  });
+
   it("starts a run from a JSON start request and renders readable step metadata", async () => {
     const client = renderApp(
       "/runs/run-1",
@@ -4646,7 +4720,7 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("do not render this result payload");
   });
 
-  it("keeps provider-backed continuation on first responses until model organizers are ready", async () => {
+  it("keeps provider-backed continuation on first responses until model review roles are ready", async () => {
     const client = renderApp(
       "/runs/run-1",
       createClient({
@@ -4670,7 +4744,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "Continue discussion will collect independent first responses only until the local service reports a complete model organizer path."
+        "Continue discussion will collect independent first responses only until the local service reports a complete model review path."
       )
     ).toBeTruthy();
     expect(screen.getByText("Review actions unlock later")).toBeTruthy();
@@ -4690,12 +4764,12 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("First responses collected")).toBeTruthy();
     expect(
       screen.getByText(
-        "The discussion collected independent first responses. Finish model organizer setup before organizing options or drafting a conclusion."
+        "The discussion collected independent first responses. Finish review role setup before organizing options or drafting a conclusion."
       )
     ).toBeTruthy();
   });
 
-  it("uses model organizer roles for provider-backed continuation when the local service reports them ready", async () => {
+  it("uses model review roles for provider-backed continuation when the local service reports them ready", async () => {
     const client = renderApp(
       "/runs/run-1",
       createClient({
@@ -4771,10 +4845,10 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByText("Model-backed organizer path ready")).toBeTruthy();
+    expect(await screen.findByText("Model-backed review path ready")).toBeTruthy();
     expect(
       screen.getByText(
-        "Continue discussion will ask configured model participants for independent first responses, then use configured model organizer roles to compare options, review risks, and draft the current conclusion."
+        "Continue discussion will ask configured model participants for independent first responses, then use Reviewer, Evidence checker, Risk reviewer, and Conclusion writer to review the result."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
@@ -4806,12 +4880,12 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Model-backed discussion continued")).toBeTruthy();
     expect(
       screen.getByText(
-        "Model participants and model organizer roles updated the readable timeline and conclusion materials."
+        "Model participants and review roles updated the readable timeline and conclusion materials."
       )
     ).toBeTruthy();
   });
 
-  it("degrades provider-backed continuation to first responses when organizers are not ready", async () => {
+  it("degrades provider-backed continuation to first responses when review roles are not ready", async () => {
     const client = renderApp(
       "/runs/run-1",
       createClient({
@@ -4887,12 +4961,12 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Model first responses ready")).toBeTruthy();
     expect(
       screen.getByText(
-        "Configured model participants can answer first, but no full organizer path is ready in the current setup."
+        "Configured model participants can answer first, but the full review path is not ready in the current setup."
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "Collect independent first responses only; finish model organizer setup before generating strongest options or a conclusion."
+        "Collect independent first responses only; finish review role setup before generating strongest options or a conclusion."
       )
     ).toBeTruthy();
     fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
@@ -4945,12 +5019,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u7ee7\u7eed\u8ba8\u8bba\u8bbe\u7f6e")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u5728\u672c\u5730\u670d\u52a1\u62a5\u544a\u5b8c\u6574\u6a21\u578b\u7ec4\u7ec7\u8def\u5f84\u524d\uff0c\u7ee7\u7eed\u8ba8\u8bba\u53ea\u4f1a\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002"
+        "\u5728\u672c\u5730\u670d\u52a1\u62a5\u544a\u5b8c\u6574\u6a21\u578b\u5ba1\u67e5\u8def\u5f84\u524d\uff0c\u7ee7\u7eed\u8ba8\u8bba\u53ea\u4f1a\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002"
       )
     ).toBeTruthy();
     expect(screen.getByText("\u5ba1\u9605\u52a8\u4f5c\u7a0d\u540e\u89e3\u9501")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "\u8981\u6c42\u66f4\u5f3a\u9009\u9879" })).toBeNull();
     expect(document.body.textContent ?? "").not.toContain("Model-backed discussion");
+    expect(document.body.textContent ?? "").not.toContain("\u7ec4\u7ec7\u8def\u5f84");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 

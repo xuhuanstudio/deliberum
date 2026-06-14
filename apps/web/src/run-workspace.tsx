@@ -864,7 +864,7 @@ function DiscussionParticipantLineup({
         <h4>{t("Participants for this discussion")}</h4>
         <p>
           {t(
-            "Before creating the discussion, see who will answer first and who will organize the result."
+            "Before creating the discussion, see who will answer first and who will review the result."
           )}
         </p>
       </div>
@@ -920,9 +920,9 @@ function buildDiscussionCreationPreview(input: {
           tone: "neutral"
         },
         {
-          label: "Who organizes the result",
+          label: "Who reviews the result",
           value: "Checking",
-          detail: "Organizer readiness appears after setup status loads.",
+          detail: "Review role readiness appears after setup status loads.",
           tone: "neutral"
         },
         {
@@ -939,8 +939,8 @@ function buildDiscussionCreationPreview(input: {
     return {
       title: "Ready to create a model-backed discussion",
       detail: input.organizerReady
-        ? "Configured model participants will answer first; model organizer roles can then structure options, disagreements, evidence gaps, risks, and a current conclusion."
-        : "Configured model participants can answer first, but organizer roles are not ready yet.",
+        ? "Configured model participants will answer first; review and conclusion roles can then structure options, disagreements, evidence gaps, risks, and a current conclusion."
+        : "Configured model participants can answer first, but review and conclusion roles are not ready yet.",
       tone: input.organizerReady ? "ok" : "warning",
       steps: [
         {
@@ -969,7 +969,7 @@ function buildDiscussionCreationPreview(input: {
           value: "Discussion room",
           detail: input.organizerReady
             ? "Open the room, then continue the guided discussion to organize first responses into a reviewable conclusion."
-            : "Open the room, then finish organizer setup before expecting strongest options or a conclusion.",
+            : "Open the room, then finish review role setup before expecting strongest options or a conclusion.",
           tone: input.organizerReady ? "ok" : "warning"
         }
       ]
@@ -990,11 +990,11 @@ function buildDiscussionCreationPreview(input: {
           tone: "warning"
         },
         {
-          label: "Who organizes the result",
-          value: input.organizerReady ? "Full discussion loop" : "Organizer setup needed",
+          label: "Who reviews the result",
+          value: input.organizerReady ? "Full discussion loop" : "Review roles setup needed",
           detail: input.organizerReady
-            ? "Local organizers can compare options, review risks, and draft the current conclusion."
-            : "The discussion may collect first responses only until organizer roles are ready.",
+            ? "Local review roles can compare options, review risks, and draft the current conclusion."
+            : "The discussion may collect first responses only until review roles are ready.",
           tone: input.organizerReady ? "ok" : "warning"
         },
         {
@@ -1020,9 +1020,9 @@ function buildDiscussionCreationPreview(input: {
         tone: "warning"
       },
       {
-        label: "Who organizes the result",
-        value: "Organizer setup needed",
-        detail: "Organizer roles are required before Deliberum can prepare the conclusion.",
+        label: "Who reviews the result",
+        value: "Review roles setup needed",
+        detail: "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer must be ready before Deliberum can prepare the conclusion.",
         tone: "warning"
       },
       {
@@ -1062,17 +1062,17 @@ function buildDiscussionParticipantLineup(input: {
         : "neutral";
   const organizerDetail = input.organizerReady
     ? input.selectedSource === "model-backed" && input.providerSource
-      ? "Model organizer roles can compare options, review evidence and risks, and draft the current conclusion after first responses."
-      : "Local organizers can compare options, review evidence and risks, and draft the current conclusion after first responses."
-    : "Organizer roles are not ready yet; continuing the discussion may collect first responses only.";
+      ? "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the discussion after first responses."
+      : "Local review roles can compare options, review evidence and risks, and draft the current conclusion after first responses."
+    : "Review roles are not ready yet; continuing the discussion may collect first responses only.";
   const organizerTone: DiscussionParticipantLineupItem["tone"] = input.organizerReady
     ? "ok"
     : "warning";
   const organizerSource = input.organizerReady
     ? input.selectedSource === "model-backed" && input.providerSource
-      ? "Model organizer"
-      : "Local discussion organizer"
-    : "Organizer setup needed";
+      ? "Model review roles"
+      : "Local review roles"
+    : "Review roles setup needed";
 
   return [
     ...perspectiveRoles.map((perspective) => ({
@@ -2612,7 +2612,7 @@ function describeDiscussionContinuationSetup(
     return {
       title: "Checking continuation setup",
       detail:
-        "Web is checking which local participant and organizer path is currently ready.",
+        "Web is checking which local participant and review path is currently ready.",
       note:
         "The recommended request updates after the daemon returns safe setup status.",
       tone: "neutral",
@@ -2643,19 +2643,19 @@ function describeDiscussionContinuationSetup(
 
   if (providerBacked && providerOrganizerReady) {
     return {
-      title: "Model-backed organizer path ready",
+      title: "Model-backed review path ready",
       detail:
-        "Continue discussion will ask configured model participants for independent first responses, then use configured model organizer roles to compare options, review risks, and draft the current conclusion.",
+        "Continue discussion will ask configured model participants for independent first responses, then use Reviewer, Evidence checker, Risk reviewer, and Conclusion writer to review the result.",
       note:
         "Provider credentials stay on this machine; Web does not show saved API keys.",
       tone: "ok",
       startRequest: OPENAI_COMPATIBLE_FULL_START_REQUEST,
       fillLabel: "Fill recommended continuation request",
       primaryActionDetail:
-        "Collect model first responses, then use model organizer roles for options, disagreements, risks, and the draft conclusion.",
+        "Collect model first responses, then use review roles for options, disagreements, risks, and the draft conclusion.",
       primaryResultTitle: "Model-backed discussion continued",
       primaryResultDetail:
-        "Model participants and model organizer roles updated the readable timeline and conclusion materials."
+        "Model participants and review roles updated the readable timeline and conclusion materials."
     };
   }
 
@@ -2663,17 +2663,17 @@ function describeDiscussionContinuationSetup(
     return {
       title: "Model first responses ready",
       detail:
-        "Configured model participants can answer first, but no full organizer path is ready in the current setup.",
+        "Configured model participants can answer first, but the full review path is not ready in the current setup.",
       note:
-        "Continue discussion will collect independent first responses only until the local service reports a complete model organizer path.",
+        "Continue discussion will collect independent first responses only until the local service reports a complete model review path.",
       tone: "warning",
       startRequest: FIRST_RESPONSES_ONLY_START_REQUEST,
       fillLabel: "Fill first responses request",
       primaryActionDetail:
-        "Collect independent first responses only; finish model organizer setup before generating strongest options or a conclusion.",
+        "Collect independent first responses only; finish review role setup before generating strongest options or a conclusion.",
       primaryResultTitle: "First responses collected",
       primaryResultDetail:
-        "The discussion collected independent first responses. Finish model organizer setup before organizing options or drafting a conclusion."
+        "The discussion collected independent first responses. Finish review role setup before organizing options or drafting a conclusion."
     };
   }
 
@@ -2681,7 +2681,7 @@ function describeDiscussionContinuationSetup(
     return {
       title: "Full demo discussion path ready",
       detail:
-        "Continue discussion can use built-in demo participants and local organizers for the full room flow without provider setup.",
+        "Continue discussion can use built-in demo participants and local review roles for the full room flow without provider setup.",
       note:
         "Configure a model provider in Setup / Models before relying on real model-backed results.",
       tone: "warning",
@@ -2693,7 +2693,7 @@ function describeDiscussionContinuationSetup(
   return {
     title: "First responses only",
     detail:
-      "This discussion can only collect independent first responses until a local participant or provider organizer path is ready.",
+      "This discussion can only collect independent first responses until a local participant or provider review path is ready.",
     note:
       "Open Setup / Models to configure a demo preset or real model provider before relying on the discussion.",
     tone: "warning",
@@ -6718,10 +6718,9 @@ function isCompletedDiscussionStage(status: unknown): boolean {
 }
 
 export function isDiscussionReviewReady(run: unknown): boolean {
-  const status = getRecordValue(run, "status");
   const finalizationStatus = getRecordValue(run, "latestFinalizationStatus");
 
-  return status === "revealed" || finalizationStatus === "completed";
+  return finalizationStatus === "completed";
 }
 
 function describeDiscussionContinuation(run: unknown): DiscussionContinuationView {
@@ -6828,6 +6827,13 @@ function describeStageStatus(status: unknown): { label: string; detail: string }
     };
   }
 
+  if (status === "waiting_for_generators" || status === "running") {
+    return {
+      label: "In progress",
+      detail: "This discussion step is still being processed."
+    };
+  }
+
   if (status === "failed") {
     return {
       label: "Failed",
@@ -6837,8 +6843,8 @@ function describeStageStatus(status: unknown): { label: string; detail: string }
 
   if (typeof status === "string") {
     return {
-      label: status,
-      detail: "Status reported for this discussion step."
+      label: "Needs attention",
+      detail: "This discussion step returned a status that needs developer review."
     };
   }
 
