@@ -3025,6 +3025,22 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Review open disagreements")).toBeTruthy();
     expect(screen.getByText("Check missing evidence")).toBeTruthy();
     expect(screen.getByText("Use next recommended actions")).toBeTruthy();
+    expect(
+      screen.getByText("Read the recommendation").closest("a")?.getAttribute("href")
+    ).toBe("#current-recommendation");
+    expect(
+      screen.getByText("Review open disagreements").closest("a")?.getAttribute("href")
+    ).toBe("#open-disagreements");
+    expect(
+      screen.getByText("Check missing evidence").closest("a")?.getAttribute("href")
+    ).toBe("#missing-evidence");
+    expect(
+      screen.getByText("Use next recommended actions").closest("a")?.getAttribute("href")
+    ).toBe("#next-recommended-actions");
+    expect(document.getElementById("current-recommendation")).toBeTruthy();
+    expect(document.getElementById("open-disagreements")).toBeTruthy();
+    expect(document.getElementById("missing-evidence")).toBeTruthy();
+    expect(document.getElementById("next-recommended-actions")).toBeTruthy();
     expect(screen.getByText("1 open disagreement needs review")).toBeTruthy();
     expect(screen.getByText("1 of 1 evidence gap needs verification")).toBeTruthy();
     expect(screen.getByText("1 recommended next action")).toBeTruthy();

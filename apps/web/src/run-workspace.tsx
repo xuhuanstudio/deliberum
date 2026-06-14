@@ -2647,7 +2647,11 @@ export function OutcomeBrief({
 
   return (
     <div className="du-outcome-brief">
-      <section className="du-outcome-hero" aria-label={t("Current conclusion snapshot")}>
+      <section
+        id="current-recommendation"
+        className="du-outcome-hero"
+        aria-label={t("Current conclusion snapshot")}
+      >
         <article className="du-outcome-recommendation">
           <p className="du-kicker">{t("Current recommendation")}</p>
           <h4>{t(recommendation)}</h4>
@@ -2704,6 +2708,7 @@ export function OutcomeBrief({
         </div>
         <div className="du-outcome-review-grid">
           <OutcomeReviewPathItem
+            href="#current-recommendation"
             title={t("Read the recommendation")}
             detail={t(
               "Use the current recommendation as reviewable material, not as an unquestioned final answer."
@@ -2711,6 +2716,7 @@ export function OutcomeBrief({
             tone="neutral"
           />
           <OutcomeReviewPathItem
+            href="#open-disagreements"
             title={t("Review open disagreements")}
             detail={describeReviewItemCount(
               t,
@@ -2721,6 +2727,7 @@ export function OutcomeBrief({
             tone={openDisagreements.length > 0 ? "warning" : "ok"}
           />
           <OutcomeReviewPathItem
+            href="#missing-evidence"
             title={t("Check missing evidence")}
             detail={describeEvidenceReviewDetail(
               t,
@@ -2730,6 +2737,7 @@ export function OutcomeBrief({
             tone={unresolvedEvidenceNeeds > 0 ? "warning" : "ok"}
           />
           <OutcomeReviewPathItem
+            href="#next-recommended-actions"
             title={t("Use next recommended actions")}
             detail={nextActionDetail}
             tone={continuationSuggestions.length > 0 ? "ok" : "warning"}
@@ -2749,30 +2757,35 @@ export function OutcomeBrief({
         />
       </div>
       <ReadableRecordList
+        id="main-perspectives"
         title="Main perspectives"
         items={mainPerspectives}
         emptyTitle="No main perspectives listed"
         summarizeItem={summarizeAlternative}
       />
       <ReadableRecordList
+        id="open-disagreements"
         title="Open disagreements"
         items={openDisagreements}
         emptyTitle="No open disagreements listed"
         summarizeItem={summarizeOpenObjection}
       />
       <ReadableRecordList
+        id="missing-evidence"
         title="Missing evidence"
         items={visibleEvidenceNeeds}
         emptyTitle="No missing evidence listed"
         summarizeItem={summarizeEvidenceNeed}
       />
       <ReadableRecordList
+        id="answer-requirements"
         title="Requirements this answer must satisfy"
         items={visibleQualityObligations}
         emptyTitle="No answer requirements listed"
         summarizeItem={summarizeQualityObligation}
       />
       <ReadableStringList
+        id="next-recommended-actions"
         title="Next recommended actions"
         items={continuationSuggestions}
         emptyTitle="No next recommended actions listed"
@@ -2782,19 +2795,21 @@ export function OutcomeBrief({
 }
 
 function OutcomeReviewPathItem({
+  href,
   title,
   detail,
   tone
 }: {
+  href: string;
   title: string;
   detail: string;
   tone: "neutral" | "ok" | "warning";
 }) {
   return (
-    <article className={`du-outcome-review-item du-outcome-review-${tone}`}>
+    <a className={`du-outcome-review-item du-outcome-review-${tone}`} href={href}>
       <strong>{title}</strong>
       <span>{detail}</span>
-    </article>
+    </a>
   );
 }
 
@@ -2858,10 +2873,12 @@ function OutcomeStatusItem({
 }
 
 function ReadableStringList({
+  id,
   title,
   items,
   emptyTitle
 }: {
+  id?: string;
   title: string;
   items: string[];
   emptyTitle: string;
@@ -2870,7 +2887,7 @@ function ReadableStringList({
   const visibleTitle = t(title);
 
   return (
-    <div className="du-readable-list">
+    <div id={id} className="du-readable-list">
       <h4>{visibleTitle}</h4>
       {items.length === 0 ? (
         <EmptyState
@@ -2899,11 +2916,13 @@ type OutcomeRecordSummary = {
 };
 
 function ReadableRecordList({
+  id,
   title,
   items,
   emptyTitle,
   summarizeItem
 }: {
+  id?: string;
   title: string;
   items: unknown[];
   emptyTitle: string;
@@ -2916,7 +2935,7 @@ function ReadableRecordList({
   const { t } = useI18n();
 
   return (
-    <div className="du-readable-list">
+    <div id={id} className="du-readable-list">
       <h4>{t(title)}</h4>
       {items.length === 0 ? (
         <EmptyState

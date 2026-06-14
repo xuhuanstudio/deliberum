@@ -987,12 +987,25 @@ textarea:focus-visible {
 }
 
 .du-outcome-review-item {
+  color: inherit;
   display: grid;
   gap: 8px;
   align-content: start;
   border-left: 4px solid var(--du-muted);
   background: var(--du-surface);
   padding: 16px;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.du-outcome-review-item:hover,
+.du-outcome-review-item:focus-visible {
+  background: var(--du-surface-muted);
+  box-shadow: inset 0 0 0 1px var(--du-accent);
+  transform: translateY(-1px);
 }
 
 .du-outcome-review-item strong {
