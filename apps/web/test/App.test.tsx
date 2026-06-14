@@ -2736,6 +2736,106 @@ describe("@deliberum/web shell", () => {
     expect(JSON.stringify(runPlan)).not.toContain("Use built-in sample participants only.");
   });
 
+  it("keeps advanced provider profiles out of the default discussion start path", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
+      profiles: [
+        {
+          id: "local-preset",
+          name: "Local preset",
+          enabled: true,
+          status: "ready",
+          components: [
+            {
+              id: "local-preset-alpha",
+              kind: "participant_adapter",
+              enabled: true
+            }
+          ],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+            envVars: [],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "needs_configuration",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: false,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: ["DELIBERUM_OPENAI_API_KEY"],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "http-template",
+          name: "HTTP-template",
+          enabled: true,
+          status: "ready",
+          components: [
+            {
+              id: "http-template",
+              kind: "participant_adapter",
+              enabled: true
+            }
+          ],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_HTTP_TEMPLATE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_HTTP_TEMPLATE_URL",
+                configured: true,
+                secret: false,
+                required: true,
+                purpose: "Required HTTP template endpoint URL."
+              }
+            ],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    });
+
+    renderApp("/runs/new?participants=model-backed", client);
+
+    expect(await screen.findByText("Demo start ready")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "No real model provider is ready yet. Configure one locally before relying on model-backed discussions."
+      )
+    ).toBeTruthy();
+    expect(screen.queryByText("Model-backed discussion selected")).toBeNull();
+    expect(screen.queryByText("HTTP-template")).toBeNull();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_HTTP_TEMPLATE_URL");
+
+    const demoSource = screen.getByRole("radio", {
+      name: /Demo participants/i
+    }) as HTMLInputElement;
+    const modelBackedSource = screen.getByRole("radio", {
+      name: /Model-backed participants/i
+    }) as HTMLInputElement;
+
+    expect(demoSource.checked).toBe(true);
+    expect(modelBackedSource.disabled).toBe(true);
+  });
+
   it("switches the user-facing shell between English and Simplified Chinese", async () => {
     renderApp("/runs/new");
 

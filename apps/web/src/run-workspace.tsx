@@ -1160,7 +1160,9 @@ function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionMo
   };
 }
 
-const MODEL_BACKED_DISCUSSION_PROFILE_IDS = new Set(["openai-compatible", "http-template"]);
+const WEB_CONFIGURABLE_MODEL_BACKED_DISCUSSION_PROFILE_IDS = new Set([
+  "openai-compatible"
+]);
 
 function isDemoDiscussionSourceAvailable(setupPlan: RuntimeSetupPlan | undefined): boolean {
   if (!setupPlan) {
@@ -1197,7 +1199,7 @@ function findProviderBackedDiscussionSource(
 function isSupportedModelBackedDiscussionProfile(
   profile: RuntimeSetupPlan["profiles"][number]
 ): boolean {
-  return MODEL_BACKED_DISCUSSION_PROFILE_IDS.has(profile.id);
+  return WEB_CONFIGURABLE_MODEL_BACKED_DISCUSSION_PROFILE_IDS.has(profile.id);
 }
 
 export function RunDetailPage() {
