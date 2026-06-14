@@ -472,6 +472,21 @@ describe("buildParticipantDispatchInput", () => {
         prepareCalls += 1;
       })
     ]);
+    appendFixtureEvent(eventStore, {
+      id: "event-2",
+      type: "participant_context_fixture",
+      visibility: "public",
+      payload: {
+        id: "internal-object-1",
+        runId: "run-1",
+        sessionId: "session-1",
+        eventId: "event-99",
+        content: "Visible participant note",
+        nested: {
+          summary: "Keep user-facing discussion context available."
+        }
+      }
+    });
     const eventCountBefore = eventStore.listEvents(run.sessionId).length;
     const runtimeSecret = "sk-dispatch-secret";
 
@@ -488,14 +503,29 @@ describe("buildParticipantDispatchInput", () => {
     expect(envelope.adapterId).toBe("openai-compatible");
     expect(envelope.providerRuntimeConfig?.apiKey).toBe(runtimeSecret);
     expect(envelope.providerSafeView).not.toHaveProperty("apiKey");
-    expect(envelope.adapterInput.payload).toEqual(envelope.context);
+    expect(envelope.adapterInput.instructions).toContain("plain-language");
+    expect(envelope.adapterContext.instructions).toContain("non-technical reader");
+    expect(envelope.adapterInput.payload).not.toEqual(envelope.context);
     expect(envelope.adapterContext.sessionId).toBe(run.sessionId);
     expect(envelope.adapterContext.sourceEventIds).toEqual(envelope.context.metadata.eventIds);
     expect(prepareCalls).toBe(0);
     expect(eventStore.listEvents(run.sessionId)).toHaveLength(eventCountBefore);
+    const adapterInputText = JSON.stringify(envelope.adapterInput);
+    expect(adapterInputText).toContain(createRunPlan().topic);
+    expect(adapterInputText).toContain("CLI advocate");
+    expect(adapterInputText).toContain("Visible participant note");
+    expect(adapterInputText).toContain("Keep user-facing discussion context available.");
+    expect(adapterInputText).not.toContain("run-1");
+    expect(adapterInputText).not.toContain("session-1");
+    expect(adapterInputText).not.toContain("event-1");
+    expect(adapterInputText).not.toContain("event-2");
+    expect(adapterInputText).not.toContain("event-99");
+    expect(adapterInputText).not.toContain("internal-object-1");
+    expect(adapterInputText).not.toContain("adapterId");
+    expect(adapterInputText).not.toContain("providerConfigId");
     expect(JSON.stringify(envelope.context)).not.toContain(runtimeSecret);
     expect(JSON.stringify(envelope.providerSafeView)).not.toContain(runtimeSecret);
-    expect(JSON.stringify(envelope.adapterInput)).not.toContain(runtimeSecret);
+    expect(adapterInputText).not.toContain(runtimeSecret);
     expect(JSON.stringify(runStore.getRun(run.id))).not.toContain(runtimeSecret);
     expect(JSON.stringify(eventStore.listEvents(run.sessionId))).not.toContain(runtimeSecret);
   });
