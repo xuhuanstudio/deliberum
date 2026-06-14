@@ -4909,6 +4909,10 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByText("Updated discussion steps")).toBeTruthy();
+    const updatedSteps = screen.getByRole("region", { name: "Updated discussion steps" });
+    expect(updatedSteps.textContent ?? "").toContain("Main perspectives");
+    expect(updatedSteps.textContent ?? "").toContain("Needs attention");
+    expect(updatedSteps.textContent ?? "").not.toContain("Main perspectivesUpdated");
     expect(document.body.textContent ?? "").not.toContain("waiting_for_generators");
     expect(document.body.textContent ?? "").not.toContain("extraction_output_invalid");
   });

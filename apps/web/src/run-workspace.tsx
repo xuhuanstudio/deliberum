@@ -3322,16 +3322,20 @@ function describeReadableExecutionStatus(
   executionStatus: unknown,
   roundStatus: unknown
 ): string {
+  if (isReadableStageAttentionStatus(roundStatus)) {
+    return "Needs attention";
+  }
+
   if (executionStatus === "executed" && roundStatus === "completed") {
     return "Completed";
   }
 
-  if (executionStatus === "executed") {
-    return "Updated";
-  }
-
   if (executionStatus === "already_running") {
     return "Already in progress";
+  }
+
+  if (executionStatus === "executed") {
+    return "Updated";
   }
 
   if (typeof executionStatus === "string" && executionStatus.length > 0) {
@@ -3343,6 +3347,14 @@ function describeReadableExecutionStatus(
   }
 
   return "Updated";
+}
+
+function isReadableStageAttentionStatus(status: unknown): boolean {
+  if (typeof status !== "string") {
+    return false;
+  }
+
+  return status === "failed" || status === "timed_out" || status.startsWith("waiting_for_");
 }
 
 function humanizeIdentifier(value: string): string {
