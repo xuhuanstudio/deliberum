@@ -1205,6 +1205,27 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
+  it("guides landing users to setup when the local service is unavailable", async () => {
+    const client = createClient({
+      getRuntimeProfiles: vi.fn(async () => {
+        throw new Error("ECONNREFUSED 127.0.0.1:3877");
+      })
+    });
+
+    renderApp("/", client);
+
+    expect(await screen.findByText("Start the local service")).toBeTruthy();
+    expect(
+      screen.getByText("Web cannot read setup or discussions until the local Deliberum service is running.")
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Open Setup / Models for the local start command and model setup steps.")
+    ).toBeTruthy();
+    expect(screen.queryByText("Local service command")).toBeNull();
+    expect(document.body.textContent ?? "").not.toContain("ECONNREFUSED");
+    expect(document.body.textContent ?? "").not.toContain("127.0.0.1:3877");
+  });
+
   it("opens setup and models as a top-level user path", async () => {
     const client = renderApp("/setup/models");
 
@@ -1304,6 +1325,39 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
   });
 
+  it("guides setup users when the local service is unavailable", async () => {
+    const getRuntimeProfiles = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("ECONNREFUSED 127.0.0.1:3877"))
+      .mockResolvedValueOnce({ profiles: [] });
+    const client = createClient({
+      getRuntimeProfiles
+    });
+
+    renderApp("/setup/models", client);
+
+    expect(await screen.findByText("Start the local service")).toBeTruthy();
+    expect(screen.getByText("Local service command")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "corepack pnpm build:packages && corepack pnpm --filter @deliberum/daemon build && node apps/daemon/dist/index.js"
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "This starts the local service only; model API keys are added from Web after it connects."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("3. Configure models in Web")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("ECONNREFUSED");
+    expect(document.body.textContent ?? "").not.toContain("127.0.0.1:3877");
+
+    fireEvent.click(screen.getByRole("button", { name: "Check again" }));
+    await waitFor(() => expect(getRuntimeProfiles).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Model providers")).toBeTruthy();
+    expect(screen.queryByText("Start the local service")).toBeNull();
+  });
+
   it("localizes the setup provider checklist without exposing setup internals", async () => {
     const client = renderApp("/setup/models", createClient(), {
       initialLanguage: "zh-CN"
@@ -1371,6 +1425,26 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
     expect(document.body.textContent ?? "").not.toContain("sk-web-setup-secret");
     expect(document.body.textContent ?? "").not.toContain("runtime profile");
+  });
+
+  it("localizes the local service setup guide without exposing connection diagnostics", async () => {
+    const client = createClient({
+      getRuntimeProfiles: vi.fn(async () => {
+        throw new Error("ECONNREFUSED 127.0.0.1:3877");
+      })
+    });
+
+    renderApp("/setup/models", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    expect(await screen.findByText("\u542f\u52a8\u672c\u5730\u670d\u52a1")).toBeTruthy();
+    expect(screen.getByText("\u672c\u5730\u670d\u52a1\u547d\u4ee4")).toBeTruthy();
+    expect(screen.getByText("1. \u542f\u52a8\u672c\u5730\u670d\u52a1")).toBeTruthy();
+    expect(screen.getByText("3. \u5728 Web \u4e2d\u914d\u7f6e\u6a21\u578b")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "\u518d\u6b21\u68c0\u67e5" })).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("ECONNREFUSED");
+    expect(document.body.textContent ?? "").not.toContain("127.0.0.1:3877");
   });
 
   it("verifies a ready provider connection from setup and models", async () => {
