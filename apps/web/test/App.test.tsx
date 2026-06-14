@@ -1198,6 +1198,20 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
   });
 
+  it("localizes landing setup readiness in Simplified Chinese", async () => {
+    renderApp("/", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect((await screen.findAllByText("\u6a21\u578b\u8bbe\u7f6e")).length).toBeGreaterThan(0);
+    expect(
+      (await screen.findAllByText("\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba")).length
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText("Model setup")).toBeNull();
+    expect(screen.queryByText("Start a demo discussion")).toBeNull();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+  });
+
   it("recommends a model-backed start from the landing readiness overview when a provider is ready", async () => {
     const client = createClient();
     vi.mocked(client.getRuntimeProfiles).mockResolvedValue({

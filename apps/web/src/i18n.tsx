@@ -73,6 +73,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u914d\u7f6e\u6a21\u578b\u524d\uff0c\u8bf7\u5148\u542f\u52a8\u672c\u5730\u670d\u52a1\u3002",
   "Start the local service, then check again.":
     "\u8bf7\u5148\u542f\u52a8\u672c\u5730\u670d\u52a1\uff0c\u7136\u540e\u518d\u6b21\u68c0\u67e5\u3002",
+  "Model setup": "\u6a21\u578b\u8bbe\u7f6e",
   "Model setup unavailable": "\u6a21\u578b\u8bbe\u7f6e\u4e0d\u53ef\u7528",
   "Web is checking whether demo or model-backed participants are ready.":
     "Web \u6b63\u5728\u68c0\u67e5\u6f14\u793a\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u662f\u5426\u5df2\u5c31\u7eea\u3002",
@@ -120,6 +121,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Start the real discussion": "\u5f00\u59cb\u771f\u5b9e\u8ba8\u8bba",
   "Open the discussion room with configured model participants selected.":
     "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u5e76\u9009\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
+  "Start a demo discussion": "\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba",
   "Open the discussion room with built-in demo participants.":
     "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u5e76\u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\u3002",
   "Complete setup before creating useful discussion material.":
