@@ -4553,7 +4553,7 @@ function FinalPage() {
         <DataPanel
           title={t("Current conclusion")}
           description={t(
-            "A readable summary of the current result. Advanced details keep technical provenance and developer controls."
+            "A readable summary of the current result. Advanced details keep source details and developer diagnostics out of the default view."
           )}
         >
           <OutcomeBrief outcome={outcome} context={outcomeContext} />

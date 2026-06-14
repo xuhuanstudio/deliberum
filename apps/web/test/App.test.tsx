@@ -5842,10 +5842,14 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
     expect(screen.getByText("Current conclusion remains provisional")).toBeTruthy();
-    expect(screen.getAllByText(/Use the daemon-backed final projection/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Use the current conclusion as reviewable material.")).toBeTruthy();
     expect(screen.getByText("Unresolved questions")).toBeTruthy();
     expect(screen.getAllByText(/Evidence coverage remains incomplete/).length).toBeGreaterThan(0);
     const defaultPageText = document.body.textContent ?? "";
+    expect(defaultPageText).not.toContain("daemon-backed final projection");
+    expect(defaultPageText).not.toContain("final projection");
+    expect(defaultPageText).not.toContain("accepted proposal material");
+    expect(defaultPageText).toContain("Compiled from accepted discussion material only.");
     expect(defaultPageText).not.toContain("Candidate proposal event");
     expect(defaultPageText).not.toContain("final-candidate-event-1");
     expect(defaultPageText).not.toContain("Provenance");
@@ -5866,6 +5870,27 @@ describe("@deliberum/web shell", () => {
         (element) => element.textContent
       )
     ).toEqual(["Current conclusion"]);
+  });
+
+  it("localizes user-facing outcome wording without exposing internal projection terms", async () => {
+    renderApp("/sessions/session-1/final", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect((await screen.findAllByText("\u5f53\u524d\u7ed3\u8bba")).length).toBeGreaterThan(0);
+    await screen.findByText(
+      "\u5c06\u5f53\u524d\u7ed3\u8bba\u4f5c\u4e3a\u53ef\u5ba1\u9605\u6750\u6599\u3002"
+    );
+    expect(
+      screen.getByText(
+        "\u4ec5\u6839\u636e\u5df2\u63a5\u53d7\u7684\u8ba8\u8bba\u6750\u6599\u7f16\u5236\u3002"
+      )
+    ).toBeTruthy();
+
+    const defaultPageText = document.body.textContent ?? "";
+    expect(defaultPageText).not.toContain("daemon-backed final projection");
+    expect(defaultPageText).not.toContain("event_ledger_and_projections");
+    expect(defaultPageText).not.toContain("final-candidate-event-1");
   });
 
   it("compiles session final projection for a selected proposal event", async () => {

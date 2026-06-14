@@ -1487,7 +1487,7 @@ export function RunOutcomePage() {
               <DataPanel
                 title={t("Current conclusion")}
                 description={t(
-                  "A readable summary of the current result. Advanced details keep the underlying technical response for developers."
+                  "A readable summary of the current result. Advanced details keep source details and developer diagnostics out of the default view."
                 )}
               >
                 <OutcomeBrief outcome={outcome.outcome} context={contextQueries.context} />
@@ -4904,19 +4904,24 @@ export function OutcomeBrief({
   context?: OutcomeBriefContext;
 }) {
   const { t } = useI18n();
-  const recommendation =
+  const recommendation = formatOutcomeTextForUser(
     getStringRecordValue(outcome, "recommendation") ??
     getStringRecordValue(outcome, "summary") ??
-    t("No current conclusion is available yet.");
-  const unresolvedQuestions = getStringArray(getRecordValue(outcome, "unresolvedQuestions"));
-  const limitations = getStringArray(getRecordValue(outcome, "limitations"));
+    t("No current conclusion is available yet.")
+  );
+  const unresolvedQuestions = getStringArray(
+    getRecordValue(outcome, "unresolvedQuestions")
+  ).map(formatOutcomeTextForUser);
+  const limitations = getStringArray(getRecordValue(outcome, "limitations")).map(
+    formatOutcomeTextForUser
+  );
   const risksAndBoundaries = uniqueReadableStrings([
-    ...getOutcomeAuditRisks(outcome),
+    ...getOutcomeAuditRisks(outcome).map(formatOutcomeTextForUser),
     ...limitations
   ]);
   const continuationSuggestions = getStringArray(
     getRecordValue(outcome, "continuationSuggestions")
-  );
+  ).map(formatOutcomeTextForUser);
   const alternatives = asArray(getRecordValue(outcome, "alternatives"));
   const unresolvedObjections = asArray(getRecordValue(outcome, "unresolvedObjections"));
   const qualityObligations = asArray(getRecordValue(outcome, "qualityObligations"));
@@ -5193,6 +5198,81 @@ function uniqueReadableStrings(values: string[]): string[] {
   return result;
 }
 
+const OUTCOME_INTERNAL_PHRASE_REPLACEMENTS: readonly {
+  pattern: RegExp;
+  replacement: string;
+}[] = [
+  {
+    pattern: /\bdaemon-backed final projection\b/gi,
+    replacement: "current conclusion"
+  },
+  {
+    pattern: /\bfinal projection\b/gi,
+    replacement: "current conclusion"
+  },
+  {
+    pattern: /\bevent_ledger_and_projections\b/gi,
+    replacement: "discussion history"
+  },
+  {
+    pattern: /\bevent ledger and projections\b/gi,
+    replacement: "discussion history"
+  },
+  {
+    pattern: /\baccepted proposal material\b/gi,
+    replacement: "accepted discussion material"
+  },
+  {
+    pattern: /\bcandidate proposal event\b/gi,
+    replacement: "candidate option"
+  },
+  {
+    pattern: /\bproposal event\b/gi,
+    replacement: "discussion update"
+  },
+  {
+    pattern: /\blocal daemon\b/gi,
+    replacement: "local service"
+  }
+];
+
+const OUTCOME_INTERNAL_ID_PATTERN = new RegExp(
+  "\\b(?:final-candidate-event|final-audit-event|process-proposal|proposal-event|final-candidate|final-audit|proposal|candidate|session|run|event)-[a-z0-9][a-z0-9-]*\\b",
+  "gi"
+);
+
+function formatOutcomeTextForUser(value: string): string {
+  let formatted = value.trim();
+
+  for (const { pattern, replacement } of OUTCOME_INTERNAL_PHRASE_REPLACEMENTS) {
+    formatted = replaceOutcomePhrase(formatted, pattern, replacement);
+  }
+
+  formatted = replaceOutcomePhrase(
+    formatted,
+    OUTCOME_INTERNAL_ID_PATTERN,
+    "discussion item"
+  );
+
+  return formatted;
+}
+
+function replaceOutcomePhrase(
+  value: string,
+  pattern: RegExp,
+  replacement: string
+): string {
+  return value.replace(pattern, (match) =>
+    /^[A-Z]/.test(match) ? capitalizeOutcomePhrase(replacement) : replacement
+  );
+}
+
+function capitalizeOutcomePhrase(value: string): string {
+  return value.length === 0
+    ? value
+    : `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+}
+
 function isUnresolvedEvidenceNeed(entry: unknown): boolean {
   const object = getRecordValue(entry, "object") ?? entry;
   const status = getStringRecordValue(object, "status");
@@ -5387,7 +5467,7 @@ function summarizeOutcomeRecord(
     return {
       kicker: options.fallbackKicker,
       title: options.fallbackTitle,
-      detail: item
+      detail: formatOutcomeTextForUser(item)
     };
   }
 
@@ -5396,12 +5476,14 @@ function summarizeOutcomeRecord(
 
   return {
     kicker: status ? formatOutcomeRecordStatusForUser(t, status) : options.fallbackKicker,
-    title:
+    title: formatOutcomeTextForUser(
       getFirstStringRecordValue(object, options.titleKeys) ??
-      options.fallbackTitle,
-    detail:
+      options.fallbackTitle
+    ),
+    detail: formatOutcomeTextForUser(
       getFirstStringRecordValue(object, options.detailKeys) ??
       options.fallbackDetail
+    )
   };
 }
 

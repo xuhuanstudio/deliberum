@@ -972,8 +972,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions.":
     "\u5c06\u5f53\u524d\u7ed3\u8bba\u4e0e\u4e3b\u8981\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u4e00\u8d77\u5ba1\u9605\u3002",
   "Back to discussion": "\u8fd4\u56de\u8ba8\u8bba",
-  "A readable summary of the current result. Advanced details keep the underlying technical response for developers.":
-    "\u5f53\u524d\u7ed3\u679c\u7684\u53ef\u8bfb\u6458\u8981\u3002\u5e95\u5c42\u6280\u672f\u54cd\u5e94\u4fdd\u7559\u5728\u9ad8\u7ea7\u8be6\u60c5\u4e2d\u4f9b\u5f00\u53d1\u8005\u67e5\u770b\u3002",
+  "A readable summary of the current result. Advanced details keep source details and developer diagnostics out of the default view.":
+    "\u5f53\u524d\u7ed3\u679c\u7684\u53ef\u8bfb\u6458\u8981\u3002\u6765\u6e90\u8be6\u60c5\u548c\u5f00\u53d1\u8005\u8bca\u65ad\u4fdd\u7559\u5728\u9ad8\u7ea7\u8be6\u60c5\u4e2d\uff0c\u4e0d\u4f1a\u51fa\u73b0\u5728\u9ed8\u8ba4\u89c6\u56fe\u3002",
   "Current conclusion not available": "\u5f53\u524d\u7ed3\u8bba\u4e0d\u53ef\u7528",
   "The discussion has not produced conclusion-ready material yet. Continue the guided discussion before opening the current conclusion.":
     "\u8ba8\u8bba\u5c1a\u672a\u751f\u6210\u53ef\u8fdb\u5165\u7ed3\u8bba\u9636\u6bb5\u7684\u6750\u6599\u3002\u8bf7\u5148\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u518d\u6253\u5f00\u5f53\u524d\u7ed3\u8bba\u3002",
@@ -995,6 +995,10 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "No current conclusion is available yet.": "\u5f53\u524d\u8fd8\u6ca1\u6709\u53ef\u7528\u7ed3\u8bba\u3002",
   "Current conclusion snapshot": "\u5f53\u524d\u7ed3\u8bba\u5feb\u7167",
   "Current recommendation": "\u5f53\u524d\u5efa\u8bae",
+  "Use the current conclusion as reviewable material.":
+    "\u5c06\u5f53\u524d\u7ed3\u8bba\u4f5c\u4e3a\u53ef\u5ba1\u9605\u6750\u6599\u3002",
+  "Compiled from accepted discussion material only.":
+    "\u4ec5\u6839\u636e\u5df2\u63a5\u53d7\u7684\u8ba8\u8bba\u6750\u6599\u7f16\u5236\u3002",
   "Risks and boundaries": "\u98ce\u9669\u4e0e\u8fb9\u754c",
   "Conclusion review path": "\u7ed3\u8bba\u5ba1\u9605\u8def\u5f84",
   "Review path": "\u5ba1\u9605\u8def\u5f84",
@@ -1179,8 +1183,6 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Current conclusion compiled": "\u5f53\u524d\u7ed3\u8bba\u5df2\u7f16\u5236",
   "This is reviewable deliberation material. It should keep open disagreements, risks, evidence gaps, and next actions visible.":
     "\u8fd9\u662f\u53ef\u5ba1\u9605\u7684\u5ba1\u8bae\u6750\u6599\u3002\u5b83\u5e94\u6301\u7eed\u5c55\u793a\u672a\u89e3\u51b3\u5206\u6b67\u3001\u98ce\u9669\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u3002",
-  "A readable summary of the current result. Advanced details keep technical provenance and developer controls.":
-    "\u5f53\u524d\u7ed3\u679c\u7684\u53ef\u8bfb\u6458\u8981\u3002\u6280\u672f\u6765\u6e90\u548c\u5f00\u53d1\u8005\u63a7\u5236\u4fdd\u7559\u5728\u9ad8\u7ea7\u8be6\u60c5\u4e2d\u3002",
   "Missing evidence, verification needs, and risks are shown together so they can be resolved before relying on the conclusion.":
     "\u7f3a\u5931\u8bc1\u636e\u3001\u9a8c\u8bc1\u9700\u6c42\u548c\u98ce\u9669\u4f1a\u4e00\u8d77\u5c55\u793a\uff0c\u4ee5\u4fbf\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u5148\u89e3\u51b3\u5b83\u4eec\u3002",
   "This page focuses on what still needs to be checked. Technical access details remain in Advanced mode.":
