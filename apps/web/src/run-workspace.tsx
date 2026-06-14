@@ -2716,6 +2716,10 @@ export function OutcomeBrief({
     context.answerRequirements
   );
   const unresolvedEvidenceNeeds = visibleEvidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
+  const openQualityObligations = countRecordsWithoutStatus(
+    visibleQualityObligations,
+    "satisfied"
+  );
   const mainPerspectiveDetail =
     alternatives.length > 0
       ? describeOutcomeCount(t, alternatives.length, "explored option", "explored options")
@@ -2800,7 +2804,7 @@ export function OutcomeBrief({
           <h4>{t("Before relying on this conclusion")}</h4>
           <p>
             {t(
-              "Start with the recommendation, then check the visible disagreements, evidence gaps, risks, and next recommended actions."
+              "Start with the recommendation, then check disagreements, evidence gaps, risks, answer requirements, and next recommended actions."
             )}
           </p>
         </div>
@@ -2835,6 +2839,28 @@ export function OutcomeBrief({
             tone={unresolvedEvidenceNeeds > 0 ? "warning" : "ok"}
           />
           <OutcomeReviewPathItem
+            href="#risks-and-boundaries"
+            title={t("Review risks and boundaries")}
+            detail={describeReviewItemCount(
+              t,
+              risksAndBoundaries.length,
+              "risk or boundary to review",
+              "risks or boundaries to review"
+            )}
+            tone={risksAndBoundaries.length > 0 ? "warning" : "ok"}
+          />
+          <OutcomeReviewPathItem
+            href="#answer-requirements"
+            title={t("Confirm answer requirements")}
+            detail={describeReviewItemCount(
+              t,
+              openQualityObligations,
+              "answer requirement needs confirmation",
+              "answer requirements need confirmation"
+            )}
+            tone={openQualityObligations > 0 ? "warning" : "ok"}
+          />
+          <OutcomeReviewPathItem
             href="#next-recommended-actions"
             title={t("Use next recommended actions")}
             detail={nextActionDetail}
@@ -2849,6 +2875,7 @@ export function OutcomeBrief({
           emptyTitle="No unresolved questions listed"
         />
         <ReadableStringList
+          id="risks-and-boundaries"
           title="Risks and boundaries"
           items={risksAndBoundaries}
           emptyTitle="No risks or boundaries listed"

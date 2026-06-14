@@ -3069,6 +3069,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Read the recommendation")).toBeTruthy();
     expect(screen.getByText("Review open disagreements")).toBeTruthy();
     expect(screen.getByText("Check missing evidence")).toBeTruthy();
+    expect(screen.getByText("Review risks and boundaries")).toBeTruthy();
+    expect(screen.getByText("Confirm answer requirements")).toBeTruthy();
     expect(screen.getByText("Use next recommended actions")).toBeTruthy();
     expect(
       screen.getByText("Read the recommendation").closest("a")?.getAttribute("href")
@@ -3080,14 +3082,24 @@ describe("@deliberum/web shell", () => {
       screen.getByText("Check missing evidence").closest("a")?.getAttribute("href")
     ).toBe("#missing-evidence");
     expect(
+      screen.getByText("Review risks and boundaries").closest("a")?.getAttribute("href")
+    ).toBe("#risks-and-boundaries");
+    expect(
+      screen.getByText("Confirm answer requirements").closest("a")?.getAttribute("href")
+    ).toBe("#answer-requirements");
+    expect(
       screen.getByText("Use next recommended actions").closest("a")?.getAttribute("href")
     ).toBe("#next-recommended-actions");
     expect(document.getElementById("current-recommendation")).toBeTruthy();
     expect(document.getElementById("open-disagreements")).toBeTruthy();
     expect(document.getElementById("missing-evidence")).toBeTruthy();
+    expect(document.getElementById("risks-and-boundaries")).toBeTruthy();
+    expect(document.getElementById("answer-requirements")).toBeTruthy();
     expect(document.getElementById("next-recommended-actions")).toBeTruthy();
     expect(screen.getByText("1 open disagreement needs review")).toBeTruthy();
     expect(screen.getByText("1 of 1 evidence gap needs verification")).toBeTruthy();
+    expect(screen.getByText("2 risks or boundaries to review")).toBeTruthy();
+    expect(screen.getByText("1 answer requirement needs confirmation")).toBeTruthy();
     expect(screen.getByText("1 recommended next action")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Missing evidence").length).toBeGreaterThan(0);

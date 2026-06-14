@@ -239,12 +239,13 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Conclusion review path": "\u7ed3\u8bba\u5ba1\u9605\u8def\u5f84",
   "Review path": "\u5ba1\u9605\u8def\u5f84",
   "Before relying on this conclusion": "\u5728\u4f9d\u8d56\u6b64\u7ed3\u8bba\u4e4b\u524d",
-  "Start with the recommendation, then check the visible disagreements, evidence gaps, risks, and next recommended actions.":
-    "\u5148\u9605\u8bfb\u5efa\u8bae\uff0c\u518d\u68c0\u67e5\u53ef\u89c1\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
+  "Start with the recommendation, then check disagreements, evidence gaps, risks, answer requirements, and next recommended actions.":
+    "\u5148\u9605\u8bfb\u5efa\u8bae\uff0c\u518d\u68c0\u67e5\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u3001\u7b54\u6848\u8981\u6c42\u548c\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
   "Read the recommendation": "\u9605\u8bfb\u5efa\u8bae",
   "Use the current recommendation as reviewable material, not as an unquestioned final answer.":
     "\u5c06\u5f53\u524d\u5efa\u8bae\u4f5c\u4e3a\u53ef\u5ba1\u9605\u6750\u6599\uff0c\u800c\u4e0d\u662f\u65e0\u9700\u8d28\u7591\u7684\u6700\u7ec8\u7b54\u6848\u3002",
   "Check missing evidence": "\u68c0\u67e5\u7f3a\u5931\u8bc1\u636e",
+  "Review risks and boundaries": "\u5ba1\u9605\u98ce\u9669\u4e0e\u8fb9\u754c",
   "Use next recommended actions": "\u4f7f\u7528\u4e0b\u4e00\u6b65\u5efa\u8bae",
   "Unresolved questions": "\u672a\u89e3\u51b3\u95ee\u9898",
   "No unresolved questions listed": "\u5c1a\u672a\u5217\u51fa\u672a\u89e3\u51b3\u95ee\u9898",
@@ -292,6 +293,10 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "recommended next actions": "\u4e0b\u4e00\u6b65\u5efa\u8bae",
   "open disagreement needs review": "\u9700\u8981\u5ba1\u9605\u7684\u672a\u89e3\u51b3\u5206\u6b67",
   "open disagreements need review": "\u9700\u8981\u5ba1\u9605\u7684\u672a\u89e3\u51b3\u5206\u6b67",
+  "risk or boundary to review": "\u9700\u8981\u5ba1\u9605\u7684\u98ce\u9669\u6216\u8fb9\u754c",
+  "risks or boundaries to review": "\u9700\u8981\u5ba1\u9605\u7684\u98ce\u9669\u6216\u8fb9\u754c",
+  "answer requirement needs confirmation": "\u9700\u8981\u786e\u8ba4\u7684\u7b54\u6848\u8981\u6c42",
+  "answer requirements need confirmation": "\u9700\u8981\u786e\u8ba4\u7684\u7b54\u6848\u8981\u6c42",
   "No evidence gaps listed": "\u5c1a\u672a\u5217\u51fa\u8bc1\u636e\u7f3a\u53e3",
   "{unresolved}/{total} still need checking": "{unresolved}/{total} \u4ecd\u9700\u6838\u67e5",
   "No evidence gaps are listed.": "\u5c1a\u672a\u5217\u51fa\u8bc1\u636e\u7f3a\u53e3\u3002",
