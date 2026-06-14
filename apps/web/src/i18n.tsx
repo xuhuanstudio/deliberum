@@ -318,11 +318,78 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Open disagreement": "\u672a\u89e3\u51b3\u5206\u6b67",
   "Evidence gap": "\u8bc1\u636e\u7f3a\u53e3",
   Requirement: "\u8981\u6c42",
+  Requirements: "\u8981\u6c42",
+  Loading: "\u52a0\u8f7d\u4e2d",
+  "Risks and evidence": "\u98ce\u9669\u4e0e\u8bc1\u636e",
+  "Ledger events": "\u8d26\u672c\u4e8b\u4ef6",
+  "Question or topic": "\u95ee\u9898\u6216\u4e3b\u9898",
+  "No discussion brief available yet": "\u5c1a\u65e0\u53ef\u7528\u8ba8\u8bba\u7b80\u62a5",
+  "Latest visible step": "\u6700\u65b0\u53ef\u89c1\u6b65\u9aa4",
+  "Review this discussion": "\u5ba1\u9605\u672c\u6b21\u8ba8\u8bba",
+  "View main perspectives": "\u67e5\u770b\u4e3b\u8981\u89c2\u70b9",
+  "Review risks and evidence": "\u5ba1\u9605\u98ce\u9669\u4e0e\u8bc1\u636e",
+  "Continue the discussion": "\u7ee7\u7eed\u8ba8\u8bba",
+  "Evidence gaps visible": "\u5b58\u5728\u8bc1\u636e\u7f3a\u53e3",
+  "No evidence gaps visible": "\u6682\u65e0\u53ef\u89c1\u8bc1\u636e\u7f3a\u53e3",
+  "No missing evidence yet": "\u5c1a\u65e0\u7f3a\u5931\u8bc1\u636e",
   "{kind} {number}": "{kind} {number}",
   "Current state: {status}": "\u5f53\u524d\u72b6\u6001\uff1a{status}",
   "Visible in this discussion": "\u5728\u672c\u6b21\u8ba8\u8bba\u4e2d\u53ef\u89c1",
   "Still open": "\u4ecd\u672a\u89e3\u51b3",
   "Needs an answer": "\u9700\u8981\u56de\u7b54",
+  "{count} update in this discussion so far.":
+    "\u672c\u6b21\u8ba8\u8bba\u76ee\u524d\u6709 {count} \u6761\u66f4\u65b0\u3002",
+  "{count} updates in this discussion so far.":
+    "\u672c\u6b21\u8ba8\u8bba\u76ee\u524d\u6709 {count} \u6761\u66f4\u65b0\u3002",
+  "The human-facing starting point for this discussion: what is being decided and where the discussion currently stands.":
+    "\u672c\u6b21\u8ba8\u8bba\u9762\u5411\u4eba\u7684\u8d77\u70b9\uff1a\u6b63\u5728\u51b3\u5b9a\u4ec0\u4e48\uff0c\u4ee5\u53ca\u8ba8\u8bba\u5f53\u524d\u8fdb\u5c55\u5230\u54ea\u91cc\u3002",
+  "The discussion setup is shown here in plain language.":
+    "\u8fd9\u91cc\u7528\u81ea\u7136\u8bed\u8a00\u5c55\u793a\u8ba8\u8bba\u8bbe\u7f6e\u3002",
+  "A quick human-readable snapshot of what is ready to inspect next.":
+    "\u4e00\u4efd\u53ef\u8bfb\u5feb\u7167\uff0c\u663e\u793a\u63a5\u4e0b\u6765\u53ef\u4ee5\u68c0\u67e5\u4ec0\u4e48\u3002",
+  "missing evidence item": "\u7f3a\u5931\u8bc1\u636e\u9879",
+  "missing evidence items": "\u7f3a\u5931\u8bc1\u636e\u9879",
+  "Start with the conclusion, then inspect the material that could change it.":
+    "\u5148\u67e5\u770b\u7ed3\u8bba\uff0c\u518d\u68c0\u67e5\u53ef\u80fd\u6539\u53d8\u7ed3\u8bba\u7684\u6750\u6599\u3002",
+  "Resolve evidence gaps before treating the conclusion as reliable.":
+    "\u5728\u628a\u7ed3\u8bba\u89c6\u4e3a\u53ef\u9760\u4e4b\u524d\uff0c\u5148\u89e3\u51b3\u8bc1\u636e\u7f3a\u53e3\u3002",
+  "Open disagreements show where the conclusion is still constrained.":
+    "\u672a\u89e3\u51b3\u5206\u6b67\u4f1a\u663e\u793a\u7ed3\u8bba\u4ecd\u53d7\u5230\u54ea\u4e9b\u7ea6\u675f\u3002",
+  "Unanswered requirements should be satisfied or explicitly acknowledged.":
+    "\u5c1a\u672a\u56de\u7b54\u7684\u8981\u6c42\u5e94\u88ab\u6ee1\u8db3\uff0c\u6216\u88ab\u660e\u786e\u8bf4\u660e\u3002",
+  "No main perspectives are visible yet. Continue the guided discussion before relying on the result.":
+    "\u5c1a\u65e0\u53ef\u89c1\u4e3b\u8981\u89c2\u70b9\u3002\u8bf7\u5728\u4f9d\u8d56\u7ed3\u679c\u524d\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\u3002",
+  "Open the current conclusion to see the result, caveats, and next steps together.":
+    "\u6253\u5f00\u5f53\u524d\u7ed3\u8bba\uff0c\u4e00\u8d77\u67e5\u770b\u7ed3\u679c\u3001\u6ce8\u610f\u4e8b\u9879\u548c\u4e0b\u4e00\u6b65\u3002",
+  "The strongest current options stay visible without selecting one hidden answer.":
+    "\u5f53\u524d\u6700\u5f3a\u9009\u9879\u4fdd\u6301\u53ef\u89c1\uff0c\u800c\u4e0d\u4f1a\u6697\u4e2d\u9009\u5b9a\u4e00\u4e2a\u7b54\u6848\u3002",
+  "These are the strongest currently visible perspectives. They remain open to challenge while the discussion continues.":
+    "\u8fd9\u4e9b\u662f\u5f53\u524d\u53ef\u89c1\u7684\u6700\u5f3a\u89c6\u89d2\u3002\u5728\u8ba8\u8bba\u7ee7\u7eed\u65f6\uff0c\u5b83\u4eec\u4ecd\u7136\u53ef\u88ab\u6311\u6218\u3002",
+  "No active candidates": "\u6682\u65e0\u6d3b\u8dc3\u5019\u9009\u9879",
+  "Objections stay visible as unresolved disagreements that can still constrain the conclusion.":
+    "\u53cd\u5bf9\u610f\u89c1\u4f1a\u4ee5\u672a\u89e3\u51b3\u5206\u6b67\u7684\u5f62\u5f0f\u4fdd\u6301\u53ef\u89c1\uff0c\u5e76\u53ef\u80fd\u4ecd\u7136\u7ea6\u675f\u7ed3\u8bba\u3002",
+  "These are challenges, failure modes, or unresolved concerns raised against the current options.":
+    "\u8fd9\u4e9b\u662f\u9488\u5bf9\u5f53\u524d\u9009\u9879\u63d0\u51fa\u7684\u6311\u6218\u3001\u5931\u8d25\u6a21\u5f0f\u6216\u672a\u89e3\u51b3\u62c5\u5fe7\u3002",
+  "Explicit requirements keep the conclusion correct, bounded, and complete.":
+    "\u660e\u786e\u8981\u6c42\u7528\u6765\u4fdd\u6301\u7ed3\u8bba\u6b63\u786e\u3001\u6709\u8fb9\u754c\u4e14\u5b8c\u6574\u3002",
+  "Unanswered requirements should be resolved before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u5e94\u5148\u89e3\u51b3\u5c1a\u672a\u56de\u7b54\u7684\u8981\u6c42\u3002",
+  "No requirements listed": "\u5c1a\u672a\u5217\u51fa\u8981\u6c42",
+  "Append-only event records are shown as returned by the daemon for debugging and audit inspection.":
+    "\u8ffd\u52a0\u5f0f\u4e8b\u4ef6\u8bb0\u5f55\u6309\u5b88\u62a4\u8fdb\u7a0b\u8fd4\u56de\u7684\u5f62\u5f0f\u5c55\u793a\uff0c\u7528\u4e8e\u8c03\u8bd5\u548c\u5ba1\u8ba1\u68c0\u67e5\u3002",
+  "Current conclusion compiled": "\u5f53\u524d\u7ed3\u8bba\u5df2\u7f16\u5236",
+  "This is reviewable deliberation material. It should keep open disagreements, risks, evidence gaps, and next actions visible.":
+    "\u8fd9\u662f\u53ef\u5ba1\u9605\u7684\u5ba1\u8bae\u6750\u6599\u3002\u5b83\u5e94\u6301\u7eed\u5c55\u793a\u672a\u89e3\u51b3\u5206\u6b67\u3001\u98ce\u9669\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u3002",
+  "A readable summary of the current result. Advanced details keep technical provenance and developer controls.":
+    "\u5f53\u524d\u7ed3\u679c\u7684\u53ef\u8bfb\u6458\u8981\u3002\u6280\u672f\u6765\u6e90\u548c\u5f00\u53d1\u8005\u63a7\u5236\u4fdd\u7559\u5728\u9ad8\u7ea7\u8be6\u60c5\u4e2d\u3002",
+  "Missing evidence, verification needs, and risks are shown together so they can be resolved before relying on the conclusion.":
+    "\u7f3a\u5931\u8bc1\u636e\u3001\u9a8c\u8bc1\u9700\u6c42\u548c\u98ce\u9669\u4f1a\u4e00\u8d77\u5c55\u793a\uff0c\u4ee5\u4fbf\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u5148\u89e3\u51b3\u5b83\u4eec\u3002",
+  "This page focuses on what still needs to be checked. Technical access details remain in Advanced mode.":
+    "\u6b64\u9875\u9762\u805a\u7126\u4ecd\u9700\u68c0\u67e5\u7684\u5185\u5bb9\u3002\u6280\u672f\u8bbf\u95ee\u7ec6\u8282\u4fdd\u7559\u5728\u9ad8\u7ea7\u6a21\u5f0f\u4e2d\u3002",
+  "Missing evidence items are user-facing verification work, not low-level access state.":
+    "\u7f3a\u5931\u8bc1\u636e\u9879\u662f\u9762\u5411\u7528\u6237\u7684\u9a8c\u8bc1\u5de5\u4f5c\uff0c\u800c\u4e0d\u662f\u5e95\u5c42\u8bbf\u95ee\u72b6\u6001\u3002",
+  "This discussion has not surfaced missing evidence items yet.":
+    "\u672c\u6b21\u8ba8\u8bba\u5c1a\u672a\u5448\u73b0\u7f3a\u5931\u8bc1\u636e\u9879\u3002",
   "Advanced / Developer Mode": "\u9ad8\u7ea7 / \u5f00\u53d1\u8005\u6a21\u5f0f",
   "Checking daemon": "\u6b63\u5728\u68c0\u67e5\u5b88\u62a4\u8fdb\u7a0b",
   "Daemon unavailable": "\u5b88\u62a4\u8fdb\u7a0b\u4e0d\u53ef\u7528",

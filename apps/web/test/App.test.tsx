@@ -1262,6 +1262,37 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("topic_contract_published")).toBeTruthy();
   });
 
+  it("localizes session user-mode pages while keeping technical ids in Advanced mode", async () => {
+    const client = renderApp("/sessions/session-1", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect((await screen.findAllByText("\u8ba8\u8bba\u7b80\u62a5")).length).toBeGreaterThan(0);
+    expect((screen.getByLabelText("\u8bed\u8a00") as HTMLSelectElement).value).toBe("zh-CN");
+    await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
+    expect(screen.getByText("\u6700\u65b0\u53ef\u89c1\u6b65\u9aa4")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5\u5df2\u53d1\u5e03")).toBeTruthy();
+    expect(screen.getByText("\u5ba1\u9605\u672c\u6b21\u8ba8\u8bba")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "\u67e5\u770b\u5f53\u524d\u7ed3\u8bba" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "\u67e5\u770b\u4e3b\u8981\u89c2\u70b9" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "\u5ba1\u9605\u98ce\u9669\u4e0e\u8bc1\u636e" })).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("topic_contract_published");
+    expect(document.body.textContent ?? "").not.toContain("View current conclusion");
+
+    cleanup();
+
+    const frontierClient = renderApp("/sessions/session-1/frontier", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect((await screen.findAllByText("\u4e3b\u8981\u89c2\u70b9")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(frontierClient.getFrontier).toHaveBeenCalledWith("session-1"));
+    expect(screen.getByText("\u5f53\u524d\u72b6\u6001\uff1a\u5728\u672c\u6b21\u8ba8\u8bba\u4e2d\u53ef\u89c1")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("candidate-1");
+  });
+
   it("shows the full discussion brief in user mode", async () => {
     const client = createClient({
       listEvents: vi.fn(async () => ({

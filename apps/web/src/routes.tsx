@@ -918,20 +918,24 @@ function isTechnicalSessionTitle(value: string): boolean {
 }
 
 function formatOverviewCount(
+  t: (message: string, values?: Record<string, string | number>) => string,
   query: { isLoading: boolean; isError: boolean },
   records: unknown[],
   singular: string,
   plural: string
 ): string {
   if (query.isLoading) {
-    return "Loading";
+    return t("Loading");
   }
 
   if (query.isError) {
-    return "Unavailable";
+    return t("Unavailable");
   }
 
-  return `${records.length} ${records.length === 1 ? singular : plural}`;
+  return t("{count} {item}", {
+    count: records.length,
+    item: t(records.length === 1 ? singular : plural)
+  });
 }
 
 type SessionReadableKind = "perspective" | "disagreement" | "requirement" | "evidence";
@@ -974,9 +978,14 @@ function ReadableSessionRecord({
   index: number;
   kind: SessionReadableKind;
 }) {
+  const { t } = useI18n();
   const object = getRecordValue(record, "object") ?? record;
   const id = getStringRecordValue(object, "id") ?? `${kind}-${index + 1}`;
-  const fallbackTitle = `${formatReadableKind(kind)} ${index + 1}`;
+  const readableKind = formatReadableKind(kind);
+  const fallbackTitle = t("{kind} {number}", {
+    kind: t(readableKind),
+    number: index + 1
+  });
   const title =
     getFirstDisplayValue(object, ["title", "name", "question", "requirement", "failureMode"]) ??
     fallbackTitle;
@@ -989,16 +998,20 @@ function ReadableSessionRecord({
       "consequence",
       "requirement"
     ]) ?? getReadableFallbackDetail(kind);
-  const status = formatReadableStatus(getRecordValue(object, "status"));
+  const status = t(formatReadableStatus(getRecordValue(object, "status")));
   const proposalEventId = formatRecordValue(getRecordValue(record, "proposalEventId"));
   const sourceEventIds = formatRecordIdList(asArray(getRecordValue(object, "sourceEventIds")));
 
   return (
     <article className="du-readable-item">
-      <p className="du-kicker">{formatReadableKind(kind)} {index + 1}</p>
-      <h4>{title}</h4>
-      {detail !== title ? <p>{detail}</p> : null}
-      <p className="du-readable-meta">Current state: {status}</p>
+      <p className="du-kicker">{fallbackTitle}</p>
+      <h4>{t(title)}</h4>
+      {detail !== title ? <p>{t(detail)}</p> : null}
+      <p className="du-readable-meta">
+        {t("Current state: {status}", {
+          status
+        })}
+      </p>
       <AdvancedDetails summary="Advanced / Developer Mode" lazy>
         <KeyValueGrid
           items={[
@@ -1036,7 +1049,7 @@ function getFirstDisplayValue(record: unknown, keys: readonly string[]): string 
 
 function formatReadableKind(kind: SessionReadableKind): string {
   if (kind === "perspective") {
-    return "Perspective";
+    return "Main perspective";
   }
 
   if (kind === "disagreement") {
@@ -1336,18 +1349,27 @@ function getStringArray(value: unknown): string[] {
   );
 }
 
-function formatBriefItemList(items: readonly string[]): string {
-  return items.map((item) => item.trim()).filter((item) => item.length > 0).join(" ");
+function formatTranslatedTextList(
+  t: (message: string, values?: Record<string, string | number>) => string,
+  items: readonly string[]
+): string {
+  return items
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+    .map((item) => t(item))
+    .join(" ");
 }
 
 function SessionRoute() {
   const { sessionId } = useSessionParams();
+  const { t } = useI18n();
 
   return (
     <WorkspaceShell
       productName="Deliberum"
-      workspaceLabel="User Mode"
+      workspaceLabel={t("User Mode")}
       navigation={<SessionNavigation sessionId={sessionId} />}
+      status={<LanguageSwitcher />}
     >
       <Outlet />
     </WorkspaceShell>
@@ -1355,6 +1377,7 @@ function SessionRoute() {
 }
 
 function SessionNavigation({ sessionId }: { sessionId: string }) {
+  const { t } = useI18n();
   const linkClass = "du-nav-link";
 
   return (
@@ -1366,7 +1389,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Discussion brief
+        {t("Discussion brief")}
       </Link>
       <Link
         to="/sessions/$sessionId/frontier"
@@ -1374,7 +1397,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Main perspectives
+        {t("Main perspectives")}
       </Link>
       <Link
         to="/sessions/$sessionId/objections"
@@ -1382,7 +1405,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Open disagreements
+        {t("Open disagreements")}
       </Link>
       <Link
         to="/sessions/$sessionId/obligations"
@@ -1390,7 +1413,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Requirements
+        {t("Requirements")}
       </Link>
       <Link
         to="/sessions/$sessionId/final"
@@ -1398,7 +1421,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Current conclusion
+        {t("Current conclusion")}
       </Link>
       <Link
         to="/sessions/$sessionId/resources"
@@ -1406,17 +1429,17 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Risks and evidence
+        {t("Risks and evidence")}
       </Link>
       <details className="du-nav-advanced">
-        <summary>Advanced / Developer Mode</summary>
+        <summary>{t("Advanced / Developer Mode")}</summary>
         <Link
           to="/sessions/$sessionId/events"
           params={{ sessionId }}
           activeProps={{ className: `${linkClass} is-active` }}
           inactiveProps={{ className: linkClass }}
         >
-          Ledger events
+          {t("Ledger events")}
         </Link>
       </details>
     </>
@@ -1426,6 +1449,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
 function SessionOverviewPage() {
   const { sessionId } = useSessionParams();
   const { client } = useDaemonRuntime();
+  const { t } = useI18n();
   const eventsQuery = useSessionEventsQuery(sessionId);
   const frontierQuery = useQuery({
     queryKey: ["frontier", sessionId],
@@ -1468,53 +1492,63 @@ function SessionOverviewPage() {
 
   return (
     <ViewFrame
-      eyebrow="User Mode"
-      title="Discussion brief"
-      description="The human-facing starting point for this discussion: what is being decided and where the discussion currently stands."
+      eyebrow={t("User Mode")}
+      title={t("Discussion brief")}
+      description={t(
+        "The human-facing starting point for this discussion: what is being decided and where the discussion currently stands."
+      )}
     >
       <QueryState query={eventsQuery}>
         <DataPanel
-          title="Discussion brief"
-          description="The discussion setup is shown here in plain language."
+          title={t("Discussion brief")}
+          description={t("The discussion setup is shown here in plain language.")}
         >
           <div className="du-readable-list">
-            <QualityPathItem title="Question or topic" detail={discussionTopic} />
+            <QualityPathItem title={t("Question or topic")} detail={t(discussionTopic)} />
             {discussionGoals.length > 0 ? (
               <QualityPathItem
-                title="Goals"
-                detail={formatBriefItemList(discussionGoals)}
+                title={t("Goals")}
+                detail={formatTranslatedTextList(t, discussionGoals)}
               />
             ) : null}
             {discussionConstraints.length > 0 ? (
               <QualityPathItem
-                title="Constraints"
-                detail={formatBriefItemList(discussionConstraints)}
+                title={t("Constraints")}
+                detail={formatTranslatedTextList(t, discussionConstraints)}
               />
             ) : null}
             {expectedOutcomes.length > 0 ? (
               <QualityPathItem
-                title="Expected result"
-                detail={formatBriefItemList(expectedOutcomes)}
+                title={t("Expected result")}
+                detail={formatTranslatedTextList(t, expectedOutcomes)}
               />
             ) : null}
             <QualityPathItem
-              title="Current activity"
-              detail={`${events.length} update${events.length === 1 ? "" : "s"} in this discussion so far.`}
+              title={t("Current activity")}
+              detail={t(
+                events.length === 1
+                  ? "{count} update in this discussion so far."
+                  : "{count} updates in this discussion so far.",
+                {
+                  count: events.length
+                }
+              )}
             />
             <QualityPathItem
-              title="Latest visible step"
-              detail={formatSessionEventTypeForUser(getRecordValue(latestEvent, "type"))}
+              title={t("Latest visible step")}
+              detail={t(formatSessionEventTypeForUser(getRecordValue(latestEvent, "type")))}
             />
           </div>
         </DataPanel>
         <DataPanel
-          title="Review this discussion"
-          description="A quick human-readable snapshot of what is ready to inspect next."
+          title={t("Review this discussion")}
+          description={t("A quick human-readable snapshot of what is ready to inspect next.")}
         >
           <div className="du-quality-map">
             <QualityMapItem
-              label="Main perspectives"
+              label={t("Main perspectives")}
               value={formatOverviewCount(
+                t,
                 frontierQuery,
                 perspectives,
                 "visible perspective",
@@ -1522,8 +1556,9 @@ function SessionOverviewPage() {
               )}
             />
             <QualityMapItem
-              label="Open disagreements"
+              label={t("Open disagreements")}
               value={formatOverviewCount(
+                t,
                 objectionsQuery,
                 openDisagreements,
                 "open disagreement",
@@ -1531,8 +1566,9 @@ function SessionOverviewPage() {
               )}
             />
             <QualityMapItem
-              label="Requirements"
+              label={t("Requirements")}
               value={formatOverviewCount(
+                t,
                 obligationsQuery,
                 answerRequirements,
                 "requirement",
@@ -1540,8 +1576,9 @@ function SessionOverviewPage() {
               )}
             />
             <QualityMapItem
-              label="Risks and missing evidence"
+              label={t("Risks and missing evidence")}
               value={formatOverviewCount(
+                t,
                 resourcesQuery,
                 missingEvidence,
                 "missing evidence item",
@@ -1555,56 +1592,66 @@ function SessionOverviewPage() {
               to="/sessions/$sessionId/final"
               params={{ sessionId }}
             >
-              View current conclusion
+              {t("View current conclusion")}
             </Link>
             <Link
               className="du-action-link du-secondary-link"
               to="/sessions/$sessionId/frontier"
               params={{ sessionId }}
             >
-              View main perspectives
+              {t("View main perspectives")}
             </Link>
             <Link
               className="du-action-link du-secondary-link"
               to="/sessions/$sessionId/resources"
               params={{ sessionId }}
             >
-              Review risks and evidence
+              {t("Review risks and evidence")}
             </Link>
           </div>
         </DataPanel>
         <DataPanel
-          title="Next recommended actions"
-          description="Start with the conclusion, then inspect the material that could change it."
+          title={t("Next recommended actions")}
+          description={t(
+            "Start with the conclusion, then inspect the material that could change it."
+          )}
         >
           <div className="du-readable-list">
             {missingEvidence.length > 0 ? (
               <QualityPathItem
-                title="Check missing evidence"
-                detail="Resolve evidence gaps before treating the conclusion as reliable."
+                title={t("Check missing evidence")}
+                detail={t("Resolve evidence gaps before treating the conclusion as reliable.")}
               />
             ) : null}
             {openDisagreements.length > 0 ? (
               <QualityPathItem
-                title="Review open disagreements"
-                detail="Open disagreements show where the conclusion is still constrained."
+                title={t("Review open disagreements")}
+                detail={t(
+                  "Open disagreements show where the conclusion is still constrained."
+                )}
               />
             ) : null}
             {answerRequirements.length > 0 ? (
               <QualityPathItem
-                title="Confirm answer requirements"
-                detail="Unanswered requirements should be satisfied or explicitly acknowledged."
+                title={t("Confirm answer requirements")}
+                detail={t(
+                  "Unanswered requirements should be satisfied or explicitly acknowledged."
+                )}
               />
             ) : null}
             {perspectives.length === 0 && !frontierQuery.isLoading ? (
               <QualityPathItem
-                title="Continue the discussion"
-                detail="No main perspectives are visible yet. Continue the guided discussion before relying on the result."
+                title={t("Continue the discussion")}
+                detail={t(
+                  "No main perspectives are visible yet. Continue the guided discussion before relying on the result."
+                )}
               />
             ) : null}
             <QualityPathItem
-              title="Review current conclusion"
-              detail="Open the current conclusion to see the result, caveats, and next steps together."
+              title={t("Review current conclusion")}
+              detail={t(
+                "Open the current conclusion to see the result, caveats, and next steps together."
+              )}
             />
           </div>
         </DataPanel>
@@ -1652,6 +1699,7 @@ function SessionOverviewPage() {
 function FrontierPage() {
   const { sessionId } = useSessionParams();
   const { client } = useDaemonRuntime();
+  const { t } = useI18n();
   const frontierQuery = useQuery({
     queryKey: ["frontier", sessionId],
     queryFn: () => client.getFrontier(sessionId)
@@ -1659,19 +1707,25 @@ function FrontierPage() {
 
   return (
     <ViewFrame
-      eyebrow="User Mode"
-      title="Main perspectives"
-      description="The strongest current options stay visible without selecting one hidden answer."
+      eyebrow={t("User Mode")}
+      title={t("Main perspectives")}
+      description={t(
+        "The strongest current options stay visible without selecting one hidden answer."
+      )}
     >
       <QueryState query={frontierQuery}>
         <DataPanel
-          title="Strongest current options"
-          description="These are the strongest currently visible perspectives. They remain open to challenge while the discussion continues."
+          title={t("Strongest current options")}
+          description={t(
+            "These are the strongest currently visible perspectives. They remain open to challenge while the discussion continues."
+          )}
         >
           <ReadableSessionRecordList
             records={asArray(frontierQuery.data?.candidates)}
-            emptyTitle="No active candidates"
-            emptyDescription="No main perspectives have been accepted into this discussion yet."
+            emptyTitle={t("No active candidates")}
+            emptyDescription={t(
+              "No main perspectives have been accepted into this discussion yet."
+            )}
             kind="perspective"
           />
         </DataPanel>
@@ -1696,6 +1750,7 @@ function FrontierPage() {
 function ObjectionsPage() {
   const { sessionId } = useSessionParams();
   const { client } = useDaemonRuntime();
+  const { t } = useI18n();
   const objectionsQuery = useQuery({
     queryKey: ["objections", sessionId],
     queryFn: () => client.getObjections(sessionId)
@@ -1703,19 +1758,25 @@ function ObjectionsPage() {
 
   return (
     <ViewFrame
-      eyebrow="User Mode"
-      title="Open disagreements"
-      description="Objections stay visible as unresolved disagreements that can still constrain the conclusion."
+      eyebrow={t("User Mode")}
+      title={t("Open disagreements")}
+      description={t(
+        "Objections stay visible as unresolved disagreements that can still constrain the conclusion."
+      )}
     >
       <QueryState query={objectionsQuery}>
         <DataPanel
-          title="Open disagreements"
-          description="These are challenges, failure modes, or unresolved concerns raised against the current options."
+          title={t("Open disagreements")}
+          description={t(
+            "These are challenges, failure modes, or unresolved concerns raised against the current options."
+          )}
         >
           <ReadableSessionRecordList
             records={asArray(objectionsQuery.data?.objections)}
-            emptyTitle="No open disagreements"
-            emptyDescription="No open disagreements have been accepted into this discussion yet."
+            emptyTitle={t("No open disagreements")}
+            emptyDescription={t(
+              "No open disagreements have been accepted into this discussion yet."
+            )}
             kind="disagreement"
           />
         </DataPanel>
@@ -1738,6 +1799,7 @@ function ObjectionsPage() {
 function ObligationsPage() {
   const { sessionId } = useSessionParams();
   const { client } = useDaemonRuntime();
+  const { t } = useI18n();
   const obligationsQuery = useQuery({
     queryKey: ["obligations", sessionId],
     queryFn: () => client.getObligations(sessionId)
@@ -1745,19 +1807,25 @@ function ObligationsPage() {
 
   return (
     <ViewFrame
-      eyebrow="User Mode"
-      title="Requirements this answer must satisfy"
-      description="Explicit requirements keep the conclusion correct, bounded, and complete."
+      eyebrow={t("User Mode")}
+      title={t("Requirements this answer must satisfy")}
+      description={t(
+        "Explicit requirements keep the conclusion correct, bounded, and complete."
+      )}
     >
       <QueryState query={obligationsQuery}>
         <DataPanel
-          title="Requirements this answer must satisfy"
-          description="Unanswered requirements should be resolved before relying on the conclusion."
+          title={t("Requirements this answer must satisfy")}
+          description={t(
+            "Unanswered requirements should be resolved before relying on the conclusion."
+          )}
         >
           <ReadableSessionRecordList
             records={asArray(obligationsQuery.data?.qualityObligations)}
-            emptyTitle="No requirements listed"
-            emptyDescription="No explicit requirements have been accepted into this discussion yet."
+            emptyTitle={t("No requirements listed")}
+            emptyDescription={t(
+              "No explicit requirements have been accepted into this discussion yet."
+            )}
             kind="requirement"
           />
         </DataPanel>
@@ -1779,13 +1847,16 @@ function ObligationsPage() {
 
 function EventsPage() {
   const { sessionId } = useSessionParams();
+  const { t } = useI18n();
   const eventsQuery = useSessionEventsQuery(sessionId);
 
   return (
     <ViewFrame
-      eyebrow="Advanced / Developer Mode"
-      title="Ledger events"
-      description="Append-only event records are shown as returned by the daemon for debugging and audit inspection."
+      eyebrow={t("Advanced / Developer Mode")}
+      title={t("Ledger events")}
+      description={t(
+        "Append-only event records are shown as returned by the daemon for debugging and audit inspection."
+      )}
     >
       <QueryState query={eventsQuery}>
         <RecordCollection
@@ -1803,6 +1874,7 @@ function FinalPage() {
   const { sessionId } = useSessionParams();
   const { client } = useDaemonRuntime();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [candidateInput, setCandidateInput] = useState(DEFAULT_FINAL_CANDIDATE_INPUT);
   const [auditInput, setAuditInput] = useState(DEFAULT_FINAL_AUDIT_INPUT);
   const [candidateInputTouched, setCandidateInputTouched] = useState(false);
@@ -1981,23 +2053,29 @@ function FinalPage() {
 
   return (
     <ViewFrame
-      eyebrow="User Mode"
-      title="Current conclusion"
-      description="Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions."
+      eyebrow={t("User Mode")}
+      title={t("Current conclusion")}
+      description={t(
+        "Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions."
+      )}
     >
       <QueryState query={finalQuery}>
         <StatusBanner
           tone={finalQuery.data?.draftStatus === "draft" ? "ok" : "warning"}
           title={
             finalQuery.data?.draftStatus === "draft"
-              ? "Current conclusion compiled"
-              : "Current conclusion remains provisional"
+              ? t("Current conclusion compiled")
+              : t("Current conclusion remains provisional")
           }
-          detail="This is reviewable deliberation material. It should keep open disagreements, risks, evidence gaps, and next actions visible."
+          detail={t(
+            "This is reviewable deliberation material. It should keep open disagreements, risks, evidence gaps, and next actions visible."
+          )}
         />
         <DataPanel
-          title="Current conclusion"
-          description="A readable summary of the current result. Advanced details keep technical provenance and developer controls."
+          title={t("Current conclusion")}
+          description={t(
+            "A readable summary of the current result. Advanced details keep technical provenance and developer controls."
+          )}
         >
           <OutcomeBrief outcome={outcome} context={outcomeContext} />
         </DataPanel>
@@ -2149,6 +2227,7 @@ function FinalPage() {
 function ResourcesPage() {
   const { sessionId } = useSessionParams();
   const { client } = useDaemonRuntime();
+  const { t } = useI18n();
   const resourcesQuery = useQuery({
     queryKey: ["session-resources", sessionId],
     queryFn: () => client.getSessionResources(sessionId)
@@ -2164,28 +2243,36 @@ function ResourcesPage() {
 
   return (
     <ViewFrame
-      eyebrow="User Mode"
-      title="Evidence and verification"
-      description="Missing evidence, verification needs, and risks are shown together so they can be resolved before relying on the conclusion."
+      eyebrow={t("User Mode")}
+      title={t("Evidence and verification")}
+      description={t(
+        "Missing evidence, verification needs, and risks are shown together so they can be resolved before relying on the conclusion."
+      )}
     >
       <QueryState query={resourcesQuery}>
         <StatusBanner
           tone={evidenceNeeds.length > 0 ? "warning" : "neutral"}
           title={
             evidenceNeeds.length > 0
-              ? "Evidence gaps visible"
-              : "No evidence gaps visible"
+              ? t("Evidence gaps visible")
+              : t("No evidence gaps visible")
           }
-          detail="This page focuses on what still needs to be checked. Technical access details remain in Advanced mode."
+          detail={t(
+            "This page focuses on what still needs to be checked. Technical access details remain in Advanced mode."
+          )}
         />
         <DataPanel
-          title="Risks and missing evidence"
-          description="Missing evidence items are user-facing verification work, not low-level access state."
+          title={t("Risks and missing evidence")}
+          description={t(
+            "Missing evidence items are user-facing verification work, not low-level access state."
+          )}
         >
           <ReadableSessionRecordList
             records={evidenceNeeds}
-            emptyTitle="No missing evidence yet"
-            emptyDescription="This discussion has not surfaced missing evidence items yet."
+            emptyTitle={t("No missing evidence yet")}
+            emptyDescription={t(
+              "This discussion has not surfaced missing evidence items yet."
+            )}
             kind="evidence"
           />
         </DataPanel>
