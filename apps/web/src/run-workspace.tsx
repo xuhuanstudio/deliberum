@@ -5435,8 +5435,8 @@ function summarizeEvidenceNeed(
     fallbackTitle: t("Missing evidence {number}", { number: index + 1 }),
     fallbackKicker: t("Evidence gap {number}", { number: index + 1 }),
     fallbackDetail: t("This evidence gap still needs verification."),
-    titleKeys: ["question", "title", "summary"],
-    detailKeys: ["description", "summary", "rationale", "text", "claim"]
+    titleKeys: ["question", "title", "summary", "reason"],
+    detailKeys: ["description", "reason", "summary", "rationale", "text", "claim"]
   }, t);
 }
 
@@ -6602,12 +6602,14 @@ function ProjectionRecord({
     getStringRecordValue(object, "content") ??
     getStringRecordValue(object, "requirement") ??
     getStringRecordValue(object, "failureMode") ??
+    getStringRecordValue(object, "reason") ??
     fallbackTitle;
   const reviewCue = t(formatProjectionRecordReviewCue(kind, getRecordValue(object, "status")));
   const description =
     getStringRecordValue(object, "description") ??
     getStringRecordValue(object, "consequence") ??
     getStringRecordValue(object, "question") ??
+    getStringRecordValue(object, "reason") ??
     getStringRecordValue(object, "requirement") ??
     getStringRecordValue(object, "content");
 

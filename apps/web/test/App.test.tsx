@@ -789,6 +789,8 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           object: {
             id: "evidence-need-1",
             targetClaimId: "claim-1",
+            reason:
+              "The rollout needs browser evidence that users can review missing evidence before relying on the conclusion.",
             status: "open"
           },
           proposalEventId: "proposal-event-1",
@@ -4136,7 +4138,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("What this discussion status means")).toBeTruthy();
     expect(screen.getByText("Discussion progress")).toBeTruthy();
     expect(screen.getByText("Risks and missing evidence")).toBeTruthy();
-    expect(screen.getByText("Evidence gap 1")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The rollout needs browser evidence that users can review missing evidence before relying on the conclusion."
+      )
+    ).toBeTruthy();
     const defaultRunText = document.body.textContent ?? "";
     expect(defaultRunText).not.toContain("objection-1");
     expect(defaultRunText).not.toContain("quality-1");
@@ -5843,7 +5849,9 @@ describe("@deliberum/web shell", () => {
       "The conclusion should label deterministic sample output before use."
     );
     expect(readableConclusion).toContain("Requirement 1");
-    expect(readableConclusion).toContain("Missing evidence 1");
+    expect(readableConclusion).toContain(
+      "The rollout needs browser evidence that users can review missing evidence before relying on the conclusion."
+    );
     expect(readableConclusion).toContain("No unresolved questions listed");
     expect(readableConclusion).toContain("No risks or boundaries listed");
     expect(readableConclusion).toContain("No next recommended actions listed");

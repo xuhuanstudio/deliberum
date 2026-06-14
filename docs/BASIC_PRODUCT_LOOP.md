@@ -50,9 +50,9 @@ Updated: 2026-06-15.
 | 7 | Start a model-backed discussion from Web. | `partial` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. | Needs end-to-end browser walkthrough after setup verification. |
 | 8 | See participant/model perspectives as readable contributions, not raw events. | `partial` | Discussion Room tests and walkthrough document cover readable room contributions. | Needs model-backed walkthrough evidence, not only deterministic demo or component tests. |
 | 9 | See strongest current options. | `partial` | Discussion Room and outcome tests render strongest options/main perspectives in user language. | Needs end-to-end proof that model-backed discussions populate this section clearly. |
-| 10 | See open disagreements. | `partial` | Web tests cover open disagreements and empty states. | Needs walkthrough evidence for both present and empty disagreement states. |
-| 11 | See missing evidence or evidence gaps. | `partial` | Web tests cover evidence gaps, resources, and outcome evidence sections. | Needs walkthrough evidence that evidence gaps are visible before a user relies on the conclusion. |
-| 12 | See risks. | `partial` | Web tests cover risks and recent outcome display hides internal source language from default view. | Needs walkthrough evidence that risk review stays visible in the room and outcome views. |
+| 10 | See open disagreements. | `partial` | Web tests cover open disagreements and empty states. A 2026-06-15 browser walkthrough with a non-empty model-backed mock provider showed an open disagreement in the room and conclusion path without exposing object ids. | Needs repeatable automated walkthrough coverage for both present and empty disagreement states. |
+| 11 | See missing evidence or evidence gaps. | `partial` | Web tests cover evidence gaps, resources, and outcome evidence sections. A 2026-06-15 browser walkthrough with a non-empty model-backed mock provider showed the concrete evidence-gap reason in the room and outcome views without exposing object ids. | Needs repeatable automated walkthrough coverage that evidence gaps stay visible before a user relies on the conclusion. |
+| 12 | See risks. | `partial` | Web tests cover risks and recent outcome display hides internal source language from default view. A 2026-06-15 browser walkthrough with a non-empty model-backed mock provider showed the room risk summary and outcome risk text without exposing secrets or internal ids. | Needs repeatable automated walkthrough coverage that risk review stays visible in the room and outcome views. |
 | 13 | See the current conclusion. | `partial` | Outcome pages render user-facing conclusion summaries; tests cover default hiding of internal projection/event terms. | Needs model-backed walkthrough evidence that conclusion material appears after continuing the discussion. |
 | 14 | See next recommended actions. | `partial` | Outcome and room tests render next recommended actions. | Needs walkthrough evidence that next actions point to user-facing continuation actions. |
 | 15 | Continue or update the discussion using user-facing actions. | `partial` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. | Highest current product gap: prove a normal user can use these actions to move from first responses to a reviewable conclusion. |
@@ -112,3 +112,40 @@ fix. It is a repeatable browser walkthrough for rows 5 through 15:
 
 If that walkthrough fails, fix the first blocking row with the smallest
 verifiable change.
+
+## Recent Browser Evidence
+
+### 2026-06-15 Non-Empty Disagreement And Evidence Walkthrough
+
+Scope: rows 5 through 15, with focused evidence for rows 10 through 12.
+
+Setup:
+
+- local daemon on `127.0.0.1:3877` from a temporary working directory;
+- Web dev server on `127.0.0.1:5173`;
+- local OpenAI-compatible mock provider on `127.0.0.1:3889`;
+- dummy provider key `local-gap-loop-token`, never shown in default Web text.
+
+Path verified in the browser:
+
+1. Opened `/setup/models`.
+2. Saved OpenAI-compatible API key, base URL, and model.
+3. Verified the provider connection.
+4. Started `/runs/new?participants=model-backed` from the Setup page.
+5. Created a model-backed discussion.
+6. Used `Continue discussion`.
+7. Confirmed the room showed participant perspectives, a strongest option, an
+   open disagreement, a concrete evidence-gap reason, an answer requirement,
+   risk review summary, current conclusion, and user-facing next actions.
+8. Opened the current conclusion page and confirmed the same concrete
+   evidence-gap reason, risk text, and next action remained visible.
+9. Repeated the room evidence check at a mobile viewport width of 390 px.
+
+Default-view safety checks:
+
+- did not show the dummy API key;
+- did not show the configured base URL or model value;
+- did not show provider config ids;
+- did not show proposal/event/object ids for the mock candidate, objection,
+  evidence need, or quality obligation;
+- did not show raw JSON or ledger details outside Advanced / Developer Mode.
