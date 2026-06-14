@@ -74,6 +74,9 @@ English is the default Web language. Simplified Chinese is supported through the
 ## Quickstart: local Web product loop
 
 This path is for a normal local user who wants to try the product through Web, not inspect the runtime first.
+Use the [Basic Product Loop Completion Matrix](docs/BASIC_PRODUCT_LOOP.md) as
+the acceptance checklist for this path. The default Web loop is not complete
+until the matrix steps are verified with real browser evidence.
 
 1. Install dependencies and build the local packages.
 
@@ -125,6 +128,7 @@ If you do not have a provider ready yet, use the demo discussion path first. The
 - [Security Model](docs/SECURITY_MODEL.md)
 - [Threat Model](docs/THREAT_MODEL.md)
 - [Technology Stack](docs/TECH_STACK.md)
+- [Basic Product Loop Completion Matrix](docs/BASIC_PRODUCT_LOOP.md)
 - [Web UI Spec](docs/WEB_UI_SPEC.md)
 - [Web Discussion Room Walkthrough](docs/WEB_DISCUSSION_ROOM_WALKTHROUGH.md)
 - [Roadmap](ROADMAP.md)

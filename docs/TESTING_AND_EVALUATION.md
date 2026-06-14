@@ -2,6 +2,20 @@
 
 Deliberum must prove that it improves outcomes, not merely that it runs.
 
+## Product-loop acceptance
+
+Product-facing changes must be checked against the
+[Basic Product Loop Completion Matrix](BASIC_PRODUCT_LOOP.md). A Web, setup,
+model readiness, discussion, conclusion, or onboarding batch should name the
+matrix row it improves before implementation starts, then update the matrix when
+new evidence changes a row's status.
+
+The product loop is not considered complete until a browser walkthrough proves
+that a normal local user can configure a provider, verify it, start a
+model-backed discussion, continue the discussion, review perspectives,
+disagreements, evidence gaps, risks, current conclusion, and next actions, and
+finish the default path without seeing secrets or internal runtime identifiers.
+
 ## Baselines
 
 Compare against:

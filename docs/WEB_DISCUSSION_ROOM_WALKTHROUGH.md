@@ -2,6 +2,10 @@
 
 This walkthrough verifies the default human-first Web path. It is intended for maintainers, reviewers, and first-time contributors who want to confirm that Deliberum behaves like a discussion product instead of an engineering console.
 
+Use this document together with the [Basic Product Loop Completion Matrix](BASIC_PRODUCT_LOOP.md).
+The matrix is the acceptance gate for the full setup-to-conclusion loop; this
+walkthrough focuses on the Discussion Room portion of that loop.
+
 ## Goal
 
 A first-time user should be able to:
@@ -102,3 +106,6 @@ corepack pnpm ci
 ```
 
 Browser verification should include desktop and mobile widths. Confirm that the default path does not expose raw run, session, projection, ledger, event, proposal, runtime, resource, or internal ids outside Advanced / Developer Mode.
+
+When this walkthrough changes the evidence for the full product loop, update
+the status and evidence in [Basic Product Loop Completion Matrix](BASIC_PRODUCT_LOOP.md).
