@@ -250,6 +250,27 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "{provider} \u5df2\u5c31\u7eea\u3002\u6b64\u8ba8\u8bba\u5c06\u4f7f\u7528\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Configure a ready model provider locally before selecting model-backed participants.":
     "\u5148\u5728\u672c\u5730\u914d\u7f6e\u4e00\u4e2a\u5df2\u5c31\u7eea\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\uff0c\u7136\u540e\u518d\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u3002",
+  "Participant lineup": "\u53c2\u4e0e\u8005\u9635\u5bb9",
+  "Participants for this discussion": "\u672c\u6b21\u8ba8\u8bba\u7684\u53c2\u4e0e\u8005",
+  "Before creating the discussion, see who will answer first and who will organize the result.":
+    "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u5148\u770b\u6e05\u8c01\u4f1a\u5148\u56de\u5e94\uff0c\u4ee5\u53ca\u8c01\u4f1a\u6574\u7406\u7ed3\u679c\u3002",
+  "Independent first response": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
+  "Requirements and disagreement review": "\u8981\u6c42\u4e0e\u5206\u6b67\u5ba1\u67e5",
+  "Evidence and risk review": "\u8bc1\u636e\u4e0e\u98ce\u9669\u5ba1\u67e5",
+  "Current conclusion draft": "\u5f53\u524d\u7ed3\u8bba\u8349\u7a3f",
+  "Configured model provider": "\u5df2\u914d\u7f6e\u6a21\u578b\u63d0\u4f9b\u65b9",
+  "{provider} will answer through the configured local daemon setup.":
+    "{provider} \u5c06\u901a\u8fc7\u5df2\u914d\u7f6e\u7684\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u8bbe\u7f6e\u56de\u5e94\u3002",
+  "Uses built-in demo material for a deterministic walkthrough.":
+    "\u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u6750\u6599\uff0c\u7528\u4e8e\u786e\u5b9a\u6027\u6f14\u793a\u6d41\u7a0b\u3002",
+  "No ready participant source is available yet.":
+    "\u5c1a\u65e0\u5c31\u7eea\u7684\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
+  "Local discussion organizer": "\u672c\u5730\u8ba8\u8bba\u7ec4\u7ec7\u5668",
+  "Organizer setup needed": "\u9700\u8981\u7ec4\u7ec7\u5668\u8bbe\u7f6e",
+  "Local organizers can compare options, review evidence and risks, and draft the current conclusion after first responses.":
+    "\u672c\u5730\u7ec4\u7ec7\u5668\u53ef\u5728\u521d\u59cb\u56de\u5e94\u540e\u6bd4\u8f83\u9009\u9879\u3001\u5ba1\u67e5\u8bc1\u636e\u548c\u98ce\u9669\uff0c\u5e76\u8d77\u8349\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Organizer roles are not ready yet; continuing the discussion may collect first responses only.":
+    "\u7ec4\u7ec7\u5668\u89d2\u8272\u5c1a\u672a\u5c31\u7eea\uff1b\u7ee7\u7eed\u8ba8\u8bba\u53ef\u80fd\u53ea\u4f1a\u6536\u96c6\u521d\u59cb\u56de\u5e94\u3002",
   "Choose an available participant source before creating the discussion.":
     "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u8bf7\u9009\u62e9\u4e00\u4e2a\u53ef\u7528\u7684\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
   "Model-backed start available": "\u53ef\u4f7f\u7528\u6a21\u578b\u652f\u6301\u7684\u5f00\u59cb\u65b9\u5f0f",

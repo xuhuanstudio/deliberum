@@ -1798,6 +1798,69 @@ textarea:focus-visible {
   opacity: 0.74;
 }
 
+.du-participant-lineup {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 16px;
+}
+
+.du-participant-lineup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-participant-lineup-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+  border-top: 4px solid var(--du-muted);
+  background: var(--du-surface);
+  padding: 14px;
+}
+
+.du-participant-lineup-card span {
+  color: var(--du-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.du-participant-lineup-card strong {
+  line-height: 1.25;
+}
+
+.du-participant-lineup-card small {
+  color: var(--du-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.du-participant-lineup-card p {
+  margin: 0;
+  color: var(--du-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.du-participant-lineup-ok {
+  border-top-color: var(--du-accent);
+}
+
+.du-participant-lineup-warning {
+  border-top-color: var(--du-warn);
+}
+
 .du-discussion-setup-note {
   margin: 12px 0 0;
   color: var(--du-muted);
@@ -2509,6 +2572,7 @@ textarea:focus-visible {
   .du-provider-setup-form-layout,
   .du-provider-check-grid,
   .du-discussion-setup-grid,
+  .du-participant-lineup-grid,
   .du-stage-grid,
   .du-result-handoff-grid,
   .du-follow-controls,

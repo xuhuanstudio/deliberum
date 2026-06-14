@@ -1959,7 +1959,10 @@ describe("@deliberum/web shell", () => {
       screen.getAllByText("\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005").length
     ).toBeGreaterThan(0);
     expect(screen.getByText("\u9009\u62e9\u53c2\u4e0e\u8005\u6765\u6e90")).toBeTruthy();
-    expect(screen.getByText("\u6f14\u793a\u53c2\u4e0e\u8005")).toBeTruthy();
+    expect(screen.getAllByText("\u6f14\u793a\u53c2\u4e0e\u8005").length).toBeGreaterThan(0);
+    expect(screen.getByText("\u672c\u6b21\u8ba8\u8bba\u7684\u53c2\u4e0e\u8005")).toBeTruthy();
+    expect(screen.getByText("\u89c6\u89d2 A")).toBeTruthy();
+    expect(screen.getByText("\u8bc1\u636e\u6838\u67e5\u8005")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
     expect(screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898")).toBeTruthy();
     expect(screen.getByText("\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b")).toBeTruthy();
@@ -1977,7 +1980,17 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Quick-start participants")).toBeTruthy();
     expect(screen.getAllByText("Model-backed participants").length).toBeGreaterThan(0);
     expect(screen.getByText("Choose participant source")).toBeTruthy();
-    expect(screen.getByText("Demo participants")).toBeTruthy();
+    expect(screen.getAllByText("Demo participants").length).toBeGreaterThan(0);
+    expect(screen.getByText("Participants for this discussion")).toBeTruthy();
+    expect(screen.getAllByText("Perspective A").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Perspective B").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Conclusion writer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Independent first response").length).toBeGreaterThan(1);
+    expect(
+      screen.getAllByText("Uses built-in demo material for a deterministic walkthrough.").length
+    ).toBeGreaterThan(1);
     expect(
       (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
         .disabled
@@ -2080,6 +2093,21 @@ describe("@deliberum/web shell", () => {
         "A configured model provider is selected for this discussion by default."
       )
     ).toBeTruthy();
+    expect(screen.getByText("Participants for this discussion")).toBeTruthy();
+    expect(screen.getAllByText("Perspective A").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Perspective B").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("OpenAI-compatible").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(
+        "OpenAI-compatible will answer through the configured local daemon setup."
+      ).length
+    ).toBeGreaterThan(1);
+    expect(
+      screen.getAllByText(
+        "Local organizers can compare options, review evidence and risks, and draft the current conclusion after first responses."
+      ).length
+    ).toBeGreaterThan(0);
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
 
     const demoSource = screen.getByRole("radio", {

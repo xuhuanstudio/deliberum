@@ -117,6 +117,14 @@ type DiscussionParticipantSourceView = {
   note: string;
   tone: "ok" | "warning" | "neutral";
 };
+type DiscussionParticipantLineupItem = {
+  role: string;
+  contribution: string;
+  source: string;
+  detail: string;
+  detailValues?: Record<string, string>;
+  tone: "ok" | "warning" | "neutral";
+};
 type DiscussionNextStepView = {
   title: string;
   detail: string;
@@ -517,6 +525,7 @@ function DiscussionModelSetupPanel({
   const demoAvailable = isDemoDiscussionSourceAvailable(setupPlan);
   const providerSource = findProviderBackedDiscussionSource(setupPlan);
   const modelBackedAvailable = Boolean(providerSource);
+  const organizerReady = isLocalPresetDiscussionPathReady(setupPlan);
 
   return (
     <DataPanel
@@ -587,6 +596,12 @@ function DiscussionModelSetupPanel({
           </span>
         </label>
       </fieldset>
+      <DiscussionParticipantLineup
+        selectedSource={selectedSource}
+        providerSource={providerSource}
+        organizerReady={organizerReady}
+        demoAvailable={demoAvailable}
+      />
       <p className="du-discussion-setup-note">
         {t(
           "This page does not show API keys. Use Setup / Models to save provider setup before starting real model-backed discussions."
@@ -599,6 +614,143 @@ function DiscussionModelSetupPanel({
       </div>
     </DataPanel>
   );
+}
+
+function DiscussionParticipantLineup({
+  selectedSource,
+  providerSource,
+  organizerReady,
+  demoAvailable
+}: {
+  selectedSource: DiscussionParticipantSource;
+  providerSource: DiscussionProviderSource | undefined;
+  organizerReady: boolean;
+  demoAvailable: boolean;
+}) {
+  const { t } = useI18n();
+  const lineup = buildDiscussionParticipantLineup({
+    selectedSource,
+    providerSource,
+    organizerReady,
+    demoAvailable
+  });
+
+  return (
+    <section className="du-participant-lineup" aria-label={t("Participants for this discussion")}>
+      <div className="du-section-label">
+        <p className="du-kicker">{t("Participant lineup")}</p>
+        <h4>{t("Participants for this discussion")}</h4>
+        <p>
+          {t(
+            "Before creating the discussion, see who will answer first and who will organize the result."
+          )}
+        </p>
+      </div>
+      <div className="du-participant-lineup-grid">
+        {lineup.map((item) => (
+          <DiscussionParticipantLineupCard key={`${item.role}:${item.contribution}`} item={item} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DiscussionParticipantLineupCard({
+  item
+}: {
+  item: DiscussionParticipantLineupItem;
+}) {
+  const { t } = useI18n();
+  const detailValues = item.detailValues
+    ? Object.fromEntries(
+        Object.entries(item.detailValues).map(([key, value]) => [key, t(value)])
+      )
+    : undefined;
+
+  return (
+    <article className={`du-participant-lineup-card du-participant-lineup-${item.tone}`}>
+      <span>{t(item.contribution)}</span>
+      <strong>{t(item.role)}</strong>
+      <small>{t(item.source)}</small>
+      <p>{t(item.detail, detailValues)}</p>
+    </article>
+  );
+}
+
+function buildDiscussionParticipantLineup(input: {
+  selectedSource: DiscussionParticipantSource;
+  providerSource: DiscussionProviderSource | undefined;
+  organizerReady: boolean;
+  demoAvailable: boolean;
+}): DiscussionParticipantLineupItem[] {
+  const providerName = input.providerSource?.name ?? "Configured model provider";
+  const perspectiveDetail =
+    input.selectedSource === "model-backed" && input.providerSource
+      ? "{provider} will answer through the configured local daemon setup."
+      : input.demoAvailable
+        ? "Uses built-in demo material for a deterministic walkthrough."
+        : "No ready participant source is available yet.";
+  const perspectiveSource =
+    input.selectedSource === "model-backed" && input.providerSource
+      ? providerName
+      : "Demo participants";
+  const perspectiveTone =
+    input.selectedSource === "model-backed" && input.providerSource
+      ? "ok"
+      : input.demoAvailable
+        ? "warning"
+        : "neutral";
+  const organizerDetail = input.organizerReady
+    ? "Local organizers can compare options, review evidence and risks, and draft the current conclusion after first responses."
+    : "Organizer roles are not ready yet; continuing the discussion may collect first responses only.";
+  const organizerTone = input.organizerReady ? "ok" : "warning";
+  const organizerSource = input.organizerReady ? "Local discussion organizer" : "Organizer setup needed";
+
+  return [
+    {
+      role: "Perspective A",
+      contribution: "Independent first response",
+      source: perspectiveSource,
+      detail: perspectiveDetail,
+      detailValues:
+        input.selectedSource === "model-backed" && input.providerSource
+          ? { provider: providerName }
+          : undefined,
+      tone: perspectiveTone
+    },
+    {
+      role: "Perspective B",
+      contribution: "Independent first response",
+      source: perspectiveSource,
+      detail: perspectiveDetail,
+      detailValues:
+        input.selectedSource === "model-backed" && input.providerSource
+          ? { provider: providerName }
+          : undefined,
+      tone: perspectiveTone
+    },
+    {
+      role: "Reviewer",
+      contribution: "Requirements and disagreement review",
+      source: organizerSource,
+      detail: organizerDetail,
+      tone: organizerTone
+    },
+    {
+      role: "Evidence checker",
+      contribution: "Evidence and risk review",
+      source: organizerSource,
+      detail: organizerDetail,
+      tone: organizerTone
+    },
+    {
+      role: "Conclusion writer",
+      contribution: "Current conclusion draft",
+      source: organizerSource,
+      detail: organizerDetail,
+      tone: organizerTone
+    }
+  ];
 }
 
 function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionModelSetupView {
