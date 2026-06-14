@@ -8,7 +8,7 @@ import {
   resolveDaemonBaseUrl,
   type WebDaemonClient
 } from "../src/client";
-import type { WebLanguage } from "../src/i18n";
+import { WEB_LANGUAGE_STORAGE_KEY, type WebLanguage } from "../src/i18n";
 
 const projection = {
   version: "1" as const,
@@ -930,6 +930,7 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   delete (globalThis as { EventSource?: unknown }).EventSource;
+  window.localStorage.clear();
   MockEventSource.instances = [];
 });
 
@@ -1498,6 +1499,35 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("Start from a question")).toBeTruthy();
     expect(screen.getByLabelText("Discussion question")).toBeTruthy();
+  });
+
+  it("remembers an explicit Simplified Chinese language choice across app remounts", async () => {
+    renderApp("/runs/new");
+
+    expect(await screen.findByText("Start from a question")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Language"), {
+      target: {
+        value: "zh-CN"
+      }
+    });
+
+    expect(await screen.findByText("\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb")).toBeTruthy();
+    expect(window.localStorage.getItem(WEB_LANGUAGE_STORAGE_KEY)).toBe("zh-CN");
+
+    cleanup();
+    renderApp("/runs/new");
+
+    expect(await screen.findByText("\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb")).toBeTruthy();
+    expect((screen.getByLabelText("\u8bed\u8a00") as HTMLSelectElement).value).toBe("zh-CN");
+  });
+
+  it("falls back to English when a stored language value is not supported", async () => {
+    window.localStorage.setItem(WEB_LANGUAGE_STORAGE_KEY, "fr");
+
+    renderApp("/runs/new");
+
+    expect(await screen.findByText("Start from a question")).toBeTruthy();
+    expect((screen.getByLabelText("Language") as HTMLSelectElement).value).toBe("en");
   });
 
   it("renders the discussion room core structure in Simplified Chinese", async () => {

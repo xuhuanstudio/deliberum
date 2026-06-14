@@ -13,6 +13,7 @@ type TranslationValues = Record<string, string | number>;
 type TranslationMap = Record<string, string>;
 
 const SUPPORTED_LANGUAGES: readonly WebLanguage[] = ["en", "zh-CN"];
+export const WEB_LANGUAGE_STORAGE_KEY = "deliberum.web.language" as const;
 
 const LANGUAGE_OPTIONS: readonly {
   code: WebLanguage;
@@ -619,10 +620,11 @@ export function I18nProvider({
   children: ReactNode;
 }) {
   const [language, setLanguageState] = useState<WebLanguage>(() =>
-    resolveInitialLanguage(initialLanguage)
+    resolveInitialLanguage(initialLanguage, readStoredLanguage())
   );
   const setLanguage = useCallback((nextLanguage: WebLanguage) => {
     setLanguageState(nextLanguage);
+    writeStoredLanguage(nextLanguage);
   }, []);
   const t = useCallback(
     (message: string, values?: TranslationValues) =>
@@ -672,9 +674,16 @@ export function LanguageSwitcher() {
   );
 }
 
-function resolveInitialLanguage(initialLanguage: WebLanguage | undefined): WebLanguage {
+function resolveInitialLanguage(
+  initialLanguage: WebLanguage | undefined,
+  storedLanguage: WebLanguage | undefined
+): WebLanguage {
   if (initialLanguage && isSupportedLanguage(initialLanguage)) {
     return initialLanguage;
+  }
+
+  if (storedLanguage && isSupportedLanguage(storedLanguage)) {
+    return storedLanguage;
   }
 
   return "en";
@@ -682,6 +691,24 @@ function resolveInitialLanguage(initialLanguage: WebLanguage | undefined): WebLa
 
 function isSupportedLanguage(value: unknown): value is WebLanguage {
   return typeof value === "string" && SUPPORTED_LANGUAGES.includes(value as WebLanguage);
+}
+
+function readStoredLanguage(): WebLanguage | undefined {
+  try {
+    const storedLanguage = globalThis.localStorage?.getItem(WEB_LANGUAGE_STORAGE_KEY);
+
+    return isSupportedLanguage(storedLanguage) ? storedLanguage : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeStoredLanguage(language: WebLanguage) {
+  try {
+    globalThis.localStorage?.setItem(WEB_LANGUAGE_STORAGE_KEY, language);
+  } catch {
+    // Language persistence is a convenience; the visible switch remains authoritative.
+  }
 }
 
 function translateMessage(language: WebLanguage, message: string): string {
