@@ -14,7 +14,7 @@ import {
   WorkspaceShell
 } from "@deliberum/ui";
 import { buildRuntimeSetupPlan } from "@deliberum/client";
-import type { RuntimeSetupPlan } from "@deliberum/client";
+import type { RuntimeProfilesResponse, RuntimeSetupPlan } from "@deliberum/client";
 import {
   useEffect,
   useRef,
@@ -52,6 +52,29 @@ const DEFAULT_RUN_PLAN_TEXT = formatPresetJson(LOCAL_PRESET_RUN_PLAN);
 const FIRST_RESPONSES_ONLY_START_REQUEST = {
   sealedDivergence: {
     autoCloseManual: true
+  }
+};
+const OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID = "openai-main";
+const OPENAI_COMPATIBLE_FULL_START_REQUEST = {
+  sealedDivergence: {
+    autoCloseManual: true
+  },
+  extraction: {
+    generatorIds: ["openai-compatible-extractor"]
+  },
+  review: {
+    reviewerIds: ["openai-compatible-reviewer"],
+    acceptancePolicy: {
+      mode: "all_generated_unchallenged",
+      authorId: "provider-review-coordinator",
+      rationale:
+        "Accept unchallenged provider-organized proposals so the room can compile a provisional current conclusion."
+    }
+  },
+  finalization: {
+    finalCandidateGeneratorId: "openai-compatible-final-candidate",
+    auditGeneratorIds: ["openai-compatible-final-auditor"],
+    compileOutcome: true
   }
 };
 const DEFAULT_PROCESS_AUTHOR_ID = "system";
@@ -269,10 +292,16 @@ export function RunNewPage() {
   const localOrganizerReady = runtimeSetupPlan
     ? isLocalPresetDiscussionPathReady(runtimeSetupPlan)
     : false;
+  const providerOrganizerReady = isProviderBackedOrganizerPathReady(
+    runtimeProfilesQuery.data,
+    providerBackedDiscussionSource?.providerConfigId
+  );
+  const selectedOrganizerReady =
+    participantSource === "model-backed" ? providerOrganizerReady : localOrganizerReady;
   const creationPreview = buildDiscussionCreationPreview({
     selectedSource: participantSource,
     providerSource: providerBackedDiscussionSource,
-    organizerReady: localOrganizerReady,
+    organizerReady: selectedOrganizerReady,
     demoAvailable: demoDiscussionAvailable,
     perspectiveCount: modelPerspectiveCount,
     setupKnown: Boolean(runtimeSetupPlan)
@@ -436,6 +465,7 @@ export function RunNewPage() {
           <DiscussionModelSetupPanel
             setupPlan={runtimeSetupPlan}
             selectedSource={participantSource}
+            organizerReady={selectedOrganizerReady}
             onSelectedSourceChange={chooseParticipantSource}
             perspectiveCount={modelPerspectiveCount}
             onPerspectiveCountChange={setModelPerspectiveCount}
@@ -635,12 +665,14 @@ function DiscussionCreationPreview({ view }: { view: DiscussionCreationPreviewVi
 function DiscussionModelSetupPanel({
   setupPlan,
   selectedSource,
+  organizerReady,
   onSelectedSourceChange,
   perspectiveCount,
   onPerspectiveCountChange
 }: {
   setupPlan: RuntimeSetupPlan;
   selectedSource: DiscussionParticipantSource;
+  organizerReady: boolean;
   onSelectedSourceChange: (source: DiscussionParticipantSource) => void;
   perspectiveCount: ProviderBackedPerspectiveCount;
   onPerspectiveCountChange: (count: ProviderBackedPerspectiveCount) => void;
@@ -650,7 +682,6 @@ function DiscussionModelSetupPanel({
   const demoAvailable = isDemoDiscussionSourceAvailable(setupPlan);
   const providerSource = findProviderBackedDiscussionSource(setupPlan);
   const modelBackedAvailable = Boolean(providerSource);
-  const organizerReady = isLocalPresetDiscussionPathReady(setupPlan);
 
   return (
     <DataPanel
@@ -903,7 +934,7 @@ function buildDiscussionCreationPreview(input: {
     return {
       title: "Ready to create a model-backed discussion",
       detail: input.organizerReady
-        ? "Configured model participants will answer first; local organizers can then structure options, disagreements, evidence gaps, risks, and a current conclusion."
+        ? "Configured model participants will answer first; model organizer roles can then structure options, disagreements, evidence gaps, risks, and a current conclusion."
         : "Configured model participants can answer first, but organizer roles are not ready yet.",
       tone: input.organizerReady ? "ok" : "warning",
       steps: [
@@ -1025,12 +1056,18 @@ function buildDiscussionParticipantLineup(input: {
         ? "warning"
         : "neutral";
   const organizerDetail = input.organizerReady
-    ? "Local organizers can compare options, review evidence and risks, and draft the current conclusion after first responses."
+    ? input.selectedSource === "model-backed" && input.providerSource
+      ? "Model organizer roles can compare options, review evidence and risks, and draft the current conclusion after first responses."
+      : "Local organizers can compare options, review evidence and risks, and draft the current conclusion after first responses."
     : "Organizer roles are not ready yet; continuing the discussion may collect first responses only.";
   const organizerTone: DiscussionParticipantLineupItem["tone"] = input.organizerReady
     ? "ok"
     : "warning";
-  const organizerSource = input.organizerReady ? "Local discussion organizer" : "Organizer setup needed";
+  const organizerSource = input.organizerReady
+    ? input.selectedSource === "model-backed" && input.providerSource
+      ? "Model organizer"
+      : "Local discussion organizer"
+    : "Organizer setup needed";
 
   return [
     ...perspectiveRoles.map((perspective) => ({
@@ -1189,7 +1226,10 @@ function findProviderBackedDiscussionSource(
   return {
     name: profile.name,
     adapterId: profile.id,
-    providerConfigId: `web-${profile.id}-discussion`,
+    providerConfigId:
+      profile.id === "openai-compatible"
+        ? OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID
+        : `web-${profile.id}-discussion`,
     ...(profile.configuredSecretEnvVarCount > 0 && profile.secretEnvVarNames[0]
       ? { apiKeyEnvVar: profile.secretEnvVarNames[0] }
       : {})
@@ -2265,7 +2305,8 @@ function StartRunForm({
   const continuationSetup = describeDiscussionContinuationSetup(
     run,
     runtimeSetupPlan,
-    runtimeProfilesQuery.isError ? "error" : runtimeProfilesQuery.isLoading ? "loading" : "ready"
+    runtimeProfilesQuery.isError ? "error" : runtimeProfilesQuery.isLoading ? "loading" : "ready",
+    runtimeProfilesQuery.data
   );
   const latestUpdateRef = useRef<HTMLElement | null>(null);
   const [startRequestText, setStartRequestText] = useState(
@@ -2559,7 +2600,8 @@ function StartRunForm({
 function describeDiscussionContinuationSetup(
   run: unknown,
   runtimeSetupPlan: RuntimeSetupPlan | undefined,
-  setupStatus: DiscussionContinuationSetupStatus
+  setupStatus: DiscussionContinuationSetupStatus,
+  runtimeProfiles: RuntimeProfilesResponse | undefined
 ): DiscussionContinuationSetupView {
   if (setupStatus === "loading") {
     return {
@@ -2589,22 +2631,26 @@ function describeDiscussionContinuationSetup(
 
   const providerBacked = hasProviderBackedDiscussionSource(run);
   const localOrganizerReady = isLocalPresetDiscussionPathReady(runtimeSetupPlan);
+  const providerOrganizerReady = isProviderBackedOrganizerPathReady(
+    runtimeProfiles,
+    getProviderBackedDiscussionConfigIds(run)
+  );
 
-  if (providerBacked && localOrganizerReady) {
+  if (providerBacked && providerOrganizerReady) {
     return {
-      title: "Model responses with local discussion organizers",
+      title: "Model-backed organizer path ready",
       detail:
-        "Continue discussion will ask configured model participants for independent first responses, then use local organizers to compare options, review risks, and draft the current conclusion.",
+        "Continue discussion will ask configured model participants for independent first responses, then use configured model organizer roles to compare options, review risks, and draft the current conclusion.",
       note:
-        "Provider credentials stay on this machine; this is the safest available full path until provider organizer setup is aligned locally.",
+        "Provider credentials stay on this machine; Web does not show saved API keys.",
       tone: "ok",
-      startRequest: LOCAL_PRESET_START_REQUEST,
+      startRequest: OPENAI_COMPATIBLE_FULL_START_REQUEST,
       fillLabel: "Fill recommended continuation request",
       primaryActionDetail:
-        "Collect model first responses, then organize options, disagreements, risks, and the draft conclusion.",
+        "Collect model first responses, then use model organizer roles for options, disagreements, risks, and the draft conclusion.",
       primaryResultTitle: "Model-backed discussion continued",
       primaryResultDetail:
-        "Model participants answered first; local organizers updated the readable timeline and conclusion materials."
+        "Model participants and model organizer roles updated the readable timeline and conclusion materials."
     };
   }
 
@@ -2614,15 +2660,15 @@ function describeDiscussionContinuationSetup(
       detail:
         "Configured model participants can answer first, but no full organizer path is ready in the current setup.",
       note:
-        "Continue discussion will collect independent first responses only until Setup / Models shows a complete organizer path.",
+        "Continue discussion will collect independent first responses only until the local service reports a complete model organizer path.",
       tone: "warning",
       startRequest: FIRST_RESPONSES_ONLY_START_REQUEST,
       fillLabel: "Fill first responses request",
       primaryActionDetail:
-        "Collect independent first responses only; complete Setup / Models before generating strongest options or a conclusion.",
+        "Collect independent first responses only; finish model organizer setup before generating strongest options or a conclusion.",
       primaryResultTitle: "First responses collected",
       primaryResultDetail:
-        "The discussion collected independent first responses. Complete setup before organizing options or drafting a conclusion."
+        "The discussion collected independent first responses. Finish model organizer setup before organizing options or drafting a conclusion."
     };
   }
 
@@ -2735,6 +2781,69 @@ function isLocalPresetDiscussionPathReady(
       (profile) => profile.id === "local-preset" && profile.enabled && profile.status === "ready"
     )
   );
+}
+
+function isProviderBackedOrganizerPathReady(
+  runtimeProfiles: RuntimeProfilesResponse | undefined,
+  providerConfigIdOrIds: string | readonly string[] | undefined
+): boolean {
+  const providerConfigIds = Array.isArray(providerConfigIdOrIds)
+    ? providerConfigIdOrIds
+    : providerConfigIdOrIds
+      ? [providerConfigIdOrIds]
+      : [];
+  const profile = runtimeProfiles?.profiles.find((candidate) => candidate.id === "openai-compatible");
+
+  if (
+    !profile?.enabled ||
+    !providerConfigIds.includes(OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID)
+  ) {
+    return false;
+  }
+
+  return (
+    hasEnabledRuntimeComponent(profile, "extraction_generator") &&
+    hasEnabledRuntimeComponent(profile, "proposal_reviewer") &&
+    hasEnabledRuntimeComponent(profile, "final_candidate_generator") &&
+    hasEnabledRuntimeComponent(profile, "final_auditor")
+  );
+}
+
+function hasEnabledRuntimeComponent(
+  profile: RuntimeProfilesResponse["profiles"][number],
+  kind: RuntimeProfilesResponse["profiles"][number]["components"][number]["kind"]
+): boolean {
+  return profile.components.some((component) => component.kind === kind && component.enabled);
+}
+
+function getProviderBackedDiscussionConfigIds(run: unknown): string[] {
+  const plan = getRecordValue(run, "plan") ?? {};
+  const participants = asArray(getRecordValue(plan, "participants"));
+  const providerConfigs = asArray(getRecordValue(plan, "providerConfigs"));
+  const configIds = new Set<string>();
+
+  for (const participant of participants) {
+    const providerConfigId = getStringRecordValue(participant, "providerConfigId");
+
+    if (providerConfigId) {
+      configIds.add(providerConfigId);
+    }
+  }
+
+  for (const providerConfig of providerConfigs) {
+    const id = getStringRecordValue(providerConfig, "id");
+    const providerConfigId = getStringRecordValue(providerConfig, "providerConfigId");
+
+    if (id) {
+      configIds.add(id);
+    }
+
+    if (providerConfigId) {
+      configIds.add(providerConfigId);
+    }
+  }
+
+  return [...configIds];
 }
 
 function GuidedDiscussionActionPath({ reviewReady }: { reviewReady: boolean }) {
