@@ -40,6 +40,72 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Start a discussion": "\u5f00\u59cb\u8ba8\u8bba",
   "Continue discussions": "\u7ee7\u7eed\u8ba8\u8bba",
   "Continue existing discussions": "\u7ee7\u7eed\u5df2\u6709\u8ba8\u8bba",
+  "Setup / Models": "\u8bbe\u7f6e / \u6a21\u578b",
+  "Check whether the local system can run model-backed discussions, and see the safest next setup action without exposing secrets.":
+    "\u68c0\u67e5\u672c\u5730\u7cfb\u7edf\u662f\u5426\u53ef\u4ee5\u8fd0\u884c\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\uff0c\u5e76\u5728\u4e0d\u66b4\u9732\u5bc6\u94a5\u7684\u60c5\u51b5\u4e0b\u67e5\u770b\u6700\u5b89\u5168\u7684\u4e0b\u4e00\u6b65\u8bbe\u7f6e\u64cd\u4f5c\u3002",
+  "Checking model setup": "\u6b63\u5728\u68c0\u67e5\u6a21\u578b\u8bbe\u7f6e",
+  "Could not load model setup": "\u65e0\u6cd5\u52a0\u8f7d\u6a21\u578b\u8bbe\u7f6e",
+  "No model setup returned": "\u6ca1\u6709\u8fd4\u56de\u6a21\u578b\u8bbe\u7f6e",
+  "The daemon did not return safe model setup status.":
+    "\u5b88\u62a4\u8fdb\u7a0b\u6ca1\u6709\u8fd4\u56de\u5b89\u5168\u7684\u6a21\u578b\u8bbe\u7f6e\u72b6\u6001\u3002",
+  "Model providers": "\u6a21\u578b\u63d0\u4f9b\u65b9",
+  "Safest next action": "\u6700\u5b89\u5168\u7684\u4e0b\u4e00\u6b65",
+  "Where to configure API key, base URL, and model":
+    "\u5728\u54ea\u91cc\u914d\u7f6e API key\u3001base URL \u548c model",
+  "Use local setup tools or local environment settings. Web shows readiness but does not store API keys.":
+    "\u4f7f\u7528\u672c\u5730\u8bbe\u7f6e\u5de5\u5177\u6216\u672c\u5730\u73af\u5883\u8bbe\u7f6e\u3002Web \u53ea\u663e\u793a\u5c31\u7eea\u72b6\u6001\uff0c\u4e0d\u5b58\u50a8 API key\u3002",
+  "Add model": "\u6dfb\u52a0\u6a21\u578b",
+  "Run the local setup wizard or edit local environment settings on this machine.":
+    "\u5728\u8fd9\u53f0\u673a\u5668\u4e0a\u8fd0\u884c\u672c\u5730\u8bbe\u7f6e\u5411\u5bfc\uff0c\u6216\u7f16\u8f91\u672c\u5730\u73af\u5883\u8bbe\u7f6e\u3002",
+  "Configure provider": "\u914d\u7f6e\u63d0\u4f9b\u65b9",
+  "Add the provider API key, base URL, and model in local setup, then restart the daemon so it can read them.":
+    "\u5728\u672c\u5730\u8bbe\u7f6e\u4e2d\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c model\uff0c\u7136\u540e\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\u8ba9\u5176\u8bfb\u53d6\u3002",
+  "Test connection": "\u6d4b\u8bd5\u8fde\u63a5",
+  "Use the local setup check after restart to verify safe setup status. Web does not send provider secrets.":
+    "\u91cd\u542f\u540e\u4f7f\u7528\u672c\u5730\u8bbe\u7f6e\u68c0\u67e5\u9a8c\u8bc1\u5b89\u5168\u8bbe\u7f6e\u72b6\u6001\u3002Web \u4e0d\u4f1a\u53d1\u9001\u63d0\u4f9b\u65b9\u5bc6\u94a5\u3002",
+  "Ready for discussions": "\u53ef\u7528\u4e8e\u8ba8\u8bba",
+  "When a model provider is ready, start a discussion and use configured participants or model-backed discussion plans.":
+    "\u5f53\u6a21\u578b\u63d0\u4f9b\u65b9\u5c31\u7eea\u540e\uff0c\u5f00\u59cb\u8ba8\u8bba\u5e76\u4f7f\u7528\u5df2\u914d\u7f6e\u7684\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u8ba1\u5212\u3002",
+  "Open Advanced / Developer Mode for exact environment variable names, setup-plan metadata, and diagnostic commands.":
+    "\u6253\u5f00\u9ad8\u7ea7 / \u5f00\u53d1\u8005\u6a21\u5f0f\u67e5\u770b\u786e\u5207\u73af\u5883\u53d8\u91cf\u540d\u79f0\u3001\u8bbe\u7f6e\u8ba1\u5212\u5143\u6570\u636e\u548c\u8bca\u65ad\u547d\u4ee4\u3002",
+  "Local demo model": "\u672c\u5730\u6f14\u793a\u6a21\u578b",
+  "Model provider": "\u6a21\u578b\u63d0\u4f9b\u65b9",
+  "Local preset": "\u672c\u5730\u9884\u8bbe",
+  "OpenAI-compatible": "OpenAI \u517c\u5bb9",
+  "HTTP-template": "HTTP \u6a21\u677f",
+  "MCP tool": "MCP \u5de5\u5177",
+  "A real model provider is ready for model-backed discussions.":
+    "\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u53ef\u7528\u4e8e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
+  "A provider is enabled, but model details still need local setup or per-discussion model settings.":
+    "\u63d0\u4f9b\u65b9\u5df2\u542f\u7528\uff0c\u4f46\u6a21\u578b\u7ec6\u8282\u4ecd\u9700\u8981\u672c\u5730\u8bbe\u7f6e\u6216\u6bcf\u6b21\u8ba8\u8bba\u7684\u6a21\u578b\u8bbe\u7f6e\u3002",
+  "The local preset is ready for demos; configure a provider for real model-backed discussions.":
+    "\u672c\u5730\u9884\u8bbe\u53ef\u7528\u4e8e\u6f14\u793a\uff1b\u8bf7\u914d\u7f6e\u63d0\u4f9b\u65b9\u4ee5\u8fdb\u884c\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
+  "No model provider is ready yet.": "\u5c1a\u65e0\u6a21\u578b\u63d0\u4f9b\u65b9\u5c31\u7eea\u3002",
+  "Ready for demo discussions": "\u53ef\u7528\u4e8e\u6f14\u793a\u8ba8\u8bba",
+  "Uses deterministic local material and does not call external providers.":
+    "\u4f7f\u7528\u786e\u5b9a\u6027\u7684\u672c\u5730\u6750\u6599\uff0c\u4e0d\u8c03\u7528\u5916\u90e8\u63d0\u4f9b\u65b9\u3002",
+  "Ready for model-backed discussions": "\u53ef\u7528\u4e8e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
+  "This provider can support configured model-backed participants from the daemon.":
+    "\u6b64\u63d0\u4f9b\u65b9\u53ef\u4ee5\u652f\u6301\u5b88\u62a4\u8fdb\u7a0b\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
+  "Provider enabled; add model details": "\u63d0\u4f9b\u65b9\u5df2\u542f\u7528\uff1b\u8bf7\u6dfb\u52a0\u6a21\u578b\u7ec6\u8282",
+  "Add a base URL and model in local setup, or provide equivalent per-discussion model settings.":
+    "\u5728\u672c\u5730\u8bbe\u7f6e\u4e2d\u6dfb\u52a0 base URL \u548c model\uff0c\u6216\u63d0\u4f9b\u7b49\u6548\u7684\u6bcf\u6b21\u8ba8\u8bba\u6a21\u578b\u8bbe\u7f6e\u3002",
+  "Configuration required": "\u9700\u8981\u914d\u7f6e",
+  "Add the missing local setup before this participant source can be used.":
+    "\u8865\u9f50\u7f3a\u5931\u7684\u672c\u5730\u8bbe\u7f6e\u540e\uff0c\u6b64\u53c2\u4e0e\u8005\u6765\u6e90\u624d\u80fd\u4f7f\u7528\u3002",
+  "Not enabled": "\u672a\u542f\u7528",
+  "Enable this provider locally before it can appear in discussions.":
+    "\u5148\u5728\u672c\u5730\u542f\u7528\u6b64\u63d0\u4f9b\u65b9\uff0c\u5b83\u624d\u80fd\u51fa\u73b0\u5728\u8ba8\u8bba\u4e2d\u3002",
+  "Configure provider locally": "\u5728\u672c\u5730\u914d\u7f6e\u63d0\u4f9b\u65b9",
+  "Use the local CLI setup wizard or local environment settings for API key, base URL, and model. Web does not store secrets.":
+    "\u4f7f\u7528\u672c\u5730 CLI \u8bbe\u7f6e\u5411\u5bfc\u6216\u672c\u5730\u73af\u5883\u8bbe\u7f6e\u6765\u914d\u7f6e API key\u3001base URL \u548c model\u3002Web \u4e0d\u5b58\u50a8\u5bc6\u94a5\u3002",
+  "Start a discussion and choose configured participants or model-backed discussion plans when needed.":
+    "\u5f00\u59cb\u8ba8\u8bba\uff0c\u5e76\u5728\u9700\u8981\u65f6\u9009\u62e9\u5df2\u914d\u7f6e\u7684\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u8ba1\u5212\u3002",
+  "Start with the local preset now, then add a real provider before relying on model-backed results.":
+    "\u73b0\u5728\u53ef\u4ee5\u5148\u4f7f\u7528\u672c\u5730\u9884\u8bbe\uff1b\u5728\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u7ed3\u679c\u524d\uff0c\u8bf7\u6dfb\u52a0\u771f\u5b9e\u63d0\u4f9b\u65b9\u3002",
+  "Add model setup first": "\u5148\u6dfb\u52a0\u6a21\u578b\u8bbe\u7f6e",
+  "Configure at least one local participant source before starting a model-backed discussion.":
+    "\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u81f3\u5c11\u914d\u7f6e\u4e00\u4e2a\u672c\u5730\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
   "Start or continue a deliberation in plain language, then inspect the current conclusion, perspectives, disagreements, evidence gaps, and next actions.":
     "\u7528\u81ea\u7136\u8bed\u8a00\u5f00\u59cb\u6216\u7ee7\u7eed\u5ba1\u8bae\uff0c\u7136\u540e\u67e5\u770b\u5f53\u524d\u7ed3\u8bba\u3001\u4e3b\u8981\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002",
   "Start or continue a discussion, then review the current conclusion, main perspectives, open disagreements, risks, missing evidence, and next recommended actions.":

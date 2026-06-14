@@ -971,8 +971,8 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(client.listSessions).not.toHaveBeenCalled();
-    expect(client.getRuntimeProfiles).not.toHaveBeenCalled();
     expect(client.getDeploymentPosture).not.toHaveBeenCalled();
     expect(client.getResourceAccessPosture).not.toHaveBeenCalled();
     expect(client.getOperationAudit).not.toHaveBeenCalled();
@@ -1033,6 +1033,39 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("link", { name: "Open session view" })).toBeTruthy();
   });
 
+  it("renders setup and model readiness as a default user path", async () => {
+    const client = renderApp("/");
+
+    expect(await screen.findByText("Setup / Models")).toBeTruthy();
+    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
+    expect(await screen.findByText("Daemon online")).toBeTruthy();
+    expect(screen.getByText("Model providers")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "A provider is enabled, but model details still need local setup or per-discussion model settings."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Ready for demo discussions")).toBeTruthy();
+    expect(screen.getByText("Provider enabled; add model details")).toBeTruthy();
+    expect(screen.getByText("Configuration required")).toBeTruthy();
+    expect(screen.getByText("Configure provider locally")).toBeTruthy();
+    expect(
+      screen.getByText("Where to configure API key, base URL, and model")
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Use local setup tools or local environment settings. Web shows readiness but does not store API keys."
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_MCP_TOOL_URL");
+
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
+    expect(await screen.findByText("Runtime profiles")).toBeTruthy();
+    expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
+  });
+
   it("localizes known sample discussion titles on the landing catalog", async () => {
     const client = createClient({
       listRuns: vi.fn(async () => ({
@@ -1054,6 +1087,16 @@ describe("@deliberum/web shell", () => {
       0
     );
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
+    expect(screen.getByText("\u8bbe\u7f6e / \u6a21\u578b")).toBeTruthy();
+    expect(screen.getAllByText("\u6a21\u578b\u63d0\u4f9b\u65b9").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText("\u63d0\u4f9b\u65b9\u5df2\u542f\u7528\uff1b\u8bf7\u6dfb\u52a0\u6a21\u578b\u7ec6\u8282")
+    ).toBeTruthy();
+    expect(
+      screen.getByText("\u5728\u54ea\u91cc\u914d\u7f6e API key\u3001base URL \u548c model")
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(screen.getByText("\u7ee7\u7eed\u6700\u65b0\u8ba8\u8bba")).toBeTruthy();
     const landingCatalogText =
       screen.getByText("\u6211\u4eec\u5e94\u5982\u4f55\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5ba1\u67e5\u5b83\uff1f")
@@ -1168,13 +1211,13 @@ describe("@deliberum/web shell", () => {
     const client = renderApp("/");
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
-    expect(client.getRuntimeProfiles).not.toHaveBeenCalled();
+    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Runtime profiles")).toBeTruthy();
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
-    expect(screen.getByText("Local preset")).toBeTruthy();
-    expect(screen.getByText("OpenAI-compatible")).toBeTruthy();
-    expect(screen.getByText("MCP tool")).toBeTruthy();
+    expect(screen.getAllByText("Local preset").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("OpenAI-compatible").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("MCP tool").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Ready").length).toBeGreaterThan(0);
     expect(screen.getByText("Ready with run config")).toBeTruthy();
     expect(screen.getByText("Needs configuration")).toBeTruthy();

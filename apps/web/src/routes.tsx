@@ -28,7 +28,9 @@ import type {
   DeploymentPostureResponse,
   OperationAuditResponse,
   ProposeFinalCandidateRequest,
-  ResourceAccessPostureResponse
+  ResourceAccessPostureResponse,
+  RuntimeSetupPlan,
+  RuntimeSetupPlanProfile
 } from "@deliberum/client";
 import {
   OutcomeBrief,
@@ -240,8 +242,7 @@ function LandingPage() {
   });
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
-    queryFn: () => client.getRuntimeProfiles(),
-    enabled: operatorDetailsOpen
+    queryFn: () => client.getRuntimeProfiles()
   });
   const deploymentPostureQuery = useQuery({
     queryKey: ["deployment-posture"],
@@ -398,6 +399,29 @@ function LandingPage() {
             </div>
           </DataPanel>
         </div>
+        <DataPanel
+          title={t("Setup / Models")}
+          description={t(
+            "Check whether the local system can run model-backed discussions, and see the safest next setup action without exposing secrets."
+          )}
+        >
+          {runtimeProfilesQuery.isLoading ? (
+            <StatusBanner title={t("Checking model setup")} />
+          ) : runtimeProfilesQuery.isError ? (
+            <StatusBanner
+              tone="warning"
+              title={t("Could not load model setup")}
+              detail={formatSafeErrorMessage(runtimeProfilesQuery.error)}
+            />
+          ) : runtimeSetupPlan ? (
+            <SetupModelsPanel setupPlan={runtimeSetupPlan} />
+          ) : (
+            <EmptyState
+              title={t("No model setup returned")}
+              description={t("The daemon did not return safe model setup status.")}
+            />
+          )}
+        </DataPanel>
         <AdvancedDetails
           summary="Advanced / Developer Mode"
           description="Core Deliberum concept names are preserved here for implementers and documentation readers."
@@ -817,6 +841,238 @@ function LandingPage() {
       </section>
     </WorkspaceShell>
   );
+}
+
+function SetupModelsPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
+  const { t } = useI18n();
+  const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
+  const providerProfiles = setupPlan.profiles.filter((profile) => profile.id !== "local-preset");
+  const readyProviderCount = providerProfiles.filter((profile) => profile.status === "ready")
+    .length;
+  const providerNeedsSetup = providerProfiles.some(
+    (profile) =>
+      profile.status === "ready_with_run_config" ||
+      profile.status === "needs_configuration" ||
+      profile.status === "disabled"
+  );
+  const canStartDiscussion =
+    localPreset?.status === "ready" ||
+    readyProviderCount > 0 ||
+    providerProfiles.some((profile) => profile.status === "ready_with_run_config");
+  const nextAction = describeSetupNextAction({
+    canStartDiscussion,
+    providerNeedsSetup,
+    readyProviderCount
+  });
+
+  return (
+    <div className="du-setup-models">
+      <div className="du-setup-status-grid">
+        <DaemonStatus />
+        <article className="du-status du-status-neutral">
+          <strong>{t("Model providers")}</strong>
+          <span>{t(describeModelProviderSummary(providerProfiles, localPreset))}</span>
+        </article>
+      </div>
+      <div className="du-setup-model-grid">
+        {localPreset ? <SetupModelCard profile={localPreset} kind="local" /> : null}
+        {providerProfiles.map((profile) => (
+          <SetupModelCard key={profile.id} profile={profile} kind="provider" />
+        ))}
+      </div>
+      <section
+        id="setup-local-instructions"
+        className={`du-setup-next-step du-status du-status-${nextAction.tone}`}
+      >
+        <p className="du-kicker">{t("Safest next action")}</p>
+        <strong>{t(nextAction.title)}</strong>
+        <span>{t(nextAction.detail)}</span>
+        <div className="du-action-row">
+          {canStartDiscussion ? (
+            <Link className="du-action-link" to="/runs/new">
+              {t("Start a discussion")}
+            </Link>
+          ) : null}
+        </div>
+      </section>
+      <details className="du-user-details">
+        <summary>
+          <span>{t("Where to configure API key, base URL, and model")}</span>
+          <small>
+            {t(
+              "Use local setup tools or local environment settings. Web shows readiness but does not store API keys."
+            )}
+          </small>
+        </summary>
+        <div className="du-user-details-stack">
+          <div className="du-setup-step-list">
+            <SetupInstructionStep
+              title={t("Add model")}
+              detail={t(
+                "Run the local setup wizard or edit local environment settings on this machine."
+              )}
+            />
+            <SetupInstructionStep
+              title={t("Configure provider")}
+              detail={t(
+                "Add the provider API key, base URL, and model in local setup, then restart the daemon so it can read them."
+              )}
+            />
+            <SetupInstructionStep
+              title={t("Test connection")}
+              detail={t(
+                "Use the local setup check after restart to verify safe setup status. Web does not send provider secrets."
+              )}
+            />
+            <SetupInstructionStep
+              title={t("Ready for discussions")}
+              detail={t(
+                "When a model provider is ready, start a discussion and use configured participants or model-backed discussion plans."
+              )}
+            />
+          </div>
+          <p className="du-readable-meta">
+            {t(
+              "Open Advanced / Developer Mode for exact environment variable names, setup-plan metadata, and diagnostic commands."
+            )}
+          </p>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function SetupModelCard({
+  profile,
+  kind
+}: {
+  profile: RuntimeSetupPlanProfile;
+  kind: "local" | "provider";
+}) {
+  const { t } = useI18n();
+  const status = describeSetupProfileStatus(profile, kind);
+
+  return (
+    <article className={`du-setup-model-card du-setup-model-${status.tone}`}>
+      <p className="du-kicker">{t(kind === "local" ? "Local demo model" : "Model provider")}</p>
+      <h4>{t(profile.name)}</h4>
+      <strong>{t(status.title)}</strong>
+      <p>{t(status.detail)}</p>
+    </article>
+  );
+}
+
+function SetupInstructionStep({ title, detail }: { title: string; detail: string }) {
+  return (
+    <article className="du-readable-item">
+      <h4>{title}</h4>
+      <p>{detail}</p>
+    </article>
+  );
+}
+
+function describeModelProviderSummary(
+  providerProfiles: RuntimeSetupPlanProfile[],
+  localPreset: RuntimeSetupPlanProfile | undefined
+): string {
+  const readyProviders = providerProfiles.filter((profile) => profile.status === "ready");
+
+  if (readyProviders.length > 0) {
+    return "A real model provider is ready for model-backed discussions.";
+  }
+
+  if (providerProfiles.some((profile) => profile.status === "ready_with_run_config")) {
+    return "A provider is enabled, but model details still need local setup or per-discussion model settings.";
+  }
+
+  if (localPreset?.status === "ready") {
+    return "The local preset is ready for demos; configure a provider for real model-backed discussions.";
+  }
+
+  return "No model provider is ready yet.";
+}
+
+function describeSetupProfileStatus(
+  profile: RuntimeSetupPlanProfile,
+  kind: "local" | "provider"
+): { title: string; detail: string; tone: "ok" | "warning" | "neutral" } {
+  if (kind === "local" && profile.status === "ready") {
+    return {
+      title: "Ready for demo discussions",
+      detail: "Uses deterministic local material and does not call external providers.",
+      tone: "ok"
+    };
+  }
+
+  if (profile.status === "ready") {
+    return {
+      title: "Ready for model-backed discussions",
+      detail: "This provider can support configured model-backed participants from the daemon.",
+      tone: "ok"
+    };
+  }
+
+  if (profile.status === "ready_with_run_config") {
+    return {
+      title: "Provider enabled; add model details",
+      detail: "Add a base URL and model in local setup, or provide equivalent per-discussion model settings.",
+      tone: "warning"
+    };
+  }
+
+  if (profile.status === "needs_configuration") {
+    return {
+      title: "Configuration required",
+      detail: "Add the missing local setup before this participant source can be used.",
+      tone: "warning"
+    };
+  }
+
+  return {
+    title: "Not enabled",
+    detail: "Enable this provider locally before it can appear in discussions.",
+    tone: "neutral"
+  };
+}
+
+function describeSetupNextAction({
+  canStartDiscussion,
+  providerNeedsSetup,
+  readyProviderCount
+}: {
+  canStartDiscussion: boolean;
+  providerNeedsSetup: boolean;
+  readyProviderCount: number;
+}): { title: string; detail: string; tone: "ok" | "warning" | "neutral" } {
+  if (readyProviderCount > 0) {
+    return {
+      title: "Ready for discussions",
+      detail: "Start a discussion and choose configured participants or model-backed discussion plans when needed.",
+      tone: "ok"
+    };
+  }
+
+  if (providerNeedsSetup) {
+    return {
+      title: "Configure provider locally",
+      detail: "Use the local CLI setup wizard or local environment settings for API key, base URL, and model. Web does not store secrets.",
+      tone: "warning"
+    };
+  }
+
+  if (canStartDiscussion) {
+    return {
+      title: "Ready for demo discussions",
+      detail: "Start with the local preset now, then add a real provider before relying on model-backed results.",
+      tone: "ok"
+    };
+  }
+
+  return {
+    title: "Add model setup first",
+    detail: "Configure at least one local participant source before starting a model-backed discussion.",
+    tone: "neutral"
+  };
 }
 
 function QualityPathItem({ title, detail }: { title: string; detail: string }) {

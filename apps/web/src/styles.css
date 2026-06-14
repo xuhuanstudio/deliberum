@@ -575,6 +575,76 @@ textarea:focus-visible {
   background: var(--du-line);
 }
 
+.du-setup-models {
+  display: grid;
+  gap: 16px;
+}
+
+.du-setup-status-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 12px;
+}
+
+.du-setup-model-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-setup-model-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+  border-top: 4px solid var(--du-muted);
+  background: var(--du-surface);
+  padding: 16px;
+}
+
+.du-setup-model-card h4,
+.du-setup-model-card p {
+  margin: 0;
+}
+
+.du-setup-model-card h4 {
+  font-size: 1rem;
+}
+
+.du-setup-model-card strong {
+  line-height: 1.35;
+}
+
+.du-setup-model-card p:not(.du-kicker) {
+  color: var(--du-muted);
+  line-height: 1.45;
+}
+
+.du-setup-model-ok {
+  border-top-color: var(--du-accent);
+}
+
+.du-setup-model-warning {
+  border-top-color: var(--du-warn);
+}
+
+.du-setup-next-step .du-action-row {
+  margin-top: 8px;
+}
+
+.du-setup-step-list {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
 .du-discussion-dashboard-grid {
   display: grid;
   grid-template-columns: minmax(240px, 1.35fr) repeat(4, minmax(0, 1fr));
@@ -2159,6 +2229,8 @@ textarea:focus-visible {
   .du-outcome-review-path,
   .du-outcome-review-grid,
   .du-outcome-section-grid,
+  .du-setup-status-grid,
+  .du-setup-model-grid,
   .du-stage-grid,
   .du-result-handoff-grid,
   .du-follow-controls,
