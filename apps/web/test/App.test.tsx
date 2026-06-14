@@ -1498,6 +1498,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
     expect(screen.getByText("\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba")).toBeTruthy();
     expect(screen.getAllByText("\u5f53\u524d\u7ed3\u8bba").length).toBeGreaterThan(0);
+    expect(await screen.findByText("\u98ce\u9669\u4e0e\u7f3a\u5931\u8bc1\u636e")).toBeTruthy();
+    expect(
+      await screen.findByText("\u5f53\u524d\u72b6\u6001\uff1a\u5728\u672c\u6b21\u8ba8\u8bba\u4e2d\u53ef\u89c1")
+    ).toBeTruthy();
+    const detailPanelsText =
+      screen.getByRole("region", { name: "\u8ba8\u8bba\u8be6\u60c5\u9762\u677f" }).textContent ??
+      "";
+    expect(detailPanelsText).toContain("\u4e3b\u8981\u89c2\u70b9");
+    expect(detailPanelsText).not.toContain("Current state:");
+    expect(detailPanelsText).not.toContain("Risks and missing evidence");
     expect(document.body.textContent ?? "").not.toContain("Run Alpha");
   });
 

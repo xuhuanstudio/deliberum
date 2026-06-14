@@ -2936,6 +2936,7 @@ function describeEvidenceReviewDetail(
 }
 
 function RunProjectionPanels({ sessionId }: { sessionId: string }) {
+  const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const frontierQuery = useQuery({
     queryKey: ["run-frontier", sessionId],
@@ -2955,17 +2956,19 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
   });
 
   return (
-    <section className="du-projection-section" aria-label="Discussion detail panels">
+    <section className="du-projection-section" aria-label={t("Discussion detail panels")}>
       <div id="main-perspectives" className="du-workbench-anchor">
         <DataPanel
-          title="Main perspectives"
-          description="Strongest current options accepted into the discussion so far."
+          title={t("Main perspectives")}
+          description={t("Strongest current options accepted into the discussion so far.")}
         >
           <QueryState query={frontierQuery}>
             <ProjectionRecordList
               records={asArray(frontierQuery.data?.candidates)}
-              emptyTitle="No main perspectives"
-              emptyDescription="No main perspectives have been accepted into this discussion yet."
+              emptyTitle={t("No main perspectives")}
+              emptyDescription={t(
+                "No main perspectives have been accepted into this discussion yet."
+              )}
               kind="candidate"
             />
           </QueryState>
@@ -2973,14 +2976,18 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
       </div>
       <div id="open-disagreements" className="du-workbench-anchor">
         <DataPanel
-          title="Open disagreements"
-          description="Unresolved objections and challenges that still constrain the discussion."
+          title={t("Open disagreements")}
+          description={t(
+            "Unresolved objections and challenges that still constrain the discussion."
+          )}
         >
           <QueryState query={objectionsQuery}>
             <ProjectionRecordList
               records={asArray(objectionsQuery.data?.objections)}
-              emptyTitle="No open disagreements"
-              emptyDescription="No open disagreements have been accepted into this discussion yet."
+              emptyTitle={t("No open disagreements")}
+              emptyDescription={t(
+                "No open disagreements have been accepted into this discussion yet."
+              )}
               kind="objection"
             />
           </QueryState>
@@ -2988,14 +2995,16 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
       </div>
       <div id="answer-requirements" className="du-workbench-anchor">
         <DataPanel
-          title="Requirements this answer must satisfy"
-          description="Explicit requirements for the current conclusion."
+          title={t("Requirements this answer must satisfy")}
+          description={t("Explicit requirements for the current conclusion.")}
         >
           <QueryState query={obligationsQuery}>
             <ProjectionRecordList
               records={asArray(obligationsQuery.data?.qualityObligations)}
-              emptyTitle="No requirements"
-              emptyDescription="No explicit requirements have been accepted into this discussion yet."
+              emptyTitle={t("No requirements")}
+              emptyDescription={t(
+                "No explicit requirements have been accepted into this discussion yet."
+              )}
               kind="quality obligation"
             />
           </QueryState>
@@ -3003,14 +3012,18 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
       </div>
       <div id="evidence-gaps" className="du-workbench-anchor">
         <DataPanel
-          title="Risks and missing evidence"
-          description="Evidence gaps and verification needs that should be checked before relying on the conclusion."
+          title={t("Risks and missing evidence")}
+          description={t(
+            "Evidence gaps and verification needs that should be checked before relying on the conclusion."
+          )}
         >
           <QueryState query={resourcesQuery}>
             <ProjectionRecordList
               records={asArray(resourcesQuery.data?.evidenceNeeds)}
-              emptyTitle="No missing evidence"
-              emptyDescription="No evidence gaps have been accepted into this discussion yet."
+              emptyTitle={t("No missing evidence")}
+              emptyDescription={t(
+                "No evidence gaps have been accepted into this discussion yet."
+              )}
               kind="evidence"
             />
           </QueryState>
@@ -3869,8 +3882,13 @@ function ProjectionRecord({
   index: number;
   kind: ProjectionRecordKind;
 }) {
+  const { t } = useI18n();
   const object = getRecordValue(record, "object") ?? record;
-  const fallbackTitle = `${formatProjectionKind(kind)} ${index + 1}`;
+  const kindLabel = t(formatProjectionKind(kind));
+  const fallbackTitle = t("{kind} {number}", {
+    kind: kindLabel,
+    number: index + 1
+  });
   const title =
     getStringRecordValue(object, "title") ??
     getStringRecordValue(object, "question") ??
@@ -3878,7 +3896,7 @@ function ProjectionRecord({
     getStringRecordValue(object, "requirement") ??
     getStringRecordValue(object, "failureMode") ??
     fallbackTitle;
-  const status = formatReadableRecordStatus(getRecordValue(object, "status"));
+  const status = t(formatReadableRecordStatus(getRecordValue(object, "status")));
   const description =
     getStringRecordValue(object, "description") ??
     getStringRecordValue(object, "consequence") ??
@@ -3888,10 +3906,10 @@ function ProjectionRecord({
 
   return (
     <article className="du-readable-item">
-      <p className="du-kicker">{formatProjectionKind(kind)}</p>
+      <p className="du-kicker">{kindLabel}</p>
       <h4>{title}</h4>
       {description && description !== title ? <p>{description}</p> : null}
-      <p className="du-readable-meta">Current state: {status}</p>
+      <p className="du-readable-meta">{t("Current state: {status}", { status })}</p>
     </article>
   );
 }
@@ -3988,7 +4006,7 @@ function formatProjectionKind(kind: ProjectionRecordKind): string {
 }
 
 function formatReadableRecordStatus(value: unknown): string {
-  if (value === "accepted_active") {
+  if (value === "accepted_active" || value === "active") {
     return "Visible in this discussion";
   }
 

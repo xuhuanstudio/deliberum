@@ -275,6 +275,37 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "{total} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4e2d\u6709 {unresolved} \u4e2a\u9700\u8981\u9a8c\u8bc1",
   "{unresolved} of {total} evidence gaps need verification":
     "{total} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4e2d\u6709 {unresolved} \u4e2a\u9700\u8981\u9a8c\u8bc1",
+  "Discussion detail panels": "\u8ba8\u8bba\u8be6\u60c5\u9762\u677f",
+  "Strongest current options accepted into the discussion so far.":
+    "\u76ee\u524d\u5df2\u7eb3\u5165\u8ba8\u8bba\u7684\u6700\u5f3a\u5f53\u524d\u9009\u9879\u3002",
+  "Unresolved objections and challenges that still constrain the discussion.":
+    "\u4ecd\u7ea6\u675f\u8ba8\u8bba\u7684\u672a\u89e3\u51b3\u53cd\u5bf9\u610f\u89c1\u548c\u6311\u6218\u3002",
+  "Explicit requirements for the current conclusion.":
+    "\u5f53\u524d\u7ed3\u8bba\u7684\u660e\u786e\u8981\u6c42\u3002",
+  "Risks and missing evidence": "\u98ce\u9669\u4e0e\u7f3a\u5931\u8bc1\u636e",
+  "Evidence gaps and verification needs that should be checked before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u5e94\u68c0\u67e5\u7684\u8bc1\u636e\u7f3a\u53e3\u548c\u9a8c\u8bc1\u9700\u6c42\u3002",
+  "No main perspectives": "\u5c1a\u65e0\u4e3b\u8981\u89c2\u70b9",
+  "No main perspectives have been accepted into this discussion yet.":
+    "\u5c1a\u672a\u6709\u4e3b\u8981\u89c2\u70b9\u88ab\u7eb3\u5165\u672c\u6b21\u8ba8\u8bba\u3002",
+  "No open disagreements": "\u5c1a\u65e0\u672a\u89e3\u51b3\u5206\u6b67",
+  "No open disagreements have been accepted into this discussion yet.":
+    "\u5c1a\u672a\u6709\u672a\u89e3\u51b3\u5206\u6b67\u88ab\u7eb3\u5165\u672c\u6b21\u8ba8\u8bba\u3002",
+  "No requirements": "\u5c1a\u65e0\u8981\u6c42",
+  "No explicit requirements have been accepted into this discussion yet.":
+    "\u5c1a\u672a\u6709\u660e\u786e\u8981\u6c42\u88ab\u7eb3\u5165\u672c\u6b21\u8ba8\u8bba\u3002",
+  "No missing evidence": "\u5c1a\u65e0\u7f3a\u5931\u8bc1\u636e",
+  "No evidence gaps have been accepted into this discussion yet.":
+    "\u5c1a\u672a\u6709\u8bc1\u636e\u7f3a\u53e3\u88ab\u7eb3\u5165\u672c\u6b21\u8ba8\u8bba\u3002",
+  "Main perspective": "\u4e3b\u8981\u89c2\u70b9",
+  "Open disagreement": "\u672a\u89e3\u51b3\u5206\u6b67",
+  "Evidence gap": "\u8bc1\u636e\u7f3a\u53e3",
+  Requirement: "\u8981\u6c42",
+  "{kind} {number}": "{kind} {number}",
+  "Current state: {status}": "\u5f53\u524d\u72b6\u6001\uff1a{status}",
+  "Visible in this discussion": "\u5728\u672c\u6b21\u8ba8\u8bba\u4e2d\u53ef\u89c1",
+  "Still open": "\u4ecd\u672a\u89e3\u51b3",
+  "Needs an answer": "\u9700\u8981\u56de\u7b54",
   "Advanced / Developer Mode": "\u9ad8\u7ea7 / \u5f00\u53d1\u8005\u6a21\u5f0f",
   "Checking daemon": "\u6b63\u5728\u68c0\u67e5\u5b88\u62a4\u8fdb\u7a0b",
   "Daemon unavailable": "\u5b88\u62a4\u8fdb\u7a0b\u4e0d\u53ef\u7528",
