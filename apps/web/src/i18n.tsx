@@ -539,6 +539,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "No visible discussion steps": "\u6ca1\u6709\u53ef\u89c1\u8ba8\u8bba\u6b65\u9aa4",
   "No user-facing step updates were returned for this request.":
     "\u672c\u6b21\u8bf7\u6c42\u6ca1\u6709\u8fd4\u56de\u9762\u5411\u7528\u6237\u7684\u6b65\u9aa4\u66f4\u65b0\u3002",
+  "Latest discussion update": "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0",
+  "Review this result first, then return to the timeline, outputs, or current conclusion.":
+    "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u5f53\u524d\u7ed3\u8bba\u3002",
   "Updated discussion steps": "\u5df2\u66f4\u65b0\u7684\u8ba8\u8bba\u6b65\u9aa4",
   "What changed": "\u53d1\u751f\u4e86\u4ec0\u4e48\u53d8\u5316",
   "Readable summary of the discussion work that just ran.":

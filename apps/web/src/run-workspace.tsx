@@ -13,7 +13,13 @@ import {
   StatusBanner,
   WorkspaceShell
 } from "@deliberum/ui";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode
+} from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
 import { LanguageSwitcher, useI18n } from "./i18n";
 import {
@@ -1300,6 +1306,7 @@ function StartRunForm({
   const { client } = useDaemonRuntime();
   const queryClient = useQueryClient();
   const continuationView = describeDiscussionContinuation(run);
+  const latestUpdateRef = useRef<HTMLElement | null>(null);
   const [startRequestText, setStartRequestText] = useState(DEFAULT_START_REQUEST_TEXT);
   const [startFeedback, setStartFeedback] = useState<DiscussionStartFeedback | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
@@ -1312,6 +1319,21 @@ function StartRunForm({
       await invalidateRunWorkspaceQueries(queryClient, runId, resultSessionId);
     }
   });
+
+  useEffect(() => {
+    if (!startMutation.data) {
+      return;
+    }
+
+    const prefersReducedMotion =
+      typeof globalThis.matchMedia === "function" &&
+      globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    latestUpdateRef.current?.scrollIntoView?.({
+      block: "start",
+      behavior: prefersReducedMotion ? "auto" : "smooth"
+    });
+  }, [startMutation.data]);
 
   function submitStartRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1504,7 +1526,23 @@ function StartRunForm({
         />
       ) : null}
       {startMutation.data ? (
-        <StartResult result={startMutation.data} runId={runId} feedback={startFeedback} />
+        <section
+          id="latest-discussion-update"
+          className="du-latest-discussion-update"
+          aria-label={t("Latest discussion update")}
+          ref={latestUpdateRef}
+        >
+          <div className="du-section-label">
+            <p className="du-kicker">{t("Latest discussion update")}</p>
+            <h4>{t("What just changed")}</h4>
+            <p>
+              {t(
+                "Review this result first, then return to the timeline, outputs, or current conclusion."
+              )}
+            </p>
+          </div>
+          <StartResult result={startMutation.data} runId={runId} feedback={startFeedback} />
+        </section>
       ) : null}
     </DataPanel>
   );

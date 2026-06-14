@@ -1867,6 +1867,16 @@ textarea:focus-visible {
   opacity: 0.78;
 }
 
+.du-latest-discussion-update {
+  display: grid;
+  gap: 12px;
+  scroll-margin-top: 18px;
+}
+
+.du-latest-discussion-update > .du-section-label {
+  border-top-color: var(--du-accent);
+}
+
 .du-start-result,
 .du-projection-section {
   display: grid;

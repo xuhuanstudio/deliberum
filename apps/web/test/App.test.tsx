@@ -1692,10 +1692,19 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "\u66f4\u65b0\u7ed3\u8bba" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    const latestUpdate = await screen.findByRole("region", {
+      name: "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0"
+    });
+    expect(latestUpdate).toBeTruthy();
+    expect(latestUpdate.textContent ?? "").toContain("\u53d1\u751f\u4e86\u4ec0\u4e48\u53d8\u5316");
+    expect(latestUpdate.textContent ?? "").toContain(
+      "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u5f53\u524d\u7ed3\u8bba\u3002"
+    );
     const resultHandoff = await screen.findByRole("region", {
       name: "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84"
     });
     expect(resultHandoff).toBeTruthy();
+    expect(latestUpdate.contains(resultHandoff)).toBe(true);
     expect(resultHandoff.textContent ?? "").toContain("\u63a5\u4e0b\u6765\u5ba1\u9605\u4ec0\u4e48");
     expect(resultHandoff.textContent ?? "").toContain(
       "\u5ba1\u9605\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf"
@@ -2371,6 +2380,15 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Update conclusion" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    const latestUpdate = await screen.findByRole("region", {
+      name: "Latest discussion update"
+    });
+    expect(latestUpdate).toBeTruthy();
+    expect(latestUpdate.getAttribute("id")).toBe("latest-discussion-update");
+    expect(latestUpdate.textContent ?? "").toContain("What just changed");
+    expect(latestUpdate.textContent ?? "").toContain(
+      "Review this result first, then return to the timeline, outputs, or current conclusion."
+    );
     expect(await screen.findByText("Discussion update completed")).toBeTruthy();
     expect(
       screen.getByText(
@@ -2379,6 +2397,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     const resultHandoff = screen.getByRole("region", { name: "Post-update review path" });
     expect(resultHandoff).toBeTruthy();
+    expect(latestUpdate.contains(resultHandoff)).toBe(true);
     expect(resultHandoff.textContent ?? "").toContain("What to review next");
     expect(resultHandoff.textContent ?? "").toContain("Review updated timeline");
     expect(resultHandoff.textContent ?? "").toContain("Review discussion outputs");
