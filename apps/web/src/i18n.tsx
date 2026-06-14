@@ -147,6 +147,35 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Start from a question": "\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb",
   "Write a brief in plain language or use the sample brief to try the full discussion flow immediately.":
     "\u7528\u81ea\u7136\u8bed\u8a00\u5199\u4e00\u4efd\u7b80\u62a5\uff0c\u6216\u4f7f\u7528\u793a\u4f8b\u7b80\u62a5\u7acb\u5373\u4f53\u9a8c\u5b8c\u6574\u8ba8\u8bba\u6d41\u7a0b\u3002",
+  "Model setup for this discussion": "\u672c\u6b21\u8ba8\u8bba\u7684\u6a21\u578b\u8bbe\u7f6e",
+  "Know whether this start path will use demo participants or configured model providers before you create the discussion.":
+    "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u5148\u786e\u8ba4\u6b64\u5165\u53e3\u4f1a\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u8fd8\u662f\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
+  "Quick-start participants": "\u5feb\u901f\u5f00\u59cb\u53c2\u4e0e\u8005",
+  "Model-backed participants": "\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005",
+  "This page does not ask for API keys. Configure API keys locally, restart the daemon, then refresh this page.":
+    "\u6b64\u9875\u9762\u4e0d\u4f1a\u8981\u6c42\u8f93\u5165 API key\u3002\u8bf7\u5728\u672c\u5730\u914d\u7f6e API key\uff0c\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\uff0c\u7136\u540e\u5237\u65b0\u6b64\u9875\u9762\u3002",
+  "Provider-ready start": "\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea",
+  "At least one real model provider is ready. The quick-start form still uses demo participants; use a model-backed discussion plan when you want provider-backed perspectives.":
+    "\u81f3\u5c11\u4e00\u4e2a\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea\u3002\u5feb\u901f\u5f00\u59cb\u8868\u5355\u4ecd\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\uff1b\u9700\u8981\u63d0\u4f9b\u65b9\u652f\u6301\u7684\u89c6\u89d2\u65f6\uff0c\u8bf7\u4f7f\u7528\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u8ba1\u5212\u3002",
+  "The plain-language form starts with built-in demo participants so the first discussion works immediately.":
+    "\u81ea\u7136\u8bed\u8a00\u8868\u5355\u4f1a\u5148\u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\uff0c\u56e0\u6b64\u7b2c\u4e00\u6b21\u8ba8\u8bba\u53ef\u4ee5\u7acb\u5373\u8fd0\u884c\u3002",
+  "Real provider-backed participants are available for model-backed plans.":
+    "\u771f\u5b9e\u63d0\u4f9b\u65b9\u652f\u6301\u7684\u53c2\u4e0e\u8005\u53ef\u7528\u4e8e\u6a21\u578b\u652f\u6301\u7684\u8ba1\u5212\u3002",
+  "Demo start, provider details needed": "\u53ef\u6f14\u793a\u5f00\u59cb\uff0c\u4ecd\u9700\u63d0\u4f9b\u65b9\u7ec6\u8282",
+  "The quick-start form can start now with demo participants. A provider is enabled, but model details still need local setup or per-discussion model settings.":
+    "\u5feb\u901f\u5f00\u59cb\u8868\u5355\u73b0\u5728\u53ef\u4ee5\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u5f00\u59cb\u3002\u5df2\u6709\u63d0\u4f9b\u65b9\u542f\u7528\uff0c\u4f46\u6a21\u578b\u7ec6\u8282\u4ecd\u9700\u8981\u672c\u5730\u8bbe\u7f6e\u6216\u6bcf\u6b21\u8ba8\u8bba\u7684\u6a21\u578b\u8bbe\u7f6e\u3002",
+  "Provider enabled; add base URL and model locally before relying on model-backed results.":
+    "\u63d0\u4f9b\u65b9\u5df2\u542f\u7528\uff1b\u5728\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u7ed3\u679c\u524d\uff0c\u8bf7\u5148\u5728\u672c\u5730\u6dfb\u52a0 base URL \u548c model\u3002",
+  "Demo start ready": "\u6f14\u793a\u5f00\u59cb\u5df2\u5c31\u7eea",
+  "You can start with built-in demo participants now. Configure a real provider before relying on model-backed results.":
+    "\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\u5f00\u59cb\u3002\u5728\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u7ed3\u679c\u524d\uff0c\u8bf7\u914d\u7f6e\u771f\u5b9e\u63d0\u4f9b\u65b9\u3002",
+  "No real model provider is ready yet. Configure one locally before relying on model-backed discussions.":
+    "\u5c1a\u65e0\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u5c31\u7eea\u3002\u5728\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u5728\u672c\u5730\u914d\u7f6e\u4e00\u4e2a\u63d0\u4f9b\u65b9\u3002",
+  "Model setup needed": "\u9700\u8981\u6a21\u578b\u8bbe\u7f6e",
+  "No demo participant or real provider is ready. Configure at least one participant source locally before starting a useful discussion.":
+    "\u6ca1\u6709\u6f14\u793a\u53c2\u4e0e\u8005\u6216\u771f\u5b9e\u63d0\u4f9b\u65b9\u5c31\u7eea\u3002\u5f00\u59cb\u6709\u7528\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u81f3\u5c11\u5728\u672c\u5730\u914d\u7f6e\u4e00\u4e2a\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
+  "The quick-start form needs at least one local participant source before it can create useful discussion material.":
+    "\u5feb\u901f\u5f00\u59cb\u8868\u5355\u9700\u8981\u81f3\u5c11\u4e00\u4e2a\u672c\u5730\u53c2\u4e0e\u8005\u6765\u6e90\uff0c\u624d\u80fd\u521b\u5efa\u6709\u7528\u7684\u8ba8\u8bba\u6750\u6599\u3002",
   "Describe what you need to decide or clarify. Deliberum will structure the discussion so the conclusion, disagreements, risks, evidence gaps, and next actions stay visible.":
     "\u63cf\u8ff0\u4f60\u9700\u8981\u51b3\u5b9a\u6216\u6f84\u6e05\u7684\u5185\u5bb9\u3002Deliberum \u4f1a\u7ec4\u7ec7\u8ba8\u8bba\uff0c\u8ba9\u7ed3\u8bba\u3001\u5206\u6b67\u3001\u98ce\u9669\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u4fdd\u6301\u53ef\u89c1\u3002",
   "Discussion question": "\u8ba8\u8bba\u95ee\u9898",

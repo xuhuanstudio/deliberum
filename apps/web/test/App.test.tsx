@@ -1637,16 +1637,49 @@ describe("@deliberum/web shell", () => {
   });
 
   it("renders the start discussion path in Simplified Chinese when requested", async () => {
-    renderApp("/runs/new", createClient(), {
+    const client = createClient();
+
+    renderApp("/runs/new", client, {
       initialLanguage: "zh-CN"
     });
 
     expect((await screen.findAllByText("\u5f00\u59cb\u8ba8\u8bba")).length).toBeGreaterThan(0);
     expect(screen.getByText("\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb")).toBeTruthy();
+    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
+    expect(screen.getByText("\u672c\u6b21\u8ba8\u8bba\u7684\u6a21\u578b\u8bbe\u7f6e")).toBeTruthy();
+    expect(
+      screen.getByText("\u53ef\u6f14\u793a\u5f00\u59cb\uff0c\u4ecd\u9700\u63d0\u4f9b\u65b9\u7ec6\u8282")
+    ).toBeTruthy();
+    expect(screen.getByText("\u5feb\u901f\u5f00\u59cb\u53c2\u4e0e\u8005")).toBeTruthy();
+    expect(screen.getByText("\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
     expect(screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898")).toBeTruthy();
     expect((screen.getByLabelText("\u8bed\u8a00") as HTMLSelectElement).value).toBe("zh-CN");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("run / session");
+  });
+
+  it("shows model readiness on the start discussion path without setup internals", async () => {
+    const client = renderApp("/runs/new");
+
+    expect(await screen.findByText("Model setup for this discussion")).toBeTruthy();
+    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
+    expect(screen.getByText("Demo start, provider details needed")).toBeTruthy();
+    expect(screen.getByText("Quick-start participants")).toBeTruthy();
+    expect(screen.getByText("Model-backed participants")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The quick-start form can start now with demo participants. A provider is enabled, but model details still need local setup or per-discussion model settings."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "This page does not ask for API keys. Configure API keys locally, restart the daemon, then refresh this page."
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
+    expect(document.body.textContent ?? "").not.toContain("runtime profile");
   });
 
   it("switches the user-facing shell between English and Simplified Chinese", async () => {

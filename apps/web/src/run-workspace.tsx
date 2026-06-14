@@ -13,6 +13,8 @@ import {
   StatusBanner,
   WorkspaceShell
 } from "@deliberum/ui";
+import { buildRuntimeSetupPlan } from "@deliberum/client";
+import type { RuntimeSetupPlan } from "@deliberum/client";
 import {
   useEffect,
   useRef,
@@ -78,6 +80,14 @@ type DiscussionContinuationView = {
 type DiscussionStartFeedback = {
   title: string;
   detail: string;
+};
+type DiscussionModelSetupView = {
+  title: string;
+  detail: string;
+  quickStartDetail: string;
+  providerDetail: string;
+  providerTone: "ok" | "warning" | "neutral";
+  tone: "ok" | "warning" | "neutral";
 };
 type DiscussionNextStepView = {
   title: string;
@@ -169,6 +179,13 @@ export function RunNewPage() {
   const [discussionConstraints, setDiscussionConstraints] = useState("");
   const [discussionExpectedOutcome, setDiscussionExpectedOutcome] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
+  const runtimeProfilesQuery = useQuery({
+    queryKey: ["runtime-profiles"],
+    queryFn: () => client.getRuntimeProfiles()
+  });
+  const runtimeSetupPlan = runtimeProfilesQuery.data
+    ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
+    : undefined;
   const createMutation = useMutation({
     mutationFn: (runPlan: Record<string, unknown>) => client.createRun({ runPlan }),
     onSuccess: (result) => {
@@ -244,6 +261,23 @@ export function RunNewPage() {
             "Write a brief in plain language or use the sample brief to try the full discussion flow immediately."
           )}
         />
+        {runtimeProfilesQuery.isLoading ? (
+          <StatusBanner title={t("Checking model setup")} />
+        ) : runtimeProfilesQuery.isError ? (
+          <StatusBanner
+            tone="warning"
+            title={t("Could not load model setup")}
+            detail={formatSafeErrorMessage(runtimeProfilesQuery.error)}
+          />
+        ) : runtimeSetupPlan ? (
+          <DiscussionModelSetupPanel setupPlan={runtimeSetupPlan} />
+        ) : (
+          <StatusBanner
+            tone="warning"
+            title={t("No model setup returned")}
+            detail={t("The daemon did not return safe model setup status.")}
+          />
+        )}
         <DataPanel
           title={t("Discussion brief")}
           description={t(
@@ -383,6 +417,107 @@ export function RunNewPage() {
       </ViewFrame>
     </RunWorkspaceShell>
   );
+}
+
+function DiscussionModelSetupPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
+  const { t } = useI18n();
+  const view = describeDiscussionModelSetup(setupPlan);
+
+  return (
+    <DataPanel
+      title={t("Model setup for this discussion")}
+      description={t(
+        "Know whether this start path will use demo participants or configured model providers before you create the discussion."
+      )}
+    >
+      <div className="du-discussion-setup-grid">
+        <article className={`du-status du-status-${view.tone}`}>
+          <strong>{t(view.title)}</strong>
+          <span>{t(view.detail)}</span>
+        </article>
+        <article className="du-status du-status-ok">
+          <strong>{t("Quick-start participants")}</strong>
+          <span>{t(view.quickStartDetail)}</span>
+        </article>
+        <article className={`du-status du-status-${view.providerTone}`}>
+          <strong>{t("Model-backed participants")}</strong>
+          <span>{t(view.providerDetail)}</span>
+        </article>
+      </div>
+      <p className="du-discussion-setup-note">
+        {t(
+          "This page does not ask for API keys. Configure API keys locally, restart the daemon, then refresh this page."
+        )}
+      </p>
+    </DataPanel>
+  );
+}
+
+function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionModelSetupView {
+  const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
+  const providerProfiles = setupPlan.profiles.filter((profile) => profile.id !== "local-preset");
+  const readyProviderCount = providerProfiles.filter((profile) => profile.status === "ready")
+    .length;
+  const readyWithDiscussionSettingsCount = providerProfiles.filter(
+    (profile) => profile.status === "ready_with_run_config"
+  ).length;
+  const providerNeedsSetup = providerProfiles.some(
+    (profile) => profile.status === "needs_configuration" || profile.status === "disabled"
+  );
+  const localPresetReady = localPreset?.status === "ready";
+
+  if (readyProviderCount > 0) {
+    return {
+      title: "Provider-ready start",
+      detail:
+        "At least one real model provider is ready. The quick-start form still uses demo participants; use a model-backed discussion plan when you want provider-backed perspectives.",
+      quickStartDetail:
+        "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
+      providerDetail: "Real provider-backed participants are available for model-backed plans.",
+      providerTone: "ok",
+      tone: "ok"
+    };
+  }
+
+  if (readyWithDiscussionSettingsCount > 0) {
+    return {
+      title: "Demo start, provider details needed",
+      detail:
+        "The quick-start form can start now with demo participants. A provider is enabled, but model details still need local setup or per-discussion model settings.",
+      quickStartDetail:
+        "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
+      providerDetail:
+        "Provider enabled; add base URL and model locally before relying on model-backed results.",
+      providerTone: "warning",
+      tone: "warning"
+    };
+  }
+
+  if (localPresetReady) {
+    return {
+      title: "Demo start ready",
+      detail:
+        "You can start with built-in demo participants now. Configure a real provider before relying on model-backed results.",
+      quickStartDetail:
+        "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
+      providerDetail:
+        "No real model provider is ready yet. Configure one locally before relying on model-backed discussions.",
+      providerTone: "warning",
+      tone: providerNeedsSetup ? "warning" : "ok"
+    };
+  }
+
+  return {
+    title: "Model setup needed",
+    detail:
+      "No demo participant or real provider is ready. Configure at least one participant source locally before starting a useful discussion.",
+    quickStartDetail:
+      "The quick-start form needs at least one local participant source before it can create useful discussion material.",
+    providerDetail:
+      "No real model provider is ready yet. Configure one locally before relying on model-backed discussions.",
+    providerTone: "neutral",
+    tone: "warning"
+  };
 }
 
 export function RunDetailPage() {

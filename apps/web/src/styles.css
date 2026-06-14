@@ -1567,6 +1567,19 @@ textarea:focus-visible {
   padding: 18px;
 }
 
+.du-discussion-setup-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.du-discussion-setup-note {
+  margin: 12px 0 0;
+  color: var(--du-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .du-discussion-form label {
   color: var(--du-muted);
   font-size: 0.85rem;
@@ -2231,6 +2244,7 @@ textarea:focus-visible {
   .du-outcome-section-grid,
   .du-setup-status-grid,
   .du-setup-model-grid,
+  .du-discussion-setup-grid,
   .du-stage-grid,
   .du-result-handoff-grid,
   .du-follow-controls,
