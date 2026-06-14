@@ -154,6 +154,23 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Model-backed participants": "\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005",
   "This page does not ask for API keys. Configure API keys locally, restart the daemon, then refresh this page.":
     "\u6b64\u9875\u9762\u4e0d\u4f1a\u8981\u6c42\u8f93\u5165 API key\u3002\u8bf7\u5728\u672c\u5730\u914d\u7f6e API key\uff0c\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\uff0c\u7136\u540e\u5237\u65b0\u6b64\u9875\u9762\u3002",
+  "This page does not ask for API keys. Provider credentials stay in local daemon setup and are never stored by Web.":
+    "\u6b64\u9875\u9762\u4e0d\u4f1a\u8981\u6c42\u8f93\u5165 API key\u3002\u63d0\u4f9b\u65b9\u51ed\u636e\u4fdd\u7559\u5728\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u8bbe\u7f6e\u4e2d\uff0c\u4e0d\u4f1a\u88ab Web \u5b58\u50a8\u3002",
+  "Choose participant source": "\u9009\u62e9\u53c2\u4e0e\u8005\u6765\u6e90",
+  "Demo participants": "\u6f14\u793a\u53c2\u4e0e\u8005",
+  "Start immediately with built-in sample participants.":
+    "\u4f7f\u7528\u5185\u7f6e\u793a\u4f8b\u53c2\u4e0e\u8005\u7acb\u5373\u5f00\u59cb\u3002",
+  "{provider} is ready. This discussion will use configured model participants from the local daemon.":
+    "{provider} \u5df2\u5c31\u7eea\u3002\u6b64\u8ba8\u8bba\u5c06\u4f7f\u7528\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
+  "Configure a ready model provider locally before selecting model-backed participants.":
+    "\u5148\u5728\u672c\u5730\u914d\u7f6e\u4e00\u4e2a\u5df2\u5c31\u7eea\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\uff0c\u7136\u540e\u518d\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u3002",
+  "Choose an available participant source before creating the discussion.":
+    "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u8bf7\u9009\u62e9\u4e00\u4e2a\u53ef\u7528\u7684\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
+  "Model-backed start available": "\u53ef\u4f7f\u7528\u6a21\u578b\u652f\u6301\u7684\u5f00\u59cb\u65b9\u5f0f",
+  "Choose demo participants for an immediate walkthrough, or choose model-backed participants to use the configured local provider.":
+    "\u53ef\u9009\u62e9\u6f14\u793a\u53c2\u4e0e\u8005\u7acb\u5373\u4f53\u9a8c\uff0c\u6216\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u4f7f\u7528\u5df2\u914d\u7f6e\u7684\u672c\u5730\u63d0\u4f9b\u65b9\u3002",
+  "A configured model provider can be selected for this discussion.":
+    "\u53ef\u4e3a\u672c\u6b21\u8ba8\u8bba\u9009\u62e9\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
   "Provider-ready start": "\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea",
   "At least one real model provider is ready. The quick-start form still uses demo participants; use a model-backed discussion plan when you want provider-backed perspectives.":
     "\u81f3\u5c11\u4e00\u4e2a\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea\u3002\u5feb\u901f\u5f00\u59cb\u8868\u5355\u4ecd\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\uff1b\u9700\u8981\u63d0\u4f9b\u65b9\u652f\u6301\u7684\u89c6\u89d2\u65f6\uff0c\u8bf7\u4f7f\u7528\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u8ba1\u5212\u3002",

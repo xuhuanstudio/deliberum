@@ -77,6 +77,12 @@ export type GuidedDiscussionRunPlanInput = {
   expectedOutcomeText: string;
 };
 
+export type ProviderBackedDiscussionPlanInput = {
+  adapterId: string;
+  providerConfigId: string;
+  apiKeyEnvVar?: string;
+};
+
 export const LOCAL_PRESET_DISCUSSION_BRIEF: GuidedDiscussionRunPlanInput = {
   question: "How should we review a proposed rollout before relying on it?",
   goalsText: [
@@ -128,6 +134,80 @@ export function buildGuidedDiscussionRunPlan(
               "Show the current conclusion.",
               "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions."
             ]
+    }
+  };
+}
+
+export function buildProviderBackedDiscussionRunPlan(
+  input: GuidedDiscussionRunPlanInput,
+  provider: ProviderBackedDiscussionPlanInput
+): Record<string, unknown> {
+  const topic = input.question.trim();
+  const userGoals = parseBriefLines(input.goalsText);
+  const userConstraints = parseBriefLines(input.constraintsText);
+  const expectedOutcomes = parseBriefLines(input.expectedOutcomeText);
+  const title = formatDiscussionTitle(topic);
+  const perspectiveAId = "provider-perspective-a";
+  const perspectiveBId = "provider-perspective-b";
+  const providerConfig: Record<string, unknown> = {
+    id: provider.providerConfigId,
+    adapterId: provider.adapterId,
+    providerConfigId: provider.providerConfigId
+  };
+
+  if (provider.apiKeyEnvVar) {
+    providerConfig.apiKeyEnvVar = provider.apiKeyEnvVar;
+  }
+
+  return {
+    ...cloneJsonObject(LOCAL_PRESET_RUN_PLAN),
+    title,
+    topic,
+    goals:
+      userGoals.length > 0
+        ? userGoals
+        : [
+            "Compare the strongest current options.",
+            "Keep open disagreements and missing evidence visible."
+          ],
+    constraints: uniqueBriefLines([
+      ...userConstraints,
+      "Use configured model-backed participants from the local daemon.",
+      "Keep provider credentials in the local daemon environment only.",
+      "Keep the conclusion provisional until reviewed."
+    ]),
+    participants: [
+      {
+        id: perspectiveAId,
+        kind: "model",
+        displayName: "Perspective A",
+        adapterId: provider.adapterId,
+        providerConfigId: provider.providerConfigId
+      },
+      {
+        id: perspectiveBId,
+        kind: "model",
+        displayName: "Perspective B",
+        adapterId: provider.adapterId,
+        providerConfigId: provider.providerConfigId
+      }
+    ],
+    providerConfigs: [providerConfig],
+    output: {
+      language: "en",
+      style: "clear",
+      expectations:
+        expectedOutcomes.length > 0
+          ? expectedOutcomes
+          : [
+              "Show the current conclusion.",
+              "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions."
+            ]
+    },
+    sealedDivergence: {
+      purpose: "initial_divergence",
+      revealPolicy: "all_completed",
+      participantIds: [perspectiveAId, perspectiveBId]
     }
   };
 }

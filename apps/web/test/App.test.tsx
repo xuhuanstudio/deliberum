@@ -1651,7 +1651,11 @@ describe("@deliberum/web shell", () => {
       screen.getByText("\u53ef\u6f14\u793a\u5f00\u59cb\uff0c\u4ecd\u9700\u63d0\u4f9b\u65b9\u7ec6\u8282")
     ).toBeTruthy();
     expect(screen.getByText("\u5feb\u901f\u5f00\u59cb\u53c2\u4e0e\u8005")).toBeTruthy();
-    expect(screen.getByText("\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005")).toBeTruthy();
+    expect(
+      screen.getAllByText("\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005").length
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("\u9009\u62e9\u53c2\u4e0e\u8005\u6765\u6e90")).toBeTruthy();
+    expect(screen.getByText("\u6f14\u793a\u53c2\u4e0e\u8005")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
     expect(screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898")).toBeTruthy();
     expect((screen.getByLabelText("\u8bed\u8a00") as HTMLSelectElement).value).toBe("zh-CN");
@@ -1666,7 +1670,13 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(screen.getByText("Demo start, provider details needed")).toBeTruthy();
     expect(screen.getByText("Quick-start participants")).toBeTruthy();
-    expect(screen.getByText("Model-backed participants")).toBeTruthy();
+    expect(screen.getAllByText("Model-backed participants").length).toBeGreaterThan(0);
+    expect(screen.getByText("Choose participant source")).toBeTruthy();
+    expect(screen.getByText("Demo participants")).toBeTruthy();
+    expect(
+      (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
+        .disabled
+    ).toBe(true);
     expect(
       screen.getByText(
         "The quick-start form can start now with demo participants. A provider is enabled, but model details still need local setup or per-discussion model settings."
@@ -1674,12 +1684,132 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "This page does not ask for API keys. Configure API keys locally, restart the daemon, then refresh this page."
+        "This page does not ask for API keys. Provider credentials stay in local daemon setup and are never stored by Web."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
     expect(document.body.textContent ?? "").not.toContain("runtime profile");
+  });
+
+  it("creates a model-backed discussion when a ready provider source is selected", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
+      profiles: [
+        {
+          id: "local-preset",
+          name: "Local preset",
+          enabled: true,
+          status: "ready",
+          components: [
+            {
+              id: "local-preset-alpha",
+              kind: "participant_adapter",
+              enabled: true
+            }
+          ],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+            envVars: [],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready",
+          components: [
+            {
+              id: "openai-compatible",
+              kind: "participant_adapter",
+              enabled: true
+            }
+          ],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_BASE_URL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default provider base URL."
+              },
+              {
+                name: "DELIBERUM_OPENAI_MODEL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default model id."
+              },
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    });
+
+    renderApp("/runs/new", client);
+
+    expect(await screen.findByText("Model-backed start available")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+
+    const modelBackedSource = screen.getByRole("radio", {
+      name: /Model-backed participants/i
+    }) as HTMLInputElement;
+    expect(modelBackedSource.disabled).toBe(false);
+    fireEvent.click(modelBackedSource);
+    expect(modelBackedSource.checked).toBe(true);
+
+    fireEvent.change(screen.getByLabelText("Discussion question"), {
+      target: {
+        value: "Should we use the configured provider for this review?"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create discussion" }));
+
+    await waitFor(() => expect(client.createRun).toHaveBeenCalled());
+    const createRunInput = vi.mocked(client.createRun).mock.calls[0]?.[0];
+    const runPlan = createRunInput?.runPlan as Record<string, unknown>;
+
+    expect(runPlan).toEqual(
+      expect.objectContaining({
+        topic: "Should we use the configured provider for this review?",
+        constraints: expect.arrayContaining([
+          "Use configured model-backed participants from the local daemon.",
+          "Keep provider credentials in the local daemon environment only."
+        ]),
+        participants: expect.arrayContaining([
+          expect.objectContaining({
+            displayName: "Perspective A",
+            adapterId: "openai-compatible",
+            providerConfigId: "web-openai-compatible-discussion"
+          })
+        ]),
+        providerConfigs: [
+          expect.objectContaining({
+            id: "web-openai-compatible-discussion",
+            adapterId: "openai-compatible",
+            providerConfigId: "web-openai-compatible-discussion",
+            apiKeyEnvVar: "DELIBERUM_OPENAI_API_KEY"
+          })
+        ]
+      })
+    );
+    expect(JSON.stringify(runPlan)).not.toContain("sk-");
+    expect(JSON.stringify(runPlan)).not.toContain("Use built-in sample participants only.");
   });
 
   it("switches the user-facing shell between English and Simplified Chinese", async () => {

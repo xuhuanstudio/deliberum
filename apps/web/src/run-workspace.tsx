@@ -41,7 +41,9 @@ import {
   LOCAL_PRESET_RUN_PLAN,
   LOCAL_PRESET_START_REQUEST,
   buildGuidedDiscussionRunPlan,
-  formatPresetJson
+  buildProviderBackedDiscussionRunPlan,
+  formatPresetJson,
+  type ProviderBackedDiscussionPlanInput
 } from "./run-presets";
 
 const DEFAULT_RUN_PLAN_TEXT = formatPresetJson(LOCAL_PRESET_RUN_PLAN);
@@ -88,6 +90,10 @@ type DiscussionModelSetupView = {
   providerDetail: string;
   providerTone: "ok" | "warning" | "neutral";
   tone: "ok" | "warning" | "neutral";
+};
+type DiscussionParticipantSource = "demo" | "model-backed";
+type DiscussionProviderSource = ProviderBackedDiscussionPlanInput & {
+  name: string;
 };
 type DiscussionNextStepView = {
   title: string;
@@ -178,6 +184,8 @@ export function RunNewPage() {
   const [discussionGoals, setDiscussionGoals] = useState("");
   const [discussionConstraints, setDiscussionConstraints] = useState("");
   const [discussionExpectedOutcome, setDiscussionExpectedOutcome] = useState("");
+  const [participantSource, setParticipantSource] =
+    useState<DiscussionParticipantSource>("demo");
   const [inputError, setInputError] = useState<string | null>(null);
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
@@ -186,6 +194,13 @@ export function RunNewPage() {
   const runtimeSetupPlan = runtimeProfilesQuery.data
     ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
     : undefined;
+  const providerBackedDiscussionSource = runtimeSetupPlan
+    ? findProviderBackedDiscussionSource(runtimeSetupPlan)
+    : undefined;
+  const selectedParticipantSourceAvailable =
+    participantSource === "demo"
+      ? isDemoDiscussionSourceAvailable(runtimeSetupPlan)
+      : Boolean(providerBackedDiscussionSource);
   const createMutation = useMutation({
     mutationFn: (runPlan: Record<string, unknown>) => client.createRun({ runPlan }),
     onSuccess: (result) => {
@@ -198,7 +213,15 @@ export function RunNewPage() {
   });
   const createdRunId = getStringRecordValue(createMutation.data?.run, "runId");
   const canCreateDiscussion =
-    discussionQuestion.trim().length > 0 && !createMutation.isPending;
+    discussionQuestion.trim().length > 0 &&
+    !createMutation.isPending &&
+    selectedParticipantSourceAvailable;
+
+  useEffect(() => {
+    if (participantSource === "model-backed" && runtimeSetupPlan && !providerBackedDiscussionSource) {
+      setParticipantSource("demo");
+    }
+  }, [participantSource, providerBackedDiscussionSource, runtimeSetupPlan]);
 
   function submitRunPlan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -234,12 +257,26 @@ export function RunNewPage() {
       return;
     }
 
-    const runPlan = buildGuidedDiscussionRunPlan({
+    const discussionPlanInput = {
       question: discussionQuestion,
       goalsText: discussionGoals,
       constraintsText: discussionConstraints,
       expectedOutcomeText: discussionExpectedOutcome
-    });
+    };
+    const runPlan =
+      participantSource === "model-backed"
+        ? providerBackedDiscussionSource
+          ? buildProviderBackedDiscussionRunPlan(
+              discussionPlanInput,
+              providerBackedDiscussionSource
+            )
+          : undefined
+        : buildGuidedDiscussionRunPlan(discussionPlanInput);
+
+    if (!runPlan) {
+      setInputError(t("Choose an available participant source before creating the discussion."));
+      return;
+    }
 
     setInputError(null);
     setRunPlanText(formatPresetJson(runPlan));
@@ -270,7 +307,11 @@ export function RunNewPage() {
             detail={formatSafeErrorMessage(runtimeProfilesQuery.error)}
           />
         ) : runtimeSetupPlan ? (
-          <DiscussionModelSetupPanel setupPlan={runtimeSetupPlan} />
+          <DiscussionModelSetupPanel
+            setupPlan={runtimeSetupPlan}
+            selectedSource={participantSource}
+            onSelectedSourceChange={setParticipantSource}
+          />
         ) : (
           <StatusBanner
             tone="warning"
@@ -419,9 +460,20 @@ export function RunNewPage() {
   );
 }
 
-function DiscussionModelSetupPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
+function DiscussionModelSetupPanel({
+  setupPlan,
+  selectedSource,
+  onSelectedSourceChange
+}: {
+  setupPlan: RuntimeSetupPlan;
+  selectedSource: DiscussionParticipantSource;
+  onSelectedSourceChange: (source: DiscussionParticipantSource) => void;
+}) {
   const { t } = useI18n();
   const view = describeDiscussionModelSetup(setupPlan);
+  const demoAvailable = isDemoDiscussionSourceAvailable(setupPlan);
+  const providerSource = findProviderBackedDiscussionSource(setupPlan);
+  const modelBackedAvailable = Boolean(providerSource);
 
   return (
     <DataPanel
@@ -444,9 +496,57 @@ function DiscussionModelSetupPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan 
           <span>{t(view.providerDetail)}</span>
         </article>
       </div>
+      <fieldset className="du-participant-source-picker">
+        <legend>{t("Choose participant source")}</legend>
+        <label
+          className={`du-participant-source-card ${
+            selectedSource === "demo" ? "du-participant-source-selected" : ""
+          } ${demoAvailable ? "" : "du-participant-source-disabled"}`}
+        >
+          <input
+            type="radio"
+            name="discussion-participant-source"
+            value="demo"
+            checked={selectedSource === "demo"}
+            disabled={!demoAvailable}
+            onChange={() => onSelectedSourceChange("demo")}
+          />
+          <span>
+            <strong>{t("Demo participants")}</strong>
+            <small>{t("Start immediately with built-in sample participants.")}</small>
+          </span>
+        </label>
+        <label
+          className={`du-participant-source-card ${
+            selectedSource === "model-backed" ? "du-participant-source-selected" : ""
+          } ${modelBackedAvailable ? "" : "du-participant-source-disabled"}`}
+        >
+          <input
+            type="radio"
+            name="discussion-participant-source"
+            value="model-backed"
+            checked={selectedSource === "model-backed"}
+            disabled={!modelBackedAvailable}
+            onChange={() => onSelectedSourceChange("model-backed")}
+          />
+          <span>
+            <strong>{t("Model-backed participants")}</strong>
+            <small>
+              {providerSource
+                ? t(
+                    "{provider} is ready. This discussion will use configured model participants from the local daemon.",
+                    { provider: t(providerSource.name) }
+                  )
+                : t(
+                    "Configure a ready model provider locally before selecting model-backed participants."
+                  )}
+            </small>
+          </span>
+        </label>
+      </fieldset>
       <p className="du-discussion-setup-note">
         {t(
-          "This page does not ask for API keys. Configure API keys locally, restart the daemon, then refresh this page."
+          "This page does not ask for API keys. Provider credentials stay in local daemon setup and are never stored by Web."
         )}
       </p>
     </DataPanel>
@@ -456,24 +556,25 @@ function DiscussionModelSetupPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan 
 function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionModelSetupView {
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const providerProfiles = setupPlan.profiles.filter((profile) => profile.id !== "local-preset");
-  const readyProviderCount = providerProfiles.filter((profile) => profile.status === "ready")
-    .length;
+  const modelBackedSource = findProviderBackedDiscussionSource(setupPlan);
   const readyWithDiscussionSettingsCount = providerProfiles.filter(
-    (profile) => profile.status === "ready_with_run_config"
+    (profile) =>
+      isSupportedModelBackedDiscussionProfile(profile) &&
+      profile.status === "ready_with_run_config"
   ).length;
   const providerNeedsSetup = providerProfiles.some(
     (profile) => profile.status === "needs_configuration" || profile.status === "disabled"
   );
   const localPresetReady = localPreset?.status === "ready";
 
-  if (readyProviderCount > 0) {
+  if (modelBackedSource) {
     return {
-      title: "Provider-ready start",
+      title: "Model-backed start available",
       detail:
-        "At least one real model provider is ready. The quick-start form still uses demo participants; use a model-backed discussion plan when you want provider-backed perspectives.",
+        "Choose demo participants for an immediate walkthrough, or choose model-backed participants to use the configured local provider.",
       quickStartDetail:
         "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
-      providerDetail: "Real provider-backed participants are available for model-backed plans.",
+      providerDetail: "A configured model provider can be selected for this discussion.",
       providerTone: "ok",
       tone: "ok"
     };
@@ -518,6 +619,46 @@ function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionMo
     providerTone: "neutral",
     tone: "warning"
   };
+}
+
+const MODEL_BACKED_DISCUSSION_PROFILE_IDS = new Set(["openai-compatible", "http-template"]);
+
+function isDemoDiscussionSourceAvailable(setupPlan: RuntimeSetupPlan | undefined): boolean {
+  if (!setupPlan) {
+    return true;
+  }
+
+  return setupPlan.profiles.some(
+    (profile) => profile.id === "local-preset" && profile.status === "ready"
+  );
+}
+
+function findProviderBackedDiscussionSource(
+  setupPlan: RuntimeSetupPlan
+): DiscussionProviderSource | undefined {
+  const profile = setupPlan.profiles.find(
+    (candidate) =>
+      candidate.status === "ready" && isSupportedModelBackedDiscussionProfile(candidate)
+  );
+
+  if (!profile) {
+    return undefined;
+  }
+
+  return {
+    name: profile.name,
+    adapterId: profile.id,
+    providerConfigId: `web-${profile.id}-discussion`,
+    ...(profile.configuredSecretEnvVarCount > 0 && profile.secretEnvVarNames[0]
+      ? { apiKeyEnvVar: profile.secretEnvVarNames[0] }
+      : {})
+  };
+}
+
+function isSupportedModelBackedDiscussionProfile(
+  profile: RuntimeSetupPlan["profiles"][number]
+): boolean {
+  return MODEL_BACKED_DISCUSSION_PROFILE_IDS.has(profile.id);
 }
 
 export function RunDetailPage() {

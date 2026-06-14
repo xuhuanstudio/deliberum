@@ -1573,6 +1573,64 @@ textarea:focus-visible {
   gap: 12px;
 }
 
+.du-participant-source-picker {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  border: 0;
+  padding: 0;
+}
+
+.du-participant-source-picker legend {
+  margin: 0 0 2px;
+  color: var(--du-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.du-participant-source-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fffefa;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.du-participant-source-card input {
+  margin-top: 3px;
+}
+
+.du-participant-source-card span {
+  display: grid;
+  gap: 3px;
+}
+
+.du-participant-source-card strong {
+  color: var(--du-text);
+  font-size: 0.88rem;
+}
+
+.du-participant-source-card small {
+  color: var(--du-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.du-participant-source-selected {
+  border-color: var(--du-accent);
+  box-shadow: 0 0 0 1px var(--du-accent);
+}
+
+.du-participant-source-disabled {
+  background: #f4f1e9;
+  cursor: not-allowed;
+  opacity: 0.74;
+}
+
 .du-discussion-setup-note {
   margin: 12px 0 0;
   color: var(--du-muted);
