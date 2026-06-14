@@ -241,8 +241,9 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       status: "saved",
       managedEnvFile: "local-daemon-env",
       configuredFields: ["apiKey", "baseUrl", "model"],
-      restartRequired: true,
-      safety: ["The daemon loads the managed local setup block at startup."]
+      restartRequired: false,
+      activeInCurrentDaemon: true,
+      safety: ["The setup was applied to the current local daemon process."]
     })),
     verifyOpenAICompatibleSetup: vi.fn(async () => ({
       profileId: "openai-compatible",
@@ -1130,7 +1131,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("How Web setup works locally")).toBeTruthy();
     expect(
       screen.getByText(
-        "Web can save provider setup to the local daemon configuration file. The daemon must be restarted before the new values become active."
+        "Web saves provider setup to the local daemon configuration file and applies it to the current daemon when possible."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
@@ -1155,7 +1156,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("What can run now")).toBeTruthy();
     expect(screen.getByText("Demo walkthrough")).toBeTruthy();
     expect(screen.getByText("Model participants")).toBeTruthy();
-    expect(screen.getByText("Setup needed")).toBeTruthy();
+    expect(screen.getAllByText("Setup needed").length).toBeGreaterThan(0);
     expect(screen.getByText("Organizer and conclusion")).toBeTruthy();
     expect(screen.getByText("Try a demo discussion")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Add model setup" })).toBeTruthy();
@@ -1207,9 +1208,14 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Model setup saved locally")).toBeTruthy();
     expect(
       screen.getByText(
-        "Restart the local daemon, then return here and check readiness before starting a real model-backed discussion."
+        "The current daemon can use this setup now. Check readiness, verify connection, then start a real model-backed discussion."
       )
     ).toBeTruthy();
+    expect(screen.getByText("Ready in this session")).toBeTruthy();
+    expect(
+      (screen.getByRole("button", { name: "Verify connection" }) as HTMLButtonElement)
+        .disabled
+    ).toBe(false);
     expect((screen.getByLabelText("Provider API key") as HTMLInputElement).value).toBe("");
     expect(document.body.textContent ?? "").not.toContain("sk-web-setup-secret");
 
@@ -1244,8 +1250,33 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u7ec4\u7ec7\u4e0e\u7ed3\u8bba")).toBeTruthy();
     expect(screen.getByText("\u8bd5\u7528\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "\u67e5\u770b\u8bbe\u7f6e\u6b65\u9aa4" }).length).toBeGreaterThan(0);
+
+    fireEvent.change(screen.getByLabelText("\u63d0\u4f9b\u65b9 API key"), {
+      target: {
+        value: "sk-web-setup-secret"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Base URL"), {
+      target: {
+        value: "https://api.example.test/v1"
+      }
+    });
+    fireEvent.change(screen.getByLabelText("\u6a21\u578b"), {
+      target: {
+        value: "web-setup-model"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "\u4fdd\u5b58\u6a21\u578b\u8bbe\u7f6e" }));
+
+    expect(await screen.findByText("\u5f53\u524d\u4f1a\u8bdd\u5df2\u5c31\u7eea")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u5f53\u524d\u5b88\u62a4\u8fdb\u7a0b\u73b0\u5728\u5df2\u53ef\u4ee5\u4f7f\u7528\u8fd9\u4e2a\u8bbe\u7f6e\u3002\u8bf7\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u3001\u9a8c\u8bc1\u8fde\u63a5\uff0c\u7136\u540e\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002"
+      )
+    ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
+    expect(document.body.textContent ?? "").not.toContain("sk-web-setup-secret");
     expect(document.body.textContent ?? "").not.toContain("runtime profile");
   });
 

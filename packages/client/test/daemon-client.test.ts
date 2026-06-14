@@ -145,8 +145,9 @@ describe("DeliberumDaemonClient", () => {
       status: "saved",
       managedEnvFile: "local-daemon-env",
       configuredFields: ["apiKey", "baseUrl", "model"],
-      restartRequired: true,
-      safety: ["The daemon loads the managed local setup block at startup."]
+      restartRequired: false,
+      activeInCurrentDaemon: true,
+      safety: ["The setup was applied to the current local daemon process."]
     });
     const daemonClient = new DeliberumDaemonClient({ fetch });
     const input = {
@@ -169,8 +170,9 @@ describe("DeliberumDaemonClient", () => {
       status: "saved",
       managedEnvFile: "local-daemon-env",
       configuredFields: ["apiKey", "baseUrl", "model"],
-      restartRequired: true,
-      safety: ["The daemon loads the managed local setup block at startup."]
+      restartRequired: false,
+      activeInCurrentDaemon: true,
+      safety: ["The setup was applied to the current local daemon process."]
     });
   });
 

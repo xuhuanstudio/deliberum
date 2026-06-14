@@ -62,6 +62,7 @@ import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from "./config";
 import { DaemonEventBus } from "./event-stream";
 import { createLocalPresetRunRegistries } from "./local-preset";
 import {
+  OPENAI_COMPATIBLE_ADAPTER_ID,
   createOpenAICompatibleRunRegistries,
   createOpenAICompatibleRuntimeEnv,
   type OpenAICompatibleProfileOptions
@@ -406,16 +407,23 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       clock: options.operationAuditClock ?? clock,
       maxEntries: options.operationAuditMaxEntries
     });
+  const openAICompatibleEnv = options.openAICompatibleEnv ?? {};
+  let enableOpenAICompatibleProfile = options.enableOpenAICompatibleProfile === true;
+  const enableOpenAICompatibleExtraction =
+    options.enableOpenAICompatibleExtraction === true;
+  const enableOpenAICompatibleReview = options.enableOpenAICompatibleReview === true;
+  const enableOpenAICompatibleFinalization =
+    options.enableOpenAICompatibleFinalization === true;
   const localPresetRegistries = options.enableLocalPreset
     ? createLocalPresetRunRegistries()
     : undefined;
-  const openAICompatibleRegistries = options.enableOpenAICompatibleProfile
+  const openAICompatibleRegistries = enableOpenAICompatibleProfile
     ? createOpenAICompatibleRunRegistries({
-        env: options.openAICompatibleEnv,
+        env: openAICompatibleEnv,
         fetch: options.openAICompatibleFetch,
-        enableExtraction: options.enableOpenAICompatibleExtraction === true,
-        enableReview: options.enableOpenAICompatibleReview === true,
-        enableFinalization: options.enableOpenAICompatibleFinalization === true
+        enableExtraction: enableOpenAICompatibleExtraction,
+        enableReview: enableOpenAICompatibleReview,
+        enableFinalization: enableOpenAICompatibleFinalization
       })
     : undefined;
   const httpTemplateRegistries = options.enableHttpTemplateProfile
@@ -490,8 +498,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     env:
       options.runEnv ??
       mergeRuntimeEnvs(
-        options.enableOpenAICompatibleProfile
-          ? createOpenAICompatibleRuntimeEnv(options.openAICompatibleEnv)
+        enableOpenAICompatibleProfile
+          ? createOpenAICompatibleRuntimeEnv(openAICompatibleEnv)
           : undefined,
         options.enableHttpTemplateProfile
           ? createHttpTemplateRuntimeEnv(options.httpTemplateEnv)
@@ -756,13 +764,13 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       context,
       buildRuntimeProfilesProjection({
         enableLocalPreset: options.enableLocalPreset === true,
-        enableOpenAICompatibleProfile: options.enableOpenAICompatibleProfile === true,
+        enableOpenAICompatibleProfile,
         enableOpenAICompatibleExtraction:
-          options.enableOpenAICompatibleExtraction === true,
-        enableOpenAICompatibleReview: options.enableOpenAICompatibleReview === true,
+          enableOpenAICompatibleExtraction,
+        enableOpenAICompatibleReview,
         enableOpenAICompatibleFinalization:
-          options.enableOpenAICompatibleFinalization === true,
-        openAICompatibleEnv: options.openAICompatibleEnv,
+          enableOpenAICompatibleFinalization,
+        openAICompatibleEnv,
         enableHttpTemplateProfile: options.enableHttpTemplateProfile === true,
         httpTemplateEnv: options.httpTemplateEnv,
         enableMcpToolProfile: options.enableMcpToolProfile === true,
@@ -775,16 +783,34 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     const body = await readJsonObject(context);
 
     try {
+      const result = await writeOpenAICompatibleSetupEnv({
+        envFilePath: options.setupEnvFilePath,
+        activeEnv: openAICompatibleEnv,
+        setup: {
+          apiKey: body.apiKey,
+          baseUrl: body.baseUrl,
+          model: body.model
+        }
+      });
+
+      enableOpenAICompatibleProfile = true;
+      runService.applyRuntimeEnv(createOpenAICompatibleRuntimeEnv(openAICompatibleEnv));
+      const openAICompatibleSetupRegistries = createOpenAICompatibleRunRegistries({
+        env: openAICompatibleEnv,
+        fetch: options.openAICompatibleFetch
+      });
+
+      if (openAICompatibleSetupRegistries.adapterRegistry) {
+        runService.installParticipantAdapter(
+          openAICompatibleSetupRegistries.adapterRegistry.require(
+            OPENAI_COMPATIBLE_ADAPTER_ID
+          )
+        );
+      }
+
       return noStoreJson(
         context,
-        await writeOpenAICompatibleSetupEnv({
-          envFilePath: options.setupEnvFilePath,
-          setup: {
-            apiKey: body.apiKey,
-            baseUrl: body.baseUrl,
-            model: body.model
-          }
-        }),
+        result,
         201
       );
     } catch (error) {
@@ -801,7 +827,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       return noStoreJson(
         context,
         await verifyOpenAICompatibleSetup({
-          env: options.openAICompatibleEnv,
+          env: openAICompatibleEnv,
           fetch: options.openAICompatibleFetch
         })
       );

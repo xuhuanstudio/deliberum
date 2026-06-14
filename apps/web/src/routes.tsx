@@ -1095,6 +1095,7 @@ function SetupModelsPanel({
           pending={openAISetupMutation.isPending}
           error={openAISetupMutation.error}
           saved={openAISetupMutation.isSuccess}
+          activeInCurrentDaemon={openAISetupMutation.data?.activeInCurrentDaemon === true}
           onCheckReadiness={checkReadiness}
           verificationPending={openAIVerificationMutation.isPending}
           verificationError={openAIVerificationMutation.error}
@@ -1122,7 +1123,7 @@ function SetupModelsPanel({
           <span>{t("How Web setup works locally")}</span>
           <small>
             {t(
-              "Web can save provider setup to the local daemon configuration file. The daemon must be restarted before the new values become active."
+              "Web saves provider setup to the local daemon configuration file and applies it to the current daemon when possible."
             )}
           </small>
         </summary>
@@ -1143,7 +1144,7 @@ function SetupModelsPanel({
             <SetupInstructionStep
               title={t("Test connection")}
               detail={t(
-                "Restart the daemon, then use Check readiness to verify that model-backed discussions are ready."
+                "Use Check readiness and Verify connection to confirm model-backed discussions are ready."
               )}
             />
             <SetupInstructionStep
@@ -1303,7 +1304,7 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
   const modelDetail = modelProviderReady
     ? "Configured model participants can answer as independent perspectives."
     : modelProviderProfiles.length > 0
-      ? "Save the provider API key, base URL, and model in Web setup, restart the daemon, then verify the connection."
+      ? "Save the provider API key, base URL, and model in Web setup, check readiness, then verify the connection."
       : "The daemon did not report a Web-configurable model provider.";
   const modelStatus = modelProviderReady
     ? "Ready"
@@ -1376,6 +1377,7 @@ function OpenAICompatibleSetupForm({
   pending,
   error,
   saved,
+  activeInCurrentDaemon,
   onCheckReadiness,
   verificationPending,
   verificationError,
@@ -1390,6 +1392,7 @@ function OpenAICompatibleSetupForm({
   pending: boolean;
   error: Error | null;
   saved: boolean;
+  activeInCurrentDaemon: boolean;
   onCheckReadiness: () => void;
   verificationPending: boolean;
   verificationError: Error | null;
@@ -1398,6 +1401,26 @@ function OpenAICompatibleSetupForm({
 }) {
   const { t } = useI18n();
   const ready = profile.status === "ready";
+  const canVerify = ready || activeInCurrentDaemon;
+  const setupStatus = ready
+    ? {
+        title: "Ready for discussions",
+        detail: "This provider is ready for model-backed discussions.",
+        tone: "ok" as const
+      }
+    : activeInCurrentDaemon
+      ? {
+          title: "Ready in this session",
+          detail:
+            "The saved setup is active in the current daemon. Check readiness, verify connection, then start a discussion.",
+          tone: "ok" as const
+        }
+      : {
+          title: "Setup needed",
+          detail:
+            "Save setup in Web, then check readiness so Web can confirm the provider is active.",
+          tone: "warning" as const
+        };
 
   return (
     <section className="du-provider-setup-form-section" aria-labelledby="openai-setup-form">
@@ -1463,7 +1486,7 @@ function OpenAICompatibleSetupForm({
             <button
               type="button"
               className="du-secondary-button"
-              disabled={!ready || verificationPending}
+              disabled={!canVerify || verificationPending}
               onClick={onVerifyConnection}
             >
               {verificationPending ? t("Verifying connection") : t("Verify connection")}
@@ -1471,15 +1494,9 @@ function OpenAICompatibleSetupForm({
           </div>
         </form>
         <aside className="du-provider-setup-form-note">
-          <article className={`du-status du-status-${ready ? "ok" : "warning"}`}>
-            <strong>{ready ? t("Ready for discussions") : t("Restart daemon required")}</strong>
-            <span>
-              {ready
-                ? t("This provider is ready for model-backed discussions.")
-                : t(
-                    "After saving, restart the local daemon and check readiness so Web can confirm the provider is active."
-                  )}
-            </span>
+          <article className={`du-status du-status-${setupStatus.tone}`}>
+            <strong>{t(setupStatus.title)}</strong>
+            <span>{t(setupStatus.detail)}</span>
           </article>
           <p className="du-readable-meta">
             {t(
@@ -1490,7 +1507,9 @@ function OpenAICompatibleSetupForm({
             {t(
               ready
                 ? "Use Verify connection to send one minimal provider request before starting a model-backed discussion."
-                : "Verify connection becomes available after the daemon reports this provider as ready."
+                : activeInCurrentDaemon
+                  ? "Verify connection is available now because the saved setup is active in this daemon."
+                  : "Verify connection becomes available after Web confirms this provider is ready."
             )}
           </p>
         </aside>
@@ -1500,7 +1519,9 @@ function OpenAICompatibleSetupForm({
           tone="ok"
           title={t("Model setup saved locally")}
           detail={t(
-            "Restart the local daemon, then return here and check readiness before starting a real model-backed discussion."
+            activeInCurrentDaemon
+              ? "The current daemon can use this setup now. Check readiness, verify connection, then start a real model-backed discussion."
+              : "Restart the local daemon, then return here and check readiness before starting a real model-backed discussion."
           )}
         />
       ) : null}
@@ -1617,7 +1638,7 @@ function describeProviderRequestTargetCheck(
     return {
       label: "Base URL",
       value: "Base URL needed",
-      detail: "Add the provider base URL or request target locally, then restart the daemon.",
+      detail: "Add the provider base URL or request target in Web setup, then check readiness.",
       tone: "warning"
     };
   }
@@ -1681,7 +1702,7 @@ function describeProviderConnectionCheck(profile: RuntimeSetupPlanProfile): Prov
     return {
       label: "Test connection",
       value: "Verify after setup",
-      detail: "After saving setup, restart the daemon, check readiness, then verify connection.",
+      detail: "After saving setup, check readiness, then verify connection.",
       tone: "warning"
     };
   }
@@ -1950,7 +1971,7 @@ function describeSetupNextAction({
   if (providerNeedsSetup) {
     return {
       title: "Configure provider locally",
-      detail: "Use the Web setup form for API key, base URL, and model, then restart the daemon so the provider becomes active.",
+      detail: "Use the Web setup form for API key, base URL, and model, then check readiness so the provider becomes active.",
       tone: "warning"
     };
   }

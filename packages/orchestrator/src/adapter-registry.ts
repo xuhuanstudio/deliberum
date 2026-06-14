@@ -22,6 +22,14 @@ export class AdapterRegistry {
     this.adaptersById.set(adapter.adapterId, adapter);
   }
 
+  replace(adapter: RegisteredParticipantAdapter): void {
+    if (!adapter.adapterId) {
+      throw new AdapterRegistryError("Adapter registry entries require an adapter id.");
+    }
+
+    this.adaptersById.set(adapter.adapterId, adapter);
+  }
+
   get(adapterId: string): RegisteredParticipantAdapter | undefined {
     return this.adaptersById.get(adapterId);
   }

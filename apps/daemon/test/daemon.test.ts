@@ -2558,6 +2558,7 @@ describe("daemon API", () => {
         managedEnvFile: string;
         configuredFields: string[];
         restartRequired: boolean;
+        activeInCurrentDaemon: boolean;
         safety: string[];
       };
       const responseText = JSON.stringify(body);
@@ -2572,11 +2573,12 @@ describe("daemon API", () => {
         status: "saved",
         managedEnvFile: "local-daemon-env",
         configuredFields: ["apiKey", "baseUrl", "model"],
-        restartRequired: true,
+        restartRequired: false,
+        activeInCurrentDaemon: true,
         safety: [
           "The API key was written to the local daemon env file but is not returned.",
-          "The daemon loads the managed local setup block at startup.",
-          "Restart the local daemon, then refresh Web to verify readiness."
+          "The setup was applied to the current local daemon process.",
+          "The daemon will also load the managed local setup block on the next start."
         ]
       });
       expect(responseText).not.toContain(apiKey);
@@ -2601,6 +2603,32 @@ describe("daemon API", () => {
       expect(auditText).not.toContain(apiKey);
       expect(auditText).not.toContain("apiKey");
       expect(auditText).not.toContain("api.example.test");
+
+      const profilesBody = (await (
+        await daemonApp.app.request("/runtime/profiles")
+      ).json()) as {
+        profiles: Array<{
+          id: string;
+          enabled: boolean;
+          status: string;
+          setup: {
+            missingRecommendedEnvVars: string[];
+          };
+        }>;
+      };
+      const openAI = profilesBody.profiles.find(
+        (profile) => profile.id === "openai-compatible"
+      );
+
+      expect(openAI).toEqual(
+        expect.objectContaining({
+          enabled: true,
+          status: "ready",
+          setup: expect.objectContaining({
+            missingRecommendedEnvVars: []
+          })
+        })
+      );
     } finally {
       rmSync(tempDir, {
         recursive: true,
@@ -2784,6 +2812,91 @@ describe("daemon API", () => {
         `${OPENAI_COMPATIBLE_BASE_URL_ENV_VAR}=https://api.example.test`
       );
       expect(envContent).toContain(OPENAI_COMPATIBLE_SETUP_ENV_END);
+    } finally {
+      rmSync(tempDir, {
+        recursive: true,
+        force: true
+      });
+    }
+  });
+
+  it("uses Web-saved OpenAI-compatible setup for model-backed discussions without restart", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "deliberum-setup-"));
+    const envFilePath = join(tempDir, ".env");
+    const apiKey = "sk-local-web-setup-secret";
+    const fetch = createOpenAICompatibleFetch("provider-backed saved setup contribution");
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      setupEnvFilePath: envFilePath,
+      openAICompatibleFetch: fetch
+    });
+
+    try {
+      const setupResponse = await daemonApp.app.request("/runtime/setup/openai-compatible", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          apiKey,
+          baseUrl: "https://api.example.test/v1",
+          model: "model-for-web-setup"
+        })
+      });
+      const setupBody = (await setupResponse.json()) as {
+        restartRequired: boolean;
+        activeInCurrentDaemon: boolean;
+      };
+      const runPlan = JSON.parse(JSON.stringify(openAICompatibleRunPlan())) as {
+        providerConfigs: Array<Record<string, unknown>>;
+      };
+
+      runPlan.providerConfigs = [
+        {
+          id: "provider-openai-compatible",
+          adapterId: OPENAI_COMPATIBLE_ADAPTER_ID,
+          providerConfigId: "provider-openai-compatible",
+          apiKeyEnvVar: OPENAI_COMPATIBLE_API_KEY_ENV_VAR
+        }
+      ];
+
+      const created = await createRun(daemonApp, runPlan);
+      const startResponse = await postJson(daemonApp.app, `/runs/${created.run.runId}/start`, {
+        sealedDivergence: {
+          autoCloseManual: true
+        }
+      });
+      const startBody = (await startResponse.json()) as {
+        stopped: boolean;
+        stages: Array<{
+          executionStatus: string;
+          result: { participantResults?: Array<{ status: string }> };
+        }>;
+      };
+      const [url, init] = getOpenAICompatibleFetchCall(fetch);
+      const request = JSON.parse(init.body) as {
+        model: string;
+      };
+      const serializedRun = JSON.stringify(daemonApp.runStore.getRun(created.run.runId));
+      const serializedEvents = JSON.stringify(
+        daemonApp.eventStore.listEvents(created.run.sessionId)
+      );
+
+      expect(setupResponse.status).toBe(201);
+      expect(setupBody).toMatchObject({
+        restartRequired: false,
+        activeInCurrentDaemon: true
+      });
+      expect(startResponse.status).toBe(200);
+      expect(startBody.stopped).toBe(false);
+      expect(startBody.stages[0]?.executionStatus).toBe("executed");
+      expect(startBody.stages[0]?.result.participantResults?.[0]?.status).toBe("submitted");
+      expect(url).toBe("https://api.example.test/v1/chat/completions");
+      expect(init.headers.Authorization).toBe(`Bearer ${apiKey}`);
+      expect(request.model).toBe("model-for-web-setup");
+      expect(serializedRun).not.toContain(apiKey);
+      expect(serializedEvents).not.toContain(apiKey);
     } finally {
       rmSync(tempDir, {
         recursive: true,

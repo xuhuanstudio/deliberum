@@ -75,7 +75,8 @@ export type OpenAICompatibleSetupResponse = {
   status: "saved";
   managedEnvFile: "local-daemon-env";
   configuredFields: Array<"apiKey" | "baseUrl" | "model">;
-  restartRequired: true;
+  restartRequired: boolean;
+  activeInCurrentDaemon: boolean;
   safety: string[];
 };
 

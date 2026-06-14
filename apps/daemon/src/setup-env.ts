@@ -24,7 +24,8 @@ export type OpenAICompatibleSetupResult = {
   status: "saved";
   managedEnvFile: "local-daemon-env";
   configuredFields: Array<"apiKey" | "baseUrl" | "model">;
-  restartRequired: true;
+  restartRequired: boolean;
+  activeInCurrentDaemon: boolean;
   safety: string[];
 };
 
@@ -47,30 +48,52 @@ export class SetupEnvError extends Error {
 
 export async function writeOpenAICompatibleSetupEnv(input: {
   envFilePath?: string;
+  activeEnv?: Record<string, string | undefined>;
   setup: OpenAICompatibleSetupInput;
 }): Promise<OpenAICompatibleSetupResult> {
   const envFilePath = input.envFilePath ?? DEFAULT_DAEMON_SETUP_ENV_FILE_PATH;
-  const apiKey = normalizeSecretValue(input.setup.apiKey, "API key");
-  const baseUrl = normalizeOpenAICompatibleBaseUrlValue(input.setup.baseUrl);
-  const model = normalizeNonSecretTextValue(input.setup.model, "Model");
-  const block = createOpenAICompatibleSetupBlock({ apiKey, baseUrl, model });
+  const setup = normalizeOpenAICompatibleSetup(input.setup);
+  const block = createOpenAICompatibleSetupBlock(setup);
   const existingContent = await readOptionalTextFile(envFilePath);
   const nextContent = mergeDaemonEnvBlock(existingContent, block);
 
   await writeFile(envFilePath, nextContent, "utf8");
+
+  if (input.activeEnv) {
+    applyOpenAICompatibleSetupToEnv(input.activeEnv, setup);
+  }
+
+  const activeInCurrentDaemon = input.activeEnv !== undefined;
 
   return {
     profileId: "openai-compatible",
     status: "saved",
     managedEnvFile: "local-daemon-env",
     configuredFields: ["apiKey", "baseUrl", "model"],
-    restartRequired: true,
-    safety: [
-      "The API key was written to the local daemon env file but is not returned.",
-      "The daemon loads the managed local setup block at startup.",
-      "Restart the local daemon, then refresh Web to verify readiness."
-    ]
+    restartRequired: !activeInCurrentDaemon,
+    activeInCurrentDaemon,
+    safety: activeInCurrentDaemon
+      ? [
+          "The API key was written to the local daemon env file but is not returned.",
+          "The setup was applied to the current local daemon process.",
+          "The daemon will also load the managed local setup block on the next start."
+        ]
+      : [
+          "The API key was written to the local daemon env file but is not returned.",
+          "The daemon loads the managed local setup block at startup.",
+          "Restart the local daemon, then refresh Web to verify readiness."
+        ]
   };
+}
+
+export function applyOpenAICompatibleSetupToEnv(
+  env: Record<string, string | undefined>,
+  setup: OpenAICompatibleSetupInput
+): void {
+  applyNormalizedOpenAICompatibleSetupToEnv(
+    env,
+    normalizeOpenAICompatibleSetup(setup)
+  );
 }
 
 export function loadManagedDaemonSetupEnvFile(input: {
@@ -133,6 +156,32 @@ function createOpenAICompatibleSetupBlock(input: {
     `${OPENAI_COMPATIBLE_API_KEY_ENV_VAR}=${formatEnvAssignmentValue(input.apiKey)}`,
     OPENAI_COMPATIBLE_SETUP_ENV_END
   ].join("\n")}\n`;
+}
+
+function normalizeOpenAICompatibleSetup(input: OpenAICompatibleSetupInput): {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+} {
+  return {
+    apiKey: normalizeSecretValue(input.apiKey, "API key"),
+    baseUrl: normalizeOpenAICompatibleBaseUrlValue(input.baseUrl),
+    model: normalizeNonSecretTextValue(input.model, "Model")
+  };
+}
+
+function applyNormalizedOpenAICompatibleSetupToEnv(
+  env: Record<string, string | undefined>,
+  setup: {
+    apiKey: string;
+    baseUrl: string;
+    model: string;
+  }
+): void {
+  env[OPENAI_COMPATIBLE_PROFILE_ENV_VAR] = "true";
+  env[OPENAI_COMPATIBLE_BASE_URL_ENV_VAR] = setup.baseUrl;
+  env[OPENAI_COMPATIBLE_MODEL_ENV_VAR] = setup.model;
+  env[OPENAI_COMPATIBLE_API_KEY_ENV_VAR] = setup.apiKey;
 }
 
 function mergeDaemonEnvBlock(existingContent: string | undefined, block: string): string {

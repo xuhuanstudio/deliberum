@@ -11,6 +11,7 @@ import {
 } from "@deliberum/core";
 import {
   InMemoryRunStore,
+  AdapterRegistry,
   createDeliberationRun,
   runCandidateRepairRound,
   runEvidenceCheckRound,
@@ -33,6 +34,7 @@ import {
   type RunFinalizationRoundOptions,
   type RunProposalReviewRoundOptions,
   type RunSealedDivergenceRoundOptions,
+  type RegisteredParticipantAdapter,
   type RunStore
 } from "@deliberum/orchestrator";
 import type { JsonValue } from "@deliberum/protocol";
@@ -55,6 +57,13 @@ export type DaemonRunOrchestrationOptions = {
   env?: Record<string, string | undefined>;
   executionClaimTtlMs?: number;
   executionClaimOwnerIdGenerator?: () => string;
+};
+
+type MutableParticipantAdapterRegistry = {
+  require(adapterId: string): RegisteredParticipantAdapter;
+  get?(adapterId: string): RegisteredParticipantAdapter | undefined;
+  register?(adapter: RegisteredParticipantAdapter): void;
+  replace?(adapter: RegisteredParticipantAdapter): void;
 };
 
 export type DaemonRunPlanView = {
@@ -263,14 +272,14 @@ export class DaemonRunOrchestrationService {
   private readonly eventBus: DaemonEventBus;
   private readonly idGenerator: IdGenerator;
   private readonly clock?: Clock;
-  private readonly adapterRegistry?: DaemonRunOrchestrationOptions["adapterRegistry"];
+  private adapterRegistry?: MutableParticipantAdapterRegistry;
   private readonly extractionGeneratorRegistry?: DaemonRunOrchestrationOptions["extractionGeneratorRegistry"];
   private readonly candidateRepairGeneratorRegistry?: DaemonRunOrchestrationOptions["candidateRepairGeneratorRegistry"];
   private readonly evidenceCheckGeneratorRegistry?: DaemonRunOrchestrationOptions["evidenceCheckGeneratorRegistry"];
   private readonly proposalReviewGeneratorRegistry?: DaemonRunOrchestrationOptions["proposalReviewGeneratorRegistry"];
   private readonly finalCandidateGeneratorRegistry?: DaemonRunOrchestrationOptions["finalCandidateGeneratorRegistry"];
   private readonly finalAuditGeneratorRegistry?: DaemonRunOrchestrationOptions["finalAuditGeneratorRegistry"];
-  private readonly env?: Record<string, string | undefined>;
+  private env?: Record<string, string | undefined>;
   private readonly executionClaimTtlMs?: number;
   private readonly executionClaimOwnerIdGenerator?: () => string;
 
@@ -290,6 +299,34 @@ export class DaemonRunOrchestrationService {
     this.env = options.env;
     this.executionClaimTtlMs = options.executionClaimTtlMs;
     this.executionClaimOwnerIdGenerator = options.executionClaimOwnerIdGenerator;
+  }
+
+  installParticipantAdapter(adapter: RegisteredParticipantAdapter): void {
+    if (!this.adapterRegistry) {
+      this.adapterRegistry = new AdapterRegistry([adapter]);
+      return;
+    }
+
+    if (typeof this.adapterRegistry.replace === "function") {
+      this.adapterRegistry.replace(adapter);
+      return;
+    }
+
+    if (typeof this.adapterRegistry.get === "function" && this.adapterRegistry.get(adapter.adapterId)) {
+      return;
+    }
+
+    if (typeof this.adapterRegistry.register === "function") {
+      this.adapterRegistry.register(adapter);
+    }
+  }
+
+  applyRuntimeEnv(values: Record<string, string | undefined>): void {
+    if (!this.env) {
+      this.env = {};
+    }
+
+    Object.assign(this.env, values);
   }
 
   createRun(input: { runPlan: unknown }): {

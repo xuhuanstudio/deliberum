@@ -20,7 +20,7 @@ User Mode is the default. A first-time user should be able to understand the pro
 Default User Mode pages and flows:
 
 - `/` introduces Deliberum as a multi-perspective discussion room, provides Start a discussion and Continue discussions actions, and keeps operator-only details inside Advanced / Developer Mode.
-- `/setup/models` shows daemon connection, local demo readiness, provider/model readiness, a plain-language provider setup checklist, and a local OpenAI-compatible setup form for API key, base URL, and model. It does not display saved provider secrets or env var names in the default view, and it tells users to restart the daemon because the daemon loads the managed local setup block at startup.
+- `/setup/models` shows daemon connection, local demo readiness, provider/model readiness, a plain-language provider setup checklist, and a local OpenAI-compatible setup form for API key, base URL, and model. It does not display saved provider secrets or env var names in the default view. Saved setup is applied to the current daemon when possible and also written to the managed local setup block for the next daemon start.
 - `/runs/new` lets a user start a discussion from a guided prompt or sample walkthrough. Advanced JSON request details stay collapsed.
 - `/runs` lists existing discussions in user language.
 - `/runs/:runId` is the Discussion Room. It shows the discussion brief, participant/model contributions, room-style timeline, strongest current options, open disagreements, evidence gaps, risk review, current conclusion, and next recommended actions.
