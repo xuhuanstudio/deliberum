@@ -1774,6 +1774,12 @@ describe("@deliberum/web shell", () => {
     expect(defaultRunText).not.toContain("sealed_until_reveal");
     expect(defaultRunText).not.toContain("Adaptive primitive suggestions");
     expect(defaultRunText).not.toContain("Ledger trace");
+    const detailPanelsText =
+      document.querySelector('[aria-label="Discussion detail panels"]')?.textContent ?? "";
+    expect((detailPanelsText.match(/Advanced \/ Developer Mode/g) ?? []).length).toBe(1);
+    expect(detailPanelsText).not.toContain("Object id");
+    expect(detailPanelsText).not.toContain("Proposal event");
+    expect(detailPanelsText).not.toContain("Source events");
     const nextStepControls = getAdvancedModeSummaryByPanelText(
       "Adaptive primitive suggestions"
     ).closest("details");

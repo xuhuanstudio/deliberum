@@ -2876,9 +2876,6 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
               emptyDescription="No main perspectives have been accepted into this discussion yet."
               kind="candidate"
             />
-            <AdvancedDetails summary="Advanced / Developer Mode" lazy>
-              <ProjectionMetadata projection={frontierQuery.data?.projection} />
-            </AdvancedDetails>
           </QueryState>
         </DataPanel>
       </div>
@@ -2894,9 +2891,6 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
               emptyDescription="No open disagreements have been accepted into this discussion yet."
               kind="objection"
             />
-            <AdvancedDetails summary="Advanced / Developer Mode" lazy>
-              <ProjectionMetadata projection={objectionsQuery.data?.projection} />
-            </AdvancedDetails>
           </QueryState>
         </DataPanel>
       </div>
@@ -2912,9 +2906,6 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
               emptyDescription="No explicit requirements have been accepted into this discussion yet."
               kind="quality obligation"
             />
-            <AdvancedDetails summary="Advanced / Developer Mode" lazy>
-              <ProjectionMetadata projection={obligationsQuery.data?.projection} />
-            </AdvancedDetails>
           </QueryState>
         </DataPanel>
       </div>
@@ -2930,12 +2921,42 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
               emptyDescription="No evidence gaps have been accepted into this discussion yet."
               kind="evidence"
             />
-            <AdvancedDetails summary="Advanced / Developer Mode" lazy>
-              <ProjectionMetadata projection={resourcesQuery.data?.projection} />
-            </AdvancedDetails>
           </QueryState>
         </DataPanel>
       </div>
+      <AdvancedDetails
+        summary="Advanced / Developer Mode"
+        description="Projection event ranges, internal record ids, proposal event ids, and source event ids for developer inspection."
+        panelLabel="Discussion detail metadata"
+        lazy
+      >
+        <div className="du-projection-developer-grid">
+          <ProjectionDeveloperDetails
+            title="Main perspectives metadata"
+            projection={frontierQuery.data?.projection}
+            records={asArray(frontierQuery.data?.candidates)}
+            kind="candidate"
+          />
+          <ProjectionDeveloperDetails
+            title="Open disagreements metadata"
+            projection={objectionsQuery.data?.projection}
+            records={asArray(objectionsQuery.data?.objections)}
+            kind="objection"
+          />
+          <ProjectionDeveloperDetails
+            title="Requirements metadata"
+            projection={obligationsQuery.data?.projection}
+            records={asArray(obligationsQuery.data?.qualityObligations)}
+            kind="quality obligation"
+          />
+          <ProjectionDeveloperDetails
+            title="Risks and missing evidence metadata"
+            projection={resourcesQuery.data?.projection}
+            records={asArray(resourcesQuery.data?.evidenceNeeds)}
+            kind="evidence"
+          />
+        </div>
+      </AdvancedDetails>
     </section>
   );
 }
@@ -3757,7 +3778,6 @@ function ProjectionRecord({
   kind: ProjectionRecordKind;
 }) {
   const object = getRecordValue(record, "object") ?? record;
-  const id = getStringRecordValue(object, "id") ?? `${kind}-${getProjectionRecordKey(record, 0)}`;
   const fallbackTitle = `${formatProjectionKind(kind)} ${index + 1}`;
   const title =
     getStringRecordValue(object, "title") ??
@@ -3773,8 +3793,6 @@ function ProjectionRecord({
     getStringRecordValue(object, "question") ??
     getStringRecordValue(object, "requirement") ??
     getStringRecordValue(object, "content");
-  const proposalEventId = getRecordValue(record, "proposalEventId");
-  const sourceEventIds = asArray(getRecordValue(object, "sourceEventIds"));
 
   return (
     <article className="du-readable-item">
@@ -3782,24 +3800,81 @@ function ProjectionRecord({
       <h4>{title}</h4>
       {description && description !== title ? <p>{description}</p> : null}
       <p className="du-readable-meta">Current state: {status}</p>
-      <AdvancedDetails summary="Advanced / Developer Mode" lazy>
-        <KeyValueGrid
-          items={[
-            {
-              label: "Object id",
-              value: id
-            },
-            {
-              label: "Proposal event",
-              value: formatRecordValue(proposalEventId)
-            },
-            {
-              label: "Source events",
-              value: formatEventIds(sourceEventIds)
-            }
-          ]}
+    </article>
+  );
+}
+
+function ProjectionDeveloperDetails({
+  title,
+  projection,
+  records,
+  kind
+}: {
+  title: string;
+  projection: unknown;
+  records: unknown[];
+  kind: ProjectionRecordKind;
+}) {
+  return (
+    <DataPanel title={title}>
+      <ProjectionMetadata projection={projection} />
+      {records.length === 0 ? (
+        <EmptyState
+          title="No internal records"
+          description="No accepted records are available for this projection yet."
         />
-      </AdvancedDetails>
+      ) : (
+        <div className="du-readable-list">
+          {records.map((record, index) => (
+            <ProjectionRecordDeveloperMetadata
+              key={getProjectionRecordKey(record, index)}
+              record={record}
+              index={index}
+              kind={kind}
+            />
+          ))}
+        </div>
+      )}
+    </DataPanel>
+  );
+}
+
+function ProjectionRecordDeveloperMetadata({
+  record,
+  index,
+  kind
+}: {
+  record: unknown;
+  index: number;
+  kind: ProjectionRecordKind;
+}) {
+  const object = getRecordValue(record, "object") ?? record;
+  const id =
+    getStringRecordValue(object, "id") ?? `${kind}-${getProjectionRecordKey(record, index)}`;
+  const proposalEventId = getRecordValue(record, "proposalEventId");
+  const sourceEventIds = asArray(getRecordValue(object, "sourceEventIds"));
+
+  return (
+    <article className="du-readable-item">
+      <p className="du-kicker">
+        {formatProjectionKind(kind)} {index + 1}
+      </p>
+      <KeyValueGrid
+        items={[
+          {
+            label: "Object id",
+            value: id
+          },
+          {
+            label: "Proposal event",
+            value: formatRecordValue(proposalEventId)
+          },
+          {
+            label: "Source events",
+            value: formatEventIds(sourceEventIds)
+          }
+        ]}
+      />
     </article>
   );
 }
