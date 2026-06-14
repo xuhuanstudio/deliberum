@@ -581,6 +581,36 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Conversation transcript": "\u5bf9\u8bdd\u8bb0\u5f55",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",
   "Readable discussion flow": "\u53ef\u8bfb\u8ba8\u8bba\u6d41\u7a0b",
+  "Room progress summary": "\u8ba8\u8bba\u5ba4\u8fdb\u5ea6\u6458\u8981",
+  "Current phase": "\u5f53\u524d\u9636\u6bb5",
+  "Current conclusion ready": "\u5f53\u524d\u7ed3\u8bba\u53ef\u5ba1\u9605",
+  "The room has a reviewable conclusion. Check open disagreements, requirements, evidence gaps, and risks before relying on it.":
+    "\u8ba8\u8bba\u5ba4\u5df2\u6709\u53ef\u5ba1\u9605\u7684\u7ed3\u8bba\u3002\u5728\u4f9d\u8d56\u5b83\u4e4b\u524d\uff0c\u8bf7\u68c0\u67e5\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8981\u6c42\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u98ce\u9669\u3002",
+  "Comparing strongest options": "\u6b63\u5728\u6bd4\u8f83\u6700\u5f3a\u9009\u9879",
+  "Strongest options are visible. Review disagreements, requirements, and evidence gaps before updating the conclusion.":
+    "\u6700\u5f3a\u9009\u9879\u5df2\u53ef\u89c1\u3002\u66f4\u65b0\u7ed3\u8bba\u524d\uff0c\u8bf7\u5ba1\u9605\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u7f3a\u53e3\u3002",
+  "Reviewing independent first responses": "\u6b63\u5728\u5ba1\u9605\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
+  "Independent first responses are visible before the room converges on strongest current options.":
+    "\u5728\u8ba8\u8bba\u5ba4\u6536\u655b\u5230\u5f53\u524d\u6700\u5f3a\u9009\u9879\u524d\uff0c\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u5df2\u53ef\u89c1\u3002",
+  "Collecting first perspectives": "\u6b63\u5728\u6536\u96c6\u7b2c\u4e00\u8f6e\u89c6\u89d2",
+  "The discussion brief is ready. Continue the discussion to collect independent first responses.":
+    "\u8ba8\u8bba\u7b80\u62a5\u5df2\u5c31\u7eea\u3002\u7ee7\u7eed\u8ba8\u8bba\u4ee5\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002",
+  "Next checkpoint": "\u4e0b\u4e00\u4e2a\u68c0\u67e5\u70b9",
+  "Review current conclusion with open items visible.":
+    "\u5728\u672a\u89e3\u51b3\u9879\u4fdd\u6301\u53ef\u89c1\u7684\u60c5\u51b5\u4e0b\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Open the current conclusion and confirm it matches the discussion brief.":
+    "\u6253\u5f00\u5f53\u524d\u7ed3\u8bba\uff0c\u5e76\u786e\u8ba4\u5b83\u4e0e\u8ba8\u8bba\u7b80\u62a5\u4e00\u81f4\u3002",
+  "Update the conclusion after reviewing the visible open items.":
+    "\u5ba1\u9605\u53ef\u89c1\u672a\u89e3\u51b3\u9879\u540e\uff0c\u66f4\u65b0\u7ed3\u8bba\u3002",
+  "Update the discussion so the room can draft a current conclusion.":
+    "\u66f4\u65b0\u8ba8\u8bba\uff0c\u8ba9\u8ba8\u8bba\u5ba4\u8d77\u8349\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Organize strongest options": "\u6574\u7406\u6700\u5f3a\u9009\u9879",
+  "Continue the discussion so the room can organize perspectives, disagreements, and evidence needs.":
+    "\u7ee7\u7eed\u8ba8\u8bba\uff0c\u8ba9\u8ba8\u8bba\u5ba4\u6574\u7406\u89c6\u89d2\u3001\u5206\u6b67\u548c\u8bc1\u636e\u9700\u6c42\u3002",
+  "Collect independent first responses": "\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
+  "Continue the discussion before comparing options or reviewing a conclusion.":
+    "\u5728\u6bd4\u8f83\u9009\u9879\u6216\u5ba1\u9605\u7ed3\u8bba\u4e4b\u524d\uff0c\u8bf7\u5148\u7ee7\u7eed\u8ba8\u8bba\u3002",
+  "Review before relying": "\u4f9d\u8d56\u524d\u9700\u5ba1\u9605",
   "Loading room activity": "\u6b63\u5728\u52a0\u8f7d\u8ba8\u8bba\u5ba4\u6d3b\u52a8",
   "Could not load room activity": "\u65e0\u6cd5\u52a0\u8f7d\u8ba8\u8bba\u5ba4\u6d3b\u52a8",
   "No room activity visible yet": "\u5c1a\u65e0\u53ef\u89c1\u8ba8\u8bba\u5ba4\u6d3b\u52a8",

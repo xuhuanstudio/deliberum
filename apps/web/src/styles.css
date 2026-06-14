@@ -613,6 +613,68 @@ textarea:focus-visible {
   line-height: 1.45;
 }
 
+.du-room-progress-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr) minmax(190px, 0.7fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-room-progress-summary article {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  background: var(--du-surface);
+  padding: 15px;
+}
+
+.du-room-progress-summary[data-state="ready"] .du-room-progress-primary {
+  border-left: 4px solid var(--du-accent);
+}
+
+.du-room-progress-summary[data-state="active"] .du-room-progress-primary,
+.du-room-progress-summary[data-state="pending"] .du-room-progress-primary {
+  border-left: 4px solid #b7791f;
+}
+
+.du-room-progress-summary h5,
+.du-room-progress-summary p {
+  margin: 0;
+}
+
+.du-room-progress-summary h5 {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.du-room-progress-summary p:not(.du-kicker) {
+  color: var(--du-muted);
+  line-height: 1.45;
+}
+
+.du-room-progress-checks div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.du-room-progress-checks span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--du-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.du-room-progress-checks strong {
+  font-size: 1rem;
+}
+
 .du-room-response-wrap,
 .du-room-activity-wrap,
 .du-room-stage-wrap {
@@ -1769,6 +1831,7 @@ textarea:focus-visible {
   .du-discussion-dashboard-grid,
   .du-room-layout,
   .du-room-brief,
+  .du-room-progress-summary,
   .du-room-response-grid,
   .du-run-list-meta,
   .du-projection-developer-grid,

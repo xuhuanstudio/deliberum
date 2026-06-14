@@ -1613,6 +1613,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u6b63\u5728\u8ba8\u8bba\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u65f6\u95f4\u7ebf")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u5ba4\u4e2d\u53d1\u751f\u4e86\u4ec0\u4e48")).toBeTruthy();
+    expect(
+      screen.getByRole("region", { name: "\u8ba8\u8bba\u5ba4\u8fdb\u5ea6\u6458\u8981" })
+    ).toBeTruthy();
+    expect(screen.getByText("\u5f53\u524d\u9636\u6bb5")).toBeTruthy();
+    expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\u53ef\u5ba1\u9605")).toBeTruthy();
+    expect(screen.getByText("\u4e0b\u4e00\u4e2a\u68c0\u67e5\u70b9")).toBeTruthy();
+    expect(screen.getByText("\u4f9d\u8d56\u524d\u9700\u5ba1\u9605")).toBeTruthy();
     expect(screen.getAllByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879").length).toBeGreaterThan(0);
     expect(screen.getByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879\u7684\u5185\u5bb9")).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
@@ -2135,6 +2142,20 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("What is being discussed")).toBeTruthy();
     expect(screen.getByText("Discussion timeline")).toBeTruthy();
     expect(screen.getByText("What has happened in the room")).toBeTruthy();
+    const roomProgressSummary = screen.getByRole("region", {
+      name: "Room progress summary"
+    });
+    expect(roomProgressSummary).toBeTruthy();
+    expect(roomProgressSummary.textContent ?? "").toContain("Current phase");
+    expect(roomProgressSummary.textContent ?? "").toContain("Current conclusion ready");
+    expect(roomProgressSummary.textContent ?? "").toContain("Next checkpoint");
+    expect(roomProgressSummary.textContent ?? "").toContain(
+      "Review current conclusion with open items visible."
+    );
+    expect(roomProgressSummary.textContent ?? "").toContain("Review before relying");
+    expect(roomProgressSummary.textContent ?? "").toContain("Open disagreements");
+    expect(roomProgressSummary.textContent ?? "").toContain("Missing evidence");
+    expect(roomProgressSummary.textContent ?? "").toContain("Requirements to satisfy");
     expect(screen.getByText("Room activity")).toBeTruthy();
     expect(screen.getByText("Readable discussion flow")).toBeTruthy();
     expect(screen.getByRole("list", { name: "Conversation transcript" })).toBeTruthy();
@@ -2836,6 +2857,11 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
     expect(await screen.findByText("Next: continue guided discussion")).toBeTruthy();
+    expect(await screen.findByText("Collecting first perspectives")).toBeTruthy();
+    expect(screen.getByText("Collect independent first responses")).toBeTruthy();
+    expect(
+      screen.getByText("Continue the discussion before comparing options or reviewing a conclusion.")
+    ).toBeTruthy();
     expect(document.querySelector(".du-page-actions")?.textContent ?? "").toContain(
       "Continue discussion"
     );

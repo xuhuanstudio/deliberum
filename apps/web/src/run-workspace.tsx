@@ -86,6 +86,13 @@ type RoomActivityItem = {
   detail: string;
   tone: "neutral" | "ok" | "warning";
 };
+type DiscussionRoomProgressView = {
+  tone: "ready" | "active" | "pending";
+  phaseTitle: string;
+  phaseDetail: string;
+  nextTitle: string;
+  nextDetail: string;
+};
 
 export function RunsListPage() {
   const { t } = useI18n();
@@ -1822,6 +1829,7 @@ function RunQualityOverview({
               mainPerspectiveCount={candidates.length}
               openDisagreementCount={unresolvedObjections}
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
+              openRequirementCount={openObligations}
             />
             <DiscussionOptionsList candidates={candidates} />
           </div>
@@ -2081,7 +2089,8 @@ function DiscussionRoomTimeline({
   activityQuery,
   mainPerspectiveCount,
   openDisagreementCount,
-  unresolvedEvidenceCount
+  unresolvedEvidenceCount,
+  openRequirementCount
 }: {
   run: unknown;
   activities: RoomActivityItem[];
@@ -2093,6 +2102,7 @@ function DiscussionRoomTimeline({
   mainPerspectiveCount: number;
   openDisagreementCount: number;
   unresolvedEvidenceCount: number;
+  openRequirementCount: number;
 }) {
   const { t } = useI18n();
   const independentResponses = describeStageStatus(
@@ -2101,6 +2111,13 @@ function DiscussionRoomTimeline({
   const mainPerspectives = describeStageStatus(getRecordValue(run, "latestExtractionStatus"));
   const conclusion = describeStageStatus(getRecordValue(run, "latestFinalizationStatus"));
   const participantResponses = getParticipantFirstResponses(activities);
+  const progressView = describeDiscussionRoomProgress({
+    run,
+    mainPerspectiveCount,
+    openDisagreementCount,
+    unresolvedEvidenceCount,
+    openRequirementCount
+  });
 
   return (
     <section className="du-room-section" aria-label={t("Discussion timeline")}>
@@ -2112,6 +2129,38 @@ function DiscussionRoomTimeline({
             "Follow the room like a structured conversation: brief, independent first responses, main perspectives, disagreements, evidence checks, and conclusion review."
           )}
         </p>
+      </div>
+      <div
+        className="du-room-progress-summary"
+        data-state={progressView.tone}
+        role="region"
+        aria-label={t("Room progress summary")}
+      >
+        <article className="du-room-progress-primary">
+          <p className="du-kicker">{t("Current phase")}</p>
+          <h5>{t(progressView.phaseTitle)}</h5>
+          <p>{t(progressView.phaseDetail)}</p>
+        </article>
+        <article>
+          <p className="du-kicker">{t("Next checkpoint")}</p>
+          <h5>{t(progressView.nextTitle)}</h5>
+          <p>{t(progressView.nextDetail)}</p>
+        </article>
+        <article className="du-room-progress-checks">
+          <p className="du-kicker">{t("Review before relying")}</p>
+          <div>
+            <span>{t("Open disagreements")}</span>
+            <strong>{openDisagreementCount}</strong>
+          </div>
+          <div>
+            <span>{t("Missing evidence")}</span>
+            <strong>{unresolvedEvidenceCount}</strong>
+          </div>
+          <div>
+            <span>{t("Requirements to satisfy")}</span>
+            <strong>{openRequirementCount}</strong>
+          </div>
+        </article>
       </div>
       {participantResponses.length > 0 ? (
         <div className="du-room-response-wrap" aria-label={t("Participant first responses")}>
@@ -2239,6 +2288,93 @@ function DiscussionRoomTimeline({
         />
       </ol>
     </section>
+  );
+}
+
+function describeDiscussionRoomProgress({
+  run,
+  mainPerspectiveCount,
+  openDisagreementCount,
+  unresolvedEvidenceCount,
+  openRequirementCount
+}: {
+  run: unknown;
+  mainPerspectiveCount: number;
+  openDisagreementCount: number;
+  unresolvedEvidenceCount: number;
+  openRequirementCount: number;
+}): DiscussionRoomProgressView {
+  const sealedStatus = getRecordValue(run, "sealedDivergenceStatus");
+  const extractionStatus = getRecordValue(run, "latestExtractionStatus");
+  const finalizationStatus = getRecordValue(run, "latestFinalizationStatus");
+  const ledgerEventCount = getRecordValue(getRecordValue(run, "ledger"), "eventCount");
+  const hasRecordedDiscussionWork =
+    typeof ledgerEventCount === "number"
+      ? ledgerEventCount > 1
+      : sealedStatus !== undefined ||
+        extractionStatus !== undefined ||
+        finalizationStatus !== undefined;
+  const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
+
+  if (isCompletedDiscussionStatus(finalizationStatus)) {
+    return {
+      tone: "ready",
+      phaseTitle: "Current conclusion ready",
+      phaseDetail:
+        "The room has a reviewable conclusion. Check open disagreements, requirements, evidence gaps, and risks before relying on it.",
+      nextTitle: "Review current conclusion",
+      nextDetail:
+        openItemCount > 0
+          ? "Review current conclusion with open items visible."
+          : "Open the current conclusion and confirm it matches the discussion brief."
+    };
+  }
+
+  if (
+    isCompletedDiscussionStatus(extractionStatus) ||
+    (mainPerspectiveCount > 0 && hasRecordedDiscussionWork)
+  ) {
+    return {
+      tone: "active",
+      phaseTitle: "Comparing strongest options",
+      phaseDetail:
+        "Strongest options are visible. Review disagreements, requirements, and evidence gaps before updating the conclusion.",
+      nextTitle: "Update conclusion",
+      nextDetail:
+        openItemCount > 0
+          ? "Update the conclusion after reviewing the visible open items."
+          : "Update the discussion so the room can draft a current conclusion."
+    };
+  }
+
+  if (isCompletedDiscussionStatus(sealedStatus)) {
+    return {
+      tone: "active",
+      phaseTitle: "Reviewing independent first responses",
+      phaseDetail:
+        "Independent first responses are visible before the room converges on strongest current options.",
+      nextTitle: "Organize strongest options",
+      nextDetail:
+        "Continue the discussion so the room can organize perspectives, disagreements, and evidence needs."
+    };
+  }
+
+  return {
+    tone: "pending",
+    phaseTitle: "Collecting first perspectives",
+    phaseDetail:
+      "The discussion brief is ready. Continue the discussion to collect independent first responses.",
+    nextTitle: "Collect independent first responses",
+    nextDetail: "Continue the discussion before comparing options or reviewing a conclusion."
+  };
+}
+
+function isCompletedDiscussionStatus(status: unknown): boolean {
+  return (
+    status === "completed" ||
+    status === "revealed" ||
+    status === "draft" ||
+    status === "provisional"
   );
 }
 
