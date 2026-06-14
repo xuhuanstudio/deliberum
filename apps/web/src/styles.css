@@ -514,6 +514,70 @@ textarea:focus-visible {
   border-top-color: var(--du-warn);
 }
 
+.du-outcome-review-path {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.78fr) minmax(0, 1.22fr);
+  gap: 1px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+  overflow: hidden;
+}
+
+.du-outcome-review-path > div {
+  background: var(--du-surface);
+  padding: 18px;
+}
+
+.du-outcome-review-path h4,
+.du-outcome-review-path p {
+  margin: 0;
+}
+
+.du-outcome-review-path h4 {
+  font-size: 1.12rem;
+}
+
+.du-outcome-review-path p:not(.du-kicker) {
+  margin-top: 8px;
+  color: var(--du-muted);
+  line-height: 1.5;
+}
+
+.du-outcome-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  padding: 0;
+}
+
+.du-outcome-review-item {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  border-left: 4px solid var(--du-muted);
+  background: var(--du-surface);
+  padding: 16px;
+}
+
+.du-outcome-review-item strong {
+  font-size: 0.92rem;
+}
+
+.du-outcome-review-item span {
+  color: var(--du-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.du-outcome-review-ok {
+  border-left-color: var(--du-accent);
+}
+
+.du-outcome-review-warning {
+  border-left-color: var(--du-warn);
+}
+
 .du-outcome-section-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1087,6 +1151,8 @@ textarea:focus-visible {
   .du-quality-summary-grid,
   .du-outcome-hero,
   .du-outcome-status-grid,
+  .du-outcome-review-path,
+  .du-outcome-review-grid,
   .du-outcome-section-grid,
   .du-stage-grid,
   .du-follow-controls,

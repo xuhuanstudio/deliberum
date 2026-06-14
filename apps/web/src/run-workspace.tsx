@@ -1668,6 +1668,14 @@ export function OutcomeBrief({
     visibleEvidenceNeeds.length === 0
       ? "No evidence gaps listed"
       : `${unresolvedEvidenceNeeds}/${visibleEvidenceNeeds.length} still need checking`;
+  const nextActionDetail =
+    continuationSuggestions.length === 0
+      ? "No next recommended actions are listed yet."
+      : describeReviewItemCount(
+          continuationSuggestions.length,
+          "recommended next action",
+          "recommended next actions"
+        );
 
   return (
     <div className="du-outcome-brief">
@@ -1714,6 +1722,45 @@ export function OutcomeBrief({
           />
         </div>
       </section>
+      <section className="du-outcome-review-path" aria-label="Conclusion review path">
+        <div>
+          <p className="du-kicker">Review path</p>
+          <h4>Before relying on this conclusion</h4>
+          <p>
+            Start with the recommendation, then check the visible disagreements,
+            evidence gaps, risks, and next recommended actions.
+          </p>
+        </div>
+        <div className="du-outcome-review-grid">
+          <OutcomeReviewPathItem
+            title="Read the recommendation"
+            detail="Use the current recommendation as reviewable material, not as an unquestioned final answer."
+            tone="neutral"
+          />
+          <OutcomeReviewPathItem
+            title="Review open disagreements"
+            detail={describeReviewItemCount(
+              openDisagreements.length,
+              "open disagreement needs review",
+              "open disagreements need review"
+            )}
+            tone={openDisagreements.length > 0 ? "warning" : "ok"}
+          />
+          <OutcomeReviewPathItem
+            title="Check missing evidence"
+            detail={describeEvidenceReviewDetail(
+              unresolvedEvidenceNeeds,
+              visibleEvidenceNeeds.length
+            )}
+            tone={unresolvedEvidenceNeeds > 0 ? "warning" : "ok"}
+          />
+          <OutcomeReviewPathItem
+            title="Use next recommended actions"
+            detail={nextActionDetail}
+            tone={continuationSuggestions.length > 0 ? "ok" : "warning"}
+          />
+        </div>
+      </section>
       <div className="du-outcome-section-grid">
         <ReadableStringList
           title="Unresolved questions"
@@ -1756,6 +1803,23 @@ export function OutcomeBrief({
         emptyTitle="No next recommended actions listed"
       />
     </div>
+  );
+}
+
+function OutcomeReviewPathItem({
+  title,
+  detail,
+  tone
+}: {
+  title: string;
+  detail: string;
+  tone: "neutral" | "ok" | "warning";
+}) {
+  return (
+    <article className={`du-outcome-review-item du-outcome-review-${tone}`}>
+      <strong>{title}</strong>
+      <span>{detail}</span>
+    </article>
   );
 }
 
@@ -1967,6 +2031,28 @@ function describeOutcomeCount(count: number, singular: string, plural: string): 
   }
 
   return `${count} ${count === 1 ? singular : plural} listed`;
+}
+
+function describeReviewItemCount(count: number, singular: string, plural: string): string {
+  if (count === 0) {
+    return `No ${plural}`;
+  }
+
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function describeEvidenceReviewDetail(unresolvedCount: number, totalCount: number): string {
+  if (totalCount === 0) {
+    return "No evidence gaps are listed.";
+  }
+
+  if (unresolvedCount === 0) {
+    return `${totalCount} evidence ${totalCount === 1 ? "gap has" : "gaps have"} been checked.`;
+  }
+
+  return `${unresolvedCount} of ${totalCount} evidence ${
+    totalCount === 1 ? "gap" : "gaps"
+  } ${unresolvedCount === 1 ? "needs" : "need"} verification`;
 }
 
 function RunProjectionPanels({ sessionId }: { sessionId: string }) {

@@ -2193,6 +2193,15 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText(/provisional/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: "Current conclusion snapshot" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Conclusion review path" })).toBeTruthy();
+    expect(screen.getByText("Before relying on this conclusion")).toBeTruthy();
+    expect(screen.getByText("Read the recommendation")).toBeTruthy();
+    expect(screen.getByText("Review open disagreements")).toBeTruthy();
+    expect(screen.getByText("Check missing evidence")).toBeTruthy();
+    expect(screen.getByText("Use next recommended actions")).toBeTruthy();
+    expect(screen.getByText("1 open disagreement needs review")).toBeTruthy();
+    expect(screen.getByText("1 of 1 evidence gap needs verification")).toBeTruthy();
+    expect(screen.getByText("1 recommended next action")).toBeTruthy();
     expect(screen.getAllByText("Open disagreements").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Missing evidence").length).toBeGreaterThan(0);
     expect(screen.getByText("Does the fixture cover all declared dimensions?")).toBeTruthy();
@@ -2257,6 +2266,10 @@ describe("@deliberum/web shell", () => {
     expect(readableConclusion).toContain("No unresolved questions listed");
     expect(readableConclusion).toContain("No risks or boundaries listed");
     expect(readableConclusion).toContain("No next recommended actions listed");
+    expect(readableConclusion).toContain("Before relying on this conclusion");
+    expect(readableConclusion).toContain("1 open disagreement needs review");
+    expect(readableConclusion).toContain("1 of 1 evidence gap needs verification");
+    expect(readableConclusion).toContain("No next recommended actions are listed yet.");
     expect(readableConclusion).not.toContain("candidate-1");
     expect(readableConclusion).not.toContain("objection-1");
     expect(readableConclusion).not.toContain("quality-1");
