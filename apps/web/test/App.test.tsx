@@ -1864,7 +1864,10 @@ describe("@deliberum/web shell", () => {
               authorId: "participant-cli",
               createdAt: "2026-06-10T00:00:02.000Z",
               payload: {
-                content: "CLI-first validation exercises the lifecycle directly."
+                localPreset: true,
+                label: "deterministic sample material",
+                position: "CLI-first validation exercises the lifecycle directly.",
+                reason: "The revealed response should read like a participant contribution."
               },
               basedOnEventIds: ["opened-event"],
               trace: {}
@@ -1905,6 +1908,9 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText("CLI-first validation exercises the lifecycle directly.")
     ).toBeTruthy();
+    expect(
+      screen.queryByText("This participant response is available for review in the room.")
+    ).toBeNull();
     expect(screen.getByText("Independent first responses revealed")).toBeTruthy();
     expect(screen.getByText("Main perspectives organized")).toBeTruthy();
     const roomText = document.querySelector(".du-room-layout")?.textContent ?? "";

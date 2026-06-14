@@ -2162,14 +2162,40 @@ function describeContributionPayload(payload: unknown): string {
     getFirstStringRecordValue(payload, [
       "summary",
       "content",
+      "position",
+      "answer",
+      "message",
       "text",
       "claim",
       "recommendation",
-      "description"
+      "description",
+      "rationale",
+      "reason"
     ]);
 
   if (readable) {
     return readable;
+  }
+
+  const nestedReadable = getFirstStringRecordValue(
+    getFirstRecordValue(payload, ["response", "output", "result"]),
+    [
+      "summary",
+      "content",
+      "position",
+      "answer",
+      "message",
+      "text",
+      "claim",
+      "recommendation",
+      "description",
+      "rationale",
+      "reason"
+    ]
+  );
+
+  if (nestedReadable) {
+    return nestedReadable;
   }
 
   return "This participant response is available for review in the room.";
@@ -2759,6 +2785,18 @@ function getFirstStringRecordValue(record: unknown, keys: readonly string[]): st
     const value = getStringRecordValue(record, key);
 
     if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function getFirstRecordValue(record: unknown, keys: readonly string[]): unknown {
+  for (const key of keys) {
+    const value = getRecordValue(record, key);
+
+    if (value && typeof value === "object") {
       return value;
     }
   }
