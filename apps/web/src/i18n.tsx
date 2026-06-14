@@ -561,6 +561,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review disagreements": "\u5ba1\u9605\u5206\u6b67",
   "Jump to unresolved objections that still constrain the conclusion.":
     "\u8df3\u5230\u4ecd\u7136\u7ea6\u675f\u7ed3\u8bba\u7684\u672a\u89e3\u51b3\u53cd\u5bf9\u610f\u89c1\u3002",
+  "Review requirements that must be satisfied or acknowledged before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u8bf7\u5ba1\u9605\u5fc5\u987b\u6ee1\u8db3\u6216\u660e\u786e\u8bf4\u660e\u7684\u8981\u6c42\u3002",
   "Check evidence": "\u68c0\u67e5\u8bc1\u636e",
   "Review missing or unchecked evidence before relying on the answer.":
     "\u5728\u4f9d\u8d56\u7b54\u6848\u524d\u5ba1\u9605\u7f3a\u5931\u6216\u672a\u6838\u67e5\u7684\u8bc1\u636e\u3002",

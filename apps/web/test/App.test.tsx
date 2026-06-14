@@ -2121,6 +2121,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("button", { name: "Update conclusion" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review disagreements" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Confirm answer requirements" })).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Confirm answer requirements" }).getAttribute("href")
+    ).toBe("#answer-requirements");
     expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("7 recorded lifecycle events");
     fireEvent.click(getUserDetailsSummaryByText("Discussion setup"));
@@ -2847,6 +2851,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Discussion actions")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review disagreements" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Confirm answer requirements" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
     fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
     fireEvent.change(await screen.findByLabelText("Advanced start request JSON"), {

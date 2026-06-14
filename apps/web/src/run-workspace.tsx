@@ -1357,6 +1357,18 @@ function StartRunForm({
           </a>
           <a
             className="du-discussion-action-button du-discussion-action-secondary"
+            href="#answer-requirements"
+            aria-label={t("Confirm answer requirements")}
+          >
+            <strong>{t("Confirm answer requirements")}</strong>
+            <span>
+              {t(
+                "Review requirements that must be satisfied or acknowledged before relying on the conclusion."
+              )}
+            </span>
+          </a>
+          <a
+            className="du-discussion-action-button du-discussion-action-secondary"
             href="#evidence-gaps"
             aria-label={t("Check evidence")}
           >
