@@ -883,6 +883,46 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+.du-provider-setup-completion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--du-line);
+  border-left: 4px solid var(--du-muted);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 14px;
+}
+
+.du-provider-setup-completion h5,
+.du-provider-setup-completion p {
+  margin: 0;
+}
+
+.du-provider-setup-completion h5 {
+  font-size: 0.98rem;
+}
+
+.du-provider-setup-completion p:not(.du-kicker) {
+  color: var(--du-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.du-provider-setup-completion .du-action-row {
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.du-provider-setup-completion-ok {
+  border-left-color: var(--du-accent);
+}
+
+.du-provider-setup-completion-warning {
+  border-left-color: var(--du-warn);
+}
+
 .du-discussion-dashboard-grid {
   display: grid;
   grid-template-columns: minmax(240px, 1.35fr) repeat(4, minmax(0, 1fr));
@@ -2642,6 +2682,7 @@ textarea:focus-visible {
   .du-setup-model-grid,
   .du-setup-readiness-grid,
   .du-provider-setup-form-layout,
+  .du-provider-setup-completion,
   .du-provider-check-grid,
   .du-discussion-setup-grid,
   .du-participant-lineup-grid,

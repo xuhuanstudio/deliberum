@@ -92,6 +92,14 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Provider connection verified": "\u63d0\u4f9b\u65b9\u8fde\u63a5\u5df2\u9a8c\u8bc1",
   "The configured provider accepted a safe test request. You can start a real model-backed discussion.":
     "\u5df2\u914d\u7f6e\u7684\u63d0\u4f9b\u65b9\u63a5\u53d7\u4e86\u4e00\u6b21\u5b89\u5168\u6d4b\u8bd5\u8bf7\u6c42\u3002\u73b0\u5728\u53ef\u4ee5\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
+  "Setup path": "\u8bbe\u7f6e\u8def\u5f84",
+  "Ready to start with real model participants":
+    "\u5df2\u53ef\u4f7f\u7528\u771f\u5b9e\u6a21\u578b\u53c2\u4e0e\u8005\u5f00\u59cb",
+  "The provider setup is available for new discussions. The start page will select model-backed participants by default while keeping demo participants available.":
+    "\u6b64\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u53ef\u7528\u4e8e\u65b0\u8ba8\u8bba\u3002\u5f00\u59cb\u9875\u4f1a\u9ed8\u8ba4\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\uff0c\u540c\u65f6\u4fdd\u7559\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u7528\u3002",
+  "Verify the provider before starting": "\u5f00\u59cb\u524d\u8bf7\u5148\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
+  "The saved setup is active in this daemon. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion.":
+    "\u5df2\u4fdd\u5b58\u7684\u8bbe\u7f6e\u5df2\u5728\u6b64\u5b88\u62a4\u8fdb\u7a0b\u4e2d\u751f\u6548\u3002\u9a8c\u8bc1\u4f1a\u53d1\u9001\u4e00\u6b21\u6700\u5c0f\u8bf7\u6c42\uff0c\u5e2e\u4f60\u5728\u8ba8\u8bba\u524d\u53d1\u73b0 key\u3001base URL \u6216 model \u95ee\u9898\u3002",
   "Provider connection could not be verified": "\u65e0\u6cd5\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u8fde\u63a5",
   "Use the Web form above to add the provider API key, base URL, and model on this machine.":
     "\u4f7f\u7528\u4e0a\u65b9 Web \u8868\u5355\u5728\u8fd9\u53f0\u673a\u5668\u4e0a\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c model\u3002",

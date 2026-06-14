@@ -1514,6 +1514,12 @@ function OpenAICompatibleSetupForm({
           </p>
         </aside>
       </div>
+      <ProviderSetupCompletion
+        ready={ready}
+        saved={saved}
+        activeInCurrentDaemon={activeInCurrentDaemon}
+        verified={verified}
+      />
       {saved ? (
         <StatusBanner
           tone="ok"
@@ -1548,6 +1554,53 @@ function OpenAICompatibleSetupForm({
           detail={formatSafeErrorMessage(error)}
         />
       ) : null}
+    </section>
+  );
+}
+
+function ProviderSetupCompletion({
+  ready,
+  saved,
+  activeInCurrentDaemon,
+  verified
+}: {
+  ready: boolean;
+  saved: boolean;
+  activeInCurrentDaemon: boolean;
+  verified: boolean;
+}) {
+  const { t } = useI18n();
+  const visible = ready || saved || activeInCurrentDaemon || verified;
+
+  if (!visible) {
+    return null;
+  }
+
+  const startReady = ready || verified;
+  const title = startReady
+    ? "Ready to start with real model participants"
+    : "Verify the provider before starting";
+  const detail = startReady
+    ? "The provider setup is available for new discussions. The start page will select model-backed participants by default while keeping demo participants available."
+    : "The saved setup is active in this daemon. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion.";
+
+  return (
+    <section
+      className={`du-provider-setup-completion du-provider-setup-completion-${
+        startReady ? "ok" : "warning"
+      }`}
+      aria-label={t("Setup path")}
+    >
+      <div>
+        <p className="du-kicker">{t("Setup path")}</p>
+        <h5>{t(title)}</h5>
+        <p>{t(detail)}</p>
+      </div>
+      <div className="du-action-row">
+        <Link className={`du-action-link ${startReady ? "" : "du-secondary-link"}`} to="/runs/new">
+          {t("Start model-backed discussion")}
+        </Link>
+      </div>
     </section>
   );
 }

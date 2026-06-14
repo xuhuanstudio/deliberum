@@ -1212,6 +1212,14 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByText("Ready in this session")).toBeTruthy();
+    expect(screen.getByText("Setup path")).toBeTruthy();
+    expect(screen.getByText("Verify the provider before starting")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The saved setup is active in this daemon. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion."
+      )
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Start model-backed discussion" })).toBeTruthy();
     expect(
       (screen.getByRole("button", { name: "Verify connection" }) as HTMLButtonElement)
         .disabled
@@ -1273,6 +1281,13 @@ describe("@deliberum/web shell", () => {
       screen.getByText(
         "\u5f53\u524d\u5b88\u62a4\u8fdb\u7a0b\u73b0\u5728\u5df2\u53ef\u4ee5\u4f7f\u7528\u8fd9\u4e2a\u8bbe\u7f6e\u3002\u8bf7\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u3001\u9a8c\u8bc1\u8fde\u63a5\uff0c\u7136\u540e\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002"
       )
+    ).toBeTruthy();
+    expect(screen.getByText("\u8bbe\u7f6e\u8def\u5f84")).toBeTruthy();
+    expect(screen.getByText("\u5f00\u59cb\u524d\u8bf7\u5148\u9a8c\u8bc1\u63d0\u4f9b\u65b9")).toBeTruthy();
+    expect(
+      screen.getByRole("link", {
+        name: "\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba"
+      })
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
@@ -1346,7 +1361,7 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("This provider is ready for model-backed discussions.")).toBeTruthy();
     expect(screen.getByText("Discussion readiness")).toBeTruthy();
-    expect(screen.getByText("Start model-backed discussion")).toBeTruthy();
+    expect(screen.getAllByText("Start model-backed discussion").length).toBeGreaterThan(0);
     expect(
       screen.getByText(
         "Start discussion will select configured model participants by default while keeping demo participants available."
@@ -1356,6 +1371,13 @@ describe("@deliberum/web shell", () => {
       screen.getByText("Configured model participants can answer as independent perspectives.")
     ).toBeTruthy();
     expect(screen.getByText("Ready to test")).toBeTruthy();
+    expect(screen.getByText("Ready to start with real model participants")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The provider setup is available for new discussions. The start page will select model-backed participants by default while keeping demo participants available."
+      )
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Start model-backed discussion" })).toBeTruthy();
     const verifyButton = screen.getByRole("button", {
       name: "Verify connection"
     }) as HTMLButtonElement;
