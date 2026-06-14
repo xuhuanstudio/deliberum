@@ -183,11 +183,15 @@ type DiscussionRoomProgressView = {
 export function RunsListPage() {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
+  const queryClient = useQueryClient();
   const runsQuery = useQuery({
     queryKey: ["runs"],
     queryFn: () => client.listRuns()
   });
   const runs = asArray(runsQuery.data?.runs);
+  function retryDiscussions() {
+    void queryClient.invalidateQueries({ queryKey: ["runs"] });
+  }
 
   return (
     <RunWorkspaceShell>
@@ -204,7 +208,13 @@ export function RunsListPage() {
         }
       >
         <RunConceptPanel />
-        <QueryState query={runsQuery}>
+        {runsQuery.isLoading ? (
+          <StatusBanner title={t("Loading discussion data")} />
+        ) : runsQuery.isError ? (
+          <DataPanel title={t("Existing discussions")}>
+            <LocalServiceSetupGuide onRetry={retryDiscussions} />
+          </DataPanel>
+        ) : (
           <DataPanel title={t("Existing discussions")}>
             {runs.length === 0 ? (
               <EmptyState
@@ -217,7 +227,7 @@ export function RunsListPage() {
               <RunCatalogList runs={runs} />
             )}
           </DataPanel>
-        </QueryState>
+        )}
       </ViewFrame>
     </RunWorkspaceShell>
   );

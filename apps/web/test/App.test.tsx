@@ -2236,6 +2236,59 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("runtime");
   });
 
+  it("guides discussion list users when the local service is unavailable", async () => {
+    const listRuns = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("ECONNREFUSED 127.0.0.1:3877"))
+      .mockResolvedValueOnce({ runs: [] });
+    const client = createClient({
+      listRuns
+    });
+
+    renderApp("/runs", client);
+
+    expect((await screen.findAllByText("Discussions")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Start the local service")).toBeTruthy();
+    expect(screen.getByText("Local service command")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js"
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Web cannot read setup or discussions until the local Deliberum service is running."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("3. Configure models in Web")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("ECONNREFUSED");
+    expect(document.body.textContent ?? "").not.toContain("127.0.0.1:3877");
+
+    fireEvent.click(screen.getByRole("button", { name: "Check again" }));
+    await waitFor(() => expect(listRuns).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("No discussions yet")).toBeTruthy();
+    expect(screen.queryByText("Start the local service")).toBeNull();
+  });
+
+  it("localizes the discussion list local service guide", async () => {
+    const client = createClient({
+      listRuns: vi.fn(async () => {
+        throw new Error("ECONNREFUSED 127.0.0.1:3877");
+      })
+    });
+
+    renderApp("/runs", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    expect(await screen.findByText("\u542f\u52a8\u672c\u5730\u670d\u52a1")).toBeTruthy();
+    expect(screen.getByText("\u672c\u5730\u670d\u52a1\u547d\u4ee4")).toBeTruthy();
+    expect(screen.getByText("3. \u5728 Web \u4e2d\u914d\u7f6e\u6a21\u578b")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "\u518d\u6b21\u68c0\u67e5" })).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("ECONNREFUSED");
+    expect(document.body.textContent ?? "").not.toContain("127.0.0.1:3877");
+  });
+
   it("renders the start discussion path in Simplified Chinese when requested", async () => {
     const client = createClient();
 
