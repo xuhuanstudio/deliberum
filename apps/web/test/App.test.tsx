@@ -1113,6 +1113,55 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("topic_contract_published")).toBeTruthy();
   });
 
+  it("shows the full discussion brief in user mode", async () => {
+    const client = createClient({
+      listEvents: vi.fn(async () => ({
+        events: [
+          {
+            id: "event-1",
+            type: "topic_contract_published",
+            sequence: 0,
+            payload: {
+              topic: "Review a proposed rollout before relying on it.",
+              goals: [
+                "Compare the strongest current options.",
+                "Keep unresolved risks visible."
+              ],
+              constraints: [
+                "Use sample material only.",
+                "Keep the conclusion provisional."
+              ],
+              output: {
+                expectations: [
+                  "Show the current conclusion.",
+                  "List disagreements, missing evidence, and next actions."
+                ]
+              }
+            }
+          }
+        ]
+      }))
+    });
+
+    renderApp("/sessions/session-1", client);
+
+    expect(await screen.findByText("Review a proposed rollout before relying on it.")).toBeTruthy();
+    expect(screen.getByText("Goals")).toBeTruthy();
+    expect(
+      screen.getByText("Compare the strongest current options. Keep unresolved risks visible.")
+    ).toBeTruthy();
+    expect(screen.getByText("Constraints")).toBeTruthy();
+    expect(
+      screen.getByText("Use sample material only. Keep the conclusion provisional.")
+    ).toBeTruthy();
+    expect(screen.getByText("Expected result")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Show the current conclusion. List disagreements, missing evidence, and next actions."
+      )
+    ).toBeTruthy();
+  });
+
   it("keeps empty session user-mode pages in reader-facing language", async () => {
     const emptyClient = createClient({
       listEvents: vi.fn(async () => ({

@@ -1224,6 +1224,16 @@ function formatUnknownArray(value: unknown): string[] {
     .filter((entry) => entry !== "None");
 }
 
+function getStringArray(value: unknown): string[] {
+  return asArray(value).filter(
+    (entry): entry is string => typeof entry === "string" && entry.trim().length > 0
+  );
+}
+
+function formatBriefItemList(items: readonly string[]): string {
+  return items.map((item) => item.trim()).filter((item) => item.length > 0).join(" ");
+}
+
 function SessionRoute() {
   const { sessionId } = useSessionParams();
 
@@ -1340,6 +1350,15 @@ function SessionOverviewPage() {
   const discussionTopic = formatRecordValue(
     getRecordValue(topicContractPayload, "topic") ?? "No discussion brief available yet"
   );
+  const discussionGoals = getStringArray(getRecordValue(topicContractPayload, "goals"));
+  const discussionConstraints = getStringArray(
+    getRecordValue(topicContractPayload, "constraints")
+  );
+  const output = getRecordValue(topicContractPayload, "output");
+  const expectedOutcomes = getStringArray(
+    getRecordValue(output, "expectations") ??
+      getRecordValue(topicContractPayload, "outputExpectations")
+  );
 
   return (
     <ViewFrame
@@ -1354,6 +1373,24 @@ function SessionOverviewPage() {
         >
           <div className="du-readable-list">
             <QualityPathItem title="Question or topic" detail={discussionTopic} />
+            {discussionGoals.length > 0 ? (
+              <QualityPathItem
+                title="Goals"
+                detail={formatBriefItemList(discussionGoals)}
+              />
+            ) : null}
+            {discussionConstraints.length > 0 ? (
+              <QualityPathItem
+                title="Constraints"
+                detail={formatBriefItemList(discussionConstraints)}
+              />
+            ) : null}
+            {expectedOutcomes.length > 0 ? (
+              <QualityPathItem
+                title="Expected result"
+                detail={formatBriefItemList(expectedOutcomes)}
+              />
+            ) : null}
             <QualityPathItem
               title="Current activity"
               detail={`${events.length} update${events.length === 1 ? "" : "s"} in this discussion so far.`}
