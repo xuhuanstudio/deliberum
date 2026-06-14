@@ -1638,6 +1638,43 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 
+.du-discussion-source {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--du-line);
+  border-left: 4px solid var(--du-muted);
+  border-radius: 8px;
+  background: #fffefa;
+  padding: 14px;
+}
+
+.du-discussion-source strong {
+  color: var(--du-text);
+  font-size: 0.95rem;
+}
+
+.du-discussion-source span,
+.du-discussion-source small {
+  color: var(--du-muted);
+  line-height: 1.5;
+}
+
+.du-discussion-source span {
+  font-size: 0.84rem;
+}
+
+.du-discussion-source small {
+  font-size: 0.78rem;
+}
+
+.du-discussion-source-ok {
+  border-left-color: var(--du-accent);
+}
+
+.du-discussion-source-warning {
+  border-left-color: var(--du-warn);
+}
+
 .du-discussion-form label {
   color: var(--du-muted);
   font-size: 0.85rem;

@@ -95,6 +95,12 @@ type DiscussionParticipantSource = "demo" | "model-backed";
 type DiscussionProviderSource = ProviderBackedDiscussionPlanInput & {
   name: string;
 };
+type DiscussionParticipantSourceView = {
+  title: string;
+  detail: string;
+  note: string;
+  tone: "ok" | "warning" | "neutral";
+};
 type DiscussionNextStepView = {
   title: string;
   detail: string;
@@ -1662,6 +1668,20 @@ export function DiscussionNextStepCard({ run }: { run: unknown }) {
   );
 }
 
+function DiscussionParticipantSourceSummary({ run }: { run: unknown }) {
+  const { t } = useI18n();
+  const source = describeDiscussionParticipantSource(run);
+
+  return (
+    <article className={`du-discussion-source du-discussion-source-${source.tone}`}>
+      <p className="du-kicker">{t("Participant source")}</p>
+      <strong>{t(source.title)}</strong>
+      <span>{t(source.detail)}</span>
+      <small>{t(source.note)}</small>
+    </article>
+  );
+}
+
 function StartRunForm({
   runId,
   sessionId,
@@ -1747,6 +1767,7 @@ function StartRunForm({
           detail={t(continuationView.explainerDetail)}
         />
       </div>
+      <DiscussionParticipantSourceSummary run={run} />
       <GuidedDiscussionActionPath reviewReady={continuationView.reviewReady} />
       <div className="du-discussion-actions" aria-label={t("Discussion actions")}>
         <p className="du-kicker">{t("Discussion actions")}</p>
@@ -1915,6 +1936,61 @@ function StartRunForm({
       ) : null}
     </DataPanel>
   );
+}
+
+function describeDiscussionParticipantSource(run: unknown): DiscussionParticipantSourceView {
+  const plan = getRecordValue(run, "plan") ?? {};
+  const participants = asArray(getRecordValue(plan, "participants"));
+  const providerConfigs = asArray(getRecordValue(plan, "providerConfigs"));
+  const hasProviderBackedParticipant = participants.some((participant) =>
+    Boolean(getStringRecordValue(participant, "providerConfigId"))
+  );
+  const hasProviderConfig = providerConfigs.length > 0;
+  const hasLocalPresetParticipant = participants.some((participant) => {
+    const id = getStringRecordValue(participant, "id") ?? "";
+    const adapterId = getStringRecordValue(participant, "adapterId") ?? "";
+
+    return id.startsWith("local-preset-") || adapterId.startsWith("local-preset-");
+  });
+
+  if (hasProviderBackedParticipant || hasProviderConfig) {
+    return {
+      title: "Model-backed discussion",
+      detail:
+        "Continue discussion will ask configured model participants for the independent first responses.",
+      note:
+        "Provider credentials stay in local daemon setup; Web does not show or store API keys.",
+      tone: "ok"
+    };
+  }
+
+  if (hasLocalPresetParticipant) {
+    return {
+      title: "Demo participant discussion",
+      detail:
+        "Continue discussion uses built-in demo participants so the full flow works without provider setup.",
+      note: "Use Setup / Models when you want real provider-backed model participants.",
+      tone: "warning"
+    };
+  }
+
+  if (participants.length > 0) {
+    return {
+      title: "Configured participant discussion",
+      detail:
+        "Continue discussion uses the participant source already attached to this discussion.",
+      note:
+        "Advanced mode keeps the underlying adapter and provider identifiers available for developers.",
+      tone: "neutral"
+    };
+  }
+
+  return {
+    title: "Participant source unavailable",
+    detail: "This discussion does not show a usable participant source yet.",
+    note: "Open Setup / Models before relying on this discussion.",
+    tone: "warning"
+  };
 }
 
 function GuidedDiscussionActionPath({ reviewReady }: { reviewReady: boolean }) {

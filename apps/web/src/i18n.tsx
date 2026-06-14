@@ -171,6 +171,27 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u53ef\u9009\u62e9\u6f14\u793a\u53c2\u4e0e\u8005\u7acb\u5373\u4f53\u9a8c\uff0c\u6216\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u4f7f\u7528\u5df2\u914d\u7f6e\u7684\u672c\u5730\u63d0\u4f9b\u65b9\u3002",
   "A configured model provider can be selected for this discussion.":
     "\u53ef\u4e3a\u672c\u6b21\u8ba8\u8bba\u9009\u62e9\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
+  "Participant source": "\u53c2\u4e0e\u8005\u6765\u6e90",
+  "Model-backed discussion": "\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
+  "Continue discussion will ask configured model participants for the independent first responses.":
+    "\u7ee7\u7eed\u8ba8\u8bba\u65f6\uff0c\u5c06\u8bf7\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u751f\u6210\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002",
+  "Provider credentials stay in local daemon setup; Web does not show or store API keys.":
+    "\u63d0\u4f9b\u65b9\u51ed\u636e\u4fdd\u7559\u5728\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u8bbe\u7f6e\u4e2d\uff1bWeb \u4e0d\u663e\u793a\u6216\u5b58\u50a8 API key\u3002",
+  "Demo participant discussion": "\u6f14\u793a\u53c2\u4e0e\u8005\u8ba8\u8bba",
+  "Continue discussion uses built-in demo participants so the full flow works without provider setup.":
+    "\u7ee7\u7eed\u8ba8\u8bba\u4f1a\u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\uff0c\u56e0\u6b64\u65e0\u9700\u914d\u7f6e\u63d0\u4f9b\u65b9\u4e5f\u80fd\u8dd1\u901a\u5b8c\u6574\u6d41\u7a0b\u3002",
+  "Use Setup / Models when you want real provider-backed model participants.":
+    "\u5982\u679c\u9700\u8981\u771f\u5b9e\u63d0\u4f9b\u65b9\u652f\u6301\u7684\u6a21\u578b\u53c2\u4e0e\u8005\uff0c\u8bf7\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u3002",
+  "Configured participant discussion": "\u5df2\u914d\u7f6e\u53c2\u4e0e\u8005\u8ba8\u8bba",
+  "Continue discussion uses the participant source already attached to this discussion.":
+    "\u7ee7\u7eed\u8ba8\u8bba\u4f1a\u4f7f\u7528\u5df2\u9644\u52a0\u5230\u6b64\u8ba8\u8bba\u7684\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
+  "Advanced mode keeps the underlying adapter and provider identifiers available for developers.":
+    "\u9ad8\u7ea7\u6a21\u5f0f\u4f1a\u4fdd\u7559\u5e95\u5c42 adapter \u548c provider \u6807\u8bc6\uff0c\u4f9b\u5f00\u53d1\u8005\u67e5\u770b\u3002",
+  "Participant source unavailable": "\u53c2\u4e0e\u8005\u6765\u6e90\u4e0d\u53ef\u7528",
+  "This discussion does not show a usable participant source yet.":
+    "\u6b64\u8ba8\u8bba\u5c1a\u672a\u663e\u793a\u53ef\u7528\u7684\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
+  "Open Setup / Models before relying on this discussion.":
+    "\u5728\u4f9d\u8d56\u6b64\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b\u3002",
   "Provider-ready start": "\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea",
   "At least one real model provider is ready. The quick-start form still uses demo participants; use a model-backed discussion plan when you want provider-backed perspectives.":
     "\u81f3\u5c11\u4e00\u4e2a\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea\u3002\u5feb\u901f\u5f00\u59cb\u8868\u5355\u4ecd\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\uff1b\u9700\u8981\u63d0\u4f9b\u65b9\u652f\u6301\u7684\u89c6\u89d2\u65f6\uff0c\u8bf7\u4f7f\u7528\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u8ba1\u5212\u3002",

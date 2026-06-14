@@ -67,6 +67,69 @@ const notStartedRunDetail = {
   }
 };
 
+const localPresetNotStartedRunDetail = {
+  ...notStartedRunDetail,
+  plan: {
+    ...runDetail.plan,
+    participants: [
+      {
+        id: "local-preset-alpha",
+        kind: "model",
+        displayName: "Perspective A",
+        adapterId: "local-preset-alpha"
+      },
+      {
+        id: "local-preset-beta",
+        kind: "model",
+        displayName: "Perspective B",
+        adapterId: "local-preset-beta"
+      }
+    ],
+    providerConfigs: []
+  }
+};
+
+const providerBackedRunDetail = {
+  ...notStartedRunDetail,
+  title: "Discussion: Should we use a configured provider?",
+  topic: "Should we use a configured provider?",
+  plan: {
+    topic: "Should we use a configured provider?",
+    goals: ["Compare provider-backed perspectives"],
+    constraints: [
+      "Use configured model-backed participants from the local daemon.",
+      "Keep provider credentials in the local daemon environment only."
+    ],
+    participants: [
+      {
+        id: "provider-perspective-a",
+        kind: "model",
+        displayName: "Perspective A",
+        adapterId: "openai-compatible",
+        providerConfigId: "web-openai-compatible-discussion"
+      },
+      {
+        id: "provider-perspective-b",
+        kind: "model",
+        displayName: "Perspective B",
+        adapterId: "openai-compatible",
+        providerConfigId: "web-openai-compatible-discussion"
+      }
+    ],
+    providerConfigs: [
+      {
+        id: "web-openai-compatible-discussion",
+        adapterId: "openai-compatible",
+        providerConfigId: "web-openai-compatible-discussion",
+        hasApiKeyEnvVar: true
+      }
+    ],
+    output: {
+      expectations: ["Show the current conclusion and next actions."]
+    }
+  }
+};
+
 function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient {
   return {
     health: vi.fn(async () => ({
@@ -3305,7 +3368,7 @@ describe("@deliberum/web shell", () => {
       "/runs/run-1",
       createClient({
         getRun: vi.fn(async () => ({
-          run: notStartedRunDetail
+          run: localPresetNotStartedRunDetail
         }))
       })
     );
@@ -3321,6 +3384,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("link", { name: "Review disagreements" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Confirm answer requirements" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
+    expect(screen.getByText("Participant source")).toBeTruthy();
+    expect(screen.getByText("Demo participant discussion")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Continue discussion uses built-in demo participants so the full flow works without provider setup."
+      )
+    ).toBeTruthy();
     const pendingDiscussionActionsText =
       document.querySelector(".du-discussion-actions")?.textContent ?? "";
     expect(pendingDiscussionActionsText).toContain("Updates discussion");
@@ -3351,6 +3421,56 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText(/sealed_divergence/)).toBeTruthy();
     expect(screen.getByText(/event-2/)).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("do not render this result payload");
+  });
+
+  it("explains provider-backed discussion source without exposing provider internals", async () => {
+    renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: providerBackedRunDetail
+        }))
+      })
+    );
+
+    expect(await screen.findByText("Model-backed discussion")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Continue discussion will ask configured model participants for the independent first responses."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Provider credentials stay in local daemon setup; Web does not show or store API keys."
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("web-openai-compatible-discussion");
+    expect(document.body.textContent ?? "").not.toContain("openai-compatible");
+  });
+
+  it("renders the discussion source summary in Simplified Chinese", async () => {
+    renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: providerBackedRunDetail
+        }))
+      }),
+      {
+        initialLanguage: "zh-CN"
+      }
+    );
+
+    expect(await screen.findByText("\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
+    expect(screen.getByText("\u53c2\u4e0e\u8005\u6765\u6e90")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u7ee7\u7eed\u8ba8\u8bba\u65f6\uff0c\u5c06\u8bf7\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u751f\u6210\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002"
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("Model-backed discussion");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
   it("fills and starts the full local preset pipeline through the client", async () => {
