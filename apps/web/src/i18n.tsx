@@ -493,7 +493,18 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "A risk review was recorded for the current conclusion.":
     "\u5df2\u4e3a\u5f53\u524d\u7ed3\u8bba\u8bb0\u5f55\u4e00\u6761\u98ce\u9669\u5ba1\u67e5\u3002",
   "This participant response is available for review in the room.":
-    "\u6b64\u53c2\u4e0e\u8005\u56de\u5e94\u53ef\u5728\u8ba8\u8bba\u5ba4\u4e2d\u5ba1\u9605\u3002"
+    "\u6b64\u53c2\u4e0e\u8005\u56de\u5e94\u53ef\u5728\u8ba8\u8bba\u5ba4\u4e2d\u5ba1\u9605\u3002",
+  "Perspective A": "\u89c6\u89d2 A",
+  "Perspective B": "\u89c6\u89d2 B",
+  "Discussion organizer": "\u8ba8\u8bba\u7ec4\u7ec7\u8005",
+  "Option reviewer": "\u9009\u9879\u5ba1\u67e5\u8005",
+  "Evidence checker": "\u8bc1\u636e\u6838\u67e5\u8005",
+  Reviewer: "\u5ba1\u67e5\u8005",
+  "Review coordinator": "\u5ba1\u67e5\u534f\u8c03\u8005",
+  "Conclusion writer": "\u7ed3\u8bba\u8d77\u8349\u8005",
+  "Risk reviewer": "\u98ce\u9669\u5ba1\u67e5\u8005",
+  "This perspective is part of the strongest current options in the room.":
+    "\u6b64\u89c6\u89d2\u5df2\u7eb3\u5165\u8ba8\u8bba\u5ba4\u4e2d\u7684\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002"
 };
 
 type I18nContextValue = {

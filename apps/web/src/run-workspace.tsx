@@ -41,6 +41,21 @@ const DEFAULT_START_REQUEST_TEXT = formatPresetJson(LOCAL_PRESET_START_REQUEST);
 const DEFAULT_PROCESS_AUTHOR_ID = "system";
 const DEFAULT_PROCESS_REVIEWER_ID = "process-reviewer";
 const DEFAULT_PROCESS_COORDINATOR_ID = "process-coordinator";
+const USER_FACING_ACTOR_LABELS: Record<string, string> = {
+  "local-preset-alpha": "Perspective A",
+  "local-preset-beta": "Perspective B",
+  "local-preset-candidate-repairer": "Option reviewer",
+  "local-preset-evidence-checker": "Evidence checker",
+  "local-preset-extractor": "Discussion organizer",
+  "local-preset-final-auditor": "Risk reviewer",
+  "local-preset-final-candidate": "Conclusion writer",
+  "local-preset-review-coordinator": "Review coordinator",
+  "local-preset-reviewer": "Reviewer",
+  "perspective-a": "Perspective A",
+  "perspective-b": "Perspective B",
+  "process-coordinator": "Review coordinator",
+  "process-reviewer": "Reviewer"
+};
 type RunFollowStatus = "idle" | "connecting" | "connected" | "error" | "unsupported";
 type ProcessDecisionStatus = "accepted" | "deferred" | "rejected";
 type DiscussionContinuationView = {
@@ -2157,7 +2172,14 @@ function getRoomEventSpeaker(event: unknown, run: unknown): string {
     return "Discussion room";
   }
 
-  return getParticipantDisplayName(run, authorId) ?? humanizeIdentifier(authorId);
+  const participantDisplayName = getParticipantDisplayName(run, authorId);
+
+  return (
+    getUserFacingActorLabel(authorId) ??
+    getUserFacingActorLabel(participantDisplayName) ??
+    participantDisplayName ??
+    humanizeIdentifier(authorId)
+  );
 }
 
 function getParticipantDisplayName(run: unknown, participantId: string): string | undefined {
@@ -2172,6 +2194,18 @@ function getParticipantDisplayName(run: unknown, participantId: string): string 
   }
 
   return undefined;
+}
+
+function getUserFacingActorLabel(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return USER_FACING_ACTOR_LABELS[normalizeActorLabel(value)];
+}
+
+function normalizeActorLabel(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, "-");
 }
 
 function isRedactedPayload(payload: unknown): boolean {
@@ -2271,7 +2305,7 @@ function DiscussionContributionList({ candidates }: { candidates: unknown[] }) {
       ) : (
         <div className="du-room-contributions">
           {candidates.map((candidate, index) => {
-            const summary = summarizeRoomPerspective(candidate, index);
+            const summary = summarizeRoomPerspective(candidate, index, t);
 
             return (
               <article
@@ -2357,23 +2391,28 @@ function DiscussionRoomFocusPanel({
 
 function summarizeRoomPerspective(
   candidate: unknown,
-  index: number
+  index: number,
+  t: TranslateFunction
 ): { speaker: string; title: string; detail: string } {
   const object = getRecordValue(candidate, "object") ?? candidate;
-  const speaker = getRoomContributorLabel(candidate, index);
+  const speaker = getRoomContributorLabel(candidate, index, t);
 
   return {
     speaker,
     title:
       getFirstStringRecordValue(object, ["title", "name", "summary"]) ??
-      `Perspective ${index + 1}`,
+      t("Perspective {number}", { number: index + 1 }),
     detail:
       getFirstStringRecordValue(object, ["summary", "rationale", "description", "claim"]) ??
-      "This perspective is part of the strongest current options in the room."
+      t("This perspective is part of the strongest current options in the room.")
   };
 }
 
-function getRoomContributorLabel(candidate: unknown, index: number): string {
+function getRoomContributorLabel(
+  candidate: unknown,
+  index: number,
+  t: TranslateFunction
+): string {
   const object = getRecordValue(candidate, "object") ?? candidate;
   const explicitLabel =
     getFirstStringRecordValue(candidate, [
@@ -2389,19 +2428,26 @@ function getRoomContributorLabel(candidate: unknown, index: number): string {
       "authorName"
     ]);
 
-  if (explicitLabel) {
-    return explicitLabel;
-  }
-
   const participantId =
     getFirstStringRecordValue(candidate, ["participantId", "authorId"]) ??
     getFirstStringRecordValue(object, ["participantId", "authorId"]);
+
+  const userFacingActorLabel =
+    getUserFacingActorLabel(participantId) ?? getUserFacingActorLabel(explicitLabel);
+
+  if (userFacingActorLabel) {
+    return t(userFacingActorLabel);
+  }
+
+  if (explicitLabel) {
+    return explicitLabel;
+  }
 
   if (participantId) {
     return humanizeIdentifier(participantId);
   }
 
-  return `Perspective ${index + 1}`;
+  return t("Perspective {number}", { number: index + 1 });
 }
 
 function QualitySummaryLink({

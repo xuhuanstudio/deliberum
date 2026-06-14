@@ -13,13 +13,13 @@ export const LOCAL_PRESET_RUN_PLAN = {
     {
       id: "local-preset-alpha",
       kind: "model",
-      displayName: "Local preset Alpha",
+      displayName: "Perspective A",
       adapterId: "local-preset-alpha"
     },
     {
       id: "local-preset-beta",
       kind: "model",
-      displayName: "Local preset Beta",
+      displayName: "Perspective B",
       adapterId: "local-preset-beta"
     }
   ],

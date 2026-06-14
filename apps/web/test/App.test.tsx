@@ -1680,6 +1680,7 @@ describe("@deliberum/web shell", () => {
           ]),
           participants: expect.arrayContaining([
             expect.objectContaining({
+              displayName: "Perspective A",
               adapterId: "local-preset-alpha"
             })
           ]),
@@ -1783,6 +1784,8 @@ describe("@deliberum/web shell", () => {
     expect(
       (runPlanInput as HTMLTextAreaElement).value
     ).toContain("local-preset-alpha");
+    expect((runPlanInput as HTMLTextAreaElement).value).toContain("Perspective A");
+    expect((runPlanInput as HTMLTextAreaElement).value).not.toContain("Local preset Alpha");
 
     fireEvent.click(screen.getByRole("button", { name: "Create run" }));
 
@@ -1793,6 +1796,7 @@ describe("@deliberum/web shell", () => {
           providerConfigs: [],
           participants: expect.arrayContaining([
             expect.objectContaining({
+              displayName: "Perspective A",
               adapterId: "local-preset-alpha"
             })
           ])
@@ -2025,6 +2029,7 @@ describe("@deliberum/web shell", () => {
 
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
     expect(await screen.findByText("Perspective A")).toBeTruthy();
+    expect(screen.getByText("Discussion organizer")).toBeTruthy();
     expect(
       screen.getByText("CLI-first validation exercises the lifecycle directly.")
     ).toBeTruthy();
@@ -2037,6 +2042,71 @@ describe("@deliberum/web shell", () => {
     expect(roomText).not.toContain("contribution-event");
     expect(roomText).not.toContain("sealed_contribution_submitted");
     expect(roomText).not.toContain("extraction_proposed");
+    expect(roomText).not.toContain("Local Preset Extractor");
+    expect(roomText).not.toContain("local-preset-extractor");
+  });
+
+  it("localizes discussion room actor labels in Simplified Chinese", async () => {
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRunEvents: vi.fn(async () => ({
+          runId: runDetail.runId,
+          sessionId: runDetail.sessionId,
+          events: [
+            {
+              id: "topic-event",
+              type: "topic_contract_published",
+              sequence: 0,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:00.000Z",
+              payload: {
+                topic: "Evaluate the local daemon run workspace"
+              },
+              basedOnEventIds: [],
+              trace: {}
+            },
+            {
+              id: "contribution-event",
+              type: "sealed_contribution_submitted",
+              sequence: 1,
+              visibility: "public",
+              authorId: "local-preset-alpha",
+              createdAt: "2026-06-10T00:00:01.000Z",
+              payload: {
+                position: "Use a reversible rollout."
+              },
+              basedOnEventIds: ["topic-event"],
+              trace: {}
+            },
+            {
+              id: "extraction-event",
+              type: "extraction_proposed",
+              sequence: 2,
+              visibility: "public",
+              authorId: "local-preset-extractor",
+              createdAt: "2026-06-10T00:00:02.000Z",
+              payload: {
+                rationale: "Organized revealed responses into reviewable perspectives."
+              },
+              basedOnEventIds: ["contribution-event"],
+              trace: {}
+            }
+          ]
+        }))
+      }),
+      {
+        initialLanguage: "zh-CN"
+      }
+    );
+
+    await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
+    expect(await screen.findByText("\u89c6\u89d2 A")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u7ec4\u7ec7\u8005")).toBeTruthy();
+    const roomText = document.querySelector(".du-room-layout")?.textContent ?? "";
+    expect(roomText).not.toContain("local-preset-alpha");
+    expect(roomText).not.toContain("local-preset-extractor");
   });
 
   it("records a suggested process proposal into the session ledger", async () => {
