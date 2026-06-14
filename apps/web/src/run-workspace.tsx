@@ -2719,7 +2719,11 @@ function ReadableRecordList({
   title: string;
   items: unknown[];
   emptyTitle: string;
-  summarizeItem: (item: unknown, index: number) => OutcomeRecordSummary;
+  summarizeItem: (
+    item: unknown,
+    index: number,
+    t: TranslateFunction
+  ) => OutcomeRecordSummary;
 }) {
   const { t } = useI18n();
 
@@ -2733,7 +2737,7 @@ function ReadableRecordList({
         />
       ) : (
         items.map((item, index) => {
-          const summary = summarizeItem(item, index);
+          const summary = summarizeItem(item, index, t);
 
           return (
             <article
@@ -2752,45 +2756,64 @@ function ReadableRecordList({
   );
 }
 
-function summarizeAlternative(item: unknown, index: number): OutcomeRecordSummary {
+function summarizeAlternative(
+  item: unknown,
+  index: number,
+  t: TranslateFunction
+): OutcomeRecordSummary {
   return summarizeOutcomeRecord(item, index, {
-    fallbackTitle: `Perspective ${index + 1}`,
-    fallbackKicker: `Perspective ${index + 1}`,
-    fallbackDetail: "This perspective is included in the current discussion material.",
+    fallbackTitle: t("Perspective {number}", { number: index + 1 }),
+    fallbackKicker: t("Perspective {number}", { number: index + 1 }),
+    fallbackDetail: t("This perspective is included in the current discussion material."),
     titleKeys: ["title", "name"],
     detailKeys: ["summary", "rationale", "description", "text", "claim"]
-  });
+  }, t);
 }
 
-function summarizeOpenObjection(item: unknown, index: number): OutcomeRecordSummary {
+function summarizeOpenObjection(
+  item: unknown,
+  index: number,
+  t: TranslateFunction
+): OutcomeRecordSummary {
   return summarizeOutcomeRecord(item, index, {
-    fallbackTitle: `Open disagreement ${index + 1}`,
-    fallbackKicker: `Disagreement ${index + 1}`,
-    fallbackDetail:
-      "This disagreement is tracked, but it does not have a plain-language summary yet.",
+    fallbackTitle: t("Open disagreement {number}", { number: index + 1 }),
+    fallbackKicker: t("Disagreement {number}", { number: index + 1 }),
+    fallbackDetail: t(
+      "This disagreement is tracked, but it does not have a plain-language summary yet."
+    ),
     titleKeys: ["title", "summary", "claim", "failureMode"],
     detailKeys: ["reason", "description", "consequence", "impact", "mitigation", "text"]
-  });
+  }, t);
 }
 
-function summarizeEvidenceNeed(item: unknown, index: number): OutcomeRecordSummary {
+function summarizeEvidenceNeed(
+  item: unknown,
+  index: number,
+  t: TranslateFunction
+): OutcomeRecordSummary {
   return summarizeOutcomeRecord(item, index, {
-    fallbackTitle: `Missing evidence ${index + 1}`,
-    fallbackKicker: `Evidence gap ${index + 1}`,
-    fallbackDetail: "This evidence gap still needs verification.",
+    fallbackTitle: t("Missing evidence {number}", { number: index + 1 }),
+    fallbackKicker: t("Evidence gap {number}", { number: index + 1 }),
+    fallbackDetail: t("This evidence gap still needs verification."),
     titleKeys: ["question", "title", "summary"],
     detailKeys: ["description", "summary", "rationale", "text", "claim"]
-  });
+  }, t);
 }
 
-function summarizeQualityObligation(item: unknown, index: number): OutcomeRecordSummary {
+function summarizeQualityObligation(
+  item: unknown,
+  index: number,
+  t: TranslateFunction
+): OutcomeRecordSummary {
   return summarizeOutcomeRecord(item, index, {
-    fallbackTitle: `Requirement ${index + 1}`,
-    fallbackKicker: `Requirement ${index + 1}`,
-    fallbackDetail: "This requirement should remain visible while reviewing the conclusion.",
+    fallbackTitle: t("Requirement {number}", { number: index + 1 }),
+    fallbackKicker: t("Requirement {number}", { number: index + 1 }),
+    fallbackDetail: t(
+      "This requirement should remain visible while reviewing the conclusion."
+    ),
     titleKeys: ["requirement", "title", "summary"],
     detailKeys: ["description", "rationale", "text", "claim"]
-  });
+  }, t);
 }
 
 function summarizeOutcomeRecord(
@@ -2802,7 +2825,8 @@ function summarizeOutcomeRecord(
     fallbackDetail: string;
     titleKeys: readonly string[];
     detailKeys: readonly string[];
-  }
+  },
+  t: TranslateFunction
 ): OutcomeRecordSummary {
   if (typeof item === "string") {
     return {
@@ -2816,7 +2840,7 @@ function summarizeOutcomeRecord(
   const status = getStringRecordValue(object, "status");
 
   return {
-    kicker: status ? formatOutcomeLabel(status) : options.fallbackKicker,
+    kicker: status ? formatOutcomeRecordStatusForUser(t, status) : options.fallbackKicker,
     title:
       getFirstStringRecordValue(object, options.titleKeys) ??
       options.fallbackTitle,
@@ -2824,6 +2848,30 @@ function summarizeOutcomeRecord(
       getFirstStringRecordValue(object, options.detailKeys) ??
       options.fallbackDetail
   };
+}
+
+function formatOutcomeRecordStatusForUser(t: TranslateFunction, value: string): string {
+  if (value === "accepted_active" || value === "active") {
+    return t("Visible in this discussion");
+  }
+
+  if (value === "open") {
+    return t("Still open");
+  }
+
+  if (value === "unanswered") {
+    return t("Needs an answer");
+  }
+
+  if (value === "unchecked") {
+    return t("Needs verification");
+  }
+
+  if (value === "checked" || value === "satisfied" || value === "resolved") {
+    return t("Resolved");
+  }
+
+  return t(formatOutcomeLabel(value));
 }
 
 function getFirstStringRecordValue(record: unknown, keys: readonly string[]): string | undefined {

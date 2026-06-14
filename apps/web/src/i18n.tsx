@@ -243,6 +243,22 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5c1a\u672a\u5217\u51fa\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
   "Nothing is listed for this section yet.":
     "\u6b64\u90e8\u5206\u5c1a\u672a\u5217\u51fa\u4efb\u4f55\u5185\u5bb9\u3002",
+  "Perspective {number}": "\u89c6\u89d2 {number}",
+  "This perspective is included in the current discussion material.":
+    "\u6b64\u89c6\u89d2\u5df2\u5305\u542b\u5728\u5f53\u524d\u8ba8\u8bba\u6750\u6599\u4e2d\u3002",
+  "Open disagreement {number}": "\u672a\u89e3\u51b3\u5206\u6b67 {number}",
+  "Disagreement {number}": "\u5206\u6b67 {number}",
+  "This disagreement is tracked, but it does not have a plain-language summary yet.":
+    "\u6b64\u5206\u6b67\u5df2\u88ab\u8ffd\u8e2a\uff0c\u4f46\u5c1a\u65e0\u81ea\u7136\u8bed\u8a00\u6458\u8981\u3002",
+  "Missing evidence {number}": "\u7f3a\u5931\u8bc1\u636e {number}",
+  "Evidence gap {number}": "\u8bc1\u636e\u7f3a\u53e3 {number}",
+  "This evidence gap still needs verification.":
+    "\u6b64\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u9a8c\u8bc1\u3002",
+  "Requirement {number}": "\u8981\u6c42 {number}",
+  "This requirement should remain visible while reviewing the conclusion.":
+    "\u5ba1\u9605\u7ed3\u8bba\u65f6\u5e94\u4fdd\u6301\u6b64\u8981\u6c42\u53ef\u89c1\u3002",
+  "Needs verification": "\u9700\u8981\u9a8c\u8bc1",
+  Resolved: "\u5df2\u89e3\u51b3",
   "{section} {number}": "{section} {number}",
   "No {item} listed": "\u5c1a\u672a\u5217\u51fa{item}",
   "{count} {item} listed": "\u5df2\u5217\u51fa {count} \u4e2a{item}",

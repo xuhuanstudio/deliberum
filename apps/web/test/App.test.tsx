@@ -1532,6 +1532,70 @@ describe("@deliberum/web shell", () => {
     expect(readableConclusion).not.toContain("Use next recommended actions");
   });
 
+  it("localizes current conclusion fallback records in Simplified Chinese", async () => {
+    const client = createClient({
+      getRunOutcome: vi.fn(async () => ({
+        runId: runDetail.runId,
+        sessionId: runDetail.sessionId,
+        status: "compiled",
+        draftStatus: "provisional",
+        outcome: {
+          recommendation: "Use the current discussion state as review material.",
+          alternatives: [
+            {
+              status: "active"
+            }
+          ],
+          unresolvedObjections: [
+            {
+              status: "open"
+            }
+          ],
+          qualityObligations: [
+            {
+              status: "unanswered"
+            }
+          ],
+          evidenceStatus: {
+            evidenceNeeds: [
+              {
+                status: "unchecked"
+              }
+            ]
+          },
+          unresolvedQuestions: [],
+          continuationSuggestions: [],
+          limitations: []
+        }
+      }))
+    });
+
+    renderApp("/runs/run-1/outcome", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    expect((await screen.findAllByText("\u5f53\u524d\u7ed3\u8bba")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
+
+    const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
+    expect(readableConclusion).toContain("\u89c6\u89d2 1");
+    expect(readableConclusion).toContain("\u6b64\u89c6\u89d2\u5df2\u5305\u542b\u5728\u5f53\u524d\u8ba8\u8bba\u6750\u6599\u4e2d\u3002");
+    expect(readableConclusion).toContain("\u5728\u672c\u6b21\u8ba8\u8bba\u4e2d\u53ef\u89c1");
+    expect(readableConclusion).toContain("\u672a\u89e3\u51b3\u5206\u6b67 1");
+    expect(readableConclusion).toContain("\u8981\u6c42 1");
+    expect(readableConclusion).toContain("\u7f3a\u5931\u8bc1\u636e 1");
+    expect(readableConclusion).toContain("\u9700\u8981\u56de\u7b54");
+    expect(readableConclusion).toContain("\u9700\u8981\u9a8c\u8bc1");
+    expect(readableConclusion).toContain("\u6b64\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u9a8c\u8bc1\u3002");
+    expect(readableConclusion).not.toContain("Perspective 1");
+    expect(readableConclusion).not.toContain("Open disagreement 1");
+    expect(readableConclusion).not.toContain("Requirement 1");
+    expect(readableConclusion).not.toContain("Missing evidence 1");
+    expect(readableConclusion).not.toContain("Visible in this discussion");
+    expect(readableConclusion).not.toContain("Needs an answer");
+    expect(readableConclusion).not.toContain("Needs verification");
+  });
+
   it("creates a run from a JSON run plan object", async () => {
     const client = renderApp("/runs/new");
     const runPlan = {
