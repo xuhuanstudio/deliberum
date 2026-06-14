@@ -45,18 +45,18 @@ Updated: 2026-06-15.
 | 2 | Understand within 30 seconds that Deliberum is a multi-perspective deliberation product. | `not browser-verified` | README and default Web copy describe the human-first product. | Needs first-viewport browser verification for desktop and mobile. |
 | 3 | See whether the local service is connected. | `partial` | Web setup and landing tests cover connected and unavailable local service states. | Needs product-loop walkthrough evidence from a fresh service start. |
 | 4 | If the local service is not connected, understand how to start it. | `partial` | Web onboarding copy and README show local service start commands. | Needs browser verification from the service-unavailable state. |
-| 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, and model. | `partial` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The 2026-06-15 integrated Web product-loop test covers entering and saving API key, base URL, and model from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the same daemon setup API against an isolated local service. | Needs real-provider or safe mock-provider browser walkthrough covering save, reload, and hidden secrets. |
-| 6 | Verify the provider connection. | `partial` | Web and daemon tests cover provider verification and recent commits require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider before creating the model-backed discussion. | Needs browser walkthrough evidence that verification is the natural next action before starting. |
-| 7 | Start a model-backed discussion from Web. | `partial` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test navigates from Setup / Models into a model-backed start and creates the discussion. `smoke:product-loop` creates and starts a provider-backed run through the daemon run API. | Needs end-to-end browser walkthrough after setup verification. |
-| 8 | See participant/model perspectives as readable contributions, not raw events. | `partial` | Discussion Room tests and walkthrough document cover readable room contributions. The integrated Web product-loop test confirms provider-backed participant contributions appear as Perspective A/B text after continuing. `smoke:product-loop` confirms sealed contribution events are produced by the model-backed service path. | Needs browser proof with a live local service and provider-backed discussion, not only API and test-rendered events. |
-| 9 | See strongest current options. | `partial` | Discussion Room and outcome tests render strongest options/main perspectives in user language. The integrated Web product-loop test confirms a strongest option appears after continuing the model-backed discussion. `smoke:product-loop` verifies the daemon frontier contains a provider-backed strongest option. | Needs browser proof that model-backed discussions populate this section clearly. |
-| 10 | See open disagreements. | `partial` | Web tests cover open disagreements and empty states. A 2026-06-15 browser walkthrough with a non-empty model-backed mock provider showed an open disagreement in the room and conclusion path without exposing object ids. The integrated Web product-loop test also covers a non-empty open-disagreement count in the room. `smoke:product-loop` verifies a provider-backed open disagreement is accepted into the daemon projection. | Needs live browser proof plus empty-state coverage across the default path. |
-| 11 | See missing evidence or evidence gaps. | `partial` | Web tests cover evidence gaps, resources, and outcome evidence sections. A 2026-06-15 browser walkthrough with a non-empty model-backed mock provider showed the concrete evidence-gap reason in the room and outcome views without exposing object ids. The integrated Web product-loop test confirms evidence-gap text remains visible before relying on the conclusion. `smoke:product-loop` verifies a provider-backed evidence need reaches session resources and outcome material. | Needs live browser proof that evidence gaps stay visible through setup, continue, room, and outcome review. |
-| 12 | See risks. | `partial` | Web tests cover risks and recent outcome display hides internal source language from default view. A 2026-06-15 browser walkthrough with a non-empty model-backed mock provider showed the room risk summary and outcome risk text without exposing secrets or internal ids. The integrated Web product-loop test confirms risk-review text appears in the model-backed room timeline. `smoke:product-loop` verifies final audit risk material reaches the compiled outcome. | Needs live browser proof that risk review stays visible in the room and outcome views. |
-| 13 | See the current conclusion. | `partial` | Outcome pages render user-facing conclusion summaries; tests cover default hiding of internal projection/event terms. The integrated Web product-loop test confirms the room reaches `Current conclusion: Ready to review` after continuing a model-backed discussion. `smoke:product-loop` verifies the daemon compiles a provider-backed current conclusion. | Needs live browser evidence that conclusion material appears after continuing the discussion. |
-| 14 | See next recommended actions. | `partial` | Outcome and room tests render next recommended actions. The integrated Web product-loop test confirms Open conclusion, Review evidence, View disagreements, Review disagreements, Check evidence, and Update conclusion remain visible as user-facing actions. `smoke:product-loop` verifies continuation suggestions are present in the provider-backed outcome. | Needs browser evidence that next actions point to user-facing continuation actions in the live path. |
-| 15 | Continue or update the discussion using user-facing actions. | `partial` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies the model-backed review request and resulting reviewable room outputs. `smoke:product-loop` verifies the same full start request succeeds against a real local daemon and local mock provider. | Highest current product gap: prove the same flow in a real browser walkthrough from first responses to a reviewable conclusion. |
-| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `partial` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. | Needs broad browser audit across setup, start, room, outcome, unavailable, paused, retry, and error states. |
+| 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, and model. | `verified` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The integrated Web product-loop test covers entering and saving API key, base URL, and model from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the daemon setup API. `smoke:web-product-loop` enters the same fields in a real browser against an isolated local daemon and safe mock provider. | Keep covered; run a real external-provider walkthrough before release hardening. |
+| 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. | Keep covered; add provider-specific troubleshooting only if real provider walkthroughs expose a blocker. |
+| 7 | Start a model-backed discussion from Web. | `verified` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test creates a model-backed discussion. `smoke:product-loop` creates and starts a provider-backed run through the daemon API. `smoke:web-product-loop` reaches the model-backed start page from Setup / Models and creates the discussion in a real browser. | Keep covered; future participant-management work should preserve this default path. |
+| 8 | See participant/model perspectives as readable contributions, not raw events. | `verified` | Discussion Room tests and walkthrough document cover readable room contributions. The integrated Web product-loop test confirms provider-backed Perspective A/B contributions after continuing. `smoke:product-loop` confirms sealed contribution events. `smoke:web-product-loop` confirms readable Perspective A/B text appears in the browser room timeline. | Keep covered; continue checking that default views do not regress into raw event views. |
+| 9 | See strongest current options. | `verified` | Discussion Room and outcome tests render strongest options/main perspectives in user language. The integrated Web product-loop test confirms a strongest option after continuation. `smoke:product-loop` verifies the daemon frontier contains a provider-backed strongest option. `smoke:web-product-loop` confirms the browser room and outcome show the provider-backed strongest option. | Keep covered; future UX work can improve scanning, but the loop step is proven. |
+| 10 | See open disagreements. | `verified` | Web tests cover open disagreements and empty states. The integrated Web product-loop test covers a non-empty open-disagreement count. `smoke:product-loop` verifies a provider-backed open disagreement reaches the daemon projection. `smoke:web-product-loop` confirms the room and outcome show an open disagreement without default object ids. | Keep covered; broader empty-state browser coverage remains useful but is not the main loop blocker. |
+| 11 | See missing evidence or evidence gaps. | `verified` | Web tests cover evidence gaps, resources, and outcome evidence sections. The integrated Web product-loop test confirms evidence-gap text remains visible. `smoke:product-loop` verifies a provider-backed evidence need reaches resources and outcome material. `smoke:web-product-loop` confirms missing evidence remains visible through room and outcome review. | Keep covered; future evidence-check workflows should preserve this visibility. |
+| 12 | See risks. | `verified` | Web tests cover risks and hide internal source language from default view. The integrated Web product-loop test confirms risk-review text appears. `smoke:product-loop` verifies final audit risk material reaches the compiled outcome. `smoke:web-product-loop` confirms risk entry points in the room and concrete risk text in the outcome. | Keep covered; future release-hardening should add real-provider risk text examples. |
+| 13 | See the current conclusion. | `verified` | Outcome pages render user-facing conclusion summaries and hide internal projection/event terms. The integrated Web product-loop test confirms the room reaches `Current conclusion: Ready to review`. `smoke:product-loop` verifies the daemon compiles a provider-backed current conclusion. `smoke:web-product-loop` opens the current conclusion page from the browser room and verifies the recommendation. | Keep covered; future work should improve conclusion readability only when it improves the main loop. |
+| 14 | See next recommended actions. | `verified` | Outcome and room tests render next recommended actions. The integrated Web product-loop test confirms user-facing action labels. `smoke:product-loop` verifies continuation suggestions in the provider-backed outcome. `smoke:web-product-loop` confirms the room links and outcome next recommended actions are visible from the browser path. | Keep covered; future actions should stay user-facing. |
+| 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion in the browser and reaches reviewable conclusion material. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
+| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `partial` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, and low-level id labels during the primary browser path. | Needs broad browser audit across unavailable, paused, retry, error, legacy, and Advanced boundary states. |
 
 ## Batch Gate
 
@@ -98,23 +98,59 @@ as supporting evidence only.
 ## Next Highest-Value Batch
 
 The current highest-value convergence batch is not another isolated UI copy
-fix. After adding DOM-level and daemon-level product-loop coverage, the next
-gate is a repeatable browser walkthrough for rows 5 through 15:
+fix. After adding DOM-level, daemon-level, and browser-level product-loop
+coverage for rows 5 through 15, the next gate is to close the remaining default
+entry and safety gaps:
 
-1. start the local service;
-2. open Web;
-3. configure an OpenAI-compatible provider from Web;
-4. verify the connection;
-5. start a model-backed discussion;
-6. continue the discussion until first responses and review material are visible;
-7. review strongest options, disagreements, evidence gaps, risks, current
-   conclusion, and next actions;
-8. confirm the default path does not expose secrets or internal ids.
+1. browser-verify the first Web viewport for rows 1 through 3 on desktop and
+   mobile;
+2. browser-verify the local-service-unavailable path for row 4;
+3. broaden row 16's default-path safety audit across unavailable, paused,
+   retry, error, legacy, and Advanced boundary states.
 
-If that walkthrough fails, fix the first blocking row with the smallest
+If those walkthroughs fail, fix the first blocking row with the smallest
 verifiable change.
 
 ## Recent Automated Evidence
+
+### 2026-06-15 Browser Product Loop Smoke
+
+Scope: rows 5 through 15, with supporting evidence for row 16 on the primary
+default path.
+
+Command:
+
+- `corepack pnpm smoke:web-product-loop`
+
+Path covered:
+
+1. Starts a local daemon from built output in an isolated temporary working
+   directory.
+2. Starts a local OpenAI-compatible mock provider.
+3. Starts Web with a temporary local origin allowed by the daemon CORS setup.
+4. Opens `/setup/models` in Chromium.
+5. Enters OpenAI-compatible API key, base URL, and model in Web.
+6. Saves setup and confirms the secret is not shown.
+7. Verifies the provider connection from Web.
+8. Starts `/runs/new?participants=model-backed` from Setup / Models.
+9. Creates a model-backed discussion from the browser.
+10. Uses Continue discussion from the room.
+11. Confirms readable participant perspectives, strongest option, open
+    disagreement, missing evidence, risk entry point, current conclusion, and
+    user-facing next actions are visible.
+12. Opens the current conclusion page and confirms the recommendation, open
+    disagreement, missing evidence, concrete risk text, and next recommended
+    action are visible.
+13. Scans setup, start, room, and outcome default text to confirm it does not
+    show the dummy API key, provider base URL, model value, OpenAI API env var,
+    provider config id, object ids, raw JSON, or low-level id labels.
+
+Limit:
+
+- This is a browser walkthrough with a deterministic local mock provider, not a
+  real external provider walkthrough. It proves the local product loop and
+  default Web path, while release hardening should still include at least one
+  real OpenAI-compatible provider pass.
 
 ### 2026-06-15 Product Loop Smoke
 
