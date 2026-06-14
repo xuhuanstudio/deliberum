@@ -31,7 +31,7 @@ export function WorkspaceShell({
         </div>
         {sessionId ? (
           <div className="du-session-chip">
-            <span>Session</span>
+            <span>Discussion</span>
             <strong>{sessionId}</strong>
           </div>
         ) : null}
@@ -39,7 +39,7 @@ export function WorkspaceShell({
         <div className="du-sidebar-footer">
           {daemonBaseUrl ? (
             <p>
-              Daemon
+              Service
               <span>{daemonBaseUrl}</span>
             </p>
           ) : null}

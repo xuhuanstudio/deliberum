@@ -20,15 +20,17 @@ describe("@deliberum/ui presentation primitives", () => {
         sessionId="session-1"
         daemonBaseUrl="http://127.0.0.1:3877"
         navigation={<a href="/sessions/session-1/events">Events</a>}
-        status={<StatusBanner tone="ok" title="Daemon online" />}
+        status={<StatusBanner tone="ok" title="Service online" />}
       >
         <PageHeader title="Event Timeline" />
       </WorkspaceShell>
     );
 
     expect(markup).toContain("Deliberum");
+    expect(markup).toContain("Discussion");
     expect(markup).toContain("session-1");
-    expect(markup).toContain("Daemon online");
+    expect(markup).toContain("Service online");
+    expect(markup).toContain("Service");
     expect(markup).toContain("Event Timeline");
   });
 
@@ -53,8 +55,8 @@ describe("@deliberum/ui presentation primitives", () => {
   it("renders empty, status, and key-value states", () => {
     const markup = renderToStaticMarkup(
       <>
-        <EmptyState title="No events" description="The daemon returned no entries." />
-        <StatusBanner tone="warning" title="Daemon unavailable" />
+        <EmptyState title="No events" description="The service returned no entries." />
+        <StatusBanner tone="warning" title="Service unavailable" />
         <KeyValueGrid
           items={[
             {
@@ -67,7 +69,7 @@ describe("@deliberum/ui presentation primitives", () => {
     );
 
     expect(markup).toContain("No events");
-    expect(markup).toContain("Daemon unavailable");
+    expect(markup).toContain("Service unavailable");
     expect(markup).toContain("Event entries");
   });
 
