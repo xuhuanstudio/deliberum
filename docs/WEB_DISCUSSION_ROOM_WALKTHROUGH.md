@@ -17,11 +17,10 @@ A first-time user should be able to:
 
 ## Local startup
 
-Build the workspace packages and daemon first:
+Build the workspace first:
 
 ```bash
-corepack pnpm build:packages
-corepack pnpm --filter @deliberum/daemon build
+corepack pnpm build
 ```
 
 Start the local daemon with the deterministic local preset profile:

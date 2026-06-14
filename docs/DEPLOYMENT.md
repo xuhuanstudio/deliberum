@@ -38,10 +38,10 @@ For local/pre-production remote hardening, `DELIBERUM_DAEMON_AUTH_TOKEN=<token>`
 
 The Web UI is currently a separate React/Vite application. It reads daemon/client responses and does not own semantic deliberation state.
 
-For a local/pre-production single-process shell, build the Web app and start the daemon with `DELIBERUM_DAEMON_WEB_ASSETS_PATH=<web-dist-path>`:
+For a local/pre-production single-process shell, build the workspace and start the daemon with `DELIBERUM_DAEMON_WEB_ASSETS_PATH=<web-dist-path>`:
 
 ```bash
-corepack pnpm --filter @deliberum/web build
+corepack pnpm build
 DELIBERUM_DAEMON_WEB_ASSETS_PATH=apps/web/dist node apps/daemon/dist/index.js
 ```
 

@@ -908,7 +908,7 @@ function LandingPage() {
 }
 
 const LOCAL_SERVICE_START_COMMAND =
-  "corepack pnpm build:packages && corepack pnpm --filter @deliberum/daemon build && node apps/daemon/dist/index.js" as const;
+  "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js" as const;
 
 function LocalServiceSetupGuide({
   compact = false,

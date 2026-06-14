@@ -1359,7 +1359,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Local service command")).toBeTruthy();
     expect(
       screen.getByText(
-        "corepack pnpm build:packages && corepack pnpm --filter @deliberum/daemon build && node apps/daemon/dist/index.js"
+        "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js"
       )
     ).toBeTruthy();
     expect(
