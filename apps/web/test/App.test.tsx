@@ -1687,7 +1687,7 @@ describe("@deliberum/web shell", () => {
     );
   });
 
-  it("renders run detail, stage status, and discussion detail panels without raw event loading", async () => {
+  it("renders run detail, room activity, stage status, and discussion detail panels without raw event ids", async () => {
     const client = renderApp("/runs/run-1");
 
     expect(
@@ -1699,7 +1699,7 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.getObjections).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getObligations).toHaveBeenCalledWith("session-1"));
     await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledWith("session-1"));
-    expect(client.getRunEvents).not.toHaveBeenCalled();
+    await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
     expect(client.getRunProcessProposals).not.toHaveBeenCalled();
     expect(client.getProcessProposalStates).not.toHaveBeenCalled();
 
@@ -1719,10 +1719,20 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(getAdvancedModeSummaryByPanelText("Discussion status details"));
     expect(await screen.findByText("Ledger events")).toBeTruthy();
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
-    expect(screen.getByText("Discussion room")).toBeTruthy();
+    expect(screen.getAllByText("Discussion room").length).toBeGreaterThan(0);
     expect(screen.getByText("What is being discussed")).toBeTruthy();
     expect(screen.getByText("Discussion timeline")).toBeTruthy();
     expect(screen.getByText("What has happened in the room")).toBeTruthy();
+    expect(screen.getByText("Room activity")).toBeTruthy();
+    expect(screen.getByText("Readable discussion flow")).toBeTruthy();
+    expect(screen.getByText("Discussion brief published")).toBeTruthy();
+    expect(screen.getByText("Independent response submitted")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "This response is sealed until the independent first responses are revealed."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Core discussion stages")).toBeTruthy();
     expect(screen.getByText("What different participants contributed")).toBeTruthy();
     expect(screen.getByText("Perspective 1")).toBeTruthy();
     expect(screen.getByText("Ready to review")).toBeTruthy();
@@ -1760,6 +1770,8 @@ describe("@deliberum/web shell", () => {
     expect(defaultRunText).not.toContain("objection-1");
     expect(defaultRunText).not.toContain("quality-1");
     expect(defaultRunText).not.toContain("evidence-need-1");
+    expect(defaultRunText).not.toContain("event-redacted");
+    expect(defaultRunText).not.toContain("sealed_until_reveal");
     expect(defaultRunText).not.toContain("Adaptive primitive suggestions");
     expect(defaultRunText).not.toContain("Ledger trace");
     const nextStepControls = getAdvancedModeSummaryByPanelText(
@@ -1793,6 +1805,112 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Projection events").length).toBeGreaterThan(0);
     expect(client.listEvents).not.toHaveBeenCalled();
     expect(screen.getByText("Current state: Visible in this discussion")).toBeTruthy();
+  });
+
+  it("renders revealed participant responses as readable room activity", async () => {
+    const runWithParticipants = {
+      ...runDetail,
+      plan: {
+        ...runDetail.plan,
+        participants: [
+          {
+            id: "participant-cli",
+            displayName: "Perspective A"
+          }
+        ]
+      }
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: runWithParticipants
+        })),
+        getRunEvents: vi.fn(async () => ({
+          runId: runDetail.runId,
+          sessionId: runDetail.sessionId,
+          events: [
+            {
+              id: "topic-event",
+              type: "topic_contract_published",
+              sequence: 0,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:00.000Z",
+              payload: {
+                topic: "Evaluate the local daemon run workspace"
+              },
+              basedOnEventIds: [],
+              trace: {}
+            },
+            {
+              id: "opened-event",
+              type: "sealed_batch_opened",
+              sequence: 1,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:01.000Z",
+              payload: {
+                participantIds: ["participant-cli"]
+              },
+              basedOnEventIds: ["topic-event"],
+              trace: {}
+            },
+            {
+              id: "contribution-event",
+              type: "sealed_contribution_submitted",
+              sequence: 2,
+              visibility: "sealed",
+              authorId: "participant-cli",
+              createdAt: "2026-06-10T00:00:02.000Z",
+              payload: {
+                content: "CLI-first validation exercises the lifecycle directly."
+              },
+              basedOnEventIds: ["opened-event"],
+              trace: {}
+            },
+            {
+              id: "revealed-event",
+              type: "sealed_batch_revealed",
+              sequence: 3,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:03.000Z",
+              payload: {
+                status: "revealed"
+              },
+              basedOnEventIds: ["opened-event", "contribution-event"],
+              trace: {}
+            },
+            {
+              id: "extraction-event",
+              type: "extraction_proposed",
+              sequence: 4,
+              visibility: "public",
+              authorId: "local-preset-extractor",
+              createdAt: "2026-06-10T00:00:04.000Z",
+              payload: {
+                rationale: "Organized revealed responses into reviewable perspectives."
+              },
+              basedOnEventIds: ["contribution-event"],
+              trace: {}
+            }
+          ]
+        }))
+      })
+    );
+
+    await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
+    expect(await screen.findByText("Perspective A")).toBeTruthy();
+    expect(
+      screen.getByText("CLI-first validation exercises the lifecycle directly.")
+    ).toBeTruthy();
+    expect(screen.getByText("Independent first responses revealed")).toBeTruthy();
+    expect(screen.getByText("Main perspectives organized")).toBeTruthy();
+    const roomText = document.querySelector(".du-room-layout")?.textContent ?? "";
+    expect(roomText).not.toContain("contribution-event");
+    expect(roomText).not.toContain("sealed_contribution_submitted");
+    expect(roomText).not.toContain("extraction_proposed");
   });
 
   it("records a suggested process proposal into the session ledger", async () => {

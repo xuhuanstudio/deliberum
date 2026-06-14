@@ -52,6 +52,12 @@ type DiscussionContinuationView = {
   reviewReady: boolean;
 };
 type DiscussionStageStatus = [label: string, status: unknown];
+type RoomActivityItem = {
+  speaker: string;
+  title: string;
+  detail: string;
+  tone: "neutral" | "ok" | "warning";
+};
 
 export function RunsListPage() {
   const { t } = useI18n();
@@ -1579,6 +1585,10 @@ function RunQualityOverview({
     queryKey: ["run-resources", sessionId],
     queryFn: () => client.getSessionResources(sessionId)
   });
+  const eventsQuery = useQuery({
+    queryKey: ["run-events", runId],
+    queryFn: () => client.getRunEvents(runId)
+  });
   const queryState = {
     isLoading:
       frontierQuery.isLoading ||
@@ -1601,6 +1611,7 @@ function RunQualityOverview({
   const objections = asArray(objectionsQuery.data?.objections);
   const obligations = asArray(obligationsQuery.data?.qualityObligations);
   const evidenceNeeds = asArray(resourcesQuery.data?.evidenceNeeds);
+  const roomActivities = createRoomActivityItems(asArray(eventsQuery.data?.events), run);
   const unresolvedObjections = countRecordsWithoutStatus(objections, "resolved");
   const openObligations = countRecordsWithoutStatus(obligations, "satisfied");
   const unresolvedEvidenceNeeds = evidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
@@ -1634,6 +1645,12 @@ function RunQualityOverview({
             <DiscussionRoomBrief run={run} />
             <DiscussionRoomTimeline
               run={run}
+              activities={roomActivities}
+              activityQuery={{
+                isLoading: eventsQuery.isLoading,
+                isError: eventsQuery.isError,
+                error: eventsQuery.error
+              }}
               mainPerspectiveCount={candidates.length}
               openDisagreementCount={unresolvedObjections}
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
@@ -1857,11 +1874,19 @@ function RoomBriefItem({ label, value }: { label: string; value: string }) {
 
 function DiscussionRoomTimeline({
   run,
+  activities,
+  activityQuery,
   mainPerspectiveCount,
   openDisagreementCount,
   unresolvedEvidenceCount
 }: {
   run: unknown;
+  activities: RoomActivityItem[];
+  activityQuery: {
+    isLoading: boolean;
+    isError: boolean;
+    error: Error | null;
+  };
   mainPerspectiveCount: number;
   openDisagreementCount: number;
   unresolvedEvidenceCount: number;
@@ -1883,6 +1908,46 @@ function DiscussionRoomTimeline({
             "Follow the room like a structured conversation: brief, independent first responses, main perspectives, disagreements, evidence checks, and conclusion review."
           )}
         </p>
+      </div>
+      <div className="du-room-activity-wrap">
+        <div>
+          <p className="du-kicker">{t("Room activity")}</p>
+          <h5>{t("Readable discussion flow")}</h5>
+        </div>
+        {activityQuery.isLoading ? (
+          <StatusBanner title={t("Loading room activity")} />
+        ) : activityQuery.isError ? (
+          <StatusBanner
+            tone="warning"
+            title={t("Could not load room activity")}
+            detail={formatSafeErrorMessage(activityQuery.error)}
+          />
+        ) : activities.length === 0 ? (
+          <EmptyState
+            title={t("No room activity visible yet")}
+            description={t(
+              "Continue the discussion so the room can show participant responses and discussion updates."
+            )}
+          />
+        ) : (
+          <ol className="du-room-activity">
+            {activities.map((activity, index) => (
+              <li
+                className="du-room-activity-item"
+                data-tone={activity.tone}
+                key={`${activity.title}:${index}`}
+              >
+                <p className="du-kicker">{t(activity.speaker)}</p>
+                <h5>{t(activity.title)}</h5>
+                <p>{t(activity.detail)}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+      <div className="du-room-stage-wrap">
+        <p className="du-kicker">{t("Core discussion stages")}</p>
+        <h5>{t("Structured deliberation progress")}</h5>
       </div>
       <ol className="du-room-flow">
         <DiscussionRoomFlowStep
@@ -1936,6 +2001,178 @@ function DiscussionRoomTimeline({
       </ol>
     </section>
   );
+}
+
+function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityItem[] {
+  return [...events]
+    .sort(compareRunEvents)
+    .map((event) => createRoomActivityItem(event, run))
+    .filter((activity): activity is RoomActivityItem => Boolean(activity));
+}
+
+function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem | null {
+  const type = getStringRecordValue(event, "type");
+  const payload = getRecordValue(event, "payload");
+  const speaker = getRoomEventSpeaker(event, run);
+
+  if (type === "topic_contract_published") {
+    return {
+      speaker: "Discussion room",
+      title: "Discussion brief published",
+      detail:
+        getFirstStringRecordValue(payload, ["topic", "question", "summary"]) ??
+        "The discussion brief is available for everyone in the room.",
+      tone: "ok"
+    };
+  }
+
+  if (type === "sealed_batch_opened") {
+    return {
+      speaker: "Discussion room",
+      title: "Independent first responses opened",
+      detail:
+        "Participants can respond separately before seeing one another's answers.",
+      tone: "neutral"
+    };
+  }
+
+  if (type === "sealed_contribution_submitted") {
+    return {
+      speaker,
+      title: "Independent response submitted",
+      detail: isRedactedPayload(payload)
+        ? "This response is sealed until the independent first responses are revealed."
+        : describeContributionPayload(payload),
+      tone: isRedactedPayload(payload) ? "warning" : "ok"
+    };
+  }
+
+  if (type === "sealed_batch_revealed") {
+    return {
+      speaker: "Discussion room",
+      title: "Independent first responses revealed",
+      detail: "The independent responses are now available for review.",
+      tone: "ok"
+    };
+  }
+
+  if (type === "extraction_proposed") {
+    return {
+      speaker,
+      title: "Main perspectives organized",
+      detail:
+        getStringRecordValue(payload, "rationale") ??
+        "The revealed responses were organized into options, disagreements, requirements, and evidence needs.",
+      tone: "ok"
+    };
+  }
+
+  if (type === "proposal_accepted") {
+    return {
+      speaker,
+      title: "Discussion material accepted for review",
+      detail:
+        getStringRecordValue(payload, "rationale") ??
+        "The room accepted this discussion material as part of the current working view.",
+      tone: "ok"
+    };
+  }
+
+  if (type === "proposal_challenged") {
+    return {
+      speaker,
+      title: "Open disagreement recorded",
+      detail:
+        getStringRecordValue(payload, "reason") ??
+        "A challenge was recorded against the current discussion material.",
+      tone: "warning"
+    };
+  }
+
+  if (type === "evidence_result_recorded") {
+    return {
+      speaker,
+      title: "Evidence check recorded",
+      detail:
+        getFirstStringRecordValue(payload, ["summary", "result", "status"]) ??
+        "An evidence check result was added to the discussion.",
+      tone: "ok"
+    };
+  }
+
+  if (type === "final_candidate_proposed") {
+    return {
+      speaker,
+      title: "Current conclusion drafted",
+      detail:
+        getStringRecordValue(payload, "recommendation") ??
+        "A reviewable conclusion draft was prepared from the current discussion material.",
+      tone: "ok"
+    };
+  }
+
+  if (type === "final_audit_recorded") {
+    return {
+      speaker,
+      title: "Risk review recorded",
+      detail:
+        getFirstStringRecordValue(payload, ["summary", "rationale"]) ??
+        "A risk review was recorded for the current conclusion.",
+      tone: "warning"
+    };
+  }
+
+  return null;
+}
+
+function getRoomEventSpeaker(event: unknown, run: unknown): string {
+  const authorId = getStringRecordValue(event, "authorId");
+
+  if (!authorId || authorId === "system") {
+    return "Discussion room";
+  }
+
+  return getParticipantDisplayName(run, authorId) ?? humanizeIdentifier(authorId);
+}
+
+function getParticipantDisplayName(run: unknown, participantId: string): string | undefined {
+  const participants = asArray(getRecordValue(getRecordValue(run, "plan"), "participants"));
+
+  for (const participant of participants) {
+    if (getStringRecordValue(participant, "id") !== participantId) {
+      continue;
+    }
+
+    return getFirstStringRecordValue(participant, ["displayName", "name", "label"]);
+  }
+
+  return undefined;
+}
+
+function isRedactedPayload(payload: unknown): boolean {
+  return getRecordValue(payload, "redacted") === true;
+}
+
+function describeContributionPayload(payload: unknown): string {
+  if (typeof payload === "string" && payload.trim().length > 0) {
+    return payload.trim();
+  }
+
+  const readable =
+    getFirstStringRecordValue(payload, [
+      "summary",
+      "content",
+      "text",
+      "claim",
+      "recommendation",
+      "description"
+    ]);
+
+  if (readable) {
+    return readable;
+  }
+
+  return "This participant response is available for review in the room.";
 }
 
 function DiscussionRoomFlowStep({

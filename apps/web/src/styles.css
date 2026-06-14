@@ -554,6 +554,67 @@ textarea:focus-visible {
   line-height: 1.45;
 }
 
+.du-room-activity-wrap,
+.du-room-stage-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.du-room-activity-wrap h5,
+.du-room-stage-wrap h5,
+.du-room-activity-wrap p,
+.du-room-stage-wrap p {
+  margin: 0;
+}
+
+.du-room-activity-wrap h5,
+.du-room-stage-wrap h5 {
+  font-size: 1rem;
+}
+
+.du-room-activity {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.du-room-activity-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid var(--du-line);
+  border-left: 4px solid var(--du-accent);
+  background: var(--du-surface);
+  padding: 14px 16px;
+}
+
+.du-room-activity-item[data-tone="warning"] {
+  border-left-color: #b7791f;
+  background: #fffefa;
+}
+
+.du-room-activity-item[data-tone="ok"] {
+  border-left-color: #2f7d62;
+  background: #f8fff9;
+}
+
+.du-room-activity-item h5,
+.du-room-activity-item p {
+  margin: 0;
+}
+
+.du-room-activity-item h5 {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.du-room-activity-item p:not(.du-kicker) {
+  color: var(--du-muted);
+  line-height: 1.5;
+}
+
 .du-room-contributions {
   display: grid;
   gap: 1px;
