@@ -729,7 +729,10 @@ function renderApp(initialPath: string, client = createClient()) {
 }
 
 async function ensureDetailsOpen(summaryText: string) {
-  const summary = await screen.findByText(summaryText);
+  const summary =
+    summaryText === "Advanced / Developer Mode"
+      ? await findAdvancedModeSummary()
+      : await screen.findByText(summaryText);
   const details = summary.closest("details") as HTMLDetailsElement | null;
 
   expect(details).not.toBeNull();
@@ -742,18 +745,18 @@ async function ensureDetailsOpen(summaryText: string) {
 }
 
 function getAdvancedModeSummary(index = 0) {
-  const summary = screen.getAllByText("Advanced / Developer Mode")[index];
+  const summary = Array.from(
+    document.querySelectorAll("details.du-advanced-panel > summary")
+  )[index];
   expect(summary).toBeTruthy();
 
   return summary as HTMLElement;
 }
 
 async function findAdvancedModeSummary(index = 0) {
-  const summaries = await screen.findAllByText("Advanced / Developer Mode");
-  const summary = summaries[index];
-  expect(summary).toBeTruthy();
+  await waitFor(() => expect(getAdvancedModeSummary(index)).toBeTruthy());
 
-  return summary as HTMLElement;
+  return getAdvancedModeSummary(index);
 }
 
 function getAdvancedModeSummaryByPanelText(text: string) {
@@ -780,7 +783,7 @@ function openAllClosedAdvancedModeDetails() {
       .filter((summary) => {
         const details = summary.closest("details") as HTMLDetailsElement | null;
 
-        return details ? !details.open : false;
+        return details?.classList.contains("du-advanced-panel") ? !details.open : false;
       });
 
     if (closedSummaries.length === 0) {
@@ -1093,8 +1096,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("link", { name: "View current conclusion" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "View main perspectives" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review risks and evidence" })).toBeTruthy();
+    expect(screen.getAllByText("Advanced / Developer Mode").length).toBeGreaterThanOrEqual(2);
     expect(document.body.textContent ?? "").not.toContain("topic_contract_published");
-    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Ledger position"));
     expect(await screen.findByText("topic_contract_published")).toBeTruthy();
   });
 

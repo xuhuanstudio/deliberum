@@ -1293,7 +1293,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         Risks and evidence
       </Link>
       <details className="du-nav-advanced">
-        <summary>Advanced</summary>
+        <summary>Advanced / Developer Mode</summary>
         <Link
           to="/sessions/$sessionId/events"
           params={{ sessionId }}
