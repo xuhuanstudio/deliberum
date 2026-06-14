@@ -362,7 +362,7 @@ function LandingPage() {
       <section className="du-landing">
         <PageHeader
           eyebrow={t("User Mode")}
-          title={t("Start a discussion")}
+          title={t("Multi-perspective deliberation for better decisions")}
           description={t(
             "Use Deliberum to frame a hard question, collect independent perspectives, compare the strongest options, keep disagreements visible, and turn the current state into a reviewable conclusion with next steps."
           )}

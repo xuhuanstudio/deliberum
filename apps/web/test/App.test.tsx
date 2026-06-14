@@ -1068,6 +1068,11 @@ describe("@deliberum/web shell", () => {
   it("opens sessions through explicit session-id navigation without stored session state", async () => {
     const client = renderApp("/");
 
+    expect(
+      await screen.findByRole("heading", {
+        name: "Multi-perspective deliberation for better decisions"
+      })
+    ).toBeTruthy();
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(screen.getByText("Ready to use Deliberum")).toBeTruthy();
     expect((await screen.findAllByText("Local service connected")).length).toBeGreaterThan(0);
@@ -1211,6 +1216,11 @@ describe("@deliberum/web shell", () => {
       initialLanguage: "zh-CN"
     });
 
+    expect(
+      await screen.findByRole("heading", {
+        name: "\u7528\u591a\u89c6\u89d2\u5ba1\u8bae\u505a\u51fa\u66f4\u597d\u51b3\u7b56"
+      })
+    ).toBeTruthy();
     expect((await screen.findAllByText("\u6a21\u578b\u8bbe\u7f6e")).length).toBeGreaterThan(0);
     expect(
       (await screen.findAllByText("\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba")).length

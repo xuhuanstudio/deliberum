@@ -38,6 +38,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Current conclusion": "\u5f53\u524d\u7ed3\u8bba",
   "Current conclusion not ready": "\u5f53\u524d\u7ed3\u8bba\u5c1a\u672a\u5c31\u7eea",
   "Start a discussion": "\u5f00\u59cb\u8ba8\u8bba",
+  "Multi-perspective deliberation for better decisions":
+    "\u7528\u591a\u89c6\u89d2\u5ba1\u8bae\u505a\u51fa\u66f4\u597d\u51b3\u7b56",
   "Continue discussions": "\u7ee7\u7eed\u8ba8\u8bba",
   "Continue existing discussions": "\u7ee7\u7eed\u5df2\u6709\u8ba8\u8bba",
   "Setup / Models": "\u8bbe\u7f6e / \u6a21\u578b",

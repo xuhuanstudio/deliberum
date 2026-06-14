@@ -41,10 +41,10 @@ Updated: 2026-06-15.
 
 | # | Product loop step | Current status | Current evidence | Highest-priority gap |
 | --- | --- | --- | --- | --- |
-| 1 | Open the Web UI. | `partial` | README quickstart points users to `http://127.0.0.1:5173/`; Web tests cover the shell and landing readiness states. | Needs a repeatable browser walkthrough from a clean local start. |
-| 2 | Understand within 30 seconds that Deliberum is a multi-perspective deliberation product. | `not browser-verified` | README and default Web copy describe the human-first product. | Needs first-viewport browser verification for desktop and mobile. |
-| 3 | See whether the local service is connected. | `partial` | Web setup and landing tests cover connected and unavailable local service states. | Needs product-loop walkthrough evidence from a fresh service start. |
-| 4 | If the local service is not connected, understand how to start it. | `partial` | Web onboarding copy and README show local service start commands. | Needs browser verification from the service-unavailable state. |
+| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:5173/`; Web tests cover the shell and landing readiness states. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. | Keep covered; packaging and installer work can improve first-run convenience later. |
+| 2 | Understand within 30 seconds that Deliberum is a multi-perspective deliberation product. | `verified` | README and default Web copy describe the human-first product. The landing page now leads with `Multi-perspective deliberation for better decisions`. `smoke:web-entry` verifies desktop and mobile first viewports include Deliberum, multi-perspective deliberation, independent perspectives, strongest options, and reviewable conclusion language. | Keep covered; future visual design work should preserve this first-viewport product signal. |
+| 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
+| 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show local service start commands. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future install work may simplify the command, but the current default path is proven. |
 | 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, and model. | `verified` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The integrated Web product-loop test covers entering and saving API key, base URL, and model from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the daemon setup API. `smoke:web-product-loop` enters the same fields in a real browser against an isolated local daemon and safe mock provider. | Keep covered; run a real external-provider walkthrough before release hardening. |
 | 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. | Keep covered; add provider-specific troubleshooting only if real provider walkthroughs expose a blocker. |
 | 7 | Start a model-backed discussion from Web. | `verified` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test creates a model-backed discussion. `smoke:product-loop` creates and starts a provider-backed run through the daemon API. `smoke:web-product-loop` reaches the model-backed start page from Setup / Models and creates the discussion in a real browser. | Keep covered; future participant-management work should preserve this default path. |
@@ -56,7 +56,7 @@ Updated: 2026-06-15.
 | 13 | See the current conclusion. | `verified` | Outcome pages render user-facing conclusion summaries and hide internal projection/event terms. The integrated Web product-loop test confirms the room reaches `Current conclusion: Ready to review`. `smoke:product-loop` verifies the daemon compiles a provider-backed current conclusion. `smoke:web-product-loop` opens the current conclusion page from the browser room and verifies the recommendation. | Keep covered; future work should improve conclusion readability only when it improves the main loop. |
 | 14 | See next recommended actions. | `verified` | Outcome and room tests render next recommended actions. The integrated Web product-loop test confirms user-facing action labels. `smoke:product-loop` verifies continuation suggestions in the provider-backed outcome. `smoke:web-product-loop` confirms the room links and outcome next recommended actions are visible from the browser path. | Keep covered; future actions should stay user-facing. |
 | 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion in the browser and reaches reviewable conclusion material. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
-| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `partial` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, and low-level id labels during the primary browser path. | Needs broad browser audit across unavailable, paused, retry, error, legacy, and Advanced boundary states. |
+| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `partial` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, and low-level id labels during the primary browser path. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. | Needs broad browser audit across paused, retry, error, legacy, and Advanced boundary states. |
 
 ## Batch Gate
 
@@ -98,20 +98,50 @@ as supporting evidence only.
 ## Next Highest-Value Batch
 
 The current highest-value convergence batch is not another isolated UI copy
-fix. After adding DOM-level, daemon-level, and browser-level product-loop
-coverage for rows 5 through 15, the next gate is to close the remaining default
-entry and safety gaps:
+fix. After adding browser-level evidence for rows 1 through 15, the next gate is
+to broaden row 16's default-path safety audit:
 
-1. browser-verify the first Web viewport for rows 1 through 3 on desktop and
-   mobile;
-2. browser-verify the local-service-unavailable path for row 4;
-3. broaden row 16's default-path safety audit across unavailable, paused,
-   retry, error, legacy, and Advanced boundary states.
+1. verify paused and retry states do not expose internal ids or raw system data;
+2. verify error states use user-facing recovery language;
+3. verify legacy `/sessions/*` and Advanced / Developer Mode remain available
+   without becoming the normal user's default path.
 
 If those walkthroughs fail, fix the first blocking row with the smallest
 verifiable change.
 
 ## Recent Automated Evidence
+
+### 2026-06-15 Web Entry Smoke
+
+Scope: rows 1 through 4, with supporting evidence for row 16 on landing and
+local-service-unavailable setup paths.
+
+Command:
+
+- `corepack pnpm smoke:web-entry`
+
+Path covered:
+
+1. Starts a local daemon from built output in an isolated temporary working
+   directory with the local preset enabled.
+2. Starts Web against that daemon and opens `/` in Chromium.
+3. Verifies the desktop and mobile first viewports include Deliberum,
+   multi-perspective deliberation, independent perspectives, strongest options,
+   and reviewable conclusion language.
+4. Verifies the connected landing path shows `Local service connected`, demo
+   readiness, and user-facing Start / Continue actions.
+5. Starts Web against an unavailable local service.
+6. Verifies the unavailable landing path guides users to Setup / Models.
+7. Verifies `/setup/models` shows the local service start command, Check again,
+   and the next Web model setup step.
+8. Scans landing and unavailable setup default text to confirm it does not show
+   raw connection errors, OpenAI/MCP env names, provider config ids, raw JSON,
+   resource posture, operation audit, or low-level id labels.
+
+Limit:
+
+- This verifies the current local development Web entry path, not a packaged
+  installer or desktop wrapper.
 
 ### 2026-06-15 Browser Product Loop Smoke
 
