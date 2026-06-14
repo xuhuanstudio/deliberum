@@ -25,7 +25,11 @@ import {
 import { useDaemonRuntime } from "./daemon-runtime";
 import { LanguageSwitcher, useI18n } from "./i18n";
 import { LocalServiceSetupGuide } from "./local-service-setup";
-import { useOpenAICompatibleProviderVerification } from "./openai-compatible-verification";
+import {
+  clearOpenAICompatibleProviderVerified,
+  markOpenAICompatibleProviderVerified,
+  useOpenAICompatibleProviderVerification
+} from "./openai-compatible-verification";
 import {
   AdvancedDetails,
   QueryState,
@@ -327,6 +331,15 @@ export function RunNewPage() {
       }
     }
   });
+  const providerVerificationMutation = useMutation({
+    mutationFn: () => client.verifyOpenAICompatibleSetup(),
+    onSuccess: () => {
+      markOpenAICompatibleProviderVerified();
+    },
+    onError: () => {
+      clearOpenAICompatibleProviderVerified();
+    }
+  });
   const createdRunId = getStringRecordValue(createMutation.data?.run, "runId");
   const canCreateDiscussion =
     discussionQuestion.trim().length > 0 &&
@@ -477,6 +490,9 @@ export function RunNewPage() {
             perspectiveCount={modelPerspectiveCount}
             onPerspectiveCountChange={setModelPerspectiveCount}
             providerConnectionVerified={providerConnectionVerified}
+            verificationPending={providerVerificationMutation.isPending}
+            verificationError={providerVerificationMutation.error}
+            onVerifyProviderConnection={() => providerVerificationMutation.mutate()}
           />
         ) : (
           <StatusBanner
@@ -677,7 +693,10 @@ function DiscussionModelSetupPanel({
   onSelectedSourceChange,
   perspectiveCount,
   onPerspectiveCountChange,
-  providerConnectionVerified
+  providerConnectionVerified,
+  verificationPending,
+  verificationError,
+  onVerifyProviderConnection
 }: {
   setupPlan: RuntimeSetupPlan;
   selectedSource: DiscussionParticipantSource;
@@ -686,6 +705,9 @@ function DiscussionModelSetupPanel({
   perspectiveCount: ProviderBackedPerspectiveCount;
   onPerspectiveCountChange: (count: ProviderBackedPerspectiveCount) => void;
   providerConnectionVerified: boolean;
+  verificationPending: boolean;
+  verificationError: Error | null;
+  onVerifyProviderConnection: () => void;
 }) {
   const { t } = useI18n();
   const view = describeDiscussionModelSetup(setupPlan, providerConnectionVerified);
@@ -724,6 +746,23 @@ function DiscussionModelSetupPanel({
           detail={t(
             "This discussion will use configured model participants from your local setup."
           )}
+        />
+      ) : null}
+      {providerSetupSaved && !modelBackedAvailable ? (
+        <StatusBanner
+          tone={verificationError ? "error" : "warning"}
+          title={t(
+            verificationError
+              ? "Provider connection could not be verified"
+              : "Verify provider connection"
+          )}
+          detail={
+            verificationError
+              ? formatSafeErrorMessage(verificationError)
+              : t(
+                  "Verify the saved provider connection here to continue with model-backed participants without returning to Setup / Models."
+                )
+          }
         />
       ) : null}
       <fieldset className="du-participant-source-picker">
@@ -839,6 +878,16 @@ function DiscussionModelSetupPanel({
         )}
       </p>
       <div className="du-action-row">
+        {providerSetupSaved && !modelBackedAvailable ? (
+          <button
+            type="button"
+            className="du-secondary-button"
+            onClick={onVerifyProviderConnection}
+            disabled={verificationPending}
+          >
+            {t(verificationPending ? "Verifying connection" : "Verify connection")}
+          </button>
+        ) : null}
         <Link className="du-action-link du-secondary-link" to="/setup/models">
           {t("Open Setup / Models")}
         </Link>

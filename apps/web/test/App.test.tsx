@@ -2952,12 +2952,111 @@ describe("@deliberum/web shell", () => {
         "Provider setup is saved; verify connection in Setup / Models before relying on model-backed results."
       )
     ).toBeTruthy();
+    expect(screen.getByText("Verify provider connection")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Verify the saved provider connection here to continue with model-backed participants without returning to Setup / Models."
+      )
+    ).toBeTruthy();
     expect(screen.queryByText("Model-backed discussion selected")).toBeNull();
     expect(
       (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
         .disabled
     ).toBe(true);
     expect(screen.getByText("Ready to create a demo discussion")).toBeTruthy();
+    const verifyButton = screen.getByRole("button", { name: "Verify connection" });
+    fireEvent.click(verifyButton);
+    await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Model-backed discussion selected")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "This discussion will use configured model participants from your local setup."
+      )
+    ).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
+          .checked
+      ).toBe(true)
+    );
+    expect(
+      (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
+        .disabled
+    ).toBe(false);
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("providerConfigId");
+  });
+
+  it("localizes start page provider verification in Simplified Chinese", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
+      profiles: [
+        {
+          id: "local-preset",
+          name: "Local preset",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+            envVars: [],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_BASE_URL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default provider base URL."
+              },
+              {
+                name: "DELIBERUM_OPENAI_MODEL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default model id."
+              },
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    });
+
+    renderApp("/runs/new?participants=model-backed", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    expect(await screen.findByText("\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u8fde\u63a5")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u5728\u6b64\u9a8c\u8bc1\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fde\u63a5\uff0c\u5373\u53ef\u7ee7\u7eed\u4f7f\u7528\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\uff0c\u65e0\u9700\u8fd4\u56de\u8bbe\u7f6e / \u6a21\u578b\u3002"
+      )
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "\u9a8c\u8bc1\u8fde\u63a5" }));
+    await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("\u5df2\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("providerConfigId");
   });

@@ -287,6 +287,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "The saved setup is active in this local service. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion.":
     "\u5df2\u4fdd\u5b58\u7684\u8bbe\u7f6e\u5df2\u5728\u6b64\u672c\u5730\u670d\u52a1\u4e2d\u751f\u6548\u3002\u9a8c\u8bc1\u4f1a\u53d1\u9001\u4e00\u6b21\u6700\u5c0f\u8bf7\u6c42\uff0c\u5e2e\u4f60\u5728\u8ba8\u8bba\u524d\u53d1\u73b0 key\u3001base URL \u6216 model \u95ee\u9898\u3002",
   "Provider connection could not be verified": "\u65e0\u6cd5\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u8fde\u63a5",
+  "Verify the saved provider connection here to continue with model-backed participants without returning to Setup / Models.":
+    "\u5728\u6b64\u9a8c\u8bc1\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fde\u63a5\uff0c\u5373\u53ef\u7ee7\u7eed\u4f7f\u7528\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\uff0c\u65e0\u9700\u8fd4\u56de\u8bbe\u7f6e / \u6a21\u578b\u3002",
   "Use the Web form above to add the provider API key, base URL, and model on this machine.":
     "\u4f7f\u7528\u4e0a\u65b9 Web \u8868\u5355\u5728\u8fd9\u53f0\u673a\u5668\u4e0a\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c model\u3002",
   "Configure provider": "\u914d\u7f6e\u63d0\u4f9b\u65b9",
