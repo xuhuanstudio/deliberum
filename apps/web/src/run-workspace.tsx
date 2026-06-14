@@ -64,6 +64,7 @@ type DiscussionContinuationView = {
   explainerTitle: string;
   explainerDetail: string;
   primaryLabel: string;
+  primaryActionDetail: string;
   reviewReady: boolean;
 };
 type DiscussionNextStepView = {
@@ -1277,20 +1278,61 @@ function StartRunForm({
           detail={t(continuationView.explainerDetail)}
         />
       </div>
+      <div className="du-discussion-actions" aria-label={t("Discussion actions")}>
+        <p className="du-kicker">{t("Discussion actions")}</p>
+        <div className="du-discussion-action-list">
+          <button
+            type="button"
+            className="du-discussion-action-button"
+            aria-label={t(continuationView.primaryLabel)}
+            onClick={startLocalPresetPipeline}
+            disabled={startMutation.isPending}
+          >
+            <strong>{t(continuationView.primaryLabel)}</strong>
+            <span>{t(continuationView.primaryActionDetail)}</span>
+          </button>
+          <button
+            type="button"
+            className="du-discussion-action-button du-discussion-action-secondary"
+            aria-label={t("Ask for stronger options")}
+            onClick={startLocalPresetPipeline}
+            disabled={startMutation.isPending}
+          >
+            <strong>{t("Ask for stronger options")}</strong>
+            <span>
+              {t(
+                "Refresh the discussion so the strongest current options can be compared and improved."
+              )}
+            </span>
+          </button>
+          <a
+            className="du-discussion-action-button du-discussion-action-secondary"
+            href="#open-disagreements"
+            aria-label={t("Review disagreements")}
+          >
+            <strong>{t("Review disagreements")}</strong>
+            <span>
+              {t("Jump to unresolved objections that still constrain the conclusion.")}
+            </span>
+          </a>
+          <a
+            className="du-discussion-action-button du-discussion-action-secondary"
+            href="#evidence-gaps"
+            aria-label={t("Check evidence")}
+          >
+            <strong>{t("Check evidence")}</strong>
+            <span>
+              {t("Review missing or unchecked evidence before relying on the answer.")}
+            </span>
+          </a>
+        </div>
+      </div>
       <div className="du-action-row">
         {continuationView.reviewReady ? (
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
             {t("View current conclusion")}
           </Link>
         ) : null}
-        <button
-          type="button"
-          className={continuationView.reviewReady ? "du-secondary-button" : undefined}
-          onClick={startLocalPresetPipeline}
-          disabled={startMutation.isPending}
-        >
-          {t(continuationView.primaryLabel)}
-        </button>
       </div>
       <AdvancedDetails
         summary="Advanced / Developer Mode"
@@ -4494,7 +4536,9 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
       explainerTitle: "Review the current conclusion",
       explainerDetail:
         "Main perspectives, open disagreements, requirements, evidence and verification, risk review, and next recommended actions are available below and on the conclusion page.",
-      primaryLabel: "Refresh discussion steps",
+      primaryLabel: "Update conclusion",
+      primaryActionDetail:
+        "Run the guided update again after reviewing disagreements, evidence gaps, and requirements.",
       reviewReady
     };
   }
@@ -4506,7 +4550,9 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
     explainerTitle: "Continue the full guided discussion",
     explainerDetail:
       "Collects independent first responses, organizes main perspectives, reviews requirements, checks evidence needs, and compiles a provisional conclusion.",
-    primaryLabel: "Continue guided discussion",
+    primaryLabel: "Continue discussion",
+    primaryActionDetail:
+      "Collect perspectives, organize strongest options, check evidence needs, and draft a conclusion.",
     reviewReady
   };
 }

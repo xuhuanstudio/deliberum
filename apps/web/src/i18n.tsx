@@ -183,6 +183,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u8ba8\u8bba\u6458\u8981\u4e2d\u6682\u65e0\u53ef\u89c1\u672a\u89e3\u51b3\u963b\u585e\u9879\u3002",
   "Review current conclusion": "\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba",
   "Continue discussion": "\u7ee7\u7eed\u8ba8\u8bba",
+  "Continue guided discussion": "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba",
   "A reviewable conclusion is available with risks, evidence gaps, and next actions.":
     "\u5df2\u6709\u53ef\u5ba1\u9605\u7ed3\u8bba\uff0c\u5e76\u5305\u542b\u98ce\u9669\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u3002",
   "The discussion needs more guided work before a conclusion is useful.":
@@ -526,13 +527,26 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review the current conclusion": "\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba",
   "Main perspectives, open disagreements, requirements, evidence and verification, risk review, and next recommended actions are available below and on the conclusion page.":
     "\u4e3b\u8981\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8981\u6c42\u3001\u8bc1\u636e\u4e0e\u6838\u67e5\u3001\u98ce\u9669\u5ba1\u67e5\u548c\u4e0b\u4e00\u6b65\u5efa\u8bae\u53ef\u5728\u4e0b\u65b9\u548c\u7ed3\u8bba\u9875\u67e5\u770b\u3002",
-  "Refresh discussion steps": "\u5237\u65b0\u8ba8\u8bba\u6b65\u9aa4",
+  "Update conclusion": "\u66f4\u65b0\u7ed3\u8bba",
+  "Run the guided update again after reviewing disagreements, evidence gaps, and requirements.":
+    "\u5728\u5ba1\u9605\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u8981\u6c42\u540e\uff0c\u518d\u6b21\u8fd0\u884c\u5f15\u5bfc\u5f0f\u66f4\u65b0\u3002",
   "Continue the guided discussion so perspectives, disagreements, requirements, evidence and verification, risk review, and conclusion can appear.":
     "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u4ee5\u5448\u73b0\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8981\u6c42\u3001\u8bc1\u636e\u4e0e\u6838\u67e5\u3001\u98ce\u9669\u5ba1\u67e5\u548c\u7ed3\u8bba\u3002",
   "Continue the full guided discussion": "\u7ee7\u7eed\u5b8c\u6574\u5f15\u5bfc\u5f0f\u8ba8\u8bba",
   "Collects independent first responses, organizes main perspectives, reviews requirements, checks evidence needs, and compiles a provisional conclusion.":
     "\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff0c\u6574\u7406\u4e3b\u8981\u89c2\u70b9\uff0c\u5ba1\u9605\u8981\u6c42\uff0c\u68c0\u67e5\u8bc1\u636e\u9700\u6c42\uff0c\u5e76\u7f16\u5236\u4e34\u65f6\u7ed3\u8bba\u3002",
-  "Continue guided discussion": "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba",
+  "Collect perspectives, organize strongest options, check evidence needs, and draft a conclusion.":
+    "\u6536\u96c6\u89c6\u89d2\u3001\u6574\u7406\u6700\u5f3a\u9009\u9879\u3001\u68c0\u67e5\u8bc1\u636e\u9700\u6c42\u5e76\u8d77\u8349\u7ed3\u8bba\u3002",
+  "Discussion actions": "\u8ba8\u8bba\u52a8\u4f5c",
+  "Ask for stronger options": "\u8981\u6c42\u66f4\u5f3a\u9009\u9879",
+  "Refresh the discussion so the strongest current options can be compared and improved.":
+    "\u5237\u65b0\u8ba8\u8bba\uff0c\u4ee5\u6bd4\u8f83\u5e76\u6539\u8fdb\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",
+  "Review disagreements": "\u5ba1\u9605\u5206\u6b67",
+  "Jump to unresolved objections that still constrain the conclusion.":
+    "\u8df3\u5230\u4ecd\u7136\u7ea6\u675f\u7ed3\u8bba\u7684\u672a\u89e3\u51b3\u53cd\u5bf9\u610f\u89c1\u3002",
+  "Check evidence": "\u68c0\u67e5\u8bc1\u636e",
+  "Review missing or unchecked evidence before relying on the answer.":
+    "\u5728\u4f9d\u8d56\u7b54\u6848\u524d\u5ba1\u9605\u7f3a\u5931\u6216\u672a\u6838\u67e5\u7684\u8bc1\u636e\u3002",
   "Room activity": "\u8ba8\u8bba\u5ba4\u6d3b\u52a8",
   "Conversation transcript": "\u5bf9\u8bdd\u8bb0\u5f55",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",

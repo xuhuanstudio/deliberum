@@ -2101,7 +2101,11 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Not specified")).toBeTruthy();
     expect(screen.getAllByText("Discussion status").length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion is ready to review")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Refresh discussion steps" })).toBeTruthy();
+    expect(screen.getByText("Discussion actions")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Update conclusion" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Review disagreements" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("7 recorded lifecycle events");
     fireEvent.click(getUserDetailsSummaryByText("Discussion setup"));
     fireEvent.click(getAdvancedModeSummaryByPanelText("Discussion status details"));
@@ -2790,7 +2794,11 @@ describe("@deliberum/web shell", () => {
       }
     };
 
-    await screen.findByText("Continue discussion");
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    expect(screen.getByText("Discussion actions")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Review disagreements" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
     fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
     fireEvent.change(await screen.findByLabelText("Advanced start request JSON"), {
       target: {
@@ -2823,7 +2831,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    await screen.findByText("Continue discussion");
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
     fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
     const startRequestInput = await screen.findByLabelText("Advanced start request JSON");
     fireEvent.change(startRequestInput, {
@@ -2837,7 +2845,7 @@ describe("@deliberum/web shell", () => {
       (startRequestInput as HTMLTextAreaElement).value
     ).toContain("local-preset-extractor");
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue guided discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
 
     await waitFor(() =>
       expect(client.startRun).toHaveBeenCalledWith(
@@ -2963,7 +2971,7 @@ describe("@deliberum/web shell", () => {
     await screen.findByText("No main perspectives");
     expect(screen.queryByText("Projection refreshed after start")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue guided discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalled());
     expect(await screen.findByText("Discussion steps completed")).toBeTruthy();
@@ -2995,8 +3003,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    await screen.findByText("Continue discussion");
-    fireEvent.click(screen.getByRole("button", { name: "Continue guided discussion" }));
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
 
     expect(await screen.findByText("Discussion could not continue")).toBeTruthy();
     expect(

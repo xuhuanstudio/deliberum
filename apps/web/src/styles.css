@@ -361,6 +361,65 @@ textarea:focus-visible {
   padding: 14px 0 0;
 }
 
+.du-discussion-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.du-discussion-action-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid var(--du-line);
+  background: var(--du-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.du-discussion-action-button {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 0;
+  background: var(--du-accent);
+  color: #ffffff;
+  padding: 16px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.du-discussion-action-button:hover:not(:disabled) {
+  background: var(--du-accent-strong);
+}
+
+.du-discussion-action-secondary {
+  border: 0;
+  background: var(--du-surface);
+  color: var(--du-ink);
+}
+
+.du-discussion-action-secondary:hover:not(:disabled) {
+  background: var(--du-surface-muted);
+}
+
+.du-discussion-action-button strong,
+.du-discussion-action-button span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.du-discussion-action-button strong {
+  font-size: 0.98rem;
+}
+
+.du-discussion-action-button span {
+  color: inherit;
+  font-size: 0.86rem;
+  line-height: 1.42;
+  opacity: 0.82;
+}
+
 .du-product-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
@@ -1612,7 +1671,8 @@ textarea:focus-visible {
   .du-room-brief,
   .du-projection-developer-grid,
   .du-final-lifecycle-grid,
-  .du-lifecycle-grid {
+  .du-lifecycle-grid,
+  .du-discussion-action-list {
     grid-template-columns: 1fr;
   }
 
