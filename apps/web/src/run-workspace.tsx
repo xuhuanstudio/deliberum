@@ -3006,9 +3006,14 @@ async function invalidateRunWorkspaceQueries(
       queryClient.invalidateQueries({ queryKey: ["run-frontier", sessionId] }),
       queryClient.invalidateQueries({ queryKey: ["run-objections", sessionId] }),
       queryClient.invalidateQueries({ queryKey: ["run-obligations", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["run-resources", sessionId] }),
       queryClient.invalidateQueries({ queryKey: ["frontier", sessionId] }),
       queryClient.invalidateQueries({ queryKey: ["objections", sessionId] }),
-      queryClient.invalidateQueries({ queryKey: ["obligations", sessionId] })
+      queryClient.invalidateQueries({ queryKey: ["obligations", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["outcome-frontier", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["outcome-objections", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["outcome-obligations", sessionId] }),
+      queryClient.invalidateQueries({ queryKey: ["outcome-resources", sessionId] })
     );
   }
 

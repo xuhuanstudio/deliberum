@@ -3829,6 +3829,7 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Update conclusion" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledTimes(2));
     const latestUpdate = await screen.findByRole("region", {
       name: "Latest discussion update"
     });
@@ -3851,6 +3852,8 @@ describe("@deliberum/web shell", () => {
     expect(resultHandoff.textContent ?? "").toContain("Review updated timeline");
     expect(resultHandoff.textContent ?? "").toContain("Review discussion outputs");
     expect(resultHandoff.textContent ?? "").toContain("View current conclusion");
+    expect(screen.getAllByText("1 evidence gap to check").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1/1").length).toBeGreaterThan(0);
     const resultHandoffLinks = Array.from(resultHandoff.querySelectorAll("a")).map((link) =>
       link.getAttribute("href")
     );
