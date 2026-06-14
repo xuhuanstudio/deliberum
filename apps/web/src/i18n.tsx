@@ -288,6 +288,17 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "{provider} \u5df2\u5c31\u7eea\u3002\u6b64\u8ba8\u8bba\u5c06\u4f7f\u7528\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Configure a ready model provider locally before selecting model-backed participants.":
     "\u5148\u5728\u672c\u5730\u914d\u7f6e\u4e00\u4e2a\u5df2\u5c31\u7eea\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\uff0c\u7136\u540e\u518d\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u3002",
+  "Choose discussion depth": "\u9009\u62e9\u8ba8\u8bba\u6df1\u5ea6",
+  "Focused review": "\u805a\u7126\u5ba1\u67e5",
+  "Two independent model perspectives keep the discussion concise.":
+    "\u4e24\u4e2a\u72ec\u7acb\u6a21\u578b\u89c6\u89d2\u53ef\u4f7f\u8ba8\u8bba\u4fdd\u6301\u7b80\u6d01\u3002",
+  "Broader review": "\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5",
+  "Three independent model perspectives give the room more comparison material.":
+    "\u4e09\u4e2a\u72ec\u7acb\u6a21\u578b\u89c6\u89d2\u4f1a\u4e3a\u8ba8\u8bba\u5ba4\u63d0\u4f9b\u66f4\u591a\u6bd4\u8f83\u6750\u6599\u3002",
+  "The selected depth controls how many independent model participants answer before Deliberum compares options.":
+    "\u9009\u5b9a\u7684\u6df1\u5ea6\u4f1a\u51b3\u5b9a Deliberum \u6bd4\u8f83\u9009\u9879\u524d\uff0c\u6709\u591a\u5c11\u4e2a\u72ec\u7acb\u6a21\u578b\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u3002",
+  "Demo walkthroughs use two built-in sample perspectives. Choose model-backed participants to use a broader independent review.":
+    "\u6f14\u793a\u6d41\u7a0b\u4f7f\u7528\u4e24\u4e2a\u5185\u7f6e\u793a\u4f8b\u89c6\u89d2\u3002\u8bf7\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u6765\u4f7f\u7528\u66f4\u5e7f\u7684\u72ec\u7acb\u5ba1\u67e5\u3002",
   "Participant lineup": "\u53c2\u4e0e\u8005\u9635\u5bb9",
   "Participants for this discussion": "\u672c\u6b21\u8ba8\u8bba\u7684\u53c2\u4e0e\u8005",
   "Before creating the discussion, see who will answer first and who will organize the result.":
@@ -1174,6 +1185,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u51c6\u5907\u597d\u540e\uff0c\u8bf7\u4f7f\u7528\u771f\u5b9e\u53d1\u5e03\u7b80\u62a5\u548c\u771f\u5b9e\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u8fde\u63a5\u91cd\u65b0\u8fd0\u884c\u8ba8\u8bba\u3002",
   "Perspective A": "\u89c6\u89d2 A",
   "Perspective B": "\u89c6\u89d2 B",
+  "Perspective C": "\u89c6\u89d2 C",
   "Discussion organizer": "\u8ba8\u8bba\u7ec4\u7ec7\u8005",
   "Option reviewer": "\u9009\u9879\u5ba1\u67e5\u8005",
   "Evidence checker": "\u8bc1\u636e\u6838\u67e5\u8005",

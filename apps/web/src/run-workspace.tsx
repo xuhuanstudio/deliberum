@@ -43,7 +43,8 @@ import {
   buildGuidedDiscussionRunPlan,
   buildProviderBackedDiscussionRunPlan,
   formatPresetJson,
-  type ProviderBackedDiscussionPlanInput
+  type ProviderBackedDiscussionPlanInput,
+  type ProviderBackedPerspectiveCount
 } from "./run-presets";
 
 const DEFAULT_RUN_PLAN_TEXT = formatPresetJson(LOCAL_PRESET_RUN_PLAN);
@@ -110,6 +111,9 @@ type DiscussionModelSetupView = {
 type DiscussionParticipantSource = "demo" | "model-backed";
 type DiscussionProviderSource = ProviderBackedDiscussionPlanInput & {
   name: string;
+};
+type DiscussionPerspectiveRole = {
+  role: string;
 };
 type DiscussionParticipantSourceView = {
   title: string;
@@ -217,6 +221,8 @@ export function RunNewPage() {
   const [participantSource, setParticipantSource] =
     useState<DiscussionParticipantSource>("demo");
   const [participantSourceTouched, setParticipantSourceTouched] = useState(false);
+  const [modelPerspectiveCount, setModelPerspectiveCount] =
+    useState<ProviderBackedPerspectiveCount>(2);
   const [inputError, setInputError] = useState<string | null>(null);
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
@@ -319,7 +325,10 @@ export function RunNewPage() {
         ? providerBackedDiscussionSource
           ? buildProviderBackedDiscussionRunPlan(
               discussionPlanInput,
-              providerBackedDiscussionSource
+              providerBackedDiscussionSource,
+              {
+                perspectiveCount: modelPerspectiveCount
+              }
             )
           : undefined
         : buildGuidedDiscussionRunPlan(discussionPlanInput);
@@ -362,6 +371,8 @@ export function RunNewPage() {
             setupPlan={runtimeSetupPlan}
             selectedSource={participantSource}
             onSelectedSourceChange={chooseParticipantSource}
+            perspectiveCount={modelPerspectiveCount}
+            onPerspectiveCountChange={setModelPerspectiveCount}
           />
         ) : (
           <StatusBanner
@@ -514,11 +525,15 @@ export function RunNewPage() {
 function DiscussionModelSetupPanel({
   setupPlan,
   selectedSource,
-  onSelectedSourceChange
+  onSelectedSourceChange,
+  perspectiveCount,
+  onPerspectiveCountChange
 }: {
   setupPlan: RuntimeSetupPlan;
   selectedSource: DiscussionParticipantSource;
   onSelectedSourceChange: (source: DiscussionParticipantSource) => void;
+  perspectiveCount: ProviderBackedPerspectiveCount;
+  onPerspectiveCountChange: (count: ProviderBackedPerspectiveCount) => void;
 }) {
   const { t } = useI18n();
   const view = describeDiscussionModelSetup(setupPlan);
@@ -596,11 +611,60 @@ function DiscussionModelSetupPanel({
           </span>
         </label>
       </fieldset>
+      <fieldset className="du-participant-source-picker du-participant-depth-picker">
+        <legend>{t("Choose discussion depth")}</legend>
+        <label
+          className={`du-participant-source-card ${
+            perspectiveCount === 2 ? "du-participant-source-selected" : ""
+          } ${modelBackedAvailable && selectedSource === "model-backed" ? "" : "du-participant-source-disabled"}`}
+        >
+          <input
+            type="radio"
+            name="model-perspective-count"
+            value="2"
+            checked={perspectiveCount === 2}
+            disabled={!modelBackedAvailable || selectedSource !== "model-backed"}
+            onChange={() => onPerspectiveCountChange(2)}
+          />
+          <span>
+            <strong>{t("Focused review")}</strong>
+            <small>{t("Two independent model perspectives keep the discussion concise.")}</small>
+          </span>
+        </label>
+        <label
+          className={`du-participant-source-card ${
+            perspectiveCount === 3 ? "du-participant-source-selected" : ""
+          } ${modelBackedAvailable && selectedSource === "model-backed" ? "" : "du-participant-source-disabled"}`}
+        >
+          <input
+            type="radio"
+            name="model-perspective-count"
+            value="3"
+            checked={perspectiveCount === 3}
+            disabled={!modelBackedAvailable || selectedSource !== "model-backed"}
+            onChange={() => onPerspectiveCountChange(3)}
+          />
+          <span>
+            <strong>{t("Broader review")}</strong>
+            <small>{t("Three independent model perspectives give the room more comparison material.")}</small>
+          </span>
+        </label>
+      </fieldset>
+      <p className="du-discussion-setup-note">
+        {selectedSource === "model-backed" && modelBackedAvailable
+          ? t(
+              "The selected depth controls how many independent model participants answer before Deliberum compares options."
+            )
+          : t(
+              "Demo walkthroughs use two built-in sample perspectives. Choose model-backed participants to use a broader independent review."
+            )}
+      </p>
       <DiscussionParticipantLineup
         selectedSource={selectedSource}
         providerSource={providerSource}
         organizerReady={organizerReady}
         demoAvailable={demoAvailable}
+        perspectiveCount={perspectiveCount}
       />
       <p className="du-discussion-setup-note">
         {t(
@@ -620,19 +684,22 @@ function DiscussionParticipantLineup({
   selectedSource,
   providerSource,
   organizerReady,
-  demoAvailable
+  demoAvailable,
+  perspectiveCount
 }: {
   selectedSource: DiscussionParticipantSource;
   providerSource: DiscussionProviderSource | undefined;
   organizerReady: boolean;
   demoAvailable: boolean;
+  perspectiveCount: ProviderBackedPerspectiveCount;
 }) {
   const { t } = useI18n();
   const lineup = buildDiscussionParticipantLineup({
     selectedSource,
     providerSource,
     organizerReady,
-    demoAvailable
+    demoAvailable,
+    perspectiveCount
   });
 
   return (
@@ -682,8 +749,10 @@ function buildDiscussionParticipantLineup(input: {
   providerSource: DiscussionProviderSource | undefined;
   organizerReady: boolean;
   demoAvailable: boolean;
+  perspectiveCount: ProviderBackedPerspectiveCount;
 }): DiscussionParticipantLineupItem[] {
   const providerName = input.providerSource?.name ?? "Configured model provider";
+  const perspectiveRoles = getDiscussionPerspectiveRoles(input);
   const perspectiveDetail =
     input.selectedSource === "model-backed" && input.providerSource
       ? "{provider} will answer through the configured local daemon setup."
@@ -694,7 +763,7 @@ function buildDiscussionParticipantLineup(input: {
     input.selectedSource === "model-backed" && input.providerSource
       ? providerName
       : "Demo participants";
-  const perspectiveTone =
+  const perspectiveTone: DiscussionParticipantLineupItem["tone"] =
     input.selectedSource === "model-backed" && input.providerSource
       ? "ok"
       : input.demoAvailable
@@ -703,12 +772,14 @@ function buildDiscussionParticipantLineup(input: {
   const organizerDetail = input.organizerReady
     ? "Local organizers can compare options, review evidence and risks, and draft the current conclusion after first responses."
     : "Organizer roles are not ready yet; continuing the discussion may collect first responses only.";
-  const organizerTone = input.organizerReady ? "ok" : "warning";
+  const organizerTone: DiscussionParticipantLineupItem["tone"] = input.organizerReady
+    ? "ok"
+    : "warning";
   const organizerSource = input.organizerReady ? "Local discussion organizer" : "Organizer setup needed";
 
   return [
-    {
-      role: "Perspective A",
+    ...perspectiveRoles.map((perspective) => ({
+      role: perspective.role,
       contribution: "Independent first response",
       source: perspectiveSource,
       detail: perspectiveDetail,
@@ -717,18 +788,7 @@ function buildDiscussionParticipantLineup(input: {
           ? { provider: providerName }
           : undefined,
       tone: perspectiveTone
-    },
-    {
-      role: "Perspective B",
-      contribution: "Independent first response",
-      source: perspectiveSource,
-      detail: perspectiveDetail,
-      detailValues:
-        input.selectedSource === "model-backed" && input.providerSource
-          ? { provider: providerName }
-          : undefined,
-      tone: perspectiveTone
-    },
+    })),
     {
       role: "Reviewer",
       contribution: "Requirements and disagreement review",
@@ -751,6 +811,30 @@ function buildDiscussionParticipantLineup(input: {
       tone: organizerTone
     }
   ];
+}
+
+function getDiscussionPerspectiveRoles(input: {
+  selectedSource: DiscussionParticipantSource;
+  providerSource: DiscussionProviderSource | undefined;
+  demoAvailable: boolean;
+  perspectiveCount: ProviderBackedPerspectiveCount;
+}): DiscussionPerspectiveRole[] {
+  const perspectiveRoles: DiscussionPerspectiveRole[] = [
+    {
+      role: "Perspective A"
+    },
+    {
+      role: "Perspective B"
+    }
+  ];
+
+  if (input.selectedSource === "model-backed" && input.providerSource && input.perspectiveCount === 3) {
+    perspectiveRoles.push({
+      role: "Perspective C"
+    });
+  }
+
+  return perspectiveRoles;
 }
 
 function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionModelSetupView {

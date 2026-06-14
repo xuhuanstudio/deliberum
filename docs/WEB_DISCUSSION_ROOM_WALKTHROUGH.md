@@ -48,7 +48,7 @@ The local preset profile is for development and review only. It makes the walkth
 
 1. Start a discussion.
 
-   Use the guided start form or the built-in sample brief. The visible action should say Start a discussion, not execute proposal, start run, or compile projection. Advanced JSON request details should stay collapsed.
+   Use the guided start form or the built-in sample brief. When a provider is ready, choose demo or model-backed participants and select whether the discussion should use a focused or broader set of independent model perspectives. The visible action should say Start a discussion, not execute proposal, start run, or compile projection. Advanced JSON request details should stay collapsed.
 
 2. Read the discussion brief.
 

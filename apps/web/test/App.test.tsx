@@ -2164,6 +2164,12 @@ describe("@deliberum/web shell", () => {
         "Local organizers can compare options, review evidence and risks, and draft the current conclusion after first responses."
       ).length
     ).toBeGreaterThan(0);
+    expect(screen.getByText("Choose discussion depth")).toBeTruthy();
+    expect(screen.getByText("Focused review")).toBeTruthy();
+    expect(screen.getByText("Broader review")).toBeTruthy();
+    expect(
+      screen.getByText("Two independent model perspectives keep the discussion concise.")
+    ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
 
     const demoSource = screen.getByRole("radio", {
@@ -2174,11 +2180,19 @@ describe("@deliberum/web shell", () => {
     }) as HTMLInputElement;
     expect(modelBackedSource.disabled).toBe(false);
     await waitFor(() => expect(modelBackedSource.checked).toBe(true));
+    expect(
+      (screen.getByRole("radio", { name: /Focused review/i }) as HTMLInputElement).checked
+    ).toBe(true);
 
     fireEvent.click(demoSource);
     expect(demoSource.checked).toBe(true);
     fireEvent.click(modelBackedSource);
     expect(modelBackedSource.checked).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: /Broader review/i }));
+    expect(
+      (screen.getByRole("radio", { name: /Broader review/i }) as HTMLInputElement).checked
+    ).toBe(true);
+    expect(screen.getByText("Perspective C")).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Language"), {
       target: {
@@ -2190,6 +2204,9 @@ describe("@deliberum/web shell", () => {
         "\u5df2\u6709\u5c31\u7eea\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u3002Web \u9ed8\u8ba4\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\uff1b\u4ec5\u5728\u9700\u8981\u6f14\u793a\u6d41\u7a0b\u65f6\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u3002"
       )
     ).toBeTruthy();
+    expect(screen.getByText("\u9009\u62e9\u8ba8\u8bba\u6df1\u5ea6")).toBeTruthy();
+    expect(screen.getByText("\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5")).toBeTruthy();
+    expect(screen.getByText("\u89c6\u89d2 C")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("\u8bed\u8a00"), {
       target: {
         value: "en"
@@ -2212,6 +2229,7 @@ describe("@deliberum/web shell", () => {
         topic: "Should we use the configured provider for this review?",
         constraints: expect.arrayContaining([
           "Use configured model-backed participants from the local daemon.",
+          "Use three independent model-backed perspectives from the local daemon.",
           "Keep provider credentials in the local daemon environment only."
         ]),
         participants: expect.arrayContaining([
@@ -2219,8 +2237,21 @@ describe("@deliberum/web shell", () => {
             displayName: "Perspective A",
             adapterId: "openai-compatible",
             providerConfigId: "web-openai-compatible-discussion"
+          }),
+          expect.objectContaining({
+            id: "provider-perspective-c",
+            displayName: "Perspective C",
+            adapterId: "openai-compatible",
+            providerConfigId: "web-openai-compatible-discussion"
           })
         ]),
+        sealedDivergence: expect.objectContaining({
+          participantIds: [
+            "provider-perspective-a",
+            "provider-perspective-b",
+            "provider-perspective-c"
+          ]
+        }),
         providerConfigs: [
           expect.objectContaining({
             id: "web-openai-compatible-discussion",

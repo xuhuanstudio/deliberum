@@ -83,6 +83,27 @@ export type ProviderBackedDiscussionPlanInput = {
   apiKeyEnvVar?: string;
 };
 
+export type ProviderBackedPerspectiveCount = 2 | 3;
+
+export type ProviderBackedDiscussionPlanOptions = {
+  perspectiveCount?: ProviderBackedPerspectiveCount;
+};
+
+const PROVIDER_BACKED_PERSPECTIVES = [
+  {
+    id: "provider-perspective-a",
+    displayName: "Perspective A"
+  },
+  {
+    id: "provider-perspective-b",
+    displayName: "Perspective B"
+  },
+  {
+    id: "provider-perspective-c",
+    displayName: "Perspective C"
+  }
+] as const;
+
 export const LOCAL_PRESET_DISCUSSION_BRIEF: GuidedDiscussionRunPlanInput = {
   question: "How should we review a proposed rollout before relying on it?",
   goalsText: [
@@ -140,15 +161,16 @@ export function buildGuidedDiscussionRunPlan(
 
 export function buildProviderBackedDiscussionRunPlan(
   input: GuidedDiscussionRunPlanInput,
-  provider: ProviderBackedDiscussionPlanInput
+  provider: ProviderBackedDiscussionPlanInput,
+  options: ProviderBackedDiscussionPlanOptions = {}
 ): Record<string, unknown> {
   const topic = input.question.trim();
   const userGoals = parseBriefLines(input.goalsText);
   const userConstraints = parseBriefLines(input.constraintsText);
   const expectedOutcomes = parseBriefLines(input.expectedOutcomeText);
   const title = formatDiscussionTitle(topic);
-  const perspectiveAId = "provider-perspective-a";
-  const perspectiveBId = "provider-perspective-b";
+  const perspectiveCount = options.perspectiveCount ?? 2;
+  const perspectives = PROVIDER_BACKED_PERSPECTIVES.slice(0, perspectiveCount);
   const providerConfig: Record<string, unknown> = {
     id: provider.providerConfigId,
     adapterId: provider.adapterId,
@@ -173,25 +195,19 @@ export function buildProviderBackedDiscussionRunPlan(
     constraints: uniqueBriefLines([
       ...userConstraints,
       "Use configured model-backed participants from the local daemon.",
+      perspectiveCount === 3
+        ? "Use three independent model-backed perspectives from the local daemon."
+        : "Use two independent model-backed perspectives from the local daemon.",
       "Keep provider credentials in the local daemon environment only.",
       "Keep the conclusion provisional until reviewed."
     ]),
-    participants: [
-      {
-        id: perspectiveAId,
-        kind: "model",
-        displayName: "Perspective A",
-        adapterId: provider.adapterId,
-        providerConfigId: provider.providerConfigId
-      },
-      {
-        id: perspectiveBId,
-        kind: "model",
-        displayName: "Perspective B",
-        adapterId: provider.adapterId,
-        providerConfigId: provider.providerConfigId
-      }
-    ],
+    participants: perspectives.map((perspective) => ({
+      id: perspective.id,
+      kind: "model",
+      displayName: perspective.displayName,
+      adapterId: provider.adapterId,
+      providerConfigId: provider.providerConfigId
+    })),
     providerConfigs: [providerConfig],
     output: {
       language: "en",
@@ -207,7 +223,7 @@ export function buildProviderBackedDiscussionRunPlan(
     sealedDivergence: {
       purpose: "initial_divergence",
       revealPolicy: "all_completed",
-      participantIds: [perspectiveAId, perspectiveBId]
+      participantIds: perspectives.map((perspective) => perspective.id)
     }
   };
 }
