@@ -21,6 +21,7 @@ import {
 } from "@deliberum/ui";
 import { useEffect, useState, type FormEvent } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
+import { LanguageSwitcher, useI18n } from "./i18n";
 import { buildRuntimeSetupPlan } from "@deliberum/client";
 import type {
   AuditFinalCandidateRequest,
@@ -225,6 +226,7 @@ function RootRoute() {
 }
 
 function LandingPage() {
+  const { t } = useI18n();
   const { daemonBaseUrl, client } = useDaemonRuntime();
   const [sessionId, setSessionId] = useState("");
   const [operatorDetailsOpen, setOperatorDetailsOpen] = useState(false);
@@ -305,71 +307,102 @@ function LandingPage() {
   return (
     <WorkspaceShell
       productName="Deliberum"
-      workspaceLabel="User Mode"
+      workspaceLabel={t("User Mode")}
+      status={<LanguageSwitcher />}
     >
       <section className="du-landing">
         <PageHeader
-          eyebrow="User Mode"
-          title="Start a discussion"
-          description="Use Deliberum to frame a hard question, collect independent perspectives, compare the strongest options, keep disagreements visible, and turn the current state into a reviewable conclusion with next steps."
+          eyebrow={t("User Mode")}
+          title={t("Start a discussion")}
+          description={t(
+            "Use Deliberum to frame a hard question, collect independent perspectives, compare the strongest options, keep disagreements visible, and turn the current state into a reviewable conclusion with next steps."
+          )}
           actions={
             <>
               <Link className="du-action-link" to="/runs/new">
-                Start a discussion
+                {t("Start a discussion")}
               </Link>
               <Link className="du-action-link du-secondary-link" to="/runs">
-                Continue discussions
+                {t("Continue discussions")}
               </Link>
             </>
           }
         />
         <div className="du-product-grid">
           <DataPanel
-            title="What you can do"
-            description="The default path is for people who need a clear decision surface, not system records."
+            title={t("What you can do")}
+            description={t(
+              "The default path is for people who need a clear decision surface, not system records."
+            )}
           >
             <div className="du-readable-list">
               <QualityPathItem
-                title="1. Start a discussion"
-                detail="Write the question, goals, constraints, and expected output as a discussion brief."
+                title={t("1. Start a discussion")}
+                detail={t(
+                  "Write the question, goals, constraints, and expected output as a discussion brief."
+                )}
               />
               <QualityPathItem
-                title="2. Review the strongest current options"
-                detail="Independent first responses become visible as main perspectives without collapsing them into a hidden authority."
+                title={t("2. Review the strongest current options")}
+                detail={t(
+                  "Independent first responses become visible as main perspectives without collapsing them into a hidden authority."
+                )}
               />
               <QualityPathItem
-                title="3. Decide what to do next"
-                detail="The current conclusion keeps open disagreements, risks, missing evidence, and recommended next actions together."
+                title={t("3. Decide what to do next")}
+                detail={t(
+                  "The current conclusion keeps open disagreements, risks, missing evidence, and recommended next actions together."
+                )}
               />
             </div>
             <div className="du-action-row">
               <Link className="du-action-link" to="/runs/new">
-                Start a discussion
+                {t("Start a discussion")}
               </Link>
               <Link className="du-action-link du-secondary-link" to="/runs">
-                Continue existing discussions
+                {t("Continue existing discussions")}
               </Link>
             </div>
           </DataPanel>
           <DataPanel
-            title="What the discussion keeps visible"
-            description="Deliberum keeps the decision surface organized around what a person needs to inspect before relying on a conclusion."
+            title={t("What the discussion keeps visible")}
+            description={t(
+              "Deliberum keeps the decision surface organized around what a person needs to inspect before relying on a conclusion."
+            )}
           >
             <div className="du-quality-map">
-              <QualityMapItem label="Discussion brief" value="Question, goals, constraints, and expected output." />
-              <QualityMapItem label="Independent first responses" value="Separate starting perspectives before the group converges." />
               <QualityMapItem
-                label="Strongest current options"
-                value="The best visible choices without selecting one option invisibly."
+                label={t("Discussion brief")}
+                value={t("Question, goals, constraints, and expected output.")}
               />
-              <QualityMapItem label="Open disagreements" value="Concerns that still constrain the conclusion." />
               <QualityMapItem
-                label="Requirements this answer must satisfy"
-                value="Conditions the final answer must meet."
+                label={t("Independent first responses")}
+                value={t("Separate starting perspectives before the group converges.")}
               />
-              <QualityMapItem label="Evidence and verification" value="Claims or gaps that still need checking." />
-              <QualityMapItem label="Risk review" value="Limits, assumptions, and failure cases to keep visible." />
-              <QualityMapItem label="Current conclusion" value="The reviewable result with next steps." />
+              <QualityMapItem
+                label={t("Strongest current options")}
+                value={t("The best visible choices without selecting one option invisibly.")}
+              />
+              <QualityMapItem
+                label={t("Open disagreements")}
+                value={t("Concerns that still constrain the conclusion.")}
+              />
+              <QualityMapItem
+                label={t("Requirements this answer must satisfy")}
+                value={t("Conditions the final answer must meet.")}
+              />
+              <QualityMapItem
+                label={t("Evidence and verification")}
+                value={t("Claims or gaps that still need checking.")}
+              />
+              <QualityMapItem
+                label={t("Risk review")}
+                value={t("Limits, assumptions, and failure cases to keep visible.")}
+              />
+              <QualityMapItem
+                label={t("Current conclusion")}
+                value={t("The reviewable result with next steps.")}
+              />
             </div>
           </DataPanel>
         </div>
@@ -395,30 +428,32 @@ function LandingPage() {
           </DataPanel>
         </AdvancedDetails>
         <DataPanel
-          title="Continue existing discussions"
-          description="Open a discussion workbench and review its brief, perspectives, disagreements, requirements, evidence, conclusion, and next actions."
+          title={t("Continue existing discussions")}
+          description={t(
+            "Open a discussion room and review its brief, perspectives, disagreements, requirements, evidence, conclusion, and next actions."
+          )}
         >
           <QueryState query={runsQuery}>
             {runEntries.length === 0 ? (
               <EmptyState
-                title="No discussions yet"
-                description="Start a discussion to create the first deliberation."
+                title={t("No discussions yet")}
+                description={t("Start a discussion to create the first deliberation.")}
               />
             ) : (
               <div className="du-run-list">
                 {runEntries.map(({ run, index, runId: catalogRunId }) => (
                   <article className="du-run-list-item" key={`${catalogRunId}-${index}`}>
-                    <p className="du-kicker">Discussion {index + 1}</p>
+                    <p className="du-kicker">{t("Discussion {number}", { number: index + 1 })}</p>
                     <h3>{formatRunDisplayTitle(run, index)}</h3>
-                    <p>{formatRunDisplaySummary(run)}</p>
+                    <p>{t(formatRunDisplaySummary(run))}</p>
                     <KeyValueGrid
                       items={[
                         {
-                          label: "Discussion status",
-                          value: describeDiscussionStatus(run)
+                          label: t("Discussion status"),
+                          value: t(describeDiscussionStatus(run))
                         },
                         {
-                          label: "Last updated",
+                          label: t("Last updated"),
                           value: formatRecordValue(getRecordValue(run, "updatedAt"))
                         }
                       ]}
@@ -429,7 +464,7 @@ function LandingPage() {
                         to="/runs/$runId"
                         params={{ runId: catalogRunId }}
                       >
-                        Open discussion
+                        {t("Open discussion")}
                       </Link>
                       {isDiscussionReviewReady(run) ? (
                         <Link
@@ -437,7 +472,7 @@ function LandingPage() {
                           to="/runs/$runId/outcome"
                           params={{ runId: catalogRunId }}
                         >
-                          Current conclusion
+                          {t("Current conclusion")}
                         </Link>
                       ) : null}
                     </div>

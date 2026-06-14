@@ -7,6 +7,7 @@ import {
   type WebDaemonClient
 } from "./client";
 import { DaemonRuntimeProvider } from "./daemon-runtime";
+import { I18nProvider, type WebLanguage } from "./i18n";
 import { createAppRouter, type AppRouter } from "./routes";
 
 export type AppProps = {
@@ -15,6 +16,7 @@ export type AppProps = {
   queryClient?: QueryClient;
   router?: AppRouter;
   initialPath?: string;
+  initialLanguage?: WebLanguage;
 };
 
 export function App({
@@ -22,7 +24,8 @@ export function App({
   daemonBaseUrl,
   queryClient,
   router,
-  initialPath
+  initialPath,
+  initialLanguage
 }: AppProps) {
   const [resolvedBaseUrl] = useState(() => daemonBaseUrl ?? resolveDaemonBaseUrl());
   const [resolvedDaemonClient] = useState(
@@ -38,14 +41,16 @@ export function App({
   );
 
   return (
-    <DaemonRuntimeProvider
-      client={resolvedDaemonClient}
-      daemonBaseUrl={resolvedBaseUrl}
-    >
-      <QueryClientProvider client={resolvedQueryClient}>
-        <RouterProvider router={resolvedRouter} />
-      </QueryClientProvider>
-    </DaemonRuntimeProvider>
+    <I18nProvider initialLanguage={initialLanguage}>
+      <DaemonRuntimeProvider
+        client={resolvedDaemonClient}
+        daemonBaseUrl={resolvedBaseUrl}
+      >
+        <QueryClientProvider client={resolvedQueryClient}>
+          <RouterProvider router={resolvedRouter} />
+        </QueryClientProvider>
+      </DaemonRuntimeProvider>
+    </I18nProvider>
   );
 }
 

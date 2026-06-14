@@ -8,6 +8,7 @@ import {
 } from "@deliberum/ui";
 import { useState, type ReactNode } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
+import { useI18n } from "./i18n";
 
 export type ViewFrameProps = {
   eyebrow: string;
@@ -47,15 +48,17 @@ export function ViewFrame({
 }
 
 export function AdvancedDetails({
-  summary = "Advanced / Developer Mode",
+  summary,
   description,
   panelLabel,
   lazy = true,
   onOpen,
   children
 }: AdvancedDetailsProps) {
+  const { t } = useI18n();
   const [hasOpened, setHasOpened] = useState(false);
   const shouldRenderBody = !lazy || hasOpened;
+  const displayedSummary = t(summary ?? "Advanced / Developer Mode");
 
   return (
     <details
@@ -68,7 +71,7 @@ export function AdvancedDetails({
         }
       }}
     >
-      <summary>{summary}</summary>
+      <summary>{displayedSummary}</summary>
       {shouldRenderBody && description ? (
         <p className="du-advanced-description">{description}</p>
       ) : null}
@@ -78,6 +81,7 @@ export function AdvancedDetails({
 }
 
 export function DaemonStatus() {
+  const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const healthQuery = useQuery({
     queryKey: ["daemon-health"],
@@ -86,27 +90,27 @@ export function DaemonStatus() {
   });
 
   if (healthQuery.isLoading) {
-    return <StatusBanner title="Checking daemon" />;
+    return <StatusBanner title={t("Checking daemon")} />;
   }
 
   if (healthQuery.isError) {
     return (
       <StatusBanner
         tone="warning"
-        title="Daemon unavailable"
-        detail="Views will retry when routes request data."
+        title={t("Daemon unavailable")}
+        detail={t("Views will retry when routes request data.")}
       />
     );
   }
 
   if (!healthQuery.data) {
-    return <StatusBanner title="Daemon status unavailable" />;
+    return <StatusBanner title={t("Daemon status unavailable")} />;
   }
 
   return (
     <StatusBanner
       tone="ok"
-      title="Daemon online"
+      title={t("Daemon online")}
       detail={`${healthQuery.data.service} on ${healthQuery.data.host}:${healthQuery.data.port}`}
     />
   );
@@ -122,15 +126,17 @@ export type QueryStateProps = {
 };
 
 export function QueryState({ query, children }: QueryStateProps) {
+  const { t } = useI18n();
+
   if (query.isLoading) {
-    return <StatusBanner title="Loading discussion data" />;
+    return <StatusBanner title={t("Loading discussion data")} />;
   }
 
   if (query.isError) {
     return (
       <StatusBanner
         tone="error"
-        title="Could not load discussion data"
+        title={t("Could not load discussion data")}
         detail={formatSafeErrorMessage(query.error)}
       />
     );

@@ -8,6 +8,7 @@ import {
   resolveDaemonBaseUrl,
   type WebDaemonClient
 } from "../src/client";
+import type { WebLanguage } from "../src/i18n";
 
 const projection = {
   version: "1" as const,
@@ -715,13 +716,20 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
   };
 }
 
-function renderApp(initialPath: string, client = createClient()) {
+function renderApp(
+  initialPath: string,
+  client = createClient(),
+  options: {
+    initialLanguage?: WebLanguage;
+  } = {}
+) {
   render(
     <App
       daemonClient={client}
       daemonBaseUrl="http://127.0.0.1:3877"
       queryClient={createWebQueryClient()}
       initialPath={initialPath}
+      initialLanguage={options.initialLanguage}
     />
   );
 
@@ -1420,6 +1428,58 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("Advanced JSON");
     expect(document.body.textContent ?? "").not.toContain("runtime");
+  });
+
+  it("renders the start discussion path in Simplified Chinese when requested", async () => {
+    renderApp("/runs/new", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect((await screen.findAllByText("\u5f00\u59cb\u8ba8\u8bba")).length).toBeGreaterThan(0);
+    expect(screen.getByText("\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
+    expect(screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898")).toBeTruthy();
+    expect((screen.getByLabelText("\u8bed\u8a00") as HTMLSelectElement).value).toBe("zh-CN");
+    expect(document.body.textContent ?? "").not.toContain("run / session");
+  });
+
+  it("switches the user-facing shell between English and Simplified Chinese", async () => {
+    renderApp("/runs/new");
+
+    expect(await screen.findByText("Start from a question")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Language"), {
+      target: {
+        value: "zh-CN"
+      }
+    });
+
+    expect(await screen.findByText("\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb")).toBeTruthy();
+    expect(screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("\u8bed\u8a00"), {
+      target: {
+        value: "en"
+      }
+    });
+
+    expect(await screen.findByText("Start from a question")).toBeTruthy();
+    expect(screen.getByLabelText("Discussion question")).toBeTruthy();
+  });
+
+  it("renders the discussion room core structure in Simplified Chinese", async () => {
+    renderApp("/runs/run-1", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect(await screen.findByText("\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba")).toBeTruthy();
+    expect(screen.getAllByText("\u8ba8\u8bba\u5ba4").length).toBeGreaterThan(0);
+    expect(screen.getByText("\u6b63\u5728\u8ba8\u8bba\u4ec0\u4e48")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u65f6\u95f4\u7ebf")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u5ba4\u4e2d\u53d1\u751f\u4e86\u4ec0\u4e48")).toBeTruthy();
+    expect(screen.getByText("\u4e0d\u540c\u53c2\u4e0e\u8005\u8d21\u732e\u4e86\u4ec0\u4e48")).toBeTruthy();
+    expect(screen.getByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
+    expect(screen.getByText("\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba")).toBeTruthy();
+    expect(screen.getAllByText("\u5f53\u524d\u7ed3\u8bba").length).toBeGreaterThan(0);
+    expect(document.body.textContent ?? "").not.toContain("Run Alpha");
   });
 
   it("creates a run from a JSON run plan object", async () => {

@@ -273,6 +273,23 @@ textarea:focus-visible {
   color: var(--du-ink);
 }
 
+.du-language-switcher {
+  display: grid;
+  gap: 6px;
+  color: var(--du-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.du-language-switcher select {
+  min-height: 36px;
+  border-radius: 6px;
+  background: var(--du-surface);
+  color: var(--du-ink);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
 .du-main {
   min-width: 0;
   padding: 34px;

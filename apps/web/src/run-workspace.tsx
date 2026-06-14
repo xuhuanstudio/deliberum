@@ -15,6 +15,7 @@ import {
 } from "@deliberum/ui";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useDaemonRuntime } from "./daemon-runtime";
+import { LanguageSwitcher, useI18n } from "./i18n";
 import {
   AdvancedDetails,
   QueryState,
@@ -53,6 +54,7 @@ type DiscussionContinuationView = {
 type DiscussionStageStatus = [label: string, status: unknown];
 
 export function RunsListPage() {
+  const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const runsQuery = useQuery({
     queryKey: ["runs"],
@@ -63,22 +65,26 @@ export function RunsListPage() {
   return (
     <RunWorkspaceShell>
       <ViewFrame
-        eyebrow="User Mode"
-        title="Discussions"
-        description="Start or continue a deliberation in plain language, then inspect the current conclusion, perspectives, disagreements, evidence gaps, and next actions."
+        eyebrow={t("User Mode")}
+        title={t("Discussions")}
+        description={t(
+          "Start or continue a deliberation in plain language, then inspect the current conclusion, perspectives, disagreements, evidence gaps, and next actions."
+        )}
         actions={
           <Link className="du-action-link" to="/runs/new">
-            Start a discussion
+            {t("Start a discussion")}
           </Link>
         }
       >
         <RunConceptPanel />
         <QueryState query={runsQuery}>
-          <DataPanel title="Existing discussions">
+          <DataPanel title={t("Existing discussions")}>
             {runs.length === 0 ? (
               <EmptyState
-                title="No discussions yet"
-                description="Start with a question. Deliberum will create a discussion brief, collect independent first responses, and keep the conclusion, disagreements, risks, and next steps visible."
+                title={t("No discussions yet")}
+                description={t(
+                  "Start with a question. Deliberum will create a discussion brief, collect independent first responses, and keep the conclusion, disagreements, risks, and next steps visible."
+                )}
               />
             ) : (
               <div className="du-run-list">
@@ -95,6 +101,7 @@ export function RunsListPage() {
 }
 
 export function RunNewPage() {
+  const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const [runPlanText, setRunPlanText] = useState(DEFAULT_RUN_PLAN_TEXT);
   const [discussionQuestion, setDiscussionQuestion] = useState("");
@@ -139,7 +146,7 @@ export function RunNewPage() {
     event.preventDefault();
 
     if (discussionQuestion.trim().length === 0) {
-      setInputError("Discussion question is required.");
+      setInputError(t("Discussion question is required."));
       return;
     }
 
@@ -158,24 +165,30 @@ export function RunNewPage() {
   return (
     <RunWorkspaceShell>
       <ViewFrame
-        eyebrow="User Mode"
-        title="Start a discussion"
-        description="Create a discussion that keeps the brief, independent first responses, strongest options, disagreements, requirements, evidence and verification, risk review, and current conclusion visible."
+        eyebrow={t("User Mode")}
+        title={t("Start a discussion")}
+        description={t(
+          "Create a discussion that keeps the brief, independent first responses, strongest options, disagreements, requirements, evidence and verification, risk review, and current conclusion visible."
+        )}
       >
         <StatusBanner
-          title="Start from a question"
-          detail="Write a brief in plain language or use the sample brief to try the full discussion flow immediately."
+          title={t("Start from a question")}
+          detail={t(
+            "Write a brief in plain language or use the sample brief to try the full discussion flow immediately."
+          )}
         />
         <DataPanel
-          title="Discussion brief"
-          description="Describe what you need to decide or clarify. Deliberum will structure the discussion so the conclusion, disagreements, risks, evidence gaps, and next actions stay visible."
+          title={t("Discussion brief")}
+          description={t(
+            "Describe what you need to decide or clarify. Deliberum will structure the discussion so the conclusion, disagreements, risks, evidence gaps, and next actions stay visible."
+          )}
         >
           <form className="du-discussion-form" onSubmit={submitGuidedDiscussion}>
             <div className="du-brief-primary">
               <div className="du-field-heading">
-                <label htmlFor="discussion-question">Discussion question</label>
+                <label htmlFor="discussion-question">{t("Discussion question")}</label>
                 <span aria-hidden="true" className="du-field-badge">
-                  Required
+                  {t("Required")}
                 </span>
               </div>
               <textarea
@@ -183,11 +196,13 @@ export function RunNewPage() {
                 className="du-brief-question"
                 value={discussionQuestion}
                 onChange={(event) => setDiscussionQuestion(event.currentTarget.value)}
-                placeholder="What should we decide, compare, or clarify?"
+                placeholder={t("What should we decide, compare, or clarify?")}
               />
               <div className="du-action-row">
                 <button type="submit" disabled={!canCreateDiscussion}>
-                  {createMutation.isPending ? "Creating discussion" : "Create discussion"}
+                  {createMutation.isPending
+                    ? t("Creating discussion")
+                    : t("Create discussion")}
                 </button>
                 <button
                   type="button"
@@ -195,50 +210,54 @@ export function RunNewPage() {
                   onClick={fillSampleDiscussionBrief}
                   disabled={createMutation.isPending}
                 >
-                  Use sample brief
+                  {t("Use sample brief")}
                 </button>
               </div>
             </div>
             <details className="du-brief-options">
-              <summary>Add goals, constraints, and expected result</summary>
+              <summary>{t("Add goals, constraints, and expected result")}</summary>
               <div className="du-brief-options-body">
                 <div className="du-discussion-form-grid">
                   <div>
-                    <label htmlFor="discussion-goals">Goals</label>
+                    <label htmlFor="discussion-goals">{t("Goals")}</label>
                     <textarea
                       id="discussion-goals"
                       value={discussionGoals}
                       onChange={(event) => setDiscussionGoals(event.currentTarget.value)}
-                      placeholder="One goal per line"
+                      placeholder={t("One goal per line")}
                     />
                   </div>
                   <div>
-                    <label htmlFor="discussion-constraints">Constraints</label>
+                    <label htmlFor="discussion-constraints">{t("Constraints")}</label>
                     <textarea
                       id="discussion-constraints"
                       value={discussionConstraints}
                       onChange={(event) => setDiscussionConstraints(event.currentTarget.value)}
-                      placeholder="One constraint per line"
+                      placeholder={t("One constraint per line")}
                     />
                   </div>
                 </div>
-                <label htmlFor="discussion-expected-outcome">Expected result</label>
+                <label htmlFor="discussion-expected-outcome">{t("Expected result")}</label>
                 <textarea
                   id="discussion-expected-outcome"
                   value={discussionExpectedOutcome}
                   onChange={(event) => setDiscussionExpectedOutcome(event.currentTarget.value)}
-                  placeholder="What should the current conclusion include?"
+                  placeholder={t("What should the current conclusion include?")}
                 />
               </div>
             </details>
             <div className="du-readable-list">
               <ExplainerItem
-                title="Works without setup"
-                detail="The sample brief uses built-in discussion material so a first-time user can review the flow immediately."
+                title={t("Works without setup")}
+                detail={t(
+                  "The sample brief uses built-in discussion material so a first-time user can review the flow immediately."
+                )}
               />
               <ExplainerItem
-                title="Complete discussion loop"
-                detail="It creates a discussion brief, independent first responses, strongest options, disagreements, requirements, evidence needs, risk review, and current conclusion."
+                title={t("Complete discussion loop")}
+                detail={t(
+                  "It creates a discussion brief, independent first responses, strongest options, disagreements, requirements, evidence needs, risk review, and current conclusion."
+                )}
               />
             </div>
           </form>
@@ -274,21 +293,23 @@ export function RunNewPage() {
         {createMutation.isError ? (
           <StatusBanner
             tone="error"
-            title="Discussion could not be created"
+            title={t("Discussion could not be created")}
             detail={formatSafeErrorMessage(createMutation.error)}
           />
         ) : null}
         {createdRunId ? (
           <StatusBanner
             tone="ok"
-            title="Discussion created"
-            detail="Next, open the discussion room and continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
+            title={t("Discussion created")}
+            detail={t(
+              "Next, open the discussion room and continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
+            )}
           />
         ) : null}
         {createdRunId ? (
           <div className="du-action-row">
             <Link className="du-action-link" to="/runs/$runId" params={{ runId: createdRunId }}>
-              Open discussion room
+              {t("Open discussion room")}
             </Link>
           </div>
         ) : null}
@@ -298,6 +319,7 @@ export function RunNewPage() {
 }
 
 export function RunDetailPage() {
+  const { t } = useI18n();
   const { runId } = useRunParams();
   const { client } = useDaemonRuntime();
   const runQuery = useQuery({
@@ -311,13 +333,15 @@ export function RunDetailPage() {
   return (
     <RunWorkspaceShell runId={runId} showConclusionNav={reviewReady}>
       <ViewFrame
-        eyebrow="User Mode"
+        eyebrow={t("User Mode")}
         title={formatRunDisplayTitle(run)}
-        description="Start or continue a discussion, then review the current conclusion, main perspectives, open disagreements, risks, missing evidence, and next recommended actions."
+        description={t(
+          "Start or continue a discussion, then review the current conclusion, main perspectives, open disagreements, risks, missing evidence, and next recommended actions."
+        )}
         actions={
           reviewReady ? (
             <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-              View current conclusion
+              {t("View current conclusion")}
             </Link>
           ) : null
         }
@@ -570,11 +594,14 @@ function RunWorkspaceShell({
   showConclusionNav?: boolean;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
+
   return (
     <WorkspaceShell
       productName="Deliberum"
-      workspaceLabel="User Mode"
+      workspaceLabel={t("User Mode")}
       navigation={<RunNavigation runId={runId} showConclusionNav={showConclusionNav} />}
+      status={<LanguageSwitcher />}
     >
       {children}
     </WorkspaceShell>
@@ -588,6 +615,7 @@ function RunNavigation({
   runId?: string;
   showConclusionNav?: boolean;
 }) {
+  const { t } = useI18n();
   const linkClass = "du-nav-link";
 
   return (
@@ -598,7 +626,7 @@ function RunNavigation({
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Discussions
+        {t("Discussions")}
       </Link>
       <Link
         to="/runs/new"
@@ -606,7 +634,7 @@ function RunNavigation({
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        Start discussion
+        {t("Start discussion")}
       </Link>
       {runId ? (
         <Link
@@ -616,7 +644,7 @@ function RunNavigation({
           activeProps={{ className: `${linkClass} is-active` }}
           inactiveProps={{ className: linkClass }}
         >
-          Discussion
+          {t("Discussion")}
         </Link>
       ) : null}
       {runId && showConclusionNav ? (
@@ -627,7 +655,7 @@ function RunNavigation({
           activeProps={{ className: `${linkClass} is-active` }}
           inactiveProps={{ className: linkClass }}
         >
-          Current conclusion
+          {t("Current conclusion")}
         </Link>
       ) : null}
     </>
@@ -635,27 +663,37 @@ function RunNavigation({
 }
 
 function RunConceptPanel() {
+  const { t } = useI18n();
+
   return (
     <DataPanel
-      title="How discussions work"
-      description="The default mode explains the deliberation loop in user language."
+      title={t("How discussions work")}
+      description={t("The default mode explains the deliberation loop in user language.")}
     >
       <div className="du-explainer-grid">
         <ExplainerItem
-          title="Discussion brief"
-          detail="The topic, goals, constraints, participants, and output expectations before anyone contributes."
+          title={t("Discussion brief")}
+          detail={t(
+            "The topic, goals, constraints, participants, and output expectations before anyone contributes."
+          )}
         />
         <ExplainerItem
-          title="Independent first responses"
-          detail="Early work is kept separate so one visible answer does not anchor the discussion."
+          title={t("Independent first responses")}
+          detail={t(
+            "Early work is kept separate so one visible answer does not anchor the discussion."
+          )}
         />
         <ExplainerItem
-          title="Strongest current options"
-          detail="Main perspectives stay visible as options, without a hidden authority choosing for the user."
+          title={t("Strongest current options")}
+          detail={t(
+            "Main perspectives stay visible as options, without a hidden authority choosing for the user."
+          )}
         />
         <ExplainerItem
-          title="Current conclusion"
-          detail="A reviewable outcome with open disagreements, risks, missing evidence, and next steps."
+          title={t("Current conclusion")}
+          detail={t(
+            "A reviewable outcome with open disagreements, risks, missing evidence, and next steps."
+          )}
         />
       </div>
     </DataPanel>
@@ -663,42 +701,53 @@ function RunConceptPanel() {
 }
 
 function RunProgressDetails({ run }: { run: unknown }) {
+  const { t } = useI18n();
+
   return (
     <details className="du-user-details">
       <summary>
-        <span>How progress is tracked</span>
+        <span>{t("How progress is tracked")}</span>
         <small>
-          Optional status explanation for the visible discussion steps. Technical identifiers stay
-          in Advanced mode.
+          {t(
+            "Optional status explanation for the visible discussion steps. Technical identifiers stay in Advanced mode."
+          )}
         </small>
       </summary>
       <div className="du-user-details-stack">
-        <section aria-label="What this discussion status means">
+        <section aria-label={t("What this discussion status means")}>
           <div className="du-section-label">
-            <p className="du-kicker">Status guide</p>
-            <h4>What this discussion status means</h4>
-            <p>Plain-language meanings for the status labels used in this page.</p>
+            <p className="du-kicker">{t("Status guide")}</p>
+            <h4>{t("What this discussion status means")}</h4>
+            <p>{t("Plain-language meanings for the status labels used in this page.")}</p>
           </div>
           <div className="du-explainer-grid">
             <ExplainerItem
-              title="Created"
-              detail="The discussion exists, but the deliberation steps have not started yet."
+              title={t("Created")}
+              detail={t(
+                "The discussion exists, but the deliberation steps have not started yet."
+              )}
             />
             <ExplainerItem
-              title="Not started yet"
-              detail="No work has been recorded for that part of the discussion."
+              title={t("Not started yet")}
+              detail={t("No work has been recorded for that part of the discussion.")}
             />
             <ExplainerItem
-              title="Setup needed"
-              detail="This discussion cannot continue until the required setup is available. Setup details stay in Advanced mode."
+              title={t("Setup needed")}
+              detail={t(
+                "This discussion cannot continue until the required setup is available. Setup details stay in Advanced mode."
+              )}
             />
           </div>
         </section>
-        <section aria-label="Discussion progress">
+        <section aria-label={t("Discussion progress")}>
           <div className="du-section-label">
-            <p className="du-kicker">Progress</p>
-            <h4>Discussion progress</h4>
-            <p>Each step corresponds to a core Deliberum concept, presented in user language.</p>
+            <p className="du-kicker">{t("Progress")}</p>
+            <h4>{t("Discussion progress")}</h4>
+            <p>
+              {t(
+                "Each step corresponds to a core Deliberum concept, presented in user language."
+              )}
+            </p>
           </div>
           <StageStatusList stages={getDiscussionStageStatuses(run)} />
         </section>
@@ -708,13 +757,16 @@ function RunProgressDetails({ run }: { run: unknown }) {
 }
 
 function DiscussionSetupDetails({ run }: { run: unknown }) {
+  const { t } = useI18n();
+
   return (
     <details className="du-user-details">
       <summary>
-        <span>Discussion setup</span>
+        <span>{t("Discussion setup")}</span>
         <small>
-          Original brief and status details for review. The main room keeps the live
-          discussion flow first.
+          {t(
+            "Original brief and status details for review. The main room keeps the live discussion flow first."
+          )}
         </small>
       </summary>
       <div className="du-user-details-stack">
@@ -726,6 +778,7 @@ function DiscussionSetupDetails({ run }: { run: unknown }) {
 }
 
 function RunBriefPanel({ run }: { run: unknown }) {
+  const { t } = useI18n();
   const plan = getRecordValue(run, "plan") ?? {};
   const question =
     getStringRecordValue(plan, "topic") ??
@@ -741,34 +794,36 @@ function RunBriefPanel({ run }: { run: unknown }) {
 
   return (
     <DataPanel
-      title="Discussion brief"
-      description="The question, goals, constraints, and expected result that anchor this discussion."
+      title={t("Discussion brief")}
+      description={t(
+        "The question, goals, constraints, and expected result that anchor this discussion."
+      )}
     >
       {hasBrief ? (
         <KeyValueGrid
           items={[
             {
-              label: "Question",
+              label: t("Question"),
               value: question
             },
             {
-              label: "Goals",
+              label: t("Goals"),
               value: formatBriefList(goals)
             },
             {
-              label: "Constraints",
+              label: t("Constraints"),
               value: formatBriefList(constraints)
             },
             {
-              label: "Expected result",
+              label: t("Expected result"),
               value: formatBriefList(expectedResult)
             }
           ]}
         />
       ) : (
         <EmptyState
-          title="No discussion brief visible yet"
-          description="Continue the discussion after the brief is available."
+          title={t("No discussion brief visible yet")}
+          description={t("Continue the discussion after the brief is available.")}
         />
       )}
     </DataPanel>
@@ -815,24 +870,25 @@ function isTechnicalRunTitle(value: string): boolean {
 }
 
 function RunListItem({ run, index }: { run: unknown; index: number }) {
+  const { t } = useI18n();
   const runId = getStringRecordValue(run, "runId");
   const reviewReady = isDiscussionReviewReady(run);
 
   return (
     <article className="du-run-list-item">
       <div>
-        <p className="du-kicker">Discussion {index + 1}</p>
+        <p className="du-kicker">{t("Discussion {number}", { number: index + 1 })}</p>
         <h3>{formatRunDisplayTitle(run, index)}</h3>
-        <p>{formatRunDisplaySummary(run)}</p>
+        <p>{t(formatRunDisplaySummary(run))}</p>
       </div>
       <KeyValueGrid
         items={[
           {
-            label: "Discussion status",
-            value: describeDiscussionStatus(run)
+            label: t("Discussion status"),
+            value: t(describeDiscussionStatus(run))
           },
           {
-            label: "Updated",
+            label: t("Updated"),
             value: formatRecordValue(getRecordValue(run, "updatedAt"))
           }
         ]}
@@ -865,11 +921,11 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
       {runId ? (
         <div className="du-action-row">
           <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
-            Open discussion
+            {t("Open discussion")}
           </Link>
           {reviewReady ? (
             <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-              Current conclusion
+              {t("Current conclusion")}
             </Link>
           ) : null}
         </div>
@@ -879,23 +935,25 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
 }
 
 function RunSummary({ run }: { run: unknown }) {
+  const { t } = useI18n();
+
   return (
     <DataPanel
-      title="Discussion status"
-      description="A user-facing summary of where the discussion currently stands."
+      title={t("Discussion status")}
+      description={t("A user-facing summary of where the discussion currently stands.")}
     >
       <KeyValueGrid
         items={[
           {
-            label: "Discussion status",
-            value: describeDiscussionStatus(run)
+            label: t("Discussion status"),
+            value: t(describeDiscussionStatus(run))
           },
           {
-            label: "Created",
+            label: t("Created"),
             value: formatRecordValue(getRecordValue(run, "createdAt"))
           },
           {
-            label: "Updated",
+            label: t("Updated"),
             value: formatRecordValue(getRecordValue(run, "updatedAt"))
           }
         ]}
@@ -1094,6 +1152,8 @@ function RunEventTimeline({ runId }: { runId: string }) {
 }
 
 function StageStatusList({ stages }: { stages: Array<[string, unknown]> }) {
+  const { t } = useI18n();
+
   return (
     <div className="du-stage-grid">
       {stages.map(([label, status]) => {
@@ -1101,9 +1161,9 @@ function StageStatusList({ stages }: { stages: Array<[string, unknown]> }) {
 
         return (
           <div className="du-stage-pill" key={label}>
-            <span>{label}</span>
-            <strong>{statusView.label}</strong>
-            <span>{statusView.detail}</span>
+            <span>{t(label)}</span>
+            <strong>{t(statusView.label)}</strong>
+            <span>{t(statusView.detail)}</span>
           </div>
         );
       })}
@@ -1120,6 +1180,7 @@ function StartRunForm({
   sessionId?: string;
   run: unknown;
 }) {
+  const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const queryClient = useQueryClient();
   const continuationView = describeDiscussionContinuation(run);
@@ -1161,19 +1222,19 @@ function StartRunForm({
 
   return (
     <DataPanel
-      title={continuationView.title}
-      description={continuationView.description}
+      title={t(continuationView.title)}
+      description={t(continuationView.description)}
     >
       <div className="du-readable-list">
         <ExplainerItem
-          title={continuationView.explainerTitle}
-          detail={continuationView.explainerDetail}
+          title={t(continuationView.explainerTitle)}
+          detail={t(continuationView.explainerDetail)}
         />
       </div>
       <div className="du-action-row">
         {continuationView.reviewReady ? (
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-            View current conclusion
+            {t("View current conclusion")}
           </Link>
         ) : null}
         <button
@@ -1182,7 +1243,7 @@ function StartRunForm({
           onClick={startLocalPresetPipeline}
           disabled={startMutation.isPending}
         >
-          {continuationView.primaryLabel}
+          {t(continuationView.primaryLabel)}
         </button>
       </div>
       <AdvancedDetails
@@ -1217,7 +1278,7 @@ function StartRunForm({
       {startMutation.isError ? (
         <StatusBanner
           tone="error"
-          title="Discussion could not continue"
+          title={t("Discussion could not continue")}
           detail={formatRunStartErrorMessage(startMutation.error)}
         />
       ) : null}
@@ -1255,6 +1316,7 @@ async function invalidateRunWorkspaceQueries(
 }
 
 function StartResult({ result, runId }: { result: unknown; runId: string }) {
+  const { t } = useI18n();
   const stages = asArray(getRecordValue(result, "stages")).map(toStageMetadata);
   const stopped = getRecordValue(result, "stopped");
   const readableStages = stages.map(toReadableStageResult);
@@ -1263,24 +1325,30 @@ function StartResult({ result, runId }: { result: unknown; runId: string }) {
     <div className="du-start-result">
       <StatusBanner
         tone={stopped === true ? "warning" : "ok"}
-        title={stopped === true ? "Discussion paused" : "Discussion steps completed"}
+        title={
+          stopped === true ? t("Discussion paused") : t("Discussion steps completed")
+        }
         detail={
           stopped === true
-            ? "The discussion stopped before every requested step finished. Review the visible steps below or open Advanced details for the technical reason."
-            : "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
+            ? t(
+                "The discussion stopped before every requested step finished. Review the visible steps below or open Advanced details for the technical reason."
+              )
+            : t(
+                "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
+              )
         }
       />
       {stopped === true ? (
         <StatusBanner
           tone="warning"
-          title="Stop reason"
+          title={t("Stop reason")}
           detail={formatRecordValue(getRecordValue(result, "stopReason"))}
         />
       ) : null}
       <ReadableStageResultList stages={readableStages} />
       <div className="du-action-row">
         <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-          View current conclusion
+          {t("View current conclusion")}
         </Link>
       </div>
       <AdvancedDetails
@@ -1307,28 +1375,30 @@ type ReadableStageResult = {
 };
 
 function ReadableStageResultList({ stages }: { stages: ReadableStageResult[] }) {
+  const { t } = useI18n();
+
   if (stages.length === 0) {
     return (
       <EmptyState
-        title="No visible discussion steps"
-        description="No user-facing step updates were returned for this request."
+        title={t("No visible discussion steps")}
+        description={t("No user-facing step updates were returned for this request.")}
       />
     );
   }
 
   return (
-    <section className="du-readable-stage-result" aria-label="Updated discussion steps">
+    <section className="du-readable-stage-result" aria-label={t("Updated discussion steps")}>
       <div className="du-section-label">
-        <p className="du-kicker">Updated discussion steps</p>
-        <h4>What changed</h4>
-        <p>Readable summary of the discussion work that just ran.</p>
+        <p className="du-kicker">{t("Updated discussion steps")}</p>
+        <h4>{t("What changed")}</h4>
+        <p>{t("Readable summary of the discussion work that just ran.")}</p>
       </div>
       <div className="du-stage-grid">
         {stages.map((stage, index) => (
           <div className="du-stage-pill" key={`${stage.label}-${index}`}>
-            <span>{stage.label}</span>
-            <strong>{stage.status}</strong>
-            <span>{stage.detail}</span>
+            <span>{t(stage.label)}</span>
+            <strong>{t(stage.status)}</strong>
+            <span>{t(stage.detail)}</span>
           </div>
         ))}
       </div>
@@ -1491,6 +1561,7 @@ function RunQualityOverview({
   sessionId: string;
   run: unknown;
 }) {
+  const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const frontierQuery = useQuery({
     queryKey: ["run-frontier", sessionId],
@@ -1535,16 +1606,22 @@ function RunQualityOverview({
   const unresolvedEvidenceNeeds = evidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
   const continuationView = describeDiscussionContinuation(run);
   const nextActionTitle = continuationView.reviewReady
-    ? "Next: review current conclusion"
-    : "Next: continue guided discussion";
+    ? t("Next: review current conclusion")
+    : t("Next: continue guided discussion");
   const nextActionDetail = continuationView.reviewReady
-    ? "Start with the conclusion, then inspect disagreements, requirements, and missing evidence before relying on it."
-    : "Continue the guided discussion so the main perspectives, disagreements, requirements, evidence, and conclusion can be produced.";
+    ? t(
+        "Start with the conclusion, then inspect disagreements, requirements, and missing evidence before relying on it."
+      )
+    : t(
+        "Continue the guided discussion so the main perspectives, disagreements, requirements, evidence, and conclusion can be produced."
+      );
 
   return (
     <DataPanel
-      title="Discussion room"
-      description="A human-readable room view of the brief, participant perspectives, discussion flow, unresolved disagreements, missing evidence, current conclusion, and next actions."
+      title={t("Discussion room")}
+      description={t(
+        "A human-readable room view of the brief, participant perspectives, discussion flow, unresolved disagreements, missing evidence, current conclusion, and next actions."
+      )}
     >
       <QueryState query={queryState}>
         <StatusBanner
@@ -1578,125 +1655,139 @@ function RunQualityOverview({
               to="/runs/$runId/outcome"
               params={{ runId }}
             >
-              <span>Ready</span>
-              <strong>Current conclusion</strong>
+              <span>{t("Ready")}</span>
+              <strong>{t("Current conclusion")}</strong>
               <p>
-                A reviewable conclusion is available with risks, evidence gaps, and next actions.
+                {t(
+                  "A reviewable conclusion is available with risks, evidence gaps, and next actions."
+                )}
               </p>
             </Link>
           ) : (
             <div
               className="du-quality-summary-item du-quality-summary-primary du-quality-summary-static"
               role="status"
-              aria-label="Current conclusion not ready"
+              aria-label={t("Current conclusion not ready")}
             >
-              <span>Not ready</span>
-              <strong>Current conclusion</strong>
-              <p>The discussion needs more guided work before a conclusion is useful.</p>
+              <span>{t("Not ready")}</span>
+              <strong>{t("Current conclusion")}</strong>
+              <p>{t("The discussion needs more guided work before a conclusion is useful.")}</p>
             </div>
           )}
           <QualitySummaryLink
-            title="Main perspectives"
-            detail="Strong options stay visible without collapsing into one hidden authority."
+            title={t("Main perspectives")}
+            detail={t("Strong options stay visible without collapsing into one hidden authority.")}
             metric={String(candidates.length)}
             targetId="main-perspectives"
           />
           <QualitySummaryLink
-            title="Open disagreements"
-            detail="Unresolved objections that still constrain the current conclusion."
+            title={t("Open disagreements")}
+            detail={t("Unresolved objections that still constrain the current conclusion.")}
             metric={String(unresolvedObjections)}
             targetId="open-disagreements"
           />
           <QualitySummaryLink
-            title="Requirements to satisfy"
-            detail="Explicit obligations that keep the output correct, complete, and bounded."
+            title={t("Requirements to satisfy")}
+            detail={t("Explicit obligations that keep the output correct, complete, and bounded.")}
             metric={`${openObligations}/${obligations.length}`}
             targetId="answer-requirements"
           />
           <QualitySummaryLink
-            title="Evidence gaps"
-            detail="Missing or unchecked evidence that should be resolved before relying on the answer."
+            title={t("Evidence gaps")}
+            detail={t(
+              "Missing or unchecked evidence that should be resolved before relying on the answer."
+            )}
             metric={`${unresolvedEvidenceNeeds}/${evidenceNeeds.length}`}
             targetId="evidence-gaps"
           />
         </div>
-        <div className="du-readable-list du-discussion-next-actions" aria-label="Next recommended actions">
-          <h4>Next recommended actions</h4>
+        <div
+          className="du-readable-list du-discussion-next-actions"
+          aria-label={t("Next recommended actions")}
+        >
+          <h4>{t("Next recommended actions")}</h4>
           {continuationView.reviewReady ? (
             <article className="du-readable-item">
-              <p className="du-kicker">Step 1</p>
-              <h4>Review current conclusion</h4>
+              <p className="du-kicker">{t("Step 1")}</p>
+              <h4>{t("Review current conclusion")}</h4>
               <p>
-                Start with the current conclusion, then check the visible disagreements,
-                requirements, and evidence gaps before relying on it.
+                {t(
+                  "Start with the current conclusion, then check the visible disagreements, requirements, and evidence gaps before relying on it."
+                )}
               </p>
               <div className="du-action-row">
                 <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-                  Open conclusion
+                  {t("Open conclusion")}
                 </Link>
               </div>
             </article>
           ) : (
             <article className="du-readable-item">
-              <p className="du-kicker">Step 1</p>
-              <h4>Continue guided discussion</h4>
+              <p className="du-kicker">{t("Step 1")}</p>
+              <h4>{t("Continue guided discussion")}</h4>
               <p>
-                Continue the discussion so independent first responses, main perspectives,
-                disagreements, requirements, evidence, and a current conclusion can be produced.
+                {t(
+                  "Continue the discussion so independent first responses, main perspectives, disagreements, requirements, evidence, and a current conclusion can be produced."
+                )}
               </p>
             </article>
           )}
           {unresolvedObjections > 0 ? (
             <article className="du-readable-item">
-              <p className="du-kicker">Check</p>
-              <h4>Review open disagreements</h4>
+              <p className="du-kicker">{t("Check")}</p>
+              <h4>{t("Review open disagreements")}</h4>
               <p>
-                There are unresolved disagreements that still constrain the current conclusion.
+                {t(
+                  "There are unresolved disagreements that still constrain the current conclusion."
+                )}
               </p>
               <div className="du-action-row">
                 <a className="du-action-link du-secondary-link" href="#open-disagreements">
-                  View disagreements
+                  {t("View disagreements")}
                 </a>
               </div>
             </article>
           ) : null}
           {unresolvedEvidenceNeeds > 0 ? (
             <article className="du-readable-item">
-              <p className="du-kicker">Check</p>
-              <h4>Resolve evidence gaps</h4>
+              <p className="du-kicker">{t("Check")}</p>
+              <h4>{t("Resolve evidence gaps")}</h4>
               <p>
-                Missing or unchecked evidence should be resolved before the conclusion is treated
-                as reliable.
+                {t(
+                  "Missing or unchecked evidence should be resolved before the conclusion is treated as reliable."
+                )}
               </p>
               <div className="du-action-row">
                 <a className="du-action-link du-secondary-link" href="#evidence-gaps">
-                  Review evidence
+                  {t("Review evidence")}
                 </a>
               </div>
             </article>
           ) : null}
           {openObligations > 0 ? (
             <article className="du-readable-item">
-              <p className="du-kicker">Check</p>
-              <h4>Confirm answer requirements</h4>
+              <p className="du-kicker">{t("Check")}</p>
+              <h4>{t("Confirm answer requirements")}</h4>
               <p>
-                Requirements that are not satisfied yet should be resolved or explicitly
-                acknowledged in the conclusion.
+                {t(
+                  "Requirements that are not satisfied yet should be resolved or explicitly acknowledged in the conclusion."
+                )}
               </p>
               <div className="du-action-row">
                 <a className="du-action-link du-secondary-link" href="#answer-requirements">
-                  View requirements
+                  {t("View requirements")}
                 </a>
               </div>
             </article>
           ) : null}
           {candidates.length === 0 ? (
             <article className="du-readable-item">
-              <p className="du-kicker">Check</p>
-              <h4>Collect main perspectives</h4>
+              <p className="du-kicker">{t("Check")}</p>
+              <h4>{t("Collect main perspectives")}</h4>
               <p>
-                No main perspectives are visible yet. Continue the discussion before relying on a
-                conclusion.
+                {t(
+                  "No main perspectives are visible yet. Continue the discussion before relying on a conclusion."
+                )}
               </p>
             </article>
           ) : null}
@@ -1707,10 +1798,11 @@ function RunQualityOverview({
 }
 
 function DiscussionRoomBrief({ run }: { run: unknown }) {
+  const { t } = useI18n();
   const question =
     getStringRecordValue(run, "topic") ??
     getStringRecordValue(getRecordValue(run, "plan"), "topic") ??
-    "No discussion question is available yet.";
+    t("No discussion question is available yet.");
   const goals = getStringArray(getRecordValue(getRecordValue(run, "plan"), "goals"));
   const constraints = getStringArray(
     getRecordValue(getRecordValue(run, "plan"), "constraints")
@@ -1720,32 +1812,33 @@ function DiscussionRoomBrief({ run }: { run: unknown }) {
   );
 
   return (
-    <section className="du-room-brief" aria-label="What is being discussed">
+    <section className="du-room-brief" aria-label={t("What is being discussed")}>
       <div>
-        <p className="du-kicker">What is being discussed</p>
+        <p className="du-kicker">{t("What is being discussed")}</p>
         <h4>{question}</h4>
         <p>
-          The room keeps the brief, participant perspectives, disagreements,
-          missing evidence, risks, current conclusion, and next actions visible together.
+          {t(
+            "The room keeps the brief, participant perspectives, disagreements, missing evidence, risks, current conclusion, and next actions visible together."
+          )}
         </p>
       </div>
       <div className="du-room-brief-grid">
         <RoomBriefItem
-          label="Goals"
-          value={goals.length > 0 ? goals.join("; ") : "No goals listed yet."}
+          label={t("Goals")}
+          value={goals.length > 0 ? goals.join("; ") : t("No goals listed yet.")}
         />
         <RoomBriefItem
-          label="Constraints"
+          label={t("Constraints")}
           value={
-            constraints.length > 0 ? constraints.join("; ") : "No constraints listed yet."
+            constraints.length > 0 ? constraints.join("; ") : t("No constraints listed yet.")
           }
         />
         <RoomBriefItem
-          label="Expected result"
+          label={t("Expected result")}
           value={
             expectedResult.length > 0
               ? expectedResult.join("; ")
-              : "No expected result listed yet."
+              : t("No expected result listed yet.")
           }
         />
       </div>
@@ -1773,6 +1866,7 @@ function DiscussionRoomTimeline({
   openDisagreementCount: number;
   unresolvedEvidenceCount: number;
 }) {
+  const { t } = useI18n();
   const independentResponses = describeStageStatus(
     getRecordValue(run, "sealedDivergenceStatus")
   );
@@ -1780,51 +1874,64 @@ function DiscussionRoomTimeline({
   const conclusion = describeStageStatus(getRecordValue(run, "latestFinalizationStatus"));
 
   return (
-    <section className="du-room-section" aria-label="Discussion timeline">
+    <section className="du-room-section" aria-label={t("Discussion timeline")}>
       <div className="du-section-label">
-        <p className="du-kicker">Discussion timeline</p>
-        <h4>What has happened in the room</h4>
+        <p className="du-kicker">{t("Discussion timeline")}</p>
+        <h4>{t("What has happened in the room")}</h4>
         <p>
-          Follow the room like a structured conversation: brief, independent first
-          responses, main perspectives, disagreements, evidence checks, and conclusion
-          review.
+          {t(
+            "Follow the room like a structured conversation: brief, independent first responses, main perspectives, disagreements, evidence checks, and conclusion review."
+          )}
         </p>
       </div>
       <ol className="du-room-flow">
         <DiscussionRoomFlowStep
-          label="Discussion brief"
-          status="Ready"
-          detail="The question, goals, and constraints are visible before discussion work begins."
+          label={t("Discussion brief")}
+          status={t("Ready")}
+          detail={t(
+            "The question, goals, and constraints are visible before discussion work begins."
+          )}
         />
         <DiscussionRoomFlowStep
-          label="Independent first responses"
-          status={independentResponses.label}
-          detail={independentResponses.detail}
+          label={t("Independent first responses")}
+          status={t(independentResponses.label)}
+          detail={t(independentResponses.detail)}
         />
         <DiscussionRoomFlowStep
-          label="Participant perspectives"
-          status={mainPerspectives.label}
-          detail={`${mainPerspectiveCount} readable ${
-            mainPerspectiveCount === 1 ? "perspective is" : "perspectives are"
-          } visible in the room.`}
+          label={t("Participant perspectives")}
+          status={t(mainPerspectives.label)}
+          detail={t(
+            mainPerspectiveCount === 1
+              ? "{count} readable perspective is visible in the room."
+              : "{count} readable perspectives are visible in the room.",
+            { count: mainPerspectiveCount }
+          )}
         />
         <DiscussionRoomFlowStep
-          label="Disagreements and evidence"
+          label={t("Disagreements and evidence")}
           status={
             openDisagreementCount + unresolvedEvidenceCount > 0
-              ? "Needs review"
-              : "No open items visible"
+              ? t("Needs review")
+              : t("No open items visible")
           }
-          detail={`${openDisagreementCount} open ${
-            openDisagreementCount === 1 ? "disagreement" : "disagreements"
-          } and ${unresolvedEvidenceCount} ${
-            unresolvedEvidenceCount === 1 ? "evidence gap" : "evidence gaps"
-          } are visible.`}
+          detail={t(
+            openDisagreementCount === 1 && unresolvedEvidenceCount === 1
+              ? "{disagreements} open disagreement and {evidence} evidence gap are visible."
+              : openDisagreementCount === 1
+                ? "{disagreements} open disagreement and {evidence} evidence gaps are visible."
+                : unresolvedEvidenceCount === 1
+                  ? "{disagreements} open disagreements and {evidence} evidence gap are visible."
+                  : "{disagreements} open disagreements and {evidence} evidence gaps are visible.",
+            {
+              disagreements: openDisagreementCount,
+              evidence: unresolvedEvidenceCount
+            }
+          )}
         />
         <DiscussionRoomFlowStep
-          label="Current conclusion"
-          status={conclusion.label}
-          detail={conclusion.detail}
+          label={t("Current conclusion")}
+          status={t(conclusion.label)}
+          detail={t(conclusion.detail)}
         />
       </ol>
     </section>
@@ -1853,20 +1960,25 @@ function DiscussionRoomFlowStep({
 }
 
 function DiscussionContributionList({ candidates }: { candidates: unknown[] }) {
+  const { t } = useI18n();
+
   return (
-    <section className="du-room-section" aria-label="Participant perspectives">
+    <section className="du-room-section" aria-label={t("Participant perspectives")}>
       <div className="du-section-label">
-        <p className="du-kicker">Participant perspectives</p>
-        <h4>What different participants contributed</h4>
+        <p className="du-kicker">{t("Participant perspectives")}</p>
+        <h4>{t("What different participants contributed")}</h4>
         <p>
-          Strong perspectives are shown as readable discussion contributions, while
-          technical details stay in Advanced mode.
+          {t(
+            "Strong perspectives are shown as readable discussion contributions, while technical details stay in Advanced mode."
+          )}
         </p>
       </div>
       {candidates.length === 0 ? (
         <EmptyState
-          title="No participant perspectives visible yet"
-          description="Continue the guided discussion so independent first responses can become readable perspectives in the room."
+          title={t("No participant perspectives visible yet")}
+          description={t(
+            "Continue the guided discussion so independent first responses can become readable perspectives in the room."
+          )}
         />
       ) : (
         <div className="du-room-contributions">
@@ -1903,47 +2015,51 @@ function DiscussionRoomFocusPanel({
   unresolvedEvidenceCount: number;
   openRequirementCount: number;
 }) {
+  const { t } = useI18n();
+
   return (
-    <aside className="du-room-focus" aria-label="Current room summary">
+    <aside className="du-room-focus" aria-label={t("Current room summary")}>
       <div>
-        <p className="du-kicker">Current conclusion</p>
-        <h4>{reviewReady ? "Ready to review" : "Not ready yet"}</h4>
+        <p className="du-kicker">{t("Current conclusion")}</p>
+        <h4>{reviewReady ? t("Ready to review") : t("Not ready yet")}</h4>
         <p>
           {reviewReady
-            ? "Review the conclusion together with disagreements, evidence gaps, risks, and next actions."
-            : "Continue the discussion before treating any answer as a conclusion."}
+            ? t(
+                "Review the conclusion together with disagreements, evidence gaps, risks, and next actions."
+              )
+            : t("Continue the discussion before treating any answer as a conclusion.")}
         </p>
       </div>
       <div className="du-room-focus-list">
         <a href="#open-disagreements">
-          <span>Open disagreements</span>
+          <span>{t("Open disagreements")}</span>
           <strong>{openDisagreementCount}</strong>
         </a>
         <a href="#evidence-gaps">
-          <span>Missing evidence</span>
+          <span>{t("Missing evidence")}</span>
           <strong>{unresolvedEvidenceCount}</strong>
         </a>
         <a href="#answer-requirements">
-          <span>Requirements to satisfy</span>
+          <span>{t("Requirements to satisfy")}</span>
           <strong>{openRequirementCount}</strong>
         </a>
         <div>
-          <span>Risks</span>
+          <span>{t("Risks")}</span>
           <strong>
             {openDisagreementCount + unresolvedEvidenceCount + openRequirementCount > 0
-              ? "Review needed"
-              : "No open blockers visible"}
+              ? t("Review needed")
+              : t("No open blockers visible")}
           </strong>
         </div>
       </div>
       <div className="du-action-row">
         {reviewReady ? (
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-            Review current conclusion
+            {t("Review current conclusion")}
           </Link>
         ) : (
           <a className="du-action-link" href="#continue-discussion">
-            Continue discussion
+            {t("Continue discussion")}
           </a>
         )}
       </div>
