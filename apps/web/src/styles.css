@@ -2057,6 +2057,83 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 
+.du-creation-preview {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fffdf6;
+  padding: 14px;
+}
+
+.du-creation-preview-ok {
+  border-color: rgba(66, 125, 83, 0.35);
+}
+
+.du-creation-preview-warning {
+  border-color: rgba(183, 127, 46, 0.45);
+}
+
+.du-creation-preview-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.du-creation-preview-heading h4,
+.du-creation-preview-heading p {
+  margin: 0;
+}
+
+.du-creation-preview-heading p:not(.du-kicker) {
+  color: var(--du-muted);
+  line-height: 1.45;
+}
+
+.du-creation-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-creation-preview-item {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border-top: 4px solid var(--du-muted);
+  background: var(--du-surface);
+  padding: 12px;
+}
+
+.du-creation-preview-item span {
+  color: var(--du-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.du-creation-preview-item strong {
+  line-height: 1.25;
+}
+
+.du-creation-preview-item p {
+  margin: 0;
+  color: var(--du-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.du-creation-preview-item-ok {
+  border-top-color: var(--du-accent);
+}
+
+.du-creation-preview-item-warning {
+  border-top-color: var(--du-warn);
+}
+
 .du-discussion-source {
   display: grid;
   gap: 5px;
@@ -2764,6 +2841,7 @@ textarea:focus-visible {
   .du-provider-setup-completion,
   .du-provider-check-grid,
   .du-discussion-setup-grid,
+  .du-creation-preview-grid,
   .du-participant-lineup-grid,
   .du-stage-grid,
   .du-result-handoff-grid,

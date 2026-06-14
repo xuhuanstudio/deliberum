@@ -2070,6 +2070,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u8bc1\u636e\u6838\u67e5\u8005")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
     expect(screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898")).toBeTruthy();
+    expect(screen.getByText("\u521b\u5efa\u9884\u89c8")).toBeTruthy();
+    expect(screen.getByText("\u53ef\u521b\u5efa\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
+    expect(screen.getByText("2 \u4e2a\u6f14\u793a\u89c6\u89d2")).toBeTruthy();
+    expect(screen.getByText("\u5b8c\u6574\u8ba8\u8bba\u5faa\u73af")).toBeTruthy();
     expect(screen.getByText("\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b")).toBeTruthy();
     expect((screen.getByLabelText("\u8bed\u8a00") as HTMLSelectElement).value).toBe("zh-CN");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
@@ -2092,6 +2096,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Conclusion writer").length).toBeGreaterThan(0);
+    expect(screen.getByText("Creation preview")).toBeTruthy();
+    expect(screen.getByText("Ready to create a demo discussion")).toBeTruthy();
+    expect(screen.getByText("2 demo perspectives")).toBeTruthy();
+    expect(screen.getByText("Full discussion loop")).toBeTruthy();
+    expect(screen.getByText("After create")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Open the room, then continue the guided discussion to review the timeline and current result."
+      )
+    ).toBeTruthy();
     expect(screen.getAllByText("Independent first response").length).toBeGreaterThan(1);
     expect(
       screen.getAllByText("Uses built-in demo material for a deterministic walkthrough.").length
@@ -2203,6 +2217,18 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Perspective B").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
     expect(screen.getAllByText("OpenAI-compatible").length).toBeGreaterThan(0);
+    expect(screen.getByText("Creation preview")).toBeTruthy();
+    expect(screen.getByText("Ready to create a model-backed discussion")).toBeTruthy();
+    expect(screen.getByText("2 model perspectives")).toBeTruthy();
+    expect(screen.getByText("OpenAI-compatible model")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Configured model participants will answer first; local organizers can then structure options, disagreements, evidence gaps, risks, and a current conclusion."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText("API keys stay on this machine and are not shown on this page.")
+    ).toBeTruthy();
     expect(
       screen.getAllByText(
         "OpenAI-compatible will answer through the configured local daemon setup."
@@ -2242,6 +2268,12 @@ describe("@deliberum/web shell", () => {
       (screen.getByRole("radio", { name: /Broader review/i }) as HTMLInputElement).checked
     ).toBe(true);
     expect(screen.getByText("Perspective C")).toBeTruthy();
+    expect(screen.getByText("3 model perspectives")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Perspective A, Perspective B, and Perspective C will answer independently."
+      )
+    ).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Language"), {
       target: {
@@ -2256,6 +2288,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u9009\u62e9\u8ba8\u8bba\u6df1\u5ea6")).toBeTruthy();
     expect(screen.getByText("\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5")).toBeTruthy();
     expect(screen.getByText("\u89c6\u89d2 C")).toBeTruthy();
+    expect(screen.getByText("\u521b\u5efa\u9884\u89c8")).toBeTruthy();
+    expect(screen.getByText("\u53ef\u521b\u5efa\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
+    expect(screen.getByText("3 \u4e2a\u6a21\u578b\u89c6\u89d2")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("\u8bed\u8a00"), {
       target: {
         value: "en"

@@ -112,6 +112,19 @@ type DiscussionParticipantSource = "demo" | "model-backed";
 type DiscussionProviderSource = ProviderBackedDiscussionPlanInput & {
   name: string;
 };
+type DiscussionCreationPreviewStep = {
+  label: string;
+  value: string;
+  detail: string;
+  tone: "ok" | "warning" | "neutral";
+  valueValues?: Record<string, string>;
+};
+type DiscussionCreationPreviewView = {
+  title: string;
+  detail: string;
+  tone: "ok" | "warning" | "neutral";
+  steps: DiscussionCreationPreviewStep[];
+};
 type DiscussionPerspectiveRole = {
   role: string;
 };
@@ -235,9 +248,21 @@ export function RunNewPage() {
     ? findProviderBackedDiscussionSource(runtimeSetupPlan)
     : undefined;
   const providerBackedDiscussionAvailable = Boolean(providerBackedDiscussionSource);
+  const demoDiscussionAvailable = isDemoDiscussionSourceAvailable(runtimeSetupPlan);
+  const localOrganizerReady = runtimeSetupPlan
+    ? isLocalPresetDiscussionPathReady(runtimeSetupPlan)
+    : false;
+  const creationPreview = buildDiscussionCreationPreview({
+    selectedSource: participantSource,
+    providerSource: providerBackedDiscussionSource,
+    organizerReady: localOrganizerReady,
+    demoAvailable: demoDiscussionAvailable,
+    perspectiveCount: modelPerspectiveCount,
+    setupKnown: Boolean(runtimeSetupPlan)
+  });
   const selectedParticipantSourceAvailable =
     participantSource === "demo"
-      ? isDemoDiscussionSourceAvailable(runtimeSetupPlan)
+      ? demoDiscussionAvailable
       : providerBackedDiscussionAvailable;
   const createMutation = useMutation({
     mutationFn: (runPlan: Record<string, unknown>) => client.createRun({ runPlan }),
@@ -402,6 +427,7 @@ export function RunNewPage() {
                 onChange={(event) => setDiscussionQuestion(event.currentTarget.value)}
                 placeholder={t("What should we decide, compare, or clarify?")}
               />
+              <DiscussionCreationPreview view={creationPreview} />
               <div className="du-action-row">
                 <button type="submit" disabled={!canCreateDiscussion}>
                   {createMutation.isPending
@@ -519,6 +545,35 @@ export function RunNewPage() {
         ) : null}
       </ViewFrame>
     </RunWorkspaceShell>
+  );
+}
+
+function DiscussionCreationPreview({ view }: { view: DiscussionCreationPreviewView }) {
+  const { t } = useI18n();
+
+  return (
+    <section
+      className={`du-creation-preview du-creation-preview-${view.tone}`}
+      aria-label={t("Creation preview")}
+    >
+      <div className="du-creation-preview-heading">
+        <p className="du-kicker">{t("Creation preview")}</p>
+        <h4>{t(view.title)}</h4>
+        <p>{t(view.detail)}</p>
+      </div>
+      <div className="du-creation-preview-grid">
+        {view.steps.map((step) => (
+          <article
+            className={`du-creation-preview-item du-creation-preview-item-${step.tone}`}
+            key={`${step.label}:${step.value}`}
+          >
+            <span>{t(step.label)}</span>
+            <strong>{t(step.value, step.valueValues)}</strong>
+            <p>{t(step.detail)}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -742,6 +797,142 @@ function DiscussionParticipantLineupCard({
       <p>{t(item.detail, detailValues)}</p>
     </article>
   );
+}
+
+function buildDiscussionCreationPreview(input: {
+  selectedSource: DiscussionParticipantSource;
+  providerSource: DiscussionProviderSource | undefined;
+  organizerReady: boolean;
+  demoAvailable: boolean;
+  perspectiveCount: ProviderBackedPerspectiveCount;
+  setupKnown: boolean;
+}): DiscussionCreationPreviewView {
+  if (!input.setupKnown) {
+    return {
+      title: "Checking discussion path",
+      detail: "Web is checking which participant source can create a useful discussion.",
+      tone: "neutral",
+      steps: [
+        {
+          label: "Who answers first",
+          value: "Checking",
+          detail: "The available participant source will appear after setup status loads.",
+          tone: "neutral"
+        },
+        {
+          label: "Who organizes the result",
+          value: "Checking",
+          detail: "Organizer readiness appears after setup status loads.",
+          tone: "neutral"
+        },
+        {
+          label: "After create",
+          value: "Discussion room",
+          detail: "The next screen will show the room for this discussion.",
+          tone: "neutral"
+        }
+      ]
+    };
+  }
+
+  if (input.selectedSource === "model-backed" && input.providerSource) {
+    return {
+      title: "Ready to create a model-backed discussion",
+      detail: input.organizerReady
+        ? "Configured model participants will answer first; local organizers can then structure options, disagreements, evidence gaps, risks, and a current conclusion."
+        : "Configured model participants can answer first, but organizer roles are not ready yet.",
+      tone: input.organizerReady ? "ok" : "warning",
+      steps: [
+        {
+          label: "Who answers first",
+          value:
+            input.perspectiveCount === 3
+              ? "3 model perspectives"
+              : "2 model perspectives",
+          detail:
+            input.perspectiveCount === 3
+              ? "Perspective A, Perspective B, and Perspective C will answer independently."
+              : "Perspective A and Perspective B will answer independently.",
+          tone: "ok"
+        },
+        {
+          label: "Participant source",
+          value: "{provider} model",
+          valueValues: {
+            provider: input.providerSource.name
+          },
+          detail: "API keys stay on this machine and are not shown on this page.",
+          tone: "ok"
+        },
+        {
+          label: "After create",
+          value: "Discussion room",
+          detail: input.organizerReady
+            ? "Open the room, then continue the guided discussion to organize first responses into a reviewable conclusion."
+            : "Open the room, then finish organizer setup before expecting strongest options or a conclusion.",
+          tone: input.organizerReady ? "ok" : "warning"
+        }
+      ]
+    };
+  }
+
+  if (input.selectedSource === "demo" && input.demoAvailable) {
+    return {
+      title: "Ready to create a demo discussion",
+      detail:
+        "Built-in demo participants let first-time users try the full room flow before model setup.",
+      tone: input.organizerReady ? "ok" : "warning",
+      steps: [
+        {
+          label: "Who answers first",
+          value: "2 demo perspectives",
+          detail: "Perspective A and Perspective B use deterministic sample material.",
+          tone: "warning"
+        },
+        {
+          label: "Who organizes the result",
+          value: input.organizerReady ? "Full discussion loop" : "Organizer setup needed",
+          detail: input.organizerReady
+            ? "Local organizers can compare options, review risks, and draft the current conclusion."
+            : "The discussion may collect first responses only until organizer roles are ready.",
+          tone: input.organizerReady ? "ok" : "warning"
+        },
+        {
+          label: "After create",
+          value: "Discussion room",
+          detail:
+            "Open the room, then continue the guided discussion to review the timeline and current result.",
+          tone: "ok"
+        }
+      ]
+    };
+  }
+
+  return {
+    title: "Finish setup before creating",
+    detail: "Choose an available participant source in Setup / Models, then return here.",
+    tone: "warning",
+    steps: [
+      {
+        label: "Who answers first",
+        value: "No participant source ready",
+        detail: "Add a demo preset or real model provider before creating useful material.",
+        tone: "warning"
+      },
+      {
+        label: "Who organizes the result",
+        value: "Organizer setup needed",
+        detail: "Organizer roles are required before Deliberum can prepare the conclusion.",
+        tone: "warning"
+      },
+      {
+        label: "After create",
+        value: "Setup / Models",
+        detail: "Complete setup first, then start the discussion again.",
+        tone: "neutral"
+      }
+    ]
+  };
 }
 
 function buildDiscussionParticipantLineup(input: {

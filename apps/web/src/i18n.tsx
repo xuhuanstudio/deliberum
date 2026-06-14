@@ -455,6 +455,59 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion question": "\u8ba8\u8bba\u95ee\u9898",
   Required: "\u5fc5\u586b",
   "What should we decide, compare, or clarify?": "\u6211\u4eec\u9700\u8981\u51b3\u5b9a\u3001\u6bd4\u8f83\u6216\u6f84\u6e05\u4ec0\u4e48\uff1f",
+  "Creation preview": "\u521b\u5efa\u9884\u89c8",
+  "Checking discussion path": "\u6b63\u5728\u68c0\u67e5\u8ba8\u8bba\u8def\u5f84",
+  "Web is checking which participant source can create a useful discussion.":
+    "Web \u6b63\u5728\u68c0\u67e5\u54ea\u4e2a\u53c2\u4e0e\u8005\u6765\u6e90\u53ef\u4ee5\u521b\u5efa\u6709\u7528\u7684\u8ba8\u8bba\u3002",
+  "Who answers first": "\u8c01\u4f1a\u5148\u56de\u5e94",
+  Checking: "\u6b63\u5728\u68c0\u67e5",
+  "The available participant source will appear after setup status loads.":
+    "\u8bbe\u7f6e\u72b6\u6001\u52a0\u8f7d\u540e\uff0c\u53ef\u7528\u53c2\u4e0e\u8005\u6765\u6e90\u4f1a\u663e\u793a\u5728\u8fd9\u91cc\u3002",
+  "Who organizes the result": "\u8c01\u4f1a\u6574\u7406\u7ed3\u679c",
+  "Organizer readiness appears after setup status loads.":
+    "\u8bbe\u7f6e\u72b6\u6001\u52a0\u8f7d\u540e\uff0c\u7ec4\u7ec7\u5668\u5c31\u7eea\u72b6\u6001\u4f1a\u663e\u793a\u5728\u8fd9\u91cc\u3002",
+  "After create": "\u521b\u5efa\u540e",
+  "The next screen will show the room for this discussion.":
+    "\u4e0b\u4e00\u4e2a\u9875\u9762\u4f1a\u663e\u793a\u672c\u6b21\u8ba8\u8bba\u7684\u8ba8\u8bba\u5ba4\u3002",
+  "Ready to create a model-backed discussion": "\u53ef\u521b\u5efa\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
+  "Configured model participants will answer first; local organizers can then structure options, disagreements, evidence gaps, risks, and a current conclusion.":
+    "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u4f1a\u5148\u56de\u5e94\uff1b\u7136\u540e\u672c\u5730\u7ec4\u7ec7\u5668\u53ef\u4ee5\u6574\u7406\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Configured model participants can answer first, but organizer roles are not ready yet.":
+    "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u53ef\u4ee5\u5148\u56de\u5e94\uff0c\u4f46\u7ec4\u7ec7\u5668\u89d2\u8272\u5c1a\u672a\u5c31\u7eea\u3002",
+  "3 model perspectives": "3 \u4e2a\u6a21\u578b\u89c6\u89d2",
+  "2 model perspectives": "2 \u4e2a\u6a21\u578b\u89c6\u89d2",
+  "Perspective A, Perspective B, and Perspective C will answer independently.":
+    "\u89c6\u89d2 A\u3001\u89c6\u89d2 B \u548c\u89c6\u89d2 C \u4f1a\u72ec\u7acb\u56de\u5e94\u3002",
+  "Perspective A and Perspective B will answer independently.":
+    "\u89c6\u89d2 A \u548c\u89c6\u89d2 B \u4f1a\u72ec\u7acb\u56de\u5e94\u3002",
+  "API keys stay on this machine and are not shown on this page.":
+    "API key \u4fdd\u7559\u5728\u8fd9\u53f0\u673a\u5668\u4e0a\uff0c\u4e14\u4e0d\u4f1a\u5728\u6b64\u9875\u663e\u793a\u3002",
+  "Open the room, then continue the guided discussion to organize first responses into a reviewable conclusion.":
+    "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u7136\u540e\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u628a\u521d\u59cb\u56de\u5e94\u6574\u7406\u4e3a\u53ef\u5ba1\u9605\u7ed3\u8bba\u3002",
+  "Open the room, then finish organizer setup before expecting strongest options or a conclusion.":
+    "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u7136\u540e\u5148\u5b8c\u6210\u7ec4\u7ec7\u5668\u8bbe\u7f6e\uff0c\u518d\u671f\u5f85\u6700\u5f3a\u9009\u9879\u6216\u7ed3\u8bba\u3002",
+  "Ready to create a demo discussion": "\u53ef\u521b\u5efa\u6f14\u793a\u8ba8\u8bba",
+  "Built-in demo participants let first-time users try the full room flow before model setup.":
+    "\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u8ba9\u9996\u6b21\u7528\u6237\u5728\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u524d\u8bd5\u7528\u5b8c\u6574\u8ba8\u8bba\u5ba4\u6d41\u7a0b\u3002",
+  "2 demo perspectives": "2 \u4e2a\u6f14\u793a\u89c6\u89d2",
+  "Perspective A and Perspective B use deterministic sample material.":
+    "\u89c6\u89d2 A \u548c\u89c6\u89d2 B \u4f7f\u7528\u786e\u5b9a\u6027\u793a\u4f8b\u6750\u6599\u3002",
+  "Full discussion loop": "\u5b8c\u6574\u8ba8\u8bba\u5faa\u73af",
+  "Local organizers can compare options, review risks, and draft the current conclusion.":
+    "\u672c\u5730\u7ec4\u7ec7\u5668\u53ef\u4ee5\u6bd4\u8f83\u9009\u9879\u3001\u5ba1\u67e5\u98ce\u9669\u5e76\u8d77\u8349\u5f53\u524d\u7ed3\u8bba\u3002",
+  "The discussion may collect first responses only until organizer roles are ready.":
+    "\u5728\u7ec4\u7ec7\u5668\u89d2\u8272\u5c31\u7eea\u524d\uff0c\u8ba8\u8bba\u53ef\u80fd\u53ea\u4f1a\u6536\u96c6\u521d\u59cb\u56de\u5e94\u3002",
+  "Open the room, then continue the guided discussion to review the timeline and current result.":
+    "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u7136\u540e\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u5ba1\u9605\u65f6\u95f4\u7ebf\u548c\u5f53\u524d\u7ed3\u679c\u3002",
+  "Finish setup before creating": "\u521b\u5efa\u524d\u8bf7\u5148\u5b8c\u6210\u8bbe\u7f6e",
+  "Choose an available participant source in Setup / Models, then return here.":
+    "\u8bf7\u5728\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u9009\u62e9\u53ef\u7528\u7684\u53c2\u4e0e\u8005\u6765\u6e90\uff0c\u7136\u540e\u56de\u5230\u8fd9\u91cc\u3002",
+  "Add a demo preset or real model provider before creating useful material.":
+    "\u5728\u521b\u5efa\u6709\u7528\u6750\u6599\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u6f14\u793a\u9884\u8bbe\u6216\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
+  "Organizer roles are required before Deliberum can prepare the conclusion.":
+    "Deliberum \u9700\u8981\u7ec4\u7ec7\u5668\u89d2\u8272\u5c31\u7eea\u540e\u624d\u80fd\u51c6\u5907\u7ed3\u8bba\u3002",
+  "Complete setup first, then start the discussion again.":
+    "\u8bf7\u5148\u5b8c\u6210\u8bbe\u7f6e\uff0c\u7136\u540e\u91cd\u65b0\u5f00\u59cb\u8ba8\u8bba\u3002",
   "Creating discussion": "\u6b63\u5728\u521b\u5efa\u8ba8\u8bba",
   "Create discussion": "\u521b\u5efa\u8ba8\u8bba",
   "Use sample brief": "\u4f7f\u7528\u793a\u4f8b\u7b80\u62a5",
