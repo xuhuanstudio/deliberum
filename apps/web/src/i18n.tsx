@@ -205,6 +205,14 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review current conclusion": "\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba",
   "Continue discussion": "\u7ee7\u7eed\u8ba8\u8bba",
   "Primary discussion actions": "\u4e3b\u8981\u8ba8\u8bba\u52a8\u4f5c",
+  "Updates discussion": "\u66f4\u65b0\u8ba8\u8bba",
+  "Review only": "\u4ec5\u67e5\u770b",
+  "After it finishes, review the updated timeline and current conclusion.":
+    "\u5b8c\u6210\u540e\uff0c\u8bf7\u67e5\u770b\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
+  "After it finishes, compare the refreshed strongest options.":
+    "\u5b8c\u6210\u540e\uff0c\u8bf7\u6bd4\u8f83\u5237\u65b0\u540e\u7684\u6700\u5f3a\u9009\u9879\u3002",
+  "Jump only; this does not change the discussion.":
+    "\u4ec5\u8df3\u8f6c\u67e5\u770b\uff1b\u4e0d\u4f1a\u6539\u53d8\u8ba8\u8bba\u3002",
   "Continue guided discussion": "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba",
   "A reviewable conclusion is available with risks, evidence gaps, and next actions.":
     "\u5df2\u6709\u53ef\u5ba1\u9605\u7ed3\u8bba\uff0c\u5e76\u5305\u542b\u98ce\u9669\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u3002",

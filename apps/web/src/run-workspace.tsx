@@ -1372,9 +1372,15 @@ function StartRunForm({
             }
             disabled={startMutation.isPending}
           >
-            <span className="du-discussion-action-badge">{t("Recommended")}</span>
+            <span className="du-discussion-action-badge-row">
+              <span className="du-discussion-action-badge">{t("Recommended")}</span>
+              <span className="du-discussion-action-badge">{t("Updates discussion")}</span>
+            </span>
             <strong>{t(continuationView.primaryLabel)}</strong>
             <span>{t(continuationView.primaryActionDetail)}</span>
+            <span className="du-discussion-action-result">
+              {t("After it finishes, review the updated timeline and current conclusion.")}
+            </span>
           </button>
           <button
             type="button"
@@ -1383,11 +1389,17 @@ function StartRunForm({
             onClick={() => startLocalPresetPipeline(strongerOptionsFeedback)}
             disabled={startMutation.isPending}
           >
+            <span className="du-discussion-action-badge-row">
+              <span className="du-discussion-action-badge">{t("Updates discussion")}</span>
+            </span>
             <strong>{t("Ask for stronger options")}</strong>
             <span>
               {t(
                 "Refresh the discussion so the strongest current options can be compared and improved."
               )}
+            </span>
+            <span className="du-discussion-action-result">
+              {t("After it finishes, compare the refreshed strongest options.")}
             </span>
           </button>
           <a
@@ -1395,9 +1407,17 @@ function StartRunForm({
             href="#open-disagreements"
             aria-label={t("Review disagreements")}
           >
+            <span className="du-discussion-action-badge-row">
+              <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                {t("Review only")}
+              </span>
+            </span>
             <strong>{t("Review disagreements")}</strong>
             <span>
               {t("Jump to unresolved objections that still constrain the conclusion.")}
+            </span>
+            <span className="du-discussion-action-result">
+              {t("Jump only; this does not change the discussion.")}
             </span>
           </a>
           <a
@@ -1405,11 +1425,19 @@ function StartRunForm({
             href="#answer-requirements"
             aria-label={t("Confirm answer requirements")}
           >
+            <span className="du-discussion-action-badge-row">
+              <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                {t("Review only")}
+              </span>
+            </span>
             <strong>{t("Confirm answer requirements")}</strong>
             <span>
               {t(
                 "Review requirements that must be satisfied or acknowledged before relying on the conclusion."
               )}
+            </span>
+            <span className="du-discussion-action-result">
+              {t("Jump only; this does not change the discussion.")}
             </span>
           </a>
           <a
@@ -1417,9 +1445,17 @@ function StartRunForm({
             href="#evidence-gaps"
             aria-label={t("Check evidence")}
           >
+            <span className="du-discussion-action-badge-row">
+              <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                {t("Review only")}
+              </span>
+            </span>
             <strong>{t("Check evidence")}</strong>
             <span>
               {t("Review missing or unchecked evidence before relying on the answer.")}
+            </span>
+            <span className="du-discussion-action-result">
+              {t("Jump only; this does not change the discussion.")}
             </span>
           </a>
         </div>

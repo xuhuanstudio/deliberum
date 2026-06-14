@@ -1647,6 +1647,16 @@ describe("@deliberum/web shell", () => {
     expect(localizedActionPath.textContent ?? "").toContain("\u63a8\u8350\u8def\u5f84");
     expect(localizedActionPath.textContent ?? "").toContain("\u4ece\u8fd9\u91cc\u5f00\u59cb");
     expect(localizedActionPath.textContent ?? "").toContain("\u9009\u62e9\u8ddf\u8fdb\u52a8\u4f5c");
+    const localizedDiscussionActionsText =
+      document.querySelector(".du-discussion-actions")?.textContent ?? "";
+    expect(localizedDiscussionActionsText).toContain("\u66f4\u65b0\u8ba8\u8bba");
+    expect(localizedDiscussionActionsText).toContain("\u4ec5\u67e5\u770b");
+    expect(localizedDiscussionActionsText).toContain(
+      "\u5b8c\u6210\u540e\uff0c\u8bf7\u67e5\u770b\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf\u548c\u5f53\u524d\u7ed3\u8bba\u3002"
+    );
+    expect(localizedDiscussionActionsText).toContain(
+      "\u4ec5\u8df3\u8f6c\u67e5\u770b\uff1b\u4e0d\u4f1a\u6539\u53d8\u8ba8\u8bba\u3002"
+    );
     expect(screen.getAllByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879").length).toBeGreaterThan(0);
     expect(screen.getByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879\u7684\u5185\u5bb9")).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
@@ -2180,6 +2190,16 @@ describe("@deliberum/web shell", () => {
       screen.getByRole("link", { name: "Confirm answer requirements" }).getAttribute("href")
     ).toBe("#answer-requirements");
     expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
+    const discussionActionsText =
+      document.querySelector(".du-discussion-actions")?.textContent ?? "";
+    expect(discussionActionsText).toContain("Updates discussion");
+    expect(discussionActionsText).toContain("Review only");
+    expect(discussionActionsText).toContain(
+      "After it finishes, review the updated timeline and current conclusion."
+    );
+    expect(discussionActionsText).toContain(
+      "Jump only; this does not change the discussion."
+    );
     const recommendedActionPath = screen.getByRole("region", {
       name: "Recommended action path"
     });
@@ -3022,6 +3042,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("link", { name: "Review disagreements" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Confirm answer requirements" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
+    const pendingDiscussionActionsText =
+      document.querySelector(".du-discussion-actions")?.textContent ?? "";
+    expect(pendingDiscussionActionsText).toContain("Updates discussion");
+    expect(pendingDiscussionActionsText).toContain(
+      "After it finishes, review the updated timeline and current conclusion."
+    );
+    expect(pendingDiscussionActionsText).toContain("Review only");
+    expect(pendingDiscussionActionsText).toContain(
+      "Jump only; this does not change the discussion."
+    );
     fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
     fireEvent.change(await screen.findByLabelText("Advanced start request JSON"), {
       target: {
