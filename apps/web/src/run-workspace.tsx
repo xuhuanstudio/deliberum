@@ -759,7 +759,7 @@ function ExplainerItem({ title, detail }: { title: string; detail: string }) {
   );
 }
 
-function formatRunDisplayTitle(run: unknown, index?: number): string {
+export function formatRunDisplayTitle(run: unknown, index?: number): string {
   const topic = getStringRecordValue(run, "topic");
   const title = getStringRecordValue(run, "title");
 
@@ -774,7 +774,7 @@ function formatRunDisplayTitle(run: unknown, index?: number): string {
   return typeof index === "number" ? `Discussion ${index + 1}` : "Discussion";
 }
 
-function formatRunDisplaySummary(run: unknown): string {
+export function formatRunDisplaySummary(run: unknown): string {
   const topic = getStringRecordValue(run, "topic");
   const title = getStringRecordValue(run, "title");
 
@@ -3331,7 +3331,7 @@ function describeRunFollowTone(status: RunFollowStatus): "neutral" | "ok" | "war
   return "neutral";
 }
 
-function describeDiscussionStatus(run: unknown): string {
+export function describeDiscussionStatus(run: unknown): string {
   const continuationView = describeDiscussionContinuation(run);
   const status = getRecordValue(run, "status");
   const completedStageCount = getDiscussionStageStatuses(run).filter(([, stageStatus]) =>

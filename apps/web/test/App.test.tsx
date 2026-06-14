@@ -934,6 +934,8 @@ describe("@deliberum/web shell", () => {
         "The current conclusion keeps open disagreements, risks, missing evidence, and recommended next actions together."
       )
     ).toBeTruthy();
+    await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    expect(client.listSessions).not.toHaveBeenCalled();
     expect(client.getRuntimeProfiles).not.toHaveBeenCalled();
     expect(client.getDeploymentPosture).not.toHaveBeenCalled();
     expect(client.getResourceAccessPosture).not.toHaveBeenCalled();
@@ -942,6 +944,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByPlaceholderText(/message/i)).toBeNull();
 
     fireEvent.click(getAdvancedModeSummary(1));
+    await waitFor(() => expect(client.listSessions).toHaveBeenCalled());
     fireEvent.change(await screen.findByLabelText("Session id"), {
       target: {
         value: "session-1"
@@ -953,19 +956,35 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
   });
 
-  it("renders the daemon session catalog without owning session state", async () => {
+  it("renders the run catalog as the default discussion continuation path", async () => {
     const client = renderApp("/");
 
     expect((await screen.findAllByText("Continue existing discussions")).length).toBeGreaterThan(0);
-    await waitFor(() => expect(client.listSessions).toHaveBeenCalled());
+    await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    expect(client.listSessions).not.toHaveBeenCalled();
     expect(screen.getByText("Evaluate the local daemon run workspace")).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("Stage 11 shell");
-    expect(screen.getByText("7 updates")).toBeTruthy();
+    expect(screen.getByText("Ready to review: current conclusion is available.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Current conclusion" })).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("Underlying session catalog");
 
     fireEvent.click(screen.getByRole("link", { name: "Open discussion" }));
 
     expect((await screen.findAllByText("Discussion brief")).length).toBeGreaterThan(0);
-    await waitFor(() => expect(client.listEvents).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
+
+    cleanup();
+
+    const advancedClient = renderApp("/");
+    expect((await screen.findAllByText("Continue existing discussions")).length).toBeGreaterThan(0);
+    expect(advancedClient.listSessions).not.toHaveBeenCalled();
+    fireEvent.click(getAdvancedModeSummary(1));
+    expect(await screen.findByText("Underlying session catalog")).toBeTruthy();
+    await waitFor(() => expect(advancedClient.listSessions).toHaveBeenCalled());
+    expect(screen.getAllByText("Session id").length).toBeGreaterThan(1);
+    expect(screen.getByText("session-1")).toBeTruthy();
+    expect(screen.getByText("7 updates")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open session view" })).toBeTruthy();
   });
 
   it("renders daemon runtime profile status without environment values", async () => {

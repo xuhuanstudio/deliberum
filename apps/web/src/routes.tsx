@@ -30,6 +30,9 @@ import type {
   ResourceAccessPostureResponse
 } from "@deliberum/client";
 import {
+  describeDiscussionStatus,
+  formatRunDisplaySummary,
+  formatRunDisplayTitle,
   OutcomeBrief,
   RunDetailPage,
   RunNewPage,
@@ -226,9 +229,14 @@ function LandingPage() {
   const [operatorDetailsOpen, setOperatorDetailsOpen] = useState(false);
   const navigate = useNavigate({ from: "/" });
   const trimmedSessionId = sessionId.trim();
+  const runsQuery = useQuery({
+    queryKey: ["runs", "landing"],
+    queryFn: () => client.listRuns()
+  });
   const sessionsQuery = useQuery({
     queryKey: ["sessions"],
-    queryFn: () => client.listSessions()
+    queryFn: () => client.listSessions(),
+    enabled: operatorDetailsOpen
   });
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
@@ -250,6 +258,7 @@ function LandingPage() {
     queryFn: () => client.getOperationAudit({ limit: 10 }),
     enabled: operatorDetailsOpen
   });
+  const runs = asArray(runsQuery.data?.runs);
   const sessions = asArray(sessionsQuery.data?.sessions);
   const runtimeProfiles = asArray(runtimeProfilesQuery.data?.profiles);
   const deploymentPosture = deploymentPostureQuery.data;
@@ -265,6 +274,11 @@ function LandingPage() {
     const catalogSessionId = getStringRecordValue(session, "sessionId");
 
     return catalogSessionId ? [{ session, index, sessionId: catalogSessionId }] : [];
+  });
+  const runEntries = runs.flatMap((run, index) => {
+    const runId = getStringRecordValue(run, "runId");
+
+    return runId ? [{ run, index, runId }] : [];
   });
   const runtimeProfileEntries = runtimeProfiles.map((profile, index) => ({
     profile,
@@ -381,48 +395,47 @@ function LandingPage() {
         </AdvancedDetails>
         <DataPanel
           title="Continue existing discussions"
-          description="Open a known discussion and review its brief, perspectives, disagreements, requirements, evidence, conclusion, and next actions."
+          description="Open a discussion workbench and review its brief, perspectives, disagreements, requirements, evidence, conclusion, and next actions."
         >
-          <QueryState query={sessionsQuery}>
-            {sessionEntries.length === 0 ? (
+          <QueryState query={runsQuery}>
+            {runEntries.length === 0 ? (
               <EmptyState
                 title="No discussions yet"
                 description="Start a discussion to create the first deliberation."
               />
             ) : (
               <div className="du-run-list">
-                {sessionEntries.map(({ session, index, sessionId: catalogSessionId }) => (
-                  <article className="du-run-list-item" key={`${catalogSessionId}-${index}`}>
+                {runEntries.map(({ run, index, runId: catalogRunId }) => (
+                  <article className="du-run-list-item" key={`${catalogRunId}-${index}`}>
                     <p className="du-kicker">Discussion {index + 1}</p>
-                    <h3>{formatSessionCatalogTitle(session, index)}</h3>
-                    <p>{formatSessionCatalogSummary(session)}</p>
+                    <h3>{formatRunDisplayTitle(run, index)}</h3>
+                    <p>{formatRunDisplaySummary(run)}</p>
                     <KeyValueGrid
                       items={[
                         {
-                          label: "Activity",
-                          value: `${formatRecordValue(getRecordValue(session, "eventCount"))} updates`
+                          label: "Discussion status",
+                          value: describeDiscussionStatus(run)
                         },
                         {
                           label: "Last updated",
-                          value: formatRecordValue(
-                            getRecordValue(session, "latestEventRecordedAt")
-                          )
-                        },
-                        {
-                          label: "Created",
-                          value: formatRecordValue(
-                            getRecordValue(session, "createdAt")
-                          )
+                          value: formatRecordValue(getRecordValue(run, "updatedAt"))
                         }
                       ]}
                     />
                     <div className="du-action-row">
                       <Link
                         className="du-action-link"
-                        to="/sessions/$sessionId"
-                        params={{ sessionId: catalogSessionId }}
+                        to="/runs/$runId"
+                        params={{ runId: catalogRunId }}
                       >
                         Open discussion
+                      </Link>
+                      <Link
+                        className="du-action-link du-secondary-link"
+                        to="/runs/$runId/outcome"
+                        params={{ runId: catalogRunId }}
+                      >
+                        Current conclusion
                       </Link>
                     </div>
                   </article>
@@ -468,83 +481,133 @@ function LandingPage() {
               </div>
             </form>
           </DataPanel>
-        <DataPanel
-          title="Deployment posture"
-          description="Safe local/pre-production daemon posture without secrets or configured resource URLs."
-        >
-          <QueryState query={deploymentPostureQuery}>
-            {deploymentPosture ? (
-              <>
-                <KeyValueGrid
-                  items={[
-                    {
-                      label: "Bind exposure",
-                      value: formatDeploymentExposure(
-                        deploymentPosture.binding.exposure
-                      )
-                    },
-                    {
-                      label: "Control auth",
-                      value: formatDeploymentAuth(deploymentPosture.controlPlane)
-                    },
-                    {
-                      label: "Configured stores",
-                      value: formatDeploymentPersistence(deploymentPosture.persistence)
-                    },
-                    {
-                      label: "Resource access",
-                      value: formatDeploymentResourceAccess(
-                        deploymentPosture.resourceAccess
-                      )
-                    },
-                    {
-                      label: "Web assets",
-                      value: formatDeploymentWebAssets(deploymentPosture.webAssets)
-                    },
-                    {
-                      label: "Production ready",
-                      value: deploymentPosture.productionReadiness.readyForProduction
-                        ? "Yes"
-                        : "No"
-                    },
-                    {
-                      label: "Blockers",
-                      value: String(
-                        deploymentPosture.productionReadiness.blockers.length
-                      )
-                    }
-                  ]}
+          <DataPanel
+            title="Underlying session catalog"
+            description="Low-level sessions remain available for developer inspection and legacy links."
+          >
+            <QueryState query={sessionsQuery}>
+              {sessionEntries.length === 0 ? (
+                <EmptyState
+                  title="No sessions returned"
+                  description="The daemon did not return any underlying ledger sessions."
                 />
-                <div
-                  className={`du-status ${formatDeploymentReadinessClass(
-                    deploymentPosture.productionReadiness.status
-                  )}`}
-                >
-                  <strong>
-                    {formatDeploymentReadinessStatus(
-                      deploymentPosture.productionReadiness.status
-                    )}
-                  </strong>
-                  <span>
-                    {deploymentPosture.productionReadiness.blockers.length > 0
-                      ? deploymentPosture.productionReadiness.blockers.join(" ")
-                      : "No daemon-reported blockers."}
-                  </span>
+              ) : (
+                <div className="du-run-list">
+                  {sessionEntries.map(({ session, index, sessionId: catalogSessionId }) => (
+                    <article className="du-run-list-item" key={`${catalogSessionId}-${index}`}>
+                      <p className="du-kicker">Session {index + 1}</p>
+                      <h3>{formatSessionCatalogTitle(session, index)}</h3>
+                      <p>{formatSessionCatalogSummary(session)}</p>
+                      <KeyValueGrid
+                        items={[
+                          {
+                            label: "Session id",
+                            value: catalogSessionId
+                          },
+                          {
+                            label: "Ledger events",
+                            value: `${formatRecordValue(getRecordValue(session, "eventCount"))} updates`
+                          },
+                          {
+                            label: "Latest event",
+                            value: formatRecordValue(
+                              getRecordValue(session, "latestEventRecordedAt")
+                            )
+                          }
+                        ]}
+                      />
+                      <div className="du-action-row">
+                        <Link
+                          className="du-action-link"
+                          to="/sessions/$sessionId"
+                          params={{ sessionId: catalogSessionId }}
+                        >
+                          Open session view
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
                 </div>
-              </>
-            ) : (
-              <EmptyState
-                title="No deployment posture"
-                description="The daemon did not return safe deployment posture metadata."
-              />
-            )}
-          </QueryState>
-        </DataPanel>
-        <DataPanel
-          title="Resource access posture"
-          description="Safe daemon resource delivery metadata without access ids, configured URLs, or payloads."
-        >
-          <QueryState query={resourceAccessPostureQuery}>
+              )}
+            </QueryState>
+          </DataPanel>
+          <DataPanel
+            title="Deployment posture"
+            description="Safe local/pre-production daemon posture without secrets or configured resource URLs."
+          >
+            <QueryState query={deploymentPostureQuery}>
+              {deploymentPosture ? (
+                <>
+                  <KeyValueGrid
+                    items={[
+                      {
+                        label: "Bind exposure",
+                        value: formatDeploymentExposure(
+                          deploymentPosture.binding.exposure
+                        )
+                      },
+                      {
+                        label: "Control auth",
+                        value: formatDeploymentAuth(deploymentPosture.controlPlane)
+                      },
+                      {
+                        label: "Configured stores",
+                        value: formatDeploymentPersistence(deploymentPosture.persistence)
+                      },
+                      {
+                        label: "Resource access",
+                        value: formatDeploymentResourceAccess(
+                          deploymentPosture.resourceAccess
+                        )
+                      },
+                      {
+                        label: "Web assets",
+                        value: formatDeploymentWebAssets(deploymentPosture.webAssets)
+                      },
+                      {
+                        label: "Production ready",
+                        value: deploymentPosture.productionReadiness.readyForProduction
+                          ? "Yes"
+                          : "No"
+                      },
+                      {
+                        label: "Blockers",
+                        value: String(
+                          deploymentPosture.productionReadiness.blockers.length
+                        )
+                      }
+                    ]}
+                  />
+                  <div
+                    className={`du-status ${formatDeploymentReadinessClass(
+                      deploymentPosture.productionReadiness.status
+                    )}`}
+                  >
+                    <strong>
+                      {formatDeploymentReadinessStatus(
+                        deploymentPosture.productionReadiness.status
+                      )}
+                    </strong>
+                    <span>
+                      {deploymentPosture.productionReadiness.blockers.length > 0
+                        ? deploymentPosture.productionReadiness.blockers.join(" ")
+                        : "No daemon-reported blockers."}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <EmptyState
+                  title="No deployment posture"
+                  description="The daemon did not return safe deployment posture metadata."
+                />
+              )}
+            </QueryState>
+          </DataPanel>
+          <DataPanel
+            title="Resource access posture"
+            description="Safe daemon resource delivery metadata without access ids, configured URLs, or payloads."
+          >
+            <QueryState query={resourceAccessPostureQuery}>
             {resourceAccessPosture ? (
               <>
                 <KeyValueGrid
