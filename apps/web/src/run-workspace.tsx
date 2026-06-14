@@ -2484,6 +2484,10 @@ export function OutcomeBrief({
     t("No current conclusion is available yet.");
   const unresolvedQuestions = getStringArray(getRecordValue(outcome, "unresolvedQuestions"));
   const limitations = getStringArray(getRecordValue(outcome, "limitations"));
+  const risksAndBoundaries = uniqueReadableStrings([
+    ...getOutcomeAuditRisks(outcome),
+    ...limitations
+  ]);
   const continuationSuggestions = getStringArray(
     getRecordValue(outcome, "continuationSuggestions")
   );
@@ -2567,14 +2571,14 @@ export function OutcomeBrief({
           />
           <OutcomeStatusItem
             title={t("Risks and boundaries")}
-            value={String(limitations.length)}
+            value={String(risksAndBoundaries.length)}
             detail={describeOutcomeCount(
               t,
-              limitations.length,
+              risksAndBoundaries.length,
               "risk or boundary",
               "risks or boundaries"
             )}
-            tone={limitations.length > 0 ? "warning" : "neutral"}
+            tone={risksAndBoundaries.length > 0 ? "warning" : "neutral"}
           />
         </div>
       </section>
@@ -2630,7 +2634,7 @@ export function OutcomeBrief({
         />
         <ReadableStringList
           title="Risks and boundaries"
-          items={limitations}
+          items={risksAndBoundaries}
           emptyTitle="No risks or boundaries listed"
         />
       </div>
@@ -2686,6 +2690,34 @@ function OutcomeReviewPathItem({
 
 function preferOutcomeRecords(outcomeRecords: unknown[], contextRecords: unknown[]): unknown[] {
   return outcomeRecords.length > 0 ? outcomeRecords : contextRecords;
+}
+
+function getOutcomeAuditRisks(outcome: unknown): string[] {
+  const audits = asArray(getRecordValue(outcome, "audits"));
+
+  return audits.flatMap((auditRecord) => {
+    const audit = getRecordValue(auditRecord, "audit") ?? auditRecord;
+
+    return getStringArray(getRecordValue(audit, "risks"));
+  });
+}
+
+function uniqueReadableStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    const normalized = value.trim();
+
+    if (normalized.length === 0 || seen.has(normalized)) {
+      continue;
+    }
+
+    seen.add(normalized);
+    result.push(normalized);
+  }
+
+  return result;
 }
 
 function isUnresolvedEvidenceNeed(entry: unknown): boolean {

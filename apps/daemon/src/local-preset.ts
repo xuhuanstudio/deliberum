@@ -60,15 +60,15 @@ export function createLocalPresetRunRegistries(): Required<LocalPresetRunRegistr
     adapterRegistry: new AdapterRegistry([
       createLocalPresetParticipantAdapter(LOCAL_PRESET_IDS.alphaAdapter, {
         position:
-          "Deterministic sample participant Alpha proposes a guarded review path.",
+          "Review the rollout in stages before relying on the recommendation.",
         reason:
-          "This sample material exists for guided testing; it is canned, not real deliberation input."
+          "The team should compare options, disagreements, risks, and missing evidence before acting."
       }),
       createLocalPresetParticipantAdapter(LOCAL_PRESET_IDS.betaAdapter, {
         position:
-          "Deterministic sample participant Beta keeps unresolved issues visible.",
+          "Keep the conclusion provisional until unresolved issues are checked.",
         reason:
-          "The discussion should keep provisional output and explicit limitations visible."
+          "A readable discussion should make remaining disagreements and next actions easy to inspect."
       })
     ]),
     extractionGeneratorRegistry: new ExtractionGeneratorRegistry([
@@ -97,24 +97,24 @@ export function localPresetRunPlan() {
     title: "Guided sample discussion",
     topic: "Review a proposed rollout before relying on it.",
     goals: [
-      "Create traceable discussion material through the guided workflow.",
-      "Show main perspectives, open disagreements, answer requirements, and the current conclusion."
+      "Compare the strongest review paths before relying on the rollout.",
+      "Keep open disagreements, answer requirements, missing evidence, and the current conclusion visible."
     ],
     constraints: [
-      "Use deterministic sample participants only.",
-      "Keep all output provisional and labeled as sample material."
+      "Use built-in sample participants only.",
+      "Keep the conclusion provisional until a human reviews it."
     ],
     participants: [
       {
         id: "local-preset-alpha",
         kind: "model",
-        displayName: "Local preset Alpha",
+        displayName: "Perspective A",
         adapterId: LOCAL_PRESET_IDS.alphaAdapter
       },
       {
         id: "local-preset-beta",
         kind: "model",
-        displayName: "Local preset Beta",
+        displayName: "Perspective B",
         adapterId: LOCAL_PRESET_IDS.betaAdapter
       }
     ],
@@ -131,8 +131,8 @@ export function localPresetRunPlan() {
       language: "en",
       style: "concise",
       expectations: [
-        "Render only deterministic sample material.",
-        "Preserve limitations and unresolved issues."
+        "Keep sample limitations visible.",
+        "Preserve unresolved disagreements and missing evidence."
       ]
     },
     sealedDivergence: {
@@ -157,7 +157,7 @@ export function localPresetStartRequest(): DaemonRunStartRequest {
         mode: "all_generated_unchallenged",
         authorId: "local-preset-review-coordinator",
         rationale:
-          "Accept unchallenged deterministic sample proposals for this development walkthrough."
+          "Accept sample discussion material that has no open challenge in this walkthrough."
       }
     },
     finalization: {
@@ -200,7 +200,7 @@ function createLocalPresetParticipantAdapter(
       return {
         payload: {
           localPreset: true,
-          label: "deterministic sample material",
+          label: "built-in sample contribution",
           ...payload,
           participantId: context.participantId
         },
@@ -209,9 +209,9 @@ function createLocalPresetParticipantAdapter(
         capabilities,
         contextCompleteness: {
           status: "complete",
-          notes: ["Deterministic sample context for development and testing."]
+          notes: ["Built-in sample context for a guided walkthrough."]
         },
-        warnings: ["Sample output is canned, not real deliberation input."]
+        warnings: ["Sample output is illustrative and should be replaced for real decisions."]
       };
     }
   };
@@ -235,23 +235,23 @@ function createLocalPresetExtractionResult(
     candidates: [
       {
         id: "local-preset-candidate-run-workspace",
-        title: "Guided rollout review",
+        title: "Staged rollout review",
         description:
-          "Use deterministic sample participants to exercise the discussion workflow.",
+          "Review the rollout in stages, keep alternatives visible, and treat the conclusion as provisional until risks and evidence gaps are checked.",
         sourceEventIds,
         status: "active",
         supportedBy: ["local-preset-claim-control-surface"],
         attackedBy: ["local-preset-objection-preset-scope"],
         qualityObligationIds: ["local-preset-quality-labeling"],
-        assumptions: ["The workflow remains a deterministic sample."],
-        tradeoffs: ["The sample does not represent real deliberation input."]
+        assumptions: ["This is a built-in sample walkthrough."],
+        tradeoffs: ["The sample does not replace real participant or model input."]
       }
     ],
     claims: [
       {
         id: "local-preset-claim-control-surface",
         content:
-          "A deterministic sample can make the discussion workflow runnable while preserving deliberation boundaries.",
+          "A staged review helps the team compare options before relying on the rollout.",
         scope: "design",
         sourceEventIds,
         supports: ["local-preset-candidate-run-workspace"]
@@ -261,8 +261,8 @@ function createLocalPresetExtractionResult(
       {
         id: "local-preset-objection-preset-scope",
         targetId: "local-preset-candidate-run-workspace",
-        failureMode: "Users could mistake deterministic sample material for real deliberation input.",
-        consequence: "The UI and generated material must label sample output and limitations clearly.",
+        failureMode: "Users could rely on the sample conclusion without checking whether it matches their real rollout.",
+        consequence: "The conclusion must keep limitations, disagreements, and next actions visible.",
         severityClaim: "major",
         status: "open",
         sourceEventIds,
@@ -275,7 +275,7 @@ function createLocalPresetExtractionResult(
         scope: "candidate",
         targetCandidateId: "local-preset-candidate-run-workspace",
         requirement:
-          "Clearly label sample output as deterministic review material.",
+          "State that the conclusion is provisional and list what must be checked next.",
         status: "unanswered",
         sourceEventIds,
         supportingRefIds: ["local-preset-claim-control-surface"],
@@ -283,7 +283,7 @@ function createLocalPresetExtractionResult(
       }
     ],
     rationale:
-      "Extract traceable sample proposal material from revealed deterministic contributions."
+      "Organize the first responses into reviewable options, disagreements, requirements, and evidence needs."
   };
 }
 
@@ -316,18 +316,18 @@ function createLocalPresetCandidateRepairResult(
         id: repairedCandidateId,
         title: `${targetCandidate.object.title} repair`,
         description:
-          "A deterministic sample repair alternative that keeps sample scope and limitations explicit.",
+          "A revised sample option that keeps limitations and review actions explicit.",
         sourceEventIds,
         status: "active",
         supportedBy: [repairClaimId],
         attackedBy: [],
         qualityObligationIds: [answeredQualityId],
         assumptions: [
-          "The repair remains deterministic sample material.",
+          "The revised option remains built-in sample material.",
           "Acceptance still requires explicit proposal review."
         ],
         tradeoffs: [
-          "The repaired alternative improves traceable labeling but does not represent real deliberation judgment."
+          "The revised option improves labeling but still does not replace real decision input."
         ]
       }
     ],
@@ -335,7 +335,7 @@ function createLocalPresetCandidateRepairResult(
       {
         id: repairClaimId,
         content:
-          "The repaired sample perspective explicitly answers sample-scope objections by preserving deterministic labeling.",
+          "The revised sample perspective answers sample-scope objections by preserving visible limitations.",
         scope: "design",
         sourceEventIds,
         supports: [repairedCandidateId]
@@ -349,7 +349,7 @@ function createLocalPresetCandidateRepairResult(
         scope: "candidate",
         targetCandidateId: repairedCandidateId,
         requirement:
-          "State that the repaired sample perspective remains provisional review material.",
+          "State that the revised sample perspective remains provisional review material.",
         status: "answered",
         sourceEventIds,
         supportingRefIds: [repairClaimId],
@@ -357,7 +357,7 @@ function createLocalPresetCandidateRepairResult(
       }
     ],
     rationale:
-      "Generate challengeable candidate repair proposal material without accepting or finalizing it."
+      "Generate a challengeable revised option without accepting or finalizing it."
   };
 }
 
@@ -376,12 +376,12 @@ function createLocalPresetEvidenceCheckResult(
   return {
     results: context.targetEvidenceNeeds.map((evidenceNeed) => ({
       evidenceNeedId: evidenceNeed.object.id,
-      source: "Deterministic sample evidence source",
+      source: "Built-in sample evidence source",
       summary: `Reported sample evidence result for ${evidenceNeed.object.id}; this is not independent verification.`,
-      limitations: ["Deterministic sample evidence is not independent verification."]
+      limitations: ["Built-in sample evidence is not independent verification."]
     })),
     rationale:
-      "Record reported evidence check material for local development without claiming verification."
+      "Record reported evidence check material without claiming independent verification."
   };
 }
 
@@ -392,7 +392,7 @@ function createLocalPresetProposalReviewer(): ProposalReviewGenerator {
       return {
         challenges: [],
         notes: [
-          "Deterministic sample review leaves generated proposals unchallenged for walkthrough coverage."
+          "Sample review leaves generated proposals unchallenged so the walkthrough can show the full discussion path."
         ]
       };
     }
@@ -412,15 +412,15 @@ function createLocalPresetFinalCandidateGenerator(): FinalCandidateGenerator {
       return {
         candidateIds: [candidateId],
         recommendation:
-          "Use the guided sample discussion only as provisional review material.",
+          "Use a staged review path before relying on the rollout.",
         applicabilityConditions: [
-          "Only in the deterministic sample walkthrough.",
-          "Only for local review and testing."
+          "When reviewing a proposed rollout with limited evidence.",
+          "When the team needs a provisional decision and explicit next actions."
         ],
         rationale:
-          "The sample exercises the full discussion path without relying on real participant or model input.",
+          "The discussion keeps the strongest option, open disagreement, evidence gaps, and review actions visible together.",
         limitations: [
-          "Deterministic sample output is canned, not real deliberation input.",
+          "This built-in sample is illustrative; replace it with real participant or model input for real decisions.",
           "The sample does not prove production readiness or real-world answer quality."
         ]
       };
@@ -433,19 +433,21 @@ function createLocalPresetFinalAuditGenerator(): FinalAuditGenerator {
     auditorId: LOCAL_PRESET_IDS.auditor,
     auditFinalCandidate(_input, context: FinalizationContext): FinalAuditGeneratorResult {
       return {
-        findings: ["The guided sample discussion produced traceable provisional material."],
+        findings: ["The current conclusion is reviewable but still provisional."],
         risks: [
-          "Sample material can only validate the walkthrough, not real-world answer quality."
+          "A team could mistake the sample walkthrough for a decision about its real rollout."
         ],
         unresolvedObjectionIds: context.unresolvedObjectionIds,
         qualityObligationIds: context.qualityObligations.qualityObligations.map(
           (entry) => entry.object.id
         ),
         evidenceNeedIds: context.evidenceNeedIds,
-        omissions: ["External provider setup, production hosting, and authentication were not part of this sample."],
+        omissions: [
+          "Real project evidence, stakeholder input, and provider-backed model perspectives were not included in this sample."
+        ],
         compressionProblems: [],
         limitations: ["The current conclusion remains provisional."],
-        continuationSuggestions: ["Review the same discussion with real participants or model connections when ready."]
+        continuationSuggestions: ["Run the discussion with the real rollout brief and real participants or model connections when ready."]
       };
     }
   };

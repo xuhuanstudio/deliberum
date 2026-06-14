@@ -420,7 +420,15 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
         },
         unresolvedQuestions: ["Which external reviewer should inspect the fixture?"],
         continuationSuggestions: ["Run the comparison fixture against a broader case set."],
-        limitations: ["Needs further audit"]
+        limitations: ["Needs further audit"],
+        audits: [
+          {
+            auditEventId: "final-audit-event-1",
+            audit: {
+              risks: ["Evidence coverage may still be incomplete."]
+            }
+          }
+        ]
       }
     })),
     getRunProcessProposals: vi.fn(async () => ({
@@ -543,7 +551,15 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
           eventIds: ["event-1", "proposal-event-1", "final-candidate-event-1"],
           finalCandidateProposalEventId: "final-candidate-event-1",
           finalAuditEventIds: ["final-audit-event-1"]
-        }
+        },
+        audits: [
+          {
+            auditEventId: "final-audit-event-1",
+            audit: {
+              risks: ["Evidence coverage may still be incomplete."]
+            }
+          }
+        ]
       }
     })),
     proposeFinalCandidate: vi.fn(async (_sessionId, input) => ({
@@ -1675,8 +1691,8 @@ describe("@deliberum/web shell", () => {
           goals: ["Compare staged rollout", "Surface migration risk"],
           constraints: expect.arrayContaining([
             "Keep the recommendation reversible",
-            "Use deterministic local preset components only.",
-            "Keep all output provisional until reviewed."
+            "Use built-in sample participants only.",
+            "Keep the conclusion provisional until reviewed."
           ]),
           participants: expect.arrayContaining([
             expect.objectContaining({
@@ -1786,6 +1802,9 @@ describe("@deliberum/web shell", () => {
     ).toContain("local-preset-alpha");
     expect((runPlanInput as HTMLTextAreaElement).value).toContain("Perspective A");
     expect((runPlanInput as HTMLTextAreaElement).value).not.toContain("Local preset Alpha");
+    expect((runPlanInput as HTMLTextAreaElement).value).not.toContain(
+      "Render only deterministic sample material"
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Create run" }));
 
@@ -1989,7 +2008,7 @@ describe("@deliberum/web shell", () => {
               createdAt: "2026-06-10T00:00:02.000Z",
               payload: {
                 localPreset: true,
-                label: "deterministic sample material",
+                label: "built-in sample contribution",
                 position: "CLI-first validation exercises the lifecycle directly.",
                 reason: "The revealed response should read like a participant contribution."
               },
@@ -2746,6 +2765,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Does the fixture cover all declared dimensions?")).toBeTruthy();
     expect(screen.getByText("Keep open disagreements visible in the current conclusion.")).toBeTruthy();
     expect(screen.getAllByText("Risks and boundaries").length).toBeGreaterThan(0);
+    expect(screen.getByText("Evidence coverage may still be incomplete.")).toBeTruthy();
+    expect(screen.getByText("Needs further audit")).toBeTruthy();
     expect(screen.getByText("Requirements this answer must satisfy")).toBeTruthy();
     expect(screen.getAllByText(/Provisional compiled material/).length).toBeGreaterThan(0);
     const defaultPageText = document.body.textContent ?? "";
@@ -2755,6 +2776,7 @@ describe("@deliberum/web shell", () => {
     expect(defaultPageText).not.toContain("objection-1");
     expect(defaultPageText).not.toContain("obligation-1");
     expect(defaultPageText).not.toContain("evidence-1");
+    expect(defaultPageText).not.toContain("final-audit-event-1");
 
     fireEvent.click(screen.getByText("Advanced / Developer Mode"));
     expect(await screen.findByText("Draft status")).toBeTruthy();

@@ -2,12 +2,12 @@ export const LOCAL_PRESET_RUN_PLAN = {
   title: "Guided sample discussion",
   topic: "Review a proposed rollout before relying on it.",
   goals: [
-    "Create traceable discussion material through the guided workflow.",
-    "Show main perspectives, open disagreements, answer requirements, and the current conclusion."
+    "Compare the strongest review paths before relying on the rollout.",
+    "Keep open disagreements, answer requirements, missing evidence, and the current conclusion visible."
   ],
   constraints: [
-    "Use deterministic sample participants only.",
-    "Keep all output provisional and labeled as sample material."
+    "Use built-in sample participants only.",
+    "Keep the conclusion provisional until a human reviews it."
   ],
   participants: [
     {
@@ -36,8 +36,8 @@ export const LOCAL_PRESET_RUN_PLAN = {
     language: "en",
     style: "concise",
     expectations: [
-      "Render only deterministic sample material.",
-      "Preserve limitations and unresolved issues."
+      "Keep sample limitations visible.",
+      "Preserve unresolved disagreements and missing evidence."
     ]
   },
   sealedDivergence: {
@@ -60,7 +60,7 @@ export const LOCAL_PRESET_START_REQUEST = {
       mode: "all_generated_unchallenged",
       authorId: "local-preset-review-coordinator",
       rationale:
-        "Accept unchallenged deterministic sample proposals for this development walkthrough."
+        "Accept sample discussion material that has no open challenge in this walkthrough."
     }
   },
   finalization: {
@@ -115,8 +115,8 @@ export function buildGuidedDiscussionRunPlan(
           ],
     constraints: uniqueBriefLines([
       ...userConstraints,
-      "Use deterministic local preset components only.",
-      "Keep all output provisional until reviewed."
+      "Use built-in sample participants only.",
+      "Keep the conclusion provisional until reviewed."
     ]),
     output: {
       language: "en",
