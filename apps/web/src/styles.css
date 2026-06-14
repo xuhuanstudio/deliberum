@@ -366,6 +366,67 @@ textarea:focus-visible {
   gap: 10px;
 }
 
+.du-guided-action-path {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #f8fff9;
+  padding: 16px;
+}
+
+.du-guided-action-path h4,
+.du-guided-action-path p {
+  margin: 0;
+}
+
+.du-guided-action-path h4 {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.du-guided-action-path > div:first-child p:not(.du-kicker) {
+  margin-top: 6px;
+  color: var(--du-muted);
+  line-height: 1.45;
+}
+
+.du-guided-action-path-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-guided-action-step {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  background: var(--du-surface);
+  padding: 14px;
+}
+
+.du-guided-action-step span {
+  color: var(--du-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.du-guided-action-step strong {
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.du-guided-action-step p {
+  color: var(--du-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .du-discussion-action-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -391,6 +452,22 @@ textarea:focus-visible {
 
 .du-discussion-action-button:hover:not(:disabled) {
   background: var(--du-accent-strong);
+}
+
+.du-discussion-action-badge {
+  width: fit-content;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  opacity: 1;
+  text-transform: uppercase;
+}
+
+.du-discussion-action-button .du-discussion-action-badge {
+  font-size: 0.72rem;
+  opacity: 1;
 }
 
 .du-discussion-action-secondary {
@@ -1919,6 +1996,7 @@ textarea:focus-visible {
   .du-room-output-grid,
   .du-room-response-grid,
   .du-run-list-meta,
+  .du-guided-action-path-list,
   .du-projection-developer-grid,
   .du-final-lifecycle-grid,
   .du-lifecycle-grid,

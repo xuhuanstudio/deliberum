@@ -576,6 +576,30 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff0c\u6574\u7406\u4e3b\u8981\u89c2\u70b9\uff0c\u5ba1\u9605\u8981\u6c42\uff0c\u68c0\u67e5\u8bc1\u636e\u9700\u6c42\uff0c\u5e76\u7f16\u5236\u4e34\u65f6\u7ed3\u8bba\u3002",
   "Collect perspectives, organize strongest options, check evidence needs, and draft a conclusion.":
     "\u6536\u96c6\u89c6\u89d2\u3001\u6574\u7406\u6700\u5f3a\u9009\u9879\u3001\u68c0\u67e5\u8bc1\u636e\u9700\u6c42\u5e76\u8d77\u8349\u7ed3\u8bba\u3002",
+  "Recommended action path": "\u63a8\u8350\u64cd\u4f5c\u8def\u5f84",
+  "Recommended path": "\u63a8\u8350\u8def\u5f84",
+  "Follow these steps so the discussion keeps moving in user terms.":
+    "\u6309\u8fd9\u4e9b\u6b65\u9aa4\u63a8\u8fdb\uff0c\u8ba8\u8bba\u4f1a\u59cb\u7ec8\u4ee5\u7528\u6237\u80fd\u7406\u89e3\u7684\u65b9\u5f0f\u7ee7\u7eed\u3002",
+  "Start here": "\u4ece\u8fd9\u91cc\u5f00\u59cb",
+  Then: "\u7136\u540e",
+  "After that": "\u4e4b\u540e",
+  "Start with the conclusion before changing the room.":
+    "\u5728\u6539\u53d8\u8ba8\u8bba\u5ba4\u4e4b\u524d\uff0c\u5148\u67e5\u770b\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Choose a follow-up action": "\u9009\u62e9\u8ddf\u8fdb\u52a8\u4f5c",
+  "Update the conclusion or ask for stronger options after checking disagreements, requirements, and evidence.":
+    "\u68c0\u67e5\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u540e\uff0c\u518d\u66f4\u65b0\u7ed3\u8bba\u6216\u8981\u6c42\u66f4\u5f3a\u9009\u9879\u3002",
+  "Recheck the room outputs": "\u91cd\u65b0\u68c0\u67e5\u8ba8\u8bba\u4ea7\u51fa",
+  "Return to strongest options, open disagreements, missing evidence, risks, and next actions.":
+    "\u56de\u5230\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002",
+  "Collect independent perspectives, strongest options, disagreements, evidence checks, risks, and a draft conclusion.":
+    "\u6536\u96c6\u72ec\u7acb\u89c6\u89d2\u3001\u6700\u5f3a\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u6838\u67e5\u3001\u98ce\u9669\u548c\u7ed3\u8bba\u8349\u7a3f\u3002",
+  "Review what changed": "\u67e5\u770b\u53d8\u5316",
+  "Use the room timeline and discussion outputs to see what each participant contributed.":
+    "\u4f7f\u7528\u8ba8\u8bba\u5ba4\u65f6\u95f4\u7ebf\u548c\u8ba8\u8bba\u4ea7\u51fa\u67e5\u770b\u6bcf\u4e2a\u53c2\u4e0e\u8005\u8d21\u732e\u4e86\u4ec0\u4e48\u3002",
+  "Open current conclusion": "\u6253\u5f00\u5f53\u524d\u7ed3\u8bba",
+  "When ready, review the conclusion together with risks, missing evidence, and next actions.":
+    "\u51c6\u5907\u597d\u540e\uff0c\u5c06\u7ed3\u8bba\u4e0e\u98ce\u9669\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u4e00\u8d77\u5ba1\u9605\u3002",
+  Recommended: "\u63a8\u8350",
   "Discussion actions": "\u8ba8\u8bba\u52a8\u4f5c",
   "Ask for stronger options": "\u8981\u6c42\u66f4\u5f3a\u9009\u9879",
   "Refresh the discussion so the strongest current options can be compared and improved.":

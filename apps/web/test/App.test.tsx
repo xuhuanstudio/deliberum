@@ -1634,6 +1634,13 @@ describe("@deliberum/web shell", () => {
       "\u7528\u5b83\u628a\u8ba8\u8bba\u65f6\u95f4\u7ebf\u8fde\u63a5\u5230\u5f53\u524d\u51b3\u7b56\u6750\u6599\u3002"
     );
     expect(localizedDiscussionOutputs.textContent ?? "").toContain("1 \u4e2a\u53ef\u6bd4\u8f83\u9009\u9879");
+    const localizedActionPath = screen.getByRole("region", {
+      name: "\u63a8\u8350\u64cd\u4f5c\u8def\u5f84"
+    });
+    expect(localizedActionPath).toBeTruthy();
+    expect(localizedActionPath.textContent ?? "").toContain("\u63a8\u8350\u8def\u5f84");
+    expect(localizedActionPath.textContent ?? "").toContain("\u4ece\u8fd9\u91cc\u5f00\u59cb");
+    expect(localizedActionPath.textContent ?? "").toContain("\u9009\u62e9\u8ddf\u8fdb\u52a8\u4f5c");
     expect(screen.getAllByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879").length).toBeGreaterThan(0);
     expect(screen.getByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879\u7684\u5185\u5bb9")).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
@@ -2147,6 +2154,16 @@ describe("@deliberum/web shell", () => {
       screen.getByRole("link", { name: "Confirm answer requirements" }).getAttribute("href")
     ).toBe("#answer-requirements");
     expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
+    const recommendedActionPath = screen.getByRole("region", {
+      name: "Recommended action path"
+    });
+    expect(recommendedActionPath).toBeTruthy();
+    expect(recommendedActionPath.textContent ?? "").toContain("Recommended path");
+    expect(recommendedActionPath.textContent ?? "").toContain("Start here");
+    expect(recommendedActionPath.textContent ?? "").toContain("Review current conclusion");
+    expect(recommendedActionPath.textContent ?? "").toContain("Choose a follow-up action");
+    expect(recommendedActionPath.textContent ?? "").toContain("Recheck the room outputs");
+    expect(screen.getAllByText("Recommended").length).toBeGreaterThan(0);
     expect(document.body.textContent ?? "").not.toContain("7 recorded lifecycle events");
     fireEvent.click(getUserDetailsSummaryByText("Discussion setup"));
     fireEvent.click(getAdvancedModeSummaryByPanelText("Discussion status details"));
@@ -2910,6 +2927,16 @@ describe("@deliberum/web shell", () => {
     expect(primaryDiscussionActions.textContent ?? "").toContain("Continue discussion");
     expect(primaryDiscussionActions.textContent ?? "").not.toContain(
       "Review current conclusion"
+    );
+    const pendingActionPath = screen.getByRole("region", {
+      name: "Recommended action path"
+    });
+    expect(pendingActionPath).toBeTruthy();
+    expect(pendingActionPath.textContent ?? "").toContain("Continue discussion");
+    expect(pendingActionPath.textContent ?? "").toContain("Review what changed");
+    expect(pendingActionPath.textContent ?? "").toContain("Open current conclusion");
+    expect(pendingActionPath.textContent ?? "").toContain(
+      "Collect independent perspectives, strongest options, disagreements, evidence checks, risks, and a draft conclusion."
     );
     expect(
       (await screen.findAllByRole("status", { name: "Current conclusion not ready" })).length

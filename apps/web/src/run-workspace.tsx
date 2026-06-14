@@ -1356,6 +1356,7 @@ function StartRunForm({
           detail={t(continuationView.explainerDetail)}
         />
       </div>
+      <GuidedDiscussionActionPath reviewReady={continuationView.reviewReady} />
       <div className="du-discussion-actions" aria-label={t("Discussion actions")}>
         <p className="du-kicker">{t("Discussion actions")}</p>
         <div className="du-discussion-action-list">
@@ -1371,6 +1372,7 @@ function StartRunForm({
             }
             disabled={startMutation.isPending}
           >
+            <span className="du-discussion-action-badge">{t("Recommended")}</span>
             <strong>{t(continuationView.primaryLabel)}</strong>
             <span>{t(continuationView.primaryActionDetail)}</span>
           </button>
@@ -1469,6 +1471,69 @@ function StartRunForm({
         <StartResult result={startMutation.data} runId={runId} feedback={startFeedback} />
       ) : null}
     </DataPanel>
+  );
+}
+
+function GuidedDiscussionActionPath({ reviewReady }: { reviewReady: boolean }) {
+  const { t } = useI18n();
+  const steps = reviewReady
+    ? [
+        {
+          label: "Start here",
+          title: "Review current conclusion",
+          detail: "Start with the conclusion before changing the room."
+        },
+        {
+          label: "Then",
+          title: "Choose a follow-up action",
+          detail:
+            "Update the conclusion or ask for stronger options after checking disagreements, requirements, and evidence."
+        },
+        {
+          label: "After that",
+          title: "Recheck the room outputs",
+          detail:
+            "Return to strongest options, open disagreements, missing evidence, risks, and next actions."
+        }
+      ]
+    : [
+        {
+          label: "Start here",
+          title: "Continue discussion",
+          detail:
+            "Collect independent perspectives, strongest options, disagreements, evidence checks, risks, and a draft conclusion."
+        },
+        {
+          label: "Then",
+          title: "Review what changed",
+          detail:
+            "Use the room timeline and discussion outputs to see what each participant contributed."
+        },
+        {
+          label: "After that",
+          title: "Open current conclusion",
+          detail:
+            "When ready, review the conclusion together with risks, missing evidence, and next actions."
+        }
+      ];
+
+  return (
+    <section className="du-guided-action-path" aria-label={t("Recommended action path")}>
+      <div>
+        <p className="du-kicker">{t("Recommended action path")}</p>
+        <h4>{t("Recommended path")}</h4>
+        <p>{t("Follow these steps so the discussion keeps moving in user terms.")}</p>
+      </div>
+      <div className="du-guided-action-path-list">
+        {steps.map((step) => (
+          <article key={`${step.label}:${step.title}`} className="du-guided-action-step">
+            <span>{t(step.label)}</span>
+            <strong>{t(step.title)}</strong>
+            <p>{t(step.detail)}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
