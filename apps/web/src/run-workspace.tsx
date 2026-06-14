@@ -282,13 +282,13 @@ export function RunNewPage() {
           <StatusBanner
             tone="ok"
             title="Discussion created"
-            detail="Next, open the discussion workbench and continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
+            detail="Next, open the discussion room and continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
           />
         ) : null}
         {createdRunId ? (
           <div className="du-action-row">
             <Link className="du-action-link" to="/runs/$runId" params={{ runId: createdRunId }}>
-              Open discussion workbench
+              Open discussion room
             </Link>
           </div>
         ) : null}
@@ -323,13 +323,21 @@ export function RunDetailPage() {
         }
       >
         <QueryState query={runQuery}>
-          <RunBriefPanel run={run} />
-          <RunSummary run={run} />
           {sessionId ? (
             <RunQualityOverview runId={runId} sessionId={sessionId} run={run} />
           ) : null}
-          <StartRunForm runId={runId} sessionId={sessionId} run={run} />
+          <div id="continue-discussion" className="du-workbench-anchor">
+            <StartRunForm runId={runId} sessionId={sessionId} run={run} />
+          </div>
           {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
+          {sessionId ? (
+            <DiscussionSetupDetails run={run} />
+          ) : (
+            <>
+              <RunBriefPanel run={run} />
+              <RunSummary run={run} />
+            </>
+          )}
           <RunProgressDetails run={run} />
           <AdvancedDetails
             summary="Advanced / Developer Mode"
@@ -699,6 +707,24 @@ function RunProgressDetails({ run }: { run: unknown }) {
   );
 }
 
+function DiscussionSetupDetails({ run }: { run: unknown }) {
+  return (
+    <details className="du-user-details">
+      <summary>
+        <span>Discussion setup</span>
+        <small>
+          Original brief and status details for review. The main room keeps the live
+          discussion flow first.
+        </small>
+      </summary>
+      <div className="du-user-details-stack">
+        <RunBriefPanel run={run} />
+        <RunSummary run={run} />
+      </div>
+    </details>
+  );
+}
+
 function RunBriefPanel({ run }: { run: unknown }) {
   const plan = getRecordValue(run, "plan") ?? {};
   const question =
@@ -812,7 +838,11 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
         ]}
       />
       <StageStatusList stages={getDiscussionStageStatuses(run)} />
-      <AdvancedDetails summary="Advanced / Developer Mode" lazy>
+      <AdvancedDetails
+        summary="Advanced / Developer Mode"
+        panelLabel="Discussion status details"
+        lazy
+      >
         <KeyValueGrid
           items={[
             {
@@ -870,7 +900,11 @@ function RunSummary({ run }: { run: unknown }) {
           }
         ]}
       />
-      <AdvancedDetails summary="Advanced / Developer Mode" lazy>
+      <AdvancedDetails
+        summary="Advanced / Developer Mode"
+        panelLabel="Discussion status details"
+        lazy
+      >
         <KeyValueGrid
           items={[
             {
@@ -1153,6 +1187,7 @@ function StartRunForm({
       </div>
       <AdvancedDetails
         summary="Advanced / Developer Mode"
+        panelLabel="Advanced start request"
         description="Submit a raw start request when testing low-level runtime behavior."
         lazy
       >
@@ -1250,6 +1285,7 @@ function StartResult({ result, runId }: { result: unknown; runId: string }) {
       </div>
       <AdvancedDetails
         summary="Advanced / Developer Mode"
+        panelLabel="Raw stage metadata"
         description="Raw execution stages, round ids, and event ids returned by the local runtime."
         lazy
       >
@@ -1507,8 +1543,8 @@ function RunQualityOverview({
 
   return (
     <DataPanel
-      title="Discussion workbench"
-      description="Start here: current conclusion, main perspectives, open disagreements, evidence gaps, answer requirements, and next steps."
+      title="Discussion room"
+      description="A human-readable room view of the brief, participant perspectives, discussion flow, unresolved disagreements, missing evidence, current conclusion, and next actions."
     >
       <QueryState query={queryState}>
         <StatusBanner
@@ -1516,6 +1552,25 @@ function RunQualityOverview({
           title={nextActionTitle}
           detail={nextActionDetail}
         />
+        <div className="du-room-layout">
+          <div className="du-room-main">
+            <DiscussionRoomBrief run={run} />
+            <DiscussionRoomTimeline
+              run={run}
+              mainPerspectiveCount={candidates.length}
+              openDisagreementCount={unresolvedObjections}
+              unresolvedEvidenceCount={unresolvedEvidenceNeeds}
+            />
+            <DiscussionContributionList candidates={candidates} />
+          </div>
+          <DiscussionRoomFocusPanel
+            runId={runId}
+            reviewReady={continuationView.reviewReady}
+            openDisagreementCount={unresolvedObjections}
+            unresolvedEvidenceCount={unresolvedEvidenceNeeds}
+            openRequirementCount={openObligations}
+          />
+        </div>
         <div className="du-discussion-dashboard-grid">
           {continuationView.reviewReady ? (
             <Link
@@ -1649,6 +1704,300 @@ function RunQualityOverview({
       </QueryState>
     </DataPanel>
   );
+}
+
+function DiscussionRoomBrief({ run }: { run: unknown }) {
+  const question =
+    getStringRecordValue(run, "topic") ??
+    getStringRecordValue(getRecordValue(run, "plan"), "topic") ??
+    "No discussion question is available yet.";
+  const goals = getStringArray(getRecordValue(getRecordValue(run, "plan"), "goals"));
+  const constraints = getStringArray(
+    getRecordValue(getRecordValue(run, "plan"), "constraints")
+  );
+  const expectedResult = getStringArray(
+    getRecordValue(getRecordValue(getRecordValue(run, "plan"), "output"), "expectations")
+  );
+
+  return (
+    <section className="du-room-brief" aria-label="What is being discussed">
+      <div>
+        <p className="du-kicker">What is being discussed</p>
+        <h4>{question}</h4>
+        <p>
+          The room keeps the brief, participant perspectives, disagreements,
+          missing evidence, risks, current conclusion, and next actions visible together.
+        </p>
+      </div>
+      <div className="du-room-brief-grid">
+        <RoomBriefItem
+          label="Goals"
+          value={goals.length > 0 ? goals.join("; ") : "No goals listed yet."}
+        />
+        <RoomBriefItem
+          label="Constraints"
+          value={
+            constraints.length > 0 ? constraints.join("; ") : "No constraints listed yet."
+          }
+        />
+        <RoomBriefItem
+          label="Expected result"
+          value={
+            expectedResult.length > 0
+              ? expectedResult.join("; ")
+              : "No expected result listed yet."
+          }
+        />
+      </div>
+    </section>
+  );
+}
+
+function RoomBriefItem({ label, value }: { label: string; value: string }) {
+  return (
+    <article className="du-room-brief-item">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
+  );
+}
+
+function DiscussionRoomTimeline({
+  run,
+  mainPerspectiveCount,
+  openDisagreementCount,
+  unresolvedEvidenceCount
+}: {
+  run: unknown;
+  mainPerspectiveCount: number;
+  openDisagreementCount: number;
+  unresolvedEvidenceCount: number;
+}) {
+  const independentResponses = describeStageStatus(
+    getRecordValue(run, "sealedDivergenceStatus")
+  );
+  const mainPerspectives = describeStageStatus(getRecordValue(run, "latestExtractionStatus"));
+  const conclusion = describeStageStatus(getRecordValue(run, "latestFinalizationStatus"));
+
+  return (
+    <section className="du-room-section" aria-label="Discussion timeline">
+      <div className="du-section-label">
+        <p className="du-kicker">Discussion timeline</p>
+        <h4>What has happened in the room</h4>
+        <p>
+          Follow the room like a structured conversation: brief, independent first
+          responses, main perspectives, disagreements, evidence checks, and conclusion
+          review.
+        </p>
+      </div>
+      <ol className="du-room-flow">
+        <DiscussionRoomFlowStep
+          label="Discussion brief"
+          status="Ready"
+          detail="The question, goals, and constraints are visible before discussion work begins."
+        />
+        <DiscussionRoomFlowStep
+          label="Independent first responses"
+          status={independentResponses.label}
+          detail={independentResponses.detail}
+        />
+        <DiscussionRoomFlowStep
+          label="Participant perspectives"
+          status={mainPerspectives.label}
+          detail={`${mainPerspectiveCount} readable ${
+            mainPerspectiveCount === 1 ? "perspective is" : "perspectives are"
+          } visible in the room.`}
+        />
+        <DiscussionRoomFlowStep
+          label="Disagreements and evidence"
+          status={
+            openDisagreementCount + unresolvedEvidenceCount > 0
+              ? "Needs review"
+              : "No open items visible"
+          }
+          detail={`${openDisagreementCount} open ${
+            openDisagreementCount === 1 ? "disagreement" : "disagreements"
+          } and ${unresolvedEvidenceCount} ${
+            unresolvedEvidenceCount === 1 ? "evidence gap" : "evidence gaps"
+          } are visible.`}
+        />
+        <DiscussionRoomFlowStep
+          label="Current conclusion"
+          status={conclusion.label}
+          detail={conclusion.detail}
+        />
+      </ol>
+    </section>
+  );
+}
+
+function DiscussionRoomFlowStep({
+  label,
+  status,
+  detail
+}: {
+  label: string;
+  status: string;
+  detail: string;
+}) {
+  return (
+    <li className="du-room-flow-step">
+      <span className="du-room-flow-marker" aria-hidden="true" />
+      <div>
+        <p className="du-kicker">{label}</p>
+        <h5>{status}</h5>
+        <p>{detail}</p>
+      </div>
+    </li>
+  );
+}
+
+function DiscussionContributionList({ candidates }: { candidates: unknown[] }) {
+  return (
+    <section className="du-room-section" aria-label="Participant perspectives">
+      <div className="du-section-label">
+        <p className="du-kicker">Participant perspectives</p>
+        <h4>What different participants contributed</h4>
+        <p>
+          Strong perspectives are shown as readable discussion contributions, while
+          technical details stay in Advanced mode.
+        </p>
+      </div>
+      {candidates.length === 0 ? (
+        <EmptyState
+          title="No participant perspectives visible yet"
+          description="Continue the guided discussion so independent first responses can become readable perspectives in the room."
+        />
+      ) : (
+        <div className="du-room-contributions">
+          {candidates.map((candidate, index) => {
+            const summary = summarizeRoomPerspective(candidate, index);
+
+            return (
+              <article
+                className="du-room-contribution"
+                key={`${summary.speaker}:${summary.title}:${index}`}
+              >
+                <p className="du-kicker">{summary.speaker}</p>
+                <h5>{summary.title}</h5>
+                <p>{summary.detail}</p>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DiscussionRoomFocusPanel({
+  runId,
+  reviewReady,
+  openDisagreementCount,
+  unresolvedEvidenceCount,
+  openRequirementCount
+}: {
+  runId: string;
+  reviewReady: boolean;
+  openDisagreementCount: number;
+  unresolvedEvidenceCount: number;
+  openRequirementCount: number;
+}) {
+  return (
+    <aside className="du-room-focus" aria-label="Current room summary">
+      <div>
+        <p className="du-kicker">Current conclusion</p>
+        <h4>{reviewReady ? "Ready to review" : "Not ready yet"}</h4>
+        <p>
+          {reviewReady
+            ? "Review the conclusion together with disagreements, evidence gaps, risks, and next actions."
+            : "Continue the discussion before treating any answer as a conclusion."}
+        </p>
+      </div>
+      <div className="du-room-focus-list">
+        <a href="#open-disagreements">
+          <span>Open disagreements</span>
+          <strong>{openDisagreementCount}</strong>
+        </a>
+        <a href="#evidence-gaps">
+          <span>Missing evidence</span>
+          <strong>{unresolvedEvidenceCount}</strong>
+        </a>
+        <a href="#answer-requirements">
+          <span>Requirements to satisfy</span>
+          <strong>{openRequirementCount}</strong>
+        </a>
+        <div>
+          <span>Risks</span>
+          <strong>
+            {openDisagreementCount + unresolvedEvidenceCount + openRequirementCount > 0
+              ? "Review needed"
+              : "No open blockers visible"}
+          </strong>
+        </div>
+      </div>
+      <div className="du-action-row">
+        {reviewReady ? (
+          <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
+            Review current conclusion
+          </Link>
+        ) : (
+          <a className="du-action-link" href="#continue-discussion">
+            Continue discussion
+          </a>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function summarizeRoomPerspective(
+  candidate: unknown,
+  index: number
+): { speaker: string; title: string; detail: string } {
+  const object = getRecordValue(candidate, "object") ?? candidate;
+  const speaker = getRoomContributorLabel(candidate, index);
+
+  return {
+    speaker,
+    title:
+      getFirstStringRecordValue(object, ["title", "name", "summary"]) ??
+      `Perspective ${index + 1}`,
+    detail:
+      getFirstStringRecordValue(object, ["summary", "rationale", "description", "claim"]) ??
+      "This perspective is part of the strongest current options in the room."
+  };
+}
+
+function getRoomContributorLabel(candidate: unknown, index: number): string {
+  const object = getRecordValue(candidate, "object") ?? candidate;
+  const explicitLabel =
+    getFirstStringRecordValue(candidate, [
+      "participantName",
+      "participantLabel",
+      "model",
+      "authorName"
+    ]) ??
+    getFirstStringRecordValue(object, [
+      "participantName",
+      "participantLabel",
+      "model",
+      "authorName"
+    ]);
+
+  if (explicitLabel) {
+    return explicitLabel;
+  }
+
+  const participantId =
+    getFirstStringRecordValue(candidate, ["participantId", "authorId"]) ??
+    getFirstStringRecordValue(object, ["participantId", "authorId"]);
+
+  if (participantId) {
+    return humanizeIdentifier(participantId);
+  }
+
+  return `Perspective ${index + 1}`;
 }
 
 function QualitySummaryLink({
