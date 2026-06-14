@@ -51,7 +51,7 @@ export async function writeOpenAICompatibleSetupEnv(input: {
 }): Promise<OpenAICompatibleSetupResult> {
   const envFilePath = input.envFilePath ?? DEFAULT_DAEMON_SETUP_ENV_FILE_PATH;
   const apiKey = normalizeSecretValue(input.setup.apiKey, "API key");
-  const baseUrl = normalizeHttpUrlValue(input.setup.baseUrl, "Base URL");
+  const baseUrl = normalizeOpenAICompatibleBaseUrlValue(input.setup.baseUrl);
   const model = normalizeNonSecretTextValue(input.setup.model, "Model");
   const block = createOpenAICompatibleSetupBlock({ apiKey, baseUrl, model });
   const existingContent = await readOptionalTextFile(envFilePath);
@@ -267,6 +267,26 @@ function normalizeHttpUrlValue(value: unknown, label: string): string {
   }
 
   return normalized;
+}
+
+function normalizeOpenAICompatibleBaseUrlValue(value: unknown): string {
+  const normalized = normalizeHttpUrlValue(value, "Base URL");
+  const parsed = new URL(normalized);
+
+  if (
+    (parsed.pathname === "/v1" || parsed.pathname === "/v1/") &&
+    parsed.search === "" &&
+    parsed.hash === ""
+  ) {
+    parsed.pathname = "/";
+    return stripTrailingSlash(parsed.toString());
+  }
+
+  return normalized;
+}
+
+function stripTrailingSlash(value: string): string {
+  return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
 function normalizeNonSecretTextValue(value: unknown, label: string): string {

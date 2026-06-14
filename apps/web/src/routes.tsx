@@ -1043,6 +1043,9 @@ function SetupModelsPanel({
       queryClient.invalidateQueries({ queryKey: ["runtime-profiles"] });
     }
   });
+  const openAIVerificationMutation = useMutation({
+    mutationFn: () => client.verifyOpenAICompatibleSetup()
+  });
   const openAISetupCanSubmit =
     openAISetupInput.apiKey.trim().length > 0 &&
     openAISetupInput.baseUrl.trim().length > 0 &&
@@ -1092,6 +1095,10 @@ function SetupModelsPanel({
           error={openAISetupMutation.error}
           saved={openAISetupMutation.isSuccess}
           onCheckReadiness={checkReadiness}
+          verificationPending={openAIVerificationMutation.isPending}
+          verificationError={openAIVerificationMutation.error}
+          verified={openAIVerificationMutation.isSuccess}
+          onVerifyConnection={() => openAIVerificationMutation.mutate()}
         />
       ) : null}
       <section
@@ -1237,7 +1244,11 @@ function OpenAICompatibleSetupForm({
   pending,
   error,
   saved,
-  onCheckReadiness
+  onCheckReadiness,
+  verificationPending,
+  verificationError,
+  verified,
+  onVerifyConnection
 }: {
   profile: RuntimeSetupPlanProfile;
   input: OpenAICompatibleSetupFormInput;
@@ -1248,6 +1259,10 @@ function OpenAICompatibleSetupForm({
   error: Error | null;
   saved: boolean;
   onCheckReadiness: () => void;
+  verificationPending: boolean;
+  verificationError: Error | null;
+  verified: boolean;
+  onVerifyConnection: () => void;
 }) {
   const { t } = useI18n();
   const ready = profile.status === "ready";
@@ -1291,7 +1306,7 @@ function OpenAICompatibleSetupForm({
                 baseUrl
               }));
             }}
-            placeholder="https://api.openai.com/v1"
+            placeholder="https://api.openai.com"
           />
           <label htmlFor="openai-compatible-model">{t("Model")}</label>
           <input
@@ -1313,6 +1328,14 @@ function OpenAICompatibleSetupForm({
             <button type="button" className="du-secondary-button" onClick={onCheckReadiness}>
               {t("Check readiness")}
             </button>
+            <button
+              type="button"
+              className="du-secondary-button"
+              disabled={!ready || verificationPending}
+              onClick={onVerifyConnection}
+            >
+              {verificationPending ? t("Verifying connection") : t("Verify connection")}
+            </button>
           </div>
         </form>
         <aside className="du-provider-setup-form-note">
@@ -1331,6 +1354,13 @@ function OpenAICompatibleSetupForm({
               "The API key is submitted only to your local daemon. Web clears the key field after saving and never shows the saved value."
             )}
           </p>
+          <p className="du-readable-meta">
+            {t(
+              ready
+                ? "Use Verify connection to send one minimal provider request before starting a model-backed discussion."
+                : "Verify connection becomes available after the daemon reports this provider as ready."
+            )}
+          </p>
         </aside>
       </div>
       {saved ? (
@@ -1340,6 +1370,22 @@ function OpenAICompatibleSetupForm({
           detail={t(
             "Restart the local daemon, then return here and check readiness before starting a real model-backed discussion."
           )}
+        />
+      ) : null}
+      {verified ? (
+        <StatusBanner
+          tone="ok"
+          title={t("Provider connection verified")}
+          detail={t(
+            "The configured provider accepted a safe test request. You can start a real model-backed discussion."
+          )}
+        />
+      ) : null}
+      {verificationError ? (
+        <StatusBanner
+          tone="error"
+          title={t("Provider connection could not be verified")}
+          detail={formatSafeErrorMessage(verificationError)}
         />
       ) : null}
       {error ? (
@@ -1411,13 +1457,13 @@ function describeProviderApiKeyCheck(profile: RuntimeSetupPlanProfile): Provider
     };
   }
 
-	  return {
-	    label: "API key",
-	    value: "API key required",
-	    detail: "Enter the provider API key in the Web setup form; the saved value is never shown.",
-	    tone: profile.enabled ? "warning" : "neutral"
-	  };
-	}
+  return {
+    label: "API key",
+    value: "API key required",
+    detail: "Enter the provider API key in the Web setup form; the saved value is never shown.",
+    tone: profile.enabled ? "warning" : "neutral"
+  };
+}
 
 function describeProviderRequestTargetCheck(
   profile: RuntimeSetupPlanProfile
@@ -1493,8 +1539,8 @@ function describeProviderConnectionCheck(profile: RuntimeSetupPlanProfile): Prov
   if (profile.status === "ready") {
     return {
       label: "Test connection",
-      value: "Ready to verify",
-      detail: "Start a small discussion or use Check readiness after daemon restart.",
+      value: "Ready to test",
+      detail: "Use Verify connection to confirm the provider accepts a minimal request.",
       tone: "ok"
     };
   }
@@ -1503,7 +1549,7 @@ function describeProviderConnectionCheck(profile: RuntimeSetupPlanProfile): Prov
     return {
       label: "Test connection",
       value: "Verify after setup",
-      detail: "After saving setup, restart the daemon and use Check readiness.",
+      detail: "After saving setup, restart the daemon, check readiness, then verify connection.",
       tone: "warning"
     };
   }
@@ -1769,13 +1815,13 @@ function describeSetupNextAction({
     };
   }
 
-	  if (providerNeedsSetup) {
-	    return {
-	      title: "Configure provider locally",
-	      detail: "Use the Web setup form for API key, base URL, and model, then restart the daemon so the provider becomes active.",
-	      tone: "warning"
-	    };
-	  }
+  if (providerNeedsSetup) {
+    return {
+      title: "Configure provider locally",
+      detail: "Use the Web setup form for API key, base URL, and model, then restart the daemon so the provider becomes active.",
+      tone: "warning"
+    };
+  }
 
   if (canStartDiscussion) {
     return {

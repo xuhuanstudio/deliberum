@@ -66,6 +66,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Saving setup": "\u6b63\u5728\u4fdd\u5b58\u8bbe\u7f6e",
   "Save model setup": "\u4fdd\u5b58\u6a21\u578b\u8bbe\u7f6e",
   "Check readiness": "\u68c0\u67e5\u5c31\u7eea\u72b6\u6001",
+  "Verifying connection": "\u6b63\u5728\u9a8c\u8bc1\u8fde\u63a5",
+  "Verify connection": "\u9a8c\u8bc1\u8fde\u63a5",
   "Restart daemon required": "\u9700\u8981\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b",
   "This provider is ready for model-backed discussions.":
     "\u6b64\u63d0\u4f9b\u65b9\u5df2\u53ef\u7528\u4e8e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
@@ -73,10 +75,18 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u4fdd\u5b58\u540e\uff0c\u91cd\u542f\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u5e76\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\uff0c\u8ba9 Web \u786e\u8ba4\u63d0\u4f9b\u65b9\u5df2\u751f\u6548\u3002",
   "The API key is submitted only to your local daemon. Web clears the key field after saving and never shows the saved value.":
     "API key \u53ea\u4f1a\u63d0\u4ea4\u5230\u4f60\u7684\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u3002Web \u4fdd\u5b58\u540e\u4f1a\u6e05\u7a7a\u8be5\u8f93\u5165\u6846\uff0c\u5e76\u4e14\u4e0d\u4f1a\u663e\u793a\u5df2\u4fdd\u5b58\u7684\u503c\u3002",
+  "Use Verify connection to send one minimal provider request before starting a model-backed discussion.":
+    "\u5728\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u53d1\u9001\u4e00\u6b21\u6700\u5c0f\u63d0\u4f9b\u65b9\u8bf7\u6c42\u3002",
+  "Verify connection becomes available after the daemon reports this provider as ready.":
+    "\u5b88\u62a4\u8fdb\u7a0b\u62a5\u544a\u6b64\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea\u540e\uff0c\u624d\u53ef\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u3002",
   "Model setup saved locally": "\u6a21\u578b\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u5230\u672c\u5730",
   "Restart the local daemon, then return here and check readiness before starting a real model-backed discussion.":
     "\u8bf7\u91cd\u542f\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\uff0c\u7136\u540e\u56de\u5230\u8fd9\u91cc\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\uff0c\u518d\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
   "Model setup could not be saved": "\u65e0\u6cd5\u4fdd\u5b58\u6a21\u578b\u8bbe\u7f6e",
+  "Provider connection verified": "\u63d0\u4f9b\u65b9\u8fde\u63a5\u5df2\u9a8c\u8bc1",
+  "The configured provider accepted a safe test request. You can start a real model-backed discussion.":
+    "\u5df2\u914d\u7f6e\u7684\u63d0\u4f9b\u65b9\u63a5\u53d7\u4e86\u4e00\u6b21\u5b89\u5168\u6d4b\u8bd5\u8bf7\u6c42\u3002\u73b0\u5728\u53ef\u4ee5\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
+  "Provider connection could not be verified": "\u65e0\u6cd5\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u8fde\u63a5",
   "Use the Web form above to add the provider API key, base URL, and model on this machine.":
     "\u4f7f\u7528\u4e0a\u65b9 Web \u8868\u5355\u5728\u8fd9\u53f0\u673a\u5668\u4e0a\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c model\u3002",
   "Configure provider": "\u914d\u7f6e\u63d0\u4f9b\u65b9",
@@ -134,12 +144,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5728\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u901a\u8fc7 Web \u8bbe\u7f6e\u6216\u672c\u5730\u8bbe\u7f6e\u6dfb\u52a0\u63d0\u4f9b\u65b9\u6a21\u578b\u3002",
   "The daemon reports that a model choice is available for this provider.":
     "\u5b88\u62a4\u8fdb\u7a0b\u62a5\u544a\u6b64\u63d0\u4f9b\u65b9\u5df2\u6709\u53ef\u7528\u7684\u6a21\u578b\u9009\u62e9\u3002",
-  "Ready to verify": "\u53ef\u4ee5\u9a8c\u8bc1",
-  "Start a small discussion or use Check readiness after daemon restart.":
-    "\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\u540e\uff0c\u53ef\u4ee5\u5f00\u59cb\u4e00\u4e2a\u5c0f\u8ba8\u8bba\u6216\u4f7f\u7528\u201c\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u201d\u3002",
+  "Ready to test": "\u53ef\u4ee5\u6d4b\u8bd5",
+  "Use Verify connection to confirm the provider accepts a minimal request.":
+    "\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u786e\u8ba4\u63d0\u4f9b\u65b9\u53ef\u4ee5\u63a5\u53d7\u6700\u5c0f\u8bf7\u6c42\u3002",
   "Verify after setup": "\u8bbe\u7f6e\u540e\u9a8c\u8bc1",
-  "After saving setup, restart the daemon and use Check readiness.":
-    "\u4fdd\u5b58\u8bbe\u7f6e\u540e\uff0c\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\u5e76\u4f7f\u7528\u201c\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u201d\u3002",
+  "After saving setup, restart the daemon, check readiness, then verify connection.":
+    "\u4fdd\u5b58\u8bbe\u7f6e\u540e\uff0c\u91cd\u542f\u5b88\u62a4\u8fdb\u7a0b\u3001\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\uff0c\u7136\u540e\u9a8c\u8bc1\u8fde\u63a5\u3002",
   "Enable provider first": "\u5148\u542f\u7528\u63d0\u4f9b\u65b9",
   "Connection verification is available after this provider is enabled locally.":
     "\u6b64\u63d0\u4f9b\u65b9\u5728\u672c\u5730\u542f\u7528\u540e\u624d\u53ef\u8fdb\u884c\u8fde\u63a5\u9a8c\u8bc1\u3002",

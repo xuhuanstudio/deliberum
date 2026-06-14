@@ -244,6 +244,12 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       restartRequired: true,
       safety: ["The daemon loads the managed local setup block at startup."]
     })),
+    verifyOpenAICompatibleSetup: vi.fn(async () => ({
+      profileId: "openai-compatible",
+      status: "connected",
+      checked: "provider_chat_completion",
+      safety: ["Provider credentials and provider response text are not returned to Web."]
+    })),
     getDeploymentPosture: vi.fn(async () => ({
       binding: {
         host: "127.0.0.1",
@@ -1150,6 +1156,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByLabelText("Provider API key")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save model setup" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Check readiness" })).toBeTruthy();
+    expect(
+      (screen.getByRole("button", { name: "Verify connection" }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
     expect(screen.getByText("Real provider setup")).toBeTruthy();
     expect(screen.getByText("API key")).toBeTruthy();
     expect(screen.getAllByText("Configured locally").length).toBeGreaterThan(0);
@@ -1212,6 +1222,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByLabelText("\u63d0\u4f9b\u65b9 API key")).toBeTruthy();
     expect(screen.getByRole("button", { name: "\u4fdd\u5b58\u6a21\u578b\u8bbe\u7f6e" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "\u68c0\u67e5\u5c31\u7eea\u72b6\u6001" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "\u9a8c\u8bc1\u8fde\u63a5" })).toBeTruthy();
     expect(screen.getByText("API key")).toBeTruthy();
     expect(screen.getAllByText("\u672c\u5730\u5df2\u914d\u7f6e").length).toBeGreaterThan(0);
     expect(screen.getByText("\u9700\u8981 Base URL")).toBeTruthy();
@@ -1221,6 +1232,143 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
     expect(document.body.textContent ?? "").not.toContain("runtime profile");
+  });
+
+  it("verifies a ready provider connection from setup and models", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
+      profiles: [
+        {
+          id: "local-preset",
+          name: "Local preset",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+            envVars: [],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready",
+          components: [
+            {
+              id: "openai-compatible",
+              kind: "participant_adapter",
+              enabled: true
+            }
+          ],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_BASE_URL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default provider base URL."
+              },
+              {
+                name: "DELIBERUM_OPENAI_MODEL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default provider model."
+              },
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    });
+    renderApp("/setup/models", client);
+
+    expect(await screen.findByText("This provider is ready for model-backed discussions.")).toBeTruthy();
+    expect(screen.getByText("Ready to test")).toBeTruthy();
+    const verifyButton = screen.getByRole("button", {
+      name: "Verify connection"
+    }) as HTMLButtonElement;
+    expect(verifyButton.disabled).toBe(false);
+
+    fireEvent.click(verifyButton);
+    await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Provider connection verified")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The configured provider accepted a safe test request. You can start a real model-backed discussion."
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+  });
+
+  it("shows a safe provider verification failure from setup and models", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
+      profiles: [
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_BASE_URL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default provider base URL."
+              },
+              {
+                name: "DELIBERUM_OPENAI_MODEL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default provider model."
+              },
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    });
+    vi.mocked(client.verifyOpenAICompatibleSetup).mockRejectedValue(
+      new Error("Provider authentication failed. Check the API key, then verify again.")
+    );
+    renderApp("/setup/models", client);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Verify connection" }));
+    expect(await screen.findByText("Provider connection could not be verified")).toBeTruthy();
+    expect(
+      screen.getByText("Provider authentication failed. Check the API key, then verify again.")
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("sk-");
   });
 
   it("localizes known sample discussion titles on the landing catalog", async () => {

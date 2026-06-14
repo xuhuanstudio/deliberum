@@ -67,6 +67,10 @@ import {
   type OpenAICompatibleProfileOptions
 } from "./openai-compatible-profile";
 import {
+  describeOpenAICompatibleVerificationError,
+  verifyOpenAICompatibleSetup
+} from "./openai-compatible-setup-verification";
+import {
   createHttpTemplateRunRegistries,
   createHttpTemplateRuntimeEnv,
   type HttpTemplateProfileOptions
@@ -116,6 +120,7 @@ import {
   SetupEnvError,
   writeOpenAICompatibleSetupEnv
 } from "./setup-env";
+import { OpenAICompatibleAdapterError } from "@deliberum/adapters";
 import { readFile, stat } from "node:fs/promises";
 import { extname, relative, resolve, sep } from "node:path";
 
@@ -785,6 +790,25 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     } catch (error) {
       if (error instanceof SetupEnvError) {
         throw new DaemonHttpError(error.code, error.message);
+      }
+
+      throw error;
+    }
+  });
+
+  app.post("/runtime/setup/openai-compatible/verify", async (context) => {
+    try {
+      return noStoreJson(
+        context,
+        await verifyOpenAICompatibleSetup({
+          env: options.openAICompatibleEnv,
+          fetch: options.openAICompatibleFetch
+        })
+      );
+    } catch (error) {
+      if (error instanceof OpenAICompatibleAdapterError) {
+        const safeError = describeOpenAICompatibleVerificationError(error);
+        throw new DaemonHttpError(safeError.code, safeError.message);
       }
 
       throw error;

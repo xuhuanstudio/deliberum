@@ -23,6 +23,7 @@ import {
   type ListRunsResponse,
   type OpenAICompatibleSetupRequest,
   type OpenAICompatibleSetupResponse,
+  type OpenAICompatibleSetupVerificationResponse,
   type ProcessProposalResponse,
   type ProcessProposalStatesResponse,
   type ProposeFinalCandidateRequest,
@@ -50,6 +51,7 @@ export type WebDaemonClient = {
   saveOpenAICompatibleSetup: (
     input: OpenAICompatibleSetupRequest
   ) => Promise<OpenAICompatibleSetupResponse>;
+  verifyOpenAICompatibleSetup: () => Promise<OpenAICompatibleSetupVerificationResponse>;
   getDeploymentPosture: () => Promise<DeploymentPostureResponse>;
   getResourceAccessPosture: () => Promise<ResourceAccessPostureResponse>;
   getOperationAudit: (options?: { limit?: number }) => Promise<OperationAuditResponse>;

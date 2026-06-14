@@ -174,6 +174,38 @@ describe("DeliberumDaemonClient", () => {
     });
   });
 
+  it("posts OpenAI-compatible setup verification without provider secrets", async () => {
+    const fetch = createFetch({
+      profileId: "openai-compatible",
+      status: "connected",
+      checked: "provider_chat_completion",
+      safety: [
+        "The verification request was sent by the local daemon.",
+        "Provider credentials and provider response text are not returned to Web."
+      ]
+    });
+    const daemonClient = new DeliberumDaemonClient({ fetch });
+
+    const result = await daemonClient.verifyOpenAICompatibleSetup();
+    const [url, init] = getFetchCall(fetch);
+
+    expect(url).toBe("http://127.0.0.1:3877/runtime/setup/openai-compatible/verify");
+    expect(init.method).toBe("POST");
+    expect(init.headers).toEqual({
+      "Content-Type": "application/json"
+    });
+    expect(JSON.parse(init.body ?? "{}")).toEqual({});
+    expect(result).toEqual({
+      profileId: "openai-compatible",
+      status: "connected",
+      checked: "provider_chat_completion",
+      safety: [
+        "The verification request was sent by the local daemon.",
+        "Provider credentials and provider response text are not returned to Web."
+      ]
+    });
+  });
+
   it("builds a safe runtime setup plan from profile metadata", () => {
     const plan = client.buildRuntimeSetupPlan({
       profiles: [

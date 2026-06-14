@@ -851,6 +851,10 @@ function normalizeOperationAuditRoute(path: string): string {
   }
 
   if (segments[0] === "runtime" && segments[1] === "setup") {
+    if (segments[2] === "openai-compatible" && segments[3] === "verify") {
+      return "/runtime/setup/openai-compatible/verify";
+    }
+
     return segments[2] === "openai-compatible"
       ? "/runtime/setup/openai-compatible"
       : "/runtime/setup/:profileId";
@@ -1072,6 +1076,9 @@ function classifyOperationAuditAction(method: string, route: string): string {
   }
   if (method === "POST" && route === "/runtime/setup/openai-compatible") {
     return "runtime_openai_compatible_setup_save";
+  }
+  if (method === "POST" && route === "/runtime/setup/openai-compatible/verify") {
+    return "runtime_openai_compatible_setup_verify";
   }
   if (method === "GET" && route === "/runtime/resource-access") {
     return "resource_access_posture_read";

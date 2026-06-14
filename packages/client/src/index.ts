@@ -79,6 +79,13 @@ export type OpenAICompatibleSetupResponse = {
   safety: string[];
 };
 
+export type OpenAICompatibleSetupVerificationResponse = {
+  profileId: "openai-compatible";
+  status: "connected";
+  checked: "provider_chat_completion";
+  safety: string[];
+};
+
 export type RuntimeSetupPlanStepKind =
   | "render_env_template"
   | "write_env_block"
@@ -849,6 +856,10 @@ export class DeliberumDaemonClient {
     input: OpenAICompatibleSetupRequest
   ): Promise<OpenAICompatibleSetupResponse> {
     return this.request("POST", "/runtime/setup/openai-compatible", input);
+  }
+
+  verifyOpenAICompatibleSetup(): Promise<OpenAICompatibleSetupVerificationResponse> {
+    return this.request("POST", "/runtime/setup/openai-compatible/verify", {});
   }
 
   getResourceAccessPosture(): Promise<ResourceAccessPostureResponse> {
