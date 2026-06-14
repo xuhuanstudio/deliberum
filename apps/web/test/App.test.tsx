@@ -2072,6 +2072,11 @@ describe("@deliberum/web shell", () => {
     );
 
     expect(await screen.findByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
+    expect(await screen.findByText("Next: continue guided discussion")).toBeTruthy();
+    expect(await screen.findByRole("status", { name: "Current conclusion not ready" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Open conclusion" })).toBeNull();
     fireEvent.click(getAdvancedModeSummary());
     expect(await screen.findByText("1 recorded lifecycle event")).toBeTruthy();
     expect(screen.getAllByText("Not started yet").length).toBeGreaterThanOrEqual(4);

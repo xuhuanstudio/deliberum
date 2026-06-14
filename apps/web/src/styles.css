@@ -409,6 +409,10 @@ textarea:focus-visible {
   background: #edf5f2;
 }
 
+.du-quality-summary-static:hover {
+  background: #f8fff9;
+}
+
 .du-quality-summary-primary {
   background: #f8fff9;
 }

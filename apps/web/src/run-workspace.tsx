@@ -306,17 +306,20 @@ export function RunDetailPage() {
   });
   const run = runQuery.data?.run;
   const sessionId = getStringRecordValue(run, "sessionId");
+  const reviewReady = isDiscussionReviewReady(run);
 
   return (
-    <RunWorkspaceShell runId={runId}>
+    <RunWorkspaceShell runId={runId} showConclusionNav={reviewReady}>
       <ViewFrame
         eyebrow="User Mode"
         title={formatRunDisplayTitle(run)}
         description="Start or continue a discussion, then review the current conclusion, main perspectives, open disagreements, risks, missing evidence, and next recommended actions."
         actions={
-          <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-            View current conclusion
-          </Link>
+          reviewReady ? (
+            <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
+              View current conclusion
+            </Link>
+          ) : null
         }
       >
         <QueryState query={runQuery}>
@@ -552,23 +555,31 @@ function AdvancedOutcomeUnavailableDetails({
 
 function RunWorkspaceShell({
   runId,
+  showConclusionNav = true,
   children
 }: {
   runId?: string;
+  showConclusionNav?: boolean;
   children: ReactNode;
 }) {
   return (
     <WorkspaceShell
       productName="Deliberum"
       workspaceLabel="User Mode"
-      navigation={<RunNavigation runId={runId} />}
+      navigation={<RunNavigation runId={runId} showConclusionNav={showConclusionNav} />}
     >
       {children}
     </WorkspaceShell>
   );
 }
 
-function RunNavigation({ runId }: { runId?: string }) {
+function RunNavigation({
+  runId,
+  showConclusionNav = true
+}: {
+  runId?: string;
+  showConclusionNav?: boolean;
+}) {
   const linkClass = "du-nav-link";
 
   return (
@@ -600,7 +611,7 @@ function RunNavigation({ runId }: { runId?: string }) {
           Discussion
         </Link>
       ) : null}
-      {runId ? (
+      {runId && showConclusionNav ? (
         <Link
           to="/runs/$runId/outcome"
           params={{ runId }}
@@ -1506,19 +1517,29 @@ function RunQualityOverview({
           detail={nextActionDetail}
         />
         <div className="du-discussion-dashboard-grid">
-          <Link
-            className="du-quality-summary-item du-quality-summary-primary"
-            to="/runs/$runId/outcome"
-            params={{ runId }}
-          >
-            <span>{continuationView.reviewReady ? "Ready" : "Not ready"}</span>
-            <strong>Current conclusion</strong>
-            <p>
-              {continuationView.reviewReady
-                ? "A reviewable conclusion is available with risks, evidence gaps, and next actions."
-                : "The discussion needs more guided work before a conclusion is useful."}
-            </p>
-          </Link>
+          {continuationView.reviewReady ? (
+            <Link
+              className="du-quality-summary-item du-quality-summary-primary"
+              to="/runs/$runId/outcome"
+              params={{ runId }}
+            >
+              <span>Ready</span>
+              <strong>Current conclusion</strong>
+              <p>
+                A reviewable conclusion is available with risks, evidence gaps, and next actions.
+              </p>
+            </Link>
+          ) : (
+            <div
+              className="du-quality-summary-item du-quality-summary-primary du-quality-summary-static"
+              role="status"
+              aria-label="Current conclusion not ready"
+            >
+              <span>Not ready</span>
+              <strong>Current conclusion</strong>
+              <p>The discussion needs more guided work before a conclusion is useful.</p>
+            </div>
+          )}
           <QualitySummaryLink
             title="Main perspectives"
             detail="Strong options stay visible without collapsing into one hidden authority."
