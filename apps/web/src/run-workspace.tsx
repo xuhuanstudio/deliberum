@@ -2055,6 +2055,7 @@ function DiscussionRoomTimeline({
   );
   const mainPerspectives = describeStageStatus(getRecordValue(run, "latestExtractionStatus"));
   const conclusion = describeStageStatus(getRecordValue(run, "latestFinalizationStatus"));
+  const participantResponses = getParticipantFirstResponses(activities);
 
   return (
     <section className="du-room-section" aria-label={t("Discussion timeline")}>
@@ -2067,6 +2068,32 @@ function DiscussionRoomTimeline({
           )}
         </p>
       </div>
+      {participantResponses.length > 0 ? (
+        <div className="du-room-response-wrap" aria-label={t("Participant first responses")}>
+          <div>
+            <p className="du-kicker">{t("Participant first responses")}</p>
+            <h5>{t("What participants said first")}</h5>
+            <p>
+              {t(
+                "These are the separate first responses before the room organized options, disagreements, and evidence needs."
+              )}
+            </p>
+          </div>
+          <div className="du-room-response-grid">
+            {participantResponses.map((response, index) => (
+              <article
+                className="du-room-response-card"
+                data-tone={response.tone}
+                key={`${response.speaker}:${response.detail}:${index}`}
+              >
+                <p className="du-kicker">{t("Independent response")}</p>
+                <h5>{t(response.speaker)}</h5>
+                <p>{t(response.detail)}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="du-room-activity-wrap">
         <div>
           <p className="du-kicker">{t("Room activity")}</p>
@@ -2167,6 +2194,15 @@ function DiscussionRoomTimeline({
         />
       </ol>
     </section>
+  );
+}
+
+function getParticipantFirstResponses(activities: RoomActivityItem[]): RoomActivityItem[] {
+  return activities.filter(
+    (activity) =>
+      activity.title === "Independent response submitted" &&
+      activity.detail !==
+        "This response is sealed until the independent first responses are revealed."
   );
 }
 

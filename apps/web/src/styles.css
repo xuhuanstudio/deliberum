@@ -613,22 +613,63 @@ textarea:focus-visible {
   line-height: 1.45;
 }
 
+.du-room-response-wrap,
 .du-room-activity-wrap,
 .du-room-stage-wrap {
   display: grid;
   gap: 8px;
 }
 
+.du-room-response-wrap h5,
 .du-room-activity-wrap h5,
 .du-room-stage-wrap h5,
+.du-room-response-wrap p,
 .du-room-activity-wrap p,
 .du-room-stage-wrap p {
   margin: 0;
 }
 
+.du-room-response-wrap h5,
 .du-room-activity-wrap h5,
 .du-room-stage-wrap h5 {
   font-size: 1rem;
+}
+
+.du-room-response-wrap p:not(.du-kicker) {
+  color: var(--du-muted);
+  line-height: 1.5;
+}
+
+.du-room-response-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-room-response-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  background: var(--du-surface);
+  padding: 15px;
+}
+
+.du-room-response-card[data-tone="warning"] {
+  border-left: 4px solid #b7791f;
+}
+
+.du-room-response-card h5,
+.du-room-response-card p {
+  margin: 0;
+}
+
+.du-room-response-card p:not(.du-kicker) {
+  color: var(--du-muted);
+  line-height: 1.45;
 }
 
 .du-room-activity {
@@ -1728,6 +1769,7 @@ textarea:focus-visible {
   .du-discussion-dashboard-grid,
   .du-room-layout,
   .du-room-brief,
+  .du-room-response-grid,
   .du-run-list-meta,
   .du-projection-developer-grid,
   .du-final-lifecycle-grid,

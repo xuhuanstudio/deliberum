@@ -549,6 +549,11 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Check evidence": "\u68c0\u67e5\u8bc1\u636e",
   "Review missing or unchecked evidence before relying on the answer.":
     "\u5728\u4f9d\u8d56\u7b54\u6848\u524d\u5ba1\u9605\u7f3a\u5931\u6216\u672a\u6838\u67e5\u7684\u8bc1\u636e\u3002",
+  "Participant first responses": "\u53c2\u4e0e\u8005\u521d\u59cb\u56de\u5e94",
+  "What participants said first": "\u53c2\u4e0e\u8005\u6700\u521d\u8bf4\u4e86\u4ec0\u4e48",
+  "These are the separate first responses before the room organized options, disagreements, and evidence needs.":
+    "\u8fd9\u4e9b\u662f\u8ba8\u8bba\u5ba4\u6574\u7406\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u9700\u6c42\u4e4b\u524d\u7684\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002",
+  "Independent response": "\u72ec\u7acb\u56de\u5e94",
   "Room activity": "\u8ba8\u8bba\u5ba4\u6d3b\u52a8",
   "Conversation transcript": "\u5bf9\u8bdd\u8bb0\u5f55",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",

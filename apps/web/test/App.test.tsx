@@ -2324,11 +2324,25 @@ describe("@deliberum/web shell", () => {
     );
 
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
-    expect(await screen.findByText("Perspective A")).toBeTruthy();
+    expect((await screen.findAllByText("Perspective A")).length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion organizer")).toBeTruthy();
     expect(
-      screen.getByText("CLI-first validation exercises the lifecycle directly.")
+      screen.getAllByText("CLI-first validation exercises the lifecycle directly.").length
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Participant first responses")).toBeTruthy();
+    expect(screen.getByText("What participants said first")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "These are the separate first responses before the room organized options, disagreements, and evidence needs."
+      )
     ).toBeTruthy();
+    const participantResponsesText =
+      document.querySelector(".du-room-response-wrap")?.textContent ?? "";
+    expect(participantResponsesText).toContain("Perspective A");
+    expect(participantResponsesText).toContain(
+      "CLI-first validation exercises the lifecycle directly."
+    );
+    expect(participantResponsesText).not.toContain("Discussion organizer");
     expect(
       screen.queryByText("This participant response is available for review in the room.")
     ).toBeNull();
@@ -2404,7 +2418,9 @@ describe("@deliberum/web shell", () => {
     );
 
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
-    expect(await screen.findByText("\u89c6\u89d2 A")).toBeTruthy();
+    expect((await screen.findAllByText("\u89c6\u89d2 A")).length).toBeGreaterThan(0);
+    expect(screen.getByText("\u53c2\u4e0e\u8005\u521d\u59cb\u56de\u5e94")).toBeTruthy();
+    expect(screen.getByText("\u53c2\u4e0e\u8005\u6700\u521d\u8bf4\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7ec4\u7ec7\u8005")).toBeTruthy();
     const roomText = document.querySelector(".du-room-layout")?.textContent ?? "";
     expect(roomText).not.toContain("local-preset-alpha");
