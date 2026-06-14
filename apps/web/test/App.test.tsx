@@ -1099,7 +1099,8 @@ describe("@deliberum/web shell", () => {
   it("renders setup and model readiness as a default user path", async () => {
     const client = renderApp("/");
 
-    expect(await screen.findByText("Setup / Models")).toBeTruthy();
+    expect((await screen.findAllByText("Setup / Models")).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Open Setup / Models" })).toBeTruthy();
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(await screen.findByText("Daemon online")).toBeTruthy();
     expect(screen.getByText("Model providers")).toBeTruthy();
@@ -1129,6 +1130,26 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
   });
 
+  it("opens setup and models as a top-level user path", async () => {
+    const client = renderApp("/setup/models");
+
+    expect(await screen.findByRole("heading", { name: "Setup / Models" })).toBeTruthy();
+    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
+    expect(screen.getByText("Model setup status")).toBeTruthy();
+    expect(await screen.findByText("Daemon online")).toBeTruthy();
+    expect(screen.getByText("Model providers")).toBeTruthy();
+    expect(screen.getByText("Configure provider locally")).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Start a discussion" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Continue discussions" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Setup / Models" })).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
+
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Setup diagnostics"));
+    expect(await screen.findByText("Runtime profile setup details")).toBeTruthy();
+    expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
+  });
+
   it("localizes known sample discussion titles on the landing catalog", async () => {
     const client = createClient({
       listRuns: vi.fn(async () => ({
@@ -1151,7 +1172,8 @@ describe("@deliberum/web shell", () => {
     );
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
-    expect(screen.getByText("\u8bbe\u7f6e / \u6a21\u578b")).toBeTruthy();
+    expect(screen.getAllByText("\u8bbe\u7f6e / \u6a21\u578b").length).toBeGreaterThan(0);
+    expect(screen.getByText("\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b")).toBeTruthy();
     expect(screen.getAllByText("\u6a21\u578b\u63d0\u4f9b\u65b9").length).toBeGreaterThan(0);
     expect(
       screen.getByText("\u63d0\u4f9b\u65b9\u5df2\u542f\u7528\uff1b\u8bf7\u6dfb\u52a0\u6a21\u578b\u7ec6\u8282")
@@ -1721,6 +1743,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u6f14\u793a\u53c2\u4e0e\u8005")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
     expect(screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898")).toBeTruthy();
+    expect(screen.getByText("\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b")).toBeTruthy();
     expect((screen.getByLabelText("\u8bed\u8a00") as HTMLSelectElement).value).toBe("zh-CN");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("run / session");
@@ -1750,6 +1773,7 @@ describe("@deliberum/web shell", () => {
         "This page does not ask for API keys. Provider credentials stay in local daemon setup and are never stored by Web."
       )
     ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open Setup / Models" })).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
     expect(document.body.textContent ?? "").not.toContain("runtime profile");

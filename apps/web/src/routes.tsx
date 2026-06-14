@@ -64,6 +64,12 @@ const landingRoute = createRoute({
   component: LandingPage
 });
 
+const setupModelsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "setup/models",
+  component: SetupModelsPage
+});
+
 const runsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "runs",
@@ -138,6 +144,7 @@ const sessionResourcesRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   landingRoute,
+  setupModelsRoute,
   runsRoute,
   runsNewRoute,
   runDetailRoute,
@@ -224,6 +231,40 @@ function RootRoute() {
   return <Outlet />;
 }
 
+function UserModeNavigation() {
+  const { t } = useI18n();
+  const linkClass = "du-nav-link";
+
+  return (
+    <>
+      <Link
+        to="/runs/new"
+        activeOptions={{ exact: true }}
+        activeProps={{ className: `${linkClass} is-active` }}
+        inactiveProps={{ className: linkClass }}
+      >
+        {t("Start discussion")}
+      </Link>
+      <Link
+        to="/setup/models"
+        activeOptions={{ exact: true }}
+        activeProps={{ className: `${linkClass} is-active` }}
+        inactiveProps={{ className: linkClass }}
+      >
+        {t("Setup / Models")}
+      </Link>
+      <Link
+        to="/runs"
+        activeOptions={{ exact: true }}
+        activeProps={{ className: `${linkClass} is-active` }}
+        inactiveProps={{ className: linkClass }}
+      >
+        {t("Discussions")}
+      </Link>
+    </>
+  );
+}
+
 function LandingPage() {
   const { t } = useI18n();
   const { daemonBaseUrl, client } = useDaemonRuntime();
@@ -301,6 +342,7 @@ function LandingPage() {
     <WorkspaceShell
       productName="Deliberum"
       workspaceLabel={t("User Mode")}
+      navigation={<UserModeNavigation />}
       status={<LanguageSwitcher />}
     >
       <section className="du-landing">
@@ -421,6 +463,11 @@ function LandingPage() {
               description={t("The daemon did not return safe model setup status.")}
             />
           )}
+          <div className="du-action-row">
+            <Link className="du-action-link du-secondary-link" to="/setup/models">
+              {t("Open Setup / Models")}
+            </Link>
+          </div>
         </DataPanel>
         <AdvancedDetails
           summary="Advanced / Developer Mode"
@@ -843,6 +890,105 @@ function LandingPage() {
   );
 }
 
+function SetupModelsPage() {
+  const { t } = useI18n();
+  const { client } = useDaemonRuntime();
+  const runtimeProfilesQuery = useQuery({
+    queryKey: ["runtime-profiles"],
+    queryFn: () => client.getRuntimeProfiles()
+  });
+  const runtimeProfiles = asArray(runtimeProfilesQuery.data?.profiles);
+  const runtimeSetupPlan = runtimeProfilesQuery.data
+    ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
+    : undefined;
+  const runtimeProfileEntries = runtimeProfiles.map((profile, index) => ({
+    profile,
+    index,
+    id: getStringRecordValue(profile, "id") ?? `runtime-profile-${index + 1}`
+  }));
+  const runtimeSetupProfilesById = new Map(
+    (runtimeSetupPlan?.profiles ?? []).map((profile) => [profile.id, profile])
+  );
+
+  return (
+    <WorkspaceShell
+      productName="Deliberum"
+      workspaceLabel={t("User Mode")}
+      navigation={<UserModeNavigation />}
+      status={<LanguageSwitcher />}
+    >
+      <section className="du-landing">
+        <PageHeader
+          eyebrow={t("User Mode")}
+          title={t("Setup / Models")}
+          description={t(
+            "Check whether the local system can run model-backed discussions, and see the safest next setup action without exposing secrets."
+          )}
+          actions={
+            <>
+              <Link className="du-action-link" to="/runs/new">
+                {t("Start a discussion")}
+              </Link>
+              <Link className="du-action-link du-secondary-link" to="/runs">
+                {t("Continue discussions")}
+              </Link>
+            </>
+          }
+        />
+        <DataPanel
+          title={t("Model setup status")}
+          description={t(
+            "See daemon connection, local demo readiness, provider readiness, and the safest next setup action in user language."
+          )}
+        >
+          {runtimeProfilesQuery.isLoading ? (
+            <StatusBanner title={t("Checking model setup")} />
+          ) : runtimeProfilesQuery.isError ? (
+            <StatusBanner
+              tone="warning"
+              title={t("Could not load model setup")}
+              detail={formatSafeErrorMessage(runtimeProfilesQuery.error)}
+            />
+          ) : runtimeSetupPlan ? (
+            <SetupModelsPanel setupPlan={runtimeSetupPlan} />
+          ) : (
+            <EmptyState
+              title={t("No model setup returned")}
+              description={t("The daemon did not return safe model setup status.")}
+            />
+          )}
+        </DataPanel>
+        <AdvancedDetails
+          summary="Advanced / Developer Mode"
+          panelLabel="Setup diagnostics"
+          description="Environment variable names, runtime profile metadata, and setup-plan details for operators."
+          lazy
+        >
+          <DataPanel
+            title="Runtime profile setup details"
+            description="Safe daemon profile setup status without environment values."
+          >
+            <QueryState query={runtimeProfilesQuery}>
+              {runtimeProfileEntries.length === 0 ? (
+                <EmptyState
+                  title="No runtime profiles"
+                  description="The daemon did not return profile setup metadata."
+                />
+              ) : (
+                <RuntimeProfileSetupDetails
+                  entries={runtimeProfileEntries}
+                  setupPlan={runtimeSetupPlan}
+                  setupProfilesById={runtimeSetupProfilesById}
+                />
+              )}
+            </QueryState>
+          </DataPanel>
+        </AdvancedDetails>
+      </section>
+    </WorkspaceShell>
+  );
+}
+
 function SetupModelsPanel({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
   const { t } = useI18n();
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
@@ -968,6 +1114,96 @@ function SetupInstructionStep({ title, detail }: { title: string; detail: string
       <h4>{title}</h4>
       <p>{detail}</p>
     </article>
+  );
+}
+
+function RuntimeProfileSetupDetails({
+  entries,
+  setupPlan,
+  setupProfilesById
+}: {
+  entries: Array<{
+    profile: unknown;
+    index: number;
+    id: string;
+  }>;
+  setupPlan: RuntimeSetupPlan | undefined;
+  setupProfilesById: Map<string, RuntimeSetupPlanProfile>;
+}) {
+  return (
+    <>
+      {setupPlan ? (
+        <KeyValueGrid
+          items={[
+            {
+              label: "Setup steps",
+              value: String(setupPlan.steps.length)
+            },
+            {
+              label: "Required env vars",
+              value: formatSetupEnvVarList(setupPlan.summary.missingRequiredEnvVars)
+            },
+            {
+              label: "Recommended env vars",
+              value: formatSetupEnvVarList(setupPlan.summary.missingRecommendedEnvVars)
+            },
+            {
+              label: "Secret env names",
+              value: formatSetupEnvVarList(setupPlan.summary.secretEnvVarNames)
+            }
+          ]}
+        />
+      ) : null}
+      <div className="du-run-list">
+        {entries.map(({ profile, index, id }) => {
+          const setup = getRecordValue(profile, "setup");
+          const components = asArray(getRecordValue(profile, "components"));
+          const enabledComponents = components.filter(
+            (componentEntry) => getRecordValue(componentEntry, "enabled") === true
+          ).length;
+          const setupProfile = setupProfilesById.get(id);
+          const missingRecommendedEnvVars = setupProfile
+            ? setupProfile.missingRecommendedEnvVars
+            : formatUnknownArray(getRecordValue(setup, "missingRecommendedEnvVars"));
+
+          return (
+            <article className="du-run-list-item" key={`${id}-${index}`}>
+              <p className="du-kicker">{id}</p>
+              <h3>{formatRecordValue(getRecordValue(profile, "name") ?? id)}</h3>
+              <p>{formatRuntimeProfileStatus(getRecordValue(profile, "status"))}</p>
+              <KeyValueGrid
+                items={[
+                  {
+                    label: "Enabled",
+                    value: getRecordValue(profile, "enabled") === true ? "Yes" : "No"
+                  },
+                  {
+                    label: "Components",
+                    value: `${enabledComponents}/${components.length}`
+                  },
+                  {
+                    label: "Enable env var",
+                    value: formatRecordValue(getRecordValue(setup, "enableEnvVar"))
+                  },
+                  {
+                    label: "Required setup",
+                    value: formatSetupEnvVarList(setupProfile?.missingRequiredEnvVars ?? [])
+                  },
+                  {
+                    label: "Recommended setup",
+                    value: formatSetupEnvVarList(missingRecommendedEnvVars)
+                  },
+                  {
+                    label: "Plan steps",
+                    value: setupProfile ? String(setupProfile.steps.length) : "Unavailable"
+                  }
+                ]}
+              />
+            </article>
+          );
+        })}
+      </div>
+    </>
   );
 }
 

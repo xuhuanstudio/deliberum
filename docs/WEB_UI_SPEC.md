@@ -1,6 +1,6 @@
 # Web UI Spec
 
-The Web UI is the human-first Discussion Room for Deliberum. Its default experience is for a first-time non-technical user who wants to start or continue a deliberation, understand the current result, and decide what to do next.
+The Web UI is the human-friendly visual operating surface for the local Deliberum system. Its default experience is for a first-time non-technical user who wants to understand model setup, start or continue a deliberation, understand the current result, and decide what to do next.
 
 It is still backed by the local daemon and reads daemon projections through `@deliberum/client`, but the default interface must not make users understand daemon, ledger, run, session, projection, event, proposal, runtime, resource, or internal ids before they can use the product.
 
@@ -20,6 +20,7 @@ User Mode is the default. A first-time user should be able to understand the pro
 Default User Mode pages and flows:
 
 - `/` introduces Deliberum as a multi-perspective discussion room, provides Start a discussion and Continue discussions actions, and keeps operator-only details inside Advanced / Developer Mode.
+- `/setup/models` shows daemon connection, local demo readiness, provider/model readiness, and safe next setup actions in user language. It does not collect or display provider secrets.
 - `/runs/new` lets a user start a discussion from a guided prompt or sample walkthrough. Advanced JSON request details stay collapsed.
 - `/runs` lists existing discussions in user language.
 - `/runs/:runId` is the Discussion Room. It shows the discussion brief, participant/model contributions, room-style timeline, strongest current options, open disagreements, evidence gaps, risk review, current conclusion, and next recommended actions.

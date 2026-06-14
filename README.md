@@ -61,6 +61,7 @@ Outcome Compilation
 The default Web path is designed for a first-time user, not for a daemon operator.
 
 - Start a discussion from `/runs/new`.
+- Check daemon and model/provider readiness from `/setup/models`.
 - Continue existing discussions from `/runs`.
 - Read participant/model perspectives as discussion contributions.
 - Follow the room timeline by deliberation stage.

@@ -571,6 +571,11 @@ function DiscussionModelSetupPanel({
           "This page does not ask for API keys. Provider credentials stay in local daemon setup and are never stored by Web."
         )}
       </p>
+      <div className="du-action-row">
+        <Link className="du-action-link du-secondary-link" to="/setup/models">
+          {t("Open Setup / Models")}
+        </Link>
+      </div>
     </DataPanel>
   );
 }
@@ -1000,20 +1005,28 @@ function RunNavigation({
   return (
     <>
       <Link
-        to="/runs"
-        activeOptions={{ exact: true }}
-        activeProps={{ className: `${linkClass} is-active` }}
-        inactiveProps={{ className: linkClass }}
-      >
-        {t("Discussions")}
-      </Link>
-      <Link
         to="/runs/new"
         activeOptions={{ exact: true }}
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
         {t("Start discussion")}
+      </Link>
+      <Link
+        to="/setup/models"
+        activeOptions={{ exact: true }}
+        activeProps={{ className: `${linkClass} is-active` }}
+        inactiveProps={{ className: linkClass }}
+      >
+        {t("Setup / Models")}
+      </Link>
+      <Link
+        to="/runs"
+        activeOptions={{ exact: true }}
+        activeProps={{ className: `${linkClass} is-active` }}
+        inactiveProps={{ className: linkClass }}
+      >
+        {t("Discussions")}
       </Link>
       {runId ? (
         <Link

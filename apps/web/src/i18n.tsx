@@ -41,6 +41,10 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Continue discussions": "\u7ee7\u7eed\u8ba8\u8bba",
   "Continue existing discussions": "\u7ee7\u7eed\u5df2\u6709\u8ba8\u8bba",
   "Setup / Models": "\u8bbe\u7f6e / \u6a21\u578b",
+  "Open Setup / Models": "\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b",
+  "Model setup status": "\u6a21\u578b\u8bbe\u7f6e\u72b6\u6001",
+  "See daemon connection, local demo readiness, provider readiness, and the safest next setup action in user language.":
+    "\u7528\u7528\u6237\u80fd\u7406\u89e3\u7684\u8bed\u8a00\u67e5\u770b\u5b88\u62a4\u8fdb\u7a0b\u8fde\u63a5\u3001\u672c\u5730\u6f14\u793a\u5c31\u7eea\u72b6\u6001\u3001\u63d0\u4f9b\u65b9\u5c31\u7eea\u72b6\u6001\u548c\u6700\u5b89\u5168\u7684\u4e0b\u4e00\u6b65\u8bbe\u7f6e\u64cd\u4f5c\u3002",
   "Check whether the local system can run model-backed discussions, and see the safest next setup action without exposing secrets.":
     "\u68c0\u67e5\u672c\u5730\u7cfb\u7edf\u662f\u5426\u53ef\u4ee5\u8fd0\u884c\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\uff0c\u5e76\u5728\u4e0d\u66b4\u9732\u5bc6\u94a5\u7684\u60c5\u51b5\u4e0b\u67e5\u770b\u6700\u5b89\u5168\u7684\u4e0b\u4e00\u6b65\u8bbe\u7f6e\u64cd\u4f5c\u3002",
   "Checking model setup": "\u6b63\u5728\u68c0\u67e5\u6a21\u578b\u8bbe\u7f6e",
