@@ -1568,7 +1568,9 @@ describe("@deliberum/web shell", () => {
   it("renders run detail, stage status, and discussion detail panels without raw event loading", async () => {
     const client = renderApp("/runs/run-1");
 
-    await screen.findByText("Evaluate the local daemon run workspace");
+    expect(
+      (await screen.findAllByText("Evaluate the local daemon run workspace")).length
+    ).toBeGreaterThan(1);
     expect(document.body.textContent ?? "").not.toContain("Run Alpha");
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
     await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
@@ -1579,6 +1581,14 @@ describe("@deliberum/web shell", () => {
     expect(client.getRunProcessProposals).not.toHaveBeenCalled();
     expect(client.getProcessProposalStates).not.toHaveBeenCalled();
 
+    expect(screen.getByText("Discussion brief")).toBeTruthy();
+    expect(screen.getByText("Question")).toBeTruthy();
+    expect(screen.getByText("Goals")).toBeTruthy();
+    expect(screen.getByText("Inspect run state")).toBeTruthy();
+    expect(screen.getByText("Constraints")).toBeTruthy();
+    expect(screen.getByText("Keep outcomes provisional")).toBeTruthy();
+    expect(screen.getByText("Expected result")).toBeTruthy();
+    expect(screen.getByText("Not specified")).toBeTruthy();
     expect(screen.getAllByText("Discussion status").length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion is ready to review")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Refresh discussion steps" })).toBeTruthy();

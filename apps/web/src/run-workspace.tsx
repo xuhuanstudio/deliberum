@@ -332,6 +332,7 @@ export function RunDetailPage() {
         }
       >
         <QueryState query={runQuery}>
+          <RunBriefPanel run={run} />
           <RunSummary run={run} />
           {sessionId ? (
             <RunQualityOverview runId={runId} sessionId={sessionId} run={run} />
@@ -696,6 +697,56 @@ function RunProgressDetails({ run }: { run: unknown }) {
         </section>
       </div>
     </details>
+  );
+}
+
+function RunBriefPanel({ run }: { run: unknown }) {
+  const plan = getRecordValue(run, "plan") ?? {};
+  const question =
+    getStringRecordValue(plan, "topic") ??
+    getStringRecordValue(run, "topic") ??
+    formatRunDisplayTitle(run);
+  const goals = getStringArray(getRecordValue(plan, "goals"));
+  const constraints = getStringArray(getRecordValue(plan, "constraints"));
+  const expectedResult = getStringArray(
+    getRecordValue(getRecordValue(plan, "output"), "expectations")
+  );
+  const hasBrief =
+    question.length > 0 || goals.length > 0 || constraints.length > 0 || expectedResult.length > 0;
+
+  return (
+    <DataPanel
+      title="Discussion brief"
+      description="The question, goals, constraints, and expected result that anchor this discussion."
+    >
+      {hasBrief ? (
+        <KeyValueGrid
+          items={[
+            {
+              label: "Question",
+              value: question
+            },
+            {
+              label: "Goals",
+              value: formatBriefList(goals)
+            },
+            {
+              label: "Constraints",
+              value: formatBriefList(constraints)
+            },
+            {
+              label: "Expected result",
+              value: formatBriefList(expectedResult)
+            }
+          ]}
+        />
+      ) : (
+        <EmptyState
+          title="No discussion brief visible yet"
+          description="Continue the discussion after the brief is available."
+        />
+      )}
+    </DataPanel>
   );
 }
 
@@ -3461,6 +3512,10 @@ function formatEventIds(eventIds: unknown[]): string {
 
 function getStringArray(value: unknown): string[] {
   return asArray(value).filter((entry): entry is string => typeof entry === "string");
+}
+
+function formatBriefList(items: readonly string[]): string {
+  return items.length > 0 ? items.join(" ") : "Not specified";
 }
 
 function countRecordsWithoutStatus(records: unknown[], settledStatus: string): number {
