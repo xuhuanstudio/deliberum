@@ -2243,6 +2243,20 @@ describe("@deliberum/web shell", () => {
           continuationSuggestions: [],
           limitations: []
         }
+      })),
+      getObjections: vi.fn(async () => ({
+        objections: [
+          {
+            object: {
+              id: "objection-context-1",
+              failureMode: "Users could mistake sample material for live deliberation.",
+              consequence: "The conclusion should label deterministic sample output before use.",
+              status: "open"
+            },
+            proposalEventId: "proposal-event-1"
+          }
+        ],
+        projection
       }))
     });
 
@@ -2258,9 +2272,11 @@ describe("@deliberum/web shell", () => {
     const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
     expect(readableConclusion).toContain("Candidate A");
     expect(readableConclusion).toContain("1 visible perspective listed");
-    expect(readableConclusion).toContain("Open disagreement 1");
     expect(readableConclusion).toContain(
-      "This disagreement is tracked, but it does not have a plain-language summary yet."
+      "Users could mistake sample material for live deliberation."
+    );
+    expect(readableConclusion).toContain(
+      "The conclusion should label deterministic sample output before use."
     );
     expect(readableConclusion).toContain("Requirement 1");
     expect(readableConclusion).toContain("Missing evidence 1");
@@ -2273,6 +2289,7 @@ describe("@deliberum/web shell", () => {
     expect(readableConclusion).toContain("No next recommended actions are listed yet.");
     expect(readableConclusion).not.toContain("candidate-1");
     expect(readableConclusion).not.toContain("objection-1");
+    expect(readableConclusion).not.toContain("objection-context-1");
     expect(readableConclusion).not.toContain("quality-1");
     expect(readableConclusion).not.toContain("evidence-need-1");
     expect(readableConclusion).not.toContain("returned");

@@ -1958,8 +1958,8 @@ function summarizeOpenObjection(item: unknown, index: number): OutcomeRecordSumm
     fallbackKicker: `Disagreement ${index + 1}`,
     fallbackDetail:
       "This disagreement is tracked, but it does not have a plain-language summary yet.",
-    titleKeys: ["title", "summary", "claim"],
-    detailKeys: ["reason", "description", "text"]
+    titleKeys: ["title", "summary", "claim", "failureMode"],
+    detailKeys: ["reason", "description", "consequence", "impact", "mitigation", "text"]
   });
 }
 
