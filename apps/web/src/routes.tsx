@@ -369,6 +369,14 @@ function LandingPage() {
             </>
           }
         />
+        <LandingReadinessOverview
+          runs={runs}
+          runsLoading={runsQuery.isLoading}
+          runsError={runsQuery.isError}
+          setupPlan={runtimeSetupPlan}
+          setupLoading={runtimeProfilesQuery.isLoading}
+          setupError={runtimeProfilesQuery.isError}
+        />
         <div className="du-product-grid">
           <DataPanel
             title={t("What you can do")}
@@ -894,6 +902,327 @@ function LandingPage() {
       </section>
     </WorkspaceShell>
   );
+}
+
+type LandingReadinessTone = "ok" | "warning" | "neutral";
+
+type LandingReadinessItem = {
+  label: string;
+  title: string;
+  detail: string;
+  tone: LandingReadinessTone;
+  values?: Record<string, string | number>;
+};
+
+type LandingReadinessAction = {
+  label: string;
+  detail: string;
+  to: "/runs/new" | "/setup/models" | "/runs";
+  tone: LandingReadinessTone;
+};
+
+function LandingReadinessOverview({
+  runs,
+  runsLoading,
+  runsError,
+  setupPlan,
+  setupLoading,
+  setupError
+}: {
+  runs: unknown[];
+  runsLoading: boolean;
+  runsError: boolean;
+  setupPlan: RuntimeSetupPlan | undefined;
+  setupLoading: boolean;
+  setupError: boolean;
+}) {
+  const { t } = useI18n();
+  const readiness = buildLandingReadiness({
+    runs,
+    runsLoading,
+    runsError,
+    setupPlan,
+    setupLoading,
+    setupError
+  });
+
+  return (
+    <DataPanel
+      title={t("Ready to use Deliberum")}
+      description={t(
+        "One place to see whether the local service, model setup, and discussion history are ready."
+      )}
+    >
+      <div className="du-setup-model-grid" aria-label={t("Product readiness")}>
+        {readiness.items.map((item) => (
+          <article
+            className={`du-setup-model-card du-setup-model-${item.tone}`}
+            key={item.label}
+          >
+            <p className="du-kicker">{t(item.label)}</p>
+            <h4>{t(item.title, item.values)}</h4>
+            <p>{t(item.detail, item.values)}</p>
+          </article>
+        ))}
+      </div>
+      <section className={`du-setup-next-step du-status du-status-${readiness.action.tone}`}>
+        <p className="du-kicker">{t("Recommended next step")}</p>
+        <strong>{t(readiness.action.label)}</strong>
+        <span>{t(readiness.action.detail)}</span>
+        <div className="du-action-row">
+          <Link className="du-action-link" to={readiness.action.to}>
+            {t(readiness.action.label)}
+          </Link>
+          {readiness.action.to !== "/setup/models" ? (
+            <Link className="du-action-link du-secondary-link" to="/setup/models">
+              {t("Open Setup / Models")}
+            </Link>
+          ) : null}
+          {runs.length > 0 && readiness.action.to !== "/runs" ? (
+            <Link className="du-action-link du-secondary-link" to="/runs">
+              {t("Continue discussions")}
+            </Link>
+          ) : null}
+        </div>
+      </section>
+    </DataPanel>
+  );
+}
+
+function buildLandingReadiness(input: {
+  runs: unknown[];
+  runsLoading: boolean;
+  runsError: boolean;
+  setupPlan: RuntimeSetupPlan | undefined;
+  setupLoading: boolean;
+  setupError: boolean;
+}): {
+  items: LandingReadinessItem[];
+  action: LandingReadinessAction;
+} {
+  const localService = describeLandingLocalService(input);
+  const modelSetup = describeLandingModelSetup(input.setupPlan, input.setupLoading, input.setupError);
+  const discussionHistory = describeLandingDiscussionHistory(
+    input.runs,
+    input.runsLoading,
+    input.runsError
+  );
+  const action = describeLandingNextAction({
+    runs: input.runs,
+    modelSetup
+  });
+
+  return {
+    items: [localService, modelSetup.item, discussionHistory],
+    action
+  };
+}
+
+function describeLandingLocalService(input: {
+  setupLoading: boolean;
+  setupError: boolean;
+  setupPlan: RuntimeSetupPlan | undefined;
+}): LandingReadinessItem {
+  if (input.setupLoading) {
+    return {
+      label: "Local service",
+      title: "Checking local service",
+      detail: "Web is checking whether the local system is reachable.",
+      tone: "neutral"
+    };
+  }
+
+  if (input.setupError || !input.setupPlan) {
+    return {
+      label: "Local service",
+      title: "Local service unavailable",
+      detail: "Open Setup / Models to check the local service and model configuration.",
+      tone: "warning"
+    };
+  }
+
+  return {
+    label: "Local service",
+    title: "Local service connected",
+    detail: "Web can read setup status from the local system.",
+    tone: "ok"
+  };
+}
+
+function describeLandingModelSetup(
+  setupPlan: RuntimeSetupPlan | undefined,
+  setupLoading: boolean,
+  setupError: boolean
+): {
+  item: LandingReadinessItem;
+  canStartModelBacked: boolean;
+  canStartDemo: boolean;
+  needsSetup: boolean;
+} {
+  if (setupLoading) {
+    return {
+      item: {
+        label: "Model setup",
+        title: "Checking model setup",
+        detail: "Web is checking whether demo or model-backed participants are ready.",
+        tone: "neutral"
+      },
+      canStartModelBacked: false,
+      canStartDemo: false,
+      needsSetup: false
+    };
+  }
+
+  if (setupError || !setupPlan) {
+    return {
+      item: {
+        label: "Model setup",
+        title: "Model setup unavailable",
+        detail: "Open Setup / Models to check the local model configuration.",
+        tone: "warning"
+      },
+      canStartModelBacked: false,
+      canStartDemo: false,
+      needsSetup: true
+    };
+  }
+
+  const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
+  const localPresetReady = localPreset?.status === "ready";
+  const modelProviderProfiles = setupPlan.profiles.filter(isUserFacingModelProviderProfile);
+  const modelProviderReady = modelProviderProfiles.some((profile) => profile.status === "ready");
+  const needsSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
+
+  if (modelProviderReady) {
+    return {
+      item: {
+        label: "Model setup",
+        title: "Real model provider ready",
+        detail: "Configured model participants can answer new discussions.",
+        tone: "ok"
+      },
+      canStartModelBacked: true,
+      canStartDemo: localPresetReady,
+      needsSetup: false
+    };
+  }
+
+  if (localPresetReady) {
+    return {
+      item: {
+        label: "Model setup",
+        title: needsSetup ? "Demo discussion ready" : "Ready for demo discussions",
+        detail: needsSetup
+          ? "Demo participants can start now; finish provider setup before relying on real model perspectives."
+          : "Built-in demo participants can start a walkthrough immediately.",
+        tone: needsSetup ? "warning" : "ok"
+      },
+      canStartModelBacked: false,
+      canStartDemo: true,
+      needsSetup
+    };
+  }
+
+  return {
+    item: {
+      label: "Model setup",
+      title: needsSetup ? "Provider setup needed" : "Discussion source unavailable",
+      detail: needsSetup
+        ? "Save API key, base URL, and model before relying on real model participants."
+        : "Complete model setup before starting useful discussions.",
+      tone: needsSetup ? "warning" : "neutral"
+    },
+    canStartModelBacked: false,
+    canStartDemo: false,
+    needsSetup: true
+  };
+}
+
+function describeLandingDiscussionHistory(
+  runs: unknown[],
+  runsLoading: boolean,
+  runsError: boolean
+): LandingReadinessItem {
+  if (runsLoading) {
+    return {
+      label: "Discussion history",
+      title: "Checking discussions",
+      detail: "Web is checking for existing discussion rooms.",
+      tone: "neutral"
+    };
+  }
+
+  if (runsError) {
+    return {
+      label: "Discussion history",
+      title: "Discussion history unavailable",
+      detail: "Existing discussions could not be loaded.",
+      tone: "warning"
+    };
+  }
+
+  if (runs.length > 0) {
+    return {
+      label: "Discussion history",
+      title: runs.length === 1 ? "1 existing discussion" : "{count} existing discussions",
+      detail: "You can continue a previous discussion room.",
+      tone: "ok",
+      values: {
+        count: runs.length
+      }
+    };
+  }
+
+  return {
+    label: "Discussion history",
+    title: "No discussions yet",
+    detail: "Start a discussion to create the first room.",
+    tone: "neutral"
+  };
+}
+
+function describeLandingNextAction(input: {
+  runs: unknown[];
+  modelSetup: {
+    canStartModelBacked: boolean;
+    canStartDemo: boolean;
+    needsSetup: boolean;
+  };
+}): LandingReadinessAction {
+  if (input.modelSetup.canStartModelBacked) {
+    return {
+      label: "Start model-backed discussion",
+      detail: "Use configured model participants for the next discussion.",
+      to: "/runs/new",
+      tone: "ok"
+    };
+  }
+
+  if (input.modelSetup.canStartDemo) {
+    return {
+      label: "Start demo discussion",
+      detail:
+        "Try the full discussion path with built-in participants while you finish model setup.",
+      to: "/runs/new",
+      tone: input.modelSetup.needsSetup ? "warning" : "ok"
+    };
+  }
+
+  if (input.runs.length > 0) {
+    return {
+      label: "Continue discussions",
+      detail: "Review a discussion that already exists while setup is being checked.",
+      to: "/runs",
+      tone: "warning"
+    };
+  }
+
+  return {
+    label: "Finish model setup",
+    detail: "Add model provider details before relying on real model-backed discussions.",
+    to: "/setup/models",
+    tone: "warning"
+  };
 }
 
 function SetupModelsPage() {

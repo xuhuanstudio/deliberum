@@ -1032,6 +1032,12 @@ describe("@deliberum/web shell", () => {
     const client = renderApp("/");
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Ready to use Deliberum")).toBeTruthy();
+    expect(await screen.findByText("Local service connected")).toBeTruthy();
+    expect(await screen.findByText("Demo discussion ready")).toBeTruthy();
+    expect(await screen.findByText("1 existing discussion")).toBeTruthy();
+    expect(screen.getByText("Recommended next step")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Start demo discussion" })).toBeTruthy();
     expect(screen.getByText("What you can do")).toBeTruthy();
     expect(screen.getByText("What the discussion keeps visible")).toBeTruthy();
     expect(screen.getAllByText("Advanced / Developer Mode").length).toBeGreaterThanOrEqual(2);
@@ -1141,6 +1147,62 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Runtime profiles")).toBeTruthy();
     expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
+  });
+
+  it("recommends a model-backed start from the landing readiness overview when a provider is ready", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
+      profiles: [
+        {
+          id: "local-preset",
+          name: "Local preset",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+            envVars: [],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    });
+
+    renderApp("/", client);
+
+    expect(await screen.findByText("Ready to use Deliberum")).toBeTruthy();
+    expect(await screen.findByText("Real model provider ready")).toBeTruthy();
+    expect(
+      await screen.findByRole("link", { name: "Start model-backed discussion" })
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Use configured model participants for the next discussion.")
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
   it("opens setup and models as a top-level user path", async () => {
@@ -1498,8 +1560,16 @@ describe("@deliberum/web shell", () => {
     );
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
+    expect(screen.getByText("Deliberum \u4f7f\u7528\u5c31\u7eea")).toBeTruthy();
+    expect(screen.getByText("\u672c\u5730\u670d\u52a1\u5df2\u8fde\u63a5")).toBeTruthy();
+    expect(screen.getByText("\u6f14\u793a\u8ba8\u8bba\u5df2\u5c31\u7eea")).toBeTruthy();
+    expect(screen.getByText("1 \u4e2a\u5df2\u6709\u8ba8\u8bba")).toBeTruthy();
+    expect(screen.getByText("\u5efa\u8bae\u7684\u4e0b\u4e00\u6b65")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba" })
+    ).toBeTruthy();
     expect(screen.getAllByText("\u8bbe\u7f6e / \u6a21\u578b").length).toBeGreaterThan(0);
-    expect(screen.getByText("\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b")).toBeTruthy();
+    expect(screen.getAllByText("\u6253\u5f00\u8bbe\u7f6e / \u6a21\u578b").length).toBeGreaterThan(0);
     expect(screen.getAllByText("\u6a21\u578b\u63d0\u4f9b\u65b9").length).toBeGreaterThan(0);
     expect(
       screen.getByText("\u63d0\u4f9b\u65b9\u5df2\u542f\u7528\uff1b\u8bf7\u6dfb\u52a0\u6a21\u578b\u7ec6\u8282")
