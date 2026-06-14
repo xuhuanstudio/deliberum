@@ -1284,7 +1284,7 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("who will organize the result");
   });
 
-  it("guides landing users to setup when the local service is unavailable", async () => {
+  it("shows the local start command on landing when the local service is unavailable", async () => {
     const client = createClient({
       getRuntimeProfiles: vi.fn(async () => {
         throw new Error("ECONNREFUSED 127.0.0.1:3877");
@@ -1295,12 +1295,28 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start the local service")).length).toBeGreaterThan(0);
     expect(
-      await screen.findByText("Web cannot read setup or discussions until the local Deliberum service is running.")
+      (
+        await screen.findAllByText(
+          "Web cannot read setup or discussions until the local Deliberum service is running."
+        )
+      ).length
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Local service command")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js"
+      )
     ).toBeTruthy();
     expect(
-      screen.getByText("Open Setup / Models for the local start command and model setup steps.")
+      screen.getByText(
+        "This starts the local service only; model API keys are added from Web after it connects."
+      )
     ).toBeTruthy();
-    expect(screen.queryByText("Local service command")).toBeNull();
+    expect(
+      screen.getByText(
+        "After the service responds, open Setup / Models to add the provider API key, base URL, and model."
+      )
+    ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("ECONNREFUSED");
     expect(document.body.textContent ?? "").not.toContain("127.0.0.1:3877");
   });

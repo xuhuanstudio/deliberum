@@ -1041,6 +1041,9 @@ function LandingReadinessOverview({
           </article>
         ))}
       </div>
+      {setupError ? (
+        <LocalServiceSetupGuide compact={false} onRetry={() => window.location.reload()} />
+      ) : null}
       <LandingFirstUsePath steps={readiness.firstUseSteps} />
       <section className={`du-setup-next-step du-status du-status-${readiness.action.tone}`}>
         <p className="du-kicker">{t("Recommended next step")}</p>
