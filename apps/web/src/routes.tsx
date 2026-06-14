@@ -1567,6 +1567,19 @@ type ProviderSetupCheck = {
   tone: "ok" | "warning" | "neutral";
 };
 
+type CurrentModelSetupItem = {
+  label: string;
+  value: string;
+  detail: string;
+  tone: "ok" | "warning" | "neutral";
+};
+
+type CurrentModelSetupStatus = {
+  title: string;
+  detail: string;
+  tone: "ok" | "warning" | "neutral";
+};
+
 type SetupDiscussionReadinessItem = {
   title: string;
   status: string;
@@ -2094,6 +2107,11 @@ function OpenAICompatibleSetupForm({
           )}
         </p>
       </div>
+      <CurrentModelSetupSummary
+        profile={profile}
+        activeInCurrentDaemon={activeInCurrentDaemon}
+        verified={verified}
+      />
       <div className="du-provider-setup-form-layout">
         <form className="du-provider-setup-form" onSubmit={onSubmit}>
           <label htmlFor="openai-compatible-api-key">{t("Provider API key")}</label>
@@ -2217,6 +2235,153 @@ function OpenAICompatibleSetupForm({
       ) : null}
     </section>
   );
+}
+
+function CurrentModelSetupSummary({
+  profile,
+  activeInCurrentDaemon,
+  verified
+}: {
+  profile: RuntimeSetupPlanProfile;
+  activeInCurrentDaemon: boolean;
+  verified: boolean;
+}) {
+  const { t } = useI18n();
+  const status = describeCurrentModelSetupStatus(profile, activeInCurrentDaemon, verified);
+  const items = createCurrentModelSetupItems(profile, activeInCurrentDaemon, verified);
+  const startReady = profile.status === "ready" || verified;
+
+  return (
+    <section
+      className={`du-current-model-setup du-current-model-setup-${status.tone}`}
+      aria-labelledby="current-model-setup"
+    >
+      <div className="du-current-model-setup-header">
+        <div>
+          <p className="du-kicker">{t("Model management")}</p>
+          <h5 id="current-model-setup">{t("Current model setup")}</h5>
+          <p>{t(status.detail)}</p>
+        </div>
+        <strong>{t(status.title)}</strong>
+      </div>
+      <div className="du-current-model-setup-grid">
+        {items.map((item) => (
+          <div
+            className={`du-current-model-setup-item du-current-model-setup-item-${item.tone}`}
+            key={item.label}
+          >
+            <span>{t(item.label)}</span>
+            <strong>{t(item.value)}</strong>
+            <p>{t(item.detail)}</p>
+          </div>
+        ))}
+      </div>
+      <p className="du-readable-meta">
+        {t(
+          "Web shows only readiness here. It never displays saved API keys, base URLs, or exact model values in the default view."
+        )}
+      </p>
+      <div className="du-action-row">
+        {startReady ? <StartModelBackedDiscussionLink /> : null}
+        <a className="du-action-link du-secondary-link" href="#openai-compatible-api-key">
+          {t(startReady ? "Edit model setup" : "Finish setup in Web")}
+        </a>
+      </div>
+    </section>
+  );
+}
+
+function describeCurrentModelSetupStatus(
+  profile: RuntimeSetupPlanProfile,
+  activeInCurrentDaemon: boolean,
+  verified: boolean
+): CurrentModelSetupStatus {
+  if (profile.status === "ready" && verified) {
+    return {
+      title: "Ready and verified",
+      detail: "The provider is ready and the latest Web test request succeeded.",
+      tone: "ok"
+    };
+  }
+
+  if (profile.status === "ready") {
+    return {
+      title: "Ready for real discussions",
+      detail:
+        "Web can start model-backed discussions with this provider. Verify the connection when you want a fresh test.",
+      tone: "ok"
+    };
+  }
+
+  if (activeInCurrentDaemon) {
+    return {
+      title: "Saved in this session",
+      detail:
+        "The local service accepted this setup. Verify the connection before relying on it for a discussion.",
+      tone: "ok"
+    };
+  }
+
+  return {
+    title: "Finish setup in Web",
+    detail:
+      "Add or replace the API key, base URL, and model below. Saved secrets stay on this machine and are not displayed again.",
+    tone: profile.enabled ? "warning" : "neutral"
+  };
+}
+
+function createCurrentModelSetupItems(
+  profile: RuntimeSetupPlanProfile,
+  activeInCurrentDaemon: boolean,
+  verified: boolean
+): CurrentModelSetupItem[] {
+  const apiKeySaved = profile.configuredSecretEnvVarCount > 0 || activeInCurrentDaemon;
+  const baseUrlSaved =
+    activeInCurrentDaemon ||
+    (hasAnySetupName(profile, isRequestTargetSetupName) &&
+      !isAnySetupNameMissing(profile, isRequestTargetSetupName));
+  const modelSaved =
+    activeInCurrentDaemon ||
+    (hasAnySetupName(profile, isModelSetupName) &&
+      !isAnySetupNameMissing(profile, isModelSetupName));
+  const canVerify = profile.status === "ready" || activeInCurrentDaemon;
+
+  return [
+    {
+      label: "Provider",
+      value: profile.name,
+      detail: "The provider Web can configure for this local system.",
+      tone: profile.enabled ? "ok" : "neutral"
+    },
+    {
+      label: "API key",
+      value: apiKeySaved ? "Saved locally" : "Required",
+      detail: apiKeySaved ? "Saved without showing the value." : "Enter this in the form below.",
+      tone: apiKeySaved ? "ok" : profile.enabled ? "warning" : "neutral"
+    },
+    {
+      label: "Base URL",
+      value: baseUrlSaved ? "Saved locally" : "Required",
+      detail: baseUrlSaved ? "Saved without showing the value." : "Enter this in the form below.",
+      tone: baseUrlSaved ? "ok" : profile.enabled ? "warning" : "neutral"
+    },
+    {
+      label: "Model",
+      value: modelSaved ? "Saved locally" : "Required",
+      detail: modelSaved ? "Saved without showing the value." : "Enter this in the form below.",
+      tone: modelSaved ? "ok" : profile.enabled ? "warning" : "neutral"
+    },
+    {
+      label: "Connection",
+      value: verified ? "Verified" : canVerify ? "Ready to verify" : "Needs saved setup",
+      detail: verified
+        ? "The latest safe provider test succeeded."
+        : canVerify
+          ? "Use Verify connection before starting a real discussion."
+          : "Save the required setup before testing the provider.",
+      tone: verified || canVerify ? "ok" : profile.enabled ? "warning" : "neutral"
+    }
+  ];
 }
 
 function ProviderSetupCompletion({

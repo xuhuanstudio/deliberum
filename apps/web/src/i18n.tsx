@@ -136,6 +136,38 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Configure OpenAI-compatible provider": "\u914d\u7f6e OpenAI-compatible \u63d0\u4f9b\u65b9",
   "Save the provider API key, base URL, and model to this machine so future discussions can use real model participants.":
     "\u5c06\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c model \u4fdd\u5b58\u5230\u8fd9\u53f0\u673a\u5668\uff0c\u8ba9\u540e\u7eed\u8ba8\u8bba\u53ef\u4ee5\u4f7f\u7528\u771f\u5b9e\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
+  "Model management": "\u6a21\u578b\u7ba1\u7406",
+  "Current model setup": "\u5f53\u524d\u6a21\u578b\u8bbe\u7f6e",
+  "Ready and verified": "\u5df2\u5c31\u7eea\u4e14\u5df2\u9a8c\u8bc1",
+  "The provider is ready and the latest Web test request succeeded.":
+    "\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea\uff0c\u6700\u8fd1\u4e00\u6b21 Web \u6d4b\u8bd5\u8bf7\u6c42\u5df2\u6210\u529f\u3002",
+  "Ready for real discussions": "\u53ef\u7528\u4e8e\u771f\u5b9e\u8ba8\u8bba",
+  "Web can start model-backed discussions with this provider. Verify the connection when you want a fresh test.":
+    "Web \u53ef\u4ee5\u4f7f\u7528\u6b64\u63d0\u4f9b\u65b9\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002\u9700\u8981\u91cd\u65b0\u6d4b\u8bd5\u65f6\uff0c\u8bf7\u9a8c\u8bc1\u8fde\u63a5\u3002",
+  "Saved in this session": "\u5df2\u5728\u5f53\u524d\u4f1a\u8bdd\u4fdd\u5b58",
+  "The local service accepted this setup. Verify the connection before relying on it for a discussion.":
+    "\u672c\u5730\u670d\u52a1\u5df2\u63a5\u53d7\u6b64\u8bbe\u7f6e\u3002\u4f9d\u8d56\u5b83\u8fdb\u884c\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u8fde\u63a5\u3002",
+  "Finish setup in Web": "\u5728 Web \u4e2d\u5b8c\u6210\u8bbe\u7f6e",
+  "Add or replace the API key, base URL, and model below. Saved secrets stay on this machine and are not displayed again.":
+    "\u5728\u4e0b\u65b9\u6dfb\u52a0\u6216\u66ff\u6362 API key\u3001Base URL \u548c\u6a21\u578b\u3002\u5df2\u4fdd\u5b58\u7684\u5bc6\u94a5\u4f1a\u4fdd\u7559\u5728\u672c\u673a\uff0c\u5e76\u4e14\u4e0d\u4f1a\u518d\u6b21\u663e\u793a\u3002",
+  "Web shows only readiness here. It never displays saved API keys, base URLs, or exact model values in the default view.":
+    "\u8fd9\u91cc\u4ec5\u663e\u793a\u5c31\u7eea\u72b6\u6001\u3002\u9ed8\u8ba4\u89c6\u56fe\u4e0d\u4f1a\u663e\u793a\u5df2\u4fdd\u5b58\u7684 API key\u3001Base URL \u6216\u5177\u4f53\u6a21\u578b\u503c\u3002",
+  "The provider Web can configure for this local system.":
+    "Web \u53ef\u4ee5\u4e3a\u6b64\u672c\u5730\u7cfb\u7edf\u914d\u7f6e\u7684\u63d0\u4f9b\u65b9\u3002",
+  "Saved locally": "\u672c\u5730\u5df2\u4fdd\u5b58",
+  "Saved without showing the value.": "\u5df2\u4fdd\u5b58\uff0c\u4f46\u4e0d\u663e\u793a\u5177\u4f53\u503c\u3002",
+  "Enter this in the form below.": "\u8bf7\u5728\u4e0b\u65b9\u8868\u5355\u4e2d\u586b\u5199\u3002",
+  Connection: "\u8fde\u63a5",
+  Verified: "\u5df2\u9a8c\u8bc1",
+  "The latest safe provider test succeeded.":
+    "\u6700\u8fd1\u4e00\u6b21\u5b89\u5168\u63d0\u4f9b\u65b9\u6d4b\u8bd5\u5df2\u6210\u529f\u3002",
+  "Ready to verify": "\u53ef\u4ee5\u9a8c\u8bc1",
+  "Use Verify connection before starting a real discussion.":
+    "\u5f00\u59cb\u771f\u5b9e\u8ba8\u8bba\u524d\uff0c\u8bf7\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u3002",
+  "Needs saved setup": "\u9700\u8981\u5148\u4fdd\u5b58\u8bbe\u7f6e",
+  "Save the required setup before testing the provider.":
+    "\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u524d\uff0c\u8bf7\u5148\u4fdd\u5b58\u6240\u9700\u8bbe\u7f6e\u3002",
+  "Edit model setup": "\u7f16\u8f91\u6a21\u578b\u8bbe\u7f6e",
   "Provider API key": "\u63d0\u4f9b\u65b9 API key",
   "Paste API key": "\u7c98\u8d34 API key",
   "Saving setup": "\u6b63\u5728\u4fdd\u5b58\u8bbe\u7f6e",
