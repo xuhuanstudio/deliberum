@@ -51,6 +51,11 @@ type DiscussionContinuationView = {
   primaryLabel: string;
   reviewReady: boolean;
 };
+type DiscussionNextStepView = {
+  title: string;
+  detail: string;
+  tone: "ready" | "active" | "pending";
+};
 type DiscussionStageStatus = [label: string, status: unknown];
 type RoomActivityItem = {
   speaker: string;
@@ -899,6 +904,7 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
           }
         ]}
       />
+      <DiscussionNextStepCard run={run} />
       <StageStatusList stages={getDiscussionStageStatuses(run)} />
       <AdvancedDetails
         summary="Advanced / Developer Mode"
@@ -992,7 +998,7 @@ function RunSummary({ run }: { run: unknown }) {
   );
 }
 
-function getDiscussionStageStatuses(run: unknown): DiscussionStageStatus[] {
+export function getDiscussionStageStatuses(run: unknown): DiscussionStageStatus[] {
   return [
     ["Independent first responses", getRecordValue(run, "sealedDivergenceStatus")],
     ["Strongest current options", getRecordValue(run, "latestExtractionStatus")],
@@ -1157,7 +1163,7 @@ function RunEventTimeline({ runId }: { runId: string }) {
   );
 }
 
-function StageStatusList({ stages }: { stages: Array<[string, unknown]> }) {
+export function StageStatusList({ stages }: { stages: Array<[string, unknown]> }) {
   const { t } = useI18n();
 
   return (
@@ -1173,6 +1179,19 @@ function StageStatusList({ stages }: { stages: Array<[string, unknown]> }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+export function DiscussionNextStepCard({ run }: { run: unknown }) {
+  const { t } = useI18n();
+  const nextStep = describeDiscussionNextStep(run);
+
+  return (
+    <div className={`du-next-step-card du-next-step-${nextStep.tone}`}>
+      <p className="du-kicker">{t("Next step")}</p>
+      <h4>{t(nextStep.title)}</h4>
+      <p>{t(nextStep.detail)}</p>
     </div>
   );
 }
@@ -4147,9 +4166,7 @@ function describeRunFollowTone(status: RunFollowStatus): "neutral" | "ok" | "war
 export function describeDiscussionStatus(run: unknown): string {
   const continuationView = describeDiscussionContinuation(run);
   const status = getRecordValue(run, "status");
-  const completedStageCount = getDiscussionStageStatuses(run).filter(([, stageStatus]) =>
-    isCompletedDiscussionStage(stageStatus)
-  ).length;
+  const completedStageCount = countCompletedDiscussionStages(run);
 
   if (continuationView.reviewReady) {
     return "Ready to review: current conclusion is available.";
@@ -4170,6 +4187,12 @@ export function describeDiscussionStatus(run: unknown): string {
   }
 
   return formatRecordValue(status);
+}
+
+function countCompletedDiscussionStages(run: unknown): number {
+  return getDiscussionStageStatuses(run).filter(([, stageStatus]) =>
+    isCompletedDiscussionStage(stageStatus)
+  ).length;
 }
 
 function isCompletedDiscussionStage(status: unknown): boolean {
@@ -4208,6 +4231,42 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
       "Collects independent first responses, organizes main perspectives, reviews requirements, checks evidence needs, and compiles a provisional conclusion.",
     primaryLabel: "Continue guided discussion",
     reviewReady
+  };
+}
+
+function describeDiscussionNextStep(run: unknown): DiscussionNextStepView {
+  if (isDiscussionReviewReady(run)) {
+    return {
+      title: "Review current conclusion",
+      detail:
+        "Start with the current conclusion, then check visible disagreements, requirements, risks, and missing evidence before relying on it.",
+      tone: "ready"
+    };
+  }
+
+  if (getRecordValue(run, "status") === "running") {
+    return {
+      title: "Check discussion progress",
+      detail:
+        "Discussion steps are running. Open the room to see which perspectives, disagreements, evidence checks, and conclusion work have changed.",
+      tone: "active"
+    };
+  }
+
+  if (countCompletedDiscussionStages(run) > 0) {
+    return {
+      title: "Continue guided discussion",
+      detail:
+        "Some discussion steps are complete. Continue the guided flow until the current conclusion, disagreements, evidence, risks, and next actions are ready.",
+      tone: "active"
+    };
+  }
+
+  return {
+    title: "Continue guided discussion",
+    detail:
+      "Continue the discussion so independent first responses, main perspectives, disagreements, requirements, evidence, and a current conclusion can be produced.",
+    tone: "pending"
   };
 }
 

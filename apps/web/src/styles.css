@@ -1191,10 +1191,39 @@ textarea:focus-visible {
   font-size: 1.05rem;
 }
 
+.du-run-list-item h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
 .du-run-list-item p:not(.du-kicker) {
   margin-top: 6px;
   overflow-wrap: anywhere;
   color: var(--du-muted);
+}
+
+.du-next-step-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--du-line);
+  border-left: 4px solid var(--du-accent);
+  border-radius: 8px;
+  background: var(--du-surface-muted);
+  padding: 14px;
+}
+
+.du-next-step-card p:not(.du-kicker) {
+  margin: 0;
+  color: var(--du-muted);
+  line-height: 1.5;
+}
+
+.du-next-step-ready {
+  border-left-color: #2f7d4f;
+}
+
+.du-next-step-active {
+  border-left-color: #8f6a12;
 }
 
 .du-stage-grid {

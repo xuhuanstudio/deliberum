@@ -31,9 +31,12 @@ import type {
   ResourceAccessPostureResponse
 } from "@deliberum/client";
 import {
+  DiscussionNextStepCard,
+  StageStatusList,
   describeDiscussionStatus,
   formatRunDisplaySummary,
   formatRunDisplayTitle,
+  getDiscussionStageStatuses,
   isDiscussionReviewReady,
   OutcomeBrief,
   RunDetailPage,
@@ -458,6 +461,8 @@ function LandingPage() {
                         }
                       ]}
                     />
+                    <DiscussionNextStepCard run={run} />
+                    <StageStatusList stages={getDiscussionStageStatuses(run)} />
                     <div className="du-action-row">
                       <Link
                         className="du-action-link"

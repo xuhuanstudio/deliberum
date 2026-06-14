@@ -249,10 +249,18 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Open a discussion room and review its brief, perspectives, disagreements, requirements, evidence, conclusion, and next actions.":
     "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u67e5\u770b\u7b80\u62a5\u3001\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8981\u6c42\u3001\u8bc1\u636e\u3001\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u3002",
   "Start a discussion to create the first deliberation.": "\u5f00\u59cb\u4e00\u4e2a\u8ba8\u8bba\u4ee5\u521b\u5efa\u9996\u6b21\u5ba1\u8bae\u3002",
+  "Next step": "\u4e0b\u4e00\u6b65",
   "Start with the current conclusion, then check the visible disagreements, requirements, and evidence gaps before relying on it.":
     "\u5148\u67e5\u770b\u5f53\u524d\u7ed3\u8bba\uff0c\u518d\u68c0\u67e5\u53ef\u89c1\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u7f3a\u53e3\uff0c\u7136\u540e\u518d\u51b3\u5b9a\u662f\u5426\u4f9d\u8d56\u5b83\u3002",
+  "Start with the current conclusion, then check visible disagreements, requirements, risks, and missing evidence before relying on it.":
+    "\u5148\u67e5\u770b\u5f53\u524d\u7ed3\u8bba\uff0c\u518d\u68c0\u67e5\u53ef\u89c1\u5206\u6b67\u3001\u8981\u6c42\u3001\u98ce\u9669\u548c\u7f3a\u5931\u8bc1\u636e\uff0c\u7136\u540e\u518d\u51b3\u5b9a\u662f\u5426\u4f9d\u8d56\u5b83\u3002",
   "Continue the discussion so independent first responses, main perspectives, disagreements, requirements, evidence, and a current conclusion can be produced.":
     "\u7ee7\u7eed\u8ba8\u8bba\uff0c\u4ee5\u751f\u6210\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3001\u4e3b\u8981\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8981\u6c42\u3001\u8bc1\u636e\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Check discussion progress": "\u67e5\u770b\u8ba8\u8bba\u8fdb\u5ea6",
+  "Discussion steps are running. Open the room to see which perspectives, disagreements, evidence checks, and conclusion work have changed.":
+    "\u8ba8\u8bba\u6b65\u9aa4\u6b63\u5728\u8fd0\u884c\u3002\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u67e5\u770b\u54ea\u4e9b\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8bc1\u636e\u6838\u67e5\u548c\u7ed3\u8bba\u5de5\u4f5c\u5df2\u53d8\u5316\u3002",
+  "Some discussion steps are complete. Continue the guided flow until the current conclusion, disagreements, evidence, risks, and next actions are ready.":
+    "\u90e8\u5206\u8ba8\u8bba\u6b65\u9aa4\u5df2\u5b8c\u6210\u3002\u8bf7\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u6d41\u7a0b\uff0c\u76f4\u5230\u5f53\u524d\u7ed3\u8bba\u3001\u5206\u6b67\u3001\u8bc1\u636e\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u5c31\u7eea\u3002",
   "There are unresolved disagreements that still constrain the current conclusion.":
     "\u4ecd\u6709\u672a\u89e3\u51b3\u5206\u6b67\u7ea6\u675f\u5f53\u524d\u7ed3\u8bba\u3002",
   "Missing or unchecked evidence should be resolved before the conclusion is treated as reliable.":

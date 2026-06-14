@@ -984,6 +984,14 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Evaluate the local daemon run workspace")).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("Stage 11 shell");
     expect(screen.getByText("Ready to review: current conclusion is available.")).toBeTruthy();
+    expect(screen.getByText("Next step")).toBeTruthy();
+    expect(screen.getByText("Review current conclusion")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Start with the current conclusion, then check visible disagreements, requirements, risks, and missing evidence before relying on it."
+      )
+    ).toBeTruthy();
+    expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Current conclusion" })).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("Underlying session catalog");
 
@@ -1018,6 +1026,14 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Continue existing discussions")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
     expect(screen.getByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
+    expect(screen.getByText("Next step")).toBeTruthy();
+    expect(screen.getByText("Continue guided discussion")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Continue the discussion so independent first responses, main perspectives, disagreements, requirements, evidence, and a current conclusion can be produced."
+      )
+    ).toBeTruthy();
+    expect(screen.getAllByText("Not started yet").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();
 
@@ -1034,6 +1050,9 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Discussions")).length).toBeGreaterThan(0);
     await waitFor(() => expect(runsClient.listRuns).toHaveBeenCalled());
     expect(screen.getByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
+    expect(screen.getByText("Next step")).toBeTruthy();
+    expect(screen.getByText("Continue guided discussion")).toBeTruthy();
+    expect(screen.getAllByText("Not started yet").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();
   });
