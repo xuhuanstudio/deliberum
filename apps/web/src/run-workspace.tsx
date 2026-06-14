@@ -361,7 +361,7 @@ export function RunDetailPage() {
     <RunWorkspaceShell runId={runId} showConclusionNav={reviewReady}>
       <ViewFrame
         eyebrow={t("User Mode")}
-        title={formatRunDisplayTitle(run)}
+        title={t(formatRunDisplayTitle(run))}
         description={t(
           "Start or continue a discussion, then review the current conclusion, main perspectives, open disagreements, risks, missing evidence, and next recommended actions."
         )}
@@ -910,7 +910,7 @@ function RunListItem({ run, index }: { run: unknown; index: number }) {
     <article className="du-run-list-item">
       <div>
         <p className="du-kicker">{t("Discussion {number}", { number: index + 1 })}</p>
-        <h3>{formatRunDisplayTitle(run, index)}</h3>
+        <h3>{t(formatRunDisplayTitle(run, index))}</h3>
         <p>{t(formatRunDisplaySummary(run))}</p>
       </div>
       <KeyValueGrid
@@ -1872,7 +1872,7 @@ function DiscussionRoomBrief({ run }: { run: unknown }) {
     <section className="du-room-brief" aria-label={t("What is being discussed")}>
       <div>
         <p className="du-kicker">{t("What is being discussed")}</p>
-        <h4>{question}</h4>
+        <h4>{t(question)}</h4>
         <p>
           {t(
             "The room keeps the brief, participant perspectives, disagreements, missing evidence, risks, current conclusion, and next actions visible together."
@@ -1882,19 +1882,21 @@ function DiscussionRoomBrief({ run }: { run: unknown }) {
       <div className="du-room-brief-grid">
         <RoomBriefItem
           label={t("Goals")}
-          value={goals.length > 0 ? goals.join("; ") : t("No goals listed yet.")}
+          value={goals.length > 0 ? formatTranslatedList(t, goals) : t("No goals listed yet.")}
         />
         <RoomBriefItem
           label={t("Constraints")}
           value={
-            constraints.length > 0 ? constraints.join("; ") : t("No constraints listed yet.")
+            constraints.length > 0
+              ? formatTranslatedList(t, constraints)
+              : t("No constraints listed yet.")
           }
         />
         <RoomBriefItem
           label={t("Expected result")}
           value={
             expectedResult.length > 0
-              ? expectedResult.join("; ")
+              ? formatTranslatedList(t, expectedResult)
               : t("No expected result listed yet.")
           }
         />
@@ -1910,6 +1912,10 @@ function RoomBriefItem({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </article>
   );
+}
+
+function formatTranslatedList(t: TranslateFunction, values: string[]): string {
+  return values.map((value) => t(value)).join("; ");
 }
 
 function DiscussionRoomTimeline({
@@ -2313,8 +2319,8 @@ function DiscussionContributionList({ candidates }: { candidates: unknown[] }) {
                 key={`${summary.speaker}:${summary.title}:${index}`}
               >
                 <p className="du-kicker">{summary.speaker}</p>
-                <h5>{summary.title}</h5>
-                <p>{summary.detail}</p>
+                <h5>{t(summary.title)}</h5>
+                <p>{t(summary.detail)}</p>
               </article>
             );
           })}
@@ -2540,7 +2546,7 @@ export function OutcomeBrief({
       <section className="du-outcome-hero" aria-label={t("Current conclusion snapshot")}>
         <article className="du-outcome-recommendation">
           <p className="du-kicker">{t("Current recommendation")}</p>
-          <h4>{recommendation}</h4>
+          <h4>{t(recommendation)}</h4>
         </article>
         <div className="du-outcome-status-grid">
           <OutcomeStatusItem
@@ -2773,7 +2779,7 @@ function ReadableStringList({
             <p className="du-kicker">
               {t("{section} {number}", { section: visibleTitle, number: index + 1 })}
             </p>
-            <p>{item}</p>
+            <p>{t(item)}</p>
           </article>
         ))
       )}
@@ -2823,9 +2829,9 @@ function ReadableRecordList({
               key={`${title}:${index}:${summary.kicker}:${summary.title}`}
             >
               <p className="du-kicker">{summary.kicker}</p>
-              <h5>{summary.title}</h5>
-              <p>{summary.detail}</p>
-              {summary.meta ? <p className="du-readable-meta">{summary.meta}</p> : null}
+              <h5>{t(summary.title)}</h5>
+              <p>{t(summary.detail)}</p>
+              {summary.meta ? <p className="du-readable-meta">{t(summary.meta)}</p> : null}
             </article>
           );
         })

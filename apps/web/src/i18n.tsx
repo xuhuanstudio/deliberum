@@ -494,6 +494,102 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5df2\u4e3a\u5f53\u524d\u7ed3\u8bba\u8bb0\u5f55\u4e00\u6761\u98ce\u9669\u5ba1\u67e5\u3002",
   "This participant response is available for review in the room.":
     "\u6b64\u53c2\u4e0e\u8005\u56de\u5e94\u53ef\u5728\u8ba8\u8bba\u5ba4\u4e2d\u5ba1\u9605\u3002",
+  "Guided sample discussion":
+    "\u5f15\u5bfc\u5f0f\u793a\u4f8b\u8ba8\u8bba",
+  "How should we review a proposed rollout before relying on it?":
+    "\u6211\u4eec\u5e94\u5982\u4f55\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5ba1\u67e5\u5b83\uff1f",
+  "Compare the strongest current options.":
+    "\u6bd4\u8f83\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",
+  "Keep unresolved disagreements and missing evidence visible.":
+    "\u4fdd\u6301\u672a\u89e3\u51b3\u5206\u6b67\u548c\u7f3a\u5931\u8bc1\u636e\u53ef\u89c1\u3002",
+  "Keep open disagreements and missing evidence visible.":
+    "\u4fdd\u6301\u672a\u89e3\u51b3\u5206\u6b67\u548c\u7f3a\u5931\u8bc1\u636e\u53ef\u89c1\u3002",
+  "Keep the walkthrough deterministic and reviewable.":
+    "\u4fdd\u6301\u6f14\u793a\u53ef\u590d\u73b0\u4e14\u53ef\u5ba1\u9605\u3002",
+  "Treat the conclusion as provisional until a human reviews it.":
+    "\u5728\u4eba\u7c7b\u5ba1\u9605\u524d\uff0c\u5c06\u7ed3\u8bba\u89c6\u4e3a\u4e34\u65f6\u7ed3\u8bba\u3002",
+  "Show the current conclusion.":
+    "\u5c55\u793a\u5f53\u524d\u7ed3\u8bba\u3002",
+  "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions.":
+    "\u5217\u51fa\u4e3b\u8981\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u98ce\u9669\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
+  "{count} readable perspective is visible in the room.":
+    "\u8ba8\u8bba\u5ba4\u4e2d\u6709 {count} \u4e2a\u53ef\u8bfb\u89c6\u89d2\u3002",
+  "{count} readable perspectives are visible in the room.":
+    "\u8ba8\u8bba\u5ba4\u4e2d\u6709 {count} \u4e2a\u53ef\u8bfb\u89c6\u89d2\u3002",
+  "{disagreements} open disagreement and {evidence} evidence gap are visible.":
+    "\u6709 {disagreements} \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u548c {evidence} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u53ef\u89c1\u3002",
+  "{disagreements} open disagreement and {evidence} evidence gaps are visible.":
+    "\u6709 {disagreements} \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u548c {evidence} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u53ef\u89c1\u3002",
+  "{disagreements} open disagreements and {evidence} evidence gap are visible.":
+    "\u6709 {disagreements} \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u548c {evidence} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u53ef\u89c1\u3002",
+  "{disagreements} open disagreements and {evidence} evidence gaps are visible.":
+    "\u6709 {disagreements} \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u548c {evidence} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u53ef\u89c1\u3002",
+  "Review a proposed rollout before relying on it.":
+    "\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5148\u5ba1\u67e5\u5b83\u3002",
+  "Compare the strongest review paths before relying on the rollout.":
+    "\u5728\u4f9d\u8d56\u6b64\u6b21\u53d1\u5e03\u524d\uff0c\u6bd4\u8f83\u6700\u5f3a\u7684\u5ba1\u67e5\u8def\u5f84\u3002",
+  "Keep open disagreements, answer requirements, missing evidence, and the current conclusion visible.":
+    "\u6301\u7eed\u5c55\u793a\u672a\u89e3\u51b3\u5206\u6b67\u3001\u7b54\u6848\u8981\u6c42\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Use built-in sample participants only.":
+    "\u4ec5\u4f7f\u7528\u5185\u7f6e\u793a\u4f8b\u53c2\u4e0e\u8005\u3002",
+  "Keep the conclusion provisional until a human reviews it.":
+    "\u5728\u4eba\u7c7b\u5ba1\u9605\u524d\uff0c\u4fdd\u6301\u7ed3\u8bba\u4e3a\u4e34\u65f6\u7ed3\u8bba\u3002",
+  "Keep the conclusion provisional until reviewed.":
+    "\u5728\u5b8c\u6210\u5ba1\u9605\u524d\uff0c\u4fdd\u6301\u7ed3\u8bba\u4e3a\u4e34\u65f6\u7ed3\u8bba\u3002",
+  "Keep sample limitations visible.":
+    "\u6301\u7eed\u5c55\u793a\u793a\u4f8b\u9650\u5236\u3002",
+  "Preserve unresolved disagreements and missing evidence.":
+    "\u4fdd\u7559\u672a\u89e3\u51b3\u5206\u6b67\u548c\u7f3a\u5931\u8bc1\u636e\u3002",
+  "Review the rollout in stages before relying on the recommendation.":
+    "\u5728\u4f9d\u8d56\u5efa\u8bae\u524d\uff0c\u5206\u9636\u6bb5\u5ba1\u67e5\u6b64\u6b21\u53d1\u5e03\u3002",
+  "The team should compare options, disagreements, risks, and missing evidence before acting.":
+    "\u56e2\u961f\u5e94\u5728\u884c\u52a8\u524d\u6bd4\u8f83\u9009\u9879\u3001\u5206\u6b67\u3001\u98ce\u9669\u548c\u7f3a\u5931\u8bc1\u636e\u3002",
+  "Keep the conclusion provisional until unresolved issues are checked.":
+    "\u5728\u672a\u89e3\u51b3\u95ee\u9898\u5b8c\u6210\u68c0\u67e5\u524d\uff0c\u4fdd\u6301\u7ed3\u8bba\u4e3a\u4e34\u65f6\u7ed3\u8bba\u3002",
+  "A readable discussion should make remaining disagreements and next actions easy to inspect.":
+    "\u53ef\u8bfb\u7684\u8ba8\u8bba\u5e94\u8ba9\u5269\u4f59\u5206\u6b67\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u6613\u4e8e\u68c0\u67e5\u3002",
+  "Accept sample discussion material that has no open challenge in this walkthrough.":
+    "\u63a5\u53d7\u672c\u6b21\u6f14\u793a\u4e2d\u6ca1\u6709\u516c\u5f00\u6311\u6218\u7684\u793a\u4f8b\u8ba8\u8bba\u6750\u6599\u3002",
+  "Staged rollout review":
+    "\u5206\u9636\u6bb5\u53d1\u5e03\u5ba1\u67e5",
+  "Review the rollout in stages, keep alternatives visible, and treat the conclusion as provisional until risks and evidence gaps are checked.":
+    "\u5206\u9636\u6bb5\u5ba1\u67e5\u6b64\u6b21\u53d1\u5e03\uff0c\u4fdd\u6301\u66ff\u4ee3\u65b9\u6848\u53ef\u89c1\uff0c\u5e76\u5728\u98ce\u9669\u548c\u8bc1\u636e\u7f3a\u53e3\u5b8c\u6210\u68c0\u67e5\u524d\u5c06\u7ed3\u8bba\u89c6\u4e3a\u4e34\u65f6\u7ed3\u8bba\u3002",
+  "This is a built-in sample walkthrough.":
+    "\u8fd9\u662f\u5185\u7f6e\u793a\u4f8b\u6f14\u793a\u3002",
+  "The sample does not replace real participant or model input.":
+    "\u8be5\u793a\u4f8b\u4e0d\u80fd\u66ff\u4ee3\u771f\u5b9e\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u8f93\u5165\u3002",
+  "A staged review helps the team compare options before relying on the rollout.":
+    "\u5206\u9636\u6bb5\u5ba1\u67e5\u6709\u52a9\u4e8e\u56e2\u961f\u5728\u4f9d\u8d56\u6b64\u6b21\u53d1\u5e03\u524d\u6bd4\u8f83\u9009\u9879\u3002",
+  "Users could rely on the sample conclusion without checking whether it matches their real rollout.":
+    "\u7528\u6237\u53ef\u80fd\u5728\u672a\u68c0\u67e5\u5176\u662f\u5426\u5339\u914d\u771f\u5b9e\u53d1\u5e03\u7684\u60c5\u51b5\u4e0b\u4f9d\u8d56\u793a\u4f8b\u7ed3\u8bba\u3002",
+  "The conclusion must keep limitations, disagreements, and next actions visible.":
+    "\u7ed3\u8bba\u5fc5\u987b\u6301\u7eed\u5c55\u793a\u9650\u5236\u3001\u5206\u6b67\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002",
+  "State that the conclusion is provisional and list what must be checked next.":
+    "\u8bf4\u660e\u7ed3\u8bba\u4ecd\u662f\u4e34\u65f6\u7ed3\u8bba\uff0c\u5e76\u5217\u51fa\u63a5\u4e0b\u6765\u5fc5\u987b\u68c0\u67e5\u7684\u5185\u5bb9\u3002",
+  "Organize the first responses into reviewable options, disagreements, requirements, and evidence needs.":
+    "\u5c06\u521d\u59cb\u56de\u5e94\u6574\u7406\u4e3a\u53ef\u5ba1\u9605\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002",
+  "Use a staged review path before relying on the rollout.":
+    "\u5728\u4f9d\u8d56\u6b64\u6b21\u53d1\u5e03\u524d\uff0c\u91c7\u7528\u5206\u9636\u6bb5\u5ba1\u67e5\u8def\u5f84\u3002",
+  "When reviewing a proposed rollout with limited evidence.":
+    "\u5f53\u62df\u8bae\u53d1\u5e03\u7684\u8bc1\u636e\u6709\u9650\u65f6\u3002",
+  "When the team needs a provisional decision and explicit next actions.":
+    "\u5f53\u56e2\u961f\u9700\u8981\u4e34\u65f6\u51b3\u7b56\u548c\u660e\u786e\u4e0b\u4e00\u6b65\u884c\u52a8\u65f6\u3002",
+  "The discussion keeps the strongest option, open disagreement, evidence gaps, and review actions visible together.":
+    "\u8ba8\u8bba\u4f1a\u540c\u65f6\u5c55\u793a\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u5ba1\u67e5\u884c\u52a8\u3002",
+  "This built-in sample is illustrative; replace it with real participant or model input for real decisions.":
+    "\u6b64\u5185\u7f6e\u793a\u4f8b\u4ec5\u7528\u4e8e\u8bf4\u660e\uff1b\u771f\u5b9e\u51b3\u7b56\u8bf7\u66ff\u6362\u4e3a\u771f\u5b9e\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u8f93\u5165\u3002",
+  "The sample does not prove production readiness or real-world answer quality.":
+    "\u8be5\u793a\u4f8b\u4e0d\u80fd\u8bc1\u660e\u751f\u4ea7\u5c31\u7eea\u6027\u6216\u771f\u5b9e\u4e16\u754c\u7b54\u6848\u8d28\u91cf\u3002",
+  "The current conclusion is reviewable but still provisional.":
+    "\u5f53\u524d\u7ed3\u8bba\u53ef\u5ba1\u9605\uff0c\u4f46\u4ecd\u662f\u4e34\u65f6\u7ed3\u8bba\u3002",
+  "A team could mistake the sample walkthrough for a decision about its real rollout.":
+    "\u56e2\u961f\u53ef\u80fd\u4f1a\u628a\u793a\u4f8b\u6f14\u793a\u8bef\u8ba4\u4e3a\u5173\u4e8e\u771f\u5b9e\u53d1\u5e03\u7684\u51b3\u7b56\u3002",
+  "Real project evidence, stakeholder input, and provider-backed model perspectives were not included in this sample.":
+    "\u6b64\u793a\u4f8b\u672a\u5305\u542b\u771f\u5b9e\u9879\u76ee\u8bc1\u636e\u3001\u5229\u76ca\u76f8\u5173\u65b9\u8f93\u5165\u548c\u7531\u63d0\u4f9b\u5546\u652f\u6301\u7684\u6a21\u578b\u89c6\u89d2\u3002",
+  "The current conclusion remains provisional.":
+    "\u5f53\u524d\u7ed3\u8bba\u4ecd\u662f\u4e34\u65f6\u7ed3\u8bba\u3002",
+  "Run the discussion with the real rollout brief and real participants or model connections when ready.":
+    "\u51c6\u5907\u597d\u540e\uff0c\u8bf7\u4f7f\u7528\u771f\u5b9e\u53d1\u5e03\u7b80\u62a5\u548c\u771f\u5b9e\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u8fde\u63a5\u91cd\u65b0\u8fd0\u884c\u8ba8\u8bba\u3002",
   "Perspective A": "\u89c6\u89d2 A",
   "Perspective B": "\u89c6\u89d2 B",
   "Discussion organizer": "\u8ba8\u8bba\u7ec4\u7ec7\u8005",

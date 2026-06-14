@@ -1521,10 +1521,75 @@ describe("@deliberum/web shell", () => {
     const detailPanelsText =
       screen.getByRole("region", { name: "\u8ba8\u8bba\u8be6\u60c5\u9762\u677f" }).textContent ??
       "";
+    const roomFlowText = document.querySelector(".du-room-flow")?.textContent ?? "";
+    expect(roomFlowText).not.toContain("readable perspectives are visible");
+    expect(roomFlowText).not.toContain("open disagreements and");
     expect(detailPanelsText).toContain("\u4e3b\u8981\u89c2\u70b9");
     expect(detailPanelsText).not.toContain("Current state:");
     expect(detailPanelsText).not.toContain("Risks and missing evidence");
     expect(document.body.textContent ?? "").not.toContain("Run Alpha");
+  });
+
+  it("localizes known sample discussion brief content in Simplified Chinese", async () => {
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: {
+            ...runDetail,
+            title: "How should we review a proposed rollout before relying on it?",
+            topic: "How should we review a proposed rollout before relying on it?",
+            plan: {
+              ...runDetail.plan,
+              topic: "How should we review a proposed rollout before relying on it?",
+              goals: [
+                "Compare the strongest current options.",
+                "Keep unresolved disagreements and missing evidence visible."
+              ],
+              constraints: [
+                "Keep the walkthrough deterministic and reviewable.",
+                "Treat the conclusion as provisional until a human reviews it.",
+                "Use built-in sample participants only.",
+                "Keep the conclusion provisional until reviewed."
+              ],
+              output: {
+                expectations: [
+                  "Show the current conclusion.",
+                  "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions."
+                ]
+              }
+            }
+          }
+        }))
+      }),
+      {
+        initialLanguage: "zh-CN"
+      }
+    );
+
+    await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
+    await waitFor(() =>
+      expect(document.querySelector(".du-room-brief")?.textContent ?? "").toContain(
+        "\u6211\u4eec\u5e94\u5982\u4f55\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5ba1\u67e5\u5b83\uff1f"
+      )
+    );
+
+    const briefText = document.querySelector(".du-room-brief")?.textContent ?? "";
+    expect(briefText).toContain(
+      "\u6211\u4eec\u5e94\u5982\u4f55\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5ba1\u67e5\u5b83\uff1f"
+    );
+    expect(briefText).toContain("\u6bd4\u8f83\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002");
+    expect(briefText).toContain(
+      "\u4fdd\u6301\u672a\u89e3\u51b3\u5206\u6b67\u548c\u7f3a\u5931\u8bc1\u636e\u53ef\u89c1\u3002"
+    );
+    expect(briefText).toContain("\u4fdd\u6301\u6f14\u793a\u53ef\u590d\u73b0\u4e14\u53ef\u5ba1\u9605\u3002");
+    expect(briefText).toContain("\u4ec5\u4f7f\u7528\u5185\u7f6e\u793a\u4f8b\u53c2\u4e0e\u8005\u3002");
+    expect(briefText).toContain("\u5c55\u793a\u5f53\u524d\u7ed3\u8bba\u3002");
+    expect(briefText).not.toContain(
+      "How should we review a proposed rollout before relying on it?"
+    );
+    expect(briefText).not.toContain("Compare the strongest current options.");
+    expect(briefText).not.toContain("Keep the walkthrough deterministic and reviewable.");
   });
 
   it("renders the current conclusion review surface in Simplified Chinese", async () => {
@@ -1546,6 +1611,94 @@ describe("@deliberum/web shell", () => {
     const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
     expect(readableConclusion).not.toContain("Review path");
     expect(readableConclusion).not.toContain("Use next recommended actions");
+  });
+
+  it("localizes known sample conclusion content in Simplified Chinese", async () => {
+    const client = createClient({
+      getRunOutcome: vi.fn(async () => ({
+        runId: runDetail.runId,
+        sessionId: runDetail.sessionId,
+        status: "compiled",
+        draftStatus: "provisional",
+        outcome: {
+          recommendation: "Use a staged review path before relying on the rollout.",
+          alternatives: [
+            {
+              title: "Staged rollout review",
+              description:
+                "Review the rollout in stages, keep alternatives visible, and treat the conclusion as provisional until risks and evidence gaps are checked.",
+              status: "active"
+            }
+          ],
+          unresolvedObjections: [
+            {
+              failureMode:
+                "Users could rely on the sample conclusion without checking whether it matches their real rollout.",
+              consequence:
+                "The conclusion must keep limitations, disagreements, and next actions visible.",
+              status: "open"
+            }
+          ],
+          qualityObligations: [
+            {
+              requirement:
+                "State that the conclusion is provisional and list what must be checked next.",
+              status: "unanswered"
+            }
+          ],
+          evidenceStatus: {
+            evidenceNeeds: []
+          },
+          unresolvedQuestions: [
+            "State that the conclusion is provisional and list what must be checked next."
+          ],
+          limitations: [
+            "This built-in sample is illustrative; replace it with real participant or model input for real decisions."
+          ],
+          continuationSuggestions: [
+            "Run the discussion with the real rollout brief and real participants or model connections when ready."
+          ],
+          audits: [
+            {
+              audit: {
+                risks: [
+                  "A team could mistake the sample walkthrough for a decision about its real rollout."
+                ]
+              }
+            }
+          ]
+        }
+      }))
+    });
+
+    renderApp("/runs/run-1/outcome", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    expect((await screen.findAllByText("\u5f53\u524d\u7ed3\u8bba")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
+
+    const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
+    expect(readableConclusion).toContain(
+      "\u5728\u4f9d\u8d56\u6b64\u6b21\u53d1\u5e03\u524d\uff0c\u91c7\u7528\u5206\u9636\u6bb5\u5ba1\u67e5\u8def\u5f84\u3002"
+    );
+    expect(readableConclusion).toContain("\u5206\u9636\u6bb5\u53d1\u5e03\u5ba1\u67e5");
+    expect(readableConclusion).toContain(
+      "\u7528\u6237\u53ef\u80fd\u5728\u672a\u68c0\u67e5\u5176\u662f\u5426\u5339\u914d\u771f\u5b9e\u53d1\u5e03\u7684\u60c5\u51b5\u4e0b\u4f9d\u8d56\u793a\u4f8b\u7ed3\u8bba\u3002"
+    );
+    expect(readableConclusion).toContain(
+      "\u6b64\u5185\u7f6e\u793a\u4f8b\u4ec5\u7528\u4e8e\u8bf4\u660e\uff1b\u771f\u5b9e\u51b3\u7b56\u8bf7\u66ff\u6362\u4e3a\u771f\u5b9e\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u8f93\u5165\u3002"
+    );
+    expect(readableConclusion).toContain(
+      "\u56e2\u961f\u53ef\u80fd\u4f1a\u628a\u793a\u4f8b\u6f14\u793a\u8bef\u8ba4\u4e3a\u5173\u4e8e\u771f\u5b9e\u53d1\u5e03\u7684\u51b3\u7b56\u3002"
+    );
+    expect(readableConclusion).toContain(
+      "\u51c6\u5907\u597d\u540e\uff0c\u8bf7\u4f7f\u7528\u771f\u5b9e\u53d1\u5e03\u7b80\u62a5\u548c\u771f\u5b9e\u53c2\u4e0e\u8005\u6216\u6a21\u578b\u8fde\u63a5\u91cd\u65b0\u8fd0\u884c\u8ba8\u8bba\u3002"
+    );
+    expect(readableConclusion).not.toContain(
+      "Use a staged review path before relying on the rollout."
+    );
+    expect(readableConclusion).not.toContain("A team could mistake the sample walkthrough");
   });
 
   it("localizes current conclusion fallback records in Simplified Chinese", async () => {
