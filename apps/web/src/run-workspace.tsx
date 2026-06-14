@@ -808,7 +808,7 @@ function DiscussionModelSetupPanel({
                   )
                 : providerSetupSaved
                   ? t(
-                      "Provider setup is saved. Verify connection in Setup / Models before selecting model-backed participants."
+                      "Provider setup is saved. Use Verify connection here or in Setup / Models before selecting model-backed participants."
                     )
                 : t(
                     "Configure a ready model provider locally before selecting model-backed participants."
@@ -1230,13 +1230,18 @@ function describeDiscussionModelSetup(
 
   if (configuredModelBackedSource) {
     return {
-      title: "Demo start, provider verification needed",
-      detail:
-        "The quick-start form can start now with demo participants. Verify the saved provider connection before selecting model-backed participants.",
+      title: localPresetReady
+        ? "Demo start, provider verification needed"
+        : "Provider verification needed",
+      detail: localPresetReady
+        ? "The quick-start form can start now with demo participants. Use Verify connection on this page to unlock model-backed participants."
+        : "Use Verify connection on this page to unlock model-backed participants for this discussion.",
       quickStartDetail:
-        "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
+        localPresetReady
+          ? "The plain-language form starts with built-in demo participants so the first discussion works immediately."
+          : "Demo participants are not enabled in this local service.",
       providerDetail:
-        "Provider setup is saved; verify connection in Setup / Models before relying on model-backed results.",
+        "Provider setup is saved; use Verify connection here or in Setup / Models before relying on model-backed results.",
       providerTone: "warning",
       tone: "warning"
     };

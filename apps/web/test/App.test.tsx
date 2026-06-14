@@ -2944,12 +2944,12 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Demo start, provider verification needed")).toBeTruthy();
     expect(
       screen.getByText(
-        "The quick-start form can start now with demo participants. Verify the saved provider connection before selecting model-backed participants."
+        "The quick-start form can start now with demo participants. Use Verify connection on this page to unlock model-backed participants."
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "Provider setup is saved; verify connection in Setup / Models before relying on model-backed results."
+        "Provider setup is saved; use Verify connection here or in Setup / Models before relying on model-backed results."
       )
     ).toBeTruthy();
     expect(screen.getByText("Verify provider connection")).toBeTruthy();
@@ -2983,6 +2983,95 @@ describe("@deliberum/web shell", () => {
       (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
         .disabled
     ).toBe(false);
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("providerConfigId");
+  });
+
+  it("does not describe demo participants as available when only provider verification can unlock the start path", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
+      profiles: [
+        {
+          id: "local-preset",
+          name: "Local preset",
+          enabled: false,
+          status: "disabled",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+            envVars: [],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_BASE_URL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default provider base URL."
+              },
+              {
+                name: "DELIBERUM_OPENAI_MODEL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default model id."
+              },
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    });
+
+    renderApp("/runs/new?participants=model-backed", client);
+
+    expect(await screen.findByText("Provider verification needed")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Use Verify connection on this page to unlock model-backed participants for this discussion."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Demo participants are not enabled in this local service.")).toBeTruthy();
+    expect(screen.queryByText("Demo start, provider verification needed")).toBeNull();
+    expect(screen.getByText("Verify provider connection")).toBeTruthy();
+    expect(
+      (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
+        .disabled
+    ).toBe(true);
+    expect(
+      (screen.getByRole("radio", { name: /Demo participants/i }) as HTMLInputElement).disabled
+    ).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Verify connection" }));
+    await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Model-backed discussion selected")).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
+          .checked
+      ).toBe(true)
+    );
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("providerConfigId");
   });

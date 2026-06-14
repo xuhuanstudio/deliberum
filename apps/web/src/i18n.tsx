@@ -615,8 +615,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "{provider} \u5df2\u5c31\u7eea\u3002\u6b64\u8ba8\u8bba\u5c06\u4f7f\u7528\u672c\u5730\u670d\u52a1\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Configure a ready model provider locally before selecting model-backed participants.":
     "\u5148\u5728\u672c\u5730\u914d\u7f6e\u4e00\u4e2a\u5df2\u5c31\u7eea\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\uff0c\u7136\u540e\u518d\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u3002",
-  "Provider setup is saved. Verify connection in Setup / Models before selecting model-backed participants.":
-    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u3002\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u524d\uff0c\u8bf7\u5148\u5728\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u9a8c\u8bc1\u8fde\u63a5\u3002",
+  "Provider setup is saved. Use Verify connection here or in Setup / Models before selecting model-backed participants.":
+    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u3002\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u524d\uff0c\u8bf7\u5728\u6b64\u9875\u6216\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u3002",
   "Choose discussion depth": "\u9009\u62e9\u8ba8\u8bba\u6df1\u5ea6",
   "Focused review": "\u805a\u7126\u5ba1\u67e5",
   "Two independent model perspectives keep the discussion concise.":
@@ -659,10 +659,15 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "A configured model provider is selected for this discussion by default.":
     "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u4f1a\u9ed8\u8ba4\u7528\u4e8e\u6b64\u8ba8\u8bba\u3002",
   "Demo start, provider verification needed": "\u53ef\u5f00\u59cb\u6f14\u793a\uff0c\u4f46\u9700\u8981\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
-  "The quick-start form can start now with demo participants. Verify the saved provider connection before selecting model-backed participants.":
-    "\u5feb\u901f\u5f00\u59cb\u8868\u5355\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u542f\u52a8\u3002\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fde\u63a5\u3002",
-  "Provider setup is saved; verify connection in Setup / Models before relying on model-backed results.":
-    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\uff1b\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u7ed3\u679c\u524d\uff0c\u8bf7\u5148\u5728\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u9a8c\u8bc1\u8fde\u63a5\u3002",
+  "Provider verification needed": "\u9700\u8981\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
+  "The quick-start form can start now with demo participants. Use Verify connection on this page to unlock model-backed participants.":
+    "\u5feb\u901f\u5f00\u59cb\u8868\u5355\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u542f\u52a8\u3002\u8bf7\u5728\u6b64\u9875\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u6765\u89e3\u9501\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u3002",
+  "Use Verify connection on this page to unlock model-backed participants for this discussion.":
+    "\u8bf7\u5728\u6b64\u9875\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u6765\u89e3\u9501\u672c\u6b21\u8ba8\u8bba\u7684\u6a21\u578b\u652f\u6301\u53c2\u4e0e\u8005\u3002",
+  "Demo participants are not enabled in this local service.":
+    "\u6b64\u672c\u5730\u670d\u52a1\u672a\u542f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u3002",
+  "Provider setup is saved; use Verify connection here or in Setup / Models before relying on model-backed results.":
+    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\uff1b\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u7ed3\u679c\u524d\uff0c\u8bf7\u5728\u6b64\u9875\u6216\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u3002",
   "Model-backed discussion selected": "\u5df2\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
   "This discussion will use configured model participants from your local setup.":
     "\u672c\u6b21\u8ba8\u8bba\u5c06\u4f7f\u7528\u4f60\u672c\u5730\u8bbe\u7f6e\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
