@@ -1755,7 +1755,7 @@ function RunQualityOverview({
               openDisagreementCount={unresolvedObjections}
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
             />
-            <DiscussionContributionList candidates={candidates} />
+            <DiscussionOptionsList candidates={candidates} />
           </div>
           <DiscussionRoomFocusPanel
             runId={runId}
@@ -2407,31 +2407,31 @@ function DiscussionRoomFlowStep({
   );
 }
 
-function DiscussionContributionList({ candidates }: { candidates: unknown[] }) {
+function DiscussionOptionsList({ candidates }: { candidates: unknown[] }) {
   const { t } = useI18n();
 
   return (
-    <section className="du-room-section" aria-label={t("Participant perspectives")}>
+    <section className="du-room-section" aria-label={t("Strongest current options")}>
       <div className="du-section-label">
-        <p className="du-kicker">{t("Participant perspectives")}</p>
-        <h4>{t("What different participants contributed")}</h4>
+        <p className="du-kicker">{t("Strongest current options")}</p>
+        <h4>{t("What the strongest options say now")}</h4>
         <p>
           {t(
-            "Strong perspectives are shown as readable discussion contributions, while technical details stay in Advanced mode."
+            "These options synthesize the discussion so far. Individual participant statements remain in the timeline above."
           )}
         </p>
       </div>
       {candidates.length === 0 ? (
         <EmptyState
-          title={t("No participant perspectives visible yet")}
+          title={t("No strongest options visible yet")}
           description={t(
-            "Continue the guided discussion so independent first responses can become readable perspectives in the room."
+            "Continue the guided discussion so the room can organize participant statements into strongest current options."
           )}
         />
       ) : (
         <div className="du-room-contributions">
           {candidates.map((candidate, index) => {
-            const summary = summarizeRoomPerspective(candidate, index, t);
+            const summary = summarizeRoomOption(candidate, index, t);
 
             return (
               <article
@@ -2538,7 +2538,7 @@ function DiscussionRoomFocusPanel({
   );
 }
 
-function summarizeRoomPerspective(
+function summarizeRoomOption(
   candidate: unknown,
   index: number,
   t: TranslateFunction
@@ -2550,7 +2550,7 @@ function summarizeRoomPerspective(
     speaker,
     title:
       getFirstStringRecordValue(object, ["title", "name", "summary"]) ??
-      t("Perspective {number}", { number: index + 1 }),
+      t("Option {number}", { number: index + 1 }),
     detail:
       getFirstStringRecordValue(object, ["summary", "rationale", "description", "claim"]) ??
       t("This perspective is part of the strongest current options in the room.")
@@ -2596,7 +2596,7 @@ function getRoomContributorLabel(
     return humanizeIdentifier(participantId);
   }
 
-  return t("Perspective {number}", { number: index + 1 });
+  return t("Option {number}", { number: index + 1 });
 }
 
 function QualitySummaryLink({

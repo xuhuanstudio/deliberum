@@ -1604,7 +1604,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u6b63\u5728\u8ba8\u8bba\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u65f6\u95f4\u7ebf")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u5ba4\u4e2d\u53d1\u751f\u4e86\u4ec0\u4e48")).toBeTruthy();
-    expect(screen.getByText("\u4e0d\u540c\u53c2\u4e0e\u8005\u8d21\u732e\u4e86\u4ec0\u4e48")).toBeTruthy();
+    expect(screen.getAllByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879").length).toBeGreaterThan(0);
+    expect(screen.getByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879\u7684\u5185\u5bb9")).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
     expect(screen.getByText("\u51b3\u7b56\u5de5\u4f5c\u533a")).toBeTruthy();
     expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\uff1a\u53ef\u5ba1\u9605")).toBeTruthy();
@@ -2130,8 +2131,13 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByText("Core discussion stages")).toBeTruthy();
-    expect(screen.getByText("What different participants contributed")).toBeTruthy();
-    expect(screen.getByText("Perspective 1")).toBeTruthy();
+    expect(screen.getByText("What the strongest options say now")).toBeTruthy();
+    expect(screen.getByText("Option 1")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "These options synthesize the discussion so far. Individual participant statements remain in the timeline above."
+      )
+    ).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "Current room summary" })).toBeTruthy();
     expect(screen.getByText("Decision workspace")).toBeTruthy();
     expect(screen.getByText("Current conclusion: Ready to review")).toBeTruthy();

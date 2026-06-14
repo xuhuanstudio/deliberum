@@ -150,13 +150,13 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   Updated: "\u5df2\u66f4\u65b0",
   "Already in progress": "\u5df2\u5728\u8fdb\u884c\u4e2d",
   "Discussion step": "\u8ba8\u8bba\u6b65\u9aa4",
-  "What different participants contributed": "\u4e0d\u540c\u53c2\u4e0e\u8005\u8d21\u732e\u4e86\u4ec0\u4e48",
   "Participant perspectives": "\u53c2\u4e0e\u8005\u89c6\u89d2",
-  "Strong perspectives are shown as readable discussion contributions, while technical details stay in Advanced mode.":
-    "\u5f3a\u89c2\u70b9\u4f1a\u4ee5\u53ef\u8bfb\u7684\u8ba8\u8bba\u8d21\u732e\u5c55\u793a\uff0c\u6280\u672f\u7ec6\u8282\u4fdd\u7559\u5728\u9ad8\u7ea7\u6a21\u5f0f\u4e2d\u3002",
-  "No participant perspectives visible yet": "\u5c1a\u65e0\u53ef\u89c1\u53c2\u4e0e\u8005\u89c6\u89d2",
-  "Continue the guided discussion so independent first responses can become readable perspectives in the room.":
-    "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u8ba9\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u8f6c\u5316\u4e3a\u8ba8\u8bba\u5ba4\u4e2d\u7684\u53ef\u8bfb\u89c6\u89d2\u3002",
+  "What the strongest options say now": "\u5f53\u524d\u6700\u5f3a\u9009\u9879\u7684\u5185\u5bb9",
+  "These options synthesize the discussion so far. Individual participant statements remain in the timeline above.":
+    "\u8fd9\u4e9b\u9009\u9879\u662f\u5bf9\u76ee\u524d\u8ba8\u8bba\u7684\u7efc\u5408\u3002\u5355\u4e2a\u53c2\u4e0e\u8005\u7684\u53d1\u8a00\u4fdd\u7559\u5728\u4e0a\u65b9\u65f6\u95f4\u7ebf\u4e2d\u3002",
+  "No strongest options visible yet": "\u5c1a\u65e0\u53ef\u89c1\u7684\u6700\u5f3a\u9009\u9879",
+  "Continue the guided discussion so the room can organize participant statements into strongest current options.":
+    "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u8ba9\u8ba8\u8bba\u5ba4\u5c06\u53c2\u4e0e\u8005\u53d1\u8a00\u6574\u7406\u4e3a\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",
   "Current room summary": "\u5f53\u524d\u8ba8\u8bba\u6458\u8981",
   "Decision workspace": "\u51b3\u7b56\u5de5\u4f5c\u533a",
   "Current conclusion: {status}": "\u5f53\u524d\u7ed3\u8bba\uff1a{status}",
@@ -259,6 +259,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Nothing is listed for this section yet.":
     "\u6b64\u90e8\u5206\u5c1a\u672a\u5217\u51fa\u4efb\u4f55\u5185\u5bb9\u3002",
   "Perspective {number}": "\u89c6\u89d2 {number}",
+  "Option {number}": "\u9009\u9879 {number}",
   "This perspective is included in the current discussion material.":
     "\u6b64\u89c6\u89d2\u5df2\u5305\u542b\u5728\u5f53\u524d\u8ba8\u8bba\u6750\u6599\u4e2d\u3002",
   "Open disagreement {number}": "\u672a\u89e3\u51b3\u5206\u6b67 {number}",
