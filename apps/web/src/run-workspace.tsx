@@ -285,20 +285,13 @@ export function RunNewPage() {
           <StatusBanner
             tone="ok"
             title="Discussion created"
-            detail="Continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
+            detail="Next, continue the guided discussion to collect perspectives, surface disagreements, and produce a reviewable conclusion."
           />
         ) : null}
         {createdRunId ? (
           <div className="du-action-row">
             <Link className="du-action-link" to="/runs/$runId" params={{ runId: createdRunId }}>
               Continue guided discussion
-            </Link>
-            <Link
-              className="du-action-link du-secondary-link"
-              to="/runs/$runId/outcome"
-              params={{ runId: createdRunId }}
-            >
-              View current conclusion
             </Link>
             {createdSessionId ? (
               <Link
