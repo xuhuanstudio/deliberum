@@ -4585,6 +4585,28 @@ describe("@deliberum/web shell", () => {
       latestFinalizationStatus: undefined,
       ledger: {
         eventCount: 5
+      },
+      rounds: {
+        sealedDivergence: {
+          status: "revealed"
+        },
+        extraction: [
+          {
+            status: "waiting_for_generators",
+            lastErrorCategory: "extraction_output_invalid",
+            generatorStates: [
+              {
+                generatorId: "openai-compatible-extractor",
+                status: "failed",
+                errorCategory: "extraction_output_invalid"
+              }
+            ]
+          }
+        ],
+        candidateRepair: [],
+        evidenceCheck: [],
+        proposalReview: [],
+        finalization: []
       }
     };
 
@@ -4597,12 +4619,23 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByText("In progress")).toBeTruthy();
-    expect(screen.getByText("This discussion step is still being processed.")).toBeTruthy();
+    expect(await screen.findByText("Needs attention: one discussion step could not finish cleanly.")).toBeTruthy();
+    expect(screen.getAllByText("Needs attention").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText("This discussion step needs attention before the conclusion can be trusted.")
+    ).toBeTruthy();
     expect(await screen.findByRole("complementary", { name: "Current room summary" })).toBeTruthy();
+    expect(screen.getByText("Discussion step needs attention")).toBeTruthy();
+    expect(screen.getAllByText("Check discussion setup").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Verify the model setup, then continue the discussion so options, evidence, risks, and conclusion can be rebuilt."
+      )
+    ).toBeTruthy();
     expect(screen.getByText("Current conclusion: Not ready yet")).toBeTruthy();
     expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
     expect(document.body.textContent ?? "").not.toContain("waiting_for_generators");
+    expect(document.body.textContent ?? "").not.toContain("extraction_output_invalid");
 
     cleanup();
 
@@ -4618,14 +4651,100 @@ describe("@deliberum/web shell", () => {
       }
     );
 
-    expect(await screen.findByText("\u8fdb\u884c\u4e2d")).toBeTruthy();
     expect(
-      screen.getByText("\u6b64\u8ba8\u8bba\u6b65\u9aa4\u4ecd\u5728\u5904\u7406\u4e2d\u3002")
+      await screen.findByText(
+        "\u9700\u8981\u5173\u6ce8\uff1a\u6709\u4e00\u4e2a\u8ba8\u8bba\u6b65\u9aa4\u672a\u80fd\u987a\u5229\u5b8c\u6210\u3002"
+      )
+    ).toBeTruthy();
+    expect(screen.getAllByText("\u9700\u8981\u5173\u6ce8").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "\u5728\u7ed3\u8bba\u53ef\u4fe1\u4e4b\u524d\uff0c\u6b64\u8ba8\u8bba\u6b65\u9aa4\u9700\u8981\u5148\u88ab\u5904\u7406\u3002"
+      )
     ).toBeTruthy();
     expect(await screen.findByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u6b65\u9aa4\u9700\u8981\u5173\u6ce8")).toBeTruthy();
+    expect(screen.getAllByText("\u68c0\u67e5\u8ba8\u8bba\u8bbe\u7f6e").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "\u8bf7\u9a8c\u8bc1\u6a21\u578b\u8bbe\u7f6e\uff0c\u7136\u540e\u7ee7\u7eed\u8ba8\u8bba\uff0c\u4ee5\u91cd\u5efa\u9009\u9879\u3001\u8bc1\u636e\u3001\u98ce\u9669\u548c\u7ed3\u8bba\u3002"
+      )
+    ).toBeTruthy();
     expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\uff1a\u5c1a\u672a\u5c31\u7eea")).toBeTruthy();
     expect(screen.queryByRole("link", { name: "\u67e5\u770b\u5f53\u524d\u7ed3\u8bba" })).toBeNull();
     expect(document.body.textContent ?? "").not.toContain("waiting_for_generators");
+    expect(document.body.textContent ?? "").not.toContain("extraction_output_invalid");
+  });
+
+  it("maps paused continuation stop reasons to user-facing language", async () => {
+    const pausedRun = {
+      ...localPresetNotStartedRunDetail,
+      status: "revealed",
+      sealedDivergenceStatus: "revealed",
+      latestExtractionStatus: "waiting_for_generators",
+      latestProposalReviewStatus: undefined,
+      latestFinalizationStatus: undefined,
+      ledger: {
+        eventCount: 5
+      },
+      rounds: {
+        sealedDivergence: {
+          status: "revealed"
+        },
+        extraction: [
+          {
+            status: "waiting_for_generators",
+            lastErrorCategory: "extraction_output_invalid",
+            generatorStates: [
+              {
+                generatorId: "local-preset-extractor",
+                status: "failed",
+                errorCategory: "extraction_output_invalid"
+              }
+            ]
+          }
+        ],
+        candidateRepair: [],
+        evidenceCheck: [],
+        proposalReview: [],
+        finalization: []
+      }
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: localPresetNotStartedRunDetail
+        })),
+        startRun: vi.fn(async () => ({
+          run: pausedRun,
+          stages: [
+            {
+              stage: "extraction",
+              executionStatus: "executed",
+              status: "waiting_for_generators"
+            }
+          ],
+          stopped: true,
+          stopReason: "waiting_for_generators"
+        }))
+      })
+    );
+
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalled());
+    expect(await screen.findByText("Discussion paused")).toBeTruthy();
+    expect(screen.getByText("Stop reason")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "A guided step is still waiting on model work. Review visible progress or try again after checking setup."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Updated discussion steps")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("waiting_for_generators");
+    expect(document.body.textContent ?? "").not.toContain("extraction_output_invalid");
   });
 
   it("starts a run from a JSON start request and renders readable step metadata", async () => {

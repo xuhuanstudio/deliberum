@@ -2060,16 +2060,89 @@ function RunSummary({ run }: { run: unknown }) {
 
 export function getDiscussionStageStatuses(run: unknown): DiscussionStageStatus[] {
   return [
-    ["Independent first responses", getRecordValue(run, "sealedDivergenceStatus")],
-    ["Strongest current options", getRecordValue(run, "latestExtractionStatus")],
-    ["Option quality", getRecordValue(run, "latestCandidateRepairStatus")],
-    ["Evidence and verification", getRecordValue(run, "latestEvidenceCheckStatus")],
+    [
+      "Independent first responses",
+      getDiscussionStageStatus(run, "sealedDivergenceStatus", "sealedDivergence")
+    ],
+    [
+      "Strongest current options",
+      getDiscussionStageStatus(run, "latestExtractionStatus", "extraction")
+    ],
+    [
+      "Option quality",
+      getDiscussionStageStatus(run, "latestCandidateRepairStatus", "candidateRepair")
+    ],
+    [
+      "Evidence and verification",
+      getDiscussionStageStatus(run, "latestEvidenceCheckStatus", "evidenceCheck")
+    ],
     [
       "Requirements this answer must satisfy",
-      getRecordValue(run, "latestProposalReviewStatus")
+      getDiscussionStageStatus(run, "latestProposalReviewStatus", "proposalReview")
     ],
-    ["Current conclusion", getRecordValue(run, "latestFinalizationStatus")]
+    [
+      "Current conclusion",
+      getDiscussionStageStatus(run, "latestFinalizationStatus", "finalization")
+    ]
   ];
+}
+
+function getDiscussionStageStatus(
+  run: unknown,
+  summaryStatusKey: string,
+  roundKey: string
+): unknown {
+  const round = getLatestDiscussionRound(run, roundKey);
+
+  if (discussionRoundNeedsAttention(round)) {
+    return "needs_attention";
+  }
+
+  return getRecordValue(run, summaryStatusKey);
+}
+
+function getLatestDiscussionRound(run: unknown, roundKey: string): unknown {
+  const rounds = getRecordValue(run, "rounds");
+  const stageRounds = getRecordValue(rounds, roundKey);
+
+  if (Array.isArray(stageRounds)) {
+    return stageRounds.at(-1);
+  }
+
+  return stageRounds;
+}
+
+function discussionRoundNeedsAttention(round: unknown): boolean {
+  if (!round) {
+    return false;
+  }
+
+  if (getRecordValue(round, "lastErrorCategory") !== undefined) {
+    return true;
+  }
+
+  const stateGroups = [
+    "participantDispatches",
+    "generatorStates",
+    "reviewerStates",
+    "auditorStates"
+  ];
+  const hasFailedState = stateGroups.some((groupKey) =>
+    asArray(getRecordValue(round, groupKey)).some(isFailedDiscussionStepState)
+  );
+  const outcomeCompilation = getRecordValue(round, "outcomeCompilation");
+
+  return (
+    hasFailedState ||
+    isFailedDiscussionStepState(getRecordValue(round, "finalCandidateState")) ||
+    getRecordValue(outcomeCompilation, "status") === "failed"
+  );
+}
+
+function isFailedDiscussionStepState(state: unknown): boolean {
+  const status = getRecordValue(state, "status");
+
+  return status === "failed" || status === "timed_out";
 }
 
 function RunEventTimeline({ runId }: { runId: string }) {
@@ -2986,7 +3059,7 @@ function StartResult({
         <StatusBanner
           tone="warning"
           title={t("Stop reason")}
-          detail={formatRecordValue(getRecordValue(result, "stopReason"))}
+          detail={t(describeStartResultStopReason(getRecordValue(result, "stopReason")))}
         />
       ) : null}
       <DiscussionResultHandoff
@@ -3009,6 +3082,18 @@ function StartResult({
       </AdvancedDetails>
     </div>
   );
+}
+
+function describeStartResultStopReason(reason: unknown): string {
+  if (reason === "waiting_for_generators" || reason === "already_running") {
+    return "A guided step is still waiting on model work. Review visible progress or try again after checking setup.";
+  }
+
+  if (reason === "failed" || reason === "timed_out") {
+    return "A guided step needs attention before Deliberum can continue the full discussion.";
+  }
+
+  return "The discussion paused before every requested step finished. Open Advanced details for the technical reason.";
 }
 
 function DiscussionResultHandoff({
@@ -3663,10 +3748,14 @@ function DiscussionRoomTimeline({
 }) {
   const { t } = useI18n();
   const independentResponses = describeStageStatus(
-    getRecordValue(run, "sealedDivergenceStatus")
+    getDiscussionStageStatus(run, "sealedDivergenceStatus", "sealedDivergence")
   );
-  const mainPerspectives = describeStageStatus(getRecordValue(run, "latestExtractionStatus"));
-  const conclusion = describeStageStatus(getRecordValue(run, "latestFinalizationStatus"));
+  const mainPerspectives = describeStageStatus(
+    getDiscussionStageStatus(run, "latestExtractionStatus", "extraction")
+  );
+  const conclusion = describeStageStatus(
+    getDiscussionStageStatus(run, "latestFinalizationStatus", "finalization")
+  );
   const participantResponses = getParticipantFirstResponses(activities);
   const activityGroups = groupRoomActivitiesByPhase(activities);
   const progressView = describeDiscussionRoomProgress({
@@ -3927,6 +4016,7 @@ function describeDiscussionRoomProgress({
         extractionStatus !== undefined ||
         finalizationStatus !== undefined;
   const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
+  const needsAttention = hasDiscussionStageNeedingAttention(run);
 
   if (isCompletedDiscussionStatus(finalizationStatus)) {
     return {
@@ -3939,6 +4029,18 @@ function describeDiscussionRoomProgress({
         openItemCount > 0
           ? "Review current conclusion with open items visible."
           : "Open the current conclusion and confirm it matches the discussion brief."
+    };
+  }
+
+  if (needsAttention) {
+    return {
+      tone: "active",
+      phaseTitle: "Discussion step needs attention",
+      phaseDetail:
+        "One guided step could not finish cleanly. Review setup or retry the discussion before relying on a conclusion.",
+      nextTitle: "Check discussion setup",
+      nextDetail:
+        "Verify the model setup, then continue the discussion so options, evidence, risks, and conclusion can be rebuilt."
     };
   }
 
@@ -6690,6 +6792,10 @@ export function describeDiscussionStatus(run: unknown): string {
     return "Ready to review: current conclusion is available.";
   }
 
+  if (hasDiscussionStageNeedingAttention(run)) {
+    return "Needs attention: one discussion step could not finish cleanly.";
+  }
+
   if (status === "running" && completedStageCount === 0) {
     return "In progress: discussion steps are currently running.";
   }
@@ -6713,8 +6819,18 @@ function countCompletedDiscussionStages(run: unknown): number {
   ).length;
 }
 
+function hasDiscussionStageNeedingAttention(run: unknown): boolean {
+  return getDiscussionStageStatuses(run).some(([, stageStatus]) =>
+    isDiscussionStageNeedingAttention(stageStatus)
+  );
+}
+
 function isCompletedDiscussionStage(status: unknown): boolean {
   return status === "completed" || status === "revealed";
+}
+
+function isDiscussionStageNeedingAttention(status: unknown): boolean {
+  return status === "needs_attention" || status === "failed";
 }
 
 export function isDiscussionReviewReady(run: unknown): boolean {
@@ -6768,6 +6884,15 @@ function describeDiscussionNextStep(run: unknown): DiscussionNextStepView {
       detail:
         "Start with the current conclusion, then check visible disagreements, requirements, risks, and missing evidence before relying on it.",
       tone: "ready"
+    };
+  }
+
+  if (hasDiscussionStageNeedingAttention(run)) {
+    return {
+      title: "Check discussion setup",
+      detail:
+        "A guided step needs attention. Verify the model setup, then continue the discussion before relying on a conclusion.",
+      tone: "active"
     };
   }
 
@@ -6831,6 +6956,13 @@ function describeStageStatus(status: unknown): { label: string; detail: string }
     return {
       label: "In progress",
       detail: "This discussion step is still being processed."
+    };
+  }
+
+  if (status === "needs_attention") {
+    return {
+      label: "Needs attention",
+      detail: "This discussion step needs attention before the conclusion can be trusted."
     };
   }
 

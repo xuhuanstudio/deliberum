@@ -1186,6 +1186,17 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u8ba8\u8bba\u5df2\u5b58\u5728\uff0c\u4f46\u5ba1\u8bae\u6b65\u9aa4\u5c1a\u672a\u5f00\u59cb\u3002",
   "No work has been recorded for that part of the discussion.":
     "\u8be5\u90e8\u5206\u8ba8\u8bba\u5c1a\u672a\u8bb0\u5f55\u4efb\u4f55\u5de5\u4f5c\u3002",
+  "Needs attention: one discussion step could not finish cleanly.":
+    "\u9700\u8981\u5173\u6ce8\uff1a\u6709\u4e00\u4e2a\u8ba8\u8bba\u6b65\u9aa4\u672a\u80fd\u987a\u5229\u5b8c\u6210\u3002",
+  "Discussion step needs attention":
+    "\u8ba8\u8bba\u6b65\u9aa4\u9700\u8981\u5173\u6ce8",
+  "One guided step could not finish cleanly. Review setup or retry the discussion before relying on a conclusion.":
+    "\u6709\u4e00\u4e2a\u5f15\u5bfc\u6b65\u9aa4\u672a\u80fd\u987a\u5229\u5b8c\u6210\u3002\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u8bf7\u68c0\u67e5\u8bbe\u7f6e\u6216\u91cd\u8bd5\u8ba8\u8bba\u3002",
+  "Check discussion setup": "\u68c0\u67e5\u8ba8\u8bba\u8bbe\u7f6e",
+  "Verify the model setup, then continue the discussion so options, evidence, risks, and conclusion can be rebuilt.":
+    "\u8bf7\u9a8c\u8bc1\u6a21\u578b\u8bbe\u7f6e\uff0c\u7136\u540e\u7ee7\u7eed\u8ba8\u8bba\uff0c\u4ee5\u91cd\u5efa\u9009\u9879\u3001\u8bc1\u636e\u3001\u98ce\u9669\u548c\u7ed3\u8bba\u3002",
+  "A guided step needs attention. Verify the model setup, then continue the discussion before relying on a conclusion.":
+    "\u6709\u4e00\u4e2a\u5f15\u5bfc\u6b65\u9aa4\u9700\u8981\u5173\u6ce8\u3002\u8bf7\u9a8c\u8bc1\u6a21\u578b\u8bbe\u7f6e\uff0c\u7136\u540e\u7ee7\u7eed\u8ba8\u8bba\uff0c\u518d\u4f9d\u8d56\u7ed3\u8bba\u3002",
   "Setup needed": "\u9700\u8981\u914d\u7f6e",
   "This discussion cannot continue until the required setup is available. Setup details stay in Advanced mode.":
     "\u5728\u6240\u9700\u914d\u7f6e\u53ef\u7528\u4e4b\u524d\uff0c\u6b64\u8ba8\u8bba\u65e0\u6cd5\u7ee7\u7eed\u3002\u914d\u7f6e\u7ec6\u8282\u4fdd\u7559\u5728\u9ad8\u7ea7\u6a21\u5f0f\u4e2d\u3002",
@@ -1242,6 +1253,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "The guided update ran so the strongest current options can be compared again before relying on the conclusion.":
     "\u5df2\u8fd0\u884c\u5f15\u5bfc\u5f0f\u66f4\u65b0\uff0c\u4ee5\u4fbf\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u518d\u6b21\u6bd4\u8f83\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",
   "Stop reason": "\u505c\u6b62\u539f\u56e0",
+  "A guided step is still waiting on model work. Review visible progress or try again after checking setup.":
+    "\u6709\u4e00\u4e2a\u5f15\u5bfc\u6b65\u9aa4\u4ecd\u5728\u7b49\u5f85\u6a21\u578b\u5de5\u4f5c\u3002\u8bf7\u67e5\u770b\u53ef\u89c1\u8fdb\u5c55\uff0c\u6216\u68c0\u67e5\u8bbe\u7f6e\u540e\u91cd\u8bd5\u3002",
+  "A guided step needs attention before Deliberum can continue the full discussion.":
+    "\u6709\u4e00\u4e2a\u5f15\u5bfc\u6b65\u9aa4\u9700\u8981\u5904\u7406\uff0cDeliberum \u624d\u80fd\u7ee7\u7eed\u5b8c\u6574\u8ba8\u8bba\u3002",
+  "The discussion paused before every requested step finished. Open Advanced details for the technical reason.":
+    "\u8ba8\u8bba\u5728\u6240\u6709\u8bf7\u6c42\u6b65\u9aa4\u5b8c\u6210\u524d\u5df2\u6682\u505c\u3002\u8bf7\u6253\u5f00\u9ad8\u7ea7\u8be6\u60c5\u67e5\u770b\u6280\u672f\u539f\u56e0\u3002",
   "No visible discussion steps": "\u6ca1\u6709\u53ef\u89c1\u8ba8\u8bba\u6b65\u9aa4",
   "No user-facing step updates were returned for this request.":
     "\u672c\u6b21\u8bf7\u6c42\u6ca1\u6709\u8fd4\u56de\u9762\u5411\u7528\u6237\u7684\u6b65\u9aa4\u66f4\u65b0\u3002",
@@ -1297,6 +1314,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   Failed: "\u5931\u8d25",
   "This discussion step could not be processed safely.": "\u6b64\u8ba8\u8bba\u6b65\u9aa4\u65e0\u6cd5\u88ab\u5b89\u5168\u5904\u7406\u3002",
   "Needs attention": "\u9700\u8981\u5173\u6ce8",
+  "This discussion step needs attention before the conclusion can be trusted.":
+    "\u5728\u7ed3\u8bba\u53ef\u4fe1\u4e4b\u524d\uff0c\u6b64\u8ba8\u8bba\u6b65\u9aa4\u9700\u8981\u5148\u88ab\u5904\u7406\u3002",
   "This discussion step returned a status that needs developer review.":
     "\u6b64\u8ba8\u8bba\u6b65\u9aa4\u8fd4\u56de\u4e86\u9700\u8981\u5f00\u53d1\u8005\u68c0\u67e5\u7684\u72b6\u6001\u3002",
   Unavailable: "\u4e0d\u53ef\u7528",
