@@ -194,6 +194,87 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "View requirements": "\u67e5\u770b\u8981\u6c42",
   "No main perspectives are visible yet. Continue the discussion before relying on a conclusion.":
     "\u5c1a\u65e0\u53ef\u89c1\u4e3b\u8981\u89c2\u70b9\u3002\u8bf7\u5148\u7ee7\u7eed\u8ba8\u8bba\uff0c\u518d\u4f9d\u8d56\u7ed3\u8bba\u3002",
+  "Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions.":
+    "\u5c06\u5f53\u524d\u7ed3\u8bba\u4e0e\u4e3b\u8981\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u4e00\u8d77\u5ba1\u9605\u3002",
+  "Back to discussion": "\u8fd4\u56de\u8ba8\u8bba",
+  "A readable summary of the current result. Advanced details keep the underlying technical response for developers.":
+    "\u5f53\u524d\u7ed3\u679c\u7684\u53ef\u8bfb\u6458\u8981\u3002\u5e95\u5c42\u6280\u672f\u54cd\u5e94\u4fdd\u7559\u5728\u9ad8\u7ea7\u8be6\u60c5\u4e2d\u4f9b\u5f00\u53d1\u8005\u67e5\u770b\u3002",
+  "Current conclusion not available": "\u5f53\u524d\u7ed3\u8bba\u4e0d\u53ef\u7528",
+  "The discussion has not produced conclusion-ready material yet. Continue the guided discussion before opening the current conclusion.":
+    "\u8ba8\u8bba\u5c1a\u672a\u751f\u6210\u53ef\u8fdb\u5165\u7ed3\u8bba\u9636\u6bb5\u7684\u6750\u6599\u3002\u8bf7\u5148\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u518d\u6253\u5f00\u5f53\u524d\u7ed3\u8bba\u3002",
+  "More than one conclusion-ready draft is available, so Deliberum cannot choose one automatically.":
+    "\u5b58\u5728\u591a\u4e2a\u53ef\u8fdb\u5165\u7ed3\u8bba\u9636\u6bb5\u7684\u8349\u7a3f\uff0c\u56e0\u6b64 Deliberum \u65e0\u6cd5\u81ea\u52a8\u9009\u62e9\u5176\u4e2d\u4e00\u4e2a\u3002",
+  "Deliberum could not safely prepare the current conclusion from the available discussion material.":
+    "Deliberum \u65e0\u6cd5\u4ece\u73b0\u6709\u8ba8\u8bba\u6750\u6599\u4e2d\u5b89\u5168\u5730\u51c6\u5907\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Deliberum returned an unavailable conclusion state. Open Advanced details for the technical reason.":
+    "Deliberum \u8fd4\u56de\u4e86\u4e0d\u53ef\u7528\u7684\u7ed3\u8bba\u72b6\u6001\u3002\u8bf7\u6253\u5f00\u9ad8\u7ea7\u8be6\u60c5\u67e5\u770b\u6280\u672f\u539f\u56e0\u3002",
+  "Current conclusion ready to review": "\u5f53\u524d\u7ed3\u8bba\u53ef\u4f9b\u5ba1\u9605",
+  "This is reviewable discussion material. Check disagreements, risks, missing evidence, and next actions before relying on it.":
+    "\u8fd9\u662f\u53ef\u5ba1\u9605\u7684\u8ba8\u8bba\u6750\u6599\u3002\u5728\u4f9d\u8d56\u5b83\u4e4b\u524d\uff0c\u8bf7\u68c0\u67e5\u5206\u6b67\u3001\u98ce\u9669\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002",
+  "Current conclusion remains provisional": "\u5f53\u524d\u7ed3\u8bba\u4ecd\u662f\u4e34\u65f6\u7ed3\u8bba",
+  "Treat this as a working conclusion until the visible disagreements, risks, and evidence gaps have been reviewed.":
+    "\u5728\u53ef\u89c1\u5206\u6b67\u3001\u98ce\u9669\u548c\u8bc1\u636e\u7f3a\u53e3\u5b8c\u6210\u5ba1\u9605\u524d\uff0c\u8bf7\u5c06\u5176\u89c6\u4e3a\u5de5\u4f5c\u4e2d\u7684\u7ed3\u8bba\u3002",
+  "Current conclusion status unknown": "\u5f53\u524d\u7ed3\u8bba\u72b6\u6001\u672a\u77e5",
+  "Review the conclusion together with its disagreements, risks, missing evidence, and next actions.":
+    "\u5c06\u7ed3\u8bba\u4e0e\u5176\u5206\u6b67\u3001\u98ce\u9669\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u4e0b\u4e00\u6b65\u4e00\u8d77\u5ba1\u9605\u3002",
+  "No current conclusion is available yet.": "\u5f53\u524d\u8fd8\u6ca1\u6709\u53ef\u7528\u7ed3\u8bba\u3002",
+  "Current conclusion snapshot": "\u5f53\u524d\u7ed3\u8bba\u5feb\u7167",
+  "Current recommendation": "\u5f53\u524d\u5efa\u8bae",
+  "Risks and boundaries": "\u98ce\u9669\u4e0e\u8fb9\u754c",
+  "Conclusion review path": "\u7ed3\u8bba\u5ba1\u9605\u8def\u5f84",
+  "Review path": "\u5ba1\u9605\u8def\u5f84",
+  "Before relying on this conclusion": "\u5728\u4f9d\u8d56\u6b64\u7ed3\u8bba\u4e4b\u524d",
+  "Start with the recommendation, then check the visible disagreements, evidence gaps, risks, and next recommended actions.":
+    "\u5148\u9605\u8bfb\u5efa\u8bae\uff0c\u518d\u68c0\u67e5\u53ef\u89c1\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
+  "Read the recommendation": "\u9605\u8bfb\u5efa\u8bae",
+  "Use the current recommendation as reviewable material, not as an unquestioned final answer.":
+    "\u5c06\u5f53\u524d\u5efa\u8bae\u4f5c\u4e3a\u53ef\u5ba1\u9605\u6750\u6599\uff0c\u800c\u4e0d\u662f\u65e0\u9700\u8d28\u7591\u7684\u6700\u7ec8\u7b54\u6848\u3002",
+  "Check missing evidence": "\u68c0\u67e5\u7f3a\u5931\u8bc1\u636e",
+  "Use next recommended actions": "\u4f7f\u7528\u4e0b\u4e00\u6b65\u5efa\u8bae",
+  "Unresolved questions": "\u672a\u89e3\u51b3\u95ee\u9898",
+  "No unresolved questions listed": "\u5c1a\u672a\u5217\u51fa\u672a\u89e3\u51b3\u95ee\u9898",
+  "No risks or boundaries listed": "\u5c1a\u672a\u5217\u51fa\u98ce\u9669\u6216\u8fb9\u754c",
+  "No main perspectives listed": "\u5c1a\u672a\u5217\u51fa\u4e3b\u8981\u89c2\u70b9",
+  "No open disagreements listed": "\u5c1a\u672a\u5217\u51fa\u672a\u89e3\u51b3\u5206\u6b67",
+  "No missing evidence listed": "\u5c1a\u672a\u5217\u51fa\u7f3a\u5931\u8bc1\u636e",
+  "No answer requirements listed": "\u5c1a\u672a\u5217\u51fa\u7b54\u6848\u8981\u6c42",
+  "No next recommended actions listed": "\u5c1a\u672a\u5217\u51fa\u4e0b\u4e00\u6b65\u5efa\u8bae",
+  "No next recommended actions are listed yet.":
+    "\u5c1a\u672a\u5217\u51fa\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
+  "Nothing is listed for this section yet.":
+    "\u6b64\u90e8\u5206\u5c1a\u672a\u5217\u51fa\u4efb\u4f55\u5185\u5bb9\u3002",
+  "{section} {number}": "{section} {number}",
+  "No {item} listed": "\u5c1a\u672a\u5217\u51fa{item}",
+  "{count} {item} listed": "\u5df2\u5217\u51fa {count} \u4e2a{item}",
+  "No {item}": "\u6ca1\u6709{item}",
+  "{count} {item}": "{count} \u4e2a{item}",
+  "explored option": "\u5df2\u63a2\u7d22\u9009\u9879",
+  "explored options": "\u5df2\u63a2\u7d22\u9009\u9879",
+  "visible perspective": "\u53ef\u89c1\u89c2\u70b9",
+  "visible perspectives": "\u53ef\u89c1\u89c2\u70b9",
+  "open disagreement": "\u672a\u89e3\u51b3\u5206\u6b67",
+  "open disagreements": "\u672a\u89e3\u51b3\u5206\u6b67",
+  "risk or boundary": "\u98ce\u9669\u6216\u8fb9\u754c",
+  "risks or boundaries": "\u98ce\u9669\u6216\u8fb9\u754c",
+  "recommended next action": "\u4e0b\u4e00\u6b65\u5efa\u8bae",
+  "recommended next actions": "\u4e0b\u4e00\u6b65\u5efa\u8bae",
+  "open disagreement needs review": "\u9700\u8981\u5ba1\u9605\u7684\u672a\u89e3\u51b3\u5206\u6b67",
+  "open disagreements need review": "\u9700\u8981\u5ba1\u9605\u7684\u672a\u89e3\u51b3\u5206\u6b67",
+  "No evidence gaps listed": "\u5c1a\u672a\u5217\u51fa\u8bc1\u636e\u7f3a\u53e3",
+  "{unresolved}/{total} still need checking": "{unresolved}/{total} \u4ecd\u9700\u6838\u67e5",
+  "No evidence gaps are listed.": "\u5c1a\u672a\u5217\u51fa\u8bc1\u636e\u7f3a\u53e3\u3002",
+  "{count} evidence gap has been checked.":
+    "\u5df2\u6838\u67e5 {count} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u3002",
+  "{count} evidence gaps have been checked.":
+    "\u5df2\u6838\u67e5 {count} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u3002",
+  "{unresolved} of {total} evidence gap needs verification":
+    "{total} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4e2d\u6709 {unresolved} \u4e2a\u9700\u8981\u9a8c\u8bc1",
+  "{unresolved} of {total} evidence gap need verification":
+    "{total} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4e2d\u6709 {unresolved} \u4e2a\u9700\u8981\u9a8c\u8bc1",
+  "{unresolved} of {total} evidence gaps needs verification":
+    "{total} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4e2d\u6709 {unresolved} \u4e2a\u9700\u8981\u9a8c\u8bc1",
+  "{unresolved} of {total} evidence gaps need verification":
+    "{total} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4e2d\u6709 {unresolved} \u4e2a\u9700\u8981\u9a8c\u8bc1",
   "Advanced / Developer Mode": "\u9ad8\u7ea7 / \u5f00\u53d1\u8005\u6a21\u5f0f",
   "Checking daemon": "\u6b63\u5728\u68c0\u67e5\u5b88\u62a4\u8fdb\u7a0b",
   "Daemon unavailable": "\u5b88\u62a4\u8fdb\u7a0b\u4e0d\u53ef\u7528",

@@ -1501,6 +1501,27 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("Run Alpha");
   });
 
+  it("renders the current conclusion review surface in Simplified Chinese", async () => {
+    const client = renderApp("/runs/run-1/outcome", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect((await screen.findAllByText("\u5f53\u524d\u7ed3\u8bba")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
+    expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\u4ecd\u662f\u4e34\u65f6\u7ed3\u8bba")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "\u5f53\u524d\u7ed3\u8bba\u5feb\u7167" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "\u7ed3\u8bba\u5ba1\u9605\u8def\u5f84" })).toBeTruthy();
+    expect(screen.getByText("\u5f53\u524d\u5efa\u8bae")).toBeTruthy();
+    expect(screen.getByText("\u5ba1\u9605\u8def\u5f84")).toBeTruthy();
+    expect(screen.getByText("\u5728\u4f9d\u8d56\u6b64\u7ed3\u8bba\u4e4b\u524d")).toBeTruthy();
+    expect(screen.getByText("\u9605\u8bfb\u5efa\u8bae")).toBeTruthy();
+    expect(screen.getByText("\u68c0\u67e5\u7f3a\u5931\u8bc1\u636e")).toBeTruthy();
+    expect(screen.getByText("\u4f7f\u7528\u4e0b\u4e00\u6b65\u5efa\u8bae")).toBeTruthy();
+    const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
+    expect(readableConclusion).not.toContain("Review path");
+    expect(readableConclusion).not.toContain("Use next recommended actions");
+  });
+
   it("creates a run from a JSON run plan object", async () => {
     const client = renderApp("/runs/new");
     const runPlan = {

@@ -57,6 +57,7 @@ type DiscussionNextStepView = {
   tone: "ready" | "active" | "pending";
 };
 type DiscussionStageStatus = [label: string, status: unknown];
+type TranslateFunction = (message: string, values?: Record<string, string | number>) => string;
 type RoomActivityItem = {
   speaker: string;
   title: string;
@@ -407,6 +408,7 @@ export function RunDetailPage() {
 }
 
 export function RunOutcomePage() {
+  const { t } = useI18n();
   const { runId } = useRunParams();
   const { client } = useDaemonRuntime();
   const [projectionProposalEventId, setProjectionProposalEventId] = useState("");
@@ -456,12 +458,14 @@ export function RunOutcomePage() {
   return (
     <RunWorkspaceShell runId={runId}>
       <ViewFrame
-        eyebrow="User Mode"
-        title="Current conclusion"
-        description="Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions."
+        eyebrow={t("User Mode")}
+        title={t("Current conclusion")}
+        description={t(
+          "Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions."
+        )}
         actions={
           <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
-            Back to discussion
+            {t("Back to discussion")}
           </Link>
         }
       >
@@ -470,12 +474,14 @@ export function RunOutcomePage() {
             <>
               <StatusBanner
                 tone={conclusionStatus.tone}
-                title={conclusionStatus.title}
-                detail={conclusionStatus.detail}
+                title={t(conclusionStatus.title)}
+                detail={t(conclusionStatus.detail)}
               />
               <DataPanel
-                title="Current conclusion"
-                description="A readable summary of the current result. Advanced details keep the underlying technical response for developers."
+                title={t("Current conclusion")}
+                description={t(
+                  "A readable summary of the current result. Advanced details keep the underlying technical response for developers."
+                )}
               >
                 <OutcomeBrief outcome={outcome.outcome} context={contextQueries.context} />
               </DataPanel>
@@ -541,8 +547,8 @@ export function RunOutcomePage() {
             <>
               <StatusBanner
                 tone="warning"
-                title="Current conclusion not available"
-                detail={describeOutcomeUnavailableReason(getRecordValue(outcome, "reason"))}
+                title={t("Current conclusion not available")}
+                detail={t(describeOutcomeUnavailableReason(getRecordValue(outcome, "reason")))}
               />
               <AdvancedOutcomeUnavailableDetails
                 outcome={outcome}
@@ -2425,10 +2431,11 @@ export function OutcomeBrief({
   outcome: unknown;
   context?: OutcomeBriefContext;
 }) {
+  const { t } = useI18n();
   const recommendation =
     getStringRecordValue(outcome, "recommendation") ??
     getStringRecordValue(outcome, "summary") ??
-    "No current conclusion is available yet.";
+    t("No current conclusion is available yet.");
   const unresolvedQuestions = getStringArray(getRecordValue(outcome, "unresolvedQuestions"));
   const limitations = getStringArray(getRecordValue(outcome, "limitations"));
   const continuationSuggestions = getStringArray(
@@ -2453,20 +2460,26 @@ export function OutcomeBrief({
   const unresolvedEvidenceNeeds = visibleEvidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
   const mainPerspectiveDetail =
     alternatives.length > 0
-      ? describeOutcomeCount(alternatives.length, "explored option", "explored options")
+      ? describeOutcomeCount(t, alternatives.length, "explored option", "explored options")
       : describeOutcomeCount(
+          t,
           mainPerspectives.length,
           "visible perspective",
           "visible perspectives"
         );
   const evidenceDetail =
     visibleEvidenceNeeds.length === 0
-      ? "No evidence gaps listed"
-      : `${unresolvedEvidenceNeeds}/${visibleEvidenceNeeds.length} still need checking`;
+      ? t("No evidence gaps listed")
+      : describeEvidenceCountSummary(
+          t,
+          unresolvedEvidenceNeeds,
+          visibleEvidenceNeeds.length
+        );
   const nextActionDetail =
     continuationSuggestions.length === 0
-      ? "No next recommended actions are listed yet."
+      ? t("No next recommended actions are listed yet.")
       : describeReviewItemCount(
+          t,
           continuationSuggestions.length,
           "recommended next action",
           "recommended next actions"
@@ -2474,21 +2487,22 @@ export function OutcomeBrief({
 
   return (
     <div className="du-outcome-brief">
-      <section className="du-outcome-hero" aria-label="Current conclusion snapshot">
+      <section className="du-outcome-hero" aria-label={t("Current conclusion snapshot")}>
         <article className="du-outcome-recommendation">
-          <p className="du-kicker">Current recommendation</p>
+          <p className="du-kicker">{t("Current recommendation")}</p>
           <h4>{recommendation}</h4>
         </article>
         <div className="du-outcome-status-grid">
           <OutcomeStatusItem
-            title="Main perspectives"
+            title={t("Main perspectives")}
             value={String(mainPerspectives.length)}
             detail={mainPerspectiveDetail}
           />
           <OutcomeStatusItem
-            title="Open disagreements"
+            title={t("Open disagreements")}
             value={String(openDisagreements.length)}
             detail={describeOutcomeCount(
+              t,
               openDisagreements.length,
               "open disagreement",
               "open disagreements"
@@ -2496,7 +2510,7 @@ export function OutcomeBrief({
             tone={openDisagreements.length > 0 ? "warning" : "ok"}
           />
           <OutcomeStatusItem
-            title="Missing evidence"
+            title={t("Missing evidence")}
             value={
               visibleEvidenceNeeds.length === 0
                 ? "0"
@@ -2506,9 +2520,10 @@ export function OutcomeBrief({
             tone={unresolvedEvidenceNeeds > 0 ? "warning" : "ok"}
           />
           <OutcomeStatusItem
-            title="Risks and boundaries"
+            title={t("Risks and boundaries")}
             value={String(limitations.length)}
             detail={describeOutcomeCount(
+              t,
               limitations.length,
               "risk or boundary",
               "risks or boundaries"
@@ -2517,24 +2532,28 @@ export function OutcomeBrief({
           />
         </div>
       </section>
-      <section className="du-outcome-review-path" aria-label="Conclusion review path">
+      <section className="du-outcome-review-path" aria-label={t("Conclusion review path")}>
         <div>
-          <p className="du-kicker">Review path</p>
-          <h4>Before relying on this conclusion</h4>
+          <p className="du-kicker">{t("Review path")}</p>
+          <h4>{t("Before relying on this conclusion")}</h4>
           <p>
-            Start with the recommendation, then check the visible disagreements,
-            evidence gaps, risks, and next recommended actions.
+            {t(
+              "Start with the recommendation, then check the visible disagreements, evidence gaps, risks, and next recommended actions."
+            )}
           </p>
         </div>
         <div className="du-outcome-review-grid">
           <OutcomeReviewPathItem
-            title="Read the recommendation"
-            detail="Use the current recommendation as reviewable material, not as an unquestioned final answer."
+            title={t("Read the recommendation")}
+            detail={t(
+              "Use the current recommendation as reviewable material, not as an unquestioned final answer."
+            )}
             tone="neutral"
           />
           <OutcomeReviewPathItem
-            title="Review open disagreements"
+            title={t("Review open disagreements")}
             detail={describeReviewItemCount(
+              t,
               openDisagreements.length,
               "open disagreement needs review",
               "open disagreements need review"
@@ -2542,15 +2561,16 @@ export function OutcomeBrief({
             tone={openDisagreements.length > 0 ? "warning" : "ok"}
           />
           <OutcomeReviewPathItem
-            title="Check missing evidence"
+            title={t("Check missing evidence")}
             detail={describeEvidenceReviewDetail(
+              t,
               unresolvedEvidenceNeeds,
               visibleEvidenceNeeds.length
             )}
             tone={unresolvedEvidenceNeeds > 0 ? "warning" : "ok"}
           />
           <OutcomeReviewPathItem
-            title="Use next recommended actions"
+            title={t("Use next recommended actions")}
             detail={nextActionDetail}
             tone={continuationSuggestions.length > 0 ? "ok" : "warning"}
           />
@@ -2658,18 +2678,23 @@ function ReadableStringList({
   items: string[];
   emptyTitle: string;
 }) {
+  const { t } = useI18n();
+  const visibleTitle = t(title);
+
   return (
     <div className="du-readable-list">
-      <h4>{title}</h4>
+      <h4>{visibleTitle}</h4>
       {items.length === 0 ? (
         <EmptyState
-          title={emptyTitle}
-          description="Nothing is listed for this section yet."
+          title={t(emptyTitle)}
+          description={t("Nothing is listed for this section yet.")}
         />
       ) : (
         items.map((item, index) => (
           <article className="du-readable-item" key={`${title}:${index}:${item}`}>
-            <p className="du-kicker">{`${title} ${index + 1}`}</p>
+            <p className="du-kicker">
+              {t("{section} {number}", { section: visibleTitle, number: index + 1 })}
+            </p>
             <p>{item}</p>
           </article>
         ))
@@ -2696,13 +2721,15 @@ function ReadableRecordList({
   emptyTitle: string;
   summarizeItem: (item: unknown, index: number) => OutcomeRecordSummary;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="du-readable-list">
-      <h4>{title}</h4>
+      <h4>{t(title)}</h4>
       {items.length === 0 ? (
         <EmptyState
-          title={emptyTitle}
-          description="Nothing is listed for this section yet."
+          title={t(emptyTitle)}
+          description={t("Nothing is listed for this section yet.")}
         />
       ) : (
         items.map((item, index) => {
@@ -2832,34 +2859,80 @@ function formatOutcomeLabel(value: string): string {
     .replace(/^./, (character) => character.toUpperCase());
 }
 
-function describeOutcomeCount(count: number, singular: string, plural: string): string {
+function describeOutcomeCount(
+  t: TranslateFunction,
+  count: number,
+  singular: string,
+  plural: string
+): string {
   if (count === 0) {
-    return `No ${plural} listed`;
+    return t("No {item} listed", { item: t(plural) });
   }
 
-  return `${count} ${count === 1 ? singular : plural} listed`;
+  return t("{count} {item} listed", {
+    count,
+    item: t(count === 1 ? singular : plural)
+  });
 }
 
-function describeReviewItemCount(count: number, singular: string, plural: string): string {
+function describeReviewItemCount(
+  t: TranslateFunction,
+  count: number,
+  singular: string,
+  plural: string
+): string {
   if (count === 0) {
-    return `No ${plural}`;
+    return t("No {item}", { item: t(plural) });
   }
 
-  return `${count} ${count === 1 ? singular : plural}`;
+  return t("{count} {item}", {
+    count,
+    item: t(count === 1 ? singular : plural)
+  });
 }
 
-function describeEvidenceReviewDetail(unresolvedCount: number, totalCount: number): string {
+function describeEvidenceCountSummary(
+  t: TranslateFunction,
+  unresolvedCount: number,
+  totalCount: number
+): string {
+  return t("{unresolved}/{total} still need checking", {
+    unresolved: unresolvedCount,
+    total: totalCount
+  });
+}
+
+function describeEvidenceReviewDetail(
+  t: TranslateFunction,
+  unresolvedCount: number,
+  totalCount: number
+): string {
   if (totalCount === 0) {
-    return "No evidence gaps are listed.";
+    return t("No evidence gaps are listed.");
   }
 
   if (unresolvedCount === 0) {
-    return `${totalCount} evidence ${totalCount === 1 ? "gap has" : "gaps have"} been checked.`;
+    return t(
+      totalCount === 1
+        ? "{count} evidence gap has been checked."
+        : "{count} evidence gaps have been checked.",
+      { count: totalCount }
+    );
   }
 
-  return `${unresolvedCount} of ${totalCount} evidence ${
-    totalCount === 1 ? "gap" : "gaps"
-  } ${unresolvedCount === 1 ? "needs" : "need"} verification`;
+  return t(
+    totalCount === 1 && unresolvedCount === 1
+      ? "{unresolved} of {total} evidence gap needs verification"
+      : totalCount === 1
+        ? "{unresolved} of {total} evidence gap need verification"
+        : unresolvedCount === 1
+          ? "{unresolved} of {total} evidence gaps needs verification"
+          : "{unresolved} of {total} evidence gaps need verification",
+    {
+      unresolved: unresolvedCount,
+      total: totalCount
+    }
+  );
 }
 
 function RunProjectionPanels({ sessionId }: { sessionId: string }) {
