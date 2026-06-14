@@ -1870,6 +1870,7 @@ type SetupDiscussionReadinessItem = {
 
 type SetupDiscussionReadinessView = {
   canStartDiscussion: boolean;
+  canStartModelBackedDiscussion: boolean;
   needsModelSetup: boolean;
   items: SetupDiscussionReadinessItem[];
 };
@@ -2057,7 +2058,9 @@ function SetupDiscussionReadiness({
         ))}
       </div>
       <div className="du-action-row">
-        {readiness.canStartDiscussion ? (
+        {readiness.canStartModelBackedDiscussion ? (
+          <StartModelBackedDiscussionLink />
+        ) : readiness.canStartDiscussion ? (
           <Link className="du-action-link" to="/runs/new">
             {t("Start a discussion")}
           </Link>
@@ -2101,9 +2104,7 @@ function ProviderSetupChecklistCard({
       </div>
       <div className="du-action-row">
         {ready ? (
-          <Link className="du-action-link" to="/runs/new">
-            {t("Start a discussion")}
-          </Link>
+          <StartModelBackedDiscussionLink />
         ) : profile.status === "ready" ? (
           <a className="du-action-link du-secondary-link" href="#openai-setup-form">
             {t("Verify connection")}
@@ -2190,6 +2191,7 @@ function buildSetupDiscussionReadiness(
 
   return {
     canStartDiscussion,
+    canStartModelBackedDiscussion: modelProviderReady,
     needsModelSetup,
     items: [
       {

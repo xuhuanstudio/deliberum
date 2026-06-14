@@ -1536,9 +1536,15 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Verify connection" }));
     await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalled());
     expect(await screen.findByText("Provider connection verified")).toBeTruthy();
+    const verifiedModelBackedStartLinks = screen.getAllByRole("link", {
+      name: "Start model-backed discussion"
+    });
+    expect(verifiedModelBackedStartLinks.length).toBeGreaterThan(1);
     expect(
-      screen.getAllByRole("link", { name: "Start model-backed discussion" }).length
-    ).toBeGreaterThan(0);
+      verifiedModelBackedStartLinks.every((link) =>
+        (link as HTMLAnchorElement).href.includes("participants=model-backed")
+      )
+    ).toBe(true);
 
     fireEvent.click(getAdvancedModeSummaryByPanelText("Setup diagnostics"));
     expect(await screen.findByText("Runtime profile setup details")).toBeTruthy();
@@ -1834,13 +1840,14 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Ready and verified")).toBeTruthy();
     expect(screen.getAllByText("Verified").length).toBeGreaterThan(0);
     expect(screen.getByText("Ready to start with real model participants")).toBeTruthy();
+    const verifiedModelBackedStartLinks = screen.getAllByRole("link", {
+      name: "Start model-backed discussion"
+    });
+    expect(verifiedModelBackedStartLinks.length).toBeGreaterThan(2);
     expect(
-      screen.getAllByRole("link", { name: "Start model-backed discussion" }).length
-    ).toBeGreaterThan(0);
-    expect(
-      screen
-        .getAllByRole("link", { name: "Start model-backed discussion" })
-        .some((link) => (link as HTMLAnchorElement).href.includes("participants=model-backed"))
+      verifiedModelBackedStartLinks.every((link) =>
+        (link as HTMLAnchorElement).href.includes("participants=model-backed")
+      )
     ).toBe(true);
     expect(await screen.findByText("Provider connection verified")).toBeTruthy();
     expect(
