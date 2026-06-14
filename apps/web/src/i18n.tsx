@@ -206,6 +206,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Ready for real discussions": "\u53ef\u7528\u4e8e\u771f\u5b9e\u8ba8\u8bba",
   "Web can start model-backed discussions with this provider. Verify the connection when you want a fresh test.":
     "Web \u53ef\u4ee5\u4f7f\u7528\u6b64\u63d0\u4f9b\u65b9\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002\u9700\u8981\u91cd\u65b0\u6d4b\u8bd5\u65f6\uff0c\u8bf7\u9a8c\u8bc1\u8fde\u63a5\u3002",
+  "Verify before real discussions": "\u5f00\u59cb\u771f\u5b9e\u8ba8\u8bba\u524d\u8bf7\u5148\u9a8c\u8bc1",
+  "The provider setup is saved locally. Verify the connection before starting model-backed discussions.":
+    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u5230\u672c\u5730\u3002\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u8fde\u63a5\u3002",
   "Saved in this session": "\u5df2\u5728\u5f53\u524d\u4f1a\u8bdd\u4fdd\u5b58",
   "The local service accepted this setup. Verify the connection before relying on it for a discussion.":
     "\u672c\u5730\u670d\u52a1\u5df2\u63a5\u53d7\u6b64\u8bbe\u7f6e\u3002\u4f9d\u8d56\u5b83\u8fdb\u884c\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u8fde\u63a5\u3002",
@@ -239,6 +242,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Verify connection": "\u9a8c\u8bc1\u8fde\u63a5",
   "This provider is ready for model-backed discussions.":
     "\u6b64\u63d0\u4f9b\u65b9\u5df2\u53ef\u7528\u4e8e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
+  "Provider setup is saved; verify the connection before starting model-backed discussions.":
+    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\uff1b\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u8fde\u63a5\u3002",
   "Ready in this session": "\u5f53\u524d\u4f1a\u8bdd\u5df2\u5c31\u7eea",
   "The saved setup is active in the current daemon. Check readiness, verify connection, then start a discussion.":
     "\u5df2\u4fdd\u5b58\u7684\u8bbe\u7f6e\u5df2\u5728\u5f53\u524d\u5b88\u62a4\u8fdb\u7a0b\u4e2d\u751f\u6548\u3002\u8bf7\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u3001\u9a8c\u8bc1\u8fde\u63a5\uff0c\u7136\u540e\u5f00\u59cb\u8ba8\u8bba\u3002",
@@ -315,6 +320,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Needs setup": "\u9700\u8981\u8bbe\u7f6e",
   "Perspective A and Perspective B use {provider}.":
     "\u89c6\u89d2 A \u548c\u89c6\u89d2 B \u4f7f\u7528 {provider}\u3002",
+  "Perspective A and Perspective B can use the saved provider after verification.":
+    "\u9a8c\u8bc1\u540e\uff0c\u89c6\u89d2 A \u548c\u89c6\u89d2 B \u53ef\u4ee5\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u3002",
   "Perspective A and Perspective B use built-in demo material.":
     "\u89c6\u89d2 A \u548c\u89c6\u89d2 B \u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u6750\u6599\u3002",
   "No first-response participants are ready yet.":
@@ -330,6 +337,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Third perspective available": "\u7b2c\u4e09\u4e2a\u89c6\u89d2\u53ef\u7528",
   "Provider required": "\u9700\u8981\u63d0\u4f9b\u65b9",
   "Perspective C can use {provider}.": "\u89c6\u89d2 C \u53ef\u4ee5\u4f7f\u7528 {provider}\u3002",
+  "Perspective C can use the saved provider after verification.":
+    "\u9a8c\u8bc1\u540e\uff0c\u89c6\u89d2 C \u53ef\u4ee5\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u3002",
   "Perspective C is not available until a model provider is ready.":
     "\u5728\u6a21\u578b\u63d0\u4f9b\u65b9\u5c31\u7eea\u4e4b\u524d\uff0c\u89c6\u89d2 C \u4e0d\u53ef\u7528\u3002",
   "Broader review adds one more independent model response when the question needs more comparison material.":
@@ -338,6 +347,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5728\u5f00\u59cb\u9875\u9009\u62e9\u201c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u201d\u4ee5\u5305\u542b\u89c6\u89d2 C\u3002",
   "Add a provider to unlock Perspective C and real model-backed broader review.":
     "\u6dfb\u52a0\u63d0\u4f9b\u65b9\u5373\u53ef\u89e3\u9501\u89c6\u89d2 C \u548c\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u3002",
+  "Verify connection to unlock Perspective C and real model-backed broader review.":
+    "\u9a8c\u8bc1\u8fde\u63a5\u540e\uff0c\u5373\u53ef\u89e3\u9501\u89c6\u89d2 C \u548c\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u3002",
   "Disagreement and evidence review": "\u5206\u6b67\u4e0e\u8bc1\u636e\u5ba1\u67e5",
   "Reviewer, Evidence checker, and Risk reviewer use the local review flow.":
     "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u672c\u5730\u5ba1\u67e5\u6d41\u7a0b\u3002",
@@ -367,6 +378,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u4f9d\u8d56\u751f\u6210\u7684\u7ed3\u8bba\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u5ba1\u67e5\u89d2\u8272\u8bbe\u7f6e\u3002",
   "Model ready": "\u6a21\u578b\u5df2\u5c31\u7eea",
   "Demo ready": "\u6f14\u793a\u5df2\u5c31\u7eea",
+  "Saved model provider": "\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\u63d0\u4f9b\u65b9",
+  "Verify provider": "\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
   "Organizer ready": "\u7ec4\u7ec7\u5668\u5df2\u5c31\u7eea",
   "Available in broader review": "\u53ef\u7528\u4e8e\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5",
   "{provider} model": "{provider} \u6a21\u578b",
@@ -380,6 +393,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review roles not ready": "\u5ba1\u67e5\u89d2\u8272\u5c1a\u672a\u5c31\u7eea",
   "New model-backed discussions can use this provider for independent first responses.":
     "\u65b0\u7684\u6a21\u578b\u652f\u6301\u8ba8\u8bba\u53ef\u4ee5\u4f7f\u7528\u6b64\u63d0\u4f9b\u65b9\u4ea7\u751f\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002",
+  "Verify the saved provider connection before using real model perspectives.":
+    "\u4f7f\u7528\u771f\u5b9e\u6a21\u578b\u89c6\u89d2\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fde\u63a5\u3002",
   "Demo discussions can show the role, but real model perspectives still need provider setup.":
     "\u6f14\u793a\u8ba8\u8bba\u53ef\u4ee5\u5c55\u793a\u8be5\u89d2\u8272\uff0c\u4f46\u771f\u5b9e\u6a21\u578b\u89c6\u89d2\u4ecd\u9700\u8981\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
   "Add a model provider or local preset before starting a useful discussion.":
@@ -398,6 +413,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Model participants": "\u6a21\u578b\u53c2\u4e0e\u8005",
   "Configured model participants can answer as independent perspectives.":
     "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u53ef\u4ee5\u4f5c\u4e3a\u72ec\u7acb\u89c6\u89d2\u8fdb\u884c\u56de\u7b54\u3002",
+  "A model provider is saved locally. Verify the connection before relying on real model participants.":
+    "\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u4fdd\u5b58\u5230\u672c\u5730\u3002\u4f9d\u8d56\u771f\u5b9e\u6a21\u578b\u53c2\u4e0e\u8005\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u8fde\u63a5\u3002",
   "Save the provider API key, base URL, and model in Web setup, check readiness, then verify the connection.":
     "\u5728 Web \u8bbe\u7f6e\u4e2d\u4fdd\u5b58\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\uff0c\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\uff0c\u7136\u540e\u9a8c\u8bc1\u8fde\u63a5\u3002",
   "No provider reported": "\u672a\u62a5\u544a\u63d0\u4f9b\u65b9",
@@ -415,6 +432,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Start model-backed discussion": "\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
   "Start discussion will select configured model participants by default while keeping demo participants available.":
     "\u5f00\u59cb\u8ba8\u8bba\u4f1a\u9ed8\u8ba4\u9009\u62e9\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\uff0c\u540c\u65f6\u4fdd\u7559\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u7528\u3002",
+  "Verify provider connection": "\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u8fde\u63a5",
+  "Use Verify connection in Setup / Models before starting a real model-backed discussion.":
+    "\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u5728\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u3002",
   "Try a demo discussion": "\u8bd5\u7528\u6f14\u793a\u8ba8\u8bba",
   "Use the sample flow now, then finish provider setup before relying on real model-backed perspectives.":
     "\u73b0\u5728\u53ef\u4ee5\u5148\u4f7f\u7528\u793a\u4f8b\u6d41\u7a0b\uff1b\u5728\u4f9d\u8d56\u771f\u5b9e\u6a21\u578b\u89c6\u89d2\u524d\uff0c\u8bf7\u5b8c\u6210\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
@@ -496,6 +516,11 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "MCP tool": "MCP \u5de5\u5177",
   "A real model provider is ready for model-backed discussions.":
     "\u771f\u5b9e\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u53ef\u7528\u4e8e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
+  "Verify model provider": "\u9a8c\u8bc1\u6a21\u578b\u63d0\u4f9b\u65b9",
+  "A model provider is saved locally; verify the connection before starting real model-backed discussions.":
+    "\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u4fdd\u5b58\u5230\u672c\u5730\uff1b\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u8fde\u63a5\u3002",
+  "A model provider is saved locally; verify the connection before starting model-backed discussions.":
+    "\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u4fdd\u5b58\u5230\u672c\u5730\uff1b\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u8fde\u63a5\u3002",
   "A provider is enabled, but model details still need Web setup or per-discussion model settings.":
     "\u63d0\u4f9b\u65b9\u5df2\u542f\u7528\uff0c\u4f46\u6a21\u578b\u7ec6\u8282\u4ecd\u9700\u8981 Web \u8bbe\u7f6e\u6216\u6bcf\u6b21\u8ba8\u8bba\u7684\u6a21\u578b\u8bbe\u7f6e\u3002",
   "The local preset is ready for demos; configure a provider for real model-backed discussions.":
@@ -588,6 +613,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "{provider} \u5df2\u5c31\u7eea\u3002\u6b64\u8ba8\u8bba\u5c06\u4f7f\u7528\u672c\u5730\u670d\u52a1\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Configure a ready model provider locally before selecting model-backed participants.":
     "\u5148\u5728\u672c\u5730\u914d\u7f6e\u4e00\u4e2a\u5df2\u5c31\u7eea\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\uff0c\u7136\u540e\u518d\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u3002",
+  "Provider setup is saved. Verify connection in Setup / Models before selecting model-backed participants.":
+    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u3002\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u524d\uff0c\u8bf7\u5148\u5728\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u9a8c\u8bc1\u8fde\u63a5\u3002",
   "Choose discussion depth": "\u9009\u62e9\u8ba8\u8bba\u6df1\u5ea6",
   "Focused review": "\u805a\u7126\u5ba1\u67e5",
   "Two independent model perspectives keep the discussion concise.":
@@ -629,6 +656,11 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5982\u679c\u9700\u8981\u4e0d\u8c03\u7528\u63d0\u4f9b\u65b9\u7684\u786e\u5b9a\u6027\u6f14\u793a\u6d41\u7a0b\uff0c\u4ecd\u53ef\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u3002",
   "A configured model provider is selected for this discussion by default.":
     "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u4f1a\u9ed8\u8ba4\u7528\u4e8e\u6b64\u8ba8\u8bba\u3002",
+  "Demo start, provider verification needed": "\u53ef\u5f00\u59cb\u6f14\u793a\uff0c\u4f46\u9700\u8981\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
+  "The quick-start form can start now with demo participants. Verify the saved provider connection before selecting model-backed participants.":
+    "\u5feb\u901f\u5f00\u59cb\u8868\u5355\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u542f\u52a8\u3002\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fde\u63a5\u3002",
+  "Provider setup is saved; verify connection in Setup / Models before relying on model-backed results.":
+    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\uff1b\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u7ed3\u679c\u524d\uff0c\u8bf7\u5148\u5728\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u9a8c\u8bc1\u8fde\u63a5\u3002",
   "Model-backed discussion selected": "\u5df2\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
   "This discussion will use configured model participants from your local setup.":
     "\u672c\u6b21\u8ba8\u8bba\u5c06\u4f7f\u7528\u4f60\u672c\u5730\u8bbe\u7f6e\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",

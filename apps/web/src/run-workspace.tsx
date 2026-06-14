@@ -25,6 +25,7 @@ import {
 import { useDaemonRuntime } from "./daemon-runtime";
 import { LanguageSwitcher, useI18n } from "./i18n";
 import { LocalServiceSetupGuide } from "./local-service-setup";
+import { useOpenAICompatibleProviderVerification } from "./openai-compatible-verification";
 import {
   AdvancedDetails,
   QueryState,
@@ -265,6 +266,7 @@ export function RunNewPage() {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const navigate = useNavigate();
+  const providerConnectionVerified = useOpenAICompatibleProviderVerification();
   const requestedParticipantSource = useLocation({
     select: (location) => getRequestedParticipantSource(location.search)
   });
@@ -287,7 +289,7 @@ export function RunNewPage() {
   const runtimeSetupPlan = runtimeProfilesQuery.data
     ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
     : undefined;
-  const providerBackedDiscussionSource = runtimeSetupPlan
+  const providerBackedDiscussionSource = runtimeSetupPlan && providerConnectionVerified
     ? findProviderBackedDiscussionSource(runtimeSetupPlan)
     : undefined;
   const providerBackedDiscussionAvailable = Boolean(providerBackedDiscussionSource);
@@ -474,6 +476,7 @@ export function RunNewPage() {
             onSelectedSourceChange={chooseParticipantSource}
             perspectiveCount={modelPerspectiveCount}
             onPerspectiveCountChange={setModelPerspectiveCount}
+            providerConnectionVerified={providerConnectionVerified}
           />
         ) : (
           <StatusBanner
@@ -673,7 +676,8 @@ function DiscussionModelSetupPanel({
   organizerReady,
   onSelectedSourceChange,
   perspectiveCount,
-  onPerspectiveCountChange
+  onPerspectiveCountChange,
+  providerConnectionVerified
 }: {
   setupPlan: RuntimeSetupPlan;
   selectedSource: DiscussionParticipantSource;
@@ -681,11 +685,15 @@ function DiscussionModelSetupPanel({
   onSelectedSourceChange: (source: DiscussionParticipantSource) => void;
   perspectiveCount: ProviderBackedPerspectiveCount;
   onPerspectiveCountChange: (count: ProviderBackedPerspectiveCount) => void;
+  providerConnectionVerified: boolean;
 }) {
   const { t } = useI18n();
-  const view = describeDiscussionModelSetup(setupPlan);
+  const view = describeDiscussionModelSetup(setupPlan, providerConnectionVerified);
   const demoAvailable = isDemoDiscussionSourceAvailable(setupPlan);
-  const providerSource = findProviderBackedDiscussionSource(setupPlan);
+  const providerSetupSaved = Boolean(findProviderBackedDiscussionSource(setupPlan));
+  const providerSource = providerConnectionVerified
+    ? findProviderBackedDiscussionSource(setupPlan)
+    : undefined;
   const modelBackedAvailable = Boolean(providerSource);
 
   return (
@@ -759,6 +767,10 @@ function DiscussionModelSetupPanel({
                     "{provider} is ready. This discussion will use configured model participants from the local service.",
                     { provider: t(providerSource.name) }
                   )
+                : providerSetupSaved
+                  ? t(
+                      "Provider setup is saved. Verify connection in Setup / Models before selecting model-backed participants."
+                    )
                 : t(
                     "Configure a ready model provider locally before selecting model-backed participants."
                   )}
@@ -1134,10 +1146,16 @@ function getDiscussionPerspectiveRoles(input: {
   return perspectiveRoles;
 }
 
-function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionModelSetupView {
+function describeDiscussionModelSetup(
+  setupPlan: RuntimeSetupPlan,
+  providerConnectionVerified: boolean
+): DiscussionModelSetupView {
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const providerProfiles = setupPlan.profiles.filter((profile) => profile.id !== "local-preset");
-  const modelBackedSource = findProviderBackedDiscussionSource(setupPlan);
+  const configuredModelBackedSource = findProviderBackedDiscussionSource(setupPlan);
+  const modelBackedSource = providerConnectionVerified
+    ? configuredModelBackedSource
+    : undefined;
   const readyWithDiscussionSettingsCount = providerProfiles.filter(
     (profile) =>
       isSupportedModelBackedDiscussionProfile(profile) &&
@@ -1158,6 +1176,20 @@ function describeDiscussionModelSetup(setupPlan: RuntimeSetupPlan): DiscussionMo
       providerDetail: "A configured model provider is selected for this discussion by default.",
       providerTone: "ok",
       tone: "ok"
+    };
+  }
+
+  if (configuredModelBackedSource) {
+    return {
+      title: "Demo start, provider verification needed",
+      detail:
+        "The quick-start form can start now with demo participants. Verify the saved provider connection before selecting model-backed participants.",
+      quickStartDetail:
+        "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
+      providerDetail:
+        "Provider setup is saved; verify connection in Setup / Models before relying on model-backed results.",
+      providerTone: "warning",
+      tone: "warning"
     };
   }
 

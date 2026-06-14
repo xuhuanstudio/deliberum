@@ -9,6 +9,10 @@ import {
   type WebDaemonClient
 } from "../src/client";
 import { WEB_LANGUAGE_STORAGE_KEY, type WebLanguage } from "../src/i18n";
+import {
+  clearOpenAICompatibleProviderVerified,
+  markOpenAICompatibleProviderVerified
+} from "../src/openai-compatible-verification";
 
 const projection = {
   version: "1" as const,
@@ -1024,6 +1028,7 @@ function readWebSource(): string {
     "src/client.ts",
     "src/daemon-runtime.tsx",
     "src/local-service-setup.tsx",
+    "src/openai-compatible-verification.ts",
     "src/routes.tsx",
     "src/run-presets.ts",
     "src/run-workspace.tsx",
@@ -1037,6 +1042,7 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   delete (globalThis as { EventSource?: unknown }).EventSource;
+  clearOpenAICompatibleProviderVerified();
   window.localStorage.clear();
   MockEventSource.instances = [];
 });
@@ -1213,6 +1219,7 @@ describe("@deliberum/web shell", () => {
   });
 
   it("recommends a model-backed start from the landing readiness overview when a provider is ready", async () => {
+    markOpenAICompatibleProviderVerified();
     const client = createClient();
     vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
       profiles: [
@@ -1282,6 +1289,63 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("who will organize the result");
+  });
+
+  it("requires provider verification before recommending a model-backed landing start", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
+      profiles: [
+        {
+          id: "local-preset",
+          name: "Local preset",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+            envVars: [],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    });
+
+    renderApp("/", client);
+
+    expect(await screen.findByText("Ready to use Deliberum")).toBeTruthy();
+    expect(await screen.findByText("Verify model provider")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "A model provider is saved locally; verify the connection before starting real model-backed discussions."
+      )
+    ).toBeTruthy();
+    expect(screen.getAllByText("Start demo discussion").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Start model-backed discussion" })).toBeNull();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
   it("shows the local start command on landing when the local service is unavailable", async () => {
@@ -1439,7 +1503,7 @@ describe("@deliberum/web shell", () => {
         "The current local service can use this setup now. Check readiness, verify connection, then start a real model-backed discussion."
       )
     ).toBeTruthy();
-    expect(screen.getByText("Ready in this session")).toBeTruthy();
+    expect(screen.getAllByText("Ready to verify").length).toBeGreaterThan(0);
     expect(screen.getByText("Saved in this session")).toBeTruthy();
     expect(
       screen.getByText(
@@ -1447,7 +1511,7 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getAllByText("Saved locally").length).toBeGreaterThan(2);
-    expect(screen.getByText("Ready to verify")).toBeTruthy();
+    expect(screen.getAllByText("Ready to verify").length).toBeGreaterThan(0);
     expect(screen.getByText("Setup path")).toBeTruthy();
     expect(screen.getByText("Verify the provider before starting")).toBeTruthy();
     expect(
@@ -1455,13 +1519,20 @@ describe("@deliberum/web shell", () => {
         "The saved setup is active in this local service. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion."
       )
     ).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Start model-backed discussion" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Start model-backed discussion" })).toBeNull();
     expect(
       (screen.getByRole("button", { name: "Verify connection" }) as HTMLButtonElement)
         .disabled
     ).toBe(false);
     expect((screen.getByLabelText("Provider API key") as HTMLInputElement).value).toBe("");
     expect(document.body.textContent ?? "").not.toContain("sk-web-setup-secret");
+
+    fireEvent.click(screen.getByRole("button", { name: "Verify connection" }));
+    await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalled());
+    expect(await screen.findByText("Provider connection verified")).toBeTruthy();
+    expect(
+      screen.getAllByRole("link", { name: "Start model-backed discussion" }).length
+    ).toBeGreaterThan(0);
 
     fireEvent.click(getAdvancedModeSummaryByPanelText("Setup diagnostics"));
     expect(await screen.findByText("Runtime profile setup details")).toBeTruthy();
@@ -1589,10 +1660,9 @@ describe("@deliberum/web shell", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "\u4fdd\u5b58\u6a21\u578b\u8bbe\u7f6e" }));
 
-    expect(await screen.findByText("\u5f53\u524d\u4f1a\u8bdd\u5df2\u5c31\u7eea")).toBeTruthy();
+    expect((await screen.findAllByText("\u53ef\u4ee5\u9a8c\u8bc1")).length).toBeGreaterThan(0);
     expect(screen.getByText("\u5df2\u5728\u5f53\u524d\u4f1a\u8bdd\u4fdd\u5b58")).toBeTruthy();
     expect(screen.getAllByText("\u672c\u5730\u5df2\u4fdd\u5b58").length).toBeGreaterThan(2);
-    expect(screen.getByText("\u53ef\u4ee5\u9a8c\u8bc1")).toBeTruthy();
     expect(
       screen.getByText(
         "\u5f53\u524d\u672c\u5730\u670d\u52a1\u73b0\u5728\u5df2\u53ef\u4ee5\u4f7f\u7528\u8fd9\u4e2a\u8bbe\u7f6e\u3002\u8bf7\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u3001\u9a8c\u8bc1\u8fde\u63a5\uff0c\u7136\u540e\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002"
@@ -1600,11 +1670,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("\u8bbe\u7f6e\u8def\u5f84")).toBeTruthy();
     expect(screen.getByText("\u5f00\u59cb\u524d\u8bf7\u5148\u9a8c\u8bc1\u63d0\u4f9b\u65b9")).toBeTruthy();
-    expect(
-      screen.getByRole("link", {
-        name: "\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba"
-      })
-    ).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba" })).toBeNull();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
     expect(document.body.textContent ?? "").not.toContain("sk-web-setup-secret");
@@ -1715,66 +1781,43 @@ describe("@deliberum/web shell", () => {
     });
     renderApp("/setup/models", client);
 
-    expect(await screen.findByText("This provider is ready for model-backed discussions.")).toBeTruthy();
+    expect((await screen.findAllByText("Verify provider connection")).length).toBeGreaterThan(0);
     expect(screen.getByText("Current model setup")).toBeTruthy();
-    expect(screen.getByText("Ready for real discussions")).toBeTruthy();
+    expect(screen.getByText("Verify before real discussions")).toBeTruthy();
     expect(
       screen.getByText(
-        "Web can start model-backed discussions with this provider. Verify the connection when you want a fresh test."
+        "The provider setup is saved locally. Verify the connection before starting model-backed discussions."
       )
     ).toBeTruthy();
     expect(screen.getAllByText("Saved locally").length).toBeGreaterThan(2);
-    expect(screen.getByText("Ready to verify")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Edit model setup" })).toBeTruthy();
+    expect(screen.getAllByText("Ready to verify").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Verify connection" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion readiness")).toBeTruthy();
-    expect(screen.getAllByText("Start model-backed discussion").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Start model-backed discussion" })).toBeNull();
     expect(
       screen.getByText(
-        "Start discussion will select configured model participants by default while keeping demo participants available."
+        "Use Verify connection in Setup / Models before starting a real model-backed discussion."
       )
     ).toBeTruthy();
     expect(
-      screen.getByText("Configured model participants can answer as independent perspectives.")
+      screen.getByText(
+        "A model provider is saved locally. Verify the connection before relying on real model participants."
+      )
     ).toBeTruthy();
     expect(screen.getByText("Ready to test")).toBeTruthy();
     expect(screen.getByText("Discussion participants")).toBeTruthy();
     expect(screen.getByText("Who joins the discussion")).toBeTruthy();
     expect(
-      screen.getByText("Perspective A and Perspective B use OpenAI-compatible.")
+      screen.getByText("Perspective A and Perspective B can use the saved provider after verification.")
     ).toBeTruthy();
-    expect(screen.getByText("Perspective C can use OpenAI-compatible.")).toBeTruthy();
+    expect(screen.getByText("Perspective C can use the saved provider after verification.")).toBeTruthy();
     expect(
-      screen.getByText("Choose Broader review on the start page to include Perspective C.")
+      screen.getByText("Verify connection to unlock Perspective C and real model-backed broader review.")
     ).toBeTruthy();
-    expect(screen.getByText("Conclusion writer ready")).toBeTruthy();
-    expect(screen.getAllByText("Model ready").length).toBeGreaterThan(1);
-    expect(screen.getAllByText("OpenAI-compatible model").length).toBeGreaterThan(1);
-    expect(screen.getByText("Available in broader review")).toBeTruthy();
-    expect(screen.getAllByText("Model review roles").length).toBeGreaterThan(1);
-    expect(
-      screen.getByText("Reviewer, Evidence checker, and Risk reviewer use the configured model provider.")
-    ).toBeTruthy();
-    expect(screen.getByText("Conclusion writer uses the configured model provider.")).toBeTruthy();
+    expect(screen.getAllByText("Verify connection").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Saved model provider").length).toBeGreaterThan(1);
     expect(document.body.textContent ?? "").not.toContain("Model organizer");
-    expect(
-      screen.getByText(
-        "Choose Broader review on the start page to add a third independent model perspective."
-      )
-    ).toBeTruthy();
-    expect(screen.getByText("Ready to start with real model participants")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "The provider setup is available for new discussions. The start page will select model-backed participants by default while keeping demo participants available."
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getAllByRole("link", { name: "Start model-backed discussion" }).length
-    ).toBeGreaterThan(0);
-    expect(
-      screen
-        .getAllByRole("link", { name: "Start model-backed discussion" })
-        .some((link) => (link as HTMLAnchorElement).href.includes("participants=model-backed"))
-    ).toBe(true);
+    expect(screen.getAllByText("Verify provider connection").length).toBeGreaterThan(0);
     const verifyButton = screen.getByRole("button", {
       name: "Verify connection"
     }) as HTMLButtonElement;
@@ -1783,7 +1826,16 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(verifyButton);
     await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalledTimes(1));
     expect(await screen.findByText("Ready and verified")).toBeTruthy();
-    expect(screen.getByText("Verified")).toBeTruthy();
+    expect(screen.getAllByText("Verified").length).toBeGreaterThan(0);
+    expect(screen.getByText("Ready to start with real model participants")).toBeTruthy();
+    expect(
+      screen.getAllByRole("link", { name: "Start model-backed discussion" }).length
+    ).toBeGreaterThan(0);
+    expect(
+      screen
+        .getAllByRole("link", { name: "Start model-backed discussion" })
+        .some((link) => (link as HTMLAnchorElement).href.includes("participants=model-backed"))
+    ).toBe(true);
     expect(await screen.findByText("Provider connection verified")).toBeTruthy();
     expect(
       screen.getByText(
@@ -2581,6 +2633,7 @@ describe("@deliberum/web shell", () => {
   });
 
   it("creates a model-backed discussion by default when a provider source is ready", async () => {
+    markOpenAICompatibleProviderVerified();
     const client = createClient();
     vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
       profiles: [
@@ -2814,6 +2867,86 @@ describe("@deliberum/web shell", () => {
     );
     expect(JSON.stringify(runPlan)).not.toContain("sk-");
     expect(JSON.stringify(runPlan)).not.toContain("Use built-in sample participants only.");
+  });
+
+  it("does not allow a model-backed start before provider verification", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
+      profiles: [
+        {
+          id: "local-preset",
+          name: "Local preset",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+            envVars: [],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        },
+        {
+          id: "openai-compatible",
+          name: "OpenAI-compatible",
+          enabled: true,
+          status: "ready",
+          components: [],
+          setup: {
+            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+            envVars: [
+              {
+                name: "DELIBERUM_OPENAI_BASE_URL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default provider base URL."
+              },
+              {
+                name: "DELIBERUM_OPENAI_MODEL",
+                configured: true,
+                secret: false,
+                required: false,
+                purpose: "Default model id."
+              },
+              {
+                name: "DELIBERUM_OPENAI_API_KEY",
+                configured: true,
+                secret: true,
+                required: false,
+                purpose: "Default provider secret."
+              }
+            ],
+            missingRecommendedEnvVars: [],
+            notes: []
+          },
+          boundaries: []
+        }
+      ]
+    });
+
+    renderApp("/runs/new?participants=model-backed", client);
+
+    expect(await screen.findByText("Demo start, provider verification needed")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The quick-start form can start now with demo participants. Verify the saved provider connection before selecting model-backed participants."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Provider setup is saved; verify connection in Setup / Models before relying on model-backed results."
+      )
+    ).toBeTruthy();
+    expect(screen.queryByText("Model-backed discussion selected")).toBeNull();
+    expect(
+      (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
+        .disabled
+    ).toBe(true);
+    expect(screen.getByText("Ready to create a demo discussion")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(document.body.textContent ?? "").not.toContain("providerConfigId");
   });
 
   it("keeps advanced provider profiles out of the default discussion start path", async () => {

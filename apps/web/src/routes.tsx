@@ -29,6 +29,11 @@ import {
 import { useDaemonRuntime } from "./daemon-runtime";
 import { LanguageSwitcher, useI18n } from "./i18n";
 import { LocalServiceSetupGuide } from "./local-service-setup";
+import {
+  clearOpenAICompatibleProviderVerified,
+  markOpenAICompatibleProviderVerified,
+  useOpenAICompatibleProviderVerification
+} from "./openai-compatible-verification";
 import { buildRuntimeSetupPlan } from "@deliberum/client";
 import type {
   AuditFinalCandidateRequest,
@@ -1013,13 +1018,15 @@ function LandingReadinessOverview({
   setupError: boolean;
 }) {
   const { t } = useI18n();
+  const providerConnectionVerified = useOpenAICompatibleProviderVerification();
   const readiness = buildLandingReadiness({
     runs,
     runsLoading,
     runsError,
     setupPlan,
     setupLoading,
-    setupError
+    setupError,
+    providerConnectionVerified
   });
 
   return (
@@ -1104,13 +1111,19 @@ function buildLandingReadiness(input: {
   setupPlan: RuntimeSetupPlan | undefined;
   setupLoading: boolean;
   setupError: boolean;
+  providerConnectionVerified: boolean;
 }): {
   items: LandingReadinessItem[];
   action: LandingReadinessAction;
   firstUseSteps: LandingFirstUseStep[];
 } {
   const localService = describeLandingLocalService(input);
-  const modelSetup = describeLandingModelSetup(input.setupPlan, input.setupLoading, input.setupError);
+  const modelSetup = describeLandingModelSetup(
+    input.setupPlan,
+    input.setupLoading,
+    input.setupError,
+    input.providerConnectionVerified
+  );
   const discussionHistory = describeLandingDiscussionHistory(
     input.runs,
     input.runsLoading,
@@ -1124,6 +1137,7 @@ function buildLandingReadiness(input: {
     localService,
     modelSetup,
     setupPlan: input.setupPlan,
+    providerConnectionVerified: input.providerConnectionVerified,
     action
   });
 
@@ -1143,6 +1157,7 @@ function buildLandingFirstUseSteps(input: {
     needsSetup: boolean;
   };
   setupPlan: RuntimeSetupPlan | undefined;
+  providerConnectionVerified: boolean;
   action: LandingReadinessAction;
 }): LandingFirstUseStep[] {
   const localServiceLoading = input.localService.title === "Checking local service";
@@ -1150,7 +1165,7 @@ function buildLandingFirstUseSteps(input: {
   const modelSetupLoading = input.modelSetup.item.title === "Checking model setup";
   const localPreset = input.setupPlan?.profiles.find((profile) => profile.id === "local-preset");
   const modelOrganizerReady = input.setupPlan
-    ? hasReadyModelOrganizerProfile(input.setupPlan.profiles)
+    ? hasReadyModelOrganizerProfile(input.setupPlan.profiles, input.providerConnectionVerified)
     : false;
   const organizerMode = modelOrganizerReady
     ? "model"
@@ -1322,7 +1337,8 @@ function describeLandingLocalService(input: {
 function describeLandingModelSetup(
   setupPlan: RuntimeSetupPlan | undefined,
   setupLoading: boolean,
-  setupError: boolean
+  setupError: boolean,
+  providerConnectionVerified: boolean
 ): {
   item: LandingReadinessItem;
   canStartModelBacked: boolean;
@@ -1362,8 +1378,11 @@ function describeLandingModelSetup(
   const modelProviderProfiles = setupPlan.profiles.filter(
     isWebConfigurableModelProviderProfile
   );
-  const modelProviderReady = modelProviderProfiles.some((profile) => profile.status === "ready");
-  const needsSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
+  const modelProviderConfigured = modelProviderProfiles.some((profile) => profile.status === "ready");
+  const modelProviderReady = modelProviderConfigured && providerConnectionVerified;
+  const needsSetup =
+    modelProviderProfiles.some((profile) => profile.status !== "ready") ||
+    (modelProviderConfigured && !providerConnectionVerified);
 
   if (modelProviderReady) {
     return {
@@ -1376,6 +1395,20 @@ function describeLandingModelSetup(
       canStartModelBacked: true,
       canStartDemo: localPresetReady,
       needsSetup: false
+    };
+  }
+
+  if (modelProviderConfigured) {
+    return {
+      item: {
+        label: "Model setup",
+        title: "Verify model provider",
+        detail: "A model provider is saved locally; verify the connection before starting real model-backed discussions.",
+        tone: "warning"
+      },
+      canStartModelBacked: false,
+      canStartDemo: localPresetReady,
+      needsSetup: true
     };
   }
 
@@ -1609,6 +1642,7 @@ function SetupModelsPanel({
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const queryClient = useQueryClient();
+  const providerConnectionVerified = useOpenAICompatibleProviderVerification();
   const [openAISetupInput, setOpenAISetupInput] = useState({
     apiKey: "",
     baseUrl: "",
@@ -1620,14 +1654,15 @@ function SetupModelsPanel({
   const openAICompatibleProfile = modelProviderProfiles.find(
     (profile) => profile.id === "openai-compatible"
   );
-  const readyProviderCount = modelProviderProfiles.filter((profile) => profile.status === "ready")
+  const configuredProviderCount = modelProviderProfiles.filter((profile) => profile.status === "ready")
     .length;
+  const readyProviderCount = providerConnectionVerified ? configuredProviderCount : 0;
   const providerNeedsSetup = modelProviderProfiles.some(
     (profile) =>
       profile.status === "ready_with_run_config" ||
       profile.status === "needs_configuration" ||
       profile.status === "disabled"
-  );
+  ) || (configuredProviderCount > 0 && !providerConnectionVerified);
   const canStartDiscussion =
     localPreset?.status === "ready" ||
     readyProviderCount > 0 ||
@@ -1635,11 +1670,13 @@ function SetupModelsPanel({
   const nextAction = describeSetupNextAction({
     canStartDiscussion,
     providerNeedsSetup,
+    providerNeedsVerification: configuredProviderCount > 0 && !providerConnectionVerified,
     readyProviderCount
   });
   const openAISetupMutation = useMutation({
     mutationFn: () => client.saveOpenAICompatibleSetup(openAISetupInput),
     onSuccess: () => {
+      clearOpenAICompatibleProviderVerified();
       setOpenAISetupInput((current) => ({
         ...current,
         apiKey: ""
@@ -1648,7 +1685,13 @@ function SetupModelsPanel({
     }
   });
   const openAIVerificationMutation = useMutation({
-    mutationFn: () => client.verifyOpenAICompatibleSetup()
+    mutationFn: () => client.verifyOpenAICompatibleSetup(),
+    onSuccess: () => {
+      markOpenAICompatibleProviderVerified();
+    },
+    onError: () => {
+      clearOpenAICompatibleProviderVerified();
+    }
   });
   const openAISetupCanSubmit =
     openAISetupInput.apiKey.trim().length > 0 &&
@@ -1676,19 +1719,45 @@ function SetupModelsPanel({
         <DaemonStatus />
         <article className="du-status du-status-neutral">
           <strong>{t("Model providers")}</strong>
-          <span>{t(describeModelProviderSummary(modelProviderProfiles, localPreset))}</span>
+          <span>
+            {t(
+              describeModelProviderSummary(
+                modelProviderProfiles,
+                localPreset,
+                providerConnectionVerified
+              )
+            )}
+          </span>
         </article>
       </div>
       <div className="du-setup-model-grid">
         {localPreset ? <SetupModelCard profile={localPreset} kind="local" /> : null}
         {modelProviderProfiles.map((profile) => (
-          <SetupModelCard key={profile.id} profile={profile} kind="provider" />
+          <SetupModelCard
+            key={profile.id}
+            profile={profile}
+            kind="provider"
+            providerConnectionVerified={providerConnectionVerified}
+          />
         ))}
       </div>
-      {full ? <SetupDiscussionReadiness setupPlan={setupPlan} /> : null}
-      {full ? <SetupParticipantReadiness setupPlan={setupPlan} /> : null}
+      {full ? (
+        <SetupDiscussionReadiness
+          setupPlan={setupPlan}
+          providerConnectionVerified={providerConnectionVerified}
+        />
+      ) : null}
+      {full ? (
+        <SetupParticipantReadiness
+          setupPlan={setupPlan}
+          providerConnectionVerified={providerConnectionVerified}
+        />
+      ) : null}
       {full && modelProviderProfiles.length > 0 ? (
-        <ProviderSetupChecklist profiles={modelProviderProfiles} />
+        <ProviderSetupChecklist
+          profiles={modelProviderProfiles}
+          providerConnectionVerified={providerConnectionVerified}
+        />
       ) : null}
       {full && openAICompatibleProfile ? (
         <OpenAICompatibleSetupForm
@@ -1704,7 +1773,7 @@ function SetupModelsPanel({
           onCheckReadiness={checkReadiness}
           verificationPending={openAIVerificationMutation.isPending}
           verificationError={openAIVerificationMutation.error}
-          verified={openAIVerificationMutation.isSuccess}
+          verified={providerConnectionVerified}
           onVerifyConnection={() => openAIVerificationMutation.mutate()}
         />
       ) : null}
@@ -1837,7 +1906,13 @@ type OpenAICompatibleSetupFormInput = {
   model: string;
 };
 
-function ProviderSetupChecklist({ profiles }: { profiles: RuntimeSetupPlanProfile[] }) {
+function ProviderSetupChecklist({
+  profiles,
+  providerConnectionVerified
+}: {
+  profiles: RuntimeSetupPlanProfile[];
+  providerConnectionVerified: boolean;
+}) {
   const { t } = useI18n();
 
   return (
@@ -1853,16 +1928,26 @@ function ProviderSetupChecklist({ profiles }: { profiles: RuntimeSetupPlanProfil
       </div>
       <div className="du-provider-check-card-grid">
         {profiles.map((profile) => (
-          <ProviderSetupChecklistCard key={profile.id} profile={profile} />
+          <ProviderSetupChecklistCard
+            key={profile.id}
+            profile={profile}
+            providerConnectionVerified={providerConnectionVerified}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function SetupParticipantReadiness({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
+function SetupParticipantReadiness({
+  setupPlan,
+  providerConnectionVerified
+}: {
+  setupPlan: RuntimeSetupPlan;
+  providerConnectionVerified: boolean;
+}) {
   const { t } = useI18n();
-  const readiness = buildSetupParticipantReadiness(setupPlan);
+  const readiness = buildSetupParticipantReadiness(setupPlan, providerConnectionVerified);
 
   return (
     <section
@@ -1938,9 +2023,15 @@ function SetupParticipantReadiness({ setupPlan }: { setupPlan: RuntimeSetupPlan 
   );
 }
 
-function SetupDiscussionReadiness({ setupPlan }: { setupPlan: RuntimeSetupPlan }) {
+function SetupDiscussionReadiness({
+  setupPlan,
+  providerConnectionVerified
+}: {
+  setupPlan: RuntimeSetupPlan;
+  providerConnectionVerified: boolean;
+}) {
   const { t } = useI18n();
-  const readiness = buildSetupDiscussionReadiness(setupPlan);
+  const readiness = buildSetupDiscussionReadiness(setupPlan, providerConnectionVerified);
 
   return (
     <section className="du-setup-discussion-readiness" aria-labelledby="setup-discussion-readiness">
@@ -1981,17 +2072,23 @@ function SetupDiscussionReadiness({ setupPlan }: { setupPlan: RuntimeSetupPlan }
   );
 }
 
-function ProviderSetupChecklistCard({ profile }: { profile: RuntimeSetupPlanProfile }) {
+function ProviderSetupChecklistCard({
+  profile,
+  providerConnectionVerified
+}: {
+  profile: RuntimeSetupPlanProfile;
+  providerConnectionVerified: boolean;
+}) {
   const { t } = useI18n();
-  const checks = createProviderSetupChecks(profile);
-  const ready = profile.status === "ready";
+  const checks = createProviderSetupChecks(profile, providerConnectionVerified);
+  const ready = profile.status === "ready" && providerConnectionVerified;
 
   return (
     <article className="du-provider-check-card">
       <div className="du-provider-check-card-header">
         <p className="du-kicker">{t("Model provider")}</p>
         <h5>{t(profile.name)}</h5>
-        <p>{t(getProviderChecklistSummary(profile))}</p>
+        <p>{t(getProviderChecklistSummary(profile, providerConnectionVerified))}</p>
       </div>
       <div className="du-provider-check-grid">
         {checks.map((check) => (
@@ -2007,6 +2104,10 @@ function ProviderSetupChecklistCard({ profile }: { profile: RuntimeSetupPlanProf
           <Link className="du-action-link" to="/runs/new">
             {t("Start a discussion")}
           </Link>
+        ) : profile.status === "ready" ? (
+          <a className="du-action-link du-secondary-link" href="#openai-setup-form">
+            {t("Verify connection")}
+          </a>
         ) : (
           <a className="du-action-link du-secondary-link" href="#setup-local-instructions">
             {t("View setup steps")}
@@ -2017,16 +2118,28 @@ function ProviderSetupChecklistCard({ profile }: { profile: RuntimeSetupPlanProf
   );
 }
 
-function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscussionReadinessView {
+function buildSetupDiscussionReadiness(
+  setupPlan: RuntimeSetupPlan,
+  providerConnectionVerified: boolean
+): SetupDiscussionReadinessView {
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const localPresetReady = localPreset?.status === "ready";
   const modelProviderProfiles = setupPlan.profiles.filter(
     isWebConfigurableModelProviderProfile
   );
-  const readyModelProviders = modelProviderProfiles.filter((profile) => profile.status === "ready");
-  const needsModelSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
+  const configuredModelProviders = modelProviderProfiles.filter(
+    (profile) => profile.status === "ready"
+  );
+  const readyModelProviders = providerConnectionVerified ? configuredModelProviders : [];
+  const needsModelSetup =
+    modelProviderProfiles.some((profile) => profile.status !== "ready") ||
+    (configuredModelProviders.length > 0 && !providerConnectionVerified);
   const modelProviderReady = readyModelProviders.length > 0;
-  const modelOrganizerReady = readyModelProviders.some(isReadyModelOrganizerProfile);
+  const modelProviderNeedsVerification =
+    configuredModelProviders.length > 0 && !providerConnectionVerified;
+  const modelOrganizerReady = readyModelProviders.some((profile) =>
+    isReadyModelOrganizerProfile(profile, providerConnectionVerified)
+  );
   const organizerMode = modelOrganizerReady
     ? "model"
     : localPresetReady
@@ -2035,12 +2148,16 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
   const canStartDiscussion = localPresetReady || modelProviderReady;
   const modelDetail = modelProviderReady
     ? "Configured model participants can answer as independent perspectives."
-    : modelProviderProfiles.length > 0
+    : modelProviderNeedsVerification
+      ? "A model provider is saved locally. Verify the connection before relying on real model participants."
+      : modelProviderProfiles.length > 0
       ? "Save the provider API key, base URL, and model in Web setup, check readiness, then verify the connection."
       : "The local service did not report a Web-configurable model provider.";
   const modelStatus = modelProviderReady
     ? "Ready"
-    : modelProviderProfiles.length > 0
+    : modelProviderNeedsVerification
+      ? "Verify connection"
+      : modelProviderProfiles.length > 0
       ? "Setup needed"
       : "No provider reported";
   const nextStep = modelProviderReady
@@ -2050,6 +2167,13 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
           "Start discussion will select configured model participants by default while keeping demo participants available.",
         tone: "ok" as const
       }
+    : modelProviderNeedsVerification
+      ? {
+          status: "Verify provider connection",
+          detail:
+            "Use Verify connection in Setup / Models before starting a real model-backed discussion.",
+          tone: "warning" as const
+        }
     : localPresetReady
       ? {
           status: "Try a demo discussion",
@@ -2080,7 +2204,14 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
         title: "Model participants",
         status: modelStatus,
         detail: modelDetail,
-        tone: modelProviderReady ? "ok" : modelProviderProfiles.length > 0 ? "warning" : "neutral"
+        tone:
+          modelProviderReady || modelProviderNeedsVerification
+            ? modelProviderReady
+              ? "ok"
+              : "warning"
+            : modelProviderProfiles.length > 0
+              ? "warning"
+              : "neutral"
       },
       {
         title: "Review roles and conclusion",
@@ -2103,42 +2234,57 @@ function buildSetupDiscussionReadiness(setupPlan: RuntimeSetupPlan): SetupDiscus
 }
 
 function buildSetupParticipantReadiness(
-  setupPlan: RuntimeSetupPlan
+  setupPlan: RuntimeSetupPlan,
+  providerConnectionVerified: boolean
 ): SetupParticipantReadinessView {
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const localPresetReady = localPreset?.status === "ready";
   const modelProviderProfiles = setupPlan.profiles.filter(
     isWebConfigurableModelProviderProfile
   );
-  const readyModelProvider = modelProviderProfiles.find((profile) => profile.status === "ready");
+  const configuredModelProvider = modelProviderProfiles.find((profile) => profile.status === "ready");
+  const readyModelProvider = providerConnectionVerified ? configuredModelProvider : undefined;
   const providerName = readyModelProvider?.name ?? "Model provider";
   const modelReady = readyModelProvider !== undefined;
+  const modelNeedsVerification =
+    configuredModelProvider !== undefined && !providerConnectionVerified;
   const modelOrganizerReady =
-    readyModelProvider !== undefined && isReadyModelOrganizerProfile(readyModelProvider);
+    readyModelProvider !== undefined &&
+    isReadyModelOrganizerProfile(readyModelProvider, providerConnectionVerified);
   const organizerMode = modelOrganizerReady
     ? "model"
     : localPresetReady
       ? "local"
       : undefined;
-  const needsModelSetup = modelProviderProfiles.some((profile) => profile.status !== "ready");
+  const needsModelSetup =
+    modelProviderProfiles.some((profile) => profile.status !== "ready") ||
+    modelNeedsVerification;
   const perspectiveStatus = modelReady
     ? "Model ready"
+    : modelNeedsVerification
+      ? "Verify connection"
     : localPresetReady
       ? "Demo ready"
       : "Setup needed";
   const perspectiveSource = modelReady
     ? "{provider} model"
+    : modelNeedsVerification
+      ? "Saved model provider"
     : localPresetReady
       ? "Built-in demo participant"
       : "No participant source ready";
   const perspectiveDetail = modelReady
     ? "New model-backed discussions can use this provider for independent first responses."
+    : modelNeedsVerification
+      ? "Verify the saved provider connection before using real model perspectives."
     : localPresetReady
       ? "Demo discussions can show the role, but real model perspectives still need provider setup."
       : "Add a model provider or local preset before starting a useful discussion.";
   const perspectiveTone: SetupParticipantReadinessItem["tone"] = modelReady
     ? "ok"
-    : localPresetReady
+    : modelNeedsVerification
+      ? "warning"
+      : localPresetReady
       ? "warning"
       : "neutral";
   const organizerStatus = organizerMode ? "Review roles ready" : "Review roles setup needed";
@@ -2160,11 +2306,15 @@ function buildSetupParticipantReadiness(
       title: "First responses",
       status: modelReady
         ? "Model-backed"
+        : modelNeedsVerification
+          ? "Verify provider"
         : localPresetReady
           ? "Demo walkthrough"
           : "Needs setup",
       uses: modelReady
         ? "Perspective A and Perspective B use {provider}."
+        : modelNeedsVerification
+          ? "Perspective A and Perspective B can use the saved provider after verification."
         : localPresetReady
           ? "Perspective A and Perspective B use built-in demo material."
           : "No first-response participants are ready yet.",
@@ -2173,6 +2323,8 @@ function buildSetupParticipantReadiness(
         "These independent first responses become the main perspectives users compare in the room.",
       action: modelReady
         ? "Start discussion will use model participants by default."
+        : modelNeedsVerification
+          ? "Verify connection before starting with model participants."
         : localPresetReady
           ? "Use the demo now or add a provider for real model responses."
           : "Add a model provider before starting.",
@@ -2180,15 +2332,23 @@ function buildSetupParticipantReadiness(
     },
     {
       title: "Broader review",
-      status: modelReady ? "Third perspective available" : "Provider required",
+      status: modelReady
+        ? "Third perspective available"
+        : modelNeedsVerification
+          ? "Verify provider"
+          : "Provider required",
       uses: modelReady
         ? "Perspective C can use {provider}."
+        : modelNeedsVerification
+          ? "Perspective C can use the saved provider after verification."
         : "Perspective C is not available until a model provider is ready.",
       usesValues: modelReady ? { provider: providerName } : undefined,
       detail:
         "Broader review adds one more independent model response when the question needs more comparison material.",
       action: modelReady
         ? "Choose Broader review on the start page to include Perspective C."
+        : modelNeedsVerification
+          ? "Verify connection to unlock Perspective C and real model-backed broader review."
         : "Add a provider to unlock Perspective C and real model-backed broader review.",
       tone: modelReady ? "ok" : "neutral"
     },
@@ -2315,20 +2475,21 @@ function OpenAICompatibleSetupForm({
   onVerifyConnection: () => void;
 }) {
   const { t } = useI18n();
-  const ready = profile.status === "ready";
-  const canVerify = ready || activeInCurrentDaemon;
+  const configured = profile.status === "ready";
+  const ready = configured && verified;
+  const canVerify = configured || activeInCurrentDaemon;
   const setupStatus = ready
     ? {
         title: "Ready for discussions",
         detail: "This provider is ready for model-backed discussions.",
         tone: "ok" as const
       }
-    : activeInCurrentDaemon
+    : configured || activeInCurrentDaemon
       ? {
-          title: "Ready in this session",
+          title: "Ready to verify",
           detail:
-            "The saved setup is active in the current local service. Check readiness, verify connection, then start a discussion.",
-          tone: "ok" as const
+            "The saved setup is active in the current local service. Verify connection before starting a real discussion.",
+          tone: "warning" as const
         }
       : {
           title: "Setup needed",
@@ -2425,7 +2586,7 @@ function OpenAICompatibleSetupForm({
           </p>
           <p className="du-readable-meta">
             {t(
-              ready
+              verified
                 ? "Use Verify connection to send one minimal provider request before starting a model-backed discussion."
                 : activeInCurrentDaemon
                   ? "Verify connection is available now because the saved setup is active in this local service."
@@ -2490,7 +2651,7 @@ function CurrentModelSetupSummary({
   const { t } = useI18n();
   const status = describeCurrentModelSetupStatus(profile, activeInCurrentDaemon, verified);
   const items = createCurrentModelSetupItems(profile, activeInCurrentDaemon, verified);
-  const startReady = profile.status === "ready" || verified;
+  const startReady = verified;
 
   return (
     <section
@@ -2547,10 +2708,10 @@ function describeCurrentModelSetupStatus(
 
   if (profile.status === "ready") {
     return {
-      title: "Ready for real discussions",
+      title: "Verify before real discussions",
       detail:
-        "Web can start model-backed discussions with this provider. Verify the connection when you want a fresh test.",
-      tone: "ok"
+        "The provider setup is saved locally. Verify the connection before starting model-backed discussions.",
+      tone: "warning"
     };
   }
 
@@ -2559,7 +2720,7 @@ function describeCurrentModelSetupStatus(
       title: "Saved in this session",
       detail:
         "The local service accepted this setup. Verify the connection before relying on it for a discussion.",
-      tone: "ok"
+      tone: "warning"
     };
   }
 
@@ -2620,7 +2781,7 @@ function createCurrentModelSetupItems(
         : canVerify
           ? "Use Verify connection before starting a real discussion."
           : "Save the required setup before testing the provider.",
-      tone: verified || canVerify ? "ok" : profile.enabled ? "warning" : "neutral"
+      tone: verified ? "ok" : canVerify || profile.enabled ? "warning" : "neutral"
     }
   ];
 }
@@ -2664,15 +2825,16 @@ function ProviderSetupCompletion({
         <p>{t(detail)}</p>
       </div>
       <div className="du-action-row">
-        <StartModelBackedDiscussionLink
-          className={`du-action-link ${startReady ? "" : "du-secondary-link"}`}
-        />
+        {startReady ? <StartModelBackedDiscussionLink /> : null}
       </div>
     </section>
   );
 }
 
-function createProviderSetupChecks(profile: RuntimeSetupPlanProfile): ProviderSetupCheck[] {
+function createProviderSetupChecks(
+  profile: RuntimeSetupPlanProfile,
+  providerConnectionVerified: boolean
+): ProviderSetupCheck[] {
   const checks: ProviderSetupCheck[] = [
     describeProviderEnabledCheck(profile),
     describeProviderApiKeyCheck(profile)
@@ -2688,7 +2850,7 @@ function createProviderSetupChecks(profile: RuntimeSetupPlanProfile): ProviderSe
     checks.push(modelCheck);
   }
 
-  checks.push(describeProviderConnectionCheck(profile));
+  checks.push(describeProviderConnectionCheck(profile, providerConnectionVerified));
 
   return checks;
 }
@@ -2808,13 +2970,25 @@ function describeProviderModelCheck(
   };
 }
 
-function describeProviderConnectionCheck(profile: RuntimeSetupPlanProfile): ProviderSetupCheck {
+function describeProviderConnectionCheck(
+  profile: RuntimeSetupPlanProfile,
+  providerConnectionVerified: boolean
+): ProviderSetupCheck {
+  if (profile.status === "ready" && providerConnectionVerified) {
+    return {
+      label: "Test connection",
+      value: "Verified",
+      detail: "The latest safe provider test succeeded.",
+      tone: "ok"
+    };
+  }
+
   if (profile.status === "ready") {
     return {
       label: "Test connection",
       value: "Ready to test",
       detail: "Use Verify connection to confirm the provider accepts a minimal request.",
-      tone: "ok"
+      tone: "warning"
     };
   }
 
@@ -2835,9 +3009,16 @@ function describeProviderConnectionCheck(profile: RuntimeSetupPlanProfile): Prov
   };
 }
 
-function getProviderChecklistSummary(profile: RuntimeSetupPlanProfile): string {
-  if (profile.status === "ready") {
+function getProviderChecklistSummary(
+  profile: RuntimeSetupPlanProfile,
+  providerConnectionVerified: boolean
+): string {
+  if (profile.status === "ready" && providerConnectionVerified) {
     return "Ready for model-backed discussions.";
+  }
+
+  if (profile.status === "ready") {
+    return "Provider setup is saved; verify the connection before starting model-backed discussions.";
   }
 
   if (profile.status === "ready_with_run_config") {
@@ -2855,16 +3036,25 @@ function isWebConfigurableModelProviderProfile(profile: RuntimeSetupPlanProfile)
   return profile.id === "openai-compatible";
 }
 
-function isReadyModelOrganizerProfile(profile: RuntimeSetupPlanProfile): boolean {
+function isReadyModelOrganizerProfile(
+  profile: RuntimeSetupPlanProfile,
+  providerConnectionVerified: boolean
+): boolean {
   return (
     profile.id === "openai-compatible" &&
     profile.status === "ready" &&
+    providerConnectionVerified &&
     profile.enabledComponentCount >= 5
   );
 }
 
-function hasReadyModelOrganizerProfile(profiles: RuntimeSetupPlanProfile[]): boolean {
-  return profiles.some(isReadyModelOrganizerProfile);
+function hasReadyModelOrganizerProfile(
+  profiles: RuntimeSetupPlanProfile[],
+  providerConnectionVerified: boolean
+): boolean {
+  return profiles.some((profile) =>
+    isReadyModelOrganizerProfile(profile, providerConnectionVerified)
+  );
 }
 
 function hasAnySetupName(
@@ -2902,13 +3092,15 @@ function isModelSetupName(name: string): boolean {
 
 function SetupModelCard({
   profile,
-  kind
+  kind,
+  providerConnectionVerified = false
 }: {
   profile: RuntimeSetupPlanProfile;
   kind: "local" | "provider";
+  providerConnectionVerified?: boolean;
 }) {
   const { t } = useI18n();
-  const status = describeSetupProfileStatus(profile, kind);
+  const status = describeSetupProfileStatus(profile, kind, providerConnectionVerified);
 
   return (
     <article className={`du-setup-model-card du-setup-model-${status.tone}`}>
@@ -3021,12 +3213,17 @@ function RuntimeProfileSetupDetails({
 
 function describeModelProviderSummary(
   providerProfiles: RuntimeSetupPlanProfile[],
-  localPreset: RuntimeSetupPlanProfile | undefined
+  localPreset: RuntimeSetupPlanProfile | undefined,
+  providerConnectionVerified: boolean
 ): string {
   const readyProviders = providerProfiles.filter((profile) => profile.status === "ready");
 
-  if (readyProviders.length > 0) {
+  if (readyProviders.length > 0 && providerConnectionVerified) {
     return "A real model provider is ready for model-backed discussions.";
+  }
+
+  if (readyProviders.length > 0) {
+    return "A model provider is saved locally; verify the connection before starting model-backed discussions.";
   }
 
   if (providerProfiles.some((profile) => profile.status === "ready_with_run_config")) {
@@ -3042,7 +3239,8 @@ function describeModelProviderSummary(
 
 function describeSetupProfileStatus(
   profile: RuntimeSetupPlanProfile,
-  kind: "local" | "provider"
+  kind: "local" | "provider",
+  providerConnectionVerified: boolean
 ): { title: string; detail: string; tone: "ok" | "warning" | "neutral" } {
   if (kind === "local" && profile.status === "ready") {
     return {
@@ -3052,11 +3250,20 @@ function describeSetupProfileStatus(
     };
   }
 
-  if (profile.status === "ready") {
+  if (profile.status === "ready" && providerConnectionVerified) {
     return {
       title: "Ready for model-backed discussions",
       detail: "This provider can support configured model-backed participants from the local service.",
       tone: "ok"
+    };
+  }
+
+  if (profile.status === "ready") {
+    return {
+      title: "Verify provider connection",
+      detail:
+        "This provider is saved locally. Use Verify connection before starting model-backed discussions.",
+      tone: "warning"
     };
   }
 
@@ -3085,10 +3292,12 @@ function describeSetupProfileStatus(
 
 function describeSetupNextAction({
   canStartDiscussion,
+  providerNeedsVerification,
   providerNeedsSetup,
   readyProviderCount
 }: {
   canStartDiscussion: boolean;
+  providerNeedsVerification: boolean;
   providerNeedsSetup: boolean;
   readyProviderCount: number;
 }): { title: string; detail: string; tone: "ok" | "warning" | "neutral" } {
@@ -3097,6 +3306,15 @@ function describeSetupNextAction({
       title: "Ready for discussions",
       detail: "Start a discussion and choose configured participants or model-backed discussion plans when needed.",
       tone: "ok"
+    };
+  }
+
+  if (providerNeedsVerification) {
+    return {
+      title: "Verify provider connection",
+      detail:
+        "Use Verify connection before starting a real model-backed discussion.",
+      tone: "warning"
     };
   }
 
