@@ -1606,12 +1606,8 @@ function StartResult({
           detail={formatRecordValue(getRecordValue(result, "stopReason"))}
         />
       ) : null}
+      <DiscussionResultHandoff runId={runId} />
       <ReadableStageResultList stages={readableStages} />
-      <div className="du-action-row">
-        <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-          {t("View current conclusion")}
-        </Link>
-      </div>
       <AdvancedDetails
         summary="Advanced / Developer Mode"
         panelLabel="Raw stage metadata"
@@ -1626,6 +1622,54 @@ function StartResult({
         />
       </AdvancedDetails>
     </div>
+  );
+}
+
+function DiscussionResultHandoff({ runId }: { runId: string }) {
+  const { t } = useI18n();
+
+  return (
+    <section className="du-result-handoff" aria-label={t("Post-update review path")}>
+      <div>
+        <p className="du-kicker">{t("Post-update review path")}</p>
+        <h4>{t("What to review next")}</h4>
+        <p>{t("Use these links to return from the completed action to the room view.")}</p>
+      </div>
+      <div className="du-result-handoff-grid">
+        <a
+          className="du-result-handoff-card"
+          href="#discussion-timeline"
+          aria-label={t("Review updated timeline")}
+        >
+          <span>{t("First")}</span>
+          <strong>{t("Review updated timeline")}</strong>
+          <p>{t("See where the new steps landed in the discussion flow.")}</p>
+        </a>
+        <a
+          className="du-result-handoff-card"
+          href="#discussion-outputs"
+          aria-label={t("Review discussion outputs")}
+        >
+          <span>{t("Then")}</span>
+          <strong>{t("Review discussion outputs")}</strong>
+          <p>
+            {t(
+              "Compare strongest options, open disagreements, requirements, and missing evidence."
+            )}
+          </p>
+        </a>
+        <Link
+          className="du-result-handoff-card du-result-handoff-primary"
+          to="/runs/$runId/outcome"
+          params={{ runId }}
+          aria-label={t("View current conclusion")}
+        >
+          <span>{t("Finally")}</span>
+          <strong>{t("View current conclusion")}</strong>
+          <p>{t("Review the conclusion with risks and next actions.")}</p>
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -2210,7 +2254,11 @@ function DiscussionRoomTimeline({
   });
 
   return (
-    <section className="du-room-section" aria-label={t("Discussion timeline")}>
+    <section
+      id="discussion-timeline"
+      className="du-room-section"
+      aria-label={t("Discussion timeline")}
+    >
       <div className="du-section-label">
         <p className="du-kicker">{t("Discussion timeline")}</p>
         <h4>{t("What has happened in the room")}</h4>
@@ -2866,7 +2914,11 @@ function DiscussionRoomOutputs({
   const { t } = useI18n();
 
   return (
-    <section className="du-room-section" aria-label={t("Discussion outputs")}>
+    <section
+      id="discussion-outputs"
+      className="du-room-section"
+      aria-label={t("Discussion outputs")}
+    >
       <div className="du-section-label">
         <p className="du-kicker">{t("Discussion outputs")}</p>
         <h4>{t("What the room has produced")}</h4>

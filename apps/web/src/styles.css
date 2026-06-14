@@ -1731,6 +1731,84 @@ textarea:focus-visible {
   gap: 12px;
 }
 
+.du-result-handoff {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #f8fff9;
+  padding: 16px;
+}
+
+.du-result-handoff h4,
+.du-result-handoff p {
+  margin: 0;
+}
+
+.du-result-handoff h4 {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.du-result-handoff > div:first-child p:not(.du-kicker) {
+  margin-top: 6px;
+  color: var(--du-muted);
+  line-height: 1.45;
+}
+
+.du-result-handoff-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-result-handoff-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  background: var(--du-surface);
+  color: var(--du-ink);
+  padding: 14px;
+  text-decoration: none;
+}
+
+.du-result-handoff-card:hover {
+  background: #edf5f2;
+}
+
+.du-result-handoff-primary {
+  background: var(--du-accent);
+  color: #ffffff;
+}
+
+.du-result-handoff-primary:hover {
+  background: var(--du-accent-strong);
+}
+
+.du-result-handoff-card span {
+  color: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  opacity: 0.76;
+  text-transform: uppercase;
+}
+
+.du-result-handoff-card strong {
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.du-result-handoff-card p {
+  color: inherit;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  opacity: 0.78;
+}
+
 .du-start-result,
 .du-projection-section {
   display: grid;
@@ -1986,6 +2064,7 @@ textarea:focus-visible {
   .du-outcome-review-grid,
   .du-outcome-section-grid,
   .du-stage-grid,
+  .du-result-handoff-grid,
   .du-follow-controls,
   .du-advanced-status-grid,
   .du-discussion-form-grid,

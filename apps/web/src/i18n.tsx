@@ -530,6 +530,20 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "What changed": "\u53d1\u751f\u4e86\u4ec0\u4e48\u53d8\u5316",
   "Readable summary of the discussion work that just ran.":
     "\u521a\u521a\u8fd0\u884c\u7684\u8ba8\u8bba\u5de5\u4f5c\u7684\u53ef\u8bfb\u6458\u8981\u3002",
+  "Post-update review path": "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84",
+  "What to review next": "\u63a5\u4e0b\u6765\u5ba1\u9605\u4ec0\u4e48",
+  "Use these links to return from the completed action to the room view.":
+    "\u7528\u8fd9\u4e9b\u94fe\u63a5\u4ece\u5df2\u5b8c\u6210\u7684\u52a8\u4f5c\u56de\u5230\u8ba8\u8bba\u5ba4\u89c6\u56fe\u3002",
+  First: "\u9996\u5148",
+  Finally: "\u6700\u540e",
+  "Review updated timeline": "\u5ba1\u9605\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf",
+  "See where the new steps landed in the discussion flow.":
+    "\u67e5\u770b\u65b0\u6b65\u9aa4\u5728\u8ba8\u8bba\u6d41\u7a0b\u4e2d\u843d\u5728\u4ec0\u4e48\u4f4d\u7f6e\u3002",
+  "Review discussion outputs": "\u5ba1\u9605\u8ba8\u8bba\u4ea7\u51fa",
+  "Compare strongest options, open disagreements, requirements, and missing evidence.":
+    "\u6bd4\u8f83\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8981\u6c42\u548c\u7f3a\u5931\u8bc1\u636e\u3002",
+  "Review the conclusion with risks and next actions.":
+    "\u5c06\u7ed3\u8bba\u4e0e\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u4e00\u8d77\u5ba1\u9605\u3002",
   "Initial perspectives were collected before any single answer could anchor the discussion.":
     "\u5728\u4efb\u4f55\u5355\u4e00\u7b54\u6848\u951a\u5b9a\u8ba8\u8bba\u4e4b\u524d\uff0c\u5df2\u6536\u96c6\u521d\u59cb\u89c6\u89d2\u3002",
   "The discussion material was organized into options, disagreements, requirements, and evidence needs.":

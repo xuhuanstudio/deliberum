@@ -1668,6 +1668,26 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("Run Alpha");
   });
 
+  it("localizes the post-action review path in Simplified Chinese", async () => {
+    const client = renderApp("/runs/run-1", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "\u66f4\u65b0\u7ed3\u8bba" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    const resultHandoff = await screen.findByRole("region", {
+      name: "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84"
+    });
+    expect(resultHandoff).toBeTruthy();
+    expect(resultHandoff.textContent ?? "").toContain("\u63a5\u4e0b\u6765\u5ba1\u9605\u4ec0\u4e48");
+    expect(resultHandoff.textContent ?? "").toContain(
+      "\u5ba1\u9605\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf"
+    );
+    expect(resultHandoff.textContent ?? "").toContain("\u5ba1\u9605\u8ba8\u8bba\u4ea7\u51fa");
+    expect(resultHandoff.textContent ?? "").toContain("\u67e5\u770b\u5f53\u524d\u7ed3\u8bba");
+  });
+
   it("localizes known sample discussion brief content in Simplified Chinese", async () => {
     const client = renderApp(
       "/runs/run-1",
@@ -2325,6 +2345,22 @@ describe("@deliberum/web shell", () => {
         "The guided update ran with the current brief. Review the updated conclusion, disagreements, requirements, and evidence before relying on it."
       )
     ).toBeTruthy();
+    const resultHandoff = screen.getByRole("region", { name: "Post-update review path" });
+    expect(resultHandoff).toBeTruthy();
+    expect(resultHandoff.textContent ?? "").toContain("What to review next");
+    expect(resultHandoff.textContent ?? "").toContain("Review updated timeline");
+    expect(resultHandoff.textContent ?? "").toContain("Review discussion outputs");
+    expect(resultHandoff.textContent ?? "").toContain("View current conclusion");
+    const resultHandoffLinks = Array.from(resultHandoff.querySelectorAll("a")).map((link) =>
+      link.getAttribute("href")
+    );
+    expect(resultHandoffLinks).toEqual(
+      expect.arrayContaining([
+        "#discussion-timeline",
+        "#discussion-outputs",
+        "/runs/run-1/outcome"
+      ])
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Ask for stronger options" }));
 
