@@ -86,6 +86,7 @@ const runsRoute = createRoute({
 const runsNewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "runs/new",
+  validateSearch: parseRunStartSearch,
   component: RunNewPage
 });
 
@@ -923,7 +924,64 @@ type LandingReadinessAction = {
   detail: string;
   to: "/runs/new" | "/setup/models" | "/runs";
   tone: LandingReadinessTone;
+  participantSource?: "model-backed";
 };
+
+function parseRunStartSearch(search: Record<string, unknown>): {
+  participants?: "demo" | "model-backed";
+} {
+  if (search.participants === "demo" || search.participants === "model-backed") {
+    return {
+      participants: search.participants
+    };
+  }
+
+  return {};
+}
+
+function StartDiscussionActionLink({ action }: { action: LandingReadinessAction }) {
+  const { t } = useI18n();
+
+  if (action.participantSource) {
+    return (
+      <Link
+        className="du-action-link"
+        to={action.to}
+        search={{
+          participants: action.participantSource
+        }}
+      >
+        {t(action.label)}
+      </Link>
+    );
+  }
+
+  return (
+    <Link className="du-action-link" to={action.to}>
+      {t(action.label)}
+    </Link>
+  );
+}
+
+function StartModelBackedDiscussionLink({
+  className = "du-action-link"
+}: {
+  className?: string;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <Link
+      className={className}
+      to="/runs/new"
+      search={{
+        participants: "model-backed"
+      }}
+    >
+      {t("Start model-backed discussion")}
+    </Link>
+  );
+}
 
 function LandingReadinessOverview({
   runs,
@@ -974,9 +1032,7 @@ function LandingReadinessOverview({
         <strong>{t(readiness.action.label)}</strong>
         <span>{t(readiness.action.detail)}</span>
         <div className="du-action-row">
-          <Link className="du-action-link" to={readiness.action.to}>
-            {t(readiness.action.label)}
-          </Link>
+          <StartDiscussionActionLink action={readiness.action} />
           {readiness.action.to !== "/setup/models" ? (
             <Link className="du-action-link du-secondary-link" to="/setup/models">
               {t("Open Setup / Models")}
@@ -1198,7 +1254,8 @@ function describeLandingNextAction(input: {
       label: "Start model-backed discussion",
       detail: "Use configured model participants for the next discussion.",
       to: "/runs/new",
-      tone: "ok"
+      tone: "ok",
+      participantSource: "model-backed"
     };
   }
 
@@ -1447,7 +1504,9 @@ function SetupModelsPanel({
         <strong>{t(nextAction.title)}</strong>
         <span>{t(nextAction.detail)}</span>
         <div className="du-action-row">
-          {canStartDiscussion ? (
+          {readyProviderCount > 0 ? (
+            <StartModelBackedDiscussionLink />
+          ) : canStartDiscussion ? (
             <Link className="du-action-link" to="/runs/new">
               {t("Start a discussion")}
             </Link>
@@ -1642,9 +1701,7 @@ function SetupParticipantReadiness({ setupPlan }: { setupPlan: RuntimeSetupPlan 
       </div>
       <div className="du-action-row">
         {readiness.canStartModelBackedDiscussion ? (
-          <Link className="du-action-link" to="/runs/new">
-            {t("Start model-backed discussion")}
-          </Link>
+          <StartModelBackedDiscussionLink />
         ) : null}
         {readiness.needsModelSetup ? (
           <a className="du-action-link du-secondary-link" href="#openai-setup-form">
@@ -2201,9 +2258,9 @@ function ProviderSetupCompletion({
         <p>{t(detail)}</p>
       </div>
       <div className="du-action-row">
-        <Link className={`du-action-link ${startReady ? "" : "du-secondary-link"}`} to="/runs/new">
-          {t("Start model-backed discussion")}
-        </Link>
+        <StartModelBackedDiscussionLink
+          className={`du-action-link ${startReady ? "" : "du-secondary-link"}`}
+        />
       </div>
     </section>
   );

@@ -494,6 +494,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5982\u679c\u9700\u8981\u4e0d\u8c03\u7528\u63d0\u4f9b\u65b9\u7684\u786e\u5b9a\u6027\u6f14\u793a\u6d41\u7a0b\uff0c\u4ecd\u53ef\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u3002",
   "A configured model provider is selected for this discussion by default.":
     "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u4f1a\u9ed8\u8ba4\u7528\u4e8e\u6b64\u8ba8\u8bba\u3002",
+  "Model-backed discussion selected": "\u5df2\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
+  "This discussion will use configured model participants from your local setup.":
+    "\u672c\u6b21\u8ba8\u8bba\u5c06\u4f7f\u7528\u4f60\u672c\u5730\u8bbe\u7f6e\u4e2d\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Participant source": "\u53c2\u4e0e\u8005\u6765\u6e90",
   "Model-backed discussion": "\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
   "Continue discussion will ask configured model participants for the independent first responses.":

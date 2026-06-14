@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import {
   useMutation,
   useQuery,
@@ -237,6 +237,9 @@ export function RunNewPage() {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
   const navigate = useNavigate();
+  const requestedParticipantSource = useLocation({
+    select: (location) => getRequestedParticipantSource(location.search)
+  });
   const queryClient = useQueryClient();
   const [runPlanText, setRunPlanText] = useState(DEFAULT_RUN_PLAN_TEXT);
   const [discussionQuestion, setDiscussionQuestion] = useState("");
@@ -244,7 +247,7 @@ export function RunNewPage() {
   const [discussionConstraints, setDiscussionConstraints] = useState("");
   const [discussionExpectedOutcome, setDiscussionExpectedOutcome] = useState("");
   const [participantSource, setParticipantSource] =
-    useState<DiscussionParticipantSource>("demo");
+    useState<DiscussionParticipantSource>(requestedParticipantSource ?? "demo");
   const [participantSourceTouched, setParticipantSourceTouched] = useState(false);
   const [modelPerspectiveCount, setModelPerspectiveCount] =
     useState<ProviderBackedPerspectiveCount>(2);
@@ -300,6 +303,27 @@ export function RunNewPage() {
       return;
     }
 
+    if (requestedParticipantSource === "model-backed" && !participantSourceTouched) {
+      if (providerBackedDiscussionAvailable) {
+        setParticipantSource("model-backed");
+        return;
+      }
+
+      if (demoDiscussionAvailable) {
+        setParticipantSource("demo");
+        return;
+      }
+    }
+
+    if (
+      requestedParticipantSource === "demo" &&
+      demoDiscussionAvailable &&
+      !participantSourceTouched
+    ) {
+      setParticipantSource("demo");
+      return;
+    }
+
     if (providerBackedDiscussionAvailable && !participantSourceTouched) {
       setParticipantSource("model-backed");
       return;
@@ -309,9 +333,11 @@ export function RunNewPage() {
       setParticipantSource("demo");
     }
   }, [
+    demoDiscussionAvailable,
     participantSource,
     participantSourceTouched,
     providerBackedDiscussionAvailable,
+    requestedParticipantSource,
     runtimeSetupPlan
   ]);
 
@@ -563,6 +589,20 @@ export function RunNewPage() {
   );
 }
 
+function getRequestedParticipantSource(
+  search: unknown
+): DiscussionParticipantSource | undefined {
+  if (!search || typeof search !== "object" || Array.isArray(search)) {
+    return undefined;
+  }
+
+  const participants = (search as Record<string, unknown>).participants;
+
+  return participants === "model-backed" || participants === "demo"
+    ? participants
+    : undefined;
+}
+
 function DiscussionCreationPreview({ view }: { view: DiscussionCreationPreviewView }) {
   const { t } = useI18n();
 
@@ -633,6 +673,15 @@ function DiscussionModelSetupPanel({
           <span>{t(view.providerDetail)}</span>
         </article>
       </div>
+      {selectedSource === "model-backed" && modelBackedAvailable ? (
+        <StatusBanner
+          tone="ok"
+          title={t("Model-backed discussion selected")}
+          detail={t(
+            "This discussion will use configured model participants from your local setup."
+          )}
+        />
+      ) : null}
       <fieldset className="du-participant-source-picker">
         <legend>{t("Choose participant source")}</legend>
         <label

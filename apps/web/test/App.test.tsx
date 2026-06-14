@@ -1197,9 +1197,15 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("Ready to use Deliberum")).toBeTruthy();
     expect(await screen.findByText("Real model provider ready")).toBeTruthy();
+    const modelBackedStartLinks = await screen.findAllByRole("link", {
+      name: "Start model-backed discussion"
+    });
+    expect(modelBackedStartLinks.length).toBeGreaterThan(0);
     expect(
-      await screen.findByRole("link", { name: "Start model-backed discussion" })
-    ).toBeTruthy();
+      modelBackedStartLinks.some((link) =>
+        (link as HTMLAnchorElement).href.includes("participants=model-backed")
+      )
+    ).toBe(true);
     expect(
       screen.getByText("Use configured model participants for the next discussion.")
     ).toBeTruthy();
@@ -1588,6 +1594,11 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getAllByRole("link", { name: "Start model-backed discussion" }).length
     ).toBeGreaterThan(0);
+    expect(
+      screen
+        .getAllByRole("link", { name: "Start model-backed discussion" })
+        .some((link) => (link as HTMLAnchorElement).href.includes("participants=model-backed"))
+    ).toBe(true);
     const verifyButton = screen.getByRole("button", {
       name: "Verify connection"
     }) as HTMLButtonElement;
@@ -2443,9 +2454,15 @@ describe("@deliberum/web shell", () => {
       ]
     });
 
-    renderApp("/runs/new", client);
+    renderApp("/runs/new?participants=model-backed", client);
 
     expect(await screen.findByText("Model-backed start available")).toBeTruthy();
+    expect(await screen.findByText("Model-backed discussion selected")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "This discussion will use configured model participants from your local setup."
+      )
+    ).toBeTruthy();
     expect(
       screen.getByText(
         "A ready model provider is available. Web selects model-backed participants by default; use demo participants only for walkthroughs."
@@ -2533,6 +2550,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5")).toBeTruthy();
     expect(screen.getByText("\u89c6\u89d2 C")).toBeTruthy();
     expect(screen.getByText("\u521b\u5efa\u9884\u89c8")).toBeTruthy();
+    expect(screen.getByText("\u5df2\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u53ef\u521b\u5efa\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("3 \u4e2a\u6a21\u578b\u89c6\u89d2")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("\u8bed\u8a00"), {
