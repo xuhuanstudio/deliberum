@@ -3383,6 +3383,9 @@ describe("@deliberum/web shell", () => {
     expect(document.getElementById("risks-and-boundaries")).toBeTruthy();
     expect(document.getElementById("answer-requirements")).toBeTruthy();
     expect(document.getElementById("next-recommended-actions")).toBeTruthy();
+    expect(screen.getByText("Explored option listed")).toBeTruthy();
+    expect(screen.getByText("Disagreement still open")).toBeTruthy();
+    expect(screen.getByText("Risks or boundaries listed")).toBeTruthy();
     expect(screen.getByText("1 open disagreement needs review")).toBeTruthy();
     expect(screen.getByText("1 of 1 evidence gap needs verification")).toBeTruthy();
     expect(screen.getByText("2 risks or boundaries to review")).toBeTruthy();
@@ -3459,7 +3462,8 @@ describe("@deliberum/web shell", () => {
 
     const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
     expect(readableConclusion).toContain("Candidate A");
-    expect(readableConclusion).toContain("1 visible perspective listed");
+    expect(readableConclusion).toContain("Perspective visible");
+    expect(readableConclusion).not.toContain("11 visible perspective listed");
     expect(readableConclusion).toContain(
       "Users could mistake sample material for live deliberation."
     );
@@ -3569,7 +3573,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Provenance")).toBeTruthy();
     const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
     expect(readableConclusion).toContain("Candidate A");
-    expect(readableConclusion).toContain("1 visible perspective listed");
+    expect(readableConclusion).toContain("Perspective visible");
+    expect(readableConclusion).not.toContain("11 visible perspective listed");
     expect(readableConclusion).not.toContain("candidate-1");
     expect(readableConclusion).not.toContain("returned");
     expect(client.getRunOutcome).not.toHaveBeenCalled();

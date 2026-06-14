@@ -3483,12 +3483,17 @@ export function OutcomeBrief({
   );
   const mainPerspectiveDetail =
     alternatives.length > 0
-      ? describeOutcomeCount(t, alternatives.length, "explored option", "explored options")
-      : describeOutcomeCount(
+      ? describeOutcomeStatusDetail(
+          t,
+          alternatives.length,
+          "Explored option listed",
+          "Explored options listed"
+        )
+      : describeOutcomeStatusDetail(
           t,
           mainPerspectives.length,
-          "visible perspective",
-          "visible perspectives"
+          "Perspective visible",
+          "Perspectives visible"
         );
   const evidenceDetail =
     visibleEvidenceNeeds.length === 0
@@ -3528,11 +3533,11 @@ export function OutcomeBrief({
           <OutcomeStatusItem
             title={t("Open disagreements")}
             value={String(openDisagreements.length)}
-            detail={describeOutcomeCount(
+            detail={describeOutcomeStatusDetail(
               t,
               openDisagreements.length,
-              "open disagreement",
-              "open disagreements"
+              "Disagreement still open",
+              "Disagreements still open"
             )}
             tone={openDisagreements.length > 0 ? "warning" : "ok"}
           />
@@ -3549,11 +3554,11 @@ export function OutcomeBrief({
           <OutcomeStatusItem
             title={t("Risks and boundaries")}
             value={String(risksAndBoundaries.length)}
-            detail={describeOutcomeCount(
+            detail={describeOutcomeStatusDetail(
               t,
               risksAndBoundaries.length,
-              "risk or boundary",
-              "risks or boundaries"
+              "Risk or boundary listed",
+              "Risks or boundaries listed"
             )}
             tone={risksAndBoundaries.length > 0 ? "warning" : "neutral"}
           />
@@ -4014,6 +4019,19 @@ function describeOutcomeCount(
     count,
     item: t(count === 1 ? singular : plural)
   });
+}
+
+function describeOutcomeStatusDetail(
+  t: TranslateFunction,
+  count: number,
+  singular: string,
+  plural: string
+): string {
+  if (count === 0) {
+    return t("None listed");
+  }
+
+  return t(count === 1 ? singular : plural);
 }
 
 function describeReviewItemCount(
