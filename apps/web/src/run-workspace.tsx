@@ -684,7 +684,7 @@ function RunProgressDetails({ run }: { run: unknown }) {
               detail="The discussion exists, but the deliberation steps have not started yet."
             />
             <ExplainerItem
-              title="Not run yet"
+              title="Not started yet"
               detail="No work has been recorded for that part of the discussion."
             />
             <ExplainerItem
@@ -1311,7 +1311,7 @@ function describeReadableStage(stageName: unknown): Pick<ReadableStageResult, "l
 
   return {
     label: "Discussion step",
-    detail: "A discussion step was updated. Advanced details include the raw stage name."
+    detail: "A discussion step was updated. Advanced details include the original step name."
   };
 }
 
@@ -3328,7 +3328,7 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
     return {
       title: "Discussion is ready to review",
       description:
-        "The guided discussion has produced a current conclusion. Review it first; rerun only when you want to refresh the discussion with the same brief.",
+        "The guided discussion has produced a current conclusion. Review it first; refresh the steps only when you want to update the discussion with the same brief.",
       explainerTitle: "Review the current conclusion",
       explainerDetail:
         "Main perspectives, open disagreements, requirements, evidence and verification, risk review, and next recommended actions are available below and on the conclusion page.",
@@ -3360,7 +3360,7 @@ function describeLedgerEvents(eventCount: unknown): string {
 function describeStageStatus(status: unknown): { label: string; detail: string } {
   if (status === undefined || status === null) {
     return {
-      label: "Not run yet",
+      label: "Not started yet",
       detail: "This discussion step has no recorded work yet."
     };
   }
@@ -3412,7 +3412,7 @@ function describeOutcomeUnavailableReason(reason: unknown): string {
     return "Deliberum could not safely prepare the current conclusion from the available discussion material.";
   }
 
-  return "Deliberum returned an unavailable conclusion state. Open Advanced details for the raw reason.";
+  return "Deliberum returned an unavailable conclusion state. Open Advanced details for the technical reason.";
 }
 
 function describeRunOutcomeReviewStatus(draftStatus: unknown): {

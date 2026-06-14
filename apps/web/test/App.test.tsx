@@ -2011,7 +2011,8 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
     fireEvent.click(getAdvancedModeSummary());
     expect(await screen.findByText("1 recorded lifecycle event")).toBeTruthy();
-    expect(screen.getAllByText("Not run yet").length).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByText("Not started yet").length).toBeGreaterThanOrEqual(4);
+    expect(document.body.textContent ?? "").not.toContain("Not run yet");
     expect(screen.getByText("No work has been recorded for that part of the discussion.")).toBeTruthy();
   });
 
