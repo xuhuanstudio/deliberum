@@ -979,7 +979,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByLabelText(/chat/i)).toBeNull();
     expect(screen.queryByPlaceholderText(/message/i)).toBeNull();
 
-    fireEvent.click(getAdvancedModeSummary(1));
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     await waitFor(() => expect(client.listSessions).toHaveBeenCalled());
     fireEvent.change(await screen.findByLabelText("Session id"), {
       target: {
@@ -998,6 +998,8 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Continue existing discussions")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
     expect(client.listSessions).not.toHaveBeenCalled();
+    expect(screen.getByText("Resume latest discussion")).toBeTruthy();
+    expect(screen.queryByText("More discussions")).toBeNull();
     expect(screen.getByText("Evaluate the local daemon run workspace")).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("Stage 11 shell");
     expect(screen.getByText("Ready to review: current conclusion is available.")).toBeTruthy();
@@ -1022,7 +1024,7 @@ describe("@deliberum/web shell", () => {
     const advancedClient = renderApp("/");
     expect((await screen.findAllByText("Continue existing discussions")).length).toBeGreaterThan(0);
     expect(advancedClient.listSessions).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummary(1));
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Underlying session catalog")).toBeTruthy();
     await waitFor(() => expect(advancedClient.listSessions).toHaveBeenCalled());
     expect(screen.getAllByText("Session id").length).toBeGreaterThan(1);
@@ -1052,6 +1054,7 @@ describe("@deliberum/web shell", () => {
       0
     );
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    expect(screen.getByText("\u7ee7\u7eed\u6700\u65b0\u8ba8\u8bba")).toBeTruthy();
     const landingCatalogText =
       screen.getByText("\u6211\u4eec\u5e94\u5982\u4f55\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5ba1\u67e5\u5b83\uff1f")
         .closest(".du-run-list-item")?.textContent ?? "";
@@ -1065,6 +1068,57 @@ describe("@deliberum/web shell", () => {
     expect(landingCatalogText).not.toContain(
       "Discussion: How should we review a proposed rollout before relying on it?"
     );
+  });
+
+  it("focuses the latest discussion before older discussion history", async () => {
+    const olderTopic = "Review an older rollout question";
+    const latestTopic = "Decide the next customer research question";
+    const client = createClient({
+      listRuns: vi.fn(async () => ({
+        runs: [
+          {
+            ...runDetail,
+            runId: "run-older",
+            title: `Discussion: ${olderTopic}`,
+            topic: olderTopic,
+            createdAt: "2026-06-10T00:00:00.000Z",
+            updatedAt: "2026-06-10T00:01:00.000Z"
+          },
+          {
+            ...runDetail,
+            runId: "run-latest",
+            title: `Discussion: ${latestTopic}`,
+            topic: latestTopic,
+            createdAt: "2026-06-10T00:02:00.000Z",
+            updatedAt: "2026-06-10T00:03:00.000Z"
+          }
+        ]
+      }))
+    });
+
+    renderApp("/runs", client);
+
+    expect(await screen.findByText("Resume latest discussion")).toBeTruthy();
+    await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
+    const featuredDiscussion = document.querySelector(".du-run-list-item-featured");
+    expect(featuredDiscussion?.textContent ?? "").toContain(latestTopic);
+    expect(featuredDiscussion?.textContent ?? "").not.toContain(olderTopic);
+
+    const moreDiscussionsSummary = screen.getByText("More discussions");
+    const moreDiscussionsDetails = moreDiscussionsSummary.closest(
+      "details"
+    ) as HTMLDetailsElement | null;
+
+    expect(moreDiscussionsDetails).not.toBeNull();
+    expect(moreDiscussionsDetails?.open).toBe(false);
+    expect(moreDiscussionsDetails?.textContent ?? "").toContain(
+      "1 earlier discussion remains available."
+    );
+    expect(moreDiscussionsDetails?.textContent ?? "").toContain(olderTopic);
+
+    fireEvent.click(moreDiscussionsSummary);
+
+    expect(moreDiscussionsDetails?.open).toBe(true);
   });
 
   it("does not send incomplete discussions to unavailable conclusions from catalogs", async () => {
@@ -1115,7 +1169,7 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(client.getRuntimeProfiles).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummary(1));
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Runtime profiles")).toBeTruthy();
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(screen.getByText("Local preset")).toBeTruthy();
@@ -1142,7 +1196,7 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(client.getDeploymentPosture).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummary(1));
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Deployment posture")).toBeTruthy();
     await waitFor(() => expect(client.getDeploymentPosture).toHaveBeenCalled());
     expect(screen.getByText("Bind exposure")).toBeTruthy();
@@ -1172,7 +1226,7 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(client.getResourceAccessPosture).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummary(1));
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Resource access posture")).toBeTruthy();
     await waitFor(() => expect(client.getResourceAccessPosture).toHaveBeenCalled());
     expect(screen.getByText("Base URL posture")).toBeTruthy();
@@ -1212,7 +1266,7 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(client.getOperationAudit).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummary(1));
+    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Operation audit")).toBeTruthy();
     await waitFor(() =>
       expect(client.getOperationAudit).toHaveBeenCalledWith({ limit: 10 })

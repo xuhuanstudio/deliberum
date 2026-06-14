@@ -150,11 +150,7 @@ export function RunsListPage() {
                 )}
               />
             ) : (
-              <div className="du-run-list">
-                {runs.map((run, index) => (
-                  <RunListItem key={getRunItemKey(run, index)} run={run} index={index} />
-                ))}
-              </div>
+              <RunCatalogList runs={runs} />
             )}
           </DataPanel>
         </QueryState>
@@ -967,15 +963,112 @@ function isTopicPrefixedTitle(title: string, topic: string | undefined): boolean
   return title.trim().toLowerCase() === `discussion: ${topic.trim()}`.toLowerCase();
 }
 
-function RunListItem({ run, index }: { run: unknown; index: number }) {
+type RunCatalogEntry = {
+  run: unknown;
+  originalIndex: number;
+};
+
+export function RunCatalogList({ runs }: { runs: unknown[] }) {
+  const { t } = useI18n();
+  const [latestRunEntry, ...earlierRunEntries] = getRunCatalogEntries(runs);
+
+  if (!latestRunEntry) {
+    return null;
+  }
+
+  return (
+    <div className="du-run-catalog">
+      <div className="du-run-list du-run-list-featured">
+        <RunListItem
+          key={getRunItemKey(latestRunEntry.run, latestRunEntry.originalIndex)}
+          eyebrow="Resume latest discussion"
+          featured
+          run={latestRunEntry.run}
+          index={0}
+        />
+      </div>
+      {earlierRunEntries.length > 0 ? (
+        <details className="du-user-details du-run-more-details">
+          <summary>
+            <span>{t("More discussions")}</span>
+            <small>
+              {t(
+                earlierRunEntries.length === 1
+                  ? "{count} earlier discussion remains available."
+                  : "{count} earlier discussions remain available.",
+                {
+                  count: earlierRunEntries.length
+                }
+              )}
+            </small>
+          </summary>
+          <div className="du-run-list">
+            {earlierRunEntries.map((entry, index) => (
+              <RunListItem
+                key={getRunItemKey(entry.run, entry.originalIndex)}
+                run={entry.run}
+                index={index + 1}
+              />
+            ))}
+          </div>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+function getRunCatalogEntries(runs: unknown[]): RunCatalogEntry[] {
+  return runs
+    .map((run, originalIndex) => ({
+      run,
+      originalIndex
+    }))
+    .sort(compareRunCatalogEntries);
+}
+
+function compareRunCatalogEntries(left: RunCatalogEntry, right: RunCatalogEntry): number {
+  const updatedDifference = getRunCatalogTime(right.run) - getRunCatalogTime(left.run);
+
+  if (updatedDifference !== 0) {
+    return updatedDifference;
+  }
+
+  return left.originalIndex - right.originalIndex;
+}
+
+function getRunCatalogTime(run: unknown): number {
+  const timestamp =
+    getStringRecordValue(run, "updatedAt") ?? getStringRecordValue(run, "createdAt");
+  const parsedTimestamp = timestamp ? Date.parse(timestamp) : Number.NaN;
+
+  return Number.isFinite(parsedTimestamp) ? parsedTimestamp : 0;
+}
+
+function RunListItem({
+  eyebrow,
+  featured = false,
+  run,
+  index
+}: {
+  eyebrow?: string;
+  featured?: boolean;
+  run: unknown;
+  index: number;
+}) {
   const { t } = useI18n();
   const runId = getStringRecordValue(run, "runId");
   const reviewReady = isDiscussionReviewReady(run);
 
   return (
-    <article className="du-run-list-item">
+    <article
+      className={
+        featured ? "du-run-list-item du-run-list-item-featured" : "du-run-list-item"
+      }
+    >
       <div>
-        <p className="du-kicker">{t("Discussion {number}", { number: index + 1 })}</p>
+        <p className="du-kicker">
+          {eyebrow ? t(eyebrow) : t("Discussion {number}", { number: index + 1 })}
+        </p>
         <h3>{t(formatRunDisplayTitle(run, index))}</h3>
         <p>{t(formatRunDisplaySummary(run))}</p>
       </div>

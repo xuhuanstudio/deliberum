@@ -1671,11 +1671,26 @@ textarea:focus-visible {
   background: var(--du-line);
 }
 
+.du-run-catalog {
+  display: grid;
+  gap: 12px;
+}
+
+.du-run-list-featured {
+  overflow: hidden;
+  border-radius: 8px;
+}
+
 .du-run-list-item {
   display: grid;
   gap: 14px;
   background: var(--du-surface);
   padding: 16px;
+}
+
+.du-run-list-item-featured {
+  border-left: 4px solid var(--du-accent);
+  background: color-mix(in srgb, var(--du-surface) 86%, var(--du-accent) 14%);
 }
 
 .du-run-list-item h3,
@@ -1730,6 +1745,19 @@ textarea:focus-visible {
 
 .du-run-list-actions {
   padding-top: 0;
+}
+
+.du-run-more-details {
+  margin: 0;
+  overflow: hidden;
+}
+
+.du-run-more-details > summary {
+  background: var(--du-surface-muted);
+}
+
+.du-run-more-details > .du-run-list {
+  border-top: 1px solid var(--du-line);
 }
 
 .du-next-step-card {

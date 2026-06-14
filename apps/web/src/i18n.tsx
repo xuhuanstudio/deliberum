@@ -109,6 +109,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u4e0b\u4e00\u6b65\uff0c\u6253\u5f00\u8ba8\u8bba\u5ba4\u5e76\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u4ee5\u6536\u96c6\u89c6\u89d2\u3001\u5448\u73b0\u5206\u6b67\u5e76\u751f\u6210\u53ef\u5ba1\u9605\u7684\u7ed3\u8bba\u3002",
   "Open discussion room": "\u6253\u5f00\u8ba8\u8bba\u5ba4",
   "Existing discussions": "\u5df2\u6709\u8ba8\u8bba",
+  "Resume latest discussion": "\u7ee7\u7eed\u6700\u65b0\u8ba8\u8bba",
+  "More discussions": "\u66f4\u591a\u8ba8\u8bba",
+  "{count} earlier discussion remains available.":
+    "\u8fd8\u6709 {count} \u4e2a\u8f83\u65e9\u8ba8\u8bba\u53ef\u7528\u3002",
+  "{count} earlier discussions remain available.":
+    "\u8fd8\u6709 {count} \u4e2a\u8f83\u65e9\u8ba8\u8bba\u53ef\u7528\u3002",
   "No discussions yet": "\u8fd8\u6ca1\u6709\u8ba8\u8bba",
   "Start with a question. Deliberum will create a discussion brief, collect independent first responses, and keep the conclusion, disagreements, risks, and next steps visible.":
     "\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb\u3002Deliberum \u4f1a\u521b\u5efa\u8ba8\u8bba\u7b80\u62a5\uff0c\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff0c\u5e76\u6301\u7eed\u5c55\u793a\u7ed3\u8bba\u3001\u5206\u6b67\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u3002",

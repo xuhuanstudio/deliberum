@@ -31,14 +31,8 @@ import type {
   ResourceAccessPostureResponse
 } from "@deliberum/client";
 import {
-  DiscussionNextStepCard,
-  StageStatusList,
-  describeDiscussionStatus,
-  formatRunDisplaySummary,
-  formatRunDisplayTitle,
-  getDiscussionStageStatuses,
-  isDiscussionReviewReady,
   OutcomeBrief,
+  RunCatalogList,
   RunDetailPage,
   RunNewPage,
   RunOutcomePage,
@@ -281,11 +275,6 @@ function LandingPage() {
 
     return catalogSessionId ? [{ session, index, sessionId: catalogSessionId }] : [];
   });
-  const runEntries = runs.flatMap((run, index) => {
-    const runId = getStringRecordValue(run, "runId");
-
-    return runId ? [{ run, index, runId }] : [];
-  });
   const runtimeProfileEntries = runtimeProfiles.map((profile, index) => ({
     profile,
     index,
@@ -437,58 +426,19 @@ function LandingPage() {
           )}
         >
           <QueryState query={runsQuery}>
-            {runEntries.length === 0 ? (
+            {runs.length === 0 ? (
               <EmptyState
                 title={t("No discussions yet")}
                 description={t("Start a discussion to create the first deliberation.")}
               />
             ) : (
-              <div className="du-run-list">
-                {runEntries.map(({ run, index, runId: catalogRunId }) => (
-                  <article className="du-run-list-item" key={`${catalogRunId}-${index}`}>
-                    <p className="du-kicker">{t("Discussion {number}", { number: index + 1 })}</p>
-                    <h3>{t(formatRunDisplayTitle(run, index))}</h3>
-                    <p>{t(formatRunDisplaySummary(run))}</p>
-                    <KeyValueGrid
-                      items={[
-                        {
-                          label: t("Discussion status"),
-                          value: t(describeDiscussionStatus(run))
-                        },
-                        {
-                          label: t("Last updated"),
-                          value: formatRecordValue(getRecordValue(run, "updatedAt"))
-                        }
-                      ]}
-                    />
-                    <DiscussionNextStepCard run={run} />
-                    <StageStatusList stages={getDiscussionStageStatuses(run)} />
-                    <div className="du-action-row">
-                      <Link
-                        className="du-action-link"
-                        to="/runs/$runId"
-                        params={{ runId: catalogRunId }}
-                      >
-                        {t("Open discussion")}
-                      </Link>
-                      {isDiscussionReviewReady(run) ? (
-                        <Link
-                          className="du-action-link du-secondary-link"
-                          to="/runs/$runId/outcome"
-                          params={{ runId: catalogRunId }}
-                        >
-                          {t("Current conclusion")}
-                        </Link>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <RunCatalogList runs={runs} />
             )}
           </QueryState>
         </DataPanel>
         <AdvancedDetails
           description="Runtime, daemon, resource, audit, deployment, raw session ids, and other operator details stay available here without leading the product experience."
+          panelLabel="Advanced operator details"
           lazy
           onOpen={() => setOperatorDetailsOpen(true)}
         >
