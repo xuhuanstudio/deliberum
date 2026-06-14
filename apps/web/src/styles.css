@@ -865,6 +865,53 @@ textarea:focus-visible {
   background: var(--du-line);
 }
 
+.du-room-output-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-room-output-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  background: var(--du-surface);
+  color: var(--du-ink);
+  padding: 14px;
+  text-decoration: none;
+}
+
+.du-room-output-item:hover {
+  background: #edf5f2;
+}
+
+.du-room-output-primary {
+  background: #f8fff9;
+}
+
+.du-room-output-item span {
+  color: var(--du-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.du-room-output-item strong {
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.du-room-output-item p {
+  margin: 0;
+  color: var(--du-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .du-room-contribution {
   display: grid;
   gap: 10px;
@@ -1869,6 +1916,7 @@ textarea:focus-visible {
   .du-room-layout,
   .du-room-brief,
   .du-room-progress-summary,
+  .du-room-output-grid,
   .du-room-response-grid,
   .du-run-list-meta,
   .du-projection-developer-grid,

@@ -1623,6 +1623,17 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\u53ef\u5ba1\u9605")).toBeTruthy();
     expect(screen.getByText("\u4e0b\u4e00\u4e2a\u68c0\u67e5\u70b9")).toBeTruthy();
     expect(screen.getByText("\u4f9d\u8d56\u524d\u9700\u5ba1\u9605")).toBeTruthy();
+    const localizedDiscussionOutputs = screen.getByRole("region", {
+      name: "\u8ba8\u8bba\u4ea7\u51fa"
+    });
+    expect(localizedDiscussionOutputs).toBeTruthy();
+    expect(localizedDiscussionOutputs.textContent ?? "").toContain(
+      "\u8ba8\u8bba\u5ba4\u5df2\u7ecf\u4ea7\u51fa\u4e86\u4ec0\u4e48"
+    );
+    expect(localizedDiscussionOutputs.textContent ?? "").toContain(
+      "\u7528\u5b83\u628a\u8ba8\u8bba\u65f6\u95f4\u7ebf\u8fde\u63a5\u5230\u5f53\u524d\u51b3\u7b56\u6750\u6599\u3002"
+    );
+    expect(localizedDiscussionOutputs.textContent ?? "").toContain("1 \u4e2a\u53ef\u6bd4\u8f83\u9009\u9879");
     expect(screen.getAllByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879").length).toBeGreaterThan(0);
     expect(screen.getByText("\u5f53\u524d\u6700\u5f3a\u9009\u9879\u7684\u5185\u5bb9")).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
@@ -2176,6 +2187,19 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByText("Core discussion stages")).toBeTruthy();
+    const discussionOutputs = screen.getByRole("region", { name: "Discussion outputs" });
+    expect(discussionOutputs).toBeTruthy();
+    expect(discussionOutputs.textContent ?? "").toContain("What the room has produced");
+    expect(discussionOutputs.textContent ?? "").toContain(
+      "Use this as the bridge from the discussion timeline to the current decision material."
+    );
+    expect(discussionOutputs.textContent ?? "").toContain("1 option ready to compare");
+    expect(discussionOutputs.textContent ?? "").toContain("1 open disagreement to review");
+    expect(discussionOutputs.textContent ?? "").toContain("1 answer requirement to confirm");
+    expect(discussionOutputs.textContent ?? "").toContain("1 evidence gap to check");
+    expect(discussionOutputs.textContent ?? "").toContain(
+      "A reviewable conclusion is ready with risks and next actions."
+    );
     expect(screen.getByText("What the strongest options say now")).toBeTruthy();
     expect(screen.getByText("Option 1")).toBeTruthy();
     expect(
@@ -2887,7 +2911,10 @@ describe("@deliberum/web shell", () => {
     expect(primaryDiscussionActions.textContent ?? "").not.toContain(
       "Review current conclusion"
     );
-    expect(await screen.findByRole("status", { name: "Current conclusion not ready" })).toBeTruthy();
+    expect(
+      (await screen.findAllByRole("status", { name: "Current conclusion not ready" })).length
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Continue the discussion before relying on a conclusion.")).toBeTruthy();
     expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Open conclusion" })).toBeNull();

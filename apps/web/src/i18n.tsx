@@ -142,6 +142,22 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "What has happened in the room": "\u8ba8\u8bba\u5ba4\u4e2d\u53d1\u751f\u4e86\u4ec0\u4e48",
   "Follow the room like a structured conversation: brief, independent first responses, main perspectives, disagreements, evidence checks, and conclusion review.":
     "\u50cf\u9605\u8bfb\u7ed3\u6784\u5316\u5bf9\u8bdd\u4e00\u6837\u8ddf\u8fdb\u8ba8\u8bba\u5ba4\uff1a\u7b80\u62a5\u3001\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3001\u4e3b\u8981\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8bc1\u636e\u6838\u67e5\u548c\u7ed3\u8bba\u5ba1\u9605\u3002",
+  "Discussion outputs": "\u8ba8\u8bba\u4ea7\u51fa",
+  "What the room has produced": "\u8ba8\u8bba\u5ba4\u5df2\u7ecf\u4ea7\u51fa\u4e86\u4ec0\u4e48",
+  "Use this as the bridge from the discussion timeline to the current decision material.":
+    "\u7528\u5b83\u628a\u8ba8\u8bba\u65f6\u95f4\u7ebf\u8fde\u63a5\u5230\u5f53\u524d\u51b3\u7b56\u6750\u6599\u3002",
+  "option ready to compare": "\u53ef\u6bd4\u8f83\u9009\u9879",
+  "options ready to compare": "\u53ef\u6bd4\u8f83\u9009\u9879",
+  "open disagreement to review": "\u5f85\u5ba1\u9605\u5206\u6b67",
+  "open disagreements to review": "\u5f85\u5ba1\u9605\u5206\u6b67",
+  "answer requirement to confirm": "\u5f85\u786e\u8ba4\u7b54\u6848\u8981\u6c42",
+  "answer requirements to confirm": "\u5f85\u786e\u8ba4\u7b54\u6848\u8981\u6c42",
+  "evidence gap to check": "\u5f85\u6838\u67e5\u8bc1\u636e\u7f3a\u53e3",
+  "evidence gaps to check": "\u5f85\u6838\u67e5\u8bc1\u636e\u7f3a\u53e3",
+  "A reviewable conclusion is ready with risks and next actions.":
+    "\u53ef\u5ba1\u9605\u7ed3\u8bba\u5df2\u5c31\u7eea\uff0c\u5e76\u5305\u542b\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002",
+  "Continue the discussion before relying on a conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u8bf7\u7ee7\u7eed\u63a8\u8fdb\u8ba8\u8bba\u3002",
   Ready: "\u5df2\u5c31\u7eea",
   "Not started yet": "\u5c1a\u672a\u5f00\u59cb",
   "Needs review": "\u9700\u8981\u5ba1\u9605",

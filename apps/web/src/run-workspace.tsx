@@ -1847,6 +1847,14 @@ function RunQualityOverview({
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
               openRequirementCount={openObligations}
             />
+            <DiscussionRoomOutputs
+              runId={runId}
+              reviewReady={continuationView.reviewReady}
+              mainPerspectiveCount={candidates.length}
+              openDisagreementCount={unresolvedObjections}
+              openRequirementCount={openObligations}
+              unresolvedEvidenceCount={unresolvedEvidenceNeeds}
+            />
             <DiscussionOptionsList candidates={candidates} />
           </div>
           <DiscussionRoomFocusPanel
@@ -2773,6 +2781,141 @@ function DiscussionRoomFlowStep({
       </div>
     </li>
   );
+}
+
+function DiscussionRoomOutputs({
+  runId,
+  reviewReady,
+  mainPerspectiveCount,
+  openDisagreementCount,
+  openRequirementCount,
+  unresolvedEvidenceCount
+}: {
+  runId: string;
+  reviewReady: boolean;
+  mainPerspectiveCount: number;
+  openDisagreementCount: number;
+  openRequirementCount: number;
+  unresolvedEvidenceCount: number;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <section className="du-room-section" aria-label={t("Discussion outputs")}>
+      <div className="du-section-label">
+        <p className="du-kicker">{t("Discussion outputs")}</p>
+        <h4>{t("What the room has produced")}</h4>
+        <p>
+          {t(
+            "Use this as the bridge from the discussion timeline to the current decision material."
+          )}
+        </p>
+      </div>
+      <div className="du-room-output-grid">
+        <DiscussionRoomOutputLink
+          href="#main-perspectives"
+          metric={String(mainPerspectiveCount)}
+          title={t("Strongest current options")}
+          detail={describeOutputCount(
+            t,
+            mainPerspectiveCount,
+            "option ready to compare",
+            "options ready to compare"
+          )}
+        />
+        <DiscussionRoomOutputLink
+          href="#open-disagreements"
+          metric={String(openDisagreementCount)}
+          title={t("Open disagreements")}
+          detail={describeOutputCount(
+            t,
+            openDisagreementCount,
+            "open disagreement to review",
+            "open disagreements to review"
+          )}
+        />
+        <DiscussionRoomOutputLink
+          href="#answer-requirements"
+          metric={String(openRequirementCount)}
+          title={t("Requirements to satisfy")}
+          detail={describeOutputCount(
+            t,
+            openRequirementCount,
+            "answer requirement to confirm",
+            "answer requirements to confirm"
+          )}
+        />
+        <DiscussionRoomOutputLink
+          href="#evidence-gaps"
+          metric={String(unresolvedEvidenceCount)}
+          title={t("Missing evidence")}
+          detail={describeOutputCount(
+            t,
+            unresolvedEvidenceCount,
+            "evidence gap to check",
+            "evidence gaps to check"
+          )}
+        />
+        {reviewReady ? (
+          <Link
+            className="du-room-output-item du-room-output-primary"
+            to="/runs/$runId/outcome"
+            params={{ runId }}
+          >
+            <span>{t("Ready")}</span>
+            <strong>{t("Current conclusion")}</strong>
+            <p>{t("A reviewable conclusion is ready with risks and next actions.")}</p>
+          </Link>
+        ) : (
+          <div
+            className="du-room-output-item du-room-output-primary"
+            role="status"
+            aria-label={t("Current conclusion not ready")}
+          >
+            <span>{t("Not ready")}</span>
+            <strong>{t("Current conclusion")}</strong>
+            <p>{t("Continue the discussion before relying on a conclusion.")}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function DiscussionRoomOutputLink({
+  href,
+  metric,
+  title,
+  detail
+}: {
+  href: string;
+  metric: string;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <a className="du-room-output-item" href={href}>
+      <span>{metric}</span>
+      <strong>{title}</strong>
+      <p>{detail}</p>
+    </a>
+  );
+}
+
+function describeOutputCount(
+  t: TranslateFunction,
+  count: number,
+  singular: string,
+  plural: string
+): string {
+  if (count === 0) {
+    return t("No {item}", { item: t(plural) });
+  }
+
+  return t("{count} {item}", {
+    count,
+    item: t(count === 1 ? singular : plural)
+  });
 }
 
 function DiscussionOptionsList({ candidates }: { candidates: unknown[] }) {
