@@ -3993,10 +3993,17 @@ describe("@deliberum/web shell", () => {
       expect.objectContaining({
         topic: "Should we use the configured provider for this review?",
         constraints: expect.arrayContaining([
+          "Write all participant responses, review notes, and conclusions in the same language as the discussion question.",
           "Use configured model-backed participants from the local service.",
           "Use three independent model-backed perspectives from the local service.",
           "Keep provider credentials saved locally and out of the discussion."
         ]),
+        output: expect.objectContaining({
+          language: "same as discussion question",
+          expectations: expect.arrayContaining([
+            "Write all participant responses, review notes, and conclusions in the same language as the discussion question."
+          ])
+        }),
         participants: expect.arrayContaining([
           expect.objectContaining({
             displayName: "Perspective A",
@@ -4974,6 +4981,7 @@ describe("@deliberum/web shell", () => {
           goals: ["Compare staged rollout", "Surface migration risk"],
           constraints: expect.arrayContaining([
             "Keep the recommendation reversible",
+            "Write all participant responses, review notes, and conclusions in the same language as the discussion question.",
             "Use built-in sample participants only.",
             "Keep the conclusion provisional until reviewed."
           ]),
@@ -4984,11 +4992,12 @@ describe("@deliberum/web shell", () => {
             })
           ]),
           output: expect.objectContaining({
-            language: "en",
+            language: "same as discussion question",
             style: "clear",
-            expectations: [
-              "Summarize the conclusion, disagreements, risks, and next steps."
-            ]
+            expectations: expect.arrayContaining([
+              "Summarize the conclusion, disagreements, risks, and next steps.",
+              "Write all participant responses, review notes, and conclusions in the same language as the discussion question."
+            ])
           })
         })
       })
@@ -4999,6 +5008,35 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByRole("link", { name: "Open discussion room" })).toBeNull();
     expect(screen.queryByText("Discussion created")).toBeNull();
     expect(screen.queryByRole("link", { name: "Review discussion brief" })).toBeNull();
+  });
+
+  it("asks participants to answer in the same language as the discussion question", async () => {
+    const client = renderApp("/runs/new");
+
+    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByLabelText("Discussion question"), {
+      target: {
+        value: "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u65b0\u529f\u80fd\u53d1\u5e03\uff1f"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create discussion" }));
+
+    await waitFor(() =>
+      expect(client.createRun).toHaveBeenCalledWith({
+        runPlan: expect.objectContaining({
+          topic: "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u65b0\u529f\u80fd\u53d1\u5e03\uff1f",
+          constraints: expect.arrayContaining([
+            "Write all participant responses, review notes, and conclusions in the same language as the discussion question."
+          ]),
+          output: expect.objectContaining({
+            language: "same as discussion question",
+            expectations: expect.arrayContaining([
+              "Write all participant responses, review notes, and conclusions in the same language as the discussion question."
+            ])
+          })
+        })
+      })
+    );
   });
 
   it("guides start discussion users when the local service is unavailable", async () => {

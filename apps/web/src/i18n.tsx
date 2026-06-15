@@ -44,6 +44,11 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "The model returned organizer output Deliberum could not use directly, so this view was rebuilt from the independent first responses. Treat the conclusion as provisional and check disagreements, missing evidence, and risks before relying on it.":
     "\u6a21\u578b\u8fd4\u56de\u7684\u7ec4\u7ec7\u5668\u8f93\u51fa\u65e0\u6cd5\u88ab Deliberum \u76f4\u63a5\u4f7f\u7528\uff0c\u56e0\u6b64\u6b64\u89c6\u56fe\u662f\u6839\u636e\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u91cd\u5efa\u7684\u3002\u8bf7\u5c06\u7ed3\u8bba\u89c6\u4e3a\u4e34\u65f6\u7ed3\u8bba\uff0c\u5e76\u5728\u4f9d\u8d56\u524d\u68c0\u67e5\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u98ce\u9669\u3002",
   "Start a discussion": "\u5f00\u59cb\u8ba8\u8bba",
+  "Preview participants and review path":
+    "\u9884\u89c8\u53c2\u4e0e\u8005\u548c\u5ba1\u67e5\u8def\u5f84",
+  "Model and participant setup": "\u6a21\u578b\u548c\u53c2\u4e0e\u8005\u8bbe\u7f6e",
+  "How this discussion will continue":
+    "\u8fd9\u4e2a\u8ba8\u8bba\u5c06\u5982\u4f55\u7ee7\u7eed",
   "Multi-perspective deliberation for better decisions":
     "\u7528\u591a\u89c6\u89d2\u5ba1\u8bae\u505a\u51fa\u66f4\u597d\u51b3\u7b56",
   "Continue discussions": "\u7ee7\u7eed\u8ba8\u8bba",

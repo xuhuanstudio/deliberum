@@ -173,6 +173,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("heading", { name: "Start a discussion" }).waitFor();
   await page.getByText("Model-backed discussion selected").waitFor();
   await page.getByText("Perspective C", { exact: true }).waitFor();
+  await page.getByText("Preview participants and review path").click();
   await page.getByText("3 model perspectives").waitFor();
   await page
     .locator('label[for="discussion-model-override"]')
@@ -270,6 +271,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByLabel("Discussion question").fill(discussionQuestion);
   await page.getByRole("button", { name: "Create discussion" }).click();
   await page.getByText("Discussion room").waitFor();
+  await page.getByText("How this discussion will continue").click();
   await page.getByText("Model-backed discussion").first().waitFor();
   await page.getByText("What is being discussed").waitFor();
   await page.getByRole("button", { name: "Continue discussion" }).waitFor();

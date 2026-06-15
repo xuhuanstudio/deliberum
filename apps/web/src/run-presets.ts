@@ -112,6 +112,8 @@ const PROVIDER_BACKED_PERSPECTIVES = [
     displayName: "Perspective C"
   }
 ] as const;
+const MATCH_TOPIC_LANGUAGE_INSTRUCTION =
+  "Write all participant responses, review notes, and conclusions in the same language as the discussion question.";
 
 export const LOCAL_PRESET_DISCUSSION_BRIEF: GuidedDiscussionRunPlanInput = {
   question: "How should we review a proposed rollout before relying on it?",
@@ -151,19 +153,22 @@ export function buildGuidedDiscussionRunPlan(
           ],
     constraints: uniqueBriefLines([
       ...userConstraints,
+      MATCH_TOPIC_LANGUAGE_INSTRUCTION,
       "Use built-in sample participants only.",
       "Keep the conclusion provisional until reviewed."
     ]),
     output: {
-      language: "en",
+      language: "same as discussion question",
       style: "clear",
-      expectations:
+      expectations: uniqueBriefLines(
         expectedOutcomes.length > 0
-          ? expectedOutcomes
+          ? [...expectedOutcomes, MATCH_TOPIC_LANGUAGE_INSTRUCTION]
           : [
               "Show the current conclusion.",
-              "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions."
+              "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions.",
+              MATCH_TOPIC_LANGUAGE_INSTRUCTION
             ]
+      )
     }
   };
 }
@@ -227,6 +232,7 @@ export function buildProviderBackedDiscussionRunPlan(
           ],
     constraints: uniqueBriefLines([
       ...userConstraints,
+      MATCH_TOPIC_LANGUAGE_INSTRUCTION,
       "Use configured model-backed participants from the local service.",
       perspectiveCount === 3
         ? "Use three independent model-backed perspectives from the local service."
@@ -238,15 +244,17 @@ export function buildProviderBackedDiscussionRunPlan(
     providerConfigs,
     timeouts: PROVIDER_BACKED_DISCUSSION_TIMEOUTS,
     output: {
-      language: "en",
+      language: "same as discussion question",
       style: "clear",
-      expectations:
+      expectations: uniqueBriefLines(
         expectedOutcomes.length > 0
-          ? expectedOutcomes
+          ? [...expectedOutcomes, MATCH_TOPIC_LANGUAGE_INSTRUCTION]
           : [
               "Show the current conclusion.",
-              "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions."
+              "List main perspectives, unresolved disagreements, risks, missing evidence, and next recommended actions.",
+              MATCH_TOPIC_LANGUAGE_INSTRUCTION
             ]
+      )
     },
     sealedDivergence: {
       purpose: "initial_divergence",

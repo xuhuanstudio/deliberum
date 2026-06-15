@@ -1492,6 +1492,35 @@ textarea:focus-visible {
   margin-top: 12px;
 }
 
+.du-default-secondary-details {
+  margin-top: 12px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+}
+
+.du-default-secondary-details > summary {
+  cursor: pointer;
+  color: var(--du-ink);
+  font-weight: 800;
+  padding: 12px 14px;
+}
+
+.du-default-secondary-details > summary:hover {
+  background: var(--du-surface-muted);
+}
+
+.du-default-secondary-details-body {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--du-line);
+  padding: 14px;
+}
+
+.du-continuation-details {
+  background: rgba(255, 254, 250, 0.72);
+}
+
 .du-room-brief,
 .du-room-section {
   display: grid;

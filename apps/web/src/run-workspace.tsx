@@ -661,48 +661,6 @@ export function RunNewPage() {
             "Write a brief in plain language or use the sample brief to try the full discussion flow immediately."
           )}
         />
-        {runtimeProfilesQuery.isLoading ? (
-          <StatusBanner title={t("Checking model setup")} />
-        ) : runtimeProfilesQuery.isError ? (
-          <LocalServiceSetupGuide onRetry={retryModelSetup} />
-        ) : runtimeSetupPlan ? (
-          <DiscussionModelSetupPanel
-            setupPlan={runtimeSetupPlan}
-            selectedSource={participantSource}
-            organizerReady={selectedOrganizerReady}
-            onSelectedSourceChange={chooseParticipantSource}
-            perspectiveCount={modelPerspectiveCount}
-            onPerspectiveCountChange={setModelPerspectiveCount}
-            modelOverride={discussionModelOverride}
-            onModelOverrideChange={setDiscussionModelOverride}
-            reviewModelOverride={reviewModelOverride}
-            onReviewModelOverrideChange={setReviewModelOverride}
-            customPerspectiveModelsEnabled={customPerspectiveModelsEnabled}
-            onCustomPerspectiveModelsEnabledChange={setCustomPerspectiveModelsEnabled}
-            perspectiveModelOverrides={perspectiveModelOverrides}
-            onPerspectiveModelOverrideChange={updatePerspectiveModelOverride}
-            roleDefaultsSaved={Boolean(storedRoleModelDefaults)}
-            roleDefaultsStatus={roleModelDefaultsStatus}
-            roleDefaultsPending={
-              roleModelDefaultsQuery.isLoading ||
-              saveRoleDefaultsMutation.isPending ||
-              clearRoleDefaultsMutation.isPending
-            }
-            onSaveRoleDefaults={saveRoleModelDefaults}
-            onApplyRoleDefaults={applyRoleModelDefaults}
-            onClearRoleDefaults={clearRoleModelDefaults}
-            providerConnectionVerified={providerConnectionVerified}
-            verificationPending={providerVerificationMutation.isPending}
-            verificationError={providerVerificationMutation.error}
-            onVerifyProviderConnection={() => providerVerificationMutation.mutate()}
-          />
-        ) : (
-          <StatusBanner
-            tone="warning"
-            title={t("No model setup returned")}
-            detail={t("The daemon did not return safe model setup status.")}
-          />
-        )}
         <DataPanel
           title={t("Discussion brief")}
           description={t(
@@ -724,7 +682,6 @@ export function RunNewPage() {
                 onChange={(event) => setDiscussionQuestion(event.currentTarget.value)}
                 placeholder={t("What should we decide, compare, or clarify?")}
               />
-              <DiscussionCreationPreview view={creationPreview} />
               <div className="du-action-row">
                 <button type="submit" disabled={!canCreateDiscussion}>
                   {createMutation.isPending
@@ -741,6 +698,12 @@ export function RunNewPage() {
                 </button>
               </div>
             </div>
+            <details className="du-brief-options">
+              <summary>{t("Preview participants and review path")}</summary>
+              <div className="du-brief-options-body">
+                <DiscussionCreationPreview view={creationPreview} />
+              </div>
+            </details>
             <details className="du-brief-options">
               <summary>{t("Add goals, constraints, and expected result")}</summary>
               <div className="du-brief-options-body">
@@ -789,6 +752,56 @@ export function RunNewPage() {
             </div>
           </form>
         </DataPanel>
+        <details
+          className="du-default-secondary-details"
+          open={runtimeProfilesQuery.isError || requestedParticipantSource === "model-backed"}
+        >
+          <summary>{t("Model and participant setup")}</summary>
+          <div className="du-default-secondary-details-body">
+            {runtimeProfilesQuery.isLoading ? (
+              <StatusBanner title={t("Checking model setup")} />
+            ) : runtimeProfilesQuery.isError ? (
+              <LocalServiceSetupGuide onRetry={retryModelSetup} />
+            ) : runtimeSetupPlan ? (
+              <DiscussionModelSetupPanel
+                setupPlan={runtimeSetupPlan}
+                selectedSource={participantSource}
+                organizerReady={selectedOrganizerReady}
+                onSelectedSourceChange={chooseParticipantSource}
+                perspectiveCount={modelPerspectiveCount}
+                onPerspectiveCountChange={setModelPerspectiveCount}
+                modelOverride={discussionModelOverride}
+                onModelOverrideChange={setDiscussionModelOverride}
+                reviewModelOverride={reviewModelOverride}
+                onReviewModelOverrideChange={setReviewModelOverride}
+                customPerspectiveModelsEnabled={customPerspectiveModelsEnabled}
+                onCustomPerspectiveModelsEnabledChange={setCustomPerspectiveModelsEnabled}
+                perspectiveModelOverrides={perspectiveModelOverrides}
+                onPerspectiveModelOverrideChange={updatePerspectiveModelOverride}
+                roleDefaultsSaved={Boolean(storedRoleModelDefaults)}
+                roleDefaultsStatus={roleModelDefaultsStatus}
+                roleDefaultsPending={
+                  roleModelDefaultsQuery.isLoading ||
+                  saveRoleDefaultsMutation.isPending ||
+                  clearRoleDefaultsMutation.isPending
+                }
+                onSaveRoleDefaults={saveRoleModelDefaults}
+                onApplyRoleDefaults={applyRoleModelDefaults}
+                onClearRoleDefaults={clearRoleModelDefaults}
+                providerConnectionVerified={providerConnectionVerified}
+                verificationPending={providerVerificationMutation.isPending}
+                verificationError={providerVerificationMutation.error}
+                onVerifyProviderConnection={() => providerVerificationMutation.mutate()}
+              />
+            ) : (
+              <StatusBanner
+                tone="warning"
+                title={t("No model setup returned")}
+                detail={t("The daemon did not return safe model setup status.")}
+              />
+            )}
+          </div>
+        </details>
         <AdvancedDetails
           summary="Advanced / Developer Mode"
           description="Create a run from a raw JSON plan when testing low-level runtime behavior."
@@ -1841,12 +1854,12 @@ export function RunDetailPage() {
         }
       >
         <QueryState query={runQuery}>
-          {sessionId ? (
-            <RunQualityOverview runId={runId} sessionId={sessionId} run={run} />
-          ) : null}
           <div id="continue-discussion" className="du-workbench-anchor">
             <StartRunForm runId={runId} sessionId={sessionId} run={run} />
           </div>
+          {sessionId ? (
+            <RunQualityOverview runId={runId} sessionId={sessionId} run={run} />
+          ) : null}
           {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
           {sessionId ? (
             <DiscussionSetupDetails run={run} />
@@ -3020,15 +3033,6 @@ function StartRunForm({
       title={t(continuationView.title)}
       description={t(continuationView.description)}
     >
-      <div className="du-readable-list">
-        <ExplainerItem
-          title={t(continuationView.explainerTitle)}
-          detail={t(continuationView.explainerDetail)}
-        />
-      </div>
-      <DiscussionParticipantSourceSummary run={run} />
-      <DiscussionContinuationSetupSummary view={continuationSetup} />
-      <GuidedDiscussionActionPath reviewReady={continuationView.reviewReady} />
       <div className="du-discussion-actions" aria-label={t("Discussion actions")}>
         <p className="du-kicker">{t("Discussion actions")}</p>
         <div className="du-discussion-action-list">
@@ -3160,6 +3164,20 @@ function StartRunForm({
           )}
         </div>
       </div>
+      <details className="du-default-secondary-details du-continuation-details">
+        <summary>{t("How this discussion will continue")}</summary>
+        <div className="du-default-secondary-details-body">
+          <div className="du-readable-list">
+            <ExplainerItem
+              title={t(continuationView.explainerTitle)}
+              detail={t(continuationView.explainerDetail)}
+            />
+          </div>
+          <DiscussionParticipantSourceSummary run={run} />
+          <DiscussionContinuationSetupSummary view={continuationSetup} />
+          <GuidedDiscussionActionPath reviewReady={continuationView.reviewReady} />
+        </div>
+      </details>
       <div className="du-action-row">
         {continuationView.reviewReady ? (
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
@@ -4046,7 +4064,6 @@ function RunQualityOverview({
         />
         <div className="du-room-layout">
           <div className="du-room-main">
-            <DiscussionRoomBrief run={run} />
             <DiscussionRoomTimeline
               run={run}
               activities={roomActivities}
@@ -4060,6 +4077,7 @@ function RunQualityOverview({
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
               openRequirementCount={openObligations}
             />
+            <DiscussionRoomBrief run={run} />
             <DiscussionRoomOutputs
               runId={runId}
               reviewReady={continuationView.reviewReady}
