@@ -30,7 +30,7 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 | # | Production gate | Current status | Current evidence | First blocking gap |
 | --- | --- | --- | --- | --- |
 | 1 | Local install/start is reliable, documented, and repeatable across supported platforms. | `complete` | `README.md` declares macOS and Ubuntu Linux as the v1.0 source-checkout supported platforms with Node.js 24 or newer and Corepack-managed pnpm 11. The `ci:local-start` script runs `doctor:local`, `build`, and `smoke:local-start`. GitHub CI includes a `local-start-platforms` matrix on `ubuntu-latest` and `macos-latest`, so the supported-platform install/build/start path is verified outside the developer machine. | Keep covered; Windows and WSL2 remain unsupported until the local-start path is verified in CI. |
-| 2 | Web first-use, Setup / Models, participant readiness, and Discussion Room form one coherent product experience. | `partial` | The v0.1 report, Web tests, and browser smokes prove the primary local Web loop. Setup / Models links naturally into focused and Broader review starts after verification. | Needs a v1.0 product audit after participant/model management is expanded; current evidence is beta-loop focused. |
+| 2 | Web first-use, Setup / Models, participant readiness, and Discussion Room form one coherent product experience. | `complete` | `docs/V1_0_WEB_PRODUCT_COHERENCE_AUDIT.md` closes Gate 2 for the v1.0 supported Web scope. `smoke:web-entry` verifies the connected and unavailable first-use entry paths, desktop and mobile first-viewport product clarity, local service status, and default-view safety. `smoke:web-product-loop` verifies the Setup / Models provider setup, verification, participant readiness, role defaults, focused and broader start links, Start Discussion role/model assignment, Discussion Room continuation, current conclusion, and default-view safety across the product path. | Keep covered. Any new default Web route, start mode, recovery state, or outcome surface must extend the same coherence and safety evidence. |
 | 3 | Real OpenAI-compatible provider workflows are stable across repeated focused and broader-review release smokes. | `partial` | `docs/BASIC_PRODUCT_LOOP.md` records repeated focused and Broader review release smokes against one reachable real provider path. | Evidence is not broad enough across providers, slower responses, quota behavior, and longer repeated runs. |
 | 4 | Provider setup, verification, failure recovery, rate limit, timeout, malformed output, and partial completion states are handled in normal-user language. | `partial` | Web recovery states and smokes cover verification failure, retryable continuation, failed stages, malformed structured output fallback, and partial first-response recovery. | Rate limit and provider-specific timeout behavior need explicit real-provider recovery evidence. |
 | 5 | Default UI never exposes secrets, raw JSON, env details, run/session/ledger/runtime/proposal/event/internal ids, or provider config ids. | `partial` | `smoke:web-product-loop`, `smoke:web-release-readiness`, `smoke:web-entry`, `smoke:web-boundaries`, and `smoke:web-resilience` scan current default paths. | Needs to remain enforced for any new model/participant management and production recovery paths. |
@@ -44,22 +44,23 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 
 ## Next Production Batch
 
-The first production blocker is now gate 2: Web first-use, Setup / Models,
-participant readiness, and Discussion Room form one coherent product
-experience. Gate 7 is closed for the v1.0 supported Web scope, so the next
-batch should audit the whole normal-user Web path end to end instead of adding
-more participant-management features.
+The first production blocker is now gate 3: real OpenAI-compatible provider
+workflows are stable across repeated focused and broader-review release smokes.
+Gate 2 and Gate 7 are closed for the v1.0 supported Web scope, so the next
+batch should run release-readiness evidence instead of continuing Web coherence
+or participant-management polishing.
 
 Recommended narrow batch:
 
-1. Audit the current default Web path from `/` to `/setup/models`, `/runs/new`,
-   `/runs/:runId`, and `/runs/:runId/outcome` against the Gate 2 definition.
-2. If a real product incoherence is found, fix only the first blocker that
-   prevents a normal user from understanding or completing the path.
-3. If no blocker is found, record Gate 2 evidence and move to the next
-   incomplete gate.
-4. Preserve English/Simplified Chinese coverage, browser verification, and
-   default-view safety scans for any change.
+1. Run the opt-in real-provider release-readiness smoke on the focused path.
+2. If focused remains stable, run the broader-review path with repeated runs
+   where practical.
+3. If a real Deliberum-side blocker is reproduced, fix only the first blocker
+   that prevents the normal user loop from completing.
+4. If no blocker is reproduced and the evidence is sufficient for the selected
+   pass, record the Gate 3 evidence and move to the next incomplete gate.
+5. Do not record provider secrets, base URLs, model names, raw provider
+   responses, or provider outputs.
 
 ## Stop Rule
 
