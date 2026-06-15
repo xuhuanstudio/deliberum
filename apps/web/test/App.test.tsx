@@ -1465,6 +1465,25 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Try a demo discussion")).toBeTruthy();
     expect(screen.getByText("Participant management")).toBeTruthy();
     expect(screen.getByText("Discussion participants")).toBeTruthy();
+    expect(screen.getByText("Model assignment")).toBeTruthy();
+    expect(screen.getByText("Demo roles only")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Demo discussions use built-in material. Add and verify a provider before model-backed roles are available."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Choose discussion depth")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Start a demo discussion now, or finish model setup to choose focused or broader model-backed review."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Current limit")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet."
+      )
+    ).toBeTruthy();
     expect(screen.getByText("Who joins the discussion")).toBeTruthy();
     expect(screen.getByText("First responses")).toBeTruthy();
     expect(
@@ -2275,6 +2294,20 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u8bd5\u7528\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u7ba1\u7406")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u53c2\u4e0e\u8005")).toBeTruthy();
+    expect(screen.getByText("\u6a21\u578b\u5206\u914d")).toBeTruthy();
+    expect(screen.getByText("\u4ec5\u6f14\u793a\u89d2\u8272")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u6f14\u793a\u8ba8\u8bba\u4f7f\u7528\u5185\u7f6e\u6750\u6599\u3002\u6a21\u578b\u652f\u6301\u7684\u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u3002"
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("\u9009\u62e9\u8ba8\u8bba\u6df1\u5ea6")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u73b0\u5728\u53ef\u4ee5\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba\uff0c\u6216\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u540e\u9009\u62e9\u805a\u7126\u6216\u66f4\u5e7f\u7684\u6a21\u578b\u652f\u6301\u5ba1\u67e5\u3002"
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("\u5f53\u524d\u9650\u5236")).toBeTruthy();
     expect(screen.getByText("\u8c01\u4f1a\u52a0\u5165\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u521d\u59cb\u56de\u5e94")).toBeTruthy();
     expect(
@@ -2467,6 +2500,18 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("Ready to test")).toBeTruthy();
     expect(screen.getByText("Discussion participants")).toBeTruthy();
+    expect(screen.getByText("Model assignment")).toBeTruthy();
+    expect(screen.getByText("Verify provider first")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The saved provider cannot power model participants until Verify connection succeeds."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "After verification, open the start page to choose Focused review or Broader review."
+      )
+    ).toBeTruthy();
     expect(screen.getByText("Who joins the discussion")).toBeTruthy();
     expect(
       screen.getByText("Perspective A and Perspective B can use the saved provider after verification.")
@@ -2502,6 +2547,17 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText(
         "The configured provider accepted a safe test request. You can start a real model-backed discussion."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Single verified provider")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer use OpenAI-compatible in the current Web path."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Choose Focused review or Broader review on the start page before creating the discussion."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");

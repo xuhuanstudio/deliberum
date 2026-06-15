@@ -338,6 +338,26 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion participants": "\u8ba8\u8bba\u53c2\u4e0e\u8005",
   "This shows which readable roles are ready before you start: first perspectives, reviewers, evidence checks, and conclusion writing.":
     "\u8fd9\u4f1a\u5728\u5f00\u59cb\u524d\u663e\u793a\u54ea\u4e9b\u53ef\u7406\u89e3\u89d2\u8272\u5df2\u5c31\u7eea\uff1a\u521d\u59cb\u89c6\u89d2\u3001\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u548c\u7ed3\u8bba\u8d77\u8349\u3002",
+  "Model assignment": "\u6a21\u578b\u5206\u914d",
+  "Single verified provider": "\u5355\u4e2a\u5df2\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
+  "Verify provider first": "\u5148\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
+  "Demo roles only": "\u4ec5\u6f14\u793a\u89d2\u8272",
+  "No model roles ready": "\u5c1a\u65e0\u6a21\u578b\u89d2\u8272\u5c31\u7eea",
+  "Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer use {provider} in the current Web path.":
+    "\u5728\u5f53\u524d Web \u8def\u5f84\u4e2d\uff0c\u89c6\u89d2 A\u3001\u89c6\u89d2 B\u3001\u53ef\u9009\u7684\u89c6\u89d2 C\u3001\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u7ed3\u8bba\u8d77\u8349\u8005\u4f7f\u7528 {provider}\u3002",
+  "The saved provider cannot power model participants until Verify connection succeeds.":
+    "\u5728\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u6210\u529f\u4e4b\u524d\uff0c\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fd8\u4e0d\u80fd\u9a71\u52a8\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
+  "Demo discussions use built-in material. Add and verify a provider before model-backed roles are available.":
+    "\u6f14\u793a\u8ba8\u8bba\u4f7f\u7528\u5185\u7f6e\u6750\u6599\u3002\u6a21\u578b\u652f\u6301\u7684\u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u3002",
+  "Choose Focused review or Broader review on the start page before creating the discussion.":
+    "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u8bf7\u5728\u5f00\u59cb\u9875\u9009\u62e9\u201c\u805a\u7126\u5ba1\u67e5\u201d\u6216\u201c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u201d\u3002",
+  "After verification, open the start page to choose Focused review or Broader review.":
+    "\u9a8c\u8bc1\u540e\uff0c\u6253\u5f00\u5f00\u59cb\u9875\u9009\u62e9\u201c\u805a\u7126\u5ba1\u67e5\u201d\u6216\u201c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u201d\u3002",
+  "Start a demo discussion now, or finish model setup to choose focused or broader model-backed review.":
+    "\u73b0\u5728\u53ef\u4ee5\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba\uff0c\u6216\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u540e\u9009\u62e9\u805a\u7126\u6216\u66f4\u5e7f\u7684\u6a21\u578b\u652f\u6301\u5ba1\u67e5\u3002",
+  "Current limit": "\u5f53\u524d\u9650\u5236",
+  "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet.":
+    "\u7cbe\u786e\u7684\u5df2\u4fdd\u5b58\u63d0\u4f9b\u65b9\u503c\u4f1a\u5728\u6b64\u9875\u9762\u4fdd\u6301\u9690\u85cf\u3002\u9ed8\u8ba4 Web \u8def\u5f84\u5c1a\u4e0d\u652f\u6301\u6309\u89d2\u8272\u5206\u914d\u6a21\u578b\u3002",
   "Participant plan": "\u53c2\u4e0e\u8005\u8ba1\u5212",
   "Who joins the discussion": "\u8c01\u4f1a\u52a0\u5165\u8ba8\u8bba",
   "This maps the current setup to the roles a normal user will see in the discussion room.":

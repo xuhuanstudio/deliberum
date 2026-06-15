@@ -826,6 +826,64 @@ textarea:focus-visible {
   line-height: 1.45;
 }
 
+.du-setup-participant-assignment {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--du-line);
+  border-left: 4px solid var(--du-muted);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.du-setup-participant-assignment h5,
+.du-setup-participant-assignment p {
+  margin: 0;
+}
+
+.du-setup-participant-assignment > p {
+  color: var(--du-text);
+  line-height: 1.45;
+}
+
+.du-setup-participant-assignment dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.du-setup-participant-assignment dl div {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 12px;
+}
+
+.du-setup-participant-assignment dt {
+  color: var(--du-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.du-setup-participant-assignment dd {
+  margin: 0;
+  color: var(--du-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.du-setup-participant-assignment-ok {
+  border-left-color: var(--du-accent);
+}
+
+.du-setup-participant-assignment-warning {
+  border-left-color: var(--du-warn);
+}
+
 .du-setup-participant-plan {
   display: grid;
   gap: 12px;

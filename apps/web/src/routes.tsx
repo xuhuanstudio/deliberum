@@ -1895,9 +1895,20 @@ type SetupParticipantPlanItem = {
   usesValues?: Record<string, string>;
 };
 
+type SetupParticipantAssignment = {
+  title: string;
+  status: string;
+  detail: string;
+  depthAction: string;
+  modelPolicy: string;
+  tone: "ok" | "warning" | "neutral";
+  detailValues?: Record<string, string>;
+};
+
 type SetupParticipantReadinessView = {
   canStartModelBackedDiscussion: boolean;
   needsModelSetup: boolean;
+  assignment: SetupParticipantAssignment;
   plan: SetupParticipantPlanItem[];
   items: SetupParticipantReadinessItem[];
 };
@@ -1965,6 +1976,26 @@ function SetupParticipantReadiness({
             "This shows which readable roles are ready before you start: first perspectives, reviewers, evidence checks, and conclusion writing."
           )}
         </p>
+      </div>
+      <div
+        className={`du-setup-participant-assignment du-setup-participant-assignment-${readiness.assignment.tone}`}
+        aria-label={t("Model assignment")}
+      >
+        <div>
+          <p className="du-kicker">{t(readiness.assignment.status)}</p>
+          <h5>{t(readiness.assignment.title)}</h5>
+        </div>
+        <p>{t(readiness.assignment.detail, readiness.assignment.detailValues)}</p>
+        <dl>
+          <div>
+            <dt>{t("Choose discussion depth")}</dt>
+            <dd>{t(readiness.assignment.depthAction)}</dd>
+          </div>
+          <div>
+            <dt>{t("Current limit")}</dt>
+            <dd>{t(readiness.assignment.modelPolicy)}</dd>
+          </div>
+        </dl>
       </div>
       <div className="du-setup-participant-plan" aria-label={t("Who joins the discussion")}>
         <div className="du-section-label">
@@ -2305,6 +2336,42 @@ function buildSetupParticipantReadiness(
   const organizerTone: SetupParticipantReadinessItem["tone"] = organizerMode
     ? "ok"
     : "warning";
+  const assignment: SetupParticipantAssignment = modelReady
+    ? {
+        title: "Model assignment",
+        status: "Single verified provider",
+        detail:
+          "Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer use {provider} in the current Web path.",
+        detailValues: { provider: providerName },
+        depthAction:
+          "Choose Focused review or Broader review on the start page before creating the discussion.",
+        modelPolicy:
+          "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet.",
+        tone: "ok"
+      }
+    : modelNeedsVerification
+      ? {
+          title: "Model assignment",
+          status: "Verify provider first",
+          detail:
+            "The saved provider cannot power model participants until Verify connection succeeds.",
+          depthAction:
+            "After verification, open the start page to choose Focused review or Broader review.",
+          modelPolicy:
+            "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet.",
+          tone: "warning"
+        }
+      : {
+          title: "Model assignment",
+          status: localPresetReady ? "Demo roles only" : "No model roles ready",
+          detail:
+            "Demo discussions use built-in material. Add and verify a provider before model-backed roles are available.",
+          depthAction:
+            "Start a demo discussion now, or finish model setup to choose focused or broader model-backed review.",
+          modelPolicy:
+            "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet.",
+          tone: localPresetReady ? "warning" : "neutral"
+        };
   const planItems: SetupParticipantPlanItem[] = [
     {
       title: "First responses",
@@ -2442,6 +2509,7 @@ function buildSetupParticipantReadiness(
   return {
     canStartModelBackedDiscussion: modelReady,
     needsModelSetup,
+    assignment,
     plan: planItems,
     items: [...perspectiveItems, ...organizerItems]
   };
