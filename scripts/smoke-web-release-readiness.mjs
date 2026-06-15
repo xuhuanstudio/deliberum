@@ -249,6 +249,9 @@ function summarizeStartPayload(payload) {
   const stages = Array.isArray(payload.stages) ? payload.stages : [];
 
   return {
+    code: readRecordValue(payload, "code"),
+    message: readRecordValue(payload, "message"),
+    error: summarizeErrorPayload(readRecordValue(payload, "error")),
     stopped: payload.stopped,
     stopReason: payload.stopReason,
     stages: stages.map((stage) => ({
@@ -257,6 +260,17 @@ function summarizeStartPayload(payload) {
       status: readRecordValue(stage, "status"),
       result: summarizeStageResult(readRecordValue(stage, "result"))
     }))
+  };
+}
+
+function summarizeErrorPayload(error) {
+  if (!error || typeof error !== "object") {
+    return undefined;
+  }
+
+  return {
+    code: readRecordValue(error, "code"),
+    message: readRecordValue(error, "message")
   };
 }
 
