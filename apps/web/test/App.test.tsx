@@ -5721,6 +5721,80 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("extraction_output_invalid");
   });
 
+  it("maps first-response participant pauses to retry guidance", async () => {
+    const pausedRun = {
+      ...providerBackedRunDetail,
+      status: "waiting_for_participants",
+      sealedDivergenceStatus: "waiting_for_participants",
+      latestExtractionStatus: undefined,
+      latestProposalReviewStatus: undefined,
+      latestFinalizationStatus: undefined,
+      ledger: {
+        eventCount: 3
+      },
+      rounds: {
+        sealedDivergence: {
+          status: "waiting_for_participants",
+          participantDispatches: [
+            {
+              participantId: "provider-perspective-a",
+              status: "submitted",
+              contributionEventId: "contribution-a"
+            },
+            {
+              participantId: "provider-perspective-b",
+              status: "failed",
+              errorCategory: "provider_http_error"
+            }
+          ]
+        },
+        extraction: [],
+        candidateRepair: [],
+        evidenceCheck: [],
+        proposalReview: [],
+        finalization: []
+      }
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: providerBackedRunDetail
+        })),
+        startRun: vi.fn(async () => ({
+          run: pausedRun,
+          stages: [
+            {
+              stage: "sealed_divergence",
+              executionStatus: "executed",
+              status: "waiting_for_participants"
+            }
+          ],
+          stopped: true,
+          stopReason: "waiting_for_participants"
+        }))
+      })
+    );
+
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalled());
+    expect(await screen.findByText("Discussion paused")).toBeTruthy();
+    expect(screen.getByText("Stop reason")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Updated discussion steps")).toBeTruthy();
+    const updatedSteps = screen.getByRole("region", { name: "Updated discussion steps" });
+    expect(updatedSteps.textContent ?? "").toContain("Independent first responses");
+    expect(updatedSteps.textContent ?? "").toContain("Needs attention");
+    expect(document.body.textContent ?? "").not.toContain("waiting_for_participants");
+    expect(document.body.textContent ?? "").not.toContain("provider_http_error");
+  });
+
   it("starts a run from a JSON start request and renders readable step metadata", async () => {
     const client = renderApp(
       "/runs/run-1",

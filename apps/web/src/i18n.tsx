@@ -1301,6 +1301,10 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "The guided update ran so the strongest current options can be compared again before relying on the conclusion.":
     "\u5df2\u8fd0\u884c\u5f15\u5bfc\u5f0f\u66f4\u65b0\uff0c\u4ee5\u4fbf\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u518d\u6b21\u6bd4\u8f83\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",
   "Stop reason": "\u505c\u6b62\u539f\u56e0",
+  "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again.":
+    "\u4ecd\u6709\u4e00\u4e2a\u521d\u59cb\u56de\u5e94\u53c2\u4e0e\u8005\u9700\u8981\u5b8c\u6210\u3002\u8bf7\u67e5\u770b\u53ef\u89c1\u8fdb\u5ea6\uff0c\u7136\u540e\u518d\u6b21\u5c1d\u8bd5\u201c\u7ee7\u7eed\u8ba8\u8bba\u201d\u3002",
+  "Independent first responses are ready but not revealed yet. Try Continue discussion again to reveal them before reviewing options.":
+    "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u5df2\u51c6\u5907\u597d\uff0c\u4f46\u5c1a\u672a\u63ed\u793a\u3002\u8bf7\u518d\u6b21\u5c1d\u8bd5\u201c\u7ee7\u7eed\u8ba8\u8bba\u201d\uff0c\u518d\u5ba1\u9605\u9009\u9879\u3002",
   "A guided step is still waiting on model work. Review visible progress or try again after checking setup.":
     "\u6709\u4e00\u4e2a\u5f15\u5bfc\u6b65\u9aa4\u4ecd\u5728\u7b49\u5f85\u6a21\u578b\u5de5\u4f5c\u3002\u8bf7\u67e5\u770b\u53ef\u89c1\u8fdb\u5c55\uff0c\u6216\u68c0\u67e5\u8bbe\u7f6e\u540e\u91cd\u8bd5\u3002",
   "A guided step needs attention before Deliberum can continue the full discussion.":

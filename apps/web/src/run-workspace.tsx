@@ -3185,6 +3185,14 @@ function StartResult({
 }
 
 function describeStartResultStopReason(reason: unknown): string {
+  if (reason === "waiting_for_participants") {
+    return "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again.";
+  }
+
+  if (reason === "waiting_for_reveal") {
+    return "Independent first responses are ready but not revealed yet. Try Continue discussion again to reveal them before reviewing options.";
+  }
+
   if (reason === "waiting_for_generators" || reason === "already_running") {
     return "A guided step is still waiting on model work. Review visible progress or try again after checking setup.";
   }

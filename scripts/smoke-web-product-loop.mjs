@@ -55,9 +55,14 @@ try {
     providerBaseUrl: `http://127.0.0.1:${providerPort}/v1`
   });
 
-  if (provider.requestCount < 5) {
+  if (provider.requestCount < 6) {
     throw new Error(
       `Browser product loop provider saw ${provider.requestCount} request(s); expected setup verification plus model-backed discussion requests.`
+    );
+  }
+  if (provider.transientParticipantFailureCount !== 1) {
+    throw new Error(
+      `Browser product loop provider saw ${provider.transientParticipantFailureCount} transient participant failure(s); expected exactly one retryable first-response failure.`
     );
   }
 } catch (error) {
@@ -149,6 +154,19 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await assertDefaultViewSafety(page, "discussion room before continuation", { providerBaseUrl });
 
   await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByText("Discussion paused", { exact: true }).waitFor();
+  await page
+    .getByText(
+      "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again."
+    )
+    .waitFor();
+  await page.getByRole("region", { name: "Updated discussion steps" }).waitFor();
+  await page.getByText("Needs attention").first().waitFor();
+  await assertDefaultViewSafety(page, "discussion room after transient participant failure", {
+    providerBaseUrl
+  });
+
+  await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Model-backed discussion continued").waitFor();
   await page.getByText("Participant first responses").waitFor();
   await page.getByText("This browser perspective supports the verified provider path.").first().waitFor();
@@ -199,7 +217,9 @@ async function assertDefaultViewSafety(page, label, { providerBaseUrl }) {
     "smoke-browser-objection",
     "smoke-browser-evidence",
     "smoke-browser-topic-event",
-    "smoke-browser-review-event"
+    "smoke-browser-review-event",
+    "provider_http_error",
+    "transient browser product-loop participant failure"
   ];
 
   for (const snippet of forbiddenSnippets) {
@@ -218,7 +238,8 @@ async function assertDefaultViewSafety(page, label, { providerBaseUrl }) {
 
 async function startOpenAICompatibleMockProvider(port) {
   const state = {
-    requestCount: 0
+    requestCount: 0,
+    transientParticipantFailureCount: 0
   };
   const server = createHttpServer(async (request, response) => {
     if (request.method !== "POST" || request.url !== "/v1/chat/completions") {
@@ -231,7 +252,7 @@ async function startOpenAICompatibleMockProvider(port) {
 
     try {
       const body = await readRequestJson(request);
-      const content = createMockProviderContent(body);
+      const content = createMockProviderContent(body, state);
 
       response.writeHead(200, {
         "content-type": "application/json"
@@ -269,6 +290,9 @@ async function startOpenAICompatibleMockProvider(port) {
     get requestCount() {
       return state.requestCount;
     },
+    get transientParticipantFailureCount() {
+      return state.transientParticipantFailureCount;
+    },
     close: () =>
       new Promise((resolveClose, rejectClose) => {
         server.close((error) => {
@@ -283,16 +307,28 @@ async function startOpenAICompatibleMockProvider(port) {
   };
 }
 
-function createMockProviderContent(body) {
+function createMockProviderContent(body, state) {
   const messages = Array.isArray(body.messages) ? body.messages : [];
   const system = messages
     .filter((message) => message?.role === "system")
     .map((message) => String(message.content ?? ""))
     .join("\n");
   const userPayload = parseLastUserJson(messages);
+  const userText = messages
+    .filter((message) => message?.role === "user")
+    .map((message) => String(message.content ?? ""))
+    .join("\n");
 
   if (system.includes("verifying Deliberum's local model provider setup")) {
     return "ready";
+  }
+
+  if (
+    userText.includes("Display name: Perspective B") &&
+    state.transientParticipantFailureCount === 0
+  ) {
+    state.transientParticipantFailureCount += 1;
+    throw new Error("transient browser product-loop participant failure");
   }
 
   if (system.includes("Prepare Deliberum extraction proposal material only.")) {

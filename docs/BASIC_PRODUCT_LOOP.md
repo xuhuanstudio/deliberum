@@ -55,8 +55,8 @@ Updated: 2026-06-15.
 | 12 | See risks. | `verified` | Web tests cover risks and hide internal source language from default view. The integrated Web product-loop test confirms risk-review text appears. `smoke:product-loop` verifies final audit risk material reaches the compiled outcome. `smoke:web-product-loop` confirms risk entry points in the room and concrete risk text in the outcome. | Keep covered; future release-hardening should add real-provider risk text examples. |
 | 13 | See the current conclusion. | `verified` | Outcome pages render user-facing conclusion summaries and hide internal projection/event terms. The integrated Web product-loop test confirms the room reaches `Current conclusion: Ready to review`. `smoke:product-loop` verifies the daemon compiles a provider-backed current conclusion. `smoke:web-product-loop` opens the current conclusion page from the browser room and verifies the recommendation. | Keep covered; future work should improve conclusion readability only when it improves the main loop. |
 | 14 | See next recommended actions. | `verified` | Outcome and room tests render next recommended actions. The integrated Web product-loop test confirms user-facing action labels. `smoke:product-loop` verifies continuation suggestions in the provider-backed outcome. `smoke:web-product-loop` confirms the room links and outcome next recommended actions are visible from the browser path. | Keep covered; future actions should stay user-facing. |
-| 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion in the browser and reaches reviewable conclusion material. `smoke:web-resilience` now also verifies a safe failed-stage recovery path with Check model setup, retry, and new model-backed discussion actions. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
-| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `verified` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, and low-level id labels during the primary browser path. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. `smoke:web-resilience` verifies paused, retryable continuation, setup-error, and failed-stage recovery states stay user-facing while raw stop reasons, stage error codes, and internal status codes remain behind Advanced details. | Keep covered; any new default route or retry state must extend the same safety scan before release. |
+| 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion, verifies a transient first-response provider failure pauses in user-facing language, clicks Continue discussion again, and reaches reviewable conclusion material. `smoke:web-resilience` also verifies a safe failed-stage recovery path with Check model setup, retry, and new model-backed discussion actions. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
+| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `verified` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, paused retry, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, low-level id labels, and provider error categories during the primary browser path. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. `smoke:web-resilience` verifies paused, retryable continuation, setup-error, and failed-stage recovery states stay user-facing while raw stop reasons, stage error codes, and internal status codes remain behind Advanced details. | Keep covered; any new default route or retry state must extend the same safety scan before release. |
 
 ## Batch Gate
 
@@ -281,15 +281,20 @@ Path covered:
 8. Starts `/runs/new?participants=model-backed` from Setup / Models.
 9. Creates a model-backed discussion from the browser.
 10. Uses Continue discussion from the room.
-11. Confirms readable participant perspectives, strongest option, open
+11. Confirms a transient provider first-response failure pauses the discussion
+    in user-facing language without showing raw provider error categories.
+12. Uses Continue discussion again and confirms the retry completes the
+    model-backed discussion.
+13. Confirms readable participant perspectives, strongest option, open
     disagreement, missing evidence, risk entry point, current conclusion, and
     user-facing next actions are visible.
-12. Opens the current conclusion page and confirms the recommendation, open
+14. Opens the current conclusion page and confirms the recommendation, open
     disagreement, missing evidence, concrete risk text, and next recommended
     action are visible.
-13. Scans setup, start, room, and outcome default text to confirm it does not
-    show the dummy API key, provider base URL, model value, OpenAI API env var,
-    provider config id, object ids, raw JSON, or low-level id labels.
+15. Scans setup, start, paused retry, room, and outcome default text to confirm
+    it does not show the dummy API key, provider base URL, model value, OpenAI
+    API env var, provider config id, object ids, raw JSON, low-level id labels,
+    or provider error categories.
 
 Limit:
 
