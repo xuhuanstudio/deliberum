@@ -502,6 +502,41 @@ Limit:
   mocks. Additional OpenAI-compatible providers, slower model behavior, and
   longer repeated runs remain release-hardening work.
 
+### 2026-06-15 Extended Real Provider Release Smoke
+
+Scope: rows 5 through 16 against the same real external OpenAI-compatible
+provider, using the Web-managed setup path after reviewer challenge recovery.
+
+Command:
+
+- `DELIBERUM_RELEASE_SMOKE_RUNS=5 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Ran five fresh isolated browser walkthroughs against the same real external
+   OpenAI-compatible provider.
+2. Each run opened `/setup/models`, entered provider setup through Web, verified
+   the provider connection, started a model-backed discussion, used Continue
+   discussion, reached readable participant perspectives, strongest options,
+   open disagreements, missing evidence, risks, current conclusion, and next
+   recommended actions, then opened the Current Conclusion page.
+3. Each run reused the release smoke's default-view safety scans for setup,
+   start, room, retry, and outcome surfaces so provider secrets, provider
+   values, env var names, provider config ids, raw JSON, and low-level ids stayed
+   out of the normal user path.
+
+Result:
+
+- Passed five consecutive runs.
+- No new normal-user blocker reproduced after the reviewer challenge recovery
+  batch.
+
+Limit:
+
+- This strengthens repeatability evidence for one provider only. It still does
+  not prove broad OpenAI-compatible provider coverage, long-running stability,
+  quota resilience, or production-grade release readiness.
+
 ### 2026-06-15 Web Entry Smoke
 
 Scope: rows 1 through 4, with supporting evidence for row 16 on landing and
