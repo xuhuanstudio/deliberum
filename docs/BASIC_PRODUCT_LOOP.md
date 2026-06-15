@@ -162,11 +162,11 @@ Latest 2026-06-15 evidence: the repository-local `.env` provider setup still
 exercises the safe provider-verification recovery path because that local
 provider endpoint is not reachable, but an explicit temporary real external
 OpenAI-compatible provider configuration passed the Web-managed release smoke
-once on the default focused two-perspective path and once on the Broader review
-three-perspective path. This means the current highest-priority product gap is
-not provider verification in Deliberum itself; it is continued real-provider
-release hardening across repeated runs, more providers, and failure recovery
-states.
+three consecutive times on the default focused two-perspective path and once on
+the Broader review three-perspective path. This means the current
+highest-priority product gap is not provider verification in Deliberum itself;
+it is continued real-provider release hardening across more providers, longer
+run batches, and failure recovery states.
 
 Set `DELIBERUM_RELEASE_SMOKE_RUNS=3` or another positive integer to repeat the
 same browser walkthrough in fresh isolated local services. The command stops on
@@ -609,6 +609,7 @@ OpenAI-compatible provider configuration, separate from the repository-local
 Commands:
 
 - `DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> DELIBERUM_RELEASE_SMOKE_BASE_URL=<provider-chat-completions-url> DELIBERUM_RELEASE_SMOKE_MODEL=<provider-model> corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> DELIBERUM_RELEASE_SMOKE_BASE_URL=<provider-chat-completions-url> DELIBERUM_RELEASE_SMOKE_MODEL=<provider-model> DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
 - `DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> DELIBERUM_RELEASE_SMOKE_BASE_URL=<provider-chat-completions-url> DELIBERUM_RELEASE_SMOKE_MODEL=<provider-model> DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 corepack pnpm smoke:web-release-readiness`
 
 Path covered:
@@ -629,6 +630,8 @@ Path covered:
 Result:
 
 - Passed once on the focused two-perspective path.
+- Passed three consecutive focused two-perspective runs in fresh isolated local
+  services.
 - Passed once on the Broader review three-perspective path.
 - The latest verified real-provider blocker was the repository-local `.env`
   provider endpoint being unreachable, not a Deliberum product-loop failure with
@@ -636,9 +639,9 @@ Result:
 
 Limit:
 
-- This is still one external provider and two single-pass walkthroughs. It does
-  not prove broad provider compatibility, long-run stability, quota resilience,
-  or production-grade release readiness.
+- This is still one external provider, one three-run focused batch, and one
+  Broader review pass. It does not prove broad provider compatibility,
+  long-run stability, quota resilience, or production-grade release readiness.
 
 ### 2026-06-15 Provider Verification Failure Recovery Guard
 
