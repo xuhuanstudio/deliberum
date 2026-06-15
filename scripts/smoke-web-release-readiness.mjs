@@ -121,9 +121,23 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await assertDefaultViewSafety(page, "after saving setup");
 
   await page.getByRole("button", { name: "Verify connection" }).click();
-  await page.getByText("Provider connection verified").waitFor({
-    timeout: releaseConfig.providerTimeoutMs
-  });
+  const providerVerificationState = await waitForFirstVisible(page, [
+    {
+      label: "verified",
+      locator: page.getByText("Provider connection verified")
+    },
+    {
+      label: "failed",
+      locator: page.getByText("Provider connection could not be verified")
+    }
+  ], releaseConfig.providerTimeoutMs);
+
+  if (providerVerificationState !== "verified") {
+    throw new Error(
+      "Release readiness provider verification did not pass before the discussion start."
+    );
+  }
+
   await page.getByText("Ready for discussions").first().waitFor();
   await assertDefaultViewSafety(page, "after verifying setup");
 
