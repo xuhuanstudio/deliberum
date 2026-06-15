@@ -116,6 +116,19 @@ until the matrix steps are verified with real browser evidence.
 
 If you do not have a provider ready yet, use the demo discussion path first. The demo is useful for learning the room flow, but real decisions should use configured model-backed participants and verified provider setup.
 
+For a release-readiness browser walkthrough against a real OpenAI-compatible provider, run the opt-in smoke after `corepack pnpm build`:
+
+```bash
+DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> \
+DELIBERUM_RELEASE_SMOKE_BASE_URL=https://provider.example \
+DELIBERUM_RELEASE_SMOKE_MODEL=provider-model \
+corepack pnpm smoke:web-release-readiness
+```
+
+Some providers need explicit structured-output compatibility settings for the review stages. When a real-provider pass pauses at the discussion organizer, use the same command with non-secret compatibility settings such as `DELIBERUM_RELEASE_SMOKE_EXTRACTION_RESPONSE_FORMAT=json_object`, `DELIBERUM_RELEASE_SMOKE_REVIEW_RESPONSE_FORMAT=json_object`, `DELIBERUM_RELEASE_SMOKE_FINAL_CANDIDATE_RESPONSE_FORMAT=json_object`, `DELIBERUM_RELEASE_SMOKE_FINAL_AUDIT_RESPONSE_FORMAT=json_object`, `DELIBERUM_RELEASE_SMOKE_MAX_COMPLETION_TOKENS=4096`, and `DELIBERUM_RELEASE_SMOKE_TEMPERATURE=0`.
+
+This command starts an isolated local daemon and Web UI, configures the provider through Web, verifies the connection, starts and continues a model-backed discussion, opens the current conclusion, and scans the default UI for secrets and low-level ids. It is not part of default CI because it needs a real provider key and network access.
+
 ## Documentation
 
 - [Project Charter](docs/PROJECT_CHARTER.md)

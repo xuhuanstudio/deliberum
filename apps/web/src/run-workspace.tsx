@@ -56,19 +56,23 @@ import {
 const DEFAULT_RUN_PLAN_TEXT = formatPresetJson(LOCAL_PRESET_RUN_PLAN);
 const FIRST_RESPONSES_ONLY_START_REQUEST = {
   sealedDivergence: {
-    autoCloseManual: true
+    autoCloseManual: true,
+    retryFailedParticipants: true
   }
 };
 const OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID = "openai-main";
 const OPENAI_COMPATIBLE_FULL_START_REQUEST = {
   sealedDivergence: {
-    autoCloseManual: true
+    autoCloseManual: true,
+    retryFailedParticipants: true
   },
   extraction: {
-    generatorIds: ["openai-compatible-extractor"]
+    generatorIds: ["openai-compatible-extractor"],
+    retryFailedGenerators: true
   },
   review: {
     reviewerIds: ["openai-compatible-reviewer"],
+    retryFailedReviewers: true,
     acceptancePolicy: {
       mode: "all_generated_unchallenged",
       authorId: "provider-review-coordinator",
@@ -79,6 +83,8 @@ const OPENAI_COMPATIBLE_FULL_START_REQUEST = {
   finalization: {
     finalCandidateGeneratorId: "openai-compatible-final-candidate",
     auditGeneratorIds: ["openai-compatible-final-auditor"],
+    retryFailedFinalCandidate: true,
+    retryFailedAuditors: true,
     compileOutcome: true
   }
 };

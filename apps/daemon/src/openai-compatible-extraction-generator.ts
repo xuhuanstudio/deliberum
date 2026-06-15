@@ -79,6 +79,7 @@ export class OpenAICompatibleExtractionGenerator implements ExtractionGenerator 
     context: ExtractionContext,
     providerRuntimeConfig?: ProviderRuntimeConfig
   ): Promise<ExtractionGeneratorResult> {
+    const messages = createExtractionMessages(context);
     const parsed = await completeOpenAICompatibleStructuredJsonObject<ExtractionRunErrorCategory>({
       config: {
         baseUrl: providerRuntimeConfig?.baseUrl ?? this.baseUrl,
@@ -92,14 +93,45 @@ export class OpenAICompatibleExtractionGenerator implements ExtractionGenerator 
         },
         ...(this.fetch ? { fetch: this.fetch } : {})
       },
-      messages: createExtractionMessages(context),
+      messages,
       malformedResponseCategory: "provider_malformed_response",
       outputDescription: "extraction output",
       createError: (message, safeCategory, safeDiagnostics) =>
         new OpenAICompatibleExtractionGeneratorError(message, safeCategory, safeDiagnostics)
     });
 
-    return parseExtractionOutput(parsed);
+    const extraction = ExtractionGeneratorResultSchema.safeParse(parsed);
+    if (extraction.success) {
+      return extraction.data;
+    }
+
+    const retryParsed = await completeOpenAICompatibleStructuredJsonObject<ExtractionRunErrorCategory>({
+      config: {
+        baseUrl: providerRuntimeConfig?.baseUrl ?? this.baseUrl,
+        apiKey: providerRuntimeConfig?.apiKey ?? this.apiKey,
+        model: providerRuntimeConfig?.modelId ?? this.model,
+        endpointPath: providerRuntimeConfig?.endpointPath ?? this.endpointPath,
+        timeoutMs: providerRuntimeConfig?.timeoutMs ?? this.timeoutMs,
+        requestOptions: {
+          ...(this.requestOptions ?? {}),
+          ...(providerRuntimeConfig?.requestOptions ?? {})
+        },
+        ...(this.fetch ? { fetch: this.fetch } : {})
+      },
+      messages: [
+        ...messages,
+        {
+          role: "user",
+          content: createExtractionSchemaRetryPrompt()
+        }
+      ],
+      malformedResponseCategory: "provider_malformed_response",
+      outputDescription: "extraction schema repair output",
+      createError: (message, safeCategory, safeDiagnostics) =>
+        new OpenAICompatibleExtractionGeneratorError(message, safeCategory, safeDiagnostics)
+    });
+
+    return parseExtractionOutput(retryParsed);
   }
 }
 
@@ -232,6 +264,18 @@ function createExtractionUserPrompt(context: ExtractionContext): string {
     null,
     2
   );
+}
+
+function createExtractionSchemaRetryPrompt(): string {
+  return [
+    "The previous JSON object was rejected because it did not match the Deliberum extraction schema.",
+    "Do not repeat the rejected object.",
+    "Return a corrected JSON object with only candidates, claims, objections, evidenceNeeds, qualityObligations, and rationale.",
+    "Every included item must satisfy the field names, enum values, non-empty string requirements, and allowedSourceEventIds from the original request.",
+    "If a group cannot be derived safely, use an empty array for that group.",
+    "The rationale field is required and must be a non-empty string.",
+    "Return only the corrected JSON object. Do not include prose, labels, Markdown, code fences, or explanation."
+  ].join(" ");
 }
 
 function parseExtractionOutput(parsed: unknown): ExtractionGeneratorResult {

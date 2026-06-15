@@ -10674,6 +10674,103 @@ describe("daemon API", () => {
     expect(serializedSafeState).not.toContain("stack");
   });
 
+  it("retries provider extraction schema failures once and succeeds without storing the rejected object", async () => {
+    const rejectedResponseMarker = "SCHEMA_REJECTED_EXTRACTION_MARKER";
+    const fetch = createOpenAICompatibleExtractionFetch({
+      contentTransforms: [
+        () =>
+          JSON.stringify({
+            candidates: [],
+            claims: [],
+            objections: [],
+            evidenceNeeds: [],
+            qualityObligations: [],
+            rationale: "",
+            marker: rejectedResponseMarker
+          }),
+        (content) => content
+      ]
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleExtraction: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model",
+        [OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR]: "json_object"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleExtractionStartRequest()
+    );
+    const body = (await response.clone().json()) as {
+      stages: Array<{
+        stage: string;
+        status?: string;
+        result: {
+          proposalResults?: Array<{
+            generatorId: string;
+            status: string;
+          }>;
+        };
+      }>;
+    };
+    const retryRequest = JSON.parse(getOpenAICompatibleFetchCall(fetch, 1)[1].body) as {
+      messages: Array<{ role: string; content: string }>;
+      response_format?: unknown;
+    };
+    const detailBody = await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json();
+    const serializedSafeState = JSON.stringify({
+      body,
+      detail: detailBody,
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      events: daemonApp.eventStore.listEvents(created.run.sessionId)
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(retryRequest.messages).toHaveLength(3);
+    expect(retryRequest.messages[2]).toMatchObject({
+      role: "user",
+      content: expect.stringContaining(
+        "The previous JSON object was rejected because it did not match the Deliberum extraction schema."
+      )
+    });
+    expect(retryRequest.messages[2].content).toContain("Do not repeat the rejected object.");
+    expect(JSON.stringify(retryRequest)).not.toContain(rejectedResponseMarker);
+    expect(retryRequest.response_format).toEqual({
+      type: "json_object"
+    });
+    expect(body.stages.find((stage) => stage.stage === "extraction")).toMatchObject({
+      status: "completed",
+      result: {
+        proposalResults: [
+          expect.objectContaining({
+            generatorId: OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+            status: "proposed"
+          })
+        ]
+      }
+    });
+    expect(daemonApp.eventStore.listEvents(created.run.sessionId).map((event) => event.type)).toContain(
+      "extraction_proposed"
+    );
+    expect(serializedSafeState).not.toContain(rejectedResponseMarker);
+    expect(serializedSafeState).not.toContain("sk-openai-runtime-secret");
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("/Users/");
+    expect(serializedSafeState).not.toContain("stack");
+  });
+
   it("does not retry provider extraction HTTP failures", async () => {
     const fetch = createOpenAICompatibleExtractionFetch({
       ok: false,
@@ -10733,6 +10830,7 @@ describe("daemon API", () => {
       },
       {
         content: "{}",
+        expectedCalls: 2,
         errorCategory: "extraction_output_invalid"
       },
       {
@@ -10807,7 +10905,13 @@ describe("daemon API", () => {
       const proposalResult = extractionStage?.result.proposalResults?.[0];
 
       expect(response.status).toBe(200);
-      expect(fetch).toHaveBeenCalledTimes("providerResponseShape" in testCase ? 2 : 1);
+      expect(fetch).toHaveBeenCalledTimes(
+        "expectedCalls" in testCase
+          ? testCase.expectedCalls
+          : "providerResponseShape" in testCase
+            ? 2
+            : 1
+      );
       expect(proposalResult).toMatchObject({
         errorCategory: testCase.errorCategory
       });

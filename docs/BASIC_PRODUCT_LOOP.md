@@ -97,9 +97,18 @@ as supporting evidence only.
 
 ## Next Highest-Value Batch
 
-Rows 1 through 16 now have direct automated and browser evidence. The next
-highest-value convergence batch should move outside the matrix's mocked or
-isolated local proof and run the product loop as a release-readiness walkthrough:
+Rows 1 through 16 now have direct automated and browser evidence. The opt-in
+release-readiness walkthrough has also been run against a real
+OpenAI-compatible provider.
+
+The next highest-value convergence batch is to productize structured-output
+readiness in Web setup. The real-provider walkthrough can complete when
+non-secret structured-output compatibility settings are enabled, but the plain
+Web setup path still exposes only API key, base URL, and model. A normal user
+should be able to understand and verify whether the provider is ready for both
+chat responses and Deliberum's structured review stages.
+
+Release-readiness walkthrough requirements:
 
 1. start from the documented local setup path;
 2. configure a real OpenAI-compatible provider without logging or rendering
@@ -107,10 +116,82 @@ isolated local proof and run the product loop as a release-readiness walkthrough
 3. complete a model-backed discussion in Web;
 4. record the first blocker that a normal outside user would hit.
 
-If that walkthrough fails, fix the first blocking product-loop step with the
-smallest verifiable change.
+If the walkthrough fails, fix the first blocking product-loop step with the
+smallest verifiable change. If it requires non-secret compatibility settings,
+record that as a Web setup/product gap rather than hiding it as an operator-only
+detail.
+
+Command:
+
+```bash
+DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> \
+DELIBERUM_RELEASE_SMOKE_BASE_URL=https://provider.example \
+DELIBERUM_RELEASE_SMOKE_MODEL=provider-model \
+corepack pnpm smoke:web-release-readiness
+```
+
+This command is intentionally outside default CI because it requires a real
+provider secret, network access, and provider quota. The smoke accepts a provider
+base URL and normalizes common `/v1` and `/v1/chat/completions` inputs before
+submitting setup through Web.
+
+For providers that need explicit structured JSON behavior during the organizer,
+reviewer, risk-review, and conclusion-writer stages, use the non-secret
+compatibility settings:
+
+```bash
+DELIBERUM_RELEASE_SMOKE_EXTRACTION_RESPONSE_FORMAT=json_object \
+DELIBERUM_RELEASE_SMOKE_REVIEW_RESPONSE_FORMAT=json_object \
+DELIBERUM_RELEASE_SMOKE_FINAL_CANDIDATE_RESPONSE_FORMAT=json_object \
+DELIBERUM_RELEASE_SMOKE_FINAL_AUDIT_RESPONSE_FORMAT=json_object \
+DELIBERUM_RELEASE_SMOKE_MAX_COMPLETION_TOKENS=4096 \
+DELIBERUM_RELEASE_SMOKE_TEMPERATURE=0 \
+corepack pnpm smoke:web-release-readiness
+```
 
 ## Recent Automated Evidence
+
+### 2026-06-15 Real Provider Release-Readiness Smoke
+
+Scope: rows 5 through 15 against a real external OpenAI-compatible provider,
+with supporting evidence for row 16 on the real-provider Web path.
+
+Command:
+
+- `corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Starts an isolated local daemon and Web UI.
+2. Opens `/setup/models` in Chromium.
+3. Enters API key, base URL, and model through Web without logging or rendering
+   the secret.
+4. Verifies the provider connection from Web.
+5. Starts a model-backed discussion from Setup / Models.
+6. Uses Continue discussion until the room reaches readable participant
+   perspectives, strongest current options, open disagreements, missing
+   evidence, risks, current conclusion, and next recommended actions.
+7. Opens the current conclusion page.
+8. Scans setup, start, room, retry, and outcome default text to confirm provider
+   secrets, base URL, model value, env var names, and provider config ids are not
+   shown.
+
+Result:
+
+- The default three-field Web setup path reached provider verification and
+  model first responses, then repeatedly paused at the discussion organizer with
+  `extraction_output_invalid`.
+- The same Web path completed when existing non-secret structured-output
+  compatibility settings were enabled for extraction, review, final candidate,
+  and final audit stages.
+- The immediate product gap is therefore Web-visible structured-output readiness
+  and troubleshooting for real providers, not another runtime subsystem.
+
+Limit:
+
+- This pass used one real OpenAI-compatible provider. Broader provider coverage,
+  Web-managed structured-output compatibility settings, and clearer normal-user
+  recovery remain release blockers.
 
 ### 2026-06-15 Web Entry Smoke
 

@@ -2040,17 +2040,22 @@ describe("@deliberum/web shell", () => {
         providerBackedRunDetail.runId,
         expect.objectContaining({
           sealedDivergence: {
-            autoCloseManual: true
+            autoCloseManual: true,
+            retryFailedParticipants: true
           },
           extraction: {
-            generatorIds: ["openai-compatible-extractor"]
+            generatorIds: ["openai-compatible-extractor"],
+            retryFailedGenerators: true
           },
           review: expect.objectContaining({
-            reviewerIds: ["openai-compatible-reviewer"]
+            reviewerIds: ["openai-compatible-reviewer"],
+            retryFailedReviewers: true
           }),
           finalization: expect.objectContaining({
             finalCandidateGeneratorId: "openai-compatible-final-candidate",
             auditGeneratorIds: ["openai-compatible-final-auditor"],
+            retryFailedFinalCandidate: true,
+            retryFailedAuditors: true,
             compileOutcome: true
           })
         })
@@ -5812,7 +5817,8 @@ describe("@deliberum/web shell", () => {
     await waitFor(() =>
       expect(client.startRun).toHaveBeenCalledWith("run-1", {
         sealedDivergence: {
-          autoCloseManual: true
+          autoCloseManual: true,
+          retryFailedParticipants: true
         }
       })
     );
@@ -5916,17 +5922,22 @@ describe("@deliberum/web shell", () => {
         "run-1",
         expect.objectContaining({
           sealedDivergence: {
-            autoCloseManual: true
+            autoCloseManual: true,
+            retryFailedParticipants: true
           },
           extraction: {
-            generatorIds: ["openai-compatible-extractor"]
+            generatorIds: ["openai-compatible-extractor"],
+            retryFailedGenerators: true
           },
           review: expect.objectContaining({
-            reviewerIds: ["openai-compatible-reviewer"]
+            reviewerIds: ["openai-compatible-reviewer"],
+            retryFailedReviewers: true
           }),
           finalization: expect.objectContaining({
             finalCandidateGeneratorId: "openai-compatible-final-candidate",
             auditGeneratorIds: ["openai-compatible-final-auditor"],
+            retryFailedFinalCandidate: true,
+            retryFailedAuditors: true,
             compileOutcome: true
           })
         })
@@ -6038,7 +6049,8 @@ describe("@deliberum/web shell", () => {
     await waitFor(() =>
       expect(client.startRun).toHaveBeenCalledWith("run-1", {
         sealedDivergence: {
-          autoCloseManual: true
+          autoCloseManual: true,
+          retryFailedParticipants: true
         }
       })
     );
