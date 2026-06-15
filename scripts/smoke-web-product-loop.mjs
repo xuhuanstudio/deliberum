@@ -270,7 +270,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
 
   await page.getByLabel("Discussion question").fill(discussionQuestion);
   await page.getByRole("button", { name: "Create discussion" }).click();
-  await page.getByText("Discussion room").waitFor();
+  await page.getByRole("heading", { name: "Discussion room" }).waitFor();
   await page.getByText("How this discussion will continue").click();
   await page.getByText("Model-backed discussion").first().waitFor();
   await page.getByText("What is being discussed").waitFor();
