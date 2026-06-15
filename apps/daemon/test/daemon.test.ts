@@ -201,6 +201,9 @@ import {
   OPENAI_COMPATIBLE_SETUP_ENV_END,
   loadManagedDaemonSetupEnvFile
 } from "../src/setup-env";
+import {
+  DEFAULT_OPENAI_COMPATIBLE_SETUP_VERIFICATION_TIMEOUT_MS
+} from "../src/openai-compatible-setup-verification";
 import { SQLiteResourceBroker } from "../src/sqlite-resource-broker";
 import * as daemon from "../src";
 import type { Resource } from "@deliberum/resources";
@@ -3315,6 +3318,81 @@ describe("daemon API", () => {
     );
     expect(auditText).not.toContain(apiKey);
     expect(auditText).not.toContain("api.example.test");
+  });
+
+  it("times out OpenAI-compatible setup verification by default without exposing secrets", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const apiKey = "sk-local-web-setup-secret";
+      const fetch = vi.fn(
+        (_url: string, init: OpenAICompatibleFetchInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () => {
+              reject(new Error("aborted"));
+            });
+          })
+      ) as unknown as MockedFetchLike;
+      const daemonApp = createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        openAICompatibleFetch: fetch,
+        openAICompatibleEnv: {
+          [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://api.example.test",
+          [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "model-for-web-setup",
+          [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: apiKey
+        }
+      });
+
+      const responsePromise = daemonApp.app.request(
+        "/runtime/setup/openai-compatible/verify",
+        {
+          method: "POST"
+        }
+      );
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(
+        DEFAULT_OPENAI_COMPATIBLE_SETUP_VERIFICATION_TIMEOUT_MS + 1
+      );
+
+      const response = await responsePromise;
+      const body = (await response.json()) as {
+        error: {
+          code: string;
+          message: string;
+        };
+      };
+      const responseText = JSON.stringify(body);
+      const auditEvents = daemonApp.operationAuditLog.list({ limit: 10 });
+      const auditText = JSON.stringify(auditEvents);
+      const [, init] = getOpenAICompatibleFetchCall(fetch);
+
+      expect(response.status).toBe(400);
+      expect(body.error).toEqual({
+        code: "provider_timeout",
+        message: "Provider verification timed out. Check the base URL and provider availability."
+      });
+      expect(init.signal).toBeDefined();
+      expect(responseText).not.toContain(apiKey);
+      expect(responseText).not.toContain("api.example.test");
+      expect(auditEvents).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: "runtime_openai_compatible_setup_verify",
+            method: "POST",
+            route: "/runtime/setup/openai-compatible/verify",
+            statusCode: 400
+          })
+        ])
+      );
+      expect(auditText).not.toContain(apiKey);
+      expect(auditText).not.toContain("api.example.test");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("reports safe resource access posture without exposing access material", async () => {

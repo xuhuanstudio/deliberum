@@ -28,6 +28,8 @@ export type OpenAICompatibleSetupVerificationResponse = {
   safety: string[];
 };
 
+export const DEFAULT_OPENAI_COMPATIBLE_SETUP_VERIFICATION_TIMEOUT_MS = 30_000;
+
 export async function verifyOpenAICompatibleSetup(input: {
   env?: Record<string, string | undefined>;
   fetch?: FetchLike;
@@ -42,7 +44,7 @@ export async function verifyOpenAICompatibleSetup(input: {
         OPENAI_COMPATIBLE_DEFAULT_ENDPOINT_PATH,
       timeoutMs: parseOptionalPositiveInteger(
         readOptionalEnv(input.env, OPENAI_COMPATIBLE_TIMEOUT_MS_ENV_VAR)
-      ),
+      ) ?? DEFAULT_OPENAI_COMPATIBLE_SETUP_VERIFICATION_TIMEOUT_MS,
       requestOptions: createVerificationRequestOptionsFromEnv(input.env),
       fetch: input.fetch
     },

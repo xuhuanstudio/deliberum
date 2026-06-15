@@ -46,7 +46,7 @@ Updated: 2026-06-15.
 | 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
 | 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show `corepack pnpm build && corepack pnpm start:local` as the local start path. `smoke:local-start` verifies that script starts a daemon-served Web shell. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future installer work may simplify dependency installation, but the current local product start path is proven. |
 | 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, model, and structured review compatibility. | `verified` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The integrated Web product-loop test covers entering and saving API key, base URL, model, and the default structured review compatibility setting from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the daemon setup API. `smoke:web-product-loop` enters the same fields in a real browser against an isolated local daemon and safe mock provider. | Keep covered; continue real external-provider walkthroughs before release hardening. |
-| 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. | Keep covered; add provider-specific troubleshooting only if real provider walkthroughs expose a blocker. |
+| 6 | Verify the provider connection. | `partial` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. A 2026-06-15 real-provider release-readiness attempt blocked here because the configured provider did not return a usable verification response; the daemon now applies a default verification timeout so Web can show a safe recovery error instead of waiting indefinitely. | Re-run real-provider release readiness after provider/network availability is confirmed, then continue to the first post-verification blocker. |
 | 7 | Start a model-backed discussion from Web. | `verified` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test creates a model-backed discussion. `smoke:product-loop` creates and starts a provider-backed run through the daemon API. `smoke:web-product-loop` reaches the model-backed start page from Setup / Models and creates the discussion in a real browser. | Keep covered; future participant-management work should preserve this default path. |
 | 8 | See participant/model perspectives as readable contributions, not raw events. | `verified` | Discussion Room tests and walkthrough document cover readable room contributions. The integrated Web product-loop test confirms provider-backed Perspective A/B contributions after continuing. `smoke:product-loop` confirms sealed contribution events. `smoke:web-product-loop` confirms readable Perspective A/B text appears in the browser room timeline. | Keep covered; continue checking that default views do not regress into raw event views. |
 | 9 | See strongest current options. | `verified` | Discussion Room and outcome tests render strongest options/main perspectives in user language. The integrated Web product-loop test confirms a strongest option after continuation. `smoke:product-loop` verifies the daemon frontier contains a provider-backed strongest option. `smoke:web-product-loop` confirms the browser room and outcome show the provider-backed strongest option. | Keep covered; future UX work can improve scanning, but the loop step is proven. |
@@ -97,19 +97,22 @@ as supporting evidence only.
 
 ## Next Highest-Value Batch
 
-Rows 1 through 16 now have direct automated and browser evidence. The opt-in
-release-readiness walkthrough has also been run against a real
-OpenAI-compatible provider.
+Rows 1 through 5 and 7 through 16 have direct automated and browser evidence on
+the local mock/default browser path. Row 6 remains partial for real-provider
+release hardening because an external provider can still fail before Web reaches
+the model-backed discussion path.
 
 The current convergence target is real-provider release hardening: continue
 running the release-readiness walkthrough through the Web-managed setup path,
 including the default Structured review compatibility option, across repeated
 passes and more OpenAI-compatible providers. Fix the first blocking normal-user
-recovery or completion step if a provider pauses or fails. The default Web path
-now has recovery guidance for safe failed-stage responses, OpenAI-compatible
-structured extraction has a conservative fallback when a provider returns JSON
-that still fails the organizer schema after retry, and the default UI explains
-when that fallback was used.
+recovery or completion step if provider verification, continuation, or
+finalization pauses or fails. The default Web path now has recovery guidance for
+safe failed-stage responses, OpenAI-compatible structured extraction has a
+conservative fallback when a provider returns JSON that still fails the
+organizer schema after retry, verification has a default timeout for
+non-responsive providers, and the default UI explains when the organizer
+fallback was used.
 
 Release-readiness walkthrough requirements:
 
