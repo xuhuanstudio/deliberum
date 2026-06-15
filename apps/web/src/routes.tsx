@@ -983,9 +983,13 @@ function StartDiscussionActionLink({
 }
 
 function StartModelBackedDiscussionLink({
-  className = "du-action-link"
+  className = "du-action-link",
+  label = "Start model-backed discussion",
+  perspectiveCount
 }: {
   className?: string;
+  label?: string;
+  perspectiveCount?: 2 | 3;
 }) {
   const { t } = useI18n();
 
@@ -994,10 +998,11 @@ function StartModelBackedDiscussionLink({
       className={className}
       to="/runs/new"
       search={{
-        participants: "model-backed"
+        participants: "model-backed",
+        ...(perspectiveCount ? { perspectives: perspectiveCount } : {})
       }}
     >
-      {t("Start model-backed discussion")}
+      {t(label)}
     </Link>
   );
 }
@@ -1996,6 +2001,23 @@ function SetupParticipantReadiness({
             <dd>{t(readiness.assignment.modelPolicy)}</dd>
           </div>
         </dl>
+        {readiness.canStartModelBackedDiscussion ? (
+          <div
+            className="du-setup-participant-depth-actions"
+            aria-label={t("Model-backed start options")}
+          >
+            <StartModelBackedDiscussionLink
+              className="du-action-link"
+              label="Start focused discussion"
+              perspectiveCount={2}
+            />
+            <StartModelBackedDiscussionLink
+              className="du-action-link du-secondary-link"
+              label="Start broader discussion"
+              perspectiveCount={3}
+            />
+          </div>
+        ) : null}
       </div>
       <div className="du-setup-participant-plan" aria-label={t("Who joins the discussion")}>
         <div className="du-section-label">

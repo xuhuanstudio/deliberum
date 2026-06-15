@@ -478,6 +478,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussions may collect first responses only until review roles are ready.":
     "\u5728\u5ba1\u67e5\u89d2\u8272\u5c31\u7eea\u524d\uff0c\u8ba8\u8bba\u53ef\u80fd\u53ea\u80fd\u6536\u96c6\u521d\u59cb\u56de\u5e94\u3002",
   "Start model-backed discussion": "\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba",
+  "Model-backed start options": "\u6a21\u578b\u652f\u6301\u7684\u5f00\u59cb\u9009\u9879",
+  "Start focused discussion": "\u5f00\u59cb\u805a\u7126\u8ba8\u8bba",
+  "Start broader discussion": "\u5f00\u59cb\u66f4\u5e7f\u8ba8\u8bba",
   "Start discussion will select configured model participants by default while keeping demo participants available.":
     "\u5f00\u59cb\u8ba8\u8bba\u4f1a\u9ed8\u8ba4\u9009\u62e9\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\uff0c\u540c\u65f6\u4fdd\u7559\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u7528\u3002",
   "Verify provider connection": "\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u8fde\u63a5",

@@ -47,7 +47,7 @@ Updated: 2026-06-15.
 | 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show `corepack pnpm build && corepack pnpm start:local` as the local start path. `smoke:local-start` verifies that script starts a daemon-served Web shell. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future installer work may simplify dependency installation, but the current local product start path is proven. |
 | 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, model, and structured review compatibility. | `verified` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The integrated Web product-loop test covers entering and saving API key, base URL, model, and the default structured review compatibility setting from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the daemon setup API. `smoke:web-product-loop` enters the same fields in a real browser against an isolated local daemon and safe mock provider. | Keep covered; continue real external-provider walkthroughs before release hardening. |
 | 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. A 2026-06-15 opt-in `smoke:web-release-readiness` run against a real external OpenAI-compatible provider verified the provider connection through Web before creating the discussion. The daemon applies a default verification timeout so Web can show a safe recovery error instead of waiting indefinitely, the Web setup page gives normal users recovery actions to review setup fields, retry Verify connection, or start a demo discussion while fixing setup, and the release-readiness smoke now verifies those Web-visible recovery actions if a real provider cannot verify. | Keep covered with repeated opt-in real-provider release-readiness runs; broaden provider coverage later. |
-| 7 | Start a model-backed discussion from Web. | `verified` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test creates a model-backed discussion. `smoke:product-loop` creates and starts a provider-backed run through the daemon API. `smoke:web-product-loop` reaches the model-backed start page from Setup / Models and creates the discussion in a real browser. The 2026-06-15 opt-in `smoke:web-release-readiness` run also started a model-backed discussion from the verified real-provider setup path. | Keep covered; future participant-management work should preserve this default path. |
+| 7 | Start a model-backed discussion from Web. | `verified` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test creates a model-backed discussion. Setup / Models tests verify that focused and broader model-backed start links appear only after provider verification and carry the selected perspective depth. `smoke:product-loop` creates and starts a provider-backed run through the daemon API. `smoke:web-product-loop` checks the verified Setup / Models focused and broader start links in a real browser, opens the broader path to confirm Perspective C is preselected, and creates the discussion from the model-backed start page. The 2026-06-15 opt-in `smoke:web-release-readiness` run also started a model-backed discussion from the verified real-provider setup path. | Keep covered; future participant-management work should preserve this default path. |
 | 8 | See participant/model perspectives as readable contributions, not raw events. | `verified` | Discussion Room tests and walkthrough document cover readable room contributions. The integrated Web product-loop test confirms provider-backed Perspective A/B contributions after continuing. `smoke:product-loop` confirms sealed contribution events. `smoke:web-product-loop` confirms readable Perspective A/B text appears in the browser room timeline. | Keep covered; continue checking that default views do not regress into raw event views. |
 | 9 | See strongest current options. | `verified` | Discussion Room and outcome tests render strongest options/main perspectives in user language. The integrated Web product-loop test confirms a strongest option after continuation. `smoke:product-loop` verifies the daemon frontier contains a provider-backed strongest option. `smoke:web-product-loop` confirms the browser room and outcome show the provider-backed strongest option. | Keep covered; future UX work can improve scanning, but the loop step is proven. |
 | 10 | See open disagreements. | `verified` | Web tests cover open disagreements and empty states. The integrated Web product-loop test covers a non-empty open-disagreement count. `smoke:product-loop` verifies a provider-backed open disagreement reaches the daemon projection. `smoke:web-product-loop` confirms the room and outcome show an open disagreement without default object ids. | Keep covered; broader empty-state browser coverage remains useful but is not the main loop blocker. |
@@ -792,20 +792,23 @@ Path covered:
 5. Enters OpenAI-compatible API key, base URL, and model in Web.
 6. Saves setup and confirms the secret is not shown.
 7. Verifies the provider connection from Web.
-8. Starts `/runs/new?participants=model-backed` from Setup / Models.
-9. Creates a model-backed discussion from the browser.
-10. Uses Continue discussion from the room.
-11. Confirms a transient provider first-response failure pauses the discussion
+8. Confirms verified Setup / Models shows focused and broader model-backed start
+   links with the expected perspective depth.
+9. Opens the broader start link and confirms Broader review preselects
+   Perspective C.
+10. Creates a model-backed discussion from the browser.
+11. Uses Continue discussion from the room.
+12. Confirms a transient provider first-response failure pauses the discussion
     in user-facing language without showing raw provider error categories.
-12. Uses Continue discussion again and confirms the retry completes the
+13. Uses Continue discussion again and confirms the retry completes the
     model-backed discussion.
-13. Confirms readable participant perspectives, strongest option, open
+14. Confirms readable participant perspectives, strongest option, open
     disagreement, missing evidence, risk entry point, current conclusion, and
     user-facing next actions are visible.
-14. Opens the current conclusion page and confirms the recommendation, open
+15. Opens the current conclusion page and confirms the recommendation, open
     disagreement, missing evidence, concrete risk text, and next recommended
     action are visible.
-15. Scans setup, start, paused retry, room, and outcome default text to confirm
+16. Scans setup, start, paused retry, room, and outcome default text to confirm
     it does not show the dummy API key, provider base URL, model value, OpenAI
     API env var, provider config id, object ids, raw JSON, low-level id labels,
     or provider error categories.
@@ -867,7 +870,7 @@ Path covered:
 2. Enters an OpenAI-compatible API key, base URL, and model.
 3. Saves the model setup without rendering the secret in default page text.
 4. Verifies the provider connection.
-5. Uses the Setup page's `Start model-backed discussion` link.
+5. Verifies the Setup page's focused and broader model-backed start links.
 6. Creates a model-backed discussion from `/runs/new?participants=model-backed`.
 7. Opens the Discussion Room.
 8. Uses `Continue discussion`.

@@ -280,6 +280,9 @@ export function RunNewPage() {
   const requestedParticipantSource = useLocation({
     select: (location) => getRequestedParticipantSource(location.search)
   });
+  const requestedPerspectiveCount = useLocation({
+    select: (location) => getRequestedPerspectiveCount(location.search)
+  });
   const queryClient = useQueryClient();
   const [runPlanText, setRunPlanText] = useState(DEFAULT_RUN_PLAN_TEXT);
   const [discussionQuestion, setDiscussionQuestion] = useState("");
@@ -290,7 +293,7 @@ export function RunNewPage() {
     useState<DiscussionParticipantSource>(requestedParticipantSource ?? "demo");
   const [participantSourceTouched, setParticipantSourceTouched] = useState(false);
   const [modelPerspectiveCount, setModelPerspectiveCount] =
-    useState<ProviderBackedPerspectiveCount>(2);
+    useState<ProviderBackedPerspectiveCount>(requestedPerspectiveCount ?? 2);
   const [inputError, setInputError] = useState<string | null>(null);
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
@@ -661,6 +664,22 @@ function getRequestedParticipantSource(
   return participants === "model-backed" || participants === "demo"
     ? participants
     : undefined;
+}
+
+function getRequestedPerspectiveCount(
+  search: unknown
+): ProviderBackedPerspectiveCount | undefined {
+  if (!search || typeof search !== "object" || Array.isArray(search)) {
+    return undefined;
+  }
+
+  const perspectives = (search as Record<string, unknown>).perspectives;
+
+  return perspectives === "3" || perspectives === 3
+    ? 3
+    : perspectives === "2" || perspectives === 2
+      ? 2
+      : undefined;
 }
 
 function DiscussionCreationPreview({ view }: { view: DiscussionCreationPreviewView }) {

@@ -136,12 +136,35 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Verify connection" }).click();
   await page.getByText("Provider connection verified").waitFor();
   await page.getByText("Ready for discussions").first().waitFor();
+  const focusedStartLink = page.getByRole("link", { name: "Start focused discussion" }).first();
+  const broaderStartLink = page.getByRole("link", { name: "Start broader discussion" }).first();
+  await focusedStartLink.waitFor();
+  await broaderStartLink.waitFor();
+  await assertStartLink(focusedStartLink, {
+    label: "focused setup start link",
+    perspectiveCount: "2"
+  });
+  await assertStartLink(broaderStartLink, {
+    label: "broader setup start link",
+    perspectiveCount: "3"
+  });
   await assertDefaultViewSafety(page, "after verifying setup", { providerBaseUrl });
 
-  await page.getByRole("link", { name: "Start model-backed discussion" }).first().click();
-  await page.waitForURL(/\/runs\/new\?participants=model-backed$/);
+  await broaderStartLink.click();
+  await page.waitForURL(/\/runs\/new\?participants=model-backed&perspectives=3$/);
   await page.getByRole("heading", { name: "Start a discussion" }).waitFor();
   await page.getByText("Model-backed discussion selected").waitFor();
+  await page.getByText("Perspective C", { exact: true }).waitFor();
+  await page.getByText("3 model perspectives").waitFor();
+  if (!(await page.getByRole("radio", { name: /Broader review/i }).isChecked())) {
+    throw new Error("Broader setup start link did not preselect Broader review.");
+  }
+  await assertDefaultViewSafety(page, "broader start discussion", { providerBaseUrl });
+
+  await page.getByRole("radio", { name: /Focused review/i }).click();
+  if (!(await page.getByRole("radio", { name: /Focused review/i }).isChecked())) {
+    throw new Error("Focused review could not be selected after checking the broader setup start link.");
+  }
   await page.getByText("Ready to create a model-backed discussion").waitFor();
   await assertDefaultViewSafety(page, "start discussion", { providerBaseUrl });
 
@@ -202,6 +225,18 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("The browser walkthrough still needs to prove evidence gaps stay visible.").waitFor();
   await page.getByText("Run another browser walkthrough after UI changes.").waitFor();
   await assertDefaultViewSafety(page, "current conclusion", { providerBaseUrl });
+}
+
+async function assertStartLink(locator, { label, perspectiveCount }) {
+  const href = await locator.getAttribute("href");
+
+  if (!href?.includes("participants=model-backed")) {
+    throw new Error(`${label} did not request model-backed participants.`);
+  }
+
+  if (!href.includes(`perspectives=${perspectiveCount}`)) {
+    throw new Error(`${label} did not request ${perspectiveCount} model perspectives.`);
+  }
 }
 
 async function assertDefaultViewSafety(page, label, { providerBaseUrl }) {

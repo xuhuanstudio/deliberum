@@ -876,6 +876,12 @@ textarea:focus-visible {
   line-height: 1.45;
 }
 
+.du-setup-participant-depth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .du-setup-participant-assignment-ok {
   border-left-color: var(--du-accent);
 }

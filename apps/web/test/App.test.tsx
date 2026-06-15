@@ -2502,6 +2502,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Discussion participants")).toBeTruthy();
     expect(screen.getByText("Model assignment")).toBeTruthy();
     expect(screen.getByText("Verify provider first")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Start focused discussion" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Start broader discussion" })).toBeNull();
     expect(
       screen.getByText(
         "The saved provider cannot power model participants until Verify connection succeeds."
@@ -2560,8 +2562,43 @@ describe("@deliberum/web shell", () => {
         "Choose Focused review or Broader review on the start page before creating the discussion."
       )
     ).toBeTruthy();
+    const focusedDiscussionLink = screen.getByRole("link", {
+      name: "Start focused discussion"
+    }) as HTMLAnchorElement;
+    const broaderDiscussionLink = screen.getByRole("link", {
+      name: "Start broader discussion"
+    }) as HTMLAnchorElement;
+    expect(focusedDiscussionLink.href).toContain("participants=model-backed");
+    expect(focusedDiscussionLink.href).toContain("perspectives=2");
+    expect(broaderDiscussionLink.href).toContain("participants=model-backed");
+    expect(broaderDiscussionLink.href).toContain("perspectives=3");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("who will organize the result");
+  });
+
+  it("localizes verified setup participant start options in Simplified Chinese", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue(createReadyOpenAISetupProfiles());
+    renderApp("/setup/models", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "\u9a8c\u8bc1\u8fde\u63a5" }));
+    expect(await screen.findByText("\u5df2\u5c31\u7eea\u4e14\u5df2\u9a8c\u8bc1")).toBeTruthy();
+    expect(screen.getByText("\u5355\u4e2a\u5df2\u9a8c\u8bc1\u63d0\u4f9b\u65b9")).toBeTruthy();
+
+    const focusedDiscussionLink = screen.getByRole("link", {
+      name: "\u5f00\u59cb\u805a\u7126\u8ba8\u8bba"
+    }) as HTMLAnchorElement;
+    const broaderDiscussionLink = screen.getByRole("link", {
+      name: "\u5f00\u59cb\u66f4\u5e7f\u8ba8\u8bba"
+    }) as HTMLAnchorElement;
+
+    expect(focusedDiscussionLink.href).toContain("participants=model-backed");
+    expect(focusedDiscussionLink.href).toContain("perspectives=2");
+    expect(broaderDiscussionLink.href).toContain("participants=model-backed");
+    expect(broaderDiscussionLink.href).toContain("perspectives=3");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
   it("shows a safe provider verification failure from setup and models", async () => {
@@ -3592,6 +3629,34 @@ describe("@deliberum/web shell", () => {
     );
     expect(JSON.stringify(runPlan)).not.toContain("sk-");
     expect(JSON.stringify(runPlan)).not.toContain("Use built-in sample participants only.");
+  });
+
+  it("opens broader model-backed review from the setup start link", async () => {
+    markOpenAICompatibleProviderVerified();
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue(createReadyOpenAISetupProfiles());
+
+    renderApp("/runs/new?participants=model-backed&perspectives=3", client);
+
+    expect(await screen.findByText("Model-backed start available")).toBeTruthy();
+    expect(await screen.findByText("Model-backed discussion selected")).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        (screen.getByRole("radio", { name: /Model-backed participants/i }) as HTMLInputElement)
+          .checked
+      ).toBe(true)
+    );
+    expect(
+      (screen.getByRole("radio", { name: /Broader review/i }) as HTMLInputElement).checked
+    ).toBe(true);
+    expect(screen.getByText("Perspective C")).toBeTruthy();
+    expect(screen.getByText("3 model perspectives")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Perspective A, Perspective B, and Perspective C will answer independently."
+      )
+    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
   it("does not allow a model-backed start before provider verification", async () => {
