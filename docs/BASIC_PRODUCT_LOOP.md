@@ -163,10 +163,11 @@ exercises the safe provider-verification recovery path because that local
 provider endpoint is not reachable, but an explicit temporary real external
 OpenAI-compatible provider configuration passed the Web-managed release smoke
 three consecutive times on the default focused two-perspective path and once on
-the Broader review three-perspective path. This means the current
-highest-priority product gap is not provider verification in Deliberum itself;
-it is continued real-provider release hardening across more providers, longer
-run batches, and failure recovery states.
+the Broader review three-perspective path. A later Broader review batch also
+passed three consecutive runs. This means the current highest-priority product
+gap is not provider verification in Deliberum itself; it is continued
+real-provider release hardening across more providers, longer run batches, and
+failure recovery states.
 
 Set `DELIBERUM_RELEASE_SMOKE_RUNS=3` or another positive integer to repeat the
 same browser walkthrough in fresh isolated local services. The command stops on
@@ -611,6 +612,7 @@ Commands:
 - `DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> DELIBERUM_RELEASE_SMOKE_BASE_URL=<provider-chat-completions-url> DELIBERUM_RELEASE_SMOKE_MODEL=<provider-model> corepack pnpm smoke:web-release-readiness`
 - `DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> DELIBERUM_RELEASE_SMOKE_BASE_URL=<provider-chat-completions-url> DELIBERUM_RELEASE_SMOKE_MODEL=<provider-model> DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
 - `DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> DELIBERUM_RELEASE_SMOKE_BASE_URL=<provider-chat-completions-url> DELIBERUM_RELEASE_SMOKE_MODEL=<provider-model> DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> DELIBERUM_RELEASE_SMOKE_BASE_URL=<provider-chat-completions-url> DELIBERUM_RELEASE_SMOKE_MODEL=<provider-model> DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
 
 Path covered:
 
@@ -633,6 +635,8 @@ Result:
 - Passed three consecutive focused two-perspective runs in fresh isolated local
   services.
 - Passed once on the Broader review three-perspective path.
+- Passed three consecutive Broader review three-perspective runs in fresh
+  isolated local services.
 - The latest verified real-provider blocker was the repository-local `.env`
   provider endpoint being unreachable, not a Deliberum product-loop failure with
   a reachable OpenAI-compatible provider.
@@ -640,8 +644,9 @@ Result:
 Limit:
 
 - This is still one external provider, one three-run focused batch, and one
-  Broader review pass. It does not prove broad provider compatibility,
-  long-run stability, quota resilience, or production-grade release readiness.
+  three-run Broader review batch. It does not prove broad provider
+  compatibility, long-run stability, quota resilience, or production-grade
+  release readiness.
 
 ### 2026-06-15 Provider Verification Failure Recovery Guard
 
