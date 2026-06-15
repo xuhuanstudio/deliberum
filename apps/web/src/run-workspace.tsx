@@ -50,6 +50,7 @@ import {
   buildProviderBackedDiscussionRunPlan,
   formatPresetJson,
   type ProviderBackedDiscussionPlanInput,
+  type ProviderBackedPerspectiveModelOverrides,
   type ProviderBackedPerspectiveCount
 } from "./run-presets";
 
@@ -168,6 +169,10 @@ type DiscussionCreationPreviewView = {
 type DiscussionPerspectiveRole = {
   role: string;
 };
+type DiscussionPerspectiveModelField = {
+  participantId: string;
+  label: string;
+};
 type DiscussionParticipantSourceView = {
   title: string;
   detail: string;
@@ -207,6 +212,21 @@ type RoomActivityPhaseView = {
   detail: string;
   updatesLabel: string;
 };
+
+const DISCUSSION_PERSPECTIVE_MODEL_FIELDS: DiscussionPerspectiveModelField[] = [
+  {
+    participantId: "provider-perspective-a",
+    label: "Perspective A model"
+  },
+  {
+    participantId: "provider-perspective-b",
+    label: "Perspective B model"
+  },
+  {
+    participantId: "provider-perspective-c",
+    label: "Perspective C model"
+  }
+];
 type RoomActivityGroup = {
   phase: RoomActivityPhaseId;
   activities: RoomActivityItem[];
@@ -295,6 +315,9 @@ export function RunNewPage() {
   const [modelPerspectiveCount, setModelPerspectiveCount] =
     useState<ProviderBackedPerspectiveCount>(requestedPerspectiveCount ?? 2);
   const [discussionModelOverride, setDiscussionModelOverride] = useState("");
+  const [customPerspectiveModelsEnabled, setCustomPerspectiveModelsEnabled] = useState(false);
+  const [perspectiveModelOverrides, setPerspectiveModelOverrides] =
+    useState<ProviderBackedPerspectiveModelOverrides>({});
   const [inputError, setInputError] = useState<string | null>(null);
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
@@ -326,6 +349,8 @@ export function RunNewPage() {
     demoAvailable: demoDiscussionAvailable,
     perspectiveCount: modelPerspectiveCount,
     modelOverride: discussionModelOverride,
+    customPerspectiveModelsEnabled,
+    perspectiveModelOverrides,
     setupKnown: Boolean(runtimeSetupPlan)
   });
   const selectedParticipantSourceAvailable =
@@ -410,6 +435,13 @@ export function RunNewPage() {
     void queryClient.invalidateQueries({ queryKey: ["runtime-profiles"] });
   }
 
+  function updatePerspectiveModelOverride(participantId: string, model: string) {
+    setPerspectiveModelOverrides((current) => ({
+      ...current,
+      [participantId]: model
+    }));
+  }
+
   function submitRunPlan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const parsed = parseJsonObjectInput(runPlanText, "Run plan");
@@ -458,7 +490,10 @@ export function RunNewPage() {
               providerBackedDiscussionSource,
               {
                 perspectiveCount: modelPerspectiveCount,
-                modelId: discussionModelOverride
+                modelId: discussionModelOverride,
+                perspectiveModels: customPerspectiveModelsEnabled
+                  ? perspectiveModelOverrides
+                  : undefined
               }
             )
           : undefined
@@ -503,6 +538,10 @@ export function RunNewPage() {
             onPerspectiveCountChange={setModelPerspectiveCount}
             modelOverride={discussionModelOverride}
             onModelOverrideChange={setDiscussionModelOverride}
+            customPerspectiveModelsEnabled={customPerspectiveModelsEnabled}
+            onCustomPerspectiveModelsEnabledChange={setCustomPerspectiveModelsEnabled}
+            perspectiveModelOverrides={perspectiveModelOverrides}
+            onPerspectiveModelOverrideChange={updatePerspectiveModelOverride}
             providerConnectionVerified={providerConnectionVerified}
             verificationPending={providerVerificationMutation.isPending}
             verificationError={providerVerificationMutation.error}
@@ -725,6 +764,10 @@ function DiscussionModelSetupPanel({
   onPerspectiveCountChange,
   modelOverride,
   onModelOverrideChange,
+  customPerspectiveModelsEnabled,
+  onCustomPerspectiveModelsEnabledChange,
+  perspectiveModelOverrides,
+  onPerspectiveModelOverrideChange,
   providerConnectionVerified,
   verificationPending,
   verificationError,
@@ -738,6 +781,10 @@ function DiscussionModelSetupPanel({
   onPerspectiveCountChange: (count: ProviderBackedPerspectiveCount) => void;
   modelOverride: string;
   onModelOverrideChange: (model: string) => void;
+  customPerspectiveModelsEnabled: boolean;
+  onCustomPerspectiveModelsEnabledChange: (enabled: boolean) => void;
+  perspectiveModelOverrides: ProviderBackedPerspectiveModelOverrides;
+  onPerspectiveModelOverrideChange: (participantId: string, model: string) => void;
   providerConnectionVerified: boolean;
   verificationPending: boolean;
   verificationError: Error | null;
@@ -751,6 +798,7 @@ function DiscussionModelSetupPanel({
     ? findProviderBackedDiscussionSource(setupPlan)
     : undefined;
   const modelBackedAvailable = Boolean(providerSource);
+  const perspectiveModelFields = getPerspectiveModelFields(perspectiveCount);
 
   return (
     <DataPanel
@@ -891,30 +939,85 @@ function DiscussionModelSetupPanel({
         </label>
       </fieldset>
       {modelBackedAvailable ? (
-        <label
-          className={`du-discussion-model-override ${
-            selectedSource === "model-backed" ? "" : "du-discussion-model-override-disabled"
-          }`}
-          htmlFor="discussion-model-override"
-        >
-          <span>
-            <strong>{t("Model for this discussion")}</strong>
-            <small>
-              {t(
-                "Leave blank to use the model saved in Setup / Models. A value here applies to every model-backed role in this discussion."
-              )}
-            </small>
-          </span>
-          <input
-            id="discussion-model-override"
-            value={modelOverride}
-            disabled={selectedSource !== "model-backed"}
-            autoComplete="off"
-            spellCheck={false}
-            placeholder={t("Use saved model setup")}
-            onChange={(event) => onModelOverrideChange(event.currentTarget.value)}
-          />
-        </label>
+        <div className="du-discussion-model-assignment">
+          <label
+            className={`du-discussion-model-override ${
+              selectedSource === "model-backed" ? "" : "du-discussion-model-override-disabled"
+            }`}
+            htmlFor="discussion-model-override"
+          >
+            <span>
+              <strong>{t("Model for this discussion")}</strong>
+              <small>
+                {t(
+                  "Leave blank to use the model saved in Setup / Models. A value here applies to every model-backed role in this discussion."
+                )}
+              </small>
+            </span>
+            <input
+              id="discussion-model-override"
+              value={modelOverride}
+              disabled={selectedSource !== "model-backed"}
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={t("Use saved model setup")}
+              onChange={(event) => onModelOverrideChange(event.currentTarget.value)}
+            />
+          </label>
+          <label
+            className={`du-perspective-model-toggle ${
+              selectedSource === "model-backed" ? "" : "du-perspective-model-toggle-disabled"
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={customPerspectiveModelsEnabled}
+              disabled={selectedSource !== "model-backed"}
+              onChange={(event) =>
+                onCustomPerspectiveModelsEnabledChange(event.currentTarget.checked)
+              }
+            />
+            <span>
+              <strong>{t("Customize perspective models")}</strong>
+              <small>
+                {t(
+                  "Give individual first-response perspectives their own model. Leave a field blank to use the shared model."
+                )}
+              </small>
+            </span>
+          </label>
+          {customPerspectiveModelsEnabled ? (
+            <div
+              className="du-perspective-model-grid"
+              aria-label={t("Perspective model assignment")}
+            >
+              {perspectiveModelFields.map((field) => (
+                <label key={field.participantId} htmlFor={`${field.participantId}-model`}>
+                  <span>{t(field.label)}</span>
+                  <input
+                    id={`${field.participantId}-model`}
+                    value={perspectiveModelOverrides[field.participantId] ?? ""}
+                    disabled={selectedSource !== "model-backed"}
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder={t("Use shared model")}
+                    onChange={(event) =>
+                      onPerspectiveModelOverrideChange(
+                        field.participantId,
+                        event.currentTarget.value
+                      )
+                    }
+                  />
+                </label>
+              ))}
+              <p>
+                {t(
+                  "Perspective model overrides affect independent first responses only. Review roles use the shared model."
+                )}
+              </p>
+            </div>
+          ) : null}
+        </div>
       ) : null}
       <p className="du-discussion-setup-note">
         {selectedSource === "model-backed" && modelBackedAvailable
@@ -1027,6 +1130,8 @@ function buildDiscussionCreationPreview(input: {
   demoAvailable: boolean;
   perspectiveCount: ProviderBackedPerspectiveCount;
   modelOverride: string;
+  customPerspectiveModelsEnabled: boolean;
+  perspectiveModelOverrides: ProviderBackedPerspectiveModelOverrides;
   setupKnown: boolean;
 }): DiscussionCreationPreviewView {
   if (!input.setupKnown) {
@@ -1059,6 +1164,9 @@ function buildDiscussionCreationPreview(input: {
 
   if (input.selectedSource === "model-backed" && input.providerSource) {
     const sharedModel = input.modelOverride.trim();
+    const customizedPerspectiveModelCount = input.customPerspectiveModelsEnabled
+      ? countPerspectiveModelOverrides(input.perspectiveModelOverrides, input.perspectiveCount)
+      : 0;
 
     return {
       title: "Ready to create a model-backed discussion",
@@ -1096,6 +1204,17 @@ function buildDiscussionCreationPreview(input: {
             : "Every model-backed role will use the model saved in Setup / Models.",
           tone: "ok"
         },
+        ...(customizedPerspectiveModelCount > 0
+          ? [
+              {
+                label: "Perspective model assignment",
+                value: "Perspective models customized",
+                detail:
+                  "Customized perspective models only affect independent first responses. Review roles use the shared model.",
+                tone: "ok" as const
+              }
+            ]
+          : []),
         {
           label: "After create",
           value: "Discussion room",
@@ -1264,6 +1383,23 @@ function getDiscussionPerspectiveRoles(input: {
   }
 
   return perspectiveRoles;
+}
+
+function getPerspectiveModelFields(
+  perspectiveCount: ProviderBackedPerspectiveCount
+): DiscussionPerspectiveModelField[] {
+  return DISCUSSION_PERSPECTIVE_MODEL_FIELDS.slice(0, perspectiveCount);
+}
+
+function countPerspectiveModelOverrides(
+  overrides: ProviderBackedPerspectiveModelOverrides,
+  perspectiveCount: ProviderBackedPerspectiveCount
+): number {
+  return getPerspectiveModelFields(perspectiveCount).filter((field) => {
+    const model = overrides[field.participantId]?.trim();
+
+    return Boolean(model);
+  }).length;
 }
 
 function describeDiscussionModelSetup(

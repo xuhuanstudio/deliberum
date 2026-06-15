@@ -128,7 +128,7 @@ node scripts/check-local-prerequisites.mjs
 
 5. Start and continue a model-backed discussion.
 
-   When setup is ready, use **Start focused discussion** for two model perspectives or **Start broader discussion** for three model perspectives. You can also open `/runs/new?participants=model-backed`. Write the discussion question, optionally set **Model for this discussion** to override the saved model for all model-backed roles in this one discussion, create the discussion, open the room, then use **Continue discussion** to collect participant perspectives and review strongest options, open disagreements, evidence gaps, risks, the current conclusion, and next recommended actions.
+   When setup is ready, use **Start focused discussion** for two model perspectives or **Start broader discussion** for three model perspectives. You can also open `/runs/new?participants=model-backed`. Write the discussion question, optionally set **Model for this discussion** to override the saved model for all model-backed roles in this one discussion, and use **Customize perspective models** only when individual first-response perspectives should use different models. Review roles still use the shared model. Create the discussion, open the room, then use **Continue discussion** to collect participant perspectives and review strongest options, open disagreements, evidence gaps, risks, the current conclusion, and next recommended actions.
 
 If you do not have a provider ready yet, use the demo discussion path first. The demo is useful for learning the room flow, but real decisions should use configured model-backed participants and verified provider setup.
 

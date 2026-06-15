@@ -803,22 +803,25 @@ Path covered:
    links with the expected perspective depth.
 9. Opens the broader start link and confirms Broader review preselects
    Perspective C.
-10. Creates a model-backed discussion from the browser.
-11. Uses Continue discussion from the room.
-12. Confirms a transient provider first-response failure pauses the discussion
+10. Sets a shared per-discussion model and a Perspective A model override,
+    confirming the override only affects independent first responses while
+    review roles keep the shared model.
+11. Creates a model-backed discussion from the browser.
+12. Uses Continue discussion from the room.
+13. Confirms a transient provider first-response failure pauses the discussion
     in user-facing language without showing raw provider error categories.
-13. Uses Continue discussion again and confirms the retry completes the
+14. Uses Continue discussion again and confirms the retry completes the
     model-backed discussion.
-14. Confirms readable participant perspectives, strongest option, open
+15. Confirms readable participant perspectives, strongest option, open
     disagreement, missing evidence, risk entry point, current conclusion, and
     user-facing next actions are visible.
-15. Opens the current conclusion page and confirms the recommendation, open
+16. Opens the current conclusion page and confirms the recommendation, open
     disagreement, missing evidence, concrete risk text, and next recommended
     action are visible.
-16. Scans setup, start, paused retry, room, and outcome default text to confirm
-    it does not show the dummy API key, provider base URL, model value, OpenAI
-    API env var, provider config id, object ids, raw JSON, low-level id labels,
-    or provider error categories.
+17. Scans setup, start, paused retry, room, and outcome default text to confirm
+    it does not show the dummy API key, provider base URL, saved provider model
+    value, OpenAI API env var, provider config id, object ids, raw JSON,
+    low-level id labels, or provider error categories.
 
 Limit:
 
@@ -878,12 +881,15 @@ Path covered:
 3. Saves the model setup without rendering the secret in default page text.
 4. Verifies the provider connection.
 5. Verifies the Setup page's focused and broader model-backed start links.
-6. Creates a model-backed discussion from `/runs/new?participants=model-backed`.
-7. Opens the Discussion Room.
-8. Uses `Continue discussion`.
-9. Verifies the continuation request includes model-backed first responses,
+6. Verifies the start page can set a shared model override plus individual
+   first-response Perspective A/C model overrides without exposing secrets or
+   provider config ids in the default UI.
+7. Creates a model-backed discussion from `/runs/new?participants=model-backed`.
+8. Opens the Discussion Room.
+9. Uses `Continue discussion`.
+10. Verifies the continuation request includes model-backed first responses,
    extraction, review, and finalization roles.
-10. Confirms the room shows participant contributions, a strongest option, an
+11. Confirms the room shows participant contributions, a strongest option, an
     open disagreement count, an evidence-gap reason, an answer requirement,
     risk-review text, a reviewable current conclusion, and user-facing next
     actions.

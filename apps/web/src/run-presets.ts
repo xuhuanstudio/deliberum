@@ -84,10 +84,12 @@ export type ProviderBackedDiscussionPlanInput = {
 };
 
 export type ProviderBackedPerspectiveCount = 2 | 3;
+export type ProviderBackedPerspectiveModelOverrides = Record<string, string | undefined>;
 
 export type ProviderBackedDiscussionPlanOptions = {
   perspectiveCount?: ProviderBackedPerspectiveCount;
   modelId?: string;
+  perspectiveModels?: ProviderBackedPerspectiveModelOverrides;
 };
 
 const PROVIDER_BACKED_DISCUSSION_TIMEOUTS = {
@@ -178,19 +180,29 @@ export function buildProviderBackedDiscussionRunPlan(
   const perspectiveCount = options.perspectiveCount ?? 2;
   const perspectives = PROVIDER_BACKED_PERSPECTIVES.slice(0, perspectiveCount);
   const modelId = options.modelId?.trim();
-  const providerConfig: Record<string, unknown> = {
-    id: provider.providerConfigId,
-    adapterId: provider.adapterId,
-    providerConfigId: provider.providerConfigId
-  };
+  const providerConfigs = [
+    createProviderBackedModelConfig(provider.providerConfigId, provider, modelId)
+  ];
+  const participants = perspectives.map((perspective) => {
+    const perspectiveModel = options.perspectiveModels?.[perspective.id]?.trim();
+    const providerConfigId = perspectiveModel
+      ? `${provider.providerConfigId}-${perspective.id.replace("provider-", "")}`
+      : provider.providerConfigId;
 
-  if (modelId) {
-    providerConfig.modelId = modelId;
-  }
+    if (perspectiveModel) {
+      providerConfigs.push(
+        createProviderBackedModelConfig(providerConfigId, provider, perspectiveModel)
+      );
+    }
 
-  if (provider.apiKeyEnvVar) {
-    providerConfig.apiKeyEnvVar = provider.apiKeyEnvVar;
-  }
+    return {
+      id: perspective.id,
+      kind: "model",
+      displayName: perspective.displayName,
+      adapterId: provider.adapterId,
+      providerConfigId
+    };
+  });
 
   return {
     ...cloneJsonObject(LOCAL_PRESET_RUN_PLAN),
@@ -212,14 +224,8 @@ export function buildProviderBackedDiscussionRunPlan(
       "Keep provider credentials saved locally and out of the discussion.",
       "Keep the conclusion provisional until reviewed."
     ]),
-    participants: perspectives.map((perspective) => ({
-      id: perspective.id,
-      kind: "model",
-      displayName: perspective.displayName,
-      adapterId: provider.adapterId,
-      providerConfigId: provider.providerConfigId
-    })),
-    providerConfigs: [providerConfig],
+    participants,
+    providerConfigs,
     timeouts: PROVIDER_BACKED_DISCUSSION_TIMEOUTS,
     output: {
       language: "en",
@@ -238,6 +244,28 @@ export function buildProviderBackedDiscussionRunPlan(
       participantIds: perspectives.map((perspective) => perspective.id)
     }
   };
+}
+
+function createProviderBackedModelConfig(
+  id: string,
+  provider: ProviderBackedDiscussionPlanInput,
+  modelId: string | undefined
+): Record<string, unknown> {
+  const providerConfig: Record<string, unknown> = {
+    id,
+    adapterId: provider.adapterId,
+    providerConfigId: provider.providerConfigId
+  };
+
+  if (modelId) {
+    providerConfig.modelId = modelId;
+  }
+
+  if (provider.apiKeyEnvVar) {
+    providerConfig.apiKeyEnvVar = provider.apiKeyEnvVar;
+  }
+
+  return providerConfig;
 }
 
 export function parseBriefLines(value: string): string[] {

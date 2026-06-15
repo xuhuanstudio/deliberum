@@ -2467,29 +2467,47 @@ textarea:focus-visible {
   opacity: 0.74;
 }
 
-.du-discussion-model-override {
+.du-discussion-model-assignment {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.du-discussion-model-override,
+.du-perspective-model-toggle {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 0.7fr);
   gap: 12px;
   align-items: center;
-  margin-top: 12px;
   border: 1px solid var(--du-line);
   border-radius: 8px;
   background: #fbfaf6;
   padding: 12px;
 }
 
-.du-discussion-model-override > span {
+.du-perspective-model-toggle {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.du-discussion-model-override > span,
+.du-perspective-model-toggle > span {
   display: grid;
   gap: 4px;
 }
 
-.du-discussion-model-override strong {
+.du-perspective-model-toggle > input {
+  margin-top: 3px;
+}
+
+.du-discussion-model-override strong,
+.du-perspective-model-toggle strong {
   color: var(--du-text);
   font-size: 0.88rem;
 }
 
-.du-discussion-model-override small {
+.du-discussion-model-override small,
+.du-perspective-model-toggle small {
   color: var(--du-muted);
   font-size: 0.78rem;
   line-height: 1.45;
@@ -2502,6 +2520,41 @@ textarea:focus-visible {
 .du-discussion-model-override-disabled {
   background: #f4f1e9;
   opacity: 0.74;
+}
+
+.du-perspective-model-toggle-disabled {
+  background: #f4f1e9;
+  cursor: not-allowed;
+  opacity: 0.74;
+}
+
+.du-perspective-model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fffefa;
+  padding: 12px;
+}
+
+.du-perspective-model-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.du-perspective-model-grid span {
+  color: var(--du-text);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.du-perspective-model-grid p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--du-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .du-participant-lineup {
@@ -3464,6 +3517,8 @@ textarea:focus-visible {
   .du-provider-check-grid,
   .du-discussion-setup-grid,
   .du-discussion-model-override,
+  .du-perspective-model-toggle,
+  .du-perspective-model-grid,
   .du-creation-preview-grid,
   .du-participant-lineup-grid,
   .du-stage-grid,

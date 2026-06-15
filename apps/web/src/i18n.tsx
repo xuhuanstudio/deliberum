@@ -494,6 +494,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u6a21\u578b\u652f\u6301\u7684\u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\u3002",
   "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together.":
     "\u6682\u4e0d\u652f\u6301\u6309\u89d2\u8272\u5355\u72ec\u7f16\u8f91\uff1b\u8bf7\u4f7f\u7528\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u4e00\u8d77\u66f4\u6539\u6240\u6709\u6a21\u578b\u652f\u6301\u7684\u89d2\u8272\u3002",
+  "The start page can customize first-response perspective models for a discussion; review roles still use the shared provider model.":
+    "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u7684\u6a21\u578b\uff1b\u5ba1\u67e5\u89d2\u8272\u4ecd\u4f7f\u7528\u5171\u4eab\u63d0\u4f9b\u65b9\u6a21\u578b\u3002",
   "Edit shared provider setup": "\u7f16\u8f91\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
   "Review provider setup": "\u68c0\u67e5\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
   "Start discussion will select configured model participants by default while keeping demo participants available.":
@@ -694,6 +696,16 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Leave blank to use the model saved in Setup / Models. A value here applies to every model-backed role in this discussion.":
     "\u7559\u7a7a\u5219\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u8fd9\u91cc\u7684\u503c\u4f1a\u5e94\u7528\u5230\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u3002",
   "Use saved model setup": "\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\u8bbe\u7f6e",
+  "Customize perspective models": "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
+  "Give individual first-response perspectives their own model. Leave a field blank to use the shared model.":
+    "\u4e3a\u5355\u4e2a\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u6307\u5b9a\u81ea\u5df1\u7684\u6a21\u578b\u3002\u7559\u7a7a\u5219\u4f7f\u7528\u5171\u4eab\u6a21\u578b\u3002",
+  "Perspective model assignment": "\u89c6\u89d2\u6a21\u578b\u5206\u914d",
+  "Perspective A model": "\u89c6\u89d2 A \u6a21\u578b",
+  "Perspective B model": "\u89c6\u89d2 B \u6a21\u578b",
+  "Perspective C model": "\u89c6\u89d2 C \u6a21\u578b",
+  "Use shared model": "\u4f7f\u7528\u5171\u4eab\u6a21\u578b",
+  "Perspective model overrides affect independent first responses only. Review roles use the shared model.":
+    "\u89c6\u89d2\u6a21\u578b\u8986\u76d6\u4ec5\u5f71\u54cd\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u5171\u4eab\u6a21\u578b\u3002",
   "The selected depth controls how many independent model participants answer before Deliberum compares options.":
     "\u9009\u5b9a\u7684\u6df1\u5ea6\u4f1a\u51b3\u5b9a Deliberum \u6bd4\u8f83\u9009\u9879\u524d\uff0c\u6709\u591a\u5c11\u4e2a\u72ec\u7acb\u6a21\u578b\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u3002",
   "Demo walkthroughs use two built-in sample perspectives. Choose model-backed participants to use a broader independent review.":
@@ -709,6 +721,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u90fd\u4f1a\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\u8986\u76d6\u503c\u3002",
   "Every model-backed role will use the model saved in Setup / Models.":
     "\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u90fd\u4f1a\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002",
+  "Perspective models customized": "\u5df2\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
+  "Customized perspective models only affect independent first responses. Review roles use the shared model.":
+    "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u5171\u4eab\u6a21\u578b\u3002",
   "Requirements and disagreement review": "\u8981\u6c42\u4e0e\u5206\u6b67\u5ba1\u67e5",
   "Evidence and risk review": "\u8bc1\u636e\u4e0e\u98ce\u9669\u5ba1\u67e5",
   "Current conclusion draft": "\u5f53\u524d\u7ed3\u8bba\u8349\u7a3f",
