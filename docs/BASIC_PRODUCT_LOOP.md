@@ -103,20 +103,15 @@ against one real external OpenAI-compatible provider. Treat this as Basic
 Product Loop evidence for the current provider path, not as broad provider
 compatibility or production-grade release readiness.
 
-The current convergence target is real-provider recovery hardening. The
-repeated real-provider stability gate is now closed for the v1.0 supported
-OpenAI-compatible Web setup path, so the next release work should focus on
-provider verification failures, rate limits, timeouts, malformed output, failed
-stages, and partial completion states in normal-user language. The default Web
-path now has recovery guidance for safe failed-stage responses,
-OpenAI-compatible structured extraction has a conservative fallback when a
-provider returns JSON that still fails Deliberum organizer validation after
-retry, verification has a default timeout for non-responsive providers, and the
-default UI explains when the organizer fallback was used. The default
-model-backed review policy also preserves the user path when the reviewer
-challenges generated proposals: Deliberum can still compile a provisional
-conclusion while keeping challenges, objections, missing evidence, risks, and
-next actions visible for review.
+The current convergence target has moved from Basic Product Loop completion to
+the v1.0 Production Readiness Matrix. Provider stability and recovery gates are
+now closed for the current supported scope, model/participant management is
+closed for one Web-managed OpenAI-compatible provider, and storage recovery is
+covered by `smoke:storage-recovery` plus `docs/STORAGE_RECOVERY.md`.
+
+Use [v1.0 Production Readiness Matrix](V1_0_PRODUCTION_READINESS_MATRIX.md) for
+the next incomplete production gate. Do not use this product-loop matrix to
+justify new runtime or Web polish after rows 1 through 16 are already verified.
 
 Release-readiness walkthrough requirements:
 
@@ -745,7 +740,7 @@ Path covered:
 
 Result:
 
-- The latest local real-provider walkthrough is blocked at provider
+- The repository-local provider walkthrough in this guard was blocked at provider
   verification with safe code `provider_network_error`, but the default Web path
   gives normal users a safe recovery path instead of exposing raw diagnostics or
   leaving them without a next action.

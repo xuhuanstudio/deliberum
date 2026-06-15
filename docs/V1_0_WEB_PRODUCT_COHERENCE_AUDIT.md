@@ -106,10 +106,13 @@ start, Discussion Room review, and current conclusion review. Future Web
 changes must continue extending the default-view safety scans whenever they add
 new default pages, start modes, recovery states, or outcome surfaces.
 
-## Next Incomplete Gate
+## Current Matrix Position
 
-The next release blocker is Gate 3: real OpenAI-compatible provider workflows
-must be stable across repeated focused and broader-review release smokes.
+Gate 2 remains complete. Later gates have since closed real-provider stability,
+provider recovery, default-view safety, Advanced / Developer Mode boundaries,
+model and participant management, and storage recovery for the current v1.0
+supported scope. Use [v1.0 Production Readiness Matrix](V1_0_PRODUCTION_READINESS_MATRIX.md)
+for the current next incomplete gate.
 
 Do not keep looping on Gate 2 docs or copy unless a new Web product-coherence
 blocker is reproduced.

@@ -102,7 +102,9 @@ Future default routes, start modes, recovery states, outcome surfaces, model
 setup surfaces, or participant-management surfaces must extend the same
 default-view safety scans before they can be considered release-ready.
 
-## Next Incomplete Gate
+## Current Matrix Position
 
-The next production blocker is Gate 6: Advanced / Developer Mode must preserve
-diagnostics without leading the normal user path.
+Gate 5 remains complete. Advanced / Developer Mode boundary evidence has since
+closed Gate 6 for the current v1.0 supported Web scope. Use
+[v1.0 Production Readiness Matrix](V1_0_PRODUCTION_READINESS_MATRIX.md) for the
+current next incomplete gate.

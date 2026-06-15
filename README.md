@@ -181,6 +181,7 @@ This command starts an isolated local daemon and Web UI, configures the provider
 - [v1.0 Real Provider Stability Audit](docs/V1_0_REAL_PROVIDER_STABILITY_AUDIT.md)
 - [v1.0 Model and Participant Management Audit](docs/V1_0_MODEL_PARTICIPANT_MANAGEMENT_AUDIT.md)
 - [v1.0 Storage Compatibility and Recovery Audit](docs/V1_0_STORAGE_RECOVERY_AUDIT.md)
+- [v1.0 Release Notes](docs/V1_0_RELEASE_NOTES.md)
 - [Web UI Spec](docs/WEB_UI_SPEC.md)
 - [Web Discussion Room Walkthrough](docs/WEB_DISCUSSION_ROOM_WALKTHROUGH.md)
 - [Roadmap](ROADMAP.md)
