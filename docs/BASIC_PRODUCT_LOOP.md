@@ -147,6 +147,11 @@ daemon setup, `corepack pnpm smoke:web-release-readiness` can reuse those values
 Explicit `DELIBERUM_RELEASE_SMOKE_*` variables still take precedence for
 provider-specific release checks.
 
+Set `DELIBERUM_RELEASE_SMOKE_RUNS=3` or another positive integer to repeat the
+same browser walkthrough in fresh isolated local services. The command stops on
+the first failed run, which makes intermittent real-provider product-loop
+failures easier to reproduce without hand-written shell loops.
+
 The smoke relies on Web setup's default Structured review compatibility option
 for organizer, reviewer, risk-review, and conclusion-writer stages. This keeps
 the release-readiness path aligned with what a normal local user can do in Web
@@ -190,7 +195,7 @@ with supporting evidence for row 16 on the real-provider Web path.
 
 Command:
 
-- `corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_RUNS=2 corepack pnpm smoke:web-release-readiness`
 
 Path covered:
 
@@ -425,14 +430,14 @@ Path covered:
 
 Result:
 
-- Passed.
+- Passed twice consecutively.
 - The provider verification recovery batch did not regress the real-provider
   default path; the Basic Product Loop can still complete through Web-managed
   setup with a real external OpenAI-compatible provider.
 
 Limit:
 
-- This is one opt-in real-provider pass. It does not prove broad provider
+- This is one opt-in repeated real-provider pass. It does not prove broad provider
   compatibility, long-running stability, or production-grade release readiness.
   Future convergence work should keep using the release-readiness smoke to find
   the first normal-user blocker on the real provider path.

@@ -122,6 +122,8 @@ corepack pnpm smoke:web-release-readiness
 
 If your local `.env` already contains `DELIBERUM_OPENAI_API_KEY`, `DELIBERUM_OPENAI_BASE_URL`, and `DELIBERUM_OPENAI_MODEL` from Web setup or local daemon setup, you can run `corepack pnpm smoke:web-release-readiness` without duplicating those values. The `DELIBERUM_RELEASE_SMOKE_*` variables override local `.env` values when set.
 
+For stability checks before a release, set `DELIBERUM_RELEASE_SMOKE_RUNS=3` or another positive integer to run the same browser walkthrough repeatedly in isolated local services. The command stops on the first failed run.
+
 This command starts an isolated local daemon and Web UI, configures the provider through Web with Structured review compatibility enabled by default, verifies the connection, starts and continues a model-backed discussion, opens the current conclusion, and scans the default UI for secrets and low-level ids. It is not part of default CI because it needs a real provider key and network access.
 
 ## Documentation
