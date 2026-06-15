@@ -106,8 +106,10 @@ release-readiness walkthrough through the Web-managed setup path, including the
 default Structured review compatibility option, and fix the first blocking
 normal-user recovery or completion step if the provider still pauses or fails.
 The default Web path now has recovery guidance for safe failed-stage responses,
-but repeated real-provider walkthroughs are still needed before release
-hardening can be considered complete.
+and OpenAI-compatible structured extraction has a conservative fallback when a
+provider returns JSON that still fails the organizer schema after retry. Repeated
+real-provider walkthroughs are still needed before release hardening can be
+considered complete.
 
 Release-readiness walkthrough requirements:
 
@@ -226,6 +228,54 @@ Limit:
 - An earlier run in the same batch exposed an intermittent real-provider
   partial first-response failure followed by a 400 on retry. The default path can
   now complete, but provider failure recovery remains a release-hardening gap.
+
+### 2026-06-15 Structured Extraction Fallback Release Smoke
+
+Scope: rows 8 through 15 against the same real external OpenAI-compatible
+provider, with supporting evidence for row 16 on failure diagnostics.
+
+Commands:
+
+- `corepack pnpm smoke:web-release-readiness`
+- `corepack pnpm --filter @deliberum/daemon test -- -t "structured provider schema repair"`
+- `corepack pnpm --filter @deliberum/daemon typecheck`
+
+Path covered:
+
+1. Ran two consecutive real-provider release-readiness browser walkthroughs.
+2. The first completed, and the second reproduced a real blocker after
+   participant first responses: extraction paused with `extraction_output_invalid`.
+3. Added release-smoke run-state diagnostics so future failures report safe
+   round status, stage status, error categories, retry attempts, and diagnostics
+   without printing provider secrets or raw model outputs.
+4. Added a structured extraction fallback for OpenAI-compatible providers when
+   Web-managed Structured review compatibility requests JSON output, the initial
+   organizer output fails the schema, and the schema-repair retry still fails.
+5. Re-ran the real-provider Web walkthrough after rebuilding the daemon and
+   confirmed the default path reached readable participant perspectives,
+   strongest current options, open disagreements, missing evidence, risks,
+   current conclusion, and next recommended actions.
+
+Result:
+
+- Fixed the first verified real-provider blocker in the default Web product
+  loop: schema-invalid organizer output no longer leaves a normal user stuck at
+  `waiting_for_generators`.
+- The fallback is conservative and traceable: it creates provisional proposal
+  material from revealed first responses, keeps an open objection, adds a
+  high-priority human-confirmation evidence need, and keeps the conclusion
+  provisional.
+- The fallback is limited to the structured review compatibility path. Lower
+  level provider paths without `json_object` response formatting continue to
+  surface extraction failures instead of silently masking configuration issues.
+
+Limit:
+
+- This improves recovery for one verified real-provider schema failure. It does
+  not prove broad provider compatibility, low latency, or production-grade
+  stability. More repeated real-provider walkthroughs and clearer in-room
+  visibility that a conservative organizer fallback was used remain release
+  hardening work.
 
 ### 2026-06-15 Web Entry Smoke
 

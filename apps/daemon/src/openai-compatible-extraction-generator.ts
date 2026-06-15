@@ -80,19 +80,20 @@ export class OpenAICompatibleExtractionGenerator implements ExtractionGenerator 
     providerRuntimeConfig?: ProviderRuntimeConfig
   ): Promise<ExtractionGeneratorResult> {
     const messages = createExtractionMessages(context);
-    const parsed = await completeOpenAICompatibleStructuredJsonObject<ExtractionRunErrorCategory>({
-      config: {
-        baseUrl: providerRuntimeConfig?.baseUrl ?? this.baseUrl,
-        apiKey: providerRuntimeConfig?.apiKey ?? this.apiKey,
-        model: providerRuntimeConfig?.modelId ?? this.model,
-        endpointPath: providerRuntimeConfig?.endpointPath ?? this.endpointPath,
-        timeoutMs: providerRuntimeConfig?.timeoutMs ?? this.timeoutMs,
-        requestOptions: {
-          ...(this.requestOptions ?? {}),
-          ...(providerRuntimeConfig?.requestOptions ?? {})
-        },
-        ...(this.fetch ? { fetch: this.fetch } : {})
+    const completionConfig = {
+      baseUrl: providerRuntimeConfig?.baseUrl ?? this.baseUrl,
+      apiKey: providerRuntimeConfig?.apiKey ?? this.apiKey,
+      model: providerRuntimeConfig?.modelId ?? this.model,
+      endpointPath: providerRuntimeConfig?.endpointPath ?? this.endpointPath,
+      timeoutMs: providerRuntimeConfig?.timeoutMs ?? this.timeoutMs,
+      requestOptions: {
+        ...(this.requestOptions ?? {}),
+        ...(providerRuntimeConfig?.requestOptions ?? {})
       },
+      ...(this.fetch ? { fetch: this.fetch } : {})
+    };
+    const parsed = await completeOpenAICompatibleStructuredJsonObject<ExtractionRunErrorCategory>({
+      config: completionConfig,
       messages,
       malformedResponseCategory: "provider_malformed_response",
       outputDescription: "extraction output",
@@ -106,18 +107,7 @@ export class OpenAICompatibleExtractionGenerator implements ExtractionGenerator 
     }
 
     const retryParsed = await completeOpenAICompatibleStructuredJsonObject<ExtractionRunErrorCategory>({
-      config: {
-        baseUrl: providerRuntimeConfig?.baseUrl ?? this.baseUrl,
-        apiKey: providerRuntimeConfig?.apiKey ?? this.apiKey,
-        model: providerRuntimeConfig?.modelId ?? this.model,
-        endpointPath: providerRuntimeConfig?.endpointPath ?? this.endpointPath,
-        timeoutMs: providerRuntimeConfig?.timeoutMs ?? this.timeoutMs,
-        requestOptions: {
-          ...(this.requestOptions ?? {}),
-          ...(providerRuntimeConfig?.requestOptions ?? {})
-        },
-        ...(this.fetch ? { fetch: this.fetch } : {})
-      },
+      config: completionConfig,
       messages: [
         ...messages,
         {
@@ -131,7 +121,18 @@ export class OpenAICompatibleExtractionGenerator implements ExtractionGenerator 
         new OpenAICompatibleExtractionGeneratorError(message, safeCategory, safeDiagnostics)
     });
 
-    return parseExtractionOutput(retryParsed);
+    try {
+      return parseExtractionOutput(retryParsed);
+    } catch (error) {
+      if (
+        isExtractionSchemaError(error) &&
+        completionConfig.requestOptions.responseFormat === "json_object"
+      ) {
+        return createFallbackExtractionResult(context);
+      }
+
+      throw error;
+    }
   }
 }
 
@@ -288,4 +289,145 @@ function parseExtractionOutput(parsed: unknown): ExtractionGeneratorResult {
   }
 
   return extraction.data;
+}
+
+function isExtractionSchemaError(error: unknown): boolean {
+  return error instanceof OpenAICompatibleExtractionGeneratorError &&
+    error.safeCategory === "extraction_output_invalid";
+}
+
+function createFallbackExtractionResult(context: ExtractionContext): ExtractionGeneratorResult {
+  const allowedSourceEventIdSet = new Set(context.metadata.allowedSourceEventIds);
+  const traceableContributions = context.contributions.filter((contribution) =>
+    allowedSourceEventIdSet.has(contribution.id)
+  );
+  const sourceEventIds = traceableContributions.map((contribution) => contribution.id);
+
+  if (sourceEventIds.length === 0) {
+    throw new OpenAICompatibleExtractionGeneratorError(
+      "OpenAI-compatible extraction fallback could not find traceable source contributions.",
+      "extraction_output_invalid"
+    );
+  }
+
+  const firstSourceEventId = sourceEventIds[0]!;
+  const claims = traceableContributions.map((contribution, index) => {
+    const claimId = `fallback-claim-${index + 1}`;
+
+    return {
+      id: claimId,
+      content: [
+        `${formatParticipantLabel(contribution.participantId)} contributed an independent first response that should be reviewed before relying on the conclusion.`,
+        `Summary: ${summarizeContributionPayload(contribution.payload)}`
+      ].join(" "),
+      scope: "process" as const,
+      sourceEventIds: [contribution.id],
+      supports: ["fallback-candidate-1"]
+    };
+  });
+  const claimIds = claims.map((claim) => claim.id);
+  const firstClaimId = claimIds[0]!;
+
+  return {
+    candidates: [
+      {
+        id: "fallback-candidate-1",
+        title: "Review the independent first responses before deciding",
+        description:
+          "Use the revealed participant responses as provisional discussion material, then verify missing evidence, disagreements, and risks before relying on a conclusion.",
+        sourceEventIds,
+        status: "active",
+        supportedBy: claimIds,
+        attackedBy: ["fallback-objection-1"],
+        qualityObligationIds: ["fallback-quality-1"],
+        assumptions: [
+          "The provider returned JSON that could not be used as structured organizer output."
+        ],
+        tradeoffs: [
+          "This fallback keeps the discussion moving, but it is less specific than a successful structured organizer pass."
+        ],
+        applicableWhen: [
+          "Use when model-backed first responses are available but organizer extraction needs recovery."
+        ]
+      }
+    ],
+    claims,
+    objections: [
+      {
+        id: "fallback-objection-1",
+        targetId: "fallback-candidate-1",
+        failureMode: "Structured organizer output was invalid.",
+        consequence:
+          "The current conclusion must remain provisional until the participant responses are checked against evidence and open disagreements.",
+        severityClaim: "major",
+        status: "open",
+        sourceEventIds,
+        responses: []
+      }
+    ],
+    evidenceNeeds: [
+      {
+        id: "fallback-evidence-1",
+        targetClaimId: firstClaimId,
+        requiredKind: "human_confirmation",
+        reason:
+          "A human should confirm that the fallback interpretation reflects the revealed participant responses before relying on the conclusion.",
+        priority: "high",
+        status: "open",
+        sourceEventIds: [firstSourceEventId]
+      }
+    ],
+    qualityObligations: [
+      {
+        id: "fallback-quality-1",
+        scope: "final_output",
+        requirement:
+          "State that the organizer used a conservative fallback and keep the conclusion provisional until evidence and disagreements are reviewed.",
+        status: "unanswered",
+        sourceEventIds,
+        supportingRefIds: claimIds,
+        unresolvedObjectionIds: ["fallback-objection-1"]
+      }
+    ],
+    rationale:
+      "The provider did not return schema-valid organizer output after a structured retry, so Deliberum preserved the user path with a traceable, conservative extraction fallback grounded in revealed first responses."
+  };
+}
+
+function formatParticipantLabel(participantId: string): string {
+  if (participantId.endsWith("-a")) {
+    return "Perspective A";
+  }
+
+  if (participantId.endsWith("-b")) {
+    return "Perspective B";
+  }
+
+  if (participantId.endsWith("-c")) {
+    return "Perspective C";
+  }
+
+  return participantId;
+}
+
+function summarizeContributionPayload(payload: unknown): string {
+  const content = readStringProperty(payload, "content") ??
+    (typeof payload === "string" ? payload : undefined) ??
+    JSON.stringify(payload);
+  const normalized = content.replace(/\s+/g, " ").trim();
+
+  if (normalized.length === 0) {
+    return "The response was present but did not include readable text.";
+  }
+
+  return normalized.length > 280 ? `${normalized.slice(0, 277)}...` : normalized;
+}
+
+function readStringProperty(value: unknown, key: string): string | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const entry = (value as Record<string, unknown>)[key];
+  return typeof entry === "string" ? entry : undefined;
 }

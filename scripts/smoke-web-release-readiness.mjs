@@ -78,6 +78,7 @@ try {
       [
         "Release readiness browser smoke failed.",
         await formatPageDebug(activePage),
+        await formatRunDebug(activePage),
         latestContinuationDebug,
         formatProcessOutput(daemon.stdout, daemon.stderr, "daemon"),
         formatProcessOutput(web.stdout, web.stderr, "web")
@@ -402,6 +403,106 @@ async function formatPageDebug(page) {
   } catch (error) {
     return `page output unavailable: ${error.message}`;
   }
+}
+
+async function formatRunDebug(page) {
+  const runId = extractRunIdFromPage(page);
+  if (!runId) {
+    return "run debug: unavailable.";
+  }
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${daemonPort}/runs/${encodeURIComponent(runId)}`);
+    const payload = await response.json();
+
+    return redactSensitive(
+      [
+        `run debug HTTP ${response.status}:`,
+        JSON.stringify(summarizeRunDebugPayload(payload), null, 2)
+      ].join("\n")
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `run debug unavailable: ${message}`;
+  }
+}
+
+function extractRunIdFromPage(page) {
+  if (!page) {
+    return undefined;
+  }
+
+  try {
+    const pathname = new URL(page.url()).pathname;
+    const match = /^\/runs\/([^/?#]+)/.exec(pathname);
+    const value = match?.[1];
+
+    if (!value || value === "new") {
+      return undefined;
+    }
+
+    return decodeURIComponent(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function summarizeRunDebugPayload(payload) {
+  const run = readRecordValue(payload, "run");
+  if (!run || typeof run !== "object") {
+    return {
+      run: "unavailable"
+    };
+  }
+
+  return {
+    status: readRecordValue(run, "status"),
+    sealedDivergenceRound: summarizeSealedDivergenceRound(
+      readRecordValue(run, "sealedDivergenceRound")
+    ),
+    extractionRounds: summarizeRoundArray(readRecordValue(run, "extractionRounds")),
+    proposalReviewRounds: summarizeRoundArray(readRecordValue(run, "proposalReviewRounds")),
+    finalizationRounds: summarizeRoundArray(readRecordValue(run, "finalizationRounds"))
+  };
+}
+
+function summarizeSealedDivergenceRound(round) {
+  if (!round || typeof round !== "object") {
+    return undefined;
+  }
+
+  return {
+    status: readRecordValue(round, "status"),
+    lastErrorCategory: readRecordValue(round, "lastErrorCategory"),
+    providerCallCount: readRecordValue(round, "providerCallCount"),
+    participantDispatches: summarizeDispatches(readRecordValue(round, "participantDispatches"))
+  };
+}
+
+function summarizeDispatches(value) {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value.map((dispatch) => ({
+    participantId: readRecordValue(dispatch, "participantId"),
+    status: readRecordValue(dispatch, "status"),
+    attempts: readRecordValue(dispatch, "attempts"),
+    errorCategory: readRecordValue(dispatch, "errorCategory"),
+    previousErrorCategories: readRecordValue(dispatch, "previousErrorCategories"),
+    safeDiagnostics: readRecordValue(dispatch, "safeDiagnostics")
+  }));
+}
+
+function summarizeRoundArray(value) {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value.map((round) => ({
+    status: readRecordValue(round, "status"),
+    lastErrorCategory: readRecordValue(round, "lastErrorCategory")
+  }));
 }
 
 function readReleaseSmokeConfig() {

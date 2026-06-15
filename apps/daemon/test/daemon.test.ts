@@ -10852,6 +10852,118 @@ describe("daemon API", () => {
     expect(serializedSafeState).not.toContain("stack");
   });
 
+  it("falls back to traceable extraction when structured provider schema repair remains invalid", async () => {
+    const rejectedResponseMarker = "SCHEMA_REJECTED_EXTRACTION_FALLBACK_MARKER";
+    const fetch = createOpenAICompatibleExtractionFetch({
+      contentTransforms: [
+        () =>
+          JSON.stringify({
+            candidates: [],
+            claims: [],
+            objections: [],
+            evidenceNeeds: [],
+            qualityObligations: [],
+            rationale: "",
+            marker: rejectedResponseMarker
+          }),
+        () =>
+          JSON.stringify({
+            candidates: [],
+            claims: [],
+            objections: [],
+            evidenceNeeds: [],
+            qualityObligations: [],
+            rationale: "",
+            marker: rejectedResponseMarker
+          })
+      ]
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleExtraction: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model",
+        [OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR]: "json_object"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleExtractionStartRequest()
+    );
+    const body = (await response.clone().json()) as {
+      stages: Array<{
+        stage: string;
+        status?: string;
+        result: {
+          proposalResults?: Array<{
+            generatorId: string;
+            status: string;
+          }>;
+        };
+      }>;
+    };
+    const proposalEvent = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .find((event) => event.type === "extraction_proposed");
+    const serializedSafeState = JSON.stringify({
+      body,
+      detail: await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json(),
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      proposalEvent,
+      events: daemonApp.eventStore.listEvents(created.run.sessionId)
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(body.stages.find((stage) => stage.stage === "extraction")).toMatchObject({
+      status: "completed",
+      result: {
+        proposalResults: [
+          expect.objectContaining({
+            generatorId: OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+            status: "proposed"
+          })
+        ]
+      }
+    });
+    expect(proposalEvent?.payload).toMatchObject({
+      candidates: [
+        expect.objectContaining({
+          id: "fallback-candidate-1",
+          status: "active"
+        })
+      ],
+      evidenceNeeds: [
+        expect.objectContaining({
+          id: "fallback-evidence-1",
+          priority: "high",
+          status: "open"
+        })
+      ],
+      qualityObligations: [
+        expect.objectContaining({
+          id: "fallback-quality-1",
+          status: "unanswered"
+        })
+      ],
+      rationale: expect.stringContaining("conservative extraction fallback")
+    });
+    expect(serializedSafeState).not.toContain(rejectedResponseMarker);
+    expect(serializedSafeState).not.toContain("sk-openai-runtime-secret");
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("/Users/");
+    expect(serializedSafeState).not.toContain("stack");
+  });
+
   it("does not retry provider extraction HTTP failures", async () => {
     const fetch = createOpenAICompatibleExtractionFetch({
       ok: false,
