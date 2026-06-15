@@ -1,11 +1,11 @@
 # Deliberum v1.0 Release Notes
 
-Status: draft release notes for the current v1.0 Production Stable convergence
-state.
+Status: final release notes for the v1.0 Production Stable source-checkout
+local-first release.
 
 These notes describe the supported v1.0 local-first product path and current
-release evidence. They are not the final v1.0 completion report. The completion
-report belongs in Gate 12 after Gates 9 and 10 are closed with current evidence.
+release evidence. The final completion report is
+[Deliberum v1.0 Production Stable Completion Report](V1_0_COMPLETION_REPORT.md).
 
 ## Supported v1.0 Path
 
@@ -93,12 +93,10 @@ These are intentionally outside the v1.0 supported scope:
 - automatic future schema migrations;
 - multiple named provider accounts or simultaneous multi-provider Web editing.
 
-## Current Remaining Release Gates
+## Release Gate Status
 
-The remaining gate is:
+All 12 v1.0 production gates are complete in the
+[v1.0 Production Readiness Matrix](V1_0_PRODUCTION_READINESS_MATRIX.md).
 
-- Gate 12: final v1.0 completion report with evidence, known limits, supported
-  paths, and post-v1.0 backlog.
-
-Do not tag the final v1.0 Production Stable release until the matrix marks all
-12 gates complete with current evidence.
+Do not tag the final v1.0 Production Stable release until the
+completion-report commit is pushed and GitHub CI is green.
