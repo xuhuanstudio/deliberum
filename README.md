@@ -78,10 +78,23 @@ Use the [Basic Product Loop Completion Matrix](docs/BASIC_PRODUCT_LOOP.md) as
 the acceptance checklist for this path. The default Web loop is not complete
 until the matrix steps are verified with real browser evidence.
 
+Prerequisites:
+
+- Node.js 24 or newer;
+- Corepack;
+- pnpm 11 through Corepack.
+
+Check your local setup before installing dependencies:
+
+```bash
+node scripts/check-local-prerequisites.mjs
+```
+
 1. Install dependencies and build the local product.
 
    ```bash
    corepack pnpm install
+   corepack pnpm doctor:local
    corepack pnpm build
    ```
 

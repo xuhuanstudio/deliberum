@@ -9,6 +9,7 @@
   },
   "scripts": {
     "clean:dist": "node scripts/clean-workspace-dist.mjs",
+    "doctor:local": "node scripts/check-local-prerequisites.mjs",
     "build:packages": "corepack pnpm -r --filter './packages/*' build && node scripts/rewrite-node-esm-imports.mjs",
     "build": "corepack pnpm -r build && node scripts/rewrite-node-esm-imports.mjs",
     "test": "corepack pnpm build:packages && corepack pnpm test:workspace",

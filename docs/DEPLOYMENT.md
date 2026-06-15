@@ -42,6 +42,7 @@ For a local/pre-production single-process shell, build the workspace and start
 the local Web product:
 
 ```bash
+node scripts/check-local-prerequisites.mjs
 corepack pnpm build
 corepack pnpm start:local
 ```

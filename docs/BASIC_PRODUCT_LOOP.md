@@ -41,7 +41,7 @@ Updated: 2026-06-15.
 
 | # | Product loop step | Current status | Current evidence | Highest-priority gap |
 | --- | --- | --- | --- | --- |
-| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:3877/` through `corepack pnpm start:local`; Web tests cover the shell and landing readiness states. `smoke:local-start` verifies the single-process local start script serves the built Web shell from the daemon. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. | Keep covered; packaging and installer work can improve first-run convenience later. |
+| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:3877/` through `corepack pnpm start:local` and includes a local prerequisite check for Node.js, Corepack, and pnpm before dependency installation. Web tests cover the shell and landing readiness states. `smoke:local-start` verifies the single-process local start script serves the built Web shell from the daemon. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. | Keep covered; packaging and installer work can improve first-run convenience later. |
 | 2 | Understand within 30 seconds that Deliberum is a multi-perspective deliberation product. | `verified` | README and default Web copy describe the human-first product. The landing page now leads with `Multi-perspective deliberation for better decisions`. `smoke:web-entry` verifies desktop and mobile first viewports include Deliberum, multi-perspective deliberation, independent perspectives, strongest options, and reviewable conclusion language. | Keep covered; future visual design work should preserve this first-viewport product signal. |
 | 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
 | 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show `corepack pnpm build && corepack pnpm start:local` as the local start path. `smoke:local-start` verifies that script starts a daemon-served Web shell. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future installer work may simplify dependency installation, but the current local product start path is proven. |
@@ -166,20 +166,26 @@ startup.
 
 Commands:
 
+- `node scripts/check-local-prerequisites.mjs`
 - `corepack pnpm smoke:local-start`
 
 Path covered:
 
-1. Starts `corepack pnpm start:local` on an isolated local port.
-2. Uses a temporary SQLite path so no local user data is touched.
-3. Waits for daemon health.
-4. Opens `/setup/models` through the daemon-served built Web shell.
-5. Confirms the start script prints the user-facing local Web URL.
+1. Checks that the local toolchain has Node.js 24 or newer, Corepack, and pnpm
+   11 through Corepack.
+2. Starts `corepack pnpm start:local` on an isolated local port.
+3. Uses a temporary SQLite path so no local user data is touched.
+4. Waits for daemon health.
+5. Opens `/setup/models` through the daemon-served built Web shell.
+6. Confirms the start script prints the user-facing local Web URL.
 
 Result:
 
 - The default local product entry can now be started as one process after
   `corepack pnpm build`.
+- External users can run a zero-dependency prerequisite check before installing
+  dependencies, which makes missing Node/Corepack/pnpm setup visible before the
+  product loop fails later.
 - The unavailable-service Web guide, README quickstart, deployment guide, and
   discussion walkthrough now point to the same local product start path.
 
