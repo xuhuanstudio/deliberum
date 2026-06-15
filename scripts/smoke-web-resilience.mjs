@@ -14,6 +14,8 @@ const clientEntry = join(repoRoot, "packages", "client", "dist", "index.js");
 const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
 const dummyApiKey = "smoke-web-resilience-token";
 const modelName = "smoke-web-resilience-model";
+const providerVerificationTimeoutMs = 500;
+const providerTimeoutResponseDelayMs = providerVerificationTimeoutMs * 4;
 const pausedQuestion =
   "Should Deliberum keep paused discussion updates readable and safe?";
 const stageFailureQuestion =
@@ -114,6 +116,11 @@ try {
   });
   provider.setVerificationFailure("rate_limit");
   await verifyProviderRateLimitRecovery(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    providerBaseUrl
+  });
+  provider.setVerificationFailure("timeout");
+  await verifyProviderTimeoutRecovery(page, {
     webBaseUrl: `http://127.0.0.1:${webPort}`,
     providerBaseUrl
   });
@@ -308,6 +315,40 @@ async function verifyProviderRateLimitRecovery(page, { webBaseUrl, providerBaseU
   });
 }
 
+async function verifyProviderTimeoutRecovery(page, { webBaseUrl, providerBaseUrl }) {
+  await page.goto(`${webBaseUrl}/setup/models`, {
+    waitUntil: "networkidle"
+  });
+  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
+  await page.getByRole("button", { name: "Verify connection" }).click();
+  await page.getByText("Provider connection could not be verified").waitFor();
+  await page
+    .getByText("Provider verification timed out. Check the base URL and provider availability.")
+    .waitFor();
+
+  const recoveryRegion = page.getByRole("region", {
+    name: "Provider verification recovery options"
+  });
+  await recoveryRegion.waitFor();
+  await recoveryRegion.getByText("Review setup fields", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Try Verify connection again", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Start demo discussion", { exact: true }).waitFor();
+
+  await assertLinkHref(page, "Review setup fields", "#setup-provider-form", "timeout recovery");
+  await assertLinkHrefIncludes(
+    page,
+    "Start demo discussion",
+    "participants=demo",
+    "timeout recovery"
+  );
+  await assertNoHorizontalOverflow(page, "timeout provider verification recovery");
+  await assertDefaultResilienceSafety(page, "timeout provider verification recovery", {
+    providerBaseUrl,
+    runId: "not-rendered-run-id",
+    sessionId: "not-rendered-session-id"
+  });
+}
+
 async function assertLinkHref(page, text, expectedHref, label) {
   const href = await page.locator("a", { hasText: text }).first().getAttribute("href");
 
@@ -342,8 +383,10 @@ async function assertDefaultResilienceSafety(page, label, { providerBaseUrl, run
     modelName,
     runId,
     sessionId,
+    "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
     "DELIBERUM_OPENAI_API_KEY",
     "DELIBERUM_OPENAI_BASE_URL",
+    "DELIBERUM_OPENAI_TIMEOUT_MS",
     "DELIBERUM_ENABLE_LOCAL_PRESET",
     "providerConfigId",
     "openai-main",
@@ -356,7 +399,10 @@ async function assertDefaultResilienceSafety(page, label, { providerBaseUrl, run
     "waiting_for_generators",
     "extraction_output_invalid",
     "run_stage_failed",
+    "provider_rate_limited",
+    "provider_timeout",
     "Run stage could not be processed safely.",
+    "OpenAI-compatible provider request timed out.",
     "budget_exceeded",
     "provider_http_error",
     "raw JSON",
@@ -479,6 +525,34 @@ async function startOpenAICompatibleMockProvider(port) {
         return;
       }
 
+      if (isVerificationRequest(body) && state.verificationFailure === "timeout") {
+        await waitForResponseCloseOrDelay(response, providerTimeoutResponseDelayMs);
+        if (!response.destroyed && !response.writableEnded) {
+          response.writeHead(200, {
+            "content-type": "application/json"
+          });
+          response.end(
+            JSON.stringify({
+              id: `chatcmpl-resilience-timeout-${state.requestCount}`,
+              object: "chat.completion",
+              created: Math.floor(Date.now() / 1000),
+              model: modelName,
+              choices: [
+                {
+                  index: 0,
+                  finish_reason: "stop",
+                  message: {
+                    role: "assistant",
+                    content: "ready"
+                  }
+                }
+              ]
+            })
+          );
+        }
+        return;
+      }
+
       const content = createMockProviderContent(body);
 
       response.writeHead(200, {
@@ -565,6 +639,17 @@ function isVerificationRequest(body) {
   return system.includes("verifying Deliberum's local model provider setup");
 }
 
+async function waitForResponseCloseOrDelay(response, timeoutMs) {
+  if (response.destroyed || response.writableEnded) {
+    return;
+  }
+
+  await Promise.race([
+    once(response, "close").then(() => undefined),
+    delay(timeoutMs).then(() => undefined)
+  ]);
+}
+
 function startDaemonProcess({ port, cwd, webOrigin }) {
   return startChildProcess(process.execPath, [daemonEntry], {
     cwd,
@@ -572,7 +657,9 @@ function startDaemonProcess({ port, cwd, webOrigin }) {
       ...buildMinimalEnv(),
       DELIBERUM_HOST: "127.0.0.1",
       DELIBERUM_PORT: String(port),
-      DELIBERUM_DAEMON_CORS_ORIGINS: webOrigin
+      DELIBERUM_DAEMON_CORS_ORIGINS: webOrigin,
+      DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE: "true",
+      DELIBERUM_OPENAI_TIMEOUT_MS: String(providerVerificationTimeoutMs)
     }
   });
 }

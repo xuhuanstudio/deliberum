@@ -37,7 +37,7 @@ test passed.
 
 ## Current Matrix
 
-Updated: 2026-06-15.
+Updated: 2026-06-16.
 
 | # | Product loop step | Current status | Current evidence | Highest-priority gap |
 | --- | --- | --- | --- | --- |
@@ -46,7 +46,7 @@ Updated: 2026-06-15.
 | 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
 | 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show `corepack pnpm build && corepack pnpm start:local` as the local start path, and README troubleshooting explains keeping the `start:local` terminal running, opening the printed local URL, and using Check again in Setup / Models after the service responds. `smoke:local-start` verifies that script starts a daemon-served Web shell. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future installer work may simplify dependency installation, but the current local product start path is proven. |
 | 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, model, and structured review compatibility. | `verified` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The integrated Web product-loop test covers entering and saving API key, base URL, model, and the default structured review compatibility setting from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the daemon setup API. `smoke:web-product-loop` enters the same fields in a real browser against an isolated local daemon and safe mock provider. | Keep covered; continue real external-provider walkthroughs before release hardening. |
-| 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. A 2026-06-15 opt-in `smoke:web-release-readiness` run against a real external OpenAI-compatible provider verified the provider connection through Web before creating the discussion. The daemon applies a default verification timeout so Web can show a safe recovery error instead of waiting indefinitely, the Web setup page gives normal users recovery actions to review setup fields, retry Verify connection, or start a demo discussion while fixing setup, and the release-readiness smoke now verifies those Web-visible recovery actions if a real provider cannot verify. `smoke:web-resilience` now also verifies the browser recovery path when a local OpenAI-compatible mock provider returns a provider rate-limit response during setup verification. | Keep covered with repeated opt-in real-provider release-readiness runs; broaden provider coverage later. |
+| 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. A 2026-06-15 opt-in `smoke:web-release-readiness` run against a real external OpenAI-compatible provider verified the provider connection through Web before creating the discussion. The daemon applies a default verification timeout so Web can show a safe recovery error instead of waiting indefinitely, the Web setup page gives normal users recovery actions to review setup fields, retry Verify connection, or start a demo discussion while fixing setup, and the release-readiness smoke now verifies those Web-visible recovery actions if a real provider cannot verify. `smoke:web-resilience` now also verifies the browser recovery path when a local OpenAI-compatible mock provider returns a provider rate-limit response or times out during setup verification. | Keep covered with repeated opt-in real-provider release-readiness runs; broaden provider coverage later. |
 | 7 | Start a model-backed discussion from Web. | `verified` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test creates a model-backed discussion. Setup / Models tests verify that focused and broader model-backed start links appear only after provider verification and carry the selected perspective depth. `smoke:product-loop` creates and starts a provider-backed run through the daemon API. `smoke:web-product-loop` checks the verified Setup / Models focused and broader start links in a real browser, opens the broader path to confirm Perspective C is preselected, and creates the discussion from the model-backed start page. The 2026-06-15 opt-in `smoke:web-release-readiness` run also started a model-backed discussion from the verified real-provider setup path. | Keep covered; future participant-management work should preserve this default path. |
 | 8 | See participant/model perspectives as readable contributions, not raw events. | `verified` | Discussion Room tests and walkthrough document cover readable room contributions. The integrated Web product-loop test confirms provider-backed Perspective A/B contributions after continuing. `smoke:product-loop` confirms sealed contribution events. `smoke:web-product-loop` confirms readable Perspective A/B text appears in the browser room timeline. | Keep covered; continue checking that default views do not regress into raw event views. |
 | 9 | See strongest current options. | `verified` | Discussion Room and outcome tests render strongest options/main perspectives in user language. The integrated Web product-loop test confirms a strongest option after continuation. `smoke:product-loop` verifies the daemon frontier contains a provider-backed strongest option. `smoke:web-product-loop` confirms the browser room and outcome show the provider-backed strongest option. | Keep covered; future UX work can improve scanning, but the loop step is proven. |
@@ -56,7 +56,7 @@ Updated: 2026-06-15.
 | 13 | See the current conclusion. | `verified` | Outcome pages render user-facing conclusion summaries and hide internal projection/event terms. The integrated Web product-loop test confirms the room reaches `Current conclusion: Ready to review`. `smoke:product-loop` verifies the daemon compiles a provider-backed current conclusion. `smoke:web-product-loop` opens the current conclusion page from the browser room and verifies the recommendation. | Keep covered; future work should improve conclusion readability only when it improves the main loop. |
 | 14 | See next recommended actions. | `verified` | Outcome and room tests render next recommended actions. The integrated Web product-loop test confirms user-facing action labels. `smoke:product-loop` verifies continuation suggestions in the provider-backed outcome. `smoke:web-product-loop` confirms the room links and outcome next recommended actions are visible from the browser path. | Keep covered; future actions should stay user-facing. |
 | 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion, verifies a transient first-response provider failure pauses in user-facing language, clicks Continue discussion again, and reaches reviewable conclusion material. `smoke:web-resilience` also verifies safe failed-stage and stopped-continuation recovery paths with Check model setup, retry, and new model-backed discussion actions. The 2026-06-15 opt-in `smoke:web-release-readiness` run completed the Continue discussion path with a real external provider and reached the reviewable room and outcome surfaces; the same smoke now verifies those recovery actions when a real-provider continuation returns `run_stage_failed`, `failed`, or `timed_out`. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
-| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `verified` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, paused retry, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, low-level id labels, and provider error categories during the primary browser path. `smoke:web-release-readiness` scans the opt-in real-provider setup, start, room, retry, and outcome path for provider secrets, provider values, env var names, provider config ids, and low-level ids. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. `smoke:web-resilience` verifies paused, retryable continuation, setup-error, failed-stage, and rate-limited provider verification recovery states stay user-facing while raw stop reasons, stage error codes, provider values, and internal status codes remain behind Advanced details. | Keep covered; any new default route or retry state must extend the same safety scan before release. |
+| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `verified` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, paused retry, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, low-level id labels, and provider error categories during the primary browser path. `smoke:web-release-readiness` scans the opt-in real-provider setup, start, room, retry, and outcome path for provider secrets, provider values, env var names, provider config ids, and low-level ids. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. `smoke:web-resilience` verifies paused, retryable continuation, setup-error, failed-stage, rate-limited provider verification, and timed-out provider verification recovery states stay user-facing while raw stop reasons, stage error codes, provider values, and internal status codes remain behind Advanced details. | Keep covered; any new default route or retry state must extend the same safety scan before release. |
 
 ## Batch Gate
 
@@ -932,10 +932,10 @@ Limit:
 
 ## Recent Browser Evidence
 
-### 2026-06-16 Rate-Limited Provider Verification Recovery
+### 2026-06-16 Rate-Limited And Timed-Out Provider Verification Recovery
 
-Scope: rows 6 and 16, with focused evidence for Gate 4 provider rate-limit
-recovery in Setup / Models.
+Scope: rows 6 and 16, with focused evidence for Gate 4 provider rate-limit and
+provider timeout recovery in Setup / Models.
 
 Automated browser smoke:
 
@@ -946,7 +946,9 @@ Setup:
 - isolated local daemon without the local preset enabled;
 - Web dev server pointed at the isolated daemon;
 - local OpenAI-compatible mock provider configured through the daemon setup API;
-- the mock provider returned HTTP 429 only for the setup verification request.
+- the mock provider returned HTTP 429 for one setup verification request;
+- the mock provider held one setup verification request open past the daemon's
+  configured provider timeout.
 
 Path verified in the browser:
 
@@ -955,19 +957,22 @@ Path verified in the browser:
 3. Confirmed the default error said `Provider connection could not be verified`.
 4. Confirmed the default error detail used the safe rate-limit message:
    `Provider rate limited the verification request. Try again later.`
-5. Confirmed normal-user recovery actions were visible: Review setup fields,
+5. Repeated `Verify connection` against the non-responsive provider path.
+6. Confirmed the default error detail used the safe timeout message:
+   `Provider verification timed out. Check the base URL and provider availability.`
+7. Confirmed normal-user recovery actions were visible: Review setup fields,
    Try Verify connection again, and Start demo discussion.
-6. Confirmed the recovery links point to the setup form and demo discussion
+8. Confirmed the recovery links point to the setup form and demo discussion
    path.
 
 Default-view safety checks:
 
 - did not show the dummy API key, provider base URL, or model name;
-- did not show OpenAI env var names;
+- did not show OpenAI env var names, including the timeout env var;
 - did not show provider config ids or internal adapter ids;
 - did not show run or session ids;
-- did not show provider HTTP status codes, raw response text, raw JSON, or stack
-  text.
+- did not show provider HTTP status codes, raw timeout errors, provider error
+  category codes, raw response text, raw JSON, or stack text.
 
 ### 2026-06-15 Paused, Retryable, And Error-State Walkthrough
 
