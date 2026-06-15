@@ -176,6 +176,7 @@ This command starts an isolated local daemon and Web UI, configures the provider
 - [Basic Product Loop Completion Matrix](docs/BASIC_PRODUCT_LOOP.md)
 - [v0.1 Open Beta Completion Report](docs/V0_1_OPEN_BETA_COMPLETION_REPORT.md)
 - [v1.0 Production Readiness Matrix](docs/V1_0_PRODUCTION_READINESS_MATRIX.md)
+- [v1.0 Model and Participant Management Audit](docs/V1_0_MODEL_PARTICIPANT_MANAGEMENT_AUDIT.md)
 - [Web UI Spec](docs/WEB_UI_SPEC.md)
 - [Web Discussion Room Walkthrough](docs/WEB_DISCUSSION_ROOM_WALKTHROUGH.md)
 - [Roadmap](ROADMAP.md)

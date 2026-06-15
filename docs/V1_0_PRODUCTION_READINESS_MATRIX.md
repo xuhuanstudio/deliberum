@@ -1,6 +1,6 @@
 # Deliberum v1.0 Production Readiness Matrix
 
-Updated: 2026-06-15
+Updated: 2026-06-16
 
 This matrix is the convergence gate for Deliberum v1.0 Production Stable. It is
 not a completion report. It records what the current repository proves, where
@@ -35,7 +35,7 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 | 4 | Provider setup, verification, failure recovery, rate limit, timeout, malformed output, and partial completion states are handled in normal-user language. | `partial` | Web recovery states and smokes cover verification failure, retryable continuation, failed stages, malformed structured output fallback, and partial first-response recovery. | Rate limit and provider-specific timeout behavior need explicit real-provider recovery evidence. |
 | 5 | Default UI never exposes secrets, raw JSON, env details, run/session/ledger/runtime/proposal/event/internal ids, or provider config ids. | `partial` | `smoke:web-product-loop`, `smoke:web-release-readiness`, `smoke:web-entry`, `smoke:web-boundaries`, and `smoke:web-resilience` scan current default paths. | Needs to remain enforced for any new model/participant management and production recovery paths. |
 | 6 | Advanced / Developer Mode preserves diagnostics without leading the normal user path. | `partial` | Current docs and smokes keep raw details behind Advanced / Developer Mode for existing default paths. | Needs a v1.0 audit after production setup, participant management, and storage recovery paths are added. |
-| 7 | Model / Participant Management supports understandable provider/model/role readiness and editing. | `partial` | Setup / Models shows current participant readiness, explains that one verified OpenAI-compatible provider powers model-backed discussions, shows the saved non-secret role defaults summary before users start, and now directly edits default discussion depth, first-response model, review role model, and optional Perspective A/B/C model choices. The start page still supports one-off role/model assignment for a single discussion. Web can save those non-secret role model choices as local service defaults, apply them to later model-backed discussions across browser sessions, and clear them without storing API keys, base URLs, or provider config ids in the role-default setup. | The default Web path does not yet provide production-grade editing for multiple providers or multiple named provider setups beyond the current single verified OpenAI-compatible provider path. Current architecture stores the Web-managed provider as a single local daemon env block, so multi-provider editing would require new secret/named-provider storage semantics. |
+| 7 | Model / Participant Management supports understandable provider/model/role readiness and editing. | `complete` | `docs/V1_0_MODEL_PARTICIPANT_MANAGEMENT_AUDIT.md` closes Gate 7 for the v1.0 supported Web scope: one Web-managed OpenAI-compatible provider setup, with direct Setup / Models editing for default discussion depth, first-response model, review role model, and optional Perspective A/B/C model choices. The start page supports per-discussion role/model overrides, applying saved defaults, and creating model-backed run plans. `apps/web/test/App.test.tsx` and `smoke:web-product-loop` verify provider setup, provider verification, focused and broader model-backed starts, role-default save/apply/clear behavior, Setup / Models direct role-default editing, and default-view safety without API keys, base URLs, provider config ids, env var names, or raw internal data. | Keep covered. Multiple named provider accounts and simultaneous multi-provider Web editing are explicit post-v1.0 architecture work because current Web-managed provider setup is a single local daemon env block and would require new secret/named-provider storage semantics. |
 | 8 | README, quickstart, walkthrough, troubleshooting, release notes, and Basic Product Loop docs match the actual UI. | `partial` | README, Basic Product Loop, deployment, walkthrough, and v0.1 completion docs match the beta UI and smokes. | v1.0 release notes do not exist yet, and docs must be updated after production gates 1, 7, and 11 move. |
 | 9 | CI, tests, language lint, docs lint, product-loop smoke, Web smoke, and real-provider release-readiness evidence are green and current. | `partial` | Local `corepack pnpm run ci` and GitHub CI are green. CI now separates full Ubuntu validation from supported-platform local-start validation on Ubuntu and macOS. Real-provider release-readiness evidence is recorded. | Real-provider smoke remains opt-in outside default CI and broader provider coverage is still incomplete. |
 | 10 | No known normal-user blocker remains in install, startup, setup, verification, discussion start, continuation, conclusion review, or recovery. | `partial` | v0.1 evidence shows no known blocker in the local beta loop with a reachable provider; unreachable provider setup shows safe recovery. Supported-platform local-start verification now covers macOS and Ubuntu Linux. | Production blockers remain in broader provider behavior, participant management, and data/storage recovery. |
@@ -44,35 +44,22 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 
 ## Next Production Batch
 
-The first production blocker is still gate 7: Model / Participant Management.
-The default Web path now explains and links the current shared provider editing
-path for model-backed discussions, lets users assign a first-response model,
-individual Perspective A/B/C models, and a separate review role model for one
-discussion, and lets users view, edit, save, and clear saved role defaults from
-Setup / Models before they start. It can save those non-secret role model
-choices as local service defaults for later discussions without storing API
-keys, base URLs, or provider config ids in the role-default setup. It still
-does not let normal users edit multiple providers or manage multiple named
-provider setups. Current evidence shows that the Web-managed provider setup is
-a single local daemon env block, so multi-provider editing would require new
-secret/named-provider storage semantics and should not be slipped into Gate 7 as
-a UI-only change.
+The first production blocker is now gate 2: Web first-use, Setup / Models,
+participant readiness, and Discussion Room form one coherent product
+experience. Gate 7 is closed for the v1.0 supported Web scope, so the next
+batch should audit the whole normal-user Web path end to end instead of adding
+more participant-management features.
 
 Recommended narrow batch:
 
-1. Decide whether Gate 7 can be accepted for v1.0 with an explicit
-   single-provider Web setup limit, or whether v1.0 must add a real
-   multi-provider secret/named-provider storage design.
-2. If single-provider setup is accepted for v1.0, run a targeted product audit
-   over Setup / Models and `/runs/new` to confirm participant/model management
-   is coherent enough for production within that limit.
-3. If multi-provider editing is required before v1.0, treat it as a new
-   architecture design batch first; do not implement it as a UI-only patch.
+1. Audit the current default Web path from `/` to `/setup/models`, `/runs/new`,
+   `/runs/:runId`, and `/runs/:runId/outcome` against the Gate 2 definition.
+2. If a real product incoherence is found, fix only the first blocker that
+   prevents a normal user from understanding or completing the path.
+3. If no blocker is found, record Gate 2 evidence and move to the next
+   incomplete gate.
 4. Preserve English/Simplified Chinese coverage, browser verification, and
-   default-view safety scans for any chosen path.
-
-Do not work on storage migrations or v1.0 release notes before gate 7 has a
-production-grade product path.
+   default-view safety scans for any change.
 
 ## Stop Rule
 
