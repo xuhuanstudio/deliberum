@@ -164,6 +164,7 @@ This command starts an isolated local daemon and Web UI, configures the provider
 - [Threat Model](docs/THREAT_MODEL.md)
 - [Technology Stack](docs/TECH_STACK.md)
 - [Basic Product Loop Completion Matrix](docs/BASIC_PRODUCT_LOOP.md)
+- [v0.1 Open Beta Completion Report](docs/V0_1_OPEN_BETA_COMPLETION_REPORT.md)
 - [Web UI Spec](docs/WEB_UI_SPEC.md)
 - [Web Discussion Room Walkthrough](docs/WEB_DISCUSSION_ROOM_WALKTHROUGH.md)
 - [Roadmap](ROADMAP.md)
