@@ -718,6 +718,30 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u672c\u5730\u670d\u52a1\u4e2d\u5df2\u6709\u53ef\u7528\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002",
   "No saved role defaults yet. API keys and base URLs are never saved here.":
     "\u5c1a\u672a\u4fdd\u5b58\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u8fd9\u91cc\u6c38\u4e0d\u4fdd\u5b58 API key \u548c base URL\u3002",
+  "Checking saved role defaults": "\u6b63\u5728\u68c0\u67e5\u5df2\u4fdd\u5b58\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e",
+  "Saved role defaults unavailable":
+    "\u5df2\u4fdd\u5b58\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u4e0d\u53ef\u7528",
+  "Saved role defaults": "\u5df2\u4fdd\u5b58\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e",
+  "No saved role defaults": "\u5c1a\u672a\u4fdd\u5b58\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e",
+  "Checking whether the local service has a saved participant model setup.":
+    "\u6b63\u5728\u68c0\u67e5\u672c\u5730\u670d\u52a1\u662f\u5426\u5df2\u6709\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u6a21\u578b\u8bbe\u7f6e\u3002",
+  "The local service did not return saved role defaults. You can still start or configure a discussion.":
+    "\u672c\u5730\u670d\u52a1\u672a\u8fd4\u56de\u5df2\u4fdd\u5b58\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u4f60\u4ecd\u7136\u53ef\u4ee5\u5f00\u59cb\u6216\u914d\u7f6e\u8ba8\u8bba\u3002",
+  "Setup / Models shows the saved participant model choices before you start. API keys, base URLs, and provider configuration ids are not returned here.":
+    "\u8bbe\u7f6e / \u6a21\u578b\u4f1a\u5728\u5f00\u59cb\u524d\u663e\u793a\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u6a21\u578b\u9009\u62e9\u3002\u8fd9\u91cc\u4e0d\u4f1a\u8fd4\u56de API key\u3001base URL \u6216\u63d0\u4f9b\u65b9\u914d\u7f6e ID\u3002",
+  "Save a default role setup from the start page, then Setup / Models will show which discussion depth and role models are ready for future discussions.":
+    "\u4ece\u5f00\u59cb\u9875\u4fdd\u5b58\u9ed8\u8ba4\u89d2\u8272\u8bbe\u7f6e\u540e\uff0c\u8bbe\u7f6e / \u6a21\u578b\u4f1a\u663e\u793a\u672a\u6765\u8ba8\u8bba\u53ef\u7528\u7684\u8ba8\u8bba\u6df1\u5ea6\u548c\u89d2\u8272\u6a21\u578b\u3002",
+  "Discussion depth": "\u8ba8\u8bba\u6df1\u5ea6",
+  "Not saved yet": "\u5c1a\u672a\u4fdd\u5b58",
+  "First responses use": "\u521d\u59cb\u56de\u5e94\u4f7f\u7528",
+  "Provider setup model": "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u6a21\u578b",
+  "Review roles use": "\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528",
+  "Perspective models": "\u89c6\u89d2\u6a21\u578b",
+  "1 custom perspective model": "1 \u4e2a\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
+  "{count} custom perspective models": "{count} \u4e2a\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
+  "Start with saved role setup": "\u4f7f\u7528\u5df2\u4fdd\u5b58\u89d2\u8272\u8bbe\u7f6e\u5f00\u59cb",
+  "Edit role defaults": "\u7f16\u8f91\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e",
+  "Create role defaults": "\u521b\u5efa\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e",
   "Use saved model for perspectives": "\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u89c6\u89d2\u6a21\u578b",
   "Use first-response model": "\u4f7f\u7528\u521d\u59cb\u56de\u5e94\u6a21\u578b",
   "Customize perspective models": "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",

@@ -807,7 +807,8 @@ Path covered:
     override, confirming uncustomized perspectives keep the first-response
     model while review roles use their own model assignment.
 11. Saves those non-secret role model choices as local service role defaults,
-    returns through Setup / Models to the start page, confirms the defaults are
+    returns through Setup / Models, confirms the saved role-default summary is
+    visible there, continues to the start page, confirms the defaults are
     applied to a new model-backed discussion, and confirms the saved defaults do
     not contain provider secrets or connection details.
 12. Creates a model-backed discussion from the browser.

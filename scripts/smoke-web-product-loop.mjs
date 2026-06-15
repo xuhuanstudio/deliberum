@@ -222,6 +222,16 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page.getByRole("link", { name: "Open Setup / Models" }).click();
   await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
+  await page.getByText("Saved role defaults").waitFor();
+  await page
+    .getByText(
+      "Setup / Models shows the saved participant model choices before you start. API keys, base URLs, and provider configuration ids are not returned here."
+    )
+    .waitFor();
+  await page.getByText("Focused review", { exact: true }).waitFor();
+  await page.getByText(discussionModelName).waitFor();
+  await page.getByText(reviewModelName).waitFor();
+  await page.getByText("1 custom perspective model").waitFor();
   await page.getByRole("link", { name: "Start broader discussion" }).first().click();
   await page.waitForURL(/\/runs\/new\?participants=model-backed&perspectives=3$/);
   await page.getByRole("heading", { name: "Start a discussion" }).waitFor();

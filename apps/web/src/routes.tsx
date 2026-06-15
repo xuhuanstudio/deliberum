@@ -39,6 +39,8 @@ import type {
   AuditFinalCandidateRequest,
   DeploymentPostureResponse,
   OperationAuditResponse,
+  OpenAICompatibleRoleModelDefaults,
+  OpenAICompatibleRoleModelDefaultsResponse,
   ProposeFinalCandidateRequest,
   ResourceAccessPostureResponse,
   RuntimeSetupPlan,
@@ -1927,6 +1929,133 @@ type OpenAICompatibleSetupFormInput = {
   structuredReview: boolean;
 };
 
+function SetupRoleDefaultsSummary({
+  loading,
+  error,
+  response,
+  modelBackedAvailable
+}: {
+  loading: boolean;
+  error: boolean;
+  response?: OpenAICompatibleRoleModelDefaultsResponse;
+  modelBackedAvailable: boolean;
+}) {
+  const { t } = useI18n();
+  const defaults = response?.status === "configured" ? response.defaults : undefined;
+  const saved = Boolean(defaults);
+  const startPath = getRoleDefaultsStartPath(defaults);
+  const perspectiveOverrideCount = defaults
+    ? countConfiguredPerspectiveRoleModels(defaults)
+    : 0;
+  const tone = error ? "warning" : saved ? "ok" : "neutral";
+
+  return (
+    <section
+      className={`du-role-defaults-panel du-status-${tone}`}
+      aria-label={t("Saved role defaults")}
+    >
+      <div>
+        <p className="du-kicker">{t("Role model defaults")}</p>
+        <strong>
+          {loading
+            ? t("Checking saved role defaults")
+            : error
+              ? t("Saved role defaults unavailable")
+              : saved
+                ? t("Saved role defaults")
+                : t("No saved role defaults")}
+        </strong>
+        <p>
+          {loading
+            ? t("Checking whether the local service has a saved participant model setup.")
+            : error
+              ? t(
+                  "The local service did not return saved role defaults. You can still start or configure a discussion."
+                )
+              : saved
+                ? t(
+                    "Setup / Models shows the saved participant model choices before you start. API keys, base URLs, and provider configuration ids are not returned here."
+                  )
+                : t(
+                    "Save a default role setup from the start page, then Setup / Models will show which discussion depth and role models are ready for future discussions."
+                  )}
+        </p>
+      </div>
+      <KeyValueGrid
+        items={[
+          {
+            label: t("Discussion depth"),
+            value: saved
+              ? t(defaults?.perspectiveCount === 3 ? "Broader review" : "Focused review")
+              : t("Not saved yet")
+          },
+          {
+            label: t("First responses use"),
+            value:
+              saved && defaults?.modelOverride.trim()
+                ? defaults.modelOverride.trim()
+                : t("Provider setup model")
+          },
+          {
+            label: t("Review roles use"),
+            value:
+              saved && defaults?.reviewModelOverride.trim()
+                ? defaults.reviewModelOverride.trim()
+                : t("First-response model")
+          },
+          {
+            label: t("Perspective models"),
+            value:
+              saved &&
+              defaults?.customPerspectiveModelsEnabled &&
+              perspectiveOverrideCount > 0
+                ? perspectiveOverrideCount === 1
+                  ? t("1 custom perspective model")
+                  : t("{count} custom perspective models", {
+                      count: perspectiveOverrideCount
+                    })
+                : t("Use first-response model")
+          }
+        ]}
+      />
+      <div className="du-action-row">
+        {modelBackedAvailable ? (
+          <>
+            {saved ? (
+              <Link className="du-action-link" to={startPath}>
+                {t("Start with saved role setup")}
+              </Link>
+            ) : null}
+            <Link className="du-action-link du-secondary-link" to={startPath}>
+              {t(saved ? "Edit role defaults" : "Create role defaults")}
+            </Link>
+          </>
+        ) : (
+          <a className="du-action-link du-secondary-link" href="#setup-provider-form">
+            {t("Verify provider first")}
+          </a>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function getRoleDefaultsStartPath(
+  defaults?: OpenAICompatibleRoleModelDefaults
+): string {
+  const perspectiveCount = defaults?.perspectiveCount ?? 2;
+
+  return `/runs/new?participants=model-backed&perspectives=${perspectiveCount}`;
+}
+
+function countConfiguredPerspectiveRoleModels(
+  defaults: OpenAICompatibleRoleModelDefaults
+): number {
+  return Object.values(defaults.perspectiveModelOverrides).filter(
+    (model) => typeof model === "string" && model.trim().length > 0
+  ).length;
+}
+
 function ProviderSetupChecklist({
   profiles,
   providerConnectionVerified
@@ -1968,7 +2097,16 @@ function SetupParticipantReadiness({
   providerConnectionVerified: boolean;
 }) {
   const { t } = useI18n();
+  const { client } = useDaemonRuntime();
   const readiness = buildSetupParticipantReadiness(setupPlan, providerConnectionVerified);
+  const roleDefaultsSupported = setupPlan.profiles.some(
+    (profile) => profile.id === "openai-compatible"
+  );
+  const roleDefaultsQuery = useQuery({
+    queryKey: ["openai-compatible-role-model-defaults"],
+    queryFn: () => client.getOpenAICompatibleRoleModelDefaults(),
+    enabled: roleDefaultsSupported
+  });
 
   return (
     <section
@@ -2035,6 +2173,12 @@ function SetupParticipantReadiness({
           </div>
         ) : null}
       </div>
+      <SetupRoleDefaultsSummary
+        loading={roleDefaultsSupported && roleDefaultsQuery.isLoading}
+        error={roleDefaultsSupported && roleDefaultsQuery.isError}
+        response={roleDefaultsQuery.data}
+        modelBackedAvailable={readiness.canStartModelBackedDiscussion}
+      />
       <div className="du-setup-participant-plan" aria-label={t("Who joins the discussion")}>
         <div className="du-section-label">
           <p className="du-kicker">{t("Participant plan")}</p>

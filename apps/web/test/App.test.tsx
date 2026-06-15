@@ -1513,6 +1513,15 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("group", { name: "Role assignment controls" })).toBeTruthy();
     expect(screen.getByText("Shared provider setup")).toBeTruthy();
     expect(screen.getByText("One provider for all model roles")).toBeTruthy();
+    expect(screen.getByText("No saved role defaults")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Save a default role setup from the start page, then Setup / Models will show which discussion depth and role models are ready for future discussions."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Discussion depth")).toBeTruthy();
+    expect(screen.getByText("Not saved yet")).toBeTruthy();
+    expect(screen.getByText("Provider setup model")).toBeTruthy();
     expect(screen.getByText("Who joins the discussion")).toBeTruthy();
     expect(screen.getByText("First responses")).toBeTruthy();
     expect(
@@ -2530,7 +2539,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Ready to test")).toBeTruthy();
     expect(screen.getByText("Discussion participants")).toBeTruthy();
     expect(screen.getByText("Model assignment")).toBeTruthy();
-    expect(screen.getByText("Verify provider first")).toBeTruthy();
+    expect(screen.getAllByText("Verify provider first").length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Start focused discussion" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Start broader discussion" })).toBeNull();
     expect(
@@ -2654,6 +2663,8 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByRole("group", { name: "\u89d2\u8272\u5206\u914d\u63a7\u4ef6" })).toBeTruthy();
     expect(screen.getByText("\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e")).toBeTruthy();
+    expect(screen.getByText("\u5c1a\u672a\u4fdd\u5b58\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u6df1\u5ea6")).toBeTruthy();
     const editSharedProviderSetupLink = screen.getByRole("link", {
       name: "\u7f16\u8f91\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e"
     }) as HTMLAnchorElement;
@@ -2671,6 +2682,61 @@ describe("@deliberum/web shell", () => {
     expect(broaderDiscussionLink.href).toContain("participants=model-backed");
     expect(broaderDiscussionLink.href).toContain("perspectives=3");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+  });
+
+  it("shows saved role defaults in setup and models without exposing provider internals", async () => {
+    markOpenAICompatibleProviderVerified();
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue(createReadyOpenAISetupProfiles());
+    vi.mocked(client.getOpenAICompatibleRoleModelDefaults).mockResolvedValue({
+      profileId: "openai-compatible",
+      status: "configured",
+      defaults: {
+        perspectiveCount: 3,
+        modelOverride: "service-first-response-model",
+        reviewModelOverride: "service-review-model",
+        customPerspectiveModelsEnabled: true,
+        perspectiveModelOverrides: {
+          "provider-perspective-a": "service-perspective-a-model",
+          "provider-perspective-c": "service-perspective-c-model"
+        }
+      },
+      safety: [
+        "Role model defaults contain non-secret model choices only.",
+        "Provider API keys, base URLs, and provider config ids are not returned."
+      ]
+    });
+
+    renderApp("/setup/models", client);
+
+    expect(await screen.findByText("Saved role defaults")).toBeTruthy();
+    await waitFor(() =>
+      expect(client.getOpenAICompatibleRoleModelDefaults).toHaveBeenCalledTimes(1)
+    );
+    expect(
+      screen.getByText(
+        "Setup / Models shows the saved participant model choices before you start. API keys, base URLs, and provider configuration ids are not returned here."
+      )
+    ).toBeTruthy();
+    expect(screen.getAllByText("Broader review").length).toBeGreaterThan(0);
+    expect(screen.getByText("service-first-response-model")).toBeTruthy();
+    expect(screen.getByText("service-review-model")).toBeTruthy();
+    expect(screen.getByText("2 custom perspective models")).toBeTruthy();
+    const startWithSavedRoleSetupLink = screen.getByRole("link", {
+      name: "Start with saved role setup"
+    }) as HTMLAnchorElement;
+    expect(startWithSavedRoleSetupLink.href).toContain("participants=model-backed");
+    expect(startWithSavedRoleSetupLink.href).toContain("perspectives=3");
+    const editRoleDefaultsLink = screen.getByRole("link", {
+      name: "Edit role defaults"
+    }) as HTMLAnchorElement;
+    expect(editRoleDefaultsLink.href).toContain("participants=model-backed");
+    expect(editRoleDefaultsLink.href).toContain("perspectives=3");
+    const pageText = document.body.textContent ?? "";
+    expect(pageText).not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(pageText).not.toContain("DELIBERUM_OPENAI_BASE_URL");
+    expect(pageText).not.toContain("providerConfigId");
+    expect(pageText).not.toContain("openai-main");
   });
 
   it("applies daemon-saved role defaults to the model-backed start page", async () => {
