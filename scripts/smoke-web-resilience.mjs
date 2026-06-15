@@ -112,6 +112,11 @@ try {
     runId: stageFailureRunId,
     sessionId: stageFailureSessionId
   });
+  provider.setVerificationFailure("rate_limit");
+  await verifyProviderRateLimitRecovery(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    providerBaseUrl
+  });
 } catch (error) {
   if (daemon.exited) {
     throw new Error(
@@ -269,6 +274,40 @@ async function verifyStageFailureRecovery(page, { webBaseUrl, providerBaseUrl, r
   });
 }
 
+async function verifyProviderRateLimitRecovery(page, { webBaseUrl, providerBaseUrl }) {
+  await page.goto(`${webBaseUrl}/setup/models`, {
+    waitUntil: "networkidle"
+  });
+  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
+  await page.getByRole("button", { name: "Verify connection" }).click();
+  await page.getByText("Provider connection could not be verified").waitFor();
+  await page
+    .getByText("Provider rate limited the verification request. Try again later.")
+    .waitFor();
+
+  const recoveryRegion = page.getByRole("region", {
+    name: "Provider verification recovery options"
+  });
+  await recoveryRegion.waitFor();
+  await recoveryRegion.getByText("Review setup fields", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Try Verify connection again", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Start demo discussion", { exact: true }).waitFor();
+
+  await assertLinkHref(page, "Review setup fields", "#setup-provider-form", "rate limit recovery");
+  await assertLinkHrefIncludes(
+    page,
+    "Start demo discussion",
+    "participants=demo",
+    "rate limit recovery"
+  );
+  await assertNoHorizontalOverflow(page, "rate limit provider verification recovery");
+  await assertDefaultResilienceSafety(page, "rate limit provider verification recovery", {
+    providerBaseUrl,
+    runId: "not-rendered-run-id",
+    sessionId: "not-rendered-session-id"
+  });
+}
+
 async function assertLinkHref(page, text, expectedHref, label) {
   const href = await page.locator("a", { hasText: text }).first().getAttribute("href");
 
@@ -417,7 +456,8 @@ function buildProviderBackedRunPlan(question) {
 
 async function startOpenAICompatibleMockProvider(port) {
   const state = {
-    requestCount: 0
+    requestCount: 0,
+    verificationFailure: undefined
   };
   const server = createHttpServer(async (request, response) => {
     if (request.method !== "POST" || request.url !== "/v1/chat/completions") {
@@ -430,6 +470,15 @@ async function startOpenAICompatibleMockProvider(port) {
 
     try {
       const body = await readRequestJson(request);
+
+      if (isVerificationRequest(body) && state.verificationFailure === "rate_limit") {
+        response.writeHead(429, {
+          "content-type": "application/json"
+        });
+        response.end(JSON.stringify({ error: { message: "mock provider rate limit" } }));
+        return;
+      }
+
       const content = createMockProviderContent(body);
 
       response.writeHead(200, {
@@ -468,6 +517,9 @@ async function startOpenAICompatibleMockProvider(port) {
     get requestCount() {
       return state.requestCount;
     },
+    setVerificationFailure(failure) {
+      state.verificationFailure = failure;
+    },
     close: () =>
       new Promise((resolveClose, rejectClose) => {
         server.close((error) => {
@@ -489,7 +541,7 @@ function createMockProviderContent(body) {
     .map((message) => String(message.content ?? ""))
     .join("\n");
 
-  if (system.includes("verifying Deliberum's local model provider setup")) {
+  if (isVerificationRequest(body)) {
     return "ready";
   }
 
@@ -501,6 +553,16 @@ function createMockProviderContent(body) {
     "This resilience perspective checks paused discussion states.",
     "Keep the default page readable and move technical details to Advanced details."
   ].join(" ");
+}
+
+function isVerificationRequest(body) {
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  const system = messages
+    .filter((message) => message?.role === "system")
+    .map((message) => String(message.content ?? ""))
+    .join("\n");
+
+  return system.includes("verifying Deliberum's local model provider setup");
 }
 
 function startDaemonProcess({ port, cwd, webOrigin }) {
