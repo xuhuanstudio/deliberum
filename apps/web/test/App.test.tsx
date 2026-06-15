@@ -5046,6 +5046,38 @@ describe("@deliberum/web shell", () => {
     expect(roomText).not.toContain("provider-review-coordinator");
   });
 
+  it("shows organizer fallback guidance in the discussion room", async () => {
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getFrontier: vi.fn(async () => ({
+          basis: "accepted_active_candidates",
+          candidates: [
+            {
+              object: {
+                id: "fallback-candidate-1",
+                title: "Review the independent first responses before deciding",
+                description:
+                  "Use the revealed participant responses as provisional discussion material, then verify missing evidence, disagreements, and risks before relying on a conclusion.",
+                status: "accepted_active"
+              },
+              proposalEventId: "proposal-event-1",
+              sourceEventIds: ["event-1"]
+            }
+          ],
+          projection
+        }))
+      })
+    );
+
+    expect(await screen.findByLabelText("Organizer recovery notice")).toBeTruthy();
+    expect(screen.getByText("Discussion organizer used a safe fallback")).toBeTruthy();
+    await waitFor(() => expect(client.getFrontier).toHaveBeenCalledWith("session-1"));
+    const roomText = document.querySelector(".du-room-main")?.textContent ?? "";
+    expect(roomText).not.toContain("fallback-candidate-1");
+    expect(roomText).not.toContain("extraction_output_invalid");
+  });
+
   it("localizes discussion room actor labels in Simplified Chinese", async () => {
     const client = renderApp(
       "/runs/run-1",
@@ -6571,6 +6603,121 @@ describe("@deliberum/web shell", () => {
     expect(readableConclusion).not.toContain("obligation-1");
     expect(readableConclusion).not.toContain("evidence-1");
     expect(readableConclusion).not.toContain("returned");
+  });
+
+  it("explains conservative organizer fallback without exposing fallback ids", async () => {
+    const client = createClient({
+      getRunOutcome: vi.fn(async () => ({
+        runId: runDetail.runId,
+        sessionId: runDetail.sessionId,
+        status: "compiled",
+        draftStatus: "provisional",
+        outcome: {
+          recommendation: "Use the recovered discussion material as reviewable input.",
+          alternatives: [
+            {
+              id: "fallback-candidate-1",
+              title: "Review the independent first responses before deciding",
+              description:
+                "Use the revealed participant responses as provisional discussion material, then verify missing evidence, disagreements, and risks before relying on a conclusion.",
+              status: "active"
+            }
+          ],
+          unresolvedObjections: [
+            {
+              id: "fallback-objection-1",
+              failureMode: "Structured organizer output was invalid.",
+              consequence:
+                "The current conclusion must remain provisional until participant responses are checked.",
+              status: "open"
+            }
+          ],
+          qualityObligations: [
+            {
+              id: "fallback-quality-1",
+              requirement:
+                "State that the organizer used a conservative fallback and keep the conclusion provisional until evidence and disagreements are reviewed.",
+              status: "unanswered"
+            }
+          ],
+          evidenceStatus: {
+            evidenceNeeds: [
+              {
+                id: "fallback-evidence-1",
+                reason:
+                  "A human should confirm that the fallback interpretation reflects the revealed participant responses.",
+                status: "open"
+              }
+            ]
+          },
+          unresolvedQuestions: [],
+          continuationSuggestions: ["Check disagreements, missing evidence, and risks."],
+          limitations: []
+        }
+      }))
+    });
+
+    renderApp("/runs/run-1/outcome", client);
+
+    expect(await screen.findByLabelText("Organizer recovery notice")).toBeTruthy();
+    expect(screen.getByText("Discussion organizer used a safe fallback")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The model returned organizer output Deliberum could not use directly, so this view was rebuilt from the independent first responses. Treat the conclusion as provisional and check disagreements, missing evidence, and risks before relying on it."
+      )
+    ).toBeTruthy();
+    const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
+    expect(readableConclusion).not.toContain("fallback-candidate-1");
+    expect(readableConclusion).not.toContain("fallback-objection-1");
+    expect(readableConclusion).not.toContain("fallback-quality-1");
+    expect(readableConclusion).not.toContain("fallback-evidence-1");
+    expect(readableConclusion).not.toContain("extraction_output_invalid");
+  });
+
+  it("localizes conservative organizer fallback guidance in Simplified Chinese", async () => {
+    const client = createClient({
+      getRunOutcome: vi.fn(async () => ({
+        runId: runDetail.runId,
+        sessionId: runDetail.sessionId,
+        status: "compiled",
+        draftStatus: "provisional",
+        outcome: {
+          recommendation: "Use the recovered discussion material as reviewable input.",
+          alternatives: [
+            {
+              id: "fallback-candidate-1",
+              title: "Review the independent first responses before deciding",
+              description:
+                "Use the revealed participant responses as provisional discussion material, then verify missing evidence, disagreements, and risks before relying on a conclusion.",
+              status: "active"
+            }
+          ],
+          unresolvedObjections: [],
+          qualityObligations: [],
+          evidenceStatus: {
+            evidenceNeeds: []
+          },
+          unresolvedQuestions: [],
+          continuationSuggestions: [],
+          limitations: []
+        }
+      }))
+    });
+
+    renderApp("/runs/run-1/outcome", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    expect(await screen.findByLabelText("\u7ec4\u7ec7\u5668\u6062\u590d\u63d0\u793a")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u7ec4\u7ec7\u5668\u4f7f\u7528\u4e86\u5b89\u5168\u964d\u7ea7")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u6a21\u578b\u8fd4\u56de\u7684\u7ec4\u7ec7\u5668\u8f93\u51fa\u65e0\u6cd5\u88ab Deliberum \u76f4\u63a5\u4f7f\u7528\uff0c\u56e0\u6b64\u6b64\u89c6\u56fe\u662f\u6839\u636e\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u91cd\u5efa\u7684\u3002\u8bf7\u5c06\u7ed3\u8bba\u89c6\u4e3a\u4e34\u65f6\u7ed3\u8bba\uff0c\u5e76\u5728\u4f9d\u8d56\u524d\u68c0\u67e5\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u98ce\u9669\u3002"
+      )
+    ).toBeTruthy();
+    const readableConclusion = document.querySelector(".du-outcome-brief")?.textContent ?? "";
+    expect(readableConclusion).not.toContain("Discussion organizer used a safe fallback");
+    expect(readableConclusion).not.toContain("fallback-candidate-1");
   });
 
   it("fills missing run conclusion sections from discussion context", async () => {

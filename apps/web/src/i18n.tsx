@@ -37,6 +37,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   Discussion: "\u8ba8\u8bba",
   "Current conclusion": "\u5f53\u524d\u7ed3\u8bba",
   "Current conclusion not ready": "\u5f53\u524d\u7ed3\u8bba\u5c1a\u672a\u5c31\u7eea",
+  "Organizer recovery notice": "\u7ec4\u7ec7\u5668\u6062\u590d\u63d0\u793a",
+  "Recovery note": "\u6062\u590d\u63d0\u793a",
+  "Discussion organizer used a safe fallback":
+    "\u8ba8\u8bba\u7ec4\u7ec7\u5668\u4f7f\u7528\u4e86\u5b89\u5168\u964d\u7ea7",
+  "The model returned organizer output Deliberum could not use directly, so this view was rebuilt from the independent first responses. Treat the conclusion as provisional and check disagreements, missing evidence, and risks before relying on it.":
+    "\u6a21\u578b\u8fd4\u56de\u7684\u7ec4\u7ec7\u5668\u8f93\u51fa\u65e0\u6cd5\u88ab Deliberum \u76f4\u63a5\u4f7f\u7528\uff0c\u56e0\u6b64\u6b64\u89c6\u56fe\u662f\u6839\u636e\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u91cd\u5efa\u7684\u3002\u8bf7\u5c06\u7ed3\u8bba\u89c6\u4e3a\u4e34\u65f6\u7ed3\u8bba\uff0c\u5e76\u5728\u4f9d\u8d56\u524d\u68c0\u67e5\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u98ce\u9669\u3002",
   "Start a discussion": "\u5f00\u59cb\u8ba8\u8bba",
   "Multi-perspective deliberation for better decisions":
     "\u7528\u591a\u89c6\u89d2\u5ba1\u8bae\u505a\u51fa\u66f4\u597d\u51b3\u7b56",

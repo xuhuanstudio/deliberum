@@ -4708,6 +4708,7 @@ function describeOutputCount(
 
 function DiscussionOptionsList({ candidates }: { candidates: unknown[] }) {
   const { t } = useI18n();
+  const organizerFallbackVisible = hasConservativeOrganizerFallback(candidates);
 
   return (
     <section className="du-room-section" aria-label={t("Strongest current options")}>
@@ -4720,6 +4721,7 @@ function DiscussionOptionsList({ candidates }: { candidates: unknown[] }) {
           )}
         </p>
       </div>
+      {organizerFallbackVisible ? <OrganizerFallbackNotice /> : null}
       {candidates.length === 0 ? (
         <EmptyState
           title={t("No strongest options visible yet")}
@@ -4960,6 +4962,12 @@ export function OutcomeBrief({
     qualityObligations,
     context.answerRequirements
   );
+  const organizerFallbackVisible = hasConservativeOrganizerFallback([
+    ...mainPerspectives,
+    ...openDisagreements,
+    ...visibleEvidenceNeeds,
+    ...visibleQualityObligations
+  ]);
   const unresolvedEvidenceNeeds = visibleEvidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
   const openQualityObligations = countRecordsWithoutStatus(
     visibleQualityObligations,
@@ -5048,6 +5056,7 @@ export function OutcomeBrief({
           />
         </div>
       </section>
+      {organizerFallbackVisible ? <OrganizerFallbackNotice /> : null}
       <section className="du-outcome-review-path" aria-label={t("Conclusion review path")}>
         <div>
           <p className="du-kicker">{t("Review path")}</p>
@@ -5166,6 +5175,51 @@ export function OutcomeBrief({
         emptyTitle="No next recommended actions listed"
       />
     </div>
+  );
+}
+
+function OrganizerFallbackNotice() {
+  const { t } = useI18n();
+
+  return (
+    <aside className="du-organizer-fallback" aria-label={t("Organizer recovery notice")}>
+      <p className="du-kicker">{t("Recovery note")}</p>
+      <h4>{t("Discussion organizer used a safe fallback")}</h4>
+      <p>
+        {t(
+          "The model returned organizer output Deliberum could not use directly, so this view was rebuilt from the independent first responses. Treat the conclusion as provisional and check disagreements, missing evidence, and risks before relying on it."
+        )}
+      </p>
+    </aside>
+  );
+}
+
+function hasConservativeOrganizerFallback(records: unknown[]): boolean {
+  return records.some(hasConservativeOrganizerFallbackMarker);
+}
+
+function hasConservativeOrganizerFallbackMarker(record: unknown): boolean {
+  const object = getRecordValue(record, "object") ?? record;
+  const id = getStringRecordValue(object, "id") ?? getStringRecordValue(record, "id");
+
+  if (id?.startsWith("fallback-")) {
+    return true;
+  }
+
+  const markerText = [
+    getStringRecordValue(object, "title"),
+    getStringRecordValue(object, "description"),
+    getStringRecordValue(object, "rationale"),
+    getStringRecordValue(object, "failureMode"),
+    getStringRecordValue(object, "reason"),
+    getStringRecordValue(object, "requirement"),
+    ...getStringArray(getRecordValue(object, "assumptions")),
+    ...getStringArray(getRecordValue(object, "tradeoffs")),
+    ...getStringArray(getRecordValue(object, "applicableWhen"))
+  ].join(" ");
+
+  return /conservative extraction fallback|structured organizer output was invalid|organizer extraction needs recovery|provider returned json that could not be used as structured organizer output/i.test(
+    markerText
   );
 }
 

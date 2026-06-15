@@ -273,9 +273,49 @@ Limit:
 
 - This improves recovery for one verified real-provider schema failure. It does
   not prove broad provider compatibility, low latency, or production-grade
-  stability. More repeated real-provider walkthroughs and clearer in-room
-  visibility that a conservative organizer fallback was used remain release
-  hardening work.
+  stability. More repeated real-provider walkthroughs remain release-hardening
+  work.
+
+### 2026-06-15 Organizer Fallback Visibility
+
+Scope: rows 9 through 14 when structured organizer output had to be rebuilt
+from independent first responses, with supporting evidence for row 16.
+
+Commands:
+
+- `corepack pnpm --filter @deliberum/web test`
+- `corepack pnpm --filter @deliberum/web typecheck`
+- `corepack pnpm lint:language`
+- `corepack pnpm smoke:web-product-loop`
+- `corepack pnpm smoke:web-resilience`
+
+Path covered:
+
+1. Added a default Discussion Room notice when strongest current options come
+   from the conservative organizer fallback.
+2. Added the same Current Conclusion notice when visible options,
+   disagreements, evidence needs, or answer requirements contain fallback
+   material.
+3. Kept fallback object ids and raw extraction error categories out of the
+   default readable room and conclusion views.
+4. Covered the notice in English and Simplified Chinese.
+5. Re-ran the browser product-loop and resilience smokes to confirm the default
+   Web path still reaches readable discussion and recovery surfaces.
+
+Result:
+
+- A normal user can now see that Deliberum used a safe organizer fallback and
+  should treat the current conclusion as provisional until disagreements,
+  missing evidence, and risks are reviewed.
+- The default UI still does not expose fallback ids, raw extraction error codes,
+  or low-level runtime details.
+
+Limit:
+
+- This is fallback visibility coverage, not a new real-provider compatibility
+  guarantee. Repeated release-readiness walkthroughs against real external
+  providers are still required before release hardening can be considered
+  complete.
 
 ### 2026-06-15 Web Entry Smoke
 
