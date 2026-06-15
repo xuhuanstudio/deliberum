@@ -67,6 +67,11 @@ try {
     runId,
     sessionId
   });
+  await verifyRunsListBoundary(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    runId,
+    sessionId
+  });
   await verifyLegacySessionBoundary(page, {
     webBaseUrl: `http://127.0.0.1:${webPort}`,
     runId,
@@ -133,6 +138,22 @@ async function verifyLandingAdvancedBoundary(page, { webBaseUrl, runId, sessionI
   await page.getByText("Operation audit").waitFor();
   await page.getByText(sessionId).waitFor();
   await page.getByRole("link", { name: "Open session view", exact: true }).waitFor();
+}
+
+async function verifyRunsListBoundary(page, { webBaseUrl, runId, sessionId }) {
+  await page.goto(`${webBaseUrl}/runs`, { waitUntil: "networkidle" });
+  await page.getByRole("heading", { name: "Discussions", exact: true }).waitFor();
+  await page.getByText("Existing discussions").waitFor();
+  await page.getByText("Resume latest discussion").waitFor();
+  await page.getByRole("link", { name: "Open discussion", exact: true }).first().waitFor();
+  await assertNoHorizontalOverflow(page, "runs list default");
+  await assertDefaultBoundarySafety(page, "runs list default", {
+    runId,
+    sessionId
+  });
+  await assertHiddenFromDefault(page, "Run id", "runs list default");
+  await assertHiddenFromDefault(page, "Session id", "runs list default");
+  await assertHiddenFromDefault(page, "Ledger events", "runs list default");
 }
 
 async function verifyLegacySessionBoundary(page, { webBaseUrl, runId, sessionId }) {
