@@ -2648,11 +2648,17 @@ function OpenAICompatibleSetupForm({
         />
       ) : null}
       {verificationError ? (
-        <StatusBanner
-          tone="error"
-          title={t("Provider connection could not be verified")}
-          detail={formatSafeErrorMessage(verificationError)}
-        />
+        <>
+          <StatusBanner
+            tone="error"
+            title={t("Provider connection could not be verified")}
+            detail={formatSafeErrorMessage(verificationError)}
+          />
+          <ProviderVerificationRecoveryActions
+            verificationPending={verificationPending}
+            onVerifyConnection={onVerifyConnection}
+          />
+        </>
       ) : null}
       {error ? (
         <StatusBanner
@@ -2661,6 +2667,63 @@ function OpenAICompatibleSetupForm({
           detail={formatSafeErrorMessage(error)}
         />
       ) : null}
+    </section>
+  );
+}
+
+function ProviderVerificationRecoveryActions({
+  verificationPending,
+  onVerifyConnection
+}: {
+  verificationPending: boolean;
+  onVerifyConnection: () => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <section
+      className="du-provider-recovery-actions"
+      aria-label={t("Provider verification recovery options")}
+    >
+      <div>
+        <p className="du-kicker">{t("Recovery options")}</p>
+        <h4>{t("Keep setup moving")}</h4>
+        <p>
+          {t(
+            "Use these steps when the provider cannot be verified so you can fix setup, retry safely, or continue with a demo discussion."
+          )}
+        </p>
+      </div>
+      <div className="du-provider-recovery-grid">
+        <a className="du-provider-recovery-card" href="#openai-setup-form">
+          <span>{t("First")}</span>
+          <strong>{t("Review setup fields")}</strong>
+          <p>{t("Check the API key, base URL, and model, then save setup again if anything changed.")}</p>
+        </a>
+        <button
+          type="button"
+          className="du-provider-recovery-card"
+          disabled={verificationPending}
+          onClick={onVerifyConnection}
+        >
+          <span>{t("Then")}</span>
+          <strong>
+            {verificationPending ? t("Verifying connection") : t("Try Verify connection again")}
+          </strong>
+          <p>{t("Send another minimal test request after setup is corrected.")}</p>
+        </button>
+        <Link
+          className="du-provider-recovery-card du-provider-recovery-primary"
+          to="/runs/new"
+          search={{
+            participants: "demo"
+          }}
+        >
+          <span>{t("While fixing setup")}</span>
+          <strong>{t("Start demo discussion")}</strong>
+          <p>{t("Use built-in participants to learn the full discussion flow without provider calls.")}</p>
+        </Link>
+      </div>
     </section>
   );
 }

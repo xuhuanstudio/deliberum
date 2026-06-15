@@ -287,6 +287,19 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Provider connection verified": "\u63d0\u4f9b\u65b9\u8fde\u63a5\u5df2\u9a8c\u8bc1",
   "The configured provider accepted a safe test request. You can start a real model-backed discussion.":
     "\u5df2\u914d\u7f6e\u7684\u63d0\u4f9b\u65b9\u63a5\u53d7\u4e86\u4e00\u6b21\u5b89\u5168\u6d4b\u8bd5\u8bf7\u6c42\u3002\u73b0\u5728\u53ef\u4ee5\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
+  "Provider verification recovery options": "\u63d0\u4f9b\u65b9\u9a8c\u8bc1\u6062\u590d\u9009\u9879",
+  "Keep setup moving": "\u7ee7\u7eed\u63a8\u8fdb\u8bbe\u7f6e",
+  "Use these steps when the provider cannot be verified so you can fix setup, retry safely, or continue with a demo discussion.":
+    "\u5f53\u63d0\u4f9b\u65b9\u65e0\u6cd5\u9a8c\u8bc1\u65f6\uff0c\u6309\u8fd9\u4e9b\u6b65\u9aa4\u4fee\u6b63\u8bbe\u7f6e\u3001\u5b89\u5168\u91cd\u8bd5\uff0c\u6216\u5148\u7ee7\u7eed\u4f7f\u7528\u6f14\u793a\u8ba8\u8bba\u3002",
+  "Review setup fields": "\u68c0\u67e5\u8bbe\u7f6e\u5b57\u6bb5",
+  "Check the API key, base URL, and model, then save setup again if anything changed.":
+    "\u68c0\u67e5 API key\u3001base URL \u548c model\uff0c\u5982\u679c\u6709\u4efb\u4f55\u4fee\u6539\uff0c\u8bf7\u91cd\u65b0\u4fdd\u5b58\u8bbe\u7f6e\u3002",
+  "Try Verify connection again": "\u518d\u6b21\u5c1d\u8bd5\u9a8c\u8bc1\u8fde\u63a5",
+  "Send another minimal test request after setup is corrected.":
+    "\u4fee\u6b63\u8bbe\u7f6e\u540e\uff0c\u518d\u53d1\u9001\u4e00\u6b21\u6700\u5c0f\u6d4b\u8bd5\u8bf7\u6c42\u3002",
+  "While fixing setup": "\u4fee\u590d\u8bbe\u7f6e\u671f\u95f4",
+  "Use built-in participants to learn the full discussion flow without provider calls.":
+    "\u4f7f\u7528\u5185\u7f6e\u53c2\u4e0e\u8005\u4e86\u89e3\u5b8c\u6574\u8ba8\u8bba\u6d41\u7a0b\uff0c\u65e0\u9700\u8c03\u7528\u63d0\u4f9b\u65b9\u3002",
   "Setup path": "\u8bbe\u7f6e\u8def\u5f84",
   "Ready to start with real model participants":
     "\u5df2\u53ef\u4f7f\u7528\u771f\u5b9e\u6a21\u578b\u53c2\u4e0e\u8005\u5f00\u59cb",

@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -841,6 +841,49 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       projection
     })),
     ...overrides
+  };
+}
+
+function createReadyOpenAISetupProfiles() {
+  return {
+    profiles: [
+      {
+        id: "openai-compatible",
+        name: "OpenAI-compatible",
+        enabled: true,
+        status: "ready" as const,
+        components: [],
+        setup: {
+          enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+          envVars: [
+            {
+              name: "DELIBERUM_OPENAI_BASE_URL",
+              configured: true,
+              secret: false,
+              required: false,
+              purpose: "Default provider base URL."
+            },
+            {
+              name: "DELIBERUM_OPENAI_MODEL",
+              configured: true,
+              secret: false,
+              required: false,
+              purpose: "Default provider model."
+            },
+            {
+              name: "DELIBERUM_OPENAI_API_KEY",
+              configured: true,
+              secret: true,
+              required: false,
+              purpose: "Default provider secret."
+            }
+          ],
+          missingRecommendedEnvVars: [],
+          notes: []
+        },
+        boundaries: []
+      }
+    ]
   };
 }
 
@@ -2467,46 +2510,7 @@ describe("@deliberum/web shell", () => {
 
   it("shows a safe provider verification failure from setup and models", async () => {
     const client = createClient();
-    vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
-      profiles: [
-        {
-          id: "openai-compatible",
-          name: "OpenAI-compatible",
-          enabled: true,
-          status: "ready",
-          components: [],
-          setup: {
-            enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
-            envVars: [
-              {
-                name: "DELIBERUM_OPENAI_BASE_URL",
-                configured: true,
-                secret: false,
-                required: false,
-                purpose: "Default provider base URL."
-              },
-              {
-                name: "DELIBERUM_OPENAI_MODEL",
-                configured: true,
-                secret: false,
-                required: false,
-                purpose: "Default provider model."
-              },
-              {
-                name: "DELIBERUM_OPENAI_API_KEY",
-                configured: true,
-                secret: true,
-                required: false,
-                purpose: "Default provider secret."
-              }
-            ],
-            missingRecommendedEnvVars: [],
-            notes: []
-          },
-          boundaries: []
-        }
-      ]
-    });
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue(createReadyOpenAISetupProfiles());
     vi.mocked(client.verifyOpenAICompatibleSetup).mockRejectedValue(
       new Error("Provider authentication failed. Check the API key, then verify again.")
     );
@@ -2517,7 +2521,43 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText("Provider authentication failed. Check the API key, then verify again.")
     ).toBeTruthy();
+    const recovery = screen.getByRole("region", {
+      name: "Provider verification recovery options"
+    });
+    expect(within(recovery).getByText("Keep setup moving")).toBeTruthy();
+    expect(within(recovery).getByText("Review setup fields")).toBeTruthy();
+    expect(within(recovery).getByText("Try Verify connection again")).toBeTruthy();
+    expect(within(recovery).getByText("Start demo discussion")).toBeTruthy();
+    const retryAction = within(recovery).getByText("Try Verify connection again").closest("button");
+    expect(retryAction).toBeTruthy();
+    fireEvent.click(retryAction as HTMLButtonElement);
+    await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalledTimes(2));
+    const demoLink = within(recovery).getByText("Start demo discussion").closest("a");
+    expect((demoLink as HTMLAnchorElement).href).toContain("participants=demo");
     expect(document.body.textContent ?? "").not.toContain("sk-");
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
+  });
+
+  it("localizes provider verification recovery options in Simplified Chinese", async () => {
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue(createReadyOpenAISetupProfiles());
+    vi.mocked(client.verifyOpenAICompatibleSetup).mockRejectedValue(
+      new Error("Provider verification timed out.")
+    );
+    renderApp("/setup/models", client, {
+      initialLanguage: "zh-CN"
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "\u9a8c\u8bc1\u8fde\u63a5" }));
+    expect(await screen.findByText("\u65e0\u6cd5\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u8fde\u63a5")).toBeTruthy();
+    const recovery = screen.getByRole("region", {
+      name: "\u63d0\u4f9b\u65b9\u9a8c\u8bc1\u6062\u590d\u9009\u9879"
+    });
+    expect(within(recovery).getByText("\u7ee7\u7eed\u63a8\u8fdb\u8bbe\u7f6e")).toBeTruthy();
+    expect(within(recovery).getByText("\u68c0\u67e5\u8bbe\u7f6e\u5b57\u6bb5")).toBeTruthy();
+    expect(within(recovery).getByText("\u518d\u6b21\u5c1d\u8bd5\u9a8c\u8bc1\u8fde\u63a5")).toBeTruthy();
+    expect(within(recovery).getByText("\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
   it("localizes known sample discussion titles on the landing catalog", async () => {
