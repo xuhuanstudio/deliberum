@@ -169,6 +169,13 @@ gap is not provider verification in Deliberum itself; it is continued
 real-provider release hardening across more providers, longer run batches, and
 failure recovery states.
 
+Additional 2026-06-15 post-change evidence: after the verified Setup / Models
+focused and broader start links were added, the opt-in real-provider
+release-readiness smoke passed one fresh focused two-perspective run and one
+fresh Broader review three-perspective run. The recorded result intentionally
+omits the provider key, base URL, model name, raw provider response, and provider
+output.
+
 Set `DELIBERUM_RELEASE_SMOKE_RUNS=3` or another positive integer to repeat the
 same browser walkthrough in fresh isolated local services. The command stops on
 the first failed run, which makes intermittent real-provider product-loop
