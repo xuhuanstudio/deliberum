@@ -70,7 +70,9 @@ Current v1.0 gate evidence includes:
 - model and participant management evidence for one Web-managed
   OpenAI-compatible provider with role model defaults;
 - SQLite storage backup, restore, process-lock shutdown, and ledger-integrity
-  recovery evidence.
+  recovery evidence;
+- current local CI, GitHub CI, Web smoke, storage recovery smoke, and opt-in
+  real-provider focused and Broader release-readiness evidence.
 
 The authoritative gate tracker remains
 [v1.0 Production Readiness Matrix](V1_0_PRODUCTION_READINESS_MATRIX.md).
@@ -91,11 +93,8 @@ These are intentionally outside the v1.0 supported scope:
 
 ## Current Remaining Release Gates
 
-After this release-note and documentation-alignment batch, the remaining gates
-are:
+The remaining gates are:
 
-- Gate 9: current CI, docs/language checks, product-loop smoke, Web smoke, and
-  real-provider release-readiness evidence are green and current;
 - Gate 10: no known normal-user blocker remains across install, startup, setup,
   verification, discussion start, continuation, conclusion review, and
   recovery;
