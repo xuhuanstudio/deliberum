@@ -156,6 +156,10 @@ same browser walkthrough in fresh isolated local services. The command stops on
 the first failed run, which makes intermittent real-provider product-loop
 failures easier to reproduce without hand-written shell loops.
 
+Set `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3` to run the same walkthrough through
+the Broader review start path with Perspective A, Perspective B, and Perspective
+C. The default remains `2`, which verifies the focused two-perspective path.
+
 The smoke relies on Web setup's default Structured review compatibility option
 for organizer, reviewer, risk-review, and conclusion-writer stages. This keeps
 the release-readiness path aligned with what a normal local user can do in Web
@@ -536,6 +540,41 @@ Limit:
 - This strengthens repeatability evidence for one provider only. It still does
   not prove broad OpenAI-compatible provider coverage, long-running stability,
   quota resilience, or production-grade release readiness.
+
+### 2026-06-15 Broader Review Real Provider Smoke
+
+Scope: rows 7 through 16 against the same real external OpenAI-compatible
+provider, using the Web-managed Broader review path.
+
+Command:
+
+- `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Opened `/setup/models`, entered provider setup through Web, and verified the
+   provider connection.
+2. Started a model-backed discussion from Web.
+3. Selected Broader review on the start page and verified Perspective A,
+   Perspective B, and Perspective C before creating the discussion.
+4. Confirmed the created discussion brief includes `Use three independent
+   model-backed perspectives from the local service.`
+5. Used Continue discussion until participant perspectives, strongest options,
+   open disagreements, missing evidence, risks, current conclusion, and next
+   recommended actions were visible.
+6. Opened the Current Conclusion page and reused default-view safety scans for
+   setup, start, room, retry, and outcome surfaces.
+
+Result:
+
+- Passed once against the real provider.
+- The release-readiness smoke can now verify both the default focused
+  two-perspective path and the Broader review path with Perspective C.
+
+Limit:
+
+- This is one Broader review pass against one provider. It does not replace
+  repeated Broader review runs or broader provider coverage before release.
 
 ### 2026-06-15 Web Entry Smoke
 

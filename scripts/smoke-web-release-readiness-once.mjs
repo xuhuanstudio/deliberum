@@ -147,6 +147,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByRole("heading", { name: "Start a discussion" }).waitFor();
   await page.getByText("Model-backed discussion selected").waitFor();
   await page.getByText("Ready to create a model-backed discussion").waitFor();
+  await selectPerspectiveDepth(page);
   await assertDefaultViewSafety(page, "start discussion");
 
   await page.getByLabel("Discussion question").fill(discussionQuestion);
@@ -154,12 +155,23 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByText("Discussion room").waitFor();
   await page.getByText("Model-backed discussion").first().waitFor();
   await page.getByText("What is being discussed").waitFor();
+  await page
+    .getByText(
+      releaseConfig.perspectiveCount === 3
+        ? "Use three independent model-backed perspectives from the local service."
+        : "Use two independent model-backed perspectives from the local service."
+    )
+    .first()
+    .waitFor();
   await page.getByRole("button", { name: "Continue discussion" }).waitFor();
   await assertDefaultViewSafety(page, "discussion room before continuation");
 
   await continueDiscussionUntilCompleted(page);
 
   await page.getByText("Participant first responses").waitFor();
+  if (releaseConfig.perspectiveCount === 3) {
+    await page.getByText("Perspective C").first().waitFor();
+  }
   await page.getByRole("region", { name: "Discussion outputs" }).waitFor();
   await page.getByText("Strongest current options").first().waitFor();
   await page.getByText("Open disagreements").first().waitFor();
@@ -185,6 +197,29 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await assertDefaultViewSafety(page, "current conclusion", {
     allowModelGeneratedLowLevelLanguage: true
   });
+}
+
+async function selectPerspectiveDepth(page) {
+  if (releaseConfig.perspectiveCount === 2) {
+    const focusedReview = page.getByRole("radio", { name: /Focused review/ });
+    await focusedReview.waitFor();
+    if (!(await focusedReview.isChecked())) {
+      await focusedReview.check();
+    }
+    await page.getByText("2 model perspectives").waitFor();
+    return;
+  }
+
+  const broaderReview = page.getByRole("radio", { name: /Broader review/ });
+  await broaderReview.waitFor();
+  if (!(await broaderReview.isChecked())) {
+    await broaderReview.check();
+  }
+  await page.getByText("Perspective C").first().waitFor();
+  await page.getByText("3 model perspectives").waitFor();
+  await page
+    .getByText("Perspective A, Perspective B, and Perspective C will answer independently.")
+    .waitFor();
 }
 
 async function continueDiscussionUntilCompleted(page) {
@@ -632,7 +667,8 @@ function readReleaseSmokeConfig(env) {
       env,
       "DELIBERUM_RELEASE_SMOKE_CONTINUE_ATTEMPTS",
       3
-    )
+    ),
+    perspectiveCount: readOptionalPerspectiveCountEnv(env)
   };
 }
 
@@ -693,6 +729,20 @@ function readOptionalPositiveIntegerEnv(env, name, fallback) {
   }
 
   return parsed;
+}
+
+function readOptionalPerspectiveCountEnv(env) {
+  const value = readOptionalEnv(env, "DELIBERUM_RELEASE_SMOKE_PERSPECTIVES");
+
+  if (!value) {
+    return 2;
+  }
+
+  if (value === "2" || value === "3") {
+    return Number(value);
+  }
+
+  throw new Error("DELIBERUM_RELEASE_SMOKE_PERSPECTIVES must be 2 or 3.");
 }
 
 function readOptionalEnv(env, name) {
