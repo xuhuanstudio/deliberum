@@ -2526,6 +2526,11 @@ describe("@deliberum/web shell", () => {
     });
     expect(within(recovery).getByText("Keep setup moving")).toBeTruthy();
     expect(within(recovery).getByText("Review setup fields")).toBeTruthy();
+    expect(
+      within(recovery).getByText(
+        "If the base URL points to a local or private provider, make sure that provider is running before you retry."
+      )
+    ).toBeTruthy();
     expect(within(recovery).getByText("Try Verify connection again")).toBeTruthy();
     expect(within(recovery).getByText("Start demo discussion")).toBeTruthy();
     const retryAction = within(recovery).getByText("Try Verify connection again").closest("button");
@@ -2555,6 +2560,11 @@ describe("@deliberum/web shell", () => {
     });
     expect(within(recovery).getByText("\u7ee7\u7eed\u63a8\u8fdb\u8bbe\u7f6e")).toBeTruthy();
     expect(within(recovery).getByText("\u68c0\u67e5\u8bbe\u7f6e\u5b57\u6bb5")).toBeTruthy();
+    expect(
+      within(recovery).getByText(
+        "\u5982\u679c base URL \u6307\u5411\u672c\u5730\u6216\u79c1\u6709\u63d0\u4f9b\u65b9\uff0c\u91cd\u8bd5\u524d\u8bf7\u786e\u8ba4\u8be5\u63d0\u4f9b\u65b9\u5df2\u542f\u52a8\u3002"
+      )
+    ).toBeTruthy();
     expect(within(recovery).getByText("\u518d\u6b21\u5c1d\u8bd5\u9a8c\u8bc1\u8fde\u63a5")).toBeTruthy();
     expect(within(recovery).getByText("\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");

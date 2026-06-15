@@ -401,6 +401,12 @@ async function assertProviderVerificationRecoveryActions(page, label) {
 
   await recoveryRegion.waitFor();
   await recoveryRegion.getByText("Review setup fields", { exact: true }).waitFor();
+  await recoveryRegion
+    .getByText(
+      "If the base URL points to a local or private provider, make sure that provider is running before you retry.",
+      { exact: true }
+    )
+    .waitFor();
   await recoveryRegion.getByText("Try Verify connection again", { exact: true }).waitFor();
   await recoveryRegion.getByText("Start demo discussion", { exact: true }).waitFor();
 

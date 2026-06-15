@@ -2699,6 +2699,11 @@ function ProviderVerificationRecoveryActions({
           <span>{t("First")}</span>
           <strong>{t("Review setup fields")}</strong>
           <p>{t("Check the API key, base URL, and model, then save setup again if anything changed.")}</p>
+          <p>
+            {t(
+              "If the base URL points to a local or private provider, make sure that provider is running before you retry."
+            )}
+          </p>
         </a>
         <button
           type="button"

@@ -294,6 +294,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review setup fields": "\u68c0\u67e5\u8bbe\u7f6e\u5b57\u6bb5",
   "Check the API key, base URL, and model, then save setup again if anything changed.":
     "\u68c0\u67e5 API key\u3001base URL \u548c model\uff0c\u5982\u679c\u6709\u4efb\u4f55\u4fee\u6539\uff0c\u8bf7\u91cd\u65b0\u4fdd\u5b58\u8bbe\u7f6e\u3002",
+  "If the base URL points to a local or private provider, make sure that provider is running before you retry.":
+    "\u5982\u679c base URL \u6307\u5411\u672c\u5730\u6216\u79c1\u6709\u63d0\u4f9b\u65b9\uff0c\u91cd\u8bd5\u524d\u8bf7\u786e\u8ba4\u8be5\u63d0\u4f9b\u65b9\u5df2\u542f\u52a8\u3002",
   "Try Verify connection again": "\u518d\u6b21\u5c1d\u8bd5\u9a8c\u8bc1\u8fde\u63a5",
   "Send another minimal test request after setup is corrected.":
     "\u4fee\u6b63\u8bbe\u7f6e\u540e\uff0c\u518d\u53d1\u9001\u4e00\u6b21\u6700\u5c0f\u6d4b\u8bd5\u8bf7\u6c42\u3002",
