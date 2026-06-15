@@ -3162,6 +3162,7 @@ function StartResult({
           detail={t(describeStartResultStopReason(getRecordValue(result, "stopReason")))}
         />
       ) : null}
+      <RunStartRecoveryActions show={isRecoverableStoppedStartResult(result)} />
       <DiscussionResultHandoff
         runId={runId}
         conclusionReviewReady={conclusionReviewReady}
@@ -3202,6 +3203,16 @@ function describeStartResultStopReason(reason: unknown): string {
   }
 
   return "The discussion paused before every requested step finished. Open Advanced details for the technical reason.";
+}
+
+function isRecoverableStoppedStartResult(result: unknown): boolean {
+  if (getRecordValue(result, "stopped") !== true) {
+    return false;
+  }
+
+  const stopReason = getRecordValue(result, "stopReason");
+
+  return stopReason === "failed" || stopReason === "timed_out";
 }
 
 function DiscussionResultHandoff({
@@ -7303,10 +7314,16 @@ function formatRunStartErrorMessage(error: Error | null | undefined): string {
   return formatSafeErrorMessage(error);
 }
 
-function RunStartRecoveryActions({ error }: { error: Error | null | undefined }) {
+function RunStartRecoveryActions({
+  error,
+  show
+}: {
+  error?: Error | null;
+  show?: boolean;
+}) {
   const { t } = useI18n();
 
-  if (getErrorCode(error) !== "run_stage_failed") {
+  if (!show && getErrorCode(error) !== "run_stage_failed") {
     return null;
   }
 

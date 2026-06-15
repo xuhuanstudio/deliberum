@@ -5874,6 +5874,132 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("provider_http_error");
   });
 
+  it("shows recovery actions when a stopped model-backed continuation fails", async () => {
+    const stoppedRun = {
+      ...providerBackedRunDetail,
+      status: "revealed",
+      sealedDivergenceStatus: "revealed",
+      latestExtractionStatus: "completed",
+      latestProposalReviewStatus: "failed",
+      latestFinalizationStatus: undefined,
+      ledger: {
+        eventCount: 8
+      },
+      rounds: {
+        sealedDivergence: {
+          status: "revealed"
+        },
+        extraction: [
+          {
+            status: "completed"
+          }
+        ],
+        candidateRepair: [],
+        evidenceCheck: [],
+        proposalReview: [
+          {
+            status: "failed",
+            lastErrorCategory: "review_output_invalid"
+          }
+        ],
+        finalization: []
+      }
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: providerBackedRunDetail
+        })),
+        startRun: vi.fn(async () => ({
+          run: stoppedRun,
+          stages: [
+            {
+              stage: "proposal_review",
+              executionStatus: "executed",
+              status: "failed"
+            }
+          ],
+          stopped: true,
+          stopReason: "failed"
+        }))
+      })
+    );
+
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalled());
+    expect(await screen.findByText("Discussion paused")).toBeTruthy();
+    expect(
+      screen.getByText("A guided step needs attention before Deliberum can continue the full discussion.")
+    ).toBeTruthy();
+    const recovery = await screen.findByRole("region", {
+      name: "Discussion recovery options"
+    });
+    expect(recovery.textContent ?? "").toContain("Keep the discussion recoverable");
+    expect(recovery.textContent ?? "").toContain("Check model setup");
+    expect(recovery.textContent ?? "").toContain("Try Continue discussion again");
+    expect(recovery.textContent ?? "").toContain("Start a new model-backed discussion");
+    expect(document.body.textContent ?? "").not.toContain("run_stage_failed");
+    expect(document.body.textContent ?? "").not.toContain("review_output_invalid");
+  });
+
+  it("localizes stopped continuation recovery actions to Simplified Chinese", async () => {
+    const zhContinue = "\u7ee7\u7eed\u8ba8\u8bba";
+    const zhPaused = "\u8ba8\u8bba\u5df2\u6682\u505c";
+    const zhDetail =
+      "\u6709\u4e00\u4e2a\u5f15\u5bfc\u6b65\u9aa4\u9700\u8981\u5904\u7406\uff0cDeliberum \u624d\u80fd\u7ee7\u7eed\u5b8c\u6574\u8ba8\u8bba\u3002";
+    const zhRegion = "\u8ba8\u8bba\u6062\u590d\u9009\u9879";
+    const zhHeading = "\u4fdd\u6301\u8ba8\u8bba\u53ef\u6062\u590d";
+    const zhSetup = "\u68c0\u67e5\u6a21\u578b\u8bbe\u7f6e";
+    const zhRetry = "\u518d\u6b21\u5c1d\u8bd5\u7ee7\u7eed\u8ba8\u8bba";
+    const zhStart = "\u5f00\u59cb\u65b0\u7684\u6a21\u578b\u652f\u6301\u8ba8\u8bba";
+    renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: providerBackedRunDetail
+        })),
+        startRun: vi.fn(async () => ({
+          run: {
+            ...providerBackedRunDetail,
+            status: "revealed",
+            sealedDivergenceStatus: "revealed",
+            latestProposalReviewStatus: "failed"
+          },
+          stages: [
+            {
+              stage: "proposal_review",
+              executionStatus: "executed",
+              status: "failed"
+            }
+          ],
+          stopped: true,
+          stopReason: "timed_out"
+        }))
+      }),
+      {
+        initialLanguage: "zh-CN"
+      }
+    );
+
+    expect(await screen.findByRole("button", { name: zhContinue })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: zhContinue }));
+
+    expect(await screen.findByText(zhPaused)).toBeTruthy();
+    expect(screen.getByText(zhDetail)).toBeTruthy();
+    const recovery = await screen.findByRole("region", {
+      name: zhRegion
+    });
+    expect(recovery.textContent ?? "").toContain(zhHeading);
+    expect(recovery.textContent ?? "").toContain(zhSetup);
+    expect(recovery.textContent ?? "").toContain(zhRetry);
+    expect(recovery.textContent ?? "").toContain(zhStart);
+    expect(document.body.textContent ?? "").not.toContain("timed_out");
+    expect(document.body.textContent ?? "").not.toContain("proposal_review");
+  });
+
   it("starts a run from a JSON start request and renders readable step metadata", async () => {
     const client = renderApp(
       "/runs/run-1",
