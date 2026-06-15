@@ -876,6 +876,33 @@ textarea:focus-visible {
   line-height: 1.45;
 }
 
+.du-setup-participant-assignment-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #f6fbf8;
+  padding: 12px;
+}
+
+.du-setup-participant-assignment-controls > div {
+  display: grid;
+  gap: 4px;
+}
+
+.du-setup-participant-assignment-controls strong,
+.du-setup-participant-assignment-controls span {
+  display: block;
+}
+
+.du-setup-participant-assignment-controls span {
+  color: var(--du-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .du-setup-participant-depth-actions {
   display: flex;
   flex-wrap: wrap;
@@ -3391,6 +3418,7 @@ textarea:focus-visible {
   .du-setup-model-grid,
   .du-first-use-path-grid,
   .du-setup-readiness-grid,
+  .du-setup-participant-assignment-controls,
   .du-setup-participant-grid,
   .du-current-model-setup-header,
   .du-current-model-setup-grid,

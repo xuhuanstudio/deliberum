@@ -1481,9 +1481,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Current limit")).toBeTruthy();
     expect(
       screen.getByText(
-        "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet."
+        "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together."
       )
     ).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Role assignment controls" })).toBeTruthy();
+    expect(screen.getByText("Shared provider setup")).toBeTruthy();
+    expect(screen.getByText("One provider for all model roles")).toBeTruthy();
     expect(screen.getByText("Who joins the discussion")).toBeTruthy();
     expect(screen.getByText("First responses")).toBeTruthy();
     expect(
@@ -2509,6 +2512,13 @@ describe("@deliberum/web shell", () => {
         "The saved provider cannot power model participants until Verify connection succeeds."
       )
     ).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Role assignment controls" })).toBeTruthy();
+    expect(screen.getByText("Shared provider setup")).toBeTruthy();
+    expect(screen.getByText("One provider for all model roles")).toBeTruthy();
+    const reviewProviderSetupLink = screen.getByRole("link", {
+      name: "Review provider setup"
+    }) as HTMLAnchorElement;
+    expect(reviewProviderSetupLink.href).toContain("#setup-provider-form");
     expect(
       screen.getByText(
         "After verification, open the start page to choose Focused review or Broader review."
@@ -2562,6 +2572,20 @@ describe("@deliberum/web shell", () => {
         "Choose Focused review or Broader review on the start page before creating the discussion."
       )
     ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "A change here applies to Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer."
+      )
+    ).toBeTruthy();
+    const editSharedProviderSetupLink = screen.getByRole("link", {
+      name: "Edit shared provider setup"
+    }) as HTMLAnchorElement;
+    expect(editSharedProviderSetupLink.href).toContain("#setup-provider-form");
     const focusedDiscussionLink = screen.getByRole("link", {
       name: "Start focused discussion"
     }) as HTMLAnchorElement;
@@ -2583,9 +2607,26 @@ describe("@deliberum/web shell", () => {
       initialLanguage: "zh-CN"
     });
 
+    expect(
+      await screen.findByText(
+        "\u6b64\u63d0\u4f9b\u65b9\u5df2\u4fdd\u5b58\u5230\u672c\u5730\u3002\u5f00\u59cb\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u3002"
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u4f7f\u7528\u6a21\u578b\u53c2\u4e0e\u8005\u5f00\u59cb\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u8fde\u63a5\u3002"
+      )
+    ).toBeTruthy();
+
     fireEvent.click(await screen.findByRole("button", { name: "\u9a8c\u8bc1\u8fde\u63a5" }));
     expect(await screen.findByText("\u5df2\u5c31\u7eea\u4e14\u5df2\u9a8c\u8bc1")).toBeTruthy();
     expect(screen.getByText("\u5355\u4e2a\u5df2\u9a8c\u8bc1\u63d0\u4f9b\u65b9")).toBeTruthy();
+    expect(screen.getByRole("group", { name: "\u89d2\u8272\u5206\u914d\u63a7\u4ef6" })).toBeTruthy();
+    expect(screen.getByText("\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e")).toBeTruthy();
+    const editSharedProviderSetupLink = screen.getByRole("link", {
+      name: "\u7f16\u8f91\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e"
+    }) as HTMLAnchorElement;
+    expect(editSharedProviderSetupLink.href).toContain("#setup-provider-form");
 
     const focusedDiscussionLink = screen.getByRole("link", {
       name: "\u5f00\u59cb\u805a\u7126\u8ba8\u8bba"

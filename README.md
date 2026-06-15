@@ -122,7 +122,7 @@ node scripts/check-local-prerequisites.mjs
 
 4. Configure a real model provider from Web.
 
-   Open `/setup/models`, then use **Configure OpenAI-compatible provider** to enter the provider API key, base URL, and model. Keep **Structured review compatibility** enabled for most real providers so Deliberum can organize options, disagreements, evidence gaps, risks, conclusions, and next actions reliably. Save the setup, check readiness, and use **Verify connection** before relying on a real model-backed discussion.
+   Open `/setup/models`, then use **Configure OpenAI-compatible provider** to enter the provider API key, base URL, and model. Keep **Structured review compatibility** enabled for most real providers so Deliberum can organize options, disagreements, evidence gaps, risks, conclusions, and next actions reliably. Save the setup, check readiness, and use **Verify connection** before relying on a real model-backed discussion. The current Web path shows that one verified provider powers the model-backed participant roles together; edit the shared provider setup to change the model used by those roles.
 
    Saved API keys stay on this machine. The default Web UI does not show saved secrets, env var names, provider config ids, raw JSON, or runtime details; those remain behind Advanced / Developer Mode.
 

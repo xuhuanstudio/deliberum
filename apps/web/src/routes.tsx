@@ -1906,6 +1906,8 @@ type SetupParticipantAssignment = {
   detail: string;
   depthAction: string;
   modelPolicy: string;
+  editDetail: string;
+  editAction: string;
   tone: "ok" | "warning" | "neutral";
   detailValues?: Record<string, string>;
 };
@@ -2001,6 +2003,20 @@ function SetupParticipantReadiness({
             <dd>{t(readiness.assignment.modelPolicy)}</dd>
           </div>
         </dl>
+        <div
+          className="du-setup-participant-assignment-controls"
+          role="group"
+          aria-label={t("Role assignment controls")}
+        >
+          <div>
+            <p className="du-kicker">{t("Shared provider setup")}</p>
+            <strong>{t("One provider for all model roles")}</strong>
+            <span>{t(readiness.assignment.editDetail)}</span>
+          </div>
+          <a className="du-action-link du-secondary-link" href="#setup-provider-form">
+            {t(readiness.assignment.editAction)}
+          </a>
+        </div>
         {readiness.canStartModelBackedDiscussion ? (
           <div
             className="du-setup-participant-depth-actions"
@@ -2070,7 +2086,7 @@ function SetupParticipantReadiness({
           <StartModelBackedDiscussionLink />
         ) : null}
         {readiness.needsModelSetup ? (
-          <a className="du-action-link du-secondary-link" href="#openai-setup-form">
+          <a className="du-action-link du-secondary-link" href="#setup-provider-form">
             {t("Add model setup")}
           </a>
         ) : null}
@@ -2121,7 +2137,7 @@ function SetupDiscussionReadiness({
           </Link>
         ) : null}
         {readiness.needsModelSetup ? (
-          <a className="du-action-link du-secondary-link" href="#openai-setup-form">
+          <a className="du-action-link du-secondary-link" href="#setup-provider-form">
             {t("Add model setup")}
           </a>
         ) : null}
@@ -2161,7 +2177,7 @@ function ProviderSetupChecklistCard({
         {ready ? (
           <StartModelBackedDiscussionLink />
         ) : profile.status === "ready" ? (
-          <a className="du-action-link du-secondary-link" href="#openai-setup-form">
+          <a className="du-action-link du-secondary-link" href="#setup-provider-form">
             {t("Verify connection")}
           </a>
         ) : (
@@ -2368,7 +2384,10 @@ function buildSetupParticipantReadiness(
         depthAction:
           "Choose Focused review or Broader review on the start page before creating the discussion.",
         modelPolicy:
-          "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet.",
+          "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together.",
+        editDetail:
+          "A change here applies to Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer.",
+        editAction: "Edit shared provider setup",
         tone: "ok"
       }
     : modelNeedsVerification
@@ -2380,7 +2399,10 @@ function buildSetupParticipantReadiness(
           depthAction:
             "After verification, open the start page to choose Focused review or Broader review.",
           modelPolicy:
-            "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet.",
+            "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together.",
+          editDetail:
+            "Review the saved provider fields, then verify connection to unlock model participants.",
+          editAction: "Review provider setup",
           tone: "warning"
         }
       : {
@@ -2391,7 +2413,10 @@ function buildSetupParticipantReadiness(
           depthAction:
             "Start a demo discussion now, or finish model setup to choose focused or broader model-backed review.",
           modelPolicy:
-            "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet.",
+            "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together.",
+          editDetail:
+            "Add the provider API key, base URL, and model before model-backed roles are available.",
+          editAction: "Add model setup",
           tone: localPresetReady ? "warning" : "neutral"
         };
   const planItems: SetupParticipantPlanItem[] = [
@@ -2593,7 +2618,11 @@ function OpenAICompatibleSetupForm({
         };
 
   return (
-    <section className="du-provider-setup-form-section" aria-labelledby="openai-setup-form">
+    <section
+      id="setup-provider-form"
+      className="du-provider-setup-form-section"
+      aria-labelledby="openai-setup-form"
+    >
       <div className="du-provider-setup-form-heading">
         <p className="du-kicker">{t("Add model")}</p>
         <h4 id="openai-setup-form">{t("Configure OpenAI-compatible provider")}</h4>
@@ -2785,7 +2814,7 @@ function ProviderVerificationRecoveryActions({
         </p>
       </div>
       <div className="du-provider-recovery-grid">
-        <a className="du-provider-recovery-card" href="#openai-setup-form">
+        <a className="du-provider-recovery-card" href="#setup-provider-form">
           <span>{t("First")}</span>
           <strong>{t("Review setup fields")}</strong>
           <p>{t("Check the API key, base URL, and model, then save setup again if anything changed.")}</p>
