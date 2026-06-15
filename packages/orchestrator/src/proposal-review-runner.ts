@@ -461,6 +461,10 @@ function resolveAcceptanceProposalEventIds(input: {
     return uniqueIds(input.acceptancePolicy.proposalEventIds);
   }
 
+  if (input.acceptancePolicy.mode === "all_generated") {
+    return [...input.proposalEventIds];
+  }
+
   const states = projectExtractionProposalStates({
     eventStore: input.options.eventStore,
     sessionId: input.run.sessionId

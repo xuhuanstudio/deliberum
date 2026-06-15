@@ -97,10 +97,11 @@ as supporting evidence only.
 
 ## Next Highest-Value Batch
 
-Rows 1 through 5 and 7 through 16 have direct automated and browser evidence on
-the local mock/default browser path. Row 6 remains partial for real-provider
-release hardening because an external provider can still fail before Web reaches
-the model-backed discussion path.
+Rows 1 through 16 have direct automated and browser evidence on the local
+mock/default browser path, with repeated opt-in release-readiness evidence
+against one real external OpenAI-compatible provider. Treat this as Basic
+Product Loop evidence for the current provider path, not as broad provider
+compatibility or production-grade release readiness.
 
 The current convergence target is real-provider release hardening: continue
 running the release-readiness walkthrough through the Web-managed setup path,
@@ -112,7 +113,10 @@ safe failed-stage responses, OpenAI-compatible structured extraction has a
 conservative fallback when a provider returns JSON that still fails the
 organizer schema after retry, verification has a default timeout for
 non-responsive providers, and the default UI explains when the organizer
-fallback was used.
+fallback was used. The default model-backed review policy also preserves the
+user path when the reviewer challenges generated proposals: Deliberum can still
+compile a provisional conclusion while keeping challenges, objections, missing
+evidence, risks, and next actions visible for review.
 
 Release-readiness walkthrough requirements:
 
@@ -447,6 +451,56 @@ Limit:
   compatibility, long-running stability, or production-grade release readiness.
   Future convergence work should keep using the release-readiness smoke to find
   the first normal-user blocker on the real provider path.
+
+### 2026-06-15 Reviewer Challenge Recovery Release Smoke
+
+Scope: rows 8 through 15 against a real external OpenAI-compatible provider,
+with supporting evidence for row 16 on default-view safety.
+
+Commands:
+
+- `corepack pnpm --filter @deliberum/orchestrator test -- -t "all_generated"`
+- `corepack pnpm --filter @deliberum/web test -- -t "model-backed review path ready"`
+- `corepack pnpm --filter @deliberum/orchestrator typecheck`
+- `corepack pnpm --filter @deliberum/web typecheck`
+- `corepack pnpm build`
+- `corepack pnpm smoke:product-loop`
+- `corepack pnpm smoke:web-product-loop`
+- `DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Reproduced a real-provider release-readiness failure where the room had
+   readable participant first responses, but repeated Continue discussion
+   attempts could still end in a safe `run_stage_failed` response before the
+   room reached strongest options, risks, conclusion, and next actions.
+2. Changed the default model-backed Web continuation policy to accept generated
+   organizer proposals for provisional finalization while keeping reviewer
+   challenges and extracted objections visible.
+3. Added focused orchestrator coverage for accepting challenged generated
+   proposals through the new provisional review policy.
+4. Updated the API and browser product-loop smokes so their mock reviewer
+   challenges generated proposals before the flow reaches finalization.
+5. Improved the release-readiness smoke's failure diagnostics so future
+   real-provider failures report safe extraction, review, and finalization round
+   states instead of only the top-level run status.
+6. Re-ran the real-provider release-readiness browser walkthrough three
+   consecutive times from Web setup through current conclusion.
+
+Result:
+
+- The reproduced real-provider blocker was fixed for the tested provider path.
+- The default Web path can now reach a provisional conclusion even when the
+  reviewer challenges generated discussion material, while preserving normal
+  user review of disagreements, missing evidence, risks, and next actions.
+- The deterministic API and browser smokes now guard against regression where a
+  reviewer challenge leaves normal users without a reviewable conclusion.
+
+Limit:
+
+- This remains evidence for one real external provider and deterministic local
+  mocks. Additional OpenAI-compatible providers, slower model behavior, and
+  longer repeated runs remain release-hardening work.
 
 ### 2026-06-15 Web Entry Smoke
 

@@ -411,10 +411,15 @@ function createMockProviderContent(body, state) {
   }
 
   if (system.includes("Prepare Deliberum proposal review material only.")) {
+    const allowedProposalEventIds = readStringArray(userPayload?.allowedProposalEventIds);
     return JSON.stringify({
-      challenges: [],
+      challenges: allowedProposalEventIds.slice(0, 1).map((proposalEventId) => ({
+        targetProposalEventId: proposalEventId,
+        reason:
+          "Keep this generated proposal provisional until browser-visible evidence gaps are reviewed."
+      })),
       notes: [
-        "The browser smoke keeps review obligations visible, so no challenge is proposed."
+        "The browser smoke challenges the generated proposal to verify the default Web flow still reaches a provisional conclusion with disagreements visible."
       ]
     });
   }

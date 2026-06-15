@@ -472,12 +472,26 @@ function summarizeRunDebugPayload(payload) {
 
   return {
     status: readRecordValue(run, "status"),
-    sealedDivergenceRound: summarizeSealedDivergenceRound(
-      readRecordValue(run, "sealedDivergenceRound")
+    sealedDivergenceStatus: readRecordValue(run, "sealedDivergenceStatus"),
+    latestExtractionStatus: readRecordValue(run, "latestExtractionStatus"),
+    latestProposalReviewStatus: readRecordValue(run, "latestProposalReviewStatus"),
+    latestFinalizationStatus: readRecordValue(run, "latestFinalizationStatus"),
+    rounds: summarizeRunRounds(readRecordValue(run, "rounds"))
+  };
+}
+
+function summarizeRunRounds(rounds) {
+  if (!rounds || typeof rounds !== "object") {
+    return undefined;
+  }
+
+  return {
+    sealedDivergence: summarizeSealedDivergenceRound(
+      readRecordValue(rounds, "sealedDivergence")
     ),
-    extractionRounds: summarizeRoundArray(readRecordValue(run, "extractionRounds")),
-    proposalReviewRounds: summarizeRoundArray(readRecordValue(run, "proposalReviewRounds")),
-    finalizationRounds: summarizeRoundArray(readRecordValue(run, "finalizationRounds"))
+    extraction: summarizeRoundArray(readRecordValue(rounds, "extraction")),
+    proposalReview: summarizeRoundArray(readRecordValue(rounds, "proposalReview")),
+    finalization: summarizeRoundArray(readRecordValue(rounds, "finalization"))
   };
 }
 
@@ -487,6 +501,7 @@ function summarizeSealedDivergenceRound(round) {
   }
 
   return {
+    roundId: readRecordValue(round, "roundId"),
     status: readRecordValue(round, "status"),
     lastErrorCategory: readRecordValue(round, "lastErrorCategory"),
     providerCallCount: readRecordValue(round, "providerCallCount"),
@@ -514,10 +529,68 @@ function summarizeRoundArray(value) {
     return undefined;
   }
 
-  return value.map((round) => ({
+  return value.map(summarizeStageRound);
+}
+
+function summarizeStageRound(round) {
+  if (!round || typeof round !== "object") {
+    return undefined;
+  }
+
+  return {
+    roundId: readRecordValue(round, "roundId"),
     status: readRecordValue(round, "status"),
-    lastErrorCategory: readRecordValue(round, "lastErrorCategory")
-  }));
+    lastErrorCategory: readRecordValue(round, "lastErrorCategory"),
+    sourceSealedDivergenceRoundId: readRecordValue(round, "sourceSealedDivergenceRoundId"),
+    sourceExtractionRoundId: readRecordValue(round, "sourceExtractionRoundId"),
+    sourceProposalReviewRoundId: readRecordValue(round, "sourceProposalReviewRoundId"),
+    generatorStates: summarizeExecutionStates(readRecordValue(round, "generatorStates")),
+    reviewerStates: summarizeExecutionStates(readRecordValue(round, "reviewerStates")),
+    finalCandidate: summarizeExecutionState(readRecordValue(round, "finalCandidate")),
+    auditorStates: summarizeExecutionStates(readRecordValue(round, "auditorStates")),
+    outcomeCompilation: summarizeOutcomeCompilation(
+      readRecordValue(round, "outcomeCompilation")
+    )
+  };
+}
+
+function summarizeExecutionStates(value) {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value.map(summarizeExecutionState);
+}
+
+function summarizeExecutionState(value) {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  return {
+    participantId: readRecordValue(value, "participantId"),
+    generatorId: readRecordValue(value, "generatorId"),
+    reviewerId: readRecordValue(value, "reviewerId"),
+    auditorId: readRecordValue(value, "auditorId"),
+    sourceId: readRecordValue(value, "sourceId"),
+    sourceType: readRecordValue(value, "sourceType"),
+    status: readRecordValue(value, "status"),
+    attempts: readRecordValue(value, "attempts"),
+    errorCategory: readRecordValue(value, "errorCategory"),
+    previousErrorCategories: readRecordValue(value, "previousErrorCategories"),
+    safeDiagnostics: readRecordValue(value, "safeDiagnostics")
+  };
+}
+
+function summarizeOutcomeCompilation(value) {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  return {
+    status: readRecordValue(value, "status"),
+    errorCategory: readRecordValue(value, "errorCategory")
+  };
 }
 
 function readReleaseSmokeConfig(env) {

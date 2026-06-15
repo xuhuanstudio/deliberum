@@ -243,10 +243,10 @@ function buildFullModelBackedStartRequest() {
     review: {
       reviewerIds: ["openai-compatible-reviewer"],
       acceptancePolicy: {
-        mode: "all_generated_unchallenged",
+        mode: "all_generated",
         authorId: "provider-review-coordinator",
         rationale:
-          "Accept unchallenged provider-organized proposals so the room can compile a provisional current conclusion."
+          "Accept provider-organized proposals so the product loop can compile a provisional current conclusion while keeping review challenges visible."
       }
     },
     finalization: {
@@ -458,10 +458,15 @@ function createMockProviderContent(body) {
   }
 
   if (system.includes("Prepare Deliberum proposal review material only.")) {
+    const allowedProposalEventIds = readStringArray(userPayload?.allowedProposalEventIds);
     return JSON.stringify({
-      challenges: [],
+      challenges: allowedProposalEventIds.slice(0, 1).map((proposalEventId) => ({
+        targetProposalEventId: proposalEventId,
+        reason:
+          "Keep this generated proposal provisional until evidence gaps and risks are reviewed."
+      })),
       notes: [
-        "No challenge is proposed because the smoke extraction keeps review obligations visible."
+        "The product-loop smoke challenges the generated proposal to verify provisional finalization remains available."
       ]
     });
   }

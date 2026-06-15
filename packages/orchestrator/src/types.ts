@@ -1408,6 +1408,13 @@ export const ExtractionAcceptancePolicySchema = z.discriminatedUnion("mode", [
       authorId: IdSchema,
       rationale: NonEmptyStringSchema
     })
+    .strict(),
+  z
+    .object({
+      mode: z.literal("all_generated"),
+      authorId: IdSchema,
+      rationale: NonEmptyStringSchema
+    })
     .strict()
 ]);
 export type ExtractionAcceptancePolicy = z.infer<typeof ExtractionAcceptancePolicySchema>;

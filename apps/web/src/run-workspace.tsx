@@ -74,10 +74,10 @@ const OPENAI_COMPATIBLE_FULL_START_REQUEST = {
     reviewerIds: ["openai-compatible-reviewer"],
     retryFailedReviewers: true,
     acceptancePolicy: {
-      mode: "all_generated_unchallenged",
+      mode: "all_generated",
       authorId: "provider-review-coordinator",
       rationale:
-        "Accept unchallenged provider-organized proposals so the room can compile a provisional current conclusion."
+        "Accept provider-organized proposals so the room can compile a provisional current conclusion while keeping review challenges visible."
     }
   },
   finalization: {

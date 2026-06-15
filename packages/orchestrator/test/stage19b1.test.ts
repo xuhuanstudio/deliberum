@@ -1015,6 +1015,56 @@ describe("Stage 19B-1 proposal review orchestration", () => {
     expect(acceptedEvents[0]?.basedOnEventIds).toEqual([proposalEventIds[1]]);
   });
 
+  it("all_generated accepts challenged proposals for provisional review material", async () => {
+    const { eventStore, runStore, run, proposalEventIds } =
+      await createRunWithExtractionProposals();
+    const reviewer = createReviewer({
+      challengeTarget: proposalEventIds[0]!
+    });
+
+    const result = await runProposalReviewRound(
+      {
+        runId: run.id,
+        acceptancePolicy: {
+          mode: "all_generated",
+          authorId: "review-coordinator",
+          rationale:
+            "Accept generated proposals for provisional finalization while keeping challenges visible."
+        }
+      },
+      {
+        eventStore,
+        runStore,
+        proposalReviewGeneratorRegistry: new ProposalReviewGeneratorRegistry([reviewer]),
+        idGenerator: createIds([
+          "challenge-1",
+          "challenge-event-1",
+          "acceptance-1",
+          "acceptance-event-1"
+        ])
+      }
+    );
+    const acceptedEvents = eventStore
+      .listEvents(run.sessionId)
+      .filter((event) => event.type === PROPOSAL_ACCEPTED_EVENT_TYPE);
+
+    expect(result.acceptanceResults).toEqual([
+      {
+        proposalEventId: proposalEventIds[0],
+        status: "accepted",
+        acceptanceEventId: "acceptance-event-1",
+        appended: true
+      }
+    ]);
+    expect(acceptedEvents).toHaveLength(1);
+    expect(acceptedEvents[0]?.basedOnEventIds).toEqual([proposalEventIds[0]]);
+    expect(
+      eventStore
+        .listEvents(run.sessionId)
+        .filter((event) => event.type === PROPOSAL_CHALLENGED_EVENT_TYPE)
+    ).toHaveLength(1);
+  });
+
   it("challenged explicit acceptance requires allowChallenged true", async () => {
     const { eventStore, runStore, run, proposalEventIds } =
       await createRunWithExtractionProposals();
