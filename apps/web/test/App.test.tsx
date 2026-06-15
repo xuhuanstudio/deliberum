@@ -3591,6 +3591,27 @@ describe("@deliberum/web shell", () => {
         "Perspective A, Perspective B, and Perspective C will answer independently."
       )
     ).toBeTruthy();
+    expect(screen.getByText("Shared model")).toBeTruthy();
+    expect(screen.getByText("Saved model setup")).toBeTruthy();
+    expect(
+      screen.getByText("Every model-backed role will use the model saved in Setup / Models.")
+    ).toBeTruthy();
+    const modelOverrideInput = screen.getByLabelText(
+      /Model for this discussion/i
+    ) as HTMLInputElement;
+    expect(modelOverrideInput.disabled).toBe(false);
+    fireEvent.change(modelOverrideInput, {
+      target: {
+        value: "release-model-v1"
+      }
+    });
+    expect(screen.getByDisplayValue("release-model-v1")).toBeTruthy();
+    expect(screen.getByText("release-model-v1")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Every model-backed role in this discussion will use this model override."
+      )
+    ).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Language"), {
       target: {
@@ -3609,6 +3630,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5df2\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u53ef\u521b\u5efa\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("3 \u4e2a\u6a21\u578b\u89c6\u89d2")).toBeTruthy();
+    expect(screen.getByText("\u672c\u6b21\u8ba8\u8bba\u7684\u6a21\u578b")).toBeTruthy();
+    expect(screen.getByText("\u5171\u4eab\u6a21\u578b")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u90fd\u4f1a\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\u8986\u76d6\u503c\u3002"
+      )
+    ).toBeTruthy();
     fireEvent.change(screen.getByLabelText("\u8bed\u8a00"), {
       target: {
         value: "en"
@@ -3659,6 +3687,7 @@ describe("@deliberum/web shell", () => {
             id: "openai-main",
             adapterId: "openai-compatible",
             providerConfigId: "openai-main",
+            modelId: "release-model-v1",
             apiKeyEnvVar: "DELIBERUM_OPENAI_API_KEY"
           })
         ],

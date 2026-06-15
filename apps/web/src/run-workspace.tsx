@@ -294,6 +294,7 @@ export function RunNewPage() {
   const [participantSourceTouched, setParticipantSourceTouched] = useState(false);
   const [modelPerspectiveCount, setModelPerspectiveCount] =
     useState<ProviderBackedPerspectiveCount>(requestedPerspectiveCount ?? 2);
+  const [discussionModelOverride, setDiscussionModelOverride] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
@@ -324,6 +325,7 @@ export function RunNewPage() {
     organizerReady: selectedOrganizerReady,
     demoAvailable: demoDiscussionAvailable,
     perspectiveCount: modelPerspectiveCount,
+    modelOverride: discussionModelOverride,
     setupKnown: Boolean(runtimeSetupPlan)
   });
   const selectedParticipantSourceAvailable =
@@ -455,7 +457,8 @@ export function RunNewPage() {
               discussionPlanInput,
               providerBackedDiscussionSource,
               {
-                perspectiveCount: modelPerspectiveCount
+                perspectiveCount: modelPerspectiveCount,
+                modelId: discussionModelOverride
               }
             )
           : undefined
@@ -498,6 +501,8 @@ export function RunNewPage() {
             onSelectedSourceChange={chooseParticipantSource}
             perspectiveCount={modelPerspectiveCount}
             onPerspectiveCountChange={setModelPerspectiveCount}
+            modelOverride={discussionModelOverride}
+            onModelOverrideChange={setDiscussionModelOverride}
             providerConnectionVerified={providerConnectionVerified}
             verificationPending={providerVerificationMutation.isPending}
             verificationError={providerVerificationMutation.error}
@@ -718,6 +723,8 @@ function DiscussionModelSetupPanel({
   onSelectedSourceChange,
   perspectiveCount,
   onPerspectiveCountChange,
+  modelOverride,
+  onModelOverrideChange,
   providerConnectionVerified,
   verificationPending,
   verificationError,
@@ -729,6 +736,8 @@ function DiscussionModelSetupPanel({
   onSelectedSourceChange: (source: DiscussionParticipantSource) => void;
   perspectiveCount: ProviderBackedPerspectiveCount;
   onPerspectiveCountChange: (count: ProviderBackedPerspectiveCount) => void;
+  modelOverride: string;
+  onModelOverrideChange: (model: string) => void;
   providerConnectionVerified: boolean;
   verificationPending: boolean;
   verificationError: Error | null;
@@ -881,6 +890,32 @@ function DiscussionModelSetupPanel({
           </span>
         </label>
       </fieldset>
+      {modelBackedAvailable ? (
+        <label
+          className={`du-discussion-model-override ${
+            selectedSource === "model-backed" ? "" : "du-discussion-model-override-disabled"
+          }`}
+          htmlFor="discussion-model-override"
+        >
+          <span>
+            <strong>{t("Model for this discussion")}</strong>
+            <small>
+              {t(
+                "Leave blank to use the model saved in Setup / Models. A value here applies to every model-backed role in this discussion."
+              )}
+            </small>
+          </span>
+          <input
+            id="discussion-model-override"
+            value={modelOverride}
+            disabled={selectedSource !== "model-backed"}
+            autoComplete="off"
+            spellCheck={false}
+            placeholder={t("Use saved model setup")}
+            onChange={(event) => onModelOverrideChange(event.currentTarget.value)}
+          />
+        </label>
+      ) : null}
       <p className="du-discussion-setup-note">
         {selectedSource === "model-backed" && modelBackedAvailable
           ? t(
@@ -991,6 +1026,7 @@ function buildDiscussionCreationPreview(input: {
   organizerReady: boolean;
   demoAvailable: boolean;
   perspectiveCount: ProviderBackedPerspectiveCount;
+  modelOverride: string;
   setupKnown: boolean;
 }): DiscussionCreationPreviewView {
   if (!input.setupKnown) {
@@ -1022,6 +1058,8 @@ function buildDiscussionCreationPreview(input: {
   }
 
   if (input.selectedSource === "model-backed" && input.providerSource) {
+    const sharedModel = input.modelOverride.trim();
+
     return {
       title: "Ready to create a model-backed discussion",
       detail: input.organizerReady
@@ -1048,6 +1086,14 @@ function buildDiscussionCreationPreview(input: {
             provider: input.providerSource.name
           },
           detail: "API keys stay on this machine and are not shown on this page.",
+          tone: "ok"
+        },
+        {
+          label: "Shared model",
+          value: sharedModel || "Saved model setup",
+          detail: sharedModel
+            ? "Every model-backed role in this discussion will use this model override."
+            : "Every model-backed role will use the model saved in Setup / Models.",
           tone: "ok"
         },
         {

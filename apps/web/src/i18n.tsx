@@ -690,6 +690,10 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Broader review": "\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5",
   "Three independent model perspectives give the room more comparison material.":
     "\u4e09\u4e2a\u72ec\u7acb\u6a21\u578b\u89c6\u89d2\u4f1a\u4e3a\u8ba8\u8bba\u5ba4\u63d0\u4f9b\u66f4\u591a\u6bd4\u8f83\u6750\u6599\u3002",
+  "Model for this discussion": "\u672c\u6b21\u8ba8\u8bba\u7684\u6a21\u578b",
+  "Leave blank to use the model saved in Setup / Models. A value here applies to every model-backed role in this discussion.":
+    "\u7559\u7a7a\u5219\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u8fd9\u91cc\u7684\u503c\u4f1a\u5e94\u7528\u5230\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u3002",
+  "Use saved model setup": "\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\u8bbe\u7f6e",
   "The selected depth controls how many independent model participants answer before Deliberum compares options.":
     "\u9009\u5b9a\u7684\u6df1\u5ea6\u4f1a\u51b3\u5b9a Deliberum \u6bd4\u8f83\u9009\u9879\u524d\uff0c\u6709\u591a\u5c11\u4e2a\u72ec\u7acb\u6a21\u578b\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u3002",
   "Demo walkthroughs use two built-in sample perspectives. Choose model-backed participants to use a broader independent review.":
@@ -699,6 +703,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Before creating the discussion, see who will answer first and who will review the result.":
     "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u5148\u770b\u6e05\u8c01\u4f1a\u5148\u56de\u5e94\uff0c\u4ee5\u53ca\u8c01\u4f1a\u5ba1\u67e5\u7ed3\u679c\u3002",
   "Independent first response": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
+  "Shared model": "\u5171\u4eab\u6a21\u578b",
+  "Saved model setup": "\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\u8bbe\u7f6e",
+  "Every model-backed role in this discussion will use this model override.":
+    "\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u90fd\u4f1a\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\u8986\u76d6\u503c\u3002",
+  "Every model-backed role will use the model saved in Setup / Models.":
+    "\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u90fd\u4f1a\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002",
   "Requirements and disagreement review": "\u8981\u6c42\u4e0e\u5206\u6b67\u5ba1\u67e5",
   "Evidence and risk review": "\u8bc1\u636e\u4e0e\u98ce\u9669\u5ba1\u67e5",
   "Current conclusion draft": "\u5f53\u524d\u7ed3\u8bba\u8349\u7a3f",

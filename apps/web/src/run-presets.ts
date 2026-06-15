@@ -87,6 +87,7 @@ export type ProviderBackedPerspectiveCount = 2 | 3;
 
 export type ProviderBackedDiscussionPlanOptions = {
   perspectiveCount?: ProviderBackedPerspectiveCount;
+  modelId?: string;
 };
 
 const PROVIDER_BACKED_DISCUSSION_TIMEOUTS = {
@@ -176,11 +177,16 @@ export function buildProviderBackedDiscussionRunPlan(
   const title = formatDiscussionTitle(topic);
   const perspectiveCount = options.perspectiveCount ?? 2;
   const perspectives = PROVIDER_BACKED_PERSPECTIVES.slice(0, perspectiveCount);
+  const modelId = options.modelId?.trim();
   const providerConfig: Record<string, unknown> = {
     id: provider.providerConfigId,
     adapterId: provider.adapterId,
     providerConfigId: provider.providerConfigId
   };
+
+  if (modelId) {
+    providerConfig.modelId = modelId;
+  }
 
   if (provider.apiKeyEnvVar) {
     providerConfig.apiKeyEnvVar = provider.apiKeyEnvVar;

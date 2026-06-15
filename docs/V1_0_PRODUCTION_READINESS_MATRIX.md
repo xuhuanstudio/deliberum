@@ -35,7 +35,7 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 | 4 | Provider setup, verification, failure recovery, rate limit, timeout, malformed output, and partial completion states are handled in normal-user language. | `partial` | Web recovery states and smokes cover verification failure, retryable continuation, failed stages, malformed structured output fallback, and partial first-response recovery. | Rate limit and provider-specific timeout behavior need explicit real-provider recovery evidence. |
 | 5 | Default UI never exposes secrets, raw JSON, env details, run/session/ledger/runtime/proposal/event/internal ids, or provider config ids. | `partial` | `smoke:web-product-loop`, `smoke:web-release-readiness`, `smoke:web-entry`, `smoke:web-boundaries`, and `smoke:web-resilience` scan current default paths. | Needs to remain enforced for any new model/participant management and production recovery paths. |
 | 6 | Advanced / Developer Mode preserves diagnostics without leading the normal user path. | `partial` | Current docs and smokes keep raw details behind Advanced / Developer Mode for existing default paths. | Needs a v1.0 audit after production setup, participant management, and storage recovery paths are added. |
-| 7 | Model / Participant Management supports understandable provider/model/role readiness and editing. | `partial` | Setup / Models shows current participant readiness, explains that one verified OpenAI-compatible provider powers the model-backed participant roles together, and links role assignment back to the shared provider setup form for editing. | The default Web path does not yet provide production-grade editing for multiple providers, multiple models, and role-specific participant assignment. |
+| 7 | Model / Participant Management supports understandable provider/model/role readiness and editing. | `partial` | Setup / Models shows current participant readiness, explains that one verified OpenAI-compatible provider powers the model-backed participant roles together, and links role assignment back to the shared provider setup form for editing. The start page lets users set a per-discussion shared model override without exposing provider secrets or low-level provider config ids. | The default Web path does not yet provide production-grade editing for multiple providers and role-specific participant assignment. |
 | 8 | README, quickstart, walkthrough, troubleshooting, release notes, and Basic Product Loop docs match the actual UI. | `partial` | README, Basic Product Loop, deployment, walkthrough, and v0.1 completion docs match the beta UI and smokes. | v1.0 release notes do not exist yet, and docs must be updated after production gates 1, 7, and 11 move. |
 | 9 | CI, tests, language lint, docs lint, product-loop smoke, Web smoke, and real-provider release-readiness evidence are green and current. | `partial` | Local `corepack pnpm run ci` and GitHub CI are green. CI now separates full Ubuntu validation from supported-platform local-start validation on Ubuntu and macOS. Real-provider release-readiness evidence is recorded. | Real-provider smoke remains opt-in outside default CI and broader provider coverage is still incomplete. |
 | 10 | No known normal-user blocker remains in install, startup, setup, verification, discussion start, continuation, conclusion review, or recovery. | `partial` | v0.1 evidence shows no known blocker in the local beta loop with a reachable provider; unreachable provider setup shows safe recovery. Supported-platform local-start verification now covers macOS and Ubuntu Linux. | Production blockers remain in broader provider behavior, participant management, and data/storage recovery. |
@@ -46,9 +46,9 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 
 The first production blocker is still gate 7: Model / Participant Management.
 The default Web path now explains and links the current shared provider editing
-path for model-backed roles, but it does not yet let normal users edit multiple
-providers, multiple models, or role-specific model assignments in a
-production-grade way.
+path for model-backed roles and lets users override the shared model for one
+model-backed discussion, but it does not yet let normal users edit multiple
+providers or role-specific model assignments in a production-grade way.
 
 Recommended narrow batch:
 

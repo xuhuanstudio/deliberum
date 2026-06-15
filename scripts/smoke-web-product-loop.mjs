@@ -13,6 +13,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
 const dummyApiKey = "smoke-web-product-loop-token";
 const modelName = "smoke-web-product-loop-model";
+const discussionModelName = "smoke-web-product-loop-discussion-model";
 const discussionQuestion =
   "Should Deliberum rely on the verified provider path for a real browser discussion?";
 
@@ -63,6 +64,11 @@ try {
   if (provider.transientParticipantFailureCount !== 1) {
     throw new Error(
       `Browser product loop provider saw ${provider.transientParticipantFailureCount} transient participant failure(s); expected exactly one retryable first-response failure.`
+    );
+  }
+  if (provider.discussionModelRequestCount < 5) {
+    throw new Error(
+      `Browser product loop provider saw ${provider.discussionModelRequestCount} request(s) for the per-discussion model; expected model-backed participant and review requests to use the override.`
     );
   }
 } catch (error) {
@@ -156,6 +162,8 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Model-backed discussion selected").waitFor();
   await page.getByText("Perspective C", { exact: true }).waitFor();
   await page.getByText("3 model perspectives").waitFor();
+  await page.getByText("Model for this discussion").waitFor();
+  await page.getByText("Saved model setup").waitFor();
   if (!(await page.getByRole("radio", { name: /Broader review/i }).isChecked())) {
     throw new Error("Broader setup start link did not preselect Broader review.");
   }
@@ -166,6 +174,11 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     throw new Error("Focused review could not be selected after checking the broader setup start link.");
   }
   await page.getByText("Ready to create a model-backed discussion").waitFor();
+  await page.getByLabel("Model for this discussion").fill(discussionModelName);
+  await page.getByText(discussionModelName).waitFor();
+  await page
+    .getByText("Every model-backed role in this discussion will use this model override.")
+    .waitFor();
   await assertDefaultViewSafety(page, "start discussion", { providerBaseUrl });
 
   await page.getByLabel("Discussion question").fill(discussionQuestion);
@@ -274,7 +287,8 @@ async function assertDefaultViewSafety(page, label, { providerBaseUrl }) {
 async function startOpenAICompatibleMockProvider(port) {
   const state = {
     requestCount: 0,
-    transientParticipantFailureCount: 0
+    transientParticipantFailureCount: 0,
+    discussionModelRequestCount: 0
   };
   const server = createHttpServer(async (request, response) => {
     if (request.method !== "POST" || request.url !== "/v1/chat/completions") {
@@ -287,6 +301,9 @@ async function startOpenAICompatibleMockProvider(port) {
 
     try {
       const body = await readRequestJson(request);
+      if (body?.model === discussionModelName) {
+        state.discussionModelRequestCount += 1;
+      }
       const content = createMockProviderContent(body, state);
 
       response.writeHead(200, {
@@ -297,7 +314,7 @@ async function startOpenAICompatibleMockProvider(port) {
           id: `chatcmpl-browser-smoke-${state.requestCount}`,
           object: "chat.completion",
           created: Math.floor(Date.now() / 1000),
-          model: modelName,
+          model: typeof body?.model === "string" ? body.model : modelName,
           choices: [
             {
               index: 0,
@@ -327,6 +344,9 @@ async function startOpenAICompatibleMockProvider(port) {
     },
     get transientParticipantFailureCount() {
       return state.transientParticipantFailureCount;
+    },
+    get discussionModelRequestCount() {
+      return state.discussionModelRequestCount;
     },
     close: () =>
       new Promise((resolveClose, rejectClose) => {

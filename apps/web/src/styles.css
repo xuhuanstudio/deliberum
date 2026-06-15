@@ -2467,6 +2467,43 @@ textarea:focus-visible {
   opacity: 0.74;
 }
 
+.du-discussion-model-override {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.7fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 12px;
+}
+
+.du-discussion-model-override > span {
+  display: grid;
+  gap: 4px;
+}
+
+.du-discussion-model-override strong {
+  color: var(--du-text);
+  font-size: 0.88rem;
+}
+
+.du-discussion-model-override small {
+  color: var(--du-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.du-discussion-model-override input {
+  width: 100%;
+}
+
+.du-discussion-model-override-disabled {
+  background: #f4f1e9;
+  opacity: 0.74;
+}
+
 .du-participant-lineup {
   display: grid;
   gap: 12px;
@@ -3426,6 +3463,7 @@ textarea:focus-visible {
   .du-provider-setup-completion,
   .du-provider-check-grid,
   .du-discussion-setup-grid,
+  .du-discussion-model-override,
   .du-creation-preview-grid,
   .du-participant-lineup-grid,
   .du-stage-grid,
