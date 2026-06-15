@@ -15,6 +15,7 @@ const dummyApiKey = "smoke-web-product-loop-token";
 const modelName = "smoke-web-product-loop-model";
 const discussionModelName = "smoke-web-product-loop-discussion-model";
 const perspectiveModelName = "smoke-web-product-loop-perspective-a-model";
+const reviewModelName = "smoke-web-product-loop-review-model";
 const discussionQuestion =
   "Should Deliberum rely on the verified provider path for a real browser discussion?";
 
@@ -67,14 +68,19 @@ try {
       `Browser product loop provider saw ${provider.transientParticipantFailureCount} transient participant failure(s); expected exactly one retryable first-response failure.`
     );
   }
-  if (provider.discussionModelRequestCount < 5) {
+  if (provider.discussionModelRequestCount < 2) {
     throw new Error(
-      `Browser product loop provider saw ${provider.discussionModelRequestCount} request(s) for the per-discussion model; expected model-backed participant and review requests to use the override.`
+      `Browser product loop provider saw ${provider.discussionModelRequestCount} request(s) for the first-response model; expected uncustomized participants to use the override.`
     );
   }
   if (provider.perspectiveModelRequestCount < 1) {
     throw new Error(
       `Browser product loop provider saw ${provider.perspectiveModelRequestCount} request(s) for the perspective model; expected Perspective A to use its own model override.`
+    );
+  }
+  if (provider.reviewModelRequestCount < 4) {
+    throw new Error(
+      `Browser product loop provider saw ${provider.reviewModelRequestCount} request(s) for the review role model; expected organizer, review, risk, and conclusion roles to use it.`
     );
   }
 } catch (error) {
@@ -168,8 +174,15 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Model-backed discussion selected").waitFor();
   await page.getByText("Perspective C", { exact: true }).waitFor();
   await page.getByText("3 model perspectives").waitFor();
-  await page.getByText("Model for this discussion").waitFor();
-  await page.getByText("Saved model setup").waitFor();
+  await page
+    .locator('label[for="discussion-model-override"]')
+    .getByText("First-response model", { exact: true })
+    .waitFor();
+  await page
+    .locator('label[for="discussion-review-model-override"]')
+    .getByText("Review role model", { exact: true })
+    .waitFor();
+  await page.getByText("Saved model setup").first().waitFor();
   if (!(await page.getByRole("radio", { name: /Broader review/i }).isChecked())) {
     throw new Error("Broader setup start link did not preselect Broader review.");
   }
@@ -180,17 +193,24 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     throw new Error("Focused review could not be selected after checking the broader setup start link.");
   }
   await page.getByText("Ready to create a model-backed discussion").waitFor();
-  await page.getByLabel("Model for this discussion").fill(discussionModelName);
-  await page.getByText(discussionModelName).waitFor();
+  await page.locator("#discussion-model-override").fill(discussionModelName);
+  await page.getByText(discussionModelName).first().waitFor();
   await page
-    .getByText("Every model-backed role in this discussion will use this model override.")
+    .getByText("Perspectives without their own model use this first-response model.")
+    .waitFor();
+  await page.locator("#discussion-review-model-override").fill(reviewModelName);
+  await page.getByText(reviewModelName).waitFor();
+  await page
+    .getByText(
+      "Review roles use this model while first-response perspectives keep their assigned models."
+    )
     .waitFor();
   await page.getByRole("checkbox", { name: /Customize perspective models/i }).click();
   await page.getByLabel("Perspective A model").fill(perspectiveModelName);
   await page.getByText("Perspective models customized").waitFor();
   await page
     .getByText(
-      "Customized perspective models only affect independent first responses. Review roles use the shared model."
+      "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set."
     )
     .waitFor();
   await assertDefaultViewSafety(page, "start discussion", { providerBaseUrl });
@@ -303,7 +323,8 @@ async function startOpenAICompatibleMockProvider(port) {
     requestCount: 0,
     transientParticipantFailureCount: 0,
     discussionModelRequestCount: 0,
-    perspectiveModelRequestCount: 0
+    perspectiveModelRequestCount: 0,
+    reviewModelRequestCount: 0
   };
   const server = createHttpServer(async (request, response) => {
     if (request.method !== "POST" || request.url !== "/v1/chat/completions") {
@@ -321,6 +342,9 @@ async function startOpenAICompatibleMockProvider(port) {
       }
       if (body?.model === perspectiveModelName) {
         state.perspectiveModelRequestCount += 1;
+      }
+      if (body?.model === reviewModelName) {
+        state.reviewModelRequestCount += 1;
       }
       const content = createMockProviderContent(body, state);
 
@@ -368,6 +392,9 @@ async function startOpenAICompatibleMockProvider(port) {
     },
     get perspectiveModelRequestCount() {
       return state.perspectiveModelRequestCount;
+    },
+    get reviewModelRequestCount() {
+      return state.reviewModelRequestCount;
     },
     close: () =>
       new Promise((resolveClose, rejectClose) => {

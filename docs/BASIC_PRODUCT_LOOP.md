@@ -803,9 +803,9 @@ Path covered:
    links with the expected perspective depth.
 9. Opens the broader start link and confirms Broader review preselects
    Perspective C.
-10. Sets a shared per-discussion model and a Perspective A model override,
-    confirming the override only affects independent first responses while
-    review roles keep the shared model.
+10. Sets a first-response model, a review role model, and a Perspective A model
+    override, confirming uncustomized perspectives keep the first-response
+    model while review roles use their own model assignment.
 11. Creates a model-backed discussion from the browser.
 12. Uses Continue discussion from the room.
 13. Confirms a transient provider first-response failure pauses the discussion
@@ -881,9 +881,9 @@ Path covered:
 3. Saves the model setup without rendering the secret in default page text.
 4. Verifies the provider connection.
 5. Verifies the Setup page's focused and broader model-backed start links.
-6. Verifies the start page can set a shared model override plus individual
-   first-response Perspective A/C model overrides without exposing secrets or
-   provider config ids in the default UI.
+6. Verifies the start page can set a first-response model, a review role model,
+   and individual first-response Perspective A/C model overrides without
+   exposing secrets or provider config ids in the default UI.
 7. Creates a model-backed discussion from `/runs/new?participants=model-backed`.
 8. Opens the Discussion Room.
 9. Uses `Continue discussion`.

@@ -315,6 +315,7 @@ export function RunNewPage() {
   const [modelPerspectiveCount, setModelPerspectiveCount] =
     useState<ProviderBackedPerspectiveCount>(requestedPerspectiveCount ?? 2);
   const [discussionModelOverride, setDiscussionModelOverride] = useState("");
+  const [reviewModelOverride, setReviewModelOverride] = useState("");
   const [customPerspectiveModelsEnabled, setCustomPerspectiveModelsEnabled] = useState(false);
   const [perspectiveModelOverrides, setPerspectiveModelOverrides] =
     useState<ProviderBackedPerspectiveModelOverrides>({});
@@ -349,6 +350,7 @@ export function RunNewPage() {
     demoAvailable: demoDiscussionAvailable,
     perspectiveCount: modelPerspectiveCount,
     modelOverride: discussionModelOverride,
+    reviewModelOverride,
     customPerspectiveModelsEnabled,
     perspectiveModelOverrides,
     setupKnown: Boolean(runtimeSetupPlan)
@@ -491,6 +493,7 @@ export function RunNewPage() {
               {
                 perspectiveCount: modelPerspectiveCount,
                 modelId: discussionModelOverride,
+                reviewModelId: reviewModelOverride,
                 perspectiveModels: customPerspectiveModelsEnabled
                   ? perspectiveModelOverrides
                   : undefined
@@ -538,6 +541,8 @@ export function RunNewPage() {
             onPerspectiveCountChange={setModelPerspectiveCount}
             modelOverride={discussionModelOverride}
             onModelOverrideChange={setDiscussionModelOverride}
+            reviewModelOverride={reviewModelOverride}
+            onReviewModelOverrideChange={setReviewModelOverride}
             customPerspectiveModelsEnabled={customPerspectiveModelsEnabled}
             onCustomPerspectiveModelsEnabledChange={setCustomPerspectiveModelsEnabled}
             perspectiveModelOverrides={perspectiveModelOverrides}
@@ -764,6 +769,8 @@ function DiscussionModelSetupPanel({
   onPerspectiveCountChange,
   modelOverride,
   onModelOverrideChange,
+  reviewModelOverride,
+  onReviewModelOverrideChange,
   customPerspectiveModelsEnabled,
   onCustomPerspectiveModelsEnabledChange,
   perspectiveModelOverrides,
@@ -781,6 +788,8 @@ function DiscussionModelSetupPanel({
   onPerspectiveCountChange: (count: ProviderBackedPerspectiveCount) => void;
   modelOverride: string;
   onModelOverrideChange: (model: string) => void;
+  reviewModelOverride: string;
+  onReviewModelOverrideChange: (model: string) => void;
   customPerspectiveModelsEnabled: boolean;
   onCustomPerspectiveModelsEnabledChange: (enabled: boolean) => void;
   perspectiveModelOverrides: ProviderBackedPerspectiveModelOverrides;
@@ -947,10 +956,10 @@ function DiscussionModelSetupPanel({
             htmlFor="discussion-model-override"
           >
             <span>
-              <strong>{t("Model for this discussion")}</strong>
+              <strong>{t("First-response model")}</strong>
               <small>
                 {t(
-                  "Leave blank to use the model saved in Setup / Models. A value here applies to every model-backed role in this discussion."
+                  "Leave blank to use the model saved in Setup / Models. Perspectives without their own model use this value for first responses."
                 )}
               </small>
             </span>
@@ -960,8 +969,32 @@ function DiscussionModelSetupPanel({
               disabled={selectedSource !== "model-backed"}
               autoComplete="off"
               spellCheck={false}
-              placeholder={t("Use saved model setup")}
+              placeholder={t("Use saved model for perspectives")}
               onChange={(event) => onModelOverrideChange(event.currentTarget.value)}
+            />
+          </label>
+          <label
+            className={`du-discussion-model-override ${
+              selectedSource === "model-backed" ? "" : "du-discussion-model-override-disabled"
+            }`}
+            htmlFor="discussion-review-model-override"
+          >
+            <span>
+              <strong>{t("Review role model")}</strong>
+              <small>
+                {t(
+                  "Leave blank to use the first-response model. A value here applies to Reviewer, Evidence checker, Risk reviewer, and Conclusion writer only."
+                )}
+              </small>
+            </span>
+            <input
+              id="discussion-review-model-override"
+              value={reviewModelOverride}
+              disabled={selectedSource !== "model-backed"}
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={t("Use first-response model")}
+              onChange={(event) => onReviewModelOverrideChange(event.currentTarget.value)}
             />
           </label>
           <label
@@ -981,7 +1014,7 @@ function DiscussionModelSetupPanel({
               <strong>{t("Customize perspective models")}</strong>
               <small>
                 {t(
-                  "Give individual first-response perspectives their own model. Leave a field blank to use the shared model."
+                  "Give individual first-response perspectives their own model. Leave a field blank to use the first-response model."
                 )}
               </small>
             </span>
@@ -1000,7 +1033,7 @@ function DiscussionModelSetupPanel({
                     disabled={selectedSource !== "model-backed"}
                     autoComplete="off"
                     spellCheck={false}
-                    placeholder={t("Use shared model")}
+                    placeholder={t("Use first-response model")}
                     onChange={(event) =>
                       onPerspectiveModelOverrideChange(
                         field.participantId,
@@ -1012,7 +1045,7 @@ function DiscussionModelSetupPanel({
               ))}
               <p>
                 {t(
-                  "Perspective model overrides affect independent first responses only. Review roles use the shared model."
+                  "Perspective model overrides affect independent first responses only. Review roles use the review role model when one is set."
                 )}
               </p>
             </div>
@@ -1130,6 +1163,7 @@ function buildDiscussionCreationPreview(input: {
   demoAvailable: boolean;
   perspectiveCount: ProviderBackedPerspectiveCount;
   modelOverride: string;
+  reviewModelOverride: string;
   customPerspectiveModelsEnabled: boolean;
   perspectiveModelOverrides: ProviderBackedPerspectiveModelOverrides;
   setupKnown: boolean;
@@ -1163,7 +1197,8 @@ function buildDiscussionCreationPreview(input: {
   }
 
   if (input.selectedSource === "model-backed" && input.providerSource) {
-    const sharedModel = input.modelOverride.trim();
+    const firstResponseModel = input.modelOverride.trim();
+    const reviewRoleModel = input.reviewModelOverride.trim();
     const customizedPerspectiveModelCount = input.customPerspectiveModelsEnabled
       ? countPerspectiveModelOverrides(input.perspectiveModelOverrides, input.perspectiveCount)
       : 0;
@@ -1197,11 +1232,19 @@ function buildDiscussionCreationPreview(input: {
           tone: "ok"
         },
         {
-          label: "Shared model",
-          value: sharedModel || "Saved model setup",
-          detail: sharedModel
-            ? "Every model-backed role in this discussion will use this model override."
-            : "Every model-backed role will use the model saved in Setup / Models.",
+          label: "First-response model",
+          value: firstResponseModel || "Saved model setup",
+          detail: firstResponseModel
+            ? "Perspectives without their own model use this first-response model."
+            : "Perspectives without their own model use the model saved in Setup / Models.",
+          tone: "ok"
+        },
+        {
+          label: "Review role model",
+          value: reviewRoleModel || firstResponseModel || "Saved model setup",
+          detail: reviewRoleModel
+            ? "Review roles use this model while first-response perspectives keep their assigned models."
+            : "Review roles use the same model as first-response perspectives.",
           tone: "ok"
         },
         ...(customizedPerspectiveModelCount > 0
@@ -1210,7 +1253,7 @@ function buildDiscussionCreationPreview(input: {
                 label: "Perspective model assignment",
                 value: "Perspective models customized",
                 detail:
-                  "Customized perspective models only affect independent first responses. Review roles use the shared model.",
+                  "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set.",
                 tone: "ok" as const
               }
             ]

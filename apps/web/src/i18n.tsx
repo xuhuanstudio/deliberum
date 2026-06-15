@@ -492,10 +492,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5148\u68c0\u67e5\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u5b57\u6bb5\uff0c\u7136\u540e\u9a8c\u8bc1\u8fde\u63a5\u4ee5\u89e3\u9501\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Add the provider API key, base URL, and model before model-backed roles are available.":
     "\u6a21\u578b\u652f\u6301\u7684\u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\u3002",
-  "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together.":
-    "\u6682\u4e0d\u652f\u6301\u6309\u89d2\u8272\u5355\u72ec\u7f16\u8f91\uff1b\u8bf7\u4f7f\u7528\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u4e00\u8d77\u66f4\u6539\u6240\u6709\u6a21\u578b\u652f\u6301\u7684\u89d2\u8272\u3002",
-  "The start page can customize first-response perspective models for a discussion; review roles still use the shared provider model.":
-    "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u7684\u6a21\u578b\uff1b\u5ba1\u67e5\u89d2\u8272\u4ecd\u4f7f\u7528\u5171\u4eab\u63d0\u4f9b\u65b9\u6a21\u578b\u3002",
+  "Verify the provider before assigning first-response and review role models on the start page.":
+    "\u5728\u5f00\u59cb\u9875\u5206\u914d\u521d\u59cb\u56de\u5e94\u548c\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u3002",
+  "Add and verify a provider before assigning first-response and review role models on the start page.":
+    "\u5728\u5f00\u59cb\u9875\u5206\u914d\u521d\u59cb\u56de\u5e94\u548c\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u3002",
+  "The start page can customize first-response perspective models and a separate review role model for one discussion.":
+    "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u5355\u72ec\u6307\u5b9a\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u3002",
   "Edit shared provider setup": "\u7f16\u8f91\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
   "Review provider setup": "\u68c0\u67e5\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
   "Start discussion will select configured model participants by default while keeping demo participants available.":
@@ -692,20 +694,23 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Broader review": "\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5",
   "Three independent model perspectives give the room more comparison material.":
     "\u4e09\u4e2a\u72ec\u7acb\u6a21\u578b\u89c6\u89d2\u4f1a\u4e3a\u8ba8\u8bba\u5ba4\u63d0\u4f9b\u66f4\u591a\u6bd4\u8f83\u6750\u6599\u3002",
-  "Model for this discussion": "\u672c\u6b21\u8ba8\u8bba\u7684\u6a21\u578b",
-  "Leave blank to use the model saved in Setup / Models. A value here applies to every model-backed role in this discussion.":
-    "\u7559\u7a7a\u5219\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u8fd9\u91cc\u7684\u503c\u4f1a\u5e94\u7528\u5230\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u3002",
-  "Use saved model setup": "\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\u8bbe\u7f6e",
+  "First-response model": "\u521d\u59cb\u56de\u5e94\u6a21\u578b",
+  "Leave blank to use the model saved in Setup / Models. Perspectives without their own model use this value for first responses.":
+    "\u7559\u7a7a\u5219\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f1a\u4f7f\u7528\u6b64\u503c\u4f5c\u4e3a\u521d\u59cb\u56de\u5e94\u6a21\u578b\u3002",
+  "Review role model": "\u5ba1\u67e5\u89d2\u8272\u6a21\u578b",
+  "Leave blank to use the first-response model. A value here applies to Reviewer, Evidence checker, Risk reviewer, and Conclusion writer only.":
+    "\u7559\u7a7a\u5219\u4f7f\u7528\u521d\u59cb\u56de\u5e94\u6a21\u578b\u3002\u8fd9\u91cc\u7684\u503c\u4ec5\u5e94\u7528\u4e8e\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u7ed3\u8bba\u64b0\u5199\u8005\u3002",
+  "Use saved model for perspectives": "\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u89c6\u89d2\u6a21\u578b",
+  "Use first-response model": "\u4f7f\u7528\u521d\u59cb\u56de\u5e94\u6a21\u578b",
   "Customize perspective models": "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
-  "Give individual first-response perspectives their own model. Leave a field blank to use the shared model.":
-    "\u4e3a\u5355\u4e2a\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u6307\u5b9a\u81ea\u5df1\u7684\u6a21\u578b\u3002\u7559\u7a7a\u5219\u4f7f\u7528\u5171\u4eab\u6a21\u578b\u3002",
+  "Give individual first-response perspectives their own model. Leave a field blank to use the first-response model.":
+    "\u4e3a\u5355\u4e2a\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u6307\u5b9a\u81ea\u5df1\u7684\u6a21\u578b\u3002\u7559\u7a7a\u5219\u4f7f\u7528\u521d\u59cb\u56de\u5e94\u6a21\u578b\u3002",
   "Perspective model assignment": "\u89c6\u89d2\u6a21\u578b\u5206\u914d",
   "Perspective A model": "\u89c6\u89d2 A \u6a21\u578b",
   "Perspective B model": "\u89c6\u89d2 B \u6a21\u578b",
   "Perspective C model": "\u89c6\u89d2 C \u6a21\u578b",
-  "Use shared model": "\u4f7f\u7528\u5171\u4eab\u6a21\u578b",
-  "Perspective model overrides affect independent first responses only. Review roles use the shared model.":
-    "\u89c6\u89d2\u6a21\u578b\u8986\u76d6\u4ec5\u5f71\u54cd\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u5171\u4eab\u6a21\u578b\u3002",
+  "Perspective model overrides affect independent first responses only. Review roles use the review role model when one is set.":
+    "\u89c6\u89d2\u6a21\u578b\u8986\u76d6\u4ec5\u5f71\u54cd\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002",
   "The selected depth controls how many independent model participants answer before Deliberum compares options.":
     "\u9009\u5b9a\u7684\u6df1\u5ea6\u4f1a\u51b3\u5b9a Deliberum \u6bd4\u8f83\u9009\u9879\u524d\uff0c\u6709\u591a\u5c11\u4e2a\u72ec\u7acb\u6a21\u578b\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u3002",
   "Demo walkthroughs use two built-in sample perspectives. Choose model-backed participants to use a broader independent review.":
@@ -715,15 +720,18 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Before creating the discussion, see who will answer first and who will review the result.":
     "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u5148\u770b\u6e05\u8c01\u4f1a\u5148\u56de\u5e94\uff0c\u4ee5\u53ca\u8c01\u4f1a\u5ba1\u67e5\u7ed3\u679c\u3002",
   "Independent first response": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
-  "Shared model": "\u5171\u4eab\u6a21\u578b",
   "Saved model setup": "\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\u8bbe\u7f6e",
-  "Every model-backed role in this discussion will use this model override.":
-    "\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u90fd\u4f1a\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\u8986\u76d6\u503c\u3002",
-  "Every model-backed role will use the model saved in Setup / Models.":
-    "\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u90fd\u4f1a\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002",
+  "Perspectives without their own model use this first-response model.":
+    "\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f7f\u7528\u8fd9\u4e2a\u521d\u59cb\u56de\u5e94\u6a21\u578b\u3002",
+  "Perspectives without their own model use the model saved in Setup / Models.":
+    "\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002",
+  "Review roles use this model while first-response perspectives keep their assigned models.":
+    "\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\uff0c\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u4fdd\u6301\u5404\u81ea\u5206\u914d\u7684\u6a21\u578b\u3002",
+  "Review roles use the same model as first-response perspectives.":
+    "\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u4e0e\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u76f8\u540c\u7684\u6a21\u578b\u3002",
   "Perspective models customized": "\u5df2\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
-  "Customized perspective models only affect independent first responses. Review roles use the shared model.":
-    "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u5171\u4eab\u6a21\u578b\u3002",
+  "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set.":
+    "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002",
   "Requirements and disagreement review": "\u8981\u6c42\u4e0e\u5206\u6b67\u5ba1\u67e5",
   "Evidence and risk review": "\u8bc1\u636e\u4e0e\u98ce\u9669\u5ba1\u67e5",
   "Current conclusion draft": "\u5f53\u524d\u7ed3\u8bba\u8349\u7a3f",

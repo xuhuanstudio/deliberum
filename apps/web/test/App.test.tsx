@@ -1481,7 +1481,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Current limit")).toBeTruthy();
     expect(
       screen.getByText(
-        "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together."
+        "Add and verify a provider before assigning first-response and review role models on the start page."
       )
     ).toBeTruthy();
     expect(screen.getByRole("group", { name: "Role assignment controls" })).toBeTruthy();
@@ -2574,7 +2574,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "The start page can customize first-response perspective models for a discussion; review roles still use the shared provider model."
+        "The start page can customize first-response perspective models and a separate review role model for one discussion."
       )
     ).toBeTruthy();
     expect(
@@ -2623,7 +2623,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5355\u4e2a\u5df2\u9a8c\u8bc1\u63d0\u4f9b\u65b9")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u7684\u6a21\u578b\uff1b\u5ba1\u67e5\u89d2\u8272\u4ecd\u4f7f\u7528\u5171\u4eab\u63d0\u4f9b\u65b9\u6a21\u578b\u3002"
+        "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u5355\u72ec\u6307\u5b9a\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u3002"
       )
     ).toBeTruthy();
     expect(screen.getByRole("group", { name: "\u89d2\u8272\u5206\u914d\u63a7\u4ef6" })).toBeTruthy();
@@ -3596,13 +3596,15 @@ describe("@deliberum/web shell", () => {
         "Perspective A, Perspective B, and Perspective C will answer independently."
       )
     ).toBeTruthy();
-    expect(screen.getByText("Shared model")).toBeTruthy();
-    expect(screen.getByText("Saved model setup")).toBeTruthy();
+    expect(screen.getAllByText("First-response model").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Saved model setup").length).toBeGreaterThan(1);
     expect(
-      screen.getByText("Every model-backed role will use the model saved in Setup / Models.")
+      screen.getByText(
+        "Perspectives without their own model use the model saved in Setup / Models."
+      )
     ).toBeTruthy();
-    const modelOverrideInput = screen.getByLabelText(
-      /Model for this discussion/i
+    const modelOverrideInput = document.getElementById(
+      "discussion-model-override"
     ) as HTMLInputElement;
     expect(modelOverrideInput.disabled).toBe(false);
     fireEvent.change(modelOverrideInput, {
@@ -3611,10 +3613,26 @@ describe("@deliberum/web shell", () => {
       }
     });
     expect(screen.getByDisplayValue("release-model-v1")).toBeTruthy();
-    expect(screen.getByText("release-model-v1")).toBeTruthy();
+    expect(screen.getAllByText("release-model-v1").length).toBeGreaterThan(1);
     expect(
       screen.getByText(
-        "Every model-backed role in this discussion will use this model override."
+        "Perspectives without their own model use this first-response model."
+      )
+    ).toBeTruthy();
+    const reviewModelInput = document.getElementById(
+      "discussion-review-model-override"
+    ) as HTMLInputElement;
+    expect(reviewModelInput.disabled).toBe(false);
+    fireEvent.change(reviewModelInput, {
+      target: {
+        value: "release-model-review"
+      }
+    });
+    expect(screen.getByDisplayValue("release-model-review")).toBeTruthy();
+    expect(screen.getByText("release-model-review")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Review roles use this model while first-response perspectives keep their assigned models."
       )
     ).toBeTruthy();
     const perspectiveModelToggle = screen.getByRole("checkbox", {
@@ -3638,7 +3656,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Perspective models customized")).toBeTruthy();
     expect(
       screen.getByText(
-        "Customized perspective models only affect independent first responses. Review roles use the shared model."
+        "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set."
       )
     ).toBeTruthy();
 
@@ -3659,8 +3677,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5df2\u9009\u62e9\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u53ef\u521b\u5efa\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("3 \u4e2a\u6a21\u578b\u89c6\u89d2")).toBeTruthy();
-    expect(screen.getByText("\u672c\u6b21\u8ba8\u8bba\u7684\u6a21\u578b")).toBeTruthy();
-    expect(screen.getByText("\u5171\u4eab\u6a21\u578b")).toBeTruthy();
+    expect(screen.getAllByText("\u521d\u59cb\u56de\u5e94\u6a21\u578b").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("\u5ba1\u67e5\u89d2\u8272\u6a21\u578b").length).toBeGreaterThan(1);
     expect(screen.getByText("\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
     expect(screen.getByText("\u89c6\u89d2\u6a21\u578b\u5206\u914d")).toBeTruthy();
     expect(screen.getByText("\u89c6\u89d2 A \u6a21\u578b")).toBeTruthy();
@@ -3668,12 +3686,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5df2\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u5171\u4eab\u6a21\u578b\u3002"
+        "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002"
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u6bcf\u4e2a\u6a21\u578b\u652f\u6301\u89d2\u8272\u90fd\u4f1a\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\u8986\u76d6\u503c\u3002"
+        "\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\uff0c\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u4fdd\u6301\u5404\u81ea\u5206\u914d\u7684\u6a21\u578b\u3002"
       )
     ).toBeTruthy();
     fireEvent.change(screen.getByLabelText("\u8bed\u8a00"), {
@@ -3711,7 +3729,7 @@ describe("@deliberum/web shell", () => {
             id: "provider-perspective-b",
             displayName: "Perspective B",
             adapterId: "openai-compatible",
-            providerConfigId: "openai-main"
+            providerConfigId: "openai-main-participant-default"
           }),
           expect.objectContaining({
             id: "provider-perspective-c",
@@ -3730,6 +3748,13 @@ describe("@deliberum/web shell", () => {
         providerConfigs: expect.arrayContaining([
           expect.objectContaining({
             id: "openai-main",
+            adapterId: "openai-compatible",
+            providerConfigId: "openai-main",
+            modelId: "release-model-review",
+            apiKeyEnvVar: "DELIBERUM_OPENAI_API_KEY"
+          }),
+          expect.objectContaining({
+            id: "openai-main-participant-default",
             adapterId: "openai-compatible",
             providerConfigId: "openai-main",
             modelId: "release-model-v1",

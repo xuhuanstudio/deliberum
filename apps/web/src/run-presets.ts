@@ -89,6 +89,7 @@ export type ProviderBackedPerspectiveModelOverrides = Record<string, string | un
 export type ProviderBackedDiscussionPlanOptions = {
   perspectiveCount?: ProviderBackedPerspectiveCount;
   modelId?: string;
+  reviewModelId?: string;
   perspectiveModels?: ProviderBackedPerspectiveModelOverrides;
 };
 
@@ -180,14 +181,23 @@ export function buildProviderBackedDiscussionRunPlan(
   const perspectiveCount = options.perspectiveCount ?? 2;
   const perspectives = PROVIDER_BACKED_PERSPECTIVES.slice(0, perspectiveCount);
   const modelId = options.modelId?.trim();
-  const providerConfigs = [
-    createProviderBackedModelConfig(provider.providerConfigId, provider, modelId)
-  ];
+  const reviewModelId = options.reviewModelId?.trim();
+  const defaultParticipantProviderConfigId = reviewModelId
+    ? `${provider.providerConfigId}-participant-default`
+    : provider.providerConfigId;
+  const providerConfigs = reviewModelId
+    ? [
+        createProviderBackedModelConfig(provider.providerConfigId, provider, reviewModelId),
+        createProviderBackedModelConfig(defaultParticipantProviderConfigId, provider, modelId)
+      ]
+    : [
+        createProviderBackedModelConfig(provider.providerConfigId, provider, modelId)
+      ];
   const participants = perspectives.map((perspective) => {
     const perspectiveModel = options.perspectiveModels?.[perspective.id]?.trim();
     const providerConfigId = perspectiveModel
       ? `${provider.providerConfigId}-${perspective.id.replace("provider-", "")}`
-      : provider.providerConfigId;
+      : defaultParticipantProviderConfigId;
 
     if (perspectiveModel) {
       providerConfigs.push(

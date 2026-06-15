@@ -2384,7 +2384,7 @@ function buildSetupParticipantReadiness(
         depthAction:
           "Choose Focused review or Broader review on the start page before creating the discussion.",
         modelPolicy:
-          "The start page can customize first-response perspective models for a discussion; review roles still use the shared provider model.",
+          "The start page can customize first-response perspective models and a separate review role model for one discussion.",
         editDetail:
           "A change here applies to Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer.",
         editAction: "Edit shared provider setup",
@@ -2399,7 +2399,7 @@ function buildSetupParticipantReadiness(
           depthAction:
             "After verification, open the start page to choose Focused review or Broader review.",
           modelPolicy:
-            "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together.",
+            "Verify the provider before assigning first-response and review role models on the start page.",
           editDetail:
             "Review the saved provider fields, then verify connection to unlock model participants.",
           editAction: "Review provider setup",
@@ -2413,7 +2413,7 @@ function buildSetupParticipantReadiness(
           depthAction:
             "Start a demo discussion now, or finish model setup to choose focused or broader model-backed review.",
           modelPolicy:
-            "Role-specific editing is not available yet; use the shared provider setup to change all model-backed roles together.",
+            "Add and verify a provider before assigning first-response and review role models on the start page.",
           editDetail:
             "Add the provider API key, base URL, and model before model-backed roles are available.",
           editAction: "Add model setup",
