@@ -56,7 +56,7 @@ Updated: 2026-06-16.
 | 13 | See the current conclusion. | `verified` | Outcome pages render user-facing conclusion summaries and hide internal projection/event terms. The integrated Web product-loop test confirms the room reaches `Current conclusion: Ready to review`. `smoke:product-loop` verifies the daemon compiles a provider-backed current conclusion. `smoke:web-product-loop` opens the current conclusion page from the browser room and verifies the recommendation. | Keep covered; future work should improve conclusion readability only when it improves the main loop. |
 | 14 | See next recommended actions. | `verified` | Outcome and room tests render next recommended actions. The integrated Web product-loop test confirms user-facing action labels. `smoke:product-loop` verifies continuation suggestions in the provider-backed outcome. `smoke:web-product-loop` confirms the room links and outcome next recommended actions are visible from the browser path. | Keep covered; future actions should stay user-facing. |
 | 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion, verifies a transient first-response provider failure pauses in user-facing language, clicks Continue discussion again, and reaches reviewable conclusion material. `smoke:web-resilience` also verifies safe failed-stage and stopped-continuation recovery paths with Check model setup, retry, and new model-backed discussion actions. The 2026-06-15 opt-in `smoke:web-release-readiness` run completed the Continue discussion path with a real external provider and reached the reviewable room and outcome surfaces; the same smoke now verifies those recovery actions when a real-provider continuation returns `run_stage_failed`, `failed`, or `timed_out`. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
-| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `verified` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, paused retry, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, low-level id labels, and provider error categories during the primary browser path. `smoke:web-release-readiness` scans the opt-in real-provider setup, start, room, retry, and outcome path for provider secrets, provider values, env var names, provider config ids, and low-level ids. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing, `/runs` discussion list, and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. `smoke:web-resilience` verifies paused, retryable continuation, setup-error, failed-stage, rate-limited provider verification, and timed-out provider verification recovery states stay user-facing while raw stop reasons, stage error codes, provider values, and internal status codes remain behind Advanced details. | Keep covered; any new default route or retry state must extend the same safety scan before release. |
+| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `verified` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, paused retry, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, low-level id labels, and provider error categories during the primary browser path. `smoke:web-release-readiness` scans the opt-in real-provider setup, start, room, retry, and outcome path for provider secrets, provider values, env var names, provider config ids, and low-level ids. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing, Setup / Models, `/runs` discussion list, Discussion Room, current conclusion, and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. `smoke:web-resilience` verifies paused, retryable continuation, setup-error, failed-stage, rate-limited provider verification, and timed-out provider verification recovery states stay user-facing while raw stop reasons, stage error codes, provider values, and internal status codes remain behind Advanced details. | Keep covered; any new default route or retry state must extend the same safety scan before release. |
 
 ## Batch Gate
 
@@ -1023,10 +1023,11 @@ Default-view safety checks:
 - did not show raw stop reasons, stage error codes, budget errors, registry
   errors, or stack text before Advanced was opened.
 
-### 2026-06-15 Default And Advanced Boundary Walkthrough
+### 2026-06-16 Default And Advanced Boundary Walkthrough
 
 Scope: row 16, with focused evidence for the default path, Advanced / Developer
-Mode, and legacy `/sessions/*` pages.
+Mode, Setup / Models, Discussion Room, current conclusion, and legacy
+`/sessions/*` pages.
 
 Automated browser smoke:
 
@@ -1049,13 +1050,26 @@ Path verified in the browser:
    `Open by session id`, the underlying session catalog, daemon base URL,
    runtime profiles, operation audit, and the low-level session link were still
    available there.
-4. Opened the legacy `/sessions/*` discussion brief page directly.
-5. Confirmed the legacy user-mode view showed the discussion brief, review
+4. Opened `/runs` and confirmed the default discussion list showed resumable
+   discussions without run ids, session ids, or ledger-event details.
+5. Opened `/setup/models` and confirmed model setup status stayed user-facing
+   while runtime profile setup details, env var names, and secret env names
+   remained collapsed until `Setup diagnostics` was opened.
+6. Opened `/runs/:runId` and confirmed the Discussion Room stayed readable by
+   default while start request JSON, run ledger timeline, run plan view,
+   process-governance ledger material, and projection metadata remained
+   collapsed until their Advanced panels were opened.
+7. Opened `/runs/:runId/outcome` and confirmed the current conclusion stayed
+   user-facing by default while candidate proposal override data, run/session
+   ids, draft status, and raw outcome material remained collapsed until
+   Advanced / Developer Mode was opened.
+8. Opened the legacy `/sessions/*` discussion brief page directly.
+9. Confirmed the legacy user-mode view showed the discussion brief, review
    summary, and next recommended actions without showing the session id, raw
    ledger entry, event type, or internal local-preset object ids.
-6. Opened the session `Ledger position` Advanced panel and confirmed the raw
+10. Opened the session `Ledger position` Advanced panel and confirmed the raw
    latest ledger entry and event type appeared only after Advanced was opened.
-7. Opened the `Ledger events` route through the Advanced navigation and
+11. Opened the `Ledger events` route through the Advanced navigation and
    confirmed append-only event records remain available for developers.
 
 Default-view safety checks:

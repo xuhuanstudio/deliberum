@@ -72,6 +72,21 @@ try {
     runId,
     sessionId
   });
+  await verifySetupAdvancedBoundary(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    runId,
+    sessionId
+  });
+  await verifyRunWorkspaceAdvancedBoundary(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    runId,
+    sessionId
+  });
+  await verifyOutcomeAdvancedBoundary(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    runId,
+    sessionId
+  });
   await verifyLegacySessionBoundary(page, {
     webBaseUrl: `http://127.0.0.1:${webPort}`,
     runId,
@@ -136,7 +151,7 @@ async function verifyLandingAdvancedBoundary(page, { webBaseUrl, runId, sessionI
   await page.getByText("Daemon base URL").waitFor();
   await page.getByText("Runtime profiles").waitFor();
   await page.getByText("Operation audit").waitFor();
-  await page.getByText(sessionId).waitFor();
+  await page.getByText(sessionId).first().waitFor();
   await page.getByRole("link", { name: "Open session view", exact: true }).waitFor();
 }
 
@@ -154,6 +169,81 @@ async function verifyRunsListBoundary(page, { webBaseUrl, runId, sessionId }) {
   await assertHiddenFromDefault(page, "Run id", "runs list default");
   await assertHiddenFromDefault(page, "Session id", "runs list default");
   await assertHiddenFromDefault(page, "Ledger events", "runs list default");
+}
+
+async function verifySetupAdvancedBoundary(page, { webBaseUrl, runId, sessionId }) {
+  await page.goto(`${webBaseUrl}/setup/models`, { waitUntil: "networkidle" });
+  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
+  await page.getByText("Model setup status").waitFor();
+  await assertNoHorizontalOverflow(page, "setup models default");
+  await assertDefaultBoundarySafety(page, "setup models default", {
+    runId,
+    sessionId
+  });
+  await assertHiddenFromDefault(page, "Runtime profile setup details", "setup models default");
+  await assertHiddenFromDefault(page, "Enable env var", "setup models default");
+  await assertHiddenFromDefault(page, "Secret env names", "setup models default");
+
+  await page.locator('details[data-advanced-panel="Setup diagnostics"] > summary').click();
+  await page.getByText("Runtime profile setup details").waitFor();
+  await page.getByText("Enable env var").first().waitFor();
+  await page.getByText("Secret env names").waitFor();
+  await page.getByText("DELIBERUM_ENABLE_LOCAL_PRESET").waitFor();
+}
+
+async function verifyRunWorkspaceAdvancedBoundary(page, { webBaseUrl, runId, sessionId }) {
+  await page.goto(`${webBaseUrl}/runs/${encodeURIComponent(runId)}`, {
+    waitUntil: "networkidle"
+  });
+  await page.getByRole("heading", { name: "Discussion room" }).waitFor();
+  await page.getByRole("link", { name: "View current conclusion", exact: true }).first().waitFor();
+  await assertNoHorizontalOverflow(page, "discussion room default");
+  await assertDefaultBoundarySafety(page, "discussion room default", {
+    runId,
+    sessionId
+  });
+  await assertHiddenFromDefault(page, "Advanced start request JSON", "discussion room default");
+  await assertHiddenFromDefault(page, "Run ledger timeline", "discussion room default");
+  await assertHiddenFromDefault(page, "Run plan view", "discussion room default");
+  await assertHiddenFromDefault(page, "Process governance ledger", "discussion room default");
+  await assertHiddenFromDefault(page, "Main perspectives metadata", "discussion room default");
+
+  await page.locator('details[data-advanced-panel="Advanced start request"] > summary').click();
+  await page.getByText("Advanced start request JSON").waitFor();
+
+  await page.locator('details[data-advanced-panel="Ledger trace"] > summary').click();
+  await page.getByText("Run ledger timeline").waitFor();
+  await page.getByText("Run plan view").waitFor();
+  await page.getByText(runId).first().waitFor();
+
+  await page.locator('details[data-advanced-panel="Adaptive primitive suggestions"] > summary').click();
+  await page.getByText("Process governance ledger").waitFor();
+  await page.getByText(sessionId).first().waitFor();
+
+  await page.locator('details[data-advanced-panel="Discussion detail metadata"] > summary').click();
+  await page.getByText("Main perspectives metadata").waitFor();
+  await page.getByText("Projection events").first().waitFor();
+}
+
+async function verifyOutcomeAdvancedBoundary(page, { webBaseUrl, runId, sessionId }) {
+  await page.goto(`${webBaseUrl}/runs/${encodeURIComponent(runId)}/outcome`, {
+    waitUntil: "networkidle"
+  });
+  await page.getByRole("heading", { name: "Current conclusion" }).first().waitFor();
+  await page.getByText("Open disagreements").first().waitFor();
+  await assertNoHorizontalOverflow(page, "current conclusion default");
+  await assertDefaultBoundarySafety(page, "current conclusion default", {
+    runId,
+    sessionId
+  });
+  await assertHiddenFromDefault(page, "Candidate proposal event override", "current conclusion default");
+  await assertHiddenFromDefault(page, "Raw outcome material", "current conclusion default");
+
+  await page.locator("details.du-advanced-panel > summary").first().click();
+  await page.getByText("Candidate proposal event override").waitFor();
+  await page.getByRole("heading", { name: "Raw outcome material" }).waitFor();
+  await page.getByText(runId).first().waitFor();
+  await page.getByText(sessionId).first().waitFor();
 }
 
 async function verifyLegacySessionBoundary(page, { webBaseUrl, runId, sessionId }) {
