@@ -1,5 +1,9 @@
 # Deployment
 
+First-time local users should start with [Getting Started](GETTING_STARTED.md).
+This document is for local/pre-production deployment details after the basic
+install, start, provider setup, and first discussion path is clear.
+
 ## Current status
 
 Deliberum is currently a local-first, pre-production implementation. The supported runtime surfaces are:

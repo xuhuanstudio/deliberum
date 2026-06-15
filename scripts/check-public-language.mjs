@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const hanPattern = /\p{Script=Han}/u;
+const localizedHanContentPaths = ["README.zh-CN.md"];
+const localizedHanContentPrefixes = ["docs/zh-CN/"];
 const findings = [];
 
 for (const filePath of listTrackedFiles()) {
@@ -25,9 +27,11 @@ for (const filePath of listTrackedFiles()) {
   const text = content.toString("utf8");
   const lines = text.split(/\r?\n/);
 
-  for (let index = 0; index < lines.length; index += 1) {
-    if (hanPattern.test(lines[index])) {
-      findings.push(`${filePath}:${index + 1}: contains non-English Han characters`);
+  if (!allowsLocalizedHanContent(filePath)) {
+    for (let index = 0; index < lines.length; index += 1) {
+      if (hanPattern.test(lines[index])) {
+        findings.push(`${filePath}:${index + 1}: contains non-English Han characters`);
+      }
     }
   }
 }
@@ -53,4 +57,11 @@ function listTrackedFiles() {
 
 function isBinaryTrackedFile(filePath) {
   return /\.(?:avif|bmp|gif|ico|jpg|jpeg|mov|mp3|mp4|pdf|png|webp|woff2?)$/i.test(filePath);
+}
+
+function allowsLocalizedHanContent(filePath) {
+  return (
+    localizedHanContentPaths.includes(filePath) ||
+    localizedHanContentPrefixes.some((prefix) => filePath.startsWith(prefix))
+  );
 }

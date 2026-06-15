@@ -6,6 +6,16 @@ It is not a role-agent chat demo, not a voting system, not a central-Judge workf
 
 > Working tagline: **Human-first peer deliberation for higher-quality decisions.**
 
+## Start here
+
+If you want to run Deliberum locally, start with
+[Getting Started](docs/GETTING_STARTED.md). It gives the shortest supported path
+from a source checkout to the local Web UI, provider setup, provider
+verification, and one model-backed discussion.
+
+For Simplified Chinese, see [README.zh-CN.md](README.zh-CN.md) and
+[Getting Started zh-CN](docs/zh-CN/GETTING_STARTED.md).
+
 ## Why Deliberum exists
 
 Most multi-agent systems rely on fixed roles, fixed order, supervisor routing, model voting, or a final judge. These designs are useful for workflows, but they often fail for open-ended deliberation:
@@ -74,6 +84,8 @@ English is the default Web language. Simplified Chinese is supported through the
 ## Quickstart: local Web product loop
 
 This path is for a normal local user who wants to try the product through Web, not inspect the runtime first.
+For a guided first-use path with troubleshooting, use
+[Getting Started](docs/GETTING_STARTED.md).
 Use the [Basic Product Loop Completion Matrix](docs/BASIC_PRODUCT_LOOP.md) as
 the acceptance checklist for this path. The default Web loop is not complete
 until the matrix steps are verified with real browser evidence.
@@ -163,6 +175,9 @@ This command starts an isolated local daemon and Web UI, configures the provider
 
 ## Documentation
 
+- [Getting Started](docs/GETTING_STARTED.md)
+- [README zh-CN](README.zh-CN.md)
+- [Getting Started zh-CN](docs/zh-CN/GETTING_STARTED.md)
 - [Project Charter](docs/PROJECT_CHARTER.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Protocol](docs/PROTOCOL.md)
