@@ -742,6 +742,17 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Start with saved role setup": "\u4f7f\u7528\u5df2\u4fdd\u5b58\u89d2\u8272\u8bbe\u7f6e\u5f00\u59cb",
   "Edit role defaults": "\u7f16\u8f91\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e",
   "Create role defaults": "\u521b\u5efa\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e",
+  "Edit default role setup": "\u7f16\u8f91\u9ed8\u8ba4\u89d2\u8272\u8bbe\u7f6e",
+  "Choose default discussion depth": "\u9009\u62e9\u9ed8\u8ba4\u8ba8\u8bba\u6df1\u5ea6",
+  "Leave blank to use the model saved in provider setup. Perspectives without their own model use this value for first responses.":
+    "\u7559\u7a7a\u5219\u4f7f\u7528\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f1a\u4f7f\u7528\u6b64\u503c\u4f5c\u4e3a\u521d\u59cb\u56de\u5e94\u3002",
+  "Saving role defaults": "\u6b63\u5728\u4fdd\u5b58\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e",
+  "Role changes are not saved yet.":
+    "\u89d2\u8272\u53d8\u66f4\u5c1a\u672a\u4fdd\u5b58\u3002",
+  "Cleared saved role defaults from the local service.":
+    "\u5df2\u4ece\u672c\u5730\u670d\u52a1\u6e05\u9664\u4fdd\u5b58\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002",
+  "Role defaults could not be changed in the local service. You can still review setup and start a discussion.":
+    "\u65e0\u6cd5\u5728\u672c\u5730\u670d\u52a1\u4e2d\u66f4\u6539\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u4f60\u4ecd\u7136\u53ef\u4ee5\u67e5\u770b\u8bbe\u7f6e\u5e76\u5f00\u59cb\u8ba8\u8bba\u3002",
   "Use saved model for perspectives": "\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u89c6\u89d2\u6a21\u578b",
   "Use first-response model": "\u4f7f\u7528\u521d\u59cb\u56de\u5e94\u6a21\u578b",
   "Customize perspective models": "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",

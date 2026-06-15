@@ -1929,25 +1929,61 @@ type OpenAICompatibleSetupFormInput = {
   structuredReview: boolean;
 };
 
+type SetupRoleDefaultsStatus = "idle" | "saved" | "cleared" | "unavailable";
+
+const SETUP_ROLE_PERSPECTIVE_FIELDS: readonly {
+  participantId: keyof OpenAICompatibleRoleModelDefaults["perspectiveModelOverrides"];
+  label: string;
+}[] = [
+  {
+    participantId: "provider-perspective-a",
+    label: "Perspective A model"
+  },
+  {
+    participantId: "provider-perspective-b",
+    label: "Perspective B model"
+  },
+  {
+    participantId: "provider-perspective-c",
+    label: "Perspective C model"
+  }
+];
+
 function SetupRoleDefaultsSummary({
   loading,
   error,
   response,
-  modelBackedAvailable
+  modelBackedAvailable,
+  form,
+  dirty,
+  pending,
+  status,
+  onFormChange,
+  onSave,
+  onClear
 }: {
   loading: boolean;
   error: boolean;
   response?: OpenAICompatibleRoleModelDefaultsResponse;
   modelBackedAvailable: boolean;
+  form: OpenAICompatibleRoleModelDefaults;
+  dirty: boolean;
+  pending: boolean;
+  status: SetupRoleDefaultsStatus;
+  onFormChange: (defaults: OpenAICompatibleRoleModelDefaults) => void;
+  onSave: () => void;
+  onClear: () => void;
 }) {
   const { t } = useI18n();
-  const defaults = response?.status === "configured" ? response.defaults : undefined;
-  const saved = Boolean(defaults);
-  const startPath = getRoleDefaultsStartPath(defaults);
-  const perspectiveOverrideCount = defaults
-    ? countConfiguredPerspectiveRoleModels(defaults)
+  const responseDefaults = response?.status === "configured" ? response.defaults : undefined;
+  const displayedDefaults = responseDefaults ?? (status === "saved" ? form : undefined);
+  const saved = Boolean(displayedDefaults);
+  const startPath = getRoleDefaultsStartPath(displayedDefaults);
+  const perspectiveOverrideCount = displayedDefaults
+    ? countConfiguredPerspectiveRoleModels(displayedDefaults)
     : 0;
   const tone = error ? "warning" : saved ? "ok" : "neutral";
+  const editablePerspectiveFields = getSetupRolePerspectiveFields(form.perspectiveCount);
 
   return (
     <section
@@ -1986,28 +2022,28 @@ function SetupRoleDefaultsSummary({
           {
             label: t("Discussion depth"),
             value: saved
-              ? t(defaults?.perspectiveCount === 3 ? "Broader review" : "Focused review")
+              ? t(displayedDefaults?.perspectiveCount === 3 ? "Broader review" : "Focused review")
               : t("Not saved yet")
           },
           {
             label: t("First responses use"),
             value:
-              saved && defaults?.modelOverride.trim()
-                ? defaults.modelOverride.trim()
+              saved && displayedDefaults?.modelOverride.trim()
+                ? displayedDefaults.modelOverride.trim()
                 : t("Provider setup model")
           },
           {
             label: t("Review roles use"),
             value:
-              saved && defaults?.reviewModelOverride.trim()
-                ? defaults.reviewModelOverride.trim()
+              saved && displayedDefaults?.reviewModelOverride.trim()
+                ? displayedDefaults.reviewModelOverride.trim()
                 : t("First-response model")
           },
           {
             label: t("Perspective models"),
             value:
               saved &&
-              defaults?.customPerspectiveModelsEnabled &&
+              displayedDefaults?.customPerspectiveModelsEnabled &&
               perspectiveOverrideCount > 0
                 ? perspectiveOverrideCount === 1
                   ? t("1 custom perspective model")
@@ -2018,6 +2054,188 @@ function SetupRoleDefaultsSummary({
           }
         ]}
       />
+      {modelBackedAvailable ? (
+        <div
+          className="du-discussion-model-assignment"
+          aria-label={t("Edit default role setup")}
+        >
+          <fieldset className="du-participant-source-picker du-participant-depth-picker">
+            <legend>{t("Choose default discussion depth")}</legend>
+            <label
+              className={`du-participant-source-card ${
+                form.perspectiveCount === 2 ? "du-participant-source-selected" : ""
+              }`}
+            >
+              <input
+                type="radio"
+                name="setup-role-default-perspective-count"
+                value="2"
+                checked={form.perspectiveCount === 2}
+                onChange={() =>
+                  onFormChange({
+                    ...form,
+                    perspectiveCount: 2,
+                    perspectiveModelOverrides: {
+                      "provider-perspective-a":
+                        form.perspectiveModelOverrides["provider-perspective-a"],
+                      "provider-perspective-b":
+                        form.perspectiveModelOverrides["provider-perspective-b"]
+                    }
+                  })
+                }
+              />
+              <span>
+                <strong>{t("Focused review")}</strong>
+                <small>{t("Two independent model perspectives keep the discussion concise.")}</small>
+              </span>
+            </label>
+            <label
+              className={`du-participant-source-card ${
+                form.perspectiveCount === 3 ? "du-participant-source-selected" : ""
+              }`}
+            >
+              <input
+                type="radio"
+                name="setup-role-default-perspective-count"
+                value="3"
+                checked={form.perspectiveCount === 3}
+                onChange={() =>
+                  onFormChange({
+                    ...form,
+                    perspectiveCount: 3
+                  })
+                }
+              />
+              <span>
+                <strong>{t("Broader review")}</strong>
+                <small>{t("Three independent model perspectives give the room more comparison material.")}</small>
+              </span>
+            </label>
+          </fieldset>
+          <label className="du-discussion-model-override" htmlFor="setup-role-first-response-model">
+            <span>
+              <strong>{t("First-response model")}</strong>
+              <small>
+                {t(
+                  "Leave blank to use the model saved in provider setup. Perspectives without their own model use this value for first responses."
+                )}
+              </small>
+            </span>
+            <input
+              id="setup-role-first-response-model"
+              value={form.modelOverride}
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={t("Provider setup model")}
+              onChange={(event) =>
+                onFormChange({
+                  ...form,
+                  modelOverride: event.currentTarget.value
+                })
+              }
+            />
+          </label>
+          <label className="du-discussion-model-override" htmlFor="setup-role-review-model">
+            <span>
+              <strong>{t("Review role model")}</strong>
+              <small>
+                {t(
+                  "Leave blank to use the first-response model. A value here applies to Reviewer, Evidence checker, Risk reviewer, and Conclusion writer only."
+                )}
+              </small>
+            </span>
+            <input
+              id="setup-role-review-model"
+              value={form.reviewModelOverride}
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={t("Use first-response model")}
+              onChange={(event) =>
+                onFormChange({
+                  ...form,
+                  reviewModelOverride: event.currentTarget.value
+                })
+              }
+            />
+          </label>
+          <label className="du-perspective-model-toggle">
+            <input
+              type="checkbox"
+              checked={form.customPerspectiveModelsEnabled}
+              onChange={(event) =>
+                onFormChange({
+                  ...form,
+                  customPerspectiveModelsEnabled: event.currentTarget.checked
+                })
+              }
+            />
+            <span>
+              <strong>{t("Customize perspective models")}</strong>
+              <small>
+                {t(
+                  "Give individual first-response perspectives their own model. Leave a field blank to use the first-response model."
+                )}
+              </small>
+            </span>
+          </label>
+          {form.customPerspectiveModelsEnabled ? (
+            <div
+              className="du-perspective-model-grid"
+              aria-label={t("Perspective model assignment")}
+            >
+              {editablePerspectiveFields.map((field) => (
+                <label key={field.participantId} htmlFor={`setup-${field.participantId}-model`}>
+                  <span>{t(field.label)}</span>
+                  <input
+                    id={`setup-${field.participantId}-model`}
+                    value={form.perspectiveModelOverrides[field.participantId] ?? ""}
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder={t("Use first-response model")}
+                    onChange={(event) =>
+                      onFormChange({
+                        ...form,
+                        perspectiveModelOverrides: {
+                          ...form.perspectiveModelOverrides,
+                          [field.participantId]: event.currentTarget.value
+                        }
+                      })
+                    }
+                  />
+                </label>
+              ))}
+              <p>
+                {t(
+                  "Perspective model overrides affect independent first responses only. Review roles use the review role model when one is set."
+                )}
+              </p>
+            </div>
+          ) : null}
+          <div className="du-action-row">
+            <button
+              type="button"
+              className="du-secondary-button"
+              disabled={pending}
+              onClick={onSave}
+            >
+              {t(pending ? "Saving role defaults" : "Save as default role setup")}
+            </button>
+            <button
+              type="button"
+              className="du-secondary-button"
+              disabled={!saved || pending}
+              onClick={onClear}
+            >
+              {t("Clear saved role setup")}
+            </button>
+          </div>
+          <p className="du-role-defaults-note">
+            {dirty
+              ? t("Role changes are not saved yet.")
+              : t(getSetupRoleDefaultsStatusMessage(status, saved))}
+          </p>
+        </div>
+      ) : null}
       <div className="du-action-row">
         {modelBackedAvailable ? (
           <>
@@ -2038,6 +2256,66 @@ function SetupRoleDefaultsSummary({
       </div>
     </section>
   );
+}
+
+function createEmptyRoleDefaults(): OpenAICompatibleRoleModelDefaults {
+  return {
+    perspectiveCount: 2,
+    modelOverride: "",
+    reviewModelOverride: "",
+    customPerspectiveModelsEnabled: false,
+    perspectiveModelOverrides: {}
+  };
+}
+
+function normalizeSetupRoleDefaults(
+  defaults: OpenAICompatibleRoleModelDefaults
+): OpenAICompatibleRoleModelDefaults {
+  const perspectiveFields = getSetupRolePerspectiveFields(defaults.perspectiveCount);
+  const perspectiveModelOverrides: OpenAICompatibleRoleModelDefaults["perspectiveModelOverrides"] = {};
+
+  if (defaults.customPerspectiveModelsEnabled) {
+    for (const field of perspectiveFields) {
+      const model = defaults.perspectiveModelOverrides[field.participantId]?.trim();
+
+      if (model) {
+        perspectiveModelOverrides[field.participantId] = model;
+      }
+    }
+  }
+
+  return {
+    perspectiveCount: defaults.perspectiveCount,
+    modelOverride: defaults.modelOverride.trim(),
+    reviewModelOverride: defaults.reviewModelOverride.trim(),
+    customPerspectiveModelsEnabled: defaults.customPerspectiveModelsEnabled,
+    perspectiveModelOverrides
+  };
+}
+
+function getSetupRolePerspectiveFields(
+  perspectiveCount: OpenAICompatibleRoleModelDefaults["perspectiveCount"]
+) {
+  return SETUP_ROLE_PERSPECTIVE_FIELDS.slice(0, perspectiveCount);
+}
+
+function getSetupRoleDefaultsStatusMessage(
+  status: SetupRoleDefaultsStatus,
+  saved: boolean
+): string {
+  switch (status) {
+    case "saved":
+      return "Saved role defaults to the local service. API keys and base URLs are not stored here.";
+    case "cleared":
+      return "Cleared saved role defaults from the local service.";
+    case "unavailable":
+      return "Role defaults could not be changed in the local service. You can still review setup and start a discussion.";
+    case "idle":
+    default:
+      return saved
+        ? "Saved role defaults are available from the local service."
+        : "No saved role defaults yet. API keys and base URLs are never saved here.";
+  }
 }
 
 function getRoleDefaultsStartPath(
@@ -2098,15 +2376,80 @@ function SetupParticipantReadiness({
 }) {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
+  const queryClient = useQueryClient();
   const readiness = buildSetupParticipantReadiness(setupPlan, providerConnectionVerified);
   const roleDefaultsSupported = setupPlan.profiles.some(
     (profile) => profile.id === "openai-compatible"
   );
+  const [roleDefaultsForm, setRoleDefaultsForm] = useState<OpenAICompatibleRoleModelDefaults>(
+    () => createEmptyRoleDefaults()
+  );
+  const [roleDefaultsFormDirty, setRoleDefaultsFormDirty] = useState(false);
+  const [roleDefaultsStatus, setRoleDefaultsStatus] =
+    useState<SetupRoleDefaultsStatus>("idle");
   const roleDefaultsQuery = useQuery({
     queryKey: ["openai-compatible-role-model-defaults"],
     queryFn: () => client.getOpenAICompatibleRoleModelDefaults(),
     enabled: roleDefaultsSupported
   });
+  const saveRoleDefaultsMutation = useMutation({
+    mutationFn: (defaults: OpenAICompatibleRoleModelDefaults) =>
+      client.saveOpenAICompatibleRoleModelDefaults(defaults),
+    onSuccess: (_result, defaults) => {
+      setRoleDefaultsForm(defaults);
+      setRoleDefaultsFormDirty(false);
+      setRoleDefaultsStatus("saved");
+      void queryClient.invalidateQueries({ queryKey: ["openai-compatible-role-model-defaults"] });
+      void queryClient.invalidateQueries({ queryKey: ["model-role-defaults"] });
+    },
+    onError: () => {
+      setRoleDefaultsStatus("unavailable");
+    }
+  });
+  const clearRoleDefaultsMutation = useMutation({
+    mutationFn: () => client.clearOpenAICompatibleRoleModelDefaults(),
+    onSuccess: () => {
+      setRoleDefaultsForm(createEmptyRoleDefaults());
+      setRoleDefaultsFormDirty(false);
+      setRoleDefaultsStatus("cleared");
+      void queryClient.invalidateQueries({ queryKey: ["openai-compatible-role-model-defaults"] });
+      void queryClient.invalidateQueries({ queryKey: ["model-role-defaults"] });
+    },
+    onError: () => {
+      setRoleDefaultsStatus("unavailable");
+    }
+  });
+
+  useEffect(() => {
+    if (!roleDefaultsQuery.isSuccess || roleDefaultsFormDirty) {
+      return;
+    }
+
+    const defaults =
+      roleDefaultsQuery.data?.status === "configured"
+        ? roleDefaultsQuery.data.defaults
+        : undefined;
+
+    setRoleDefaultsForm(defaults ?? createEmptyRoleDefaults());
+  }, [
+    roleDefaultsFormDirty,
+    roleDefaultsQuery.data,
+    roleDefaultsQuery.isSuccess
+  ]);
+
+  function updateRoleDefaultsForm(defaults: OpenAICompatibleRoleModelDefaults) {
+    setRoleDefaultsForm(defaults);
+    setRoleDefaultsFormDirty(true);
+    setRoleDefaultsStatus("idle");
+  }
+
+  function saveRoleDefaults() {
+    saveRoleDefaultsMutation.mutate(normalizeSetupRoleDefaults(roleDefaultsForm));
+  }
+
+  function clearRoleDefaults() {
+    clearRoleDefaultsMutation.mutate();
+  }
 
   return (
     <section
@@ -2178,6 +2521,13 @@ function SetupParticipantReadiness({
         error={roleDefaultsSupported && roleDefaultsQuery.isError}
         response={roleDefaultsQuery.data}
         modelBackedAvailable={readiness.canStartModelBackedDiscussion}
+        form={roleDefaultsForm}
+        dirty={roleDefaultsFormDirty}
+        pending={saveRoleDefaultsMutation.isPending || clearRoleDefaultsMutation.isPending}
+        status={roleDefaultsStatus}
+        onFormChange={updateRoleDefaultsForm}
+        onSave={saveRoleDefaults}
+        onClear={clearRoleDefaults}
       />
       <div className="du-setup-participant-plan" aria-label={t("Who joins the discussion")}>
         <div className="du-section-label">

@@ -808,9 +808,11 @@ Path covered:
     model while review roles use their own model assignment.
 11. Saves those non-secret role model choices as local service role defaults,
     returns through Setup / Models, confirms the saved role-default summary is
-    visible there, continues to the start page, confirms the defaults are
-    applied to a new model-backed discussion, and confirms the saved defaults do
-    not contain provider secrets or connection details.
+    visible there, confirms the Setup / Models role-default editor is populated,
+    saves the role defaults directly from Setup / Models, continues to the start
+    page, confirms the defaults are applied to a new model-backed discussion,
+    and confirms the saved defaults do not contain provider secrets or
+    connection details.
 12. Creates a model-backed discussion from the browser.
 13. Uses Continue discussion from the room.
 14. Confirms a transient provider first-response failure pauses the discussion

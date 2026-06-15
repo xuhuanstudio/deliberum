@@ -2739,6 +2739,72 @@ describe("@deliberum/web shell", () => {
     expect(pageText).not.toContain("openai-main");
   });
 
+  it("edits role defaults directly from setup and models", async () => {
+    markOpenAICompatibleProviderVerified();
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue(createReadyOpenAISetupProfiles());
+
+    renderApp("/setup/models", client);
+
+    expect(await screen.findByText("No saved role defaults")).toBeTruthy();
+    expect(screen.getByText("Choose default discussion depth")).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: /Broader review/i }));
+    fireEvent.change(document.getElementById("setup-role-first-response-model") as HTMLInputElement, {
+      target: {
+        value: " setup-first-response-model "
+      }
+    });
+    fireEvent.change(document.getElementById("setup-role-review-model") as HTMLInputElement, {
+      target: {
+        value: " setup-review-model "
+      }
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: /Customize perspective models/i }));
+    fireEvent.change(screen.getByLabelText("Perspective A model"), {
+      target: {
+        value: " setup-perspective-a-model "
+      }
+    });
+    fireEvent.change(screen.getByLabelText("Perspective C model"), {
+      target: {
+        value: " setup-perspective-c-model "
+      }
+    });
+    expect(screen.getByText("Role changes are not saved yet.")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save as default role setup" }));
+    await waitFor(() =>
+      expect(client.saveOpenAICompatibleRoleModelDefaults).toHaveBeenCalledWith({
+        perspectiveCount: 3,
+        modelOverride: "setup-first-response-model",
+        reviewModelOverride: "setup-review-model",
+        customPerspectiveModelsEnabled: true,
+        perspectiveModelOverrides: {
+          "provider-perspective-a": "setup-perspective-a-model",
+          "provider-perspective-c": "setup-perspective-c-model"
+        }
+      })
+    );
+    expect(
+      await screen.findByText(
+        "Saved role defaults to the local service. API keys and base URLs are not stored here."
+      )
+    ).toBeTruthy();
+    expect(JSON.stringify(vi.mocked(client.saveOpenAICompatibleRoleModelDefaults).mock.calls)).not.toContain("sk-");
+    expect(JSON.stringify(vi.mocked(client.saveOpenAICompatibleRoleModelDefaults).mock.calls)).not.toContain("https://api.example.test/v1");
+    expect(JSON.stringify(vi.mocked(client.saveOpenAICompatibleRoleModelDefaults).mock.calls)).not.toContain("providerConfigId");
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear saved role setup" }));
+    await waitFor(() =>
+      expect(client.clearOpenAICompatibleRoleModelDefaults).toHaveBeenCalledTimes(1)
+    );
+    expect(
+      await screen.findByText(
+        "Cleared saved role defaults from the local service."
+      )
+    ).toBeTruthy();
+  });
+
   it("applies daemon-saved role defaults to the model-backed start page", async () => {
     markOpenAICompatibleProviderVerified();
     const client = createClient();

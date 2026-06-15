@@ -222,16 +222,30 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page.getByRole("link", { name: "Open Setup / Models" }).click();
   await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
-  await page.getByText("Saved role defaults").waitFor();
+  await page.getByText("Saved role defaults", { exact: true }).waitFor();
   await page
     .getByText(
       "Setup / Models shows the saved participant model choices before you start. API keys, base URLs, and provider configuration ids are not returned here."
     )
     .waitFor();
-  await page.getByText("Focused review", { exact: true }).waitFor();
   await page.getByText(discussionModelName).waitFor();
   await page.getByText(reviewModelName).waitFor();
   await page.getByText("1 custom perspective model").waitFor();
+  if ((await page.locator("#setup-role-first-response-model").inputValue()) !== discussionModelName) {
+    throw new Error("Setup / Models did not show the saved first-response role model.");
+  }
+  if ((await page.locator("#setup-role-review-model").inputValue()) !== reviewModelName) {
+    throw new Error("Setup / Models did not show the saved review role model.");
+  }
+  if ((await page.getByLabel("Perspective A model").inputValue()) !== perspectiveModelName) {
+    throw new Error("Setup / Models did not show the saved Perspective A model.");
+  }
+  await page.getByRole("button", { name: "Save as default role setup" }).click();
+  await page
+    .getByText(
+      "Saved role defaults to the local service. API keys and base URLs are not stored here."
+    )
+    .waitFor();
   await page.getByRole("link", { name: "Start broader discussion" }).first().click();
   await page.waitForURL(/\/runs\/new\?participants=model-backed&perspectives=3$/);
   await page.getByRole("heading", { name: "Start a discussion" }).waitFor();
