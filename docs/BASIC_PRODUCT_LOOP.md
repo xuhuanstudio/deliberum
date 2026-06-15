@@ -101,15 +101,15 @@ Rows 1 through 16 now have direct automated and browser evidence. The opt-in
 release-readiness walkthrough has also been run against a real
 OpenAI-compatible provider.
 
-The current convergence target is real-provider repeatability: run the
-release-readiness walkthrough through the Web-managed setup path, including the
-default Structured review compatibility option, and fix the first blocking
-normal-user recovery or completion step if the provider still pauses or fails.
-The default Web path now has recovery guidance for safe failed-stage responses,
-and OpenAI-compatible structured extraction has a conservative fallback when a
-provider returns JSON that still fails the organizer schema after retry. Repeated
-real-provider walkthroughs are still needed before release hardening can be
-considered complete.
+The current convergence target is real-provider release hardening: continue
+running the release-readiness walkthrough through the Web-managed setup path,
+including the default Structured review compatibility option, across repeated
+passes and more OpenAI-compatible providers. Fix the first blocking normal-user
+recovery or completion step if a provider pauses or fails. The default Web path
+now has recovery guidance for safe failed-stage responses, OpenAI-compatible
+structured extraction has a conservative fallback when a provider returns JSON
+that still fails the organizer schema after retry, and the default UI explains
+when that fallback was used.
 
 Release-readiness walkthrough requirements:
 
@@ -316,6 +316,46 @@ Limit:
   guarantee. Repeated release-readiness walkthroughs against real external
   providers are still required before release hardening can be considered
   complete.
+
+### 2026-06-15 Repeated Real Provider Release Smoke
+
+Scope: rows 5 through 16 against a real external OpenAI-compatible provider,
+using the Web-managed setup path after organizer fallback recovery and fallback
+visibility were added.
+
+Command:
+
+- `corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Ran the release-readiness browser walkthrough twice consecutively against the
+   same real external OpenAI-compatible provider.
+2. Entered provider setup through `/setup/models` with the default Structured
+   review compatibility option enabled.
+3. Verified the provider connection from Web.
+4. Started a model-backed discussion from Web.
+5. Continued the discussion until participant perspectives, strongest current
+   options, open disagreements, missing evidence, risks, current conclusion, and
+   next recommended actions were visible.
+6. Opened the Current Conclusion page.
+7. Reused the smoke's default-view safety scans for setup, start, room, retry,
+   and outcome surfaces so provider secrets, provider values, env var names,
+   provider config ids, raw JSON, and low-level ids stayed out of the normal
+   user path.
+
+Result:
+
+- Passed twice consecutively.
+- The Basic Product Loop can now complete repeatedly with this real provider
+  through the default Web-managed setup path.
+
+Limit:
+
+- This is repeatability evidence for one provider, not broad provider
+  compatibility or production-grade stability. Future release-hardening batches
+  should run the same walkthrough against additional OpenAI-compatible providers
+  and fix the first normal-user blocker that appears.
 
 ### 2026-06-15 Web Entry Smoke
 
