@@ -158,6 +158,16 @@ daemon setup, `corepack pnpm smoke:web-release-readiness` can reuse those values
 Explicit `DELIBERUM_RELEASE_SMOKE_*` variables still take precedence for
 provider-specific release checks.
 
+Latest 2026-06-15 evidence: the repository-local `.env` provider setup still
+exercises the safe provider-verification recovery path because that local
+provider endpoint is not reachable, but an explicit temporary real external
+OpenAI-compatible provider configuration passed the Web-managed release smoke
+once on the default focused two-perspective path and once on the Broader review
+three-perspective path. This means the current highest-priority product gap is
+not provider verification in Deliberum itself; it is continued real-provider
+release hardening across repeated runs, more providers, and failure recovery
+states.
+
 Set `DELIBERUM_RELEASE_SMOKE_RUNS=3` or another positive integer to repeat the
 same browser walkthrough in fresh isolated local services. The command stops on
 the first failed run, which makes intermittent real-provider product-loop
@@ -589,6 +599,46 @@ Limit:
 
 - This is one Broader review pass against one provider. It does not replace
   repeated Broader review runs or broader provider coverage before release.
+
+### 2026-06-15 Temporary Real Provider Release Smoke
+
+Scope: rows 5 through 16 against an explicit temporary real external
+OpenAI-compatible provider configuration, separate from the repository-local
+`.env` provider setup.
+
+Commands:
+
+- `DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> DELIBERUM_RELEASE_SMOKE_BASE_URL=<provider-chat-completions-url> DELIBERUM_RELEASE_SMOKE_MODEL=<provider-model> corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_API_KEY=<provider-key> DELIBERUM_RELEASE_SMOKE_BASE_URL=<provider-chat-completions-url> DELIBERUM_RELEASE_SMOKE_MODEL=<provider-model> DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Confirmed the provider accepted a minimal OpenAI-compatible chat completion
+   request before running the Web walkthrough.
+2. Opened `/setup/models`, entered API key, base URL, and model through Web, and
+   verified the provider connection without logging or rendering secrets.
+3. Started a model-backed discussion from Web.
+4. Completed the default focused two-perspective Continue discussion path to
+   participant perspectives, strongest options, open disagreements, missing
+   evidence, risks, current conclusion, and next recommended actions.
+5. Re-ran the same Web-managed walkthrough with Broader review enabled and
+   verified Perspective A, Perspective B, and Perspective C.
+6. Opened the Current Conclusion page and reused default-view safety scans for
+   setup, start, room, retry, and outcome surfaces.
+
+Result:
+
+- Passed once on the focused two-perspective path.
+- Passed once on the Broader review three-perspective path.
+- The latest verified real-provider blocker was the repository-local `.env`
+  provider endpoint being unreachable, not a Deliberum product-loop failure with
+  a reachable OpenAI-compatible provider.
+
+Limit:
+
+- This is still one external provider and two single-pass walkthroughs. It does
+  not prove broad provider compatibility, long-run stability, quota resilience,
+  or production-grade release readiness.
 
 ### 2026-06-15 Provider Verification Failure Recovery Guard
 
