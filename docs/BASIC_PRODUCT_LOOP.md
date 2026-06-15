@@ -131,11 +131,12 @@ smallest verifiable change. Provider-specific compatibility that must be set by
 a normal user belongs in Setup / Models; lower-level diagnostics and env var
 names stay behind Advanced / Developer Mode.
 
-If provider verification fails, the smoke verifies the default Setup / Models
-view shows normal-user recovery actions: Review setup fields, Try Verify
-connection again, and Start demo discussion. This keeps provider setup failures
-actionable without printing provider secrets, base URLs, model values, or env
-var names.
+If provider verification fails, the smoke records only the safe daemon response
+summary, then verifies the default Setup / Models view shows normal-user
+recovery actions: Review setup fields, Try Verify connection again, and Start
+demo discussion. This keeps provider setup failures actionable without printing
+provider secrets, base URLs, model values, provider response text, or env var
+names.
 
 Command:
 
@@ -606,9 +607,10 @@ Path covered:
    local provider setup.
 2. The provider did not pass Web verification, so the walkthrough correctly
    stopped before starting a model-backed discussion.
-3. The release-readiness smoke now verifies that this failure state still shows
-   normal-user recovery actions: Review setup fields, Try Verify connection
-   again, and Start demo discussion.
+3. The release-readiness smoke now records the safe verification response
+   summary and verifies that this failure state still shows normal-user
+   recovery actions: Review setup fields, Try Verify connection again, and Start
+   demo discussion.
 4. The same smoke continues scanning the default setup view so provider secrets,
    provider values, env var names, provider config ids, raw JSON, and low-level
    ids stay out of the normal user path.
@@ -618,8 +620,9 @@ Path covered:
 Result:
 
 - The latest local real-provider walkthrough is blocked at provider
-  verification, but the default Web path gives normal users a safe recovery path
-  instead of exposing raw diagnostics or leaving them without a next action.
+  verification with safe code `provider_network_error`, but the default Web path
+  gives normal users a safe recovery path instead of exposing raw diagnostics or
+  leaving them without a next action.
 - This improves release-readiness failure evidence; it does not count as a
   successful real-provider end-to-end pass.
 

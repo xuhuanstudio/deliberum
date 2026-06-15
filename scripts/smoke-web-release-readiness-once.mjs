@@ -36,6 +36,7 @@ const web = startWebProcess({
 
 let browser;
 let activePage;
+let latestProviderVerificationDebug = "";
 let latestContinuationDebug = "";
 
 try {
@@ -80,6 +81,7 @@ try {
         "Release readiness browser smoke failed.",
         await formatPageDebug(activePage),
         await formatRunDebug(activePage),
+        latestProviderVerificationDebug,
         latestContinuationDebug,
         formatProcessOutput(daemon.stdout, daemon.stderr, "daemon"),
         formatProcessOutput(web.stdout, web.stderr, "web")
@@ -121,7 +123,17 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByText("Ready to verify").first().waitFor();
   await assertDefaultViewSafety(page, "after saving setup");
 
-  await page.getByRole("button", { name: "Verify connection" }).click();
+  const [verificationResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/runtime/setup/openai-compatible/verify",
+      { timeout: releaseConfig.providerTimeoutMs }
+    ),
+    page.getByRole("button", { name: "Verify connection" }).click()
+  ]);
+  latestProviderVerificationDebug =
+    await summarizeProviderVerificationResponse(verificationResponse);
   const providerVerificationState = await waitForFirstVisible(page, [
     {
       label: "verified",
@@ -278,6 +290,45 @@ async function continueDiscussionUntilCompleted(page) {
   throw new Error(
     `Release readiness walkthrough did not complete the model-backed continuation after ${releaseConfig.continueAttempts} attempt(s): ${finalState}.`
   );
+}
+
+async function summarizeProviderVerificationResponse(response) {
+  let payload;
+
+  try {
+    payload = await response.json();
+  } catch (error) {
+    return [
+      `provider verification response HTTP ${response.status()}`,
+      `verification response JSON parse failed: ${error.message}`
+    ].join("\n");
+  }
+
+  return redactSensitive(
+    [
+      `provider verification response HTTP ${response.status()}`,
+      JSON.stringify(summarizeProviderVerificationPayload(payload), null, 2)
+    ].join("\n")
+  );
+}
+
+function summarizeProviderVerificationPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return {
+      payload: "non_object"
+    };
+  }
+
+  const error = readRecordValue(payload, "error");
+
+  return {
+    profileId: readRecordValue(payload, "profileId"),
+    status: readRecordValue(payload, "status"),
+    checked: readRecordValue(payload, "checked"),
+    code: readRecordValue(payload, "code"),
+    message: readRecordValue(payload, "message"),
+    error: summarizeErrorPayload(error)
+  };
 }
 
 async function summarizeStartResponse(response, attempt) {
