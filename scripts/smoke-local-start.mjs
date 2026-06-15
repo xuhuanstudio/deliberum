@@ -11,6 +11,7 @@ import { chromium } from "@playwright/test";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const port = await reserveLocalPort();
 const tempDir = mkdtempSync(join(tmpdir(), "deliberum-local-start-"));
+const detachedChild = process.platform !== "win32";
 const child = spawn("corepack", ["pnpm", "start:local"], {
   cwd: repoRoot,
   env: {
@@ -19,6 +20,7 @@ const child = spawn("corepack", ["pnpm", "start:local"], {
     DELIBERUM_PORT: String(port),
     DELIBERUM_DAEMON_SQLITE_PATH: join(tempDir, "deliberum.sqlite")
   },
+  detached: detachedChild,
   stdio: ["ignore", "pipe", "pipe"]
 });
 let stdout = "";
@@ -155,7 +157,7 @@ async function terminateChild(processChild, processExitPromise) {
     return;
   }
 
-  processChild.kill("SIGTERM");
+  signalChildTree(processChild, "SIGTERM");
 
   const exitedCleanly = await Promise.race([
     processExitPromise.then(() => true),
@@ -165,8 +167,21 @@ async function terminateChild(processChild, processExitPromise) {
     return;
   }
 
-  processChild.kill("SIGKILL");
+  signalChildTree(processChild, "SIGKILL");
   await processExitPromise;
+}
+
+function signalChildTree(processChild, signal) {
+  if (detachedChild && processChild.pid !== undefined) {
+    try {
+      process.kill(-processChild.pid, signal);
+      return;
+    } catch {
+      // Fall through to direct child signaling below.
+    }
+  }
+
+  processChild.kill(signal);
 }
 
 function formatProcessOutput(processStdout, processStderr) {
