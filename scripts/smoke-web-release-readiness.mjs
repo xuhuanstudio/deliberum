@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -10,7 +10,8 @@ import { chromium } from "@playwright/test";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
-const releaseConfig = readReleaseSmokeConfig();
+const releaseSmokeEnv = readReleaseSmokeEnv();
+const releaseConfig = readReleaseSmokeConfig(releaseSmokeEnv);
 const discussionQuestion = [
   "Run a Deliberum release-readiness check for a normal local user.",
   "Assess whether the product loop is ready to configure a real model provider,",
@@ -519,11 +520,20 @@ function summarizeRoundArray(value) {
   }));
 }
 
-function readReleaseSmokeConfig() {
-  const apiKey = readRequiredEnv("DELIBERUM_RELEASE_SMOKE_API_KEY");
-  const providerInputUrl = readRequiredEnv("DELIBERUM_RELEASE_SMOKE_BASE_URL");
+function readReleaseSmokeConfig(env) {
+  const apiKey = readRequiredEnv(env, {
+    name: "DELIBERUM_RELEASE_SMOKE_API_KEY",
+    fallbackName: "DELIBERUM_OPENAI_API_KEY"
+  });
+  const providerInputUrl = readRequiredEnv(env, {
+    name: "DELIBERUM_RELEASE_SMOKE_BASE_URL",
+    fallbackName: "DELIBERUM_OPENAI_BASE_URL"
+  });
   const providerBaseUrl = normalizeProviderBaseUrl(providerInputUrl);
-  const model = readRequiredEnv("DELIBERUM_RELEASE_SMOKE_MODEL");
+  const model = readRequiredEnv(env, {
+    name: "DELIBERUM_RELEASE_SMOKE_MODEL",
+    fallbackName: "DELIBERUM_OPENAI_MODEL"
+  });
 
   return {
     apiKey,
@@ -531,18 +541,22 @@ function readReleaseSmokeConfig() {
     providerBaseUrl,
     model,
     browserTimeoutMs: readOptionalPositiveIntegerEnv(
+      env,
       "DELIBERUM_RELEASE_SMOKE_BROWSER_TIMEOUT_MS",
       180_000
     ),
     providerTimeoutMs: readOptionalPositiveIntegerEnv(
+      env,
       "DELIBERUM_RELEASE_SMOKE_PROVIDER_TIMEOUT_MS",
       180_000
     ),
     productLoopTimeoutMs: readOptionalPositiveIntegerEnv(
+      env,
       "DELIBERUM_RELEASE_SMOKE_PRODUCT_LOOP_TIMEOUT_MS",
       360_000
     ),
     continueAttempts: readOptionalPositiveIntegerEnv(
+      env,
       "DELIBERUM_RELEASE_SMOKE_CONTINUE_ATTEMPTS",
       3
     )
@@ -570,18 +584,30 @@ function normalizeProviderBaseUrl(value) {
   return stripTrailingSlash(value);
 }
 
-function readRequiredEnv(name) {
-  const value = process.env[name]?.trim();
+function readReleaseSmokeEnv() {
+  return {
+    ...readLocalEnvFile(
+      process.env.DELIBERUM_RELEASE_SMOKE_ENV_FILE?.trim() ||
+        join(repoRoot, ".env")
+    ),
+    ...process.env
+  };
+}
+
+function readRequiredEnv(env, { name, fallbackName }) {
+  const value = readOptionalEnv(env, name) ?? readOptionalEnv(env, fallbackName);
 
   if (!value) {
-    throw new Error(`${name} is required for release readiness smoke.`);
+    throw new Error(
+      `${name} or ${fallbackName} is required for release readiness smoke.`
+    );
   }
 
   return value;
 }
 
-function readOptionalPositiveIntegerEnv(name, fallback) {
-  const value = process.env[name]?.trim();
+function readOptionalPositiveIntegerEnv(env, name, fallback) {
+  const value = readOptionalEnv(env, name);
 
   if (!value) {
     return fallback;
@@ -594,6 +620,70 @@ function readOptionalPositiveIntegerEnv(name, fallback) {
   }
 
   return parsed;
+}
+
+function readOptionalEnv(env, name) {
+  const value = env[name]?.trim();
+
+  return value && value.length > 0 ? value : undefined;
+}
+
+function readLocalEnvFile(filePath) {
+  if (!filePath || !existsSync(filePath)) {
+    return {};
+  }
+
+  return parseEnvAssignments(readFileSync(filePath, "utf8"));
+}
+
+function parseEnvAssignments(text) {
+  const env = {};
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const parsed = parseEnvAssignment(rawLine);
+
+    if (parsed) {
+      env[parsed.name] = parsed.value;
+    }
+  }
+
+  return env;
+}
+
+function parseEnvAssignment(rawLine) {
+  const line = rawLine.trim();
+
+  if (!line || line.startsWith("#")) {
+    return undefined;
+  }
+
+  const separatorIndex = line.indexOf("=");
+  if (separatorIndex <= 0) {
+    return undefined;
+  }
+
+  const name = line.slice(0, separatorIndex).trim();
+  const rawValue = line.slice(separatorIndex + 1).trim();
+
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+    return undefined;
+  }
+
+  return {
+    name,
+    value: unquoteEnvValue(rawValue)
+  };
+}
+
+function unquoteEnvValue(value) {
+  if (
+    (value.startsWith("\"") && value.endsWith("\"")) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+
+  return value;
 }
 
 function stripTrailingSlash(value) {
@@ -615,24 +705,48 @@ function startDaemonProcess({ port, cwd, webOrigin }) {
 
 function buildOptionalProviderCompatibilityEnv() {
   const mappings = [
-    ["DELIBERUM_RELEASE_SMOKE_ENDPOINT_PATH", "DELIBERUM_OPENAI_ENDPOINT_PATH"],
-    ["DELIBERUM_RELEASE_SMOKE_TIMEOUT_MS", "DELIBERUM_OPENAI_TIMEOUT_MS"],
-    ["DELIBERUM_RELEASE_SMOKE_TOP_P", "DELIBERUM_OPENAI_TOP_P"],
-    ["DELIBERUM_RELEASE_SMOKE_STREAM", "DELIBERUM_OPENAI_STREAM"],
-    ["DELIBERUM_RELEASE_SMOKE_THINKING", "DELIBERUM_OPENAI_THINKING"],
+    [
+      "DELIBERUM_RELEASE_SMOKE_ENDPOINT_PATH",
+      "DELIBERUM_OPENAI_ENDPOINT_PATH",
+      "DELIBERUM_OPENAI_ENDPOINT_PATH"
+    ],
+    [
+      "DELIBERUM_RELEASE_SMOKE_TIMEOUT_MS",
+      "DELIBERUM_OPENAI_TIMEOUT_MS",
+      "DELIBERUM_OPENAI_TIMEOUT_MS"
+    ],
+    [
+      "DELIBERUM_RELEASE_SMOKE_TOP_P",
+      "DELIBERUM_OPENAI_TOP_P",
+      "DELIBERUM_OPENAI_TOP_P"
+    ],
+    [
+      "DELIBERUM_RELEASE_SMOKE_STREAM",
+      "DELIBERUM_OPENAI_STREAM",
+      "DELIBERUM_OPENAI_STREAM"
+    ],
+    [
+      "DELIBERUM_RELEASE_SMOKE_THINKING",
+      "DELIBERUM_OPENAI_THINKING",
+      "DELIBERUM_OPENAI_THINKING"
+    ],
     [
       "DELIBERUM_RELEASE_SMOKE_FREQUENCY_PENALTY",
+      "DELIBERUM_OPENAI_FREQUENCY_PENALTY",
       "DELIBERUM_OPENAI_FREQUENCY_PENALTY"
     ],
     [
       "DELIBERUM_RELEASE_SMOKE_PRESENCE_PENALTY",
+      "DELIBERUM_OPENAI_PRESENCE_PENALTY",
       "DELIBERUM_OPENAI_PRESENCE_PENALTY"
     ]
   ];
   const env = {};
 
-  for (const [sourceName, targetName] of mappings) {
-    const value = process.env[sourceName]?.trim();
+  for (const [sourceName, fallbackName, targetName] of mappings) {
+    const value =
+      readOptionalEnv(releaseSmokeEnv, sourceName) ??
+      readOptionalEnv(releaseSmokeEnv, fallbackName);
 
     if (value) {
       env[targetName] = value;
