@@ -213,6 +213,38 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
       "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set."
     )
     .waitFor();
+  await page.getByText("Role model defaults").waitFor();
+  await page.getByRole("button", { name: "Save as default role setup" }).click();
+  await page
+    .getByText(
+      "Saved role defaults for future discussions. API keys and base URLs are not stored here."
+    )
+    .waitFor();
+  const storedRoleDefaults = await page.evaluate(
+    () => localStorage.getItem("deliberum:model-role-defaults:v1") ?? ""
+  );
+  if (storedRoleDefaults.includes(dummyApiKey) || storedRoleDefaults.includes(providerBaseUrl)) {
+    throw new Error("Saved role defaults included provider secrets or connection details.");
+  }
+  await page.getByRole("link", { name: "Open Setup / Models" }).click();
+  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
+  await page.getByRole("link", { name: "Start broader discussion" }).first().click();
+  await page.waitForURL(/\/runs\/new\?participants=model-backed&perspectives=3$/);
+  await page.getByRole("heading", { name: "Start a discussion" }).waitFor();
+  await page.getByText("Saved role defaults are available for this browser.").waitFor();
+  if ((await page.locator("#discussion-model-override").inputValue()) !== discussionModelName) {
+    throw new Error("Saved role defaults did not restore the first-response model.");
+  }
+  if ((await page.locator("#discussion-review-model-override").inputValue()) !== reviewModelName) {
+    throw new Error("Saved role defaults did not restore the review role model.");
+  }
+  if ((await page.getByLabel("Perspective A model").inputValue()) !== perspectiveModelName) {
+    throw new Error("Saved role defaults did not restore the Perspective A model.");
+  }
+  await page.getByRole("button", { name: "Clear saved role setup" }).click();
+  await page
+    .getByText("Cleared saved role defaults. Current discussion fields are unchanged.")
+    .waitFor();
   await assertDefaultViewSafety(page, "start discussion", { providerBaseUrl });
 
   await page.getByLabel("Discussion question").fill(discussionQuestion);

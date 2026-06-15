@@ -700,6 +700,24 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review role model": "\u5ba1\u67e5\u89d2\u8272\u6a21\u578b",
   "Leave blank to use the first-response model. A value here applies to Reviewer, Evidence checker, Risk reviewer, and Conclusion writer only.":
     "\u7559\u7a7a\u5219\u4f7f\u7528\u521d\u59cb\u56de\u5e94\u6a21\u578b\u3002\u8fd9\u91cc\u7684\u503c\u4ec5\u5e94\u7528\u4e8e\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u7ed3\u8bba\u64b0\u5199\u8005\u3002",
+  "Role model defaults": "\u89d2\u8272\u6a21\u578b\u9ed8\u8ba4\u8bbe\u7f6e",
+  "Save non-secret role model choices in this browser so the next model-backed discussion starts with the same setup.":
+    "\u5c06\u975e\u5bc6\u94a5\u7684\u89d2\u8272\u6a21\u578b\u9009\u62e9\u4fdd\u5b58\u5728\u6b64\u6d4f\u89c8\u5668\u4e2d\uff0c\u8ba9\u4e0b\u4e00\u6b21\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u4f7f\u7528\u76f8\u540c\u8bbe\u7f6e\u5f00\u59cb\u3002",
+  "Save as default role setup": "\u4fdd\u5b58\u4e3a\u9ed8\u8ba4\u89d2\u8272\u8bbe\u7f6e",
+  "Apply saved role setup": "\u5e94\u7528\u5df2\u4fdd\u5b58\u7684\u89d2\u8272\u8bbe\u7f6e",
+  "Clear saved role setup": "\u6e05\u9664\u5df2\u4fdd\u5b58\u7684\u89d2\u8272\u8bbe\u7f6e",
+  "Saved role defaults for future discussions. API keys and base URLs are not stored here.":
+    "\u5df2\u4e3a\u4ee5\u540e\u7684\u8ba8\u8bba\u4fdd\u5b58\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u8fd9\u91cc\u4e0d\u4fdd\u5b58 API key \u548c base URL\u3002",
+  "Applied the saved role setup to this discussion.":
+    "\u5df2\u5c06\u4fdd\u5b58\u7684\u89d2\u8272\u8bbe\u7f6e\u5e94\u7528\u5230\u672c\u6b21\u8ba8\u8bba\u3002",
+  "Cleared saved role defaults. Current discussion fields are unchanged.":
+    "\u5df2\u6e05\u9664\u4fdd\u5b58\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u5f53\u524d\u8ba8\u8bba\u5b57\u6bb5\u4e0d\u53d8\u3002",
+  "Role defaults could not be saved in this browser. You can still create this discussion.":
+    "\u65e0\u6cd5\u5728\u6b64\u6d4f\u89c8\u5668\u4e2d\u4fdd\u5b58\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u4f60\u4ecd\u7136\u53ef\u4ee5\u521b\u5efa\u672c\u6b21\u8ba8\u8bba\u3002",
+  "Saved role defaults are available for this browser.":
+    "\u6b64\u6d4f\u89c8\u5668\u5df2\u6709\u53ef\u7528\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002",
+  "No saved role defaults yet. API keys and base URLs are never saved here.":
+    "\u5c1a\u672a\u4fdd\u5b58\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u8fd9\u91cc\u6c38\u4e0d\u4fdd\u5b58 API key \u548c base URL\u3002",
   "Use saved model for perspectives": "\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u89c6\u89d2\u6a21\u578b",
   "Use first-response model": "\u4f7f\u7528\u521d\u59cb\u56de\u5e94\u6a21\u578b",
   "Customize perspective models": "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",

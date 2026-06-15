@@ -3659,6 +3659,40 @@ describe("@deliberum/web shell", () => {
         "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set."
       )
     ).toBeTruthy();
+    expect(screen.getByText("Role model defaults")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "No saved role defaults yet. API keys and base URLs are never saved here."
+      )
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save as default role setup" }));
+    expect(
+      screen.getByText(
+        "Saved role defaults for future discussions. API keys and base URLs are not stored here."
+      )
+    ).toBeTruthy();
+    const savedDefaults = window.localStorage.getItem("deliberum:model-role-defaults:v1");
+    expect(savedDefaults).toBeTruthy();
+    expect(savedDefaults).toContain("release-model-v1");
+    expect(savedDefaults).toContain("release-model-review");
+    expect(savedDefaults).toContain("release-model-perspective-a");
+    expect(savedDefaults).toContain("release-model-perspective-c");
+    expect(savedDefaults).not.toContain("sk-");
+    expect(savedDefaults).not.toContain("https://api.example.test/v1");
+    fireEvent.change(modelOverrideInput, {
+      target: {
+        value: "temporary-first-response-model"
+      }
+    });
+    expect(screen.getByDisplayValue("temporary-first-response-model")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Apply saved role setup" }));
+    expect(screen.getByDisplayValue("release-model-v1")).toBeTruthy();
+    expect(screen.getByText("Applied the saved role setup to this discussion.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Clear saved role setup" }));
+    expect(window.localStorage.getItem("deliberum:model-role-defaults:v1")).toBeNull();
+    expect(
+      screen.getByText("Cleared saved role defaults. Current discussion fields are unchanged.")
+    ).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Language"), {
       target: {
@@ -3679,6 +3713,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("3 \u4e2a\u6a21\u578b\u89c6\u89d2")).toBeTruthy();
     expect(screen.getAllByText("\u521d\u59cb\u56de\u5e94\u6a21\u578b").length).toBeGreaterThan(1);
     expect(screen.getAllByText("\u5ba1\u67e5\u89d2\u8272\u6a21\u578b").length).toBeGreaterThan(1);
+    expect(screen.getByText("\u89d2\u8272\u6a21\u578b\u9ed8\u8ba4\u8bbe\u7f6e")).toBeTruthy();
+    expect(screen.getByText("\u4fdd\u5b58\u4e3a\u9ed8\u8ba4\u89d2\u8272\u8bbe\u7f6e")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u5df2\u6e05\u9664\u4fdd\u5b58\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u5f53\u524d\u8ba8\u8bba\u5b57\u6bb5\u4e0d\u53d8\u3002"
+      )
+    ).toBeTruthy();
     expect(screen.getByText("\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
     expect(screen.getByText("\u89c6\u89d2\u6a21\u578b\u5206\u914d")).toBeTruthy();
     expect(screen.getByText("\u89c6\u89d2 A \u6a21\u578b")).toBeTruthy();
@@ -7583,9 +7624,14 @@ describe("@deliberum/web shell", () => {
 
   it("does not add hidden session persistence or forbidden semantic authority APIs", () => {
     const source = readWebSource();
+    const localStorageMatches = source.match(/\blocalStorage\b/g) ?? [];
+
+    expect(source).toContain(
+      'const ROLE_MODEL_DEFAULTS_STORAGE_KEY = "deliberum:model-role-defaults:v1";'
+    );
+    expect(localStorageMatches).toHaveLength(3);
 
     for (const forbiddenSnippet of [
-      "localStorage",
       "sessionStorage",
       "currentSession",
       "@deliberum/core",

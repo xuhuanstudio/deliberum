@@ -806,19 +806,23 @@ Path covered:
 10. Sets a first-response model, a review role model, and a Perspective A model
     override, confirming uncustomized perspectives keep the first-response
     model while review roles use their own model assignment.
-11. Creates a model-backed discussion from the browser.
-12. Uses Continue discussion from the room.
-13. Confirms a transient provider first-response failure pauses the discussion
+11. Saves those non-secret role model choices as browser role defaults, returns
+    through Setup / Models to the start page, confirms the defaults are applied
+    to a new model-backed discussion, and confirms the saved defaults do not
+    contain provider secrets or connection details.
+12. Creates a model-backed discussion from the browser.
+13. Uses Continue discussion from the room.
+14. Confirms a transient provider first-response failure pauses the discussion
     in user-facing language without showing raw provider error categories.
-14. Uses Continue discussion again and confirms the retry completes the
+15. Uses Continue discussion again and confirms the retry completes the
     model-backed discussion.
-15. Confirms readable participant perspectives, strongest option, open
+16. Confirms readable participant perspectives, strongest option, open
     disagreement, missing evidence, risk entry point, current conclusion, and
     user-facing next actions are visible.
-16. Opens the current conclusion page and confirms the recommendation, open
+17. Opens the current conclusion page and confirms the recommendation, open
     disagreement, missing evidence, concrete risk text, and next recommended
     action are visible.
-17. Scans setup, start, paused retry, room, and outcome default text to confirm
+18. Scans setup, start, paused retry, room, and outcome default text to confirm
     it does not show the dummy API key, provider base URL, saved provider model
     value, OpenAI API env var, provider config id, object ids, raw JSON,
     low-level id labels, or provider error categories.
@@ -884,12 +888,14 @@ Path covered:
 6. Verifies the start page can set a first-response model, a review role model,
    and individual first-response Perspective A/C model overrides without
    exposing secrets or provider config ids in the default UI.
-7. Creates a model-backed discussion from `/runs/new?participants=model-backed`.
-8. Opens the Discussion Room.
-9. Uses `Continue discussion`.
-10. Verifies the continuation request includes model-backed first responses,
+7. Verifies those non-secret role model choices can be saved, reapplied, and
+   cleared as browser role defaults without storing API keys or base URLs.
+8. Creates a model-backed discussion from `/runs/new?participants=model-backed`.
+9. Opens the Discussion Room.
+10. Uses `Continue discussion`.
+11. Verifies the continuation request includes model-backed first responses,
    extraction, review, and finalization roles.
-11. Confirms the room shows participant contributions, a strongest option, an
+12. Confirms the room shows participant contributions, a strongest option, an
     open disagreement count, an evidence-gap reason, an answer requirement,
     risk-review text, a reviewable current conclusion, and user-facing next
     actions.
