@@ -283,6 +283,32 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       checked: "provider_chat_completion",
       safety: ["Provider credentials and provider response text are not returned to Web."]
     })),
+    getOpenAICompatibleRoleModelDefaults: vi.fn(async () => ({
+      profileId: "openai-compatible",
+      status: "empty",
+      safety: [
+        "Role model defaults contain non-secret model choices only.",
+        "Provider API keys, base URLs, and provider config ids are not returned."
+      ]
+    })),
+    saveOpenAICompatibleRoleModelDefaults: vi.fn(async () => ({
+      profileId: "openai-compatible",
+      status: "saved",
+      managedEnvFile: "local-daemon-env",
+      configuredFields: ["perspectiveCount", "customPerspectiveModelsEnabled"],
+      restartRequired: false,
+      activeInCurrentDaemon: true,
+      safety: ["Only non-secret model role choices are stored."]
+    })),
+    clearOpenAICompatibleRoleModelDefaults: vi.fn(async () => ({
+      profileId: "openai-compatible",
+      status: "cleared",
+      managedEnvFile: "local-daemon-env",
+      configuredFields: [],
+      restartRequired: false,
+      activeInCurrentDaemon: true,
+      safety: ["Only non-secret model role choices are stored."]
+    })),
     getDeploymentPosture: vi.fn(async () => ({
       binding: {
         host: "127.0.0.1",
@@ -2647,6 +2673,47 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
 
+  it("applies daemon-saved role defaults to the model-backed start page", async () => {
+    markOpenAICompatibleProviderVerified();
+    const client = createClient();
+    vi.mocked(client.getRuntimeProfiles).mockResolvedValue(createReadyOpenAISetupProfiles());
+    vi.mocked(client.getOpenAICompatibleRoleModelDefaults).mockResolvedValue({
+      profileId: "openai-compatible",
+      status: "configured",
+      defaults: {
+        perspectiveCount: 3,
+        modelOverride: "service-first-response-model",
+        reviewModelOverride: "service-review-model",
+        customPerspectiveModelsEnabled: true,
+        perspectiveModelOverrides: {
+          "provider-perspective-a": "service-perspective-a-model",
+          "provider-perspective-c": "service-perspective-c-model"
+        }
+      },
+      safety: [
+        "Role model defaults contain non-secret model choices only.",
+        "Provider API keys, base URLs, and provider config ids are not returned."
+      ]
+    });
+
+    renderApp("/runs/new?participants=model-backed", client);
+
+    expect(await screen.findByDisplayValue("service-first-response-model")).toBeTruthy();
+    expect(screen.getByDisplayValue("service-review-model")).toBeTruthy();
+    expect(screen.getByDisplayValue("service-perspective-a-model")).toBeTruthy();
+    expect(screen.getByDisplayValue("service-perspective-c-model")).toBeTruthy();
+    expect(
+      (screen.getByRole("radio", { name: /Broader review/i }) as HTMLInputElement).checked
+    ).toBe(true);
+    expect(
+      screen.getByText("Saved role defaults are available from the local service.")
+    ).toBeTruthy();
+    const pageText = document.body.textContent ?? "";
+    expect(pageText).not.toContain("DELIBERUM_OPENAI_API_KEY");
+    expect(pageText).not.toContain("providerConfigId");
+    expect(pageText).not.toContain("openai-main");
+  });
+
   it("shows a safe provider verification failure from setup and models", async () => {
     const client = createClient();
     vi.mocked(client.getRuntimeProfiles).mockResolvedValue(createReadyOpenAISetupProfiles());
@@ -3443,6 +3510,34 @@ describe("@deliberum/web shell", () => {
   it("creates a model-backed discussion by default when a provider source is ready", async () => {
     markOpenAICompatibleProviderVerified();
     const client = createClient();
+    const savedRoleDefaults = {
+      perspectiveCount: 3 as const,
+      modelOverride: "release-model-v1",
+      reviewModelOverride: "release-model-review",
+      customPerspectiveModelsEnabled: true,
+      perspectiveModelOverrides: {
+        "provider-perspective-a": "release-model-perspective-a",
+        "provider-perspective-c": "release-model-perspective-c"
+      }
+    };
+    vi.mocked(client.getOpenAICompatibleRoleModelDefaults)
+      .mockResolvedValueOnce({
+        profileId: "openai-compatible",
+        status: "empty",
+        safety: [
+          "Role model defaults contain non-secret model choices only.",
+          "Provider API keys, base URLs, and provider config ids are not returned."
+        ]
+      })
+      .mockResolvedValue({
+        profileId: "openai-compatible",
+        status: "configured",
+        defaults: savedRoleDefaults,
+        safety: [
+          "Role model defaults contain non-secret model choices only.",
+          "Provider API keys, base URLs, and provider config ids are not returned."
+        ]
+      });
     vi.mocked(client.getRuntimeProfiles).mockResolvedValue({
       profiles: [
         {
@@ -3666,19 +3761,25 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Save as default role setup" }));
+    await waitFor(() =>
+      expect(client.saveOpenAICompatibleRoleModelDefaults).toHaveBeenCalledWith({
+        perspectiveCount: 3,
+        modelOverride: "release-model-v1",
+        reviewModelOverride: "release-model-review",
+        customPerspectiveModelsEnabled: true,
+        perspectiveModelOverrides: {
+          "provider-perspective-a": "release-model-perspective-a",
+          "provider-perspective-c": "release-model-perspective-c"
+        }
+      })
+    );
     expect(
       screen.getByText(
-        "Saved role defaults for future discussions. API keys and base URLs are not stored here."
+        "Saved role defaults to the local service. API keys and base URLs are not stored here."
       )
     ).toBeTruthy();
-    const savedDefaults = window.localStorage.getItem("deliberum:model-role-defaults:v1");
-    expect(savedDefaults).toBeTruthy();
-    expect(savedDefaults).toContain("release-model-v1");
-    expect(savedDefaults).toContain("release-model-review");
-    expect(savedDefaults).toContain("release-model-perspective-a");
-    expect(savedDefaults).toContain("release-model-perspective-c");
-    expect(savedDefaults).not.toContain("sk-");
-    expect(savedDefaults).not.toContain("https://api.example.test/v1");
+    expect(JSON.stringify(vi.mocked(client.saveOpenAICompatibleRoleModelDefaults).mock.calls)).not.toContain("sk-");
+    expect(JSON.stringify(vi.mocked(client.saveOpenAICompatibleRoleModelDefaults).mock.calls)).not.toContain("https://api.example.test/v1");
     fireEvent.change(modelOverrideInput, {
       target: {
         value: "temporary-first-response-model"
@@ -3689,9 +3790,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByDisplayValue("release-model-v1")).toBeTruthy();
     expect(screen.getByText("Applied the saved role setup to this discussion.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Clear saved role setup" }));
-    expect(window.localStorage.getItem("deliberum:model-role-defaults:v1")).toBeNull();
+    await waitFor(() =>
+      expect(client.clearOpenAICompatibleRoleModelDefaults).toHaveBeenCalledTimes(1)
+    );
     expect(
-      screen.getByText("Cleared saved role defaults. Current discussion fields are unchanged.")
+      screen.getByText(
+        "Cleared saved role defaults from the local service. Current discussion fields are unchanged."
+      )
     ).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Language"), {
@@ -3717,7 +3822,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u4fdd\u5b58\u4e3a\u9ed8\u8ba4\u89d2\u8272\u8bbe\u7f6e")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u5df2\u6e05\u9664\u4fdd\u5b58\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u5f53\u524d\u8ba8\u8bba\u5b57\u6bb5\u4e0d\u53d8\u3002"
+        "\u5df2\u4ece\u672c\u5730\u670d\u52a1\u6e05\u9664\u4fdd\u5b58\u7684\u89d2\u8272\u9ed8\u8ba4\u8bbe\u7f6e\u3002\u5f53\u524d\u8ba8\u8bba\u5b57\u6bb5\u4e0d\u53d8\u3002"
       )
     ).toBeTruthy();
     expect(screen.getByText("\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
@@ -7626,10 +7731,9 @@ describe("@deliberum/web shell", () => {
     const source = readWebSource();
     const localStorageMatches = source.match(/\blocalStorage\b/g) ?? [];
 
-    expect(source).toContain(
-      'const ROLE_MODEL_DEFAULTS_STORAGE_KEY = "deliberum:model-role-defaults:v1";'
-    );
-    expect(localStorageMatches).toHaveLength(3);
+    expect(source).not.toContain("ROLE_MODEL_DEFAULTS_STORAGE_KEY");
+    expect(source).not.toContain("deliberum:model-role-defaults:v1");
+    expect(localStorageMatches).toHaveLength(0);
 
     for (const forbiddenSnippet of [
       "sessionStorage",

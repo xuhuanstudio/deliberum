@@ -209,6 +209,74 @@ describe("DeliberumDaemonClient", () => {
     });
   });
 
+  it("manages OpenAI-compatible model role defaults through safe setup routes", async () => {
+    const defaults = {
+      perspectiveCount: 3 as const,
+      modelOverride: "client-first-response-model",
+      reviewModelOverride: "client-review-model",
+      customPerspectiveModelsEnabled: true,
+      perspectiveModelOverrides: {
+        "provider-perspective-a": "client-perspective-a-model"
+      }
+    };
+    const saveFetch = createFetch({
+      profileId: "openai-compatible",
+      status: "saved",
+      managedEnvFile: "local-daemon-env",
+      configuredFields: [
+        "perspectiveCount",
+        "modelOverride",
+        "reviewModelOverride",
+        "customPerspectiveModelsEnabled",
+        "perspectiveModelOverrides"
+      ],
+      restartRequired: false,
+      activeInCurrentDaemon: true,
+      safety: ["Only non-secret model role choices are stored."]
+    });
+    const saveClient = new DeliberumDaemonClient({ fetch: saveFetch });
+
+    const saveResult = await saveClient.saveOpenAICompatibleRoleModelDefaults(defaults);
+    const [saveUrl, saveInit] = getFetchCall(saveFetch);
+
+    expect(saveUrl).toBe("http://127.0.0.1:3877/runtime/setup/model-role-defaults");
+    expect(saveInit.method).toBe("POST");
+    expect(JSON.parse(saveInit.body ?? "{}")).toEqual(defaults);
+    expect(saveResult.status).toBe("saved");
+
+    const readFetch = createFetch({
+      profileId: "openai-compatible",
+      status: "configured",
+      defaults,
+      safety: ["Provider API keys, base URLs, and provider config ids are not returned."]
+    });
+    const readClient = new DeliberumDaemonClient({ fetch: readFetch });
+    const readResult = await readClient.getOpenAICompatibleRoleModelDefaults();
+    const [readUrl, readInit] = getFetchCall(readFetch);
+
+    expect(readUrl).toBe("http://127.0.0.1:3877/runtime/setup/model-role-defaults");
+    expect(readInit.method).toBe("GET");
+    expect(readResult.defaults).toEqual(defaults);
+
+    const clearFetch = createFetch({
+      profileId: "openai-compatible",
+      status: "cleared",
+      managedEnvFile: "local-daemon-env",
+      configuredFields: [],
+      restartRequired: false,
+      activeInCurrentDaemon: true,
+      safety: ["Only non-secret model role choices are stored."]
+    });
+    const clearClient = new DeliberumDaemonClient({ fetch: clearFetch });
+    const clearResult = await clearClient.clearOpenAICompatibleRoleModelDefaults();
+    const [clearUrl, clearInit] = getFetchCall(clearFetch);
+
+    expect(clearUrl).toBe("http://127.0.0.1:3877/runtime/setup/model-role-defaults");
+    expect(clearInit.method).toBe("DELETE");
+    expect(clearInit.body).toBeUndefined();
+    expect(clearResult.status).toBe("cleared");
+  });
+
   it("builds a safe runtime setup plan from profile metadata", () => {
     const plan = client.buildRuntimeSetupPlan({
       profiles: [

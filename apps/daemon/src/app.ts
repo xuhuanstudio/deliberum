@@ -118,7 +118,10 @@ import {
   type WebGETTokenGenerator
 } from "./webget-session-store";
 import {
+  clearOpenAICompatibleRoleModelDefaultsEnv,
+  readOpenAICompatibleRoleModelDefaultsFromEnv,
   SetupEnvError,
+  writeOpenAICompatibleRoleModelDefaultsEnv,
   writeOpenAICompatibleSetupEnv
 } from "./setup-env";
 import { OpenAICompatibleAdapterError } from "@deliberum/adapters";
@@ -527,7 +530,7 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
     "*",
     cors({
       origin: corsOrigins,
-      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
       allowHeaders: ["Content-Type", "Authorization"]
     })
   );
@@ -876,6 +879,80 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
       if (error instanceof OpenAICompatibleAdapterError) {
         const safeError = describeOpenAICompatibleVerificationError(error);
         throw new DaemonHttpError(safeError.code, safeError.message);
+      }
+
+      throw error;
+    }
+  });
+
+  app.get("/runtime/setup/model-role-defaults", (context) =>
+    noStoreJson(context, {
+      profileId: "openai-compatible",
+      status: readOpenAICompatibleRoleModelDefaultsFromEnv({
+        env: openAICompatibleEnv
+      })
+        ? "configured"
+        : "empty",
+      defaults: readOpenAICompatibleRoleModelDefaultsFromEnv({
+        env: openAICompatibleEnv
+      }),
+      safety: [
+        "Role model defaults contain non-secret model choices only.",
+        "Provider API keys, base URLs, and provider config ids are not returned."
+      ]
+    })
+  );
+
+  app.post("/runtime/setup/model-role-defaults", async (context) => {
+    const body = await readJsonObject(context);
+
+    try {
+      return noStoreJson(
+        context,
+        await writeOpenAICompatibleRoleModelDefaultsEnv({
+          envFilePath: options.setupEnvFilePath,
+          activeEnv: openAICompatibleEnv,
+          defaults: {
+            perspectiveCount: body.perspectiveCount === 3 ? 3 : 2,
+            modelOverride:
+              typeof body.modelOverride === "string" ? body.modelOverride : "",
+            reviewModelOverride:
+              typeof body.reviewModelOverride === "string"
+                ? body.reviewModelOverride
+                : "",
+            customPerspectiveModelsEnabled:
+              body.customPerspectiveModelsEnabled === true,
+            perspectiveModelOverrides:
+              body.perspectiveModelOverrides &&
+              typeof body.perspectiveModelOverrides === "object" &&
+              !Array.isArray(body.perspectiveModelOverrides)
+                ? (body.perspectiveModelOverrides as Record<string, string | undefined>)
+                : {}
+          }
+        }),
+        201
+      );
+    } catch (error) {
+      if (error instanceof SetupEnvError) {
+        throw new DaemonHttpError(error.code, error.message);
+      }
+
+      throw error;
+    }
+  });
+
+  app.delete("/runtime/setup/model-role-defaults", async (context) => {
+    try {
+      return noStoreJson(
+        context,
+        await clearOpenAICompatibleRoleModelDefaultsEnv({
+          envFilePath: options.setupEnvFilePath,
+          activeEnv: openAICompatibleEnv
+        })
+      );
+    } catch (error) {
+      if (error instanceof SetupEnvError) {
+        throw new DaemonHttpError(error.code, error.message);
       }
 
       throw error;

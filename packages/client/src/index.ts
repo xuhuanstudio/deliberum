@@ -88,6 +88,41 @@ export type OpenAICompatibleSetupVerificationResponse = {
   safety: string[];
 };
 
+export type OpenAICompatibleRoleModelDefaults = {
+  perspectiveCount: 2 | 3;
+  modelOverride: string;
+  reviewModelOverride: string;
+  customPerspectiveModelsEnabled: boolean;
+  perspectiveModelOverrides: {
+    "provider-perspective-a"?: string;
+    "provider-perspective-b"?: string;
+    "provider-perspective-c"?: string;
+  };
+};
+
+export type OpenAICompatibleRoleModelDefaultsResponse = {
+  profileId: "openai-compatible";
+  status: "configured" | "empty";
+  defaults?: OpenAICompatibleRoleModelDefaults;
+  safety: string[];
+};
+
+export type OpenAICompatibleRoleModelDefaultsSaveResponse = {
+  profileId: "openai-compatible";
+  status: "saved" | "cleared";
+  managedEnvFile: "local-daemon-env";
+  configuredFields: Array<
+    | "perspectiveCount"
+    | "modelOverride"
+    | "reviewModelOverride"
+    | "customPerspectiveModelsEnabled"
+    | "perspectiveModelOverrides"
+  >;
+  restartRequired: boolean;
+  activeInCurrentDaemon: boolean;
+  safety: string[];
+};
+
 export type RuntimeSetupPlanStepKind =
   | "render_env_template"
   | "write_env_block"
@@ -862,6 +897,20 @@ export class DeliberumDaemonClient {
 
   verifyOpenAICompatibleSetup(): Promise<OpenAICompatibleSetupVerificationResponse> {
     return this.request("POST", "/runtime/setup/openai-compatible/verify", {});
+  }
+
+  getOpenAICompatibleRoleModelDefaults(): Promise<OpenAICompatibleRoleModelDefaultsResponse> {
+    return this.request("GET", "/runtime/setup/model-role-defaults");
+  }
+
+  saveOpenAICompatibleRoleModelDefaults(
+    input: OpenAICompatibleRoleModelDefaults
+  ): Promise<OpenAICompatibleRoleModelDefaultsSaveResponse> {
+    return this.request("POST", "/runtime/setup/model-role-defaults", input);
+  }
+
+  clearOpenAICompatibleRoleModelDefaults(): Promise<OpenAICompatibleRoleModelDefaultsSaveResponse> {
+    return this.request("DELETE", "/runtime/setup/model-role-defaults");
   }
 
   getResourceAccessPosture(): Promise<ResourceAccessPostureResponse> {

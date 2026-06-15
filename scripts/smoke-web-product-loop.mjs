@@ -217,21 +217,15 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Save as default role setup" }).click();
   await page
     .getByText(
-      "Saved role defaults for future discussions. API keys and base URLs are not stored here."
+      "Saved role defaults to the local service. API keys and base URLs are not stored here."
     )
     .waitFor();
-  const storedRoleDefaults = await page.evaluate(
-    () => localStorage.getItem("deliberum:model-role-defaults:v1") ?? ""
-  );
-  if (storedRoleDefaults.includes(dummyApiKey) || storedRoleDefaults.includes(providerBaseUrl)) {
-    throw new Error("Saved role defaults included provider secrets or connection details.");
-  }
   await page.getByRole("link", { name: "Open Setup / Models" }).click();
   await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
   await page.getByRole("link", { name: "Start broader discussion" }).first().click();
   await page.waitForURL(/\/runs\/new\?participants=model-backed&perspectives=3$/);
   await page.getByRole("heading", { name: "Start a discussion" }).waitFor();
-  await page.getByText("Saved role defaults are available for this browser.").waitFor();
+  await page.getByText("Saved role defaults are available from the local service.").waitFor();
   if ((await page.locator("#discussion-model-override").inputValue()) !== discussionModelName) {
     throw new Error("Saved role defaults did not restore the first-response model.");
   }
@@ -243,7 +237,9 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   }
   await page.getByRole("button", { name: "Clear saved role setup" }).click();
   await page
-    .getByText("Cleared saved role defaults. Current discussion fields are unchanged.")
+    .getByText(
+      "Cleared saved role defaults from the local service. Current discussion fields are unchanged."
+    )
     .waitFor();
   await assertDefaultViewSafety(page, "start discussion", { providerBaseUrl });
 

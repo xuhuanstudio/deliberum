@@ -21,6 +21,9 @@ import {
   type GetSessionFinalOptions,
   type ListSessionsResponse,
   type ListRunsResponse,
+  type OpenAICompatibleRoleModelDefaults,
+  type OpenAICompatibleRoleModelDefaultsResponse,
+  type OpenAICompatibleRoleModelDefaultsSaveResponse,
   type OpenAICompatibleSetupRequest,
   type OpenAICompatibleSetupResponse,
   type OpenAICompatibleSetupVerificationResponse,
@@ -54,6 +57,11 @@ export type WebDaemonClient = {
     input: OpenAICompatibleSetupRequest
   ) => Promise<OpenAICompatibleSetupResponse>;
   verifyOpenAICompatibleSetup: () => Promise<OpenAICompatibleSetupVerificationResponse>;
+  getOpenAICompatibleRoleModelDefaults: () => Promise<OpenAICompatibleRoleModelDefaultsResponse>;
+  saveOpenAICompatibleRoleModelDefaults: (
+    input: OpenAICompatibleRoleModelDefaults
+  ) => Promise<OpenAICompatibleRoleModelDefaultsSaveResponse>;
+  clearOpenAICompatibleRoleModelDefaults: () => Promise<OpenAICompatibleRoleModelDefaultsSaveResponse>;
   getDeploymentPosture: () => Promise<DeploymentPostureResponse>;
   getResourceAccessPosture: () => Promise<ResourceAccessPostureResponse>;
   getOperationAudit: (options?: { limit?: number }) => Promise<OperationAuditResponse>;

@@ -806,10 +806,10 @@ Path covered:
 10. Sets a first-response model, a review role model, and a Perspective A model
     override, confirming uncustomized perspectives keep the first-response
     model while review roles use their own model assignment.
-11. Saves those non-secret role model choices as browser role defaults, returns
-    through Setup / Models to the start page, confirms the defaults are applied
-    to a new model-backed discussion, and confirms the saved defaults do not
-    contain provider secrets or connection details.
+11. Saves those non-secret role model choices as local service role defaults,
+    returns through Setup / Models to the start page, confirms the defaults are
+    applied to a new model-backed discussion, and confirms the saved defaults do
+    not contain provider secrets or connection details.
 12. Creates a model-backed discussion from the browser.
 13. Uses Continue discussion from the room.
 14. Confirms a transient provider first-response failure pauses the discussion
@@ -888,8 +888,9 @@ Path covered:
 6. Verifies the start page can set a first-response model, a review role model,
    and individual first-response Perspective A/C model overrides without
    exposing secrets or provider config ids in the default UI.
-7. Verifies those non-secret role model choices can be saved, reapplied, and
-   cleared as browser role defaults without storing API keys or base URLs.
+7. Verifies those non-secret role model choices can be saved to the local
+   service, reapplied, and cleared without storing API keys or base URLs in the
+   role-default setup.
 8. Creates a model-backed discussion from `/runs/new?participants=model-backed`.
 9. Opens the Discussion Room.
 10. Uses `Continue discussion`.

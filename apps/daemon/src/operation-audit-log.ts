@@ -851,6 +851,10 @@ function normalizeOperationAuditRoute(path: string): string {
   }
 
   if (segments[0] === "runtime" && segments[1] === "setup") {
+    if (segments[2] === "model-role-defaults") {
+      return "/runtime/setup/model-role-defaults";
+    }
+
     if (segments[2] === "openai-compatible" && segments[3] === "verify") {
       return "/runtime/setup/openai-compatible/verify";
     }
@@ -1079,6 +1083,15 @@ function classifyOperationAuditAction(method: string, route: string): string {
   }
   if (method === "POST" && route === "/runtime/setup/openai-compatible/verify") {
     return "runtime_openai_compatible_setup_verify";
+  }
+  if (method === "GET" && route === "/runtime/setup/model-role-defaults") {
+    return "runtime_model_role_defaults_read";
+  }
+  if (method === "POST" && route === "/runtime/setup/model-role-defaults") {
+    return "runtime_model_role_defaults_save";
+  }
+  if (method === "DELETE" && route === "/runtime/setup/model-role-defaults") {
+    return "runtime_model_role_defaults_clear";
   }
   if (method === "GET" && route === "/runtime/resource-access") {
     return "resource_access_posture_read";

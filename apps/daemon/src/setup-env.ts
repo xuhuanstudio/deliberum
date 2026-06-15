@@ -27,6 +27,24 @@ export const OPENAI_COMPATIBLE_SETUP_ENV_BEGIN =
 export const OPENAI_COMPATIBLE_SETUP_ENV_END =
   "# END DELIBERUM OPENAI-COMPATIBLE WEB SETUP" as const;
 export const DEFAULT_DAEMON_SETUP_ENV_FILE_PATH = ".env" as const;
+export const OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_BEGIN =
+  "# BEGIN DELIBERUM MODEL ROLE DEFAULTS WEB SETUP" as const;
+export const OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_END =
+  "# END DELIBERUM MODEL ROLE DEFAULTS WEB SETUP" as const;
+export const OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_COUNT_ENV_VAR =
+  "DELIBERUM_OPENAI_ROLE_DEFAULT_PERSPECTIVE_COUNT" as const;
+export const OPENAI_COMPATIBLE_ROLE_DEFAULT_MODEL_ENV_VAR =
+  "DELIBERUM_OPENAI_ROLE_DEFAULT_MODEL" as const;
+export const OPENAI_COMPATIBLE_ROLE_DEFAULT_REVIEW_MODEL_ENV_VAR =
+  "DELIBERUM_OPENAI_ROLE_DEFAULT_REVIEW_MODEL" as const;
+export const OPENAI_COMPATIBLE_ROLE_DEFAULT_CUSTOM_PERSPECTIVE_MODELS_ENV_VAR =
+  "DELIBERUM_OPENAI_ROLE_DEFAULT_CUSTOM_PERSPECTIVE_MODELS" as const;
+export const OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_A_MODEL_ENV_VAR =
+  "DELIBERUM_OPENAI_ROLE_DEFAULT_PERSPECTIVE_A_MODEL" as const;
+export const OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_B_MODEL_ENV_VAR =
+  "DELIBERUM_OPENAI_ROLE_DEFAULT_PERSPECTIVE_B_MODEL" as const;
+export const OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_C_MODEL_ENV_VAR =
+  "DELIBERUM_OPENAI_ROLE_DEFAULT_PERSPECTIVE_C_MODEL" as const;
 
 export type OpenAICompatibleSetupInput = {
   apiKey: unknown;
@@ -40,6 +58,34 @@ export type OpenAICompatibleSetupResult = {
   status: "saved";
   managedEnvFile: "local-daemon-env";
   configuredFields: Array<"apiKey" | "baseUrl" | "model" | "structuredReview">;
+  restartRequired: boolean;
+  activeInCurrentDaemon: boolean;
+  safety: string[];
+};
+
+export type OpenAICompatibleRoleModelDefaults = {
+  perspectiveCount: 2 | 3;
+  modelOverride: string;
+  reviewModelOverride: string;
+  customPerspectiveModelsEnabled: boolean;
+  perspectiveModelOverrides: {
+    "provider-perspective-a"?: string;
+    "provider-perspective-b"?: string;
+    "provider-perspective-c"?: string;
+  };
+};
+
+export type OpenAICompatibleRoleModelDefaultsResult = {
+  profileId: "openai-compatible";
+  status: "saved" | "cleared";
+  managedEnvFile: "local-daemon-env";
+  configuredFields: Array<
+    | "perspectiveCount"
+    | "modelOverride"
+    | "reviewModelOverride"
+    | "customPerspectiveModelsEnabled"
+    | "perspectiveModelOverrides"
+  >;
   restartRequired: boolean;
   activeInCurrentDaemon: boolean;
   safety: string[];
@@ -104,6 +150,89 @@ export async function writeOpenAICompatibleSetupEnv(input: {
   };
 }
 
+export async function writeOpenAICompatibleRoleModelDefaultsEnv(input: {
+  envFilePath?: string;
+  activeEnv?: Record<string, string | undefined>;
+  defaults: OpenAICompatibleRoleModelDefaults;
+}): Promise<OpenAICompatibleRoleModelDefaultsResult> {
+  const envFilePath = input.envFilePath ?? DEFAULT_DAEMON_SETUP_ENV_FILE_PATH;
+  const defaults = normalizeOpenAICompatibleRoleModelDefaults(input.defaults);
+  const block = createOpenAICompatibleRoleDefaultsBlock(defaults);
+  const existingContent = await readOptionalTextFile(envFilePath);
+  const nextContent = mergeDaemonEnvBlock(
+    existingContent,
+    block,
+    OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_BEGIN,
+    OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_END
+  );
+
+  await writeFile(envFilePath, nextContent, "utf8");
+
+  if (input.activeEnv) {
+    applyOpenAICompatibleRoleModelDefaultsToEnv(input.activeEnv, defaults);
+  }
+
+  return createRoleModelDefaultsResult({
+    status: "saved",
+    activeInCurrentDaemon: input.activeEnv !== undefined,
+    configuredFields: getConfiguredRoleModelDefaultsFields(defaults)
+  });
+}
+
+export async function clearOpenAICompatibleRoleModelDefaultsEnv(input: {
+  envFilePath?: string;
+  activeEnv?: Record<string, string | undefined>;
+} = {}): Promise<OpenAICompatibleRoleModelDefaultsResult> {
+  const envFilePath = input.envFilePath ?? DEFAULT_DAEMON_SETUP_ENV_FILE_PATH;
+  const existingContent = await readOptionalTextFile(envFilePath);
+  const nextContent = removeDaemonEnvBlock(
+    existingContent,
+    OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_BEGIN,
+    OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_END
+  );
+
+  if (nextContent !== existingContent) {
+    await writeFile(envFilePath, nextContent ?? "", "utf8");
+  }
+
+  if (input.activeEnv) {
+    clearOpenAICompatibleRoleModelDefaultsFromEnv(input.activeEnv);
+  }
+
+  return createRoleModelDefaultsResult({
+    status: "cleared",
+    activeInCurrentDaemon: input.activeEnv !== undefined,
+    configuredFields: []
+  });
+}
+
+export function readOpenAICompatibleRoleModelDefaultsFromEnv(input: {
+  env?: Record<string, string | undefined>;
+} = {}): OpenAICompatibleRoleModelDefaults | undefined {
+  const env = input.env ?? process.env;
+  const perspectiveCount = env[OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_COUNT_ENV_VAR];
+
+  if (!perspectiveCount) {
+    return undefined;
+  }
+
+  return normalizeOpenAICompatibleRoleModelDefaults({
+    perspectiveCount: perspectiveCount === "3" ? 3 : 2,
+    modelOverride: env[OPENAI_COMPATIBLE_ROLE_DEFAULT_MODEL_ENV_VAR] ?? "",
+    reviewModelOverride: env[OPENAI_COMPATIBLE_ROLE_DEFAULT_REVIEW_MODEL_ENV_VAR] ?? "",
+    customPerspectiveModelsEnabled:
+      env[OPENAI_COMPATIBLE_ROLE_DEFAULT_CUSTOM_PERSPECTIVE_MODELS_ENV_VAR] === "true",
+    perspectiveModelOverrides: {
+      "provider-perspective-a":
+        env[OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_A_MODEL_ENV_VAR],
+      "provider-perspective-b":
+        env[OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_B_MODEL_ENV_VAR],
+      "provider-perspective-c":
+        env[OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_C_MODEL_ENV_VAR]
+    }
+  });
+}
+
 export function applyOpenAICompatibleSetupToEnv(
   env: Record<string, string | undefined>,
   setup: OpenAICompatibleSetupInput
@@ -122,7 +251,7 @@ export function loadManagedDaemonSetupEnvFile(input: {
   const env = input.env ?? process.env;
   const existingContent = readOptionalTextFileSync(envFilePath);
   const assignments =
-    existingContent === undefined ? undefined : parseManagedDaemonEnvBlock(existingContent);
+    existingContent === undefined ? undefined : parseManagedDaemonEnvBlocks(existingContent);
   const appliedEnvVars: string[] = [];
   const skippedEnvVars: string[] = [];
 
@@ -192,6 +321,49 @@ function createOpenAICompatibleSetupBlock(input: {
     `${OPENAI_COMPATIBLE_MODEL_ENV_VAR}=${formatEnvAssignmentValue(input.model)}`,
     `${OPENAI_COMPATIBLE_API_KEY_ENV_VAR}=${formatEnvAssignmentValue(input.apiKey)}`,
     OPENAI_COMPATIBLE_SETUP_ENV_END
+  ].join("\n")}\n`;
+}
+
+function createOpenAICompatibleRoleDefaultsBlock(
+  defaults: OpenAICompatibleRoleModelDefaults
+): string {
+  const perspectiveOverrides = defaults.customPerspectiveModelsEnabled
+    ? defaults.perspectiveModelOverrides
+    : {};
+
+  return `${[
+    OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_BEGIN,
+    "# Deliberum non-secret model role defaults",
+    "# Generated by local Web setup.",
+    "# This block must not contain API keys, base URLs, or provider config ids.",
+    `${OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_COUNT_ENV_VAR}=${defaults.perspectiveCount}`,
+    `${OPENAI_COMPATIBLE_ROLE_DEFAULT_CUSTOM_PERSPECTIVE_MODELS_ENV_VAR}=${String(defaults.customPerspectiveModelsEnabled)}`,
+    ...(defaults.modelOverride
+      ? [
+          `${OPENAI_COMPATIBLE_ROLE_DEFAULT_MODEL_ENV_VAR}=${formatEnvAssignmentValue(defaults.modelOverride)}`
+        ]
+      : []),
+    ...(defaults.reviewModelOverride
+      ? [
+          `${OPENAI_COMPATIBLE_ROLE_DEFAULT_REVIEW_MODEL_ENV_VAR}=${formatEnvAssignmentValue(defaults.reviewModelOverride)}`
+        ]
+      : []),
+    ...(perspectiveOverrides["provider-perspective-a"]
+      ? [
+          `${OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_A_MODEL_ENV_VAR}=${formatEnvAssignmentValue(perspectiveOverrides["provider-perspective-a"])}`
+        ]
+      : []),
+    ...(perspectiveOverrides["provider-perspective-b"]
+      ? [
+          `${OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_B_MODEL_ENV_VAR}=${formatEnvAssignmentValue(perspectiveOverrides["provider-perspective-b"])}`
+        ]
+      : []),
+    ...(perspectiveOverrides["provider-perspective-c"]
+      ? [
+          `${OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_C_MODEL_ENV_VAR}=${formatEnvAssignmentValue(perspectiveOverrides["provider-perspective-c"])}`
+        ]
+      : []),
+    OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_END
   ].join("\n")}\n`;
 }
 
@@ -267,13 +439,18 @@ function applyOpenAICompatibleStructuredReviewSetupToEnv(
   env[OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR] = "0";
 }
 
-function mergeDaemonEnvBlock(existingContent: string | undefined, block: string): string {
+function mergeDaemonEnvBlock(
+  existingContent: string | undefined,
+  block: string,
+  beginMarker: string = OPENAI_COMPATIBLE_SETUP_ENV_BEGIN,
+  endMarker: string = OPENAI_COMPATIBLE_SETUP_ENV_END
+): string {
   if (existingContent === undefined || existingContent.trim().length === 0) {
     return block;
   }
 
-  const beginIndex = existingContent.indexOf(OPENAI_COMPATIBLE_SETUP_ENV_BEGIN);
-  const endIndex = existingContent.indexOf(OPENAI_COMPATIBLE_SETUP_ENV_END);
+  const beginIndex = existingContent.indexOf(beginMarker);
+  const endIndex = existingContent.indexOf(endMarker);
 
   if (beginIndex === -1 && endIndex === -1) {
     const separator = existingContent.endsWith("\n") ? "\n" : "\n\n";
@@ -287,12 +464,50 @@ function mergeDaemonEnvBlock(existingContent: string | undefined, block: string)
     );
   }
 
-  const replacementEndIndex = endIndex + OPENAI_COMPATIBLE_SETUP_ENV_END.length;
+  const replacementEndIndex = endIndex + endMarker.length;
   const before = existingContent.slice(0, beginIndex);
   const after = existingContent.slice(replacementEndIndex).replace(/^\r?\n/, "");
   const separator = before.length > 0 && !before.endsWith("\n") ? "\n" : "";
 
   return `${before}${separator}${block}${after}`;
+}
+
+function removeDaemonEnvBlock(
+  existingContent: string | undefined,
+  beginMarker: string,
+  endMarker: string
+): string | undefined {
+  if (existingContent === undefined || existingContent.trim().length === 0) {
+    return existingContent;
+  }
+
+  const beginIndex = existingContent.indexOf(beginMarker);
+  const endIndex = existingContent.indexOf(endMarker);
+
+  if (beginIndex === -1 && endIndex === -1) {
+    return existingContent;
+  }
+
+  if (beginIndex === -1 || endIndex === -1 || endIndex < beginIndex) {
+    throw new SetupEnvError(
+      "setup_env_file_invalid",
+      "The local env file contains an incomplete Deliberum Web setup block."
+    );
+  }
+
+  const replacementEndIndex = endIndex + endMarker.length;
+  const before = existingContent.slice(0, beginIndex).replace(/\r?\n$/, "");
+  const after = existingContent.slice(replacementEndIndex).replace(/^\r?\n/, "");
+
+  if (before.length === 0) {
+    return after;
+  }
+
+  if (after.length === 0) {
+    return `${before}\n`;
+  }
+
+  return `${before}\n\n${after}`;
 }
 
 async function readOptionalTextFile(filePath: string): Promise<string | undefined> {
@@ -319,9 +534,41 @@ function readOptionalTextFileSync(filePath: string): string | undefined {
   }
 }
 
-function parseManagedDaemonEnvBlock(content: string): Map<string, string> | undefined {
-  const beginIndex = content.indexOf(OPENAI_COMPATIBLE_SETUP_ENV_BEGIN);
-  const endIndex = content.indexOf(OPENAI_COMPATIBLE_SETUP_ENV_END);
+function parseManagedDaemonEnvBlocks(content: string): Map<string, string> | undefined {
+  const blocks = [
+    parseManagedDaemonEnvBlock(
+      content,
+      OPENAI_COMPATIBLE_SETUP_ENV_BEGIN,
+      OPENAI_COMPATIBLE_SETUP_ENV_END
+    ),
+    parseManagedDaemonEnvBlock(
+      content,
+      OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_BEGIN,
+      OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_END
+    )
+  ];
+  const assignments = new Map<string, string>();
+
+  for (const block of blocks) {
+    if (!block) {
+      continue;
+    }
+
+    for (const [name, value] of block) {
+      assignments.set(name, value);
+    }
+  }
+
+  return assignments.size > 0 ? assignments : undefined;
+}
+
+function parseManagedDaemonEnvBlock(
+  content: string,
+  beginMarker: string,
+  endMarker: string
+): Map<string, string> | undefined {
+  const beginIndex = content.indexOf(beginMarker);
+  const endIndex = content.indexOf(endMarker);
 
   if (beginIndex === -1 && endIndex === -1) {
     return undefined;
@@ -335,7 +582,7 @@ function parseManagedDaemonEnvBlock(content: string): Map<string, string> | unde
   }
 
   const blockBody = content.slice(
-    beginIndex + OPENAI_COMPATIBLE_SETUP_ENV_BEGIN.length,
+    beginIndex + beginMarker.length,
     endIndex
   );
   const assignments = new Map<string, string>();
@@ -446,6 +693,168 @@ function normalizeOptionalBooleanValue(value: unknown, fallback: boolean): boole
   return value;
 }
 
+function normalizeOpenAICompatibleRoleModelDefaults(
+  value: OpenAICompatibleRoleModelDefaults
+): OpenAICompatibleRoleModelDefaults {
+  const perspectiveCount = value.perspectiveCount === 3 ? 3 : 2;
+  const customPerspectiveModelsEnabled = Boolean(value.customPerspectiveModelsEnabled);
+
+  return {
+    perspectiveCount,
+    modelOverride: normalizeOptionalRoleModelValue(value.modelOverride, "First-response model"),
+    reviewModelOverride: normalizeOptionalRoleModelValue(
+      value.reviewModelOverride,
+      "Review role model"
+    ),
+    customPerspectiveModelsEnabled,
+    perspectiveModelOverrides: customPerspectiveModelsEnabled
+      ? sanitizeRolePerspectiveModelOverrides(value.perspectiveModelOverrides)
+      : {}
+  };
+}
+
+function sanitizeRolePerspectiveModelOverrides(
+  overrides: OpenAICompatibleRoleModelDefaults["perspectiveModelOverrides"]
+): OpenAICompatibleRoleModelDefaults["perspectiveModelOverrides"] {
+  return Object.fromEntries(
+    (
+      [
+      ["provider-perspective-a", "Perspective A model"],
+      ["provider-perspective-b", "Perspective B model"],
+      ["provider-perspective-c", "Perspective C model"]
+      ] as const
+    ).flatMap(([participantId, label]) => {
+      const model = normalizeOptionalRoleModelValue(
+        overrides[participantId as keyof typeof overrides],
+        label
+      );
+
+      return model ? [[participantId, model]] : [];
+    })
+  );
+}
+
+function normalizeOptionalRoleModelValue(value: unknown, label: string): string {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  if (typeof value !== "string") {
+    throw new SetupEnvError("setup_value_invalid", `${label} must be a string.`);
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  return normalizeNonSecretTextValue(normalized, label);
+}
+
+function applyOpenAICompatibleRoleModelDefaultsToEnv(
+  env: Record<string, string | undefined>,
+  defaults: OpenAICompatibleRoleModelDefaults
+): void {
+  clearOpenAICompatibleRoleModelDefaultsFromEnv(env);
+  env[OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_COUNT_ENV_VAR] = String(
+    defaults.perspectiveCount
+  );
+  env[OPENAI_COMPATIBLE_ROLE_DEFAULT_CUSTOM_PERSPECTIVE_MODELS_ENV_VAR] = String(
+    defaults.customPerspectiveModelsEnabled
+  );
+
+  if (defaults.modelOverride) {
+    env[OPENAI_COMPATIBLE_ROLE_DEFAULT_MODEL_ENV_VAR] = defaults.modelOverride;
+  }
+  if (defaults.reviewModelOverride) {
+    env[OPENAI_COMPATIBLE_ROLE_DEFAULT_REVIEW_MODEL_ENV_VAR] =
+      defaults.reviewModelOverride;
+  }
+  if (
+    defaults.customPerspectiveModelsEnabled &&
+    defaults.perspectiveModelOverrides["provider-perspective-a"]
+  ) {
+    env[OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_A_MODEL_ENV_VAR] =
+      defaults.perspectiveModelOverrides["provider-perspective-a"];
+  }
+  if (
+    defaults.customPerspectiveModelsEnabled &&
+    defaults.perspectiveModelOverrides["provider-perspective-b"]
+  ) {
+    env[OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_B_MODEL_ENV_VAR] =
+      defaults.perspectiveModelOverrides["provider-perspective-b"];
+  }
+  if (
+    defaults.customPerspectiveModelsEnabled &&
+    defaults.perspectiveModelOverrides["provider-perspective-c"]
+  ) {
+    env[OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_C_MODEL_ENV_VAR] =
+      defaults.perspectiveModelOverrides["provider-perspective-c"];
+  }
+}
+
+function clearOpenAICompatibleRoleModelDefaultsFromEnv(
+  env: Record<string, string | undefined>
+): void {
+  for (const name of OPENAI_COMPATIBLE_ROLE_DEFAULT_ENV_VARS) {
+    delete env[name];
+  }
+}
+
+function getConfiguredRoleModelDefaultsFields(
+  defaults: OpenAICompatibleRoleModelDefaults
+): OpenAICompatibleRoleModelDefaultsResult["configuredFields"] {
+  return [
+    "perspectiveCount",
+    "customPerspectiveModelsEnabled",
+    ...(defaults.modelOverride ? ["modelOverride" as const] : []),
+    ...(defaults.reviewModelOverride ? ["reviewModelOverride" as const] : []),
+    ...(Object.keys(defaults.perspectiveModelOverrides).length > 0
+      ? ["perspectiveModelOverrides" as const]
+      : [])
+  ];
+}
+
+function createRoleModelDefaultsResult(input: {
+  status: "saved" | "cleared";
+  activeInCurrentDaemon: boolean;
+  configuredFields: OpenAICompatibleRoleModelDefaultsResult["configuredFields"];
+}): OpenAICompatibleRoleModelDefaultsResult {
+  return {
+    profileId: "openai-compatible",
+    status: input.status,
+    managedEnvFile: "local-daemon-env",
+    configuredFields: input.configuredFields,
+    restartRequired: !input.activeInCurrentDaemon,
+    activeInCurrentDaemon: input.activeInCurrentDaemon,
+    safety:
+      input.status === "saved"
+        ? input.activeInCurrentDaemon
+          ? [
+              "Role model defaults were written to the local daemon env file.",
+              "Only non-secret model role choices are stored.",
+              "The setup was applied to the current local daemon process."
+            ]
+          : [
+              "Role model defaults were written to the local daemon env file.",
+              "Only non-secret model role choices are stored.",
+              "Restart the local daemon to use the saved role defaults."
+            ]
+        : input.activeInCurrentDaemon
+          ? [
+              "Role model defaults were removed from the local daemon env file.",
+              "Only non-secret model role choices were cleared.",
+              "The current local daemon process was cleared."
+            ]
+          : [
+              "Role model defaults were removed from the local daemon env file.",
+              "Only non-secret model role choices were cleared.",
+              "Restart the local daemon to use the cleared role defaults."
+            ]
+  };
+}
+
 function normalizeTextValue(value: unknown, label: string): string {
   if (typeof value !== "string") {
     throw new SetupEnvError("setup_value_invalid", `${label} must be a string.`);
@@ -521,9 +930,20 @@ function isManagedSetupEnvVar(name: string): boolean {
     name === OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR ||
     name === OPENAI_COMPATIBLE_BASE_URL_ENV_VAR ||
     name === OPENAI_COMPATIBLE_MODEL_ENV_VAR ||
-    name === OPENAI_COMPATIBLE_API_KEY_ENV_VAR
+    name === OPENAI_COMPATIBLE_API_KEY_ENV_VAR ||
+    (OPENAI_COMPATIBLE_ROLE_DEFAULT_ENV_VARS as readonly string[]).includes(name)
   );
 }
+
+const OPENAI_COMPATIBLE_ROLE_DEFAULT_ENV_VARS = [
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_COUNT_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_MODEL_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_REVIEW_MODEL_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_CUSTOM_PERSPECTIVE_MODELS_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_A_MODEL_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_B_MODEL_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_C_MODEL_ENV_VAR
+] as const;
 
 function containsSecretLikeValue(value: string): boolean {
   return /api[_-]?key|secret|private[_-]?token|access[_-]?token|authorization|bearer|sk-[a-z0-9]/i.test(

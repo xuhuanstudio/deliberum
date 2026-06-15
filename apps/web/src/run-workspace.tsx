@@ -14,7 +14,11 @@ import {
   WorkspaceShell
 } from "@deliberum/ui";
 import { buildRuntimeSetupPlan } from "@deliberum/client";
-import type { RuntimeProfilesResponse, RuntimeSetupPlan } from "@deliberum/client";
+import type {
+  OpenAICompatibleRoleModelDefaults,
+  RuntimeProfilesResponse,
+  RuntimeSetupPlan
+} from "@deliberum/client";
 import {
   useEffect,
   useRef,
@@ -55,7 +59,6 @@ import {
 } from "./run-presets";
 
 const DEFAULT_RUN_PLAN_TEXT = formatPresetJson(LOCAL_PRESET_RUN_PLAN);
-const ROLE_MODEL_DEFAULTS_STORAGE_KEY = "deliberum:model-role-defaults:v1";
 const FIRST_RESPONSES_ONLY_START_REQUEST = {
   sealedDivergence: {
     autoCloseManual: true,
@@ -174,13 +177,7 @@ type DiscussionPerspectiveModelField = {
   participantId: string;
   label: string;
 };
-type RoleModelDefaults = {
-  perspectiveCount: ProviderBackedPerspectiveCount;
-  modelOverride: string;
-  reviewModelOverride: string;
-  customPerspectiveModelsEnabled: boolean;
-  perspectiveModelOverrides: ProviderBackedPerspectiveModelOverrides;
-};
+type RoleModelDefaults = OpenAICompatibleRoleModelDefaults;
 type RoleModelDefaultsStatus = "idle" | "saved" | "loaded" | "cleared" | "unavailable";
 type DiscussionParticipantSourceView = {
   title: string;
@@ -323,9 +320,11 @@ export function RunNewPage() {
   const [participantSourceTouched, setParticipantSourceTouched] = useState(false);
   const [storedRoleModelDefaults, setStoredRoleModelDefaults] = useState<
     RoleModelDefaults | undefined
-  >(() => readRoleModelDefaults());
+  >(undefined);
   const [roleModelDefaultsStatus, setRoleModelDefaultsStatus] =
     useState<RoleModelDefaultsStatus>("idle");
+  const [roleModelDefaultsAppliedFromService, setRoleModelDefaultsAppliedFromService] =
+    useState(false);
   const [modelPerspectiveCount, setModelPerspectiveCount] =
     useState<ProviderBackedPerspectiveCount>(
       requestedPerspectiveCount ?? storedRoleModelDefaults?.perspectiveCount ?? 2
@@ -347,6 +346,10 @@ export function RunNewPage() {
   const runtimeProfilesQuery = useQuery({
     queryKey: ["runtime-profiles"],
     queryFn: () => client.getRuntimeProfiles()
+  });
+  const roleModelDefaultsQuery = useQuery({
+    queryKey: ["model-role-defaults"],
+    queryFn: () => client.getOpenAICompatibleRoleModelDefaults()
   });
   const runtimeSetupPlan = runtimeProfilesQuery.data
     ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
@@ -402,6 +405,29 @@ export function RunNewPage() {
       clearOpenAICompatibleProviderVerified();
     }
   });
+  const saveRoleDefaultsMutation = useMutation({
+    mutationFn: (defaults: RoleModelDefaults) =>
+      client.saveOpenAICompatibleRoleModelDefaults(defaults),
+    onSuccess: (_result, defaults) => {
+      setStoredRoleModelDefaults(defaults);
+      setRoleModelDefaultsStatus("saved");
+      void queryClient.invalidateQueries({ queryKey: ["model-role-defaults"] });
+    },
+    onError: () => {
+      setRoleModelDefaultsStatus("unavailable");
+    }
+  });
+  const clearRoleDefaultsMutation = useMutation({
+    mutationFn: () => client.clearOpenAICompatibleRoleModelDefaults(),
+    onSuccess: () => {
+      setStoredRoleModelDefaults(undefined);
+      setRoleModelDefaultsStatus("cleared");
+      void queryClient.invalidateQueries({ queryKey: ["model-role-defaults"] });
+    },
+    onError: () => {
+      setRoleModelDefaultsStatus("unavailable");
+    }
+  });
   const createdRunId = getStringRecordValue(createMutation.data?.run, "runId");
   const canCreateDiscussion =
     discussionQuestion.trim().length > 0 &&
@@ -452,6 +478,53 @@ export function RunNewPage() {
     runtimeSetupPlan
   ]);
 
+  useEffect(() => {
+    const defaults =
+      roleModelDefaultsQuery.data?.status === "configured"
+        ? roleModelDefaultsQuery.data.defaults
+        : undefined;
+
+    if (!defaults) {
+      if (roleModelDefaultsQuery.isSuccess && storedRoleModelDefaults) {
+        setStoredRoleModelDefaults(undefined);
+      }
+      return;
+    }
+
+    setStoredRoleModelDefaults(defaults);
+
+    if (
+      roleModelDefaultsAppliedFromService ||
+      roleModelDefaultsStatus !== "idle" ||
+      discussionModelOverride ||
+      reviewModelOverride ||
+      customPerspectiveModelsEnabled ||
+      Object.keys(perspectiveModelOverrides).length > 0
+    ) {
+      return;
+    }
+
+    if (requestedPerspectiveCount === undefined) {
+      setModelPerspectiveCount(defaults.perspectiveCount);
+    }
+    setDiscussionModelOverride(defaults.modelOverride);
+    setReviewModelOverride(defaults.reviewModelOverride);
+    setCustomPerspectiveModelsEnabled(defaults.customPerspectiveModelsEnabled);
+    setPerspectiveModelOverrides(defaults.perspectiveModelOverrides);
+    setRoleModelDefaultsAppliedFromService(true);
+  }, [
+    customPerspectiveModelsEnabled,
+    discussionModelOverride,
+    perspectiveModelOverrides,
+    requestedPerspectiveCount,
+    reviewModelOverride,
+    roleModelDefaultsAppliedFromService,
+    roleModelDefaultsQuery.data,
+    roleModelDefaultsQuery.isSuccess,
+    roleModelDefaultsStatus,
+    storedRoleModelDefaults
+  ]);
+
   function chooseParticipantSource(source: DiscussionParticipantSource) {
     setParticipantSourceTouched(true);
     setParticipantSource(source);
@@ -459,6 +532,7 @@ export function RunNewPage() {
 
   function retryModelSetup() {
     void queryClient.invalidateQueries({ queryKey: ["runtime-profiles"] });
+    void queryClient.invalidateQueries({ queryKey: ["model-role-defaults"] });
   }
 
   function updatePerspectiveModelOverride(participantId: string, model: string) {
@@ -480,18 +554,11 @@ export function RunNewPage() {
 
   function saveRoleModelDefaults() {
     const defaults = captureCurrentRoleModelDefaults();
-
-    if (!writeRoleModelDefaults(defaults)) {
-      setRoleModelDefaultsStatus("unavailable");
-      return;
-    }
-
-    setStoredRoleModelDefaults(defaults);
-    setRoleModelDefaultsStatus("saved");
+    saveRoleDefaultsMutation.mutate(defaults);
   }
 
   function applyRoleModelDefaults() {
-    const defaults = readRoleModelDefaults();
+    const defaults = storedRoleModelDefaults;
 
     if (!defaults) {
       setRoleModelDefaultsStatus("unavailable");
@@ -508,13 +575,7 @@ export function RunNewPage() {
   }
 
   function clearRoleModelDefaults() {
-    if (!clearStoredRoleModelDefaults()) {
-      setRoleModelDefaultsStatus("unavailable");
-      return;
-    }
-
-    setStoredRoleModelDefaults(undefined);
-    setRoleModelDefaultsStatus("cleared");
+    clearRoleDefaultsMutation.mutate();
   }
 
   function submitRunPlan(event: FormEvent<HTMLFormElement>) {
@@ -622,6 +683,11 @@ export function RunNewPage() {
             onPerspectiveModelOverrideChange={updatePerspectiveModelOverride}
             roleDefaultsSaved={Boolean(storedRoleModelDefaults)}
             roleDefaultsStatus={roleModelDefaultsStatus}
+            roleDefaultsPending={
+              roleModelDefaultsQuery.isLoading ||
+              saveRoleDefaultsMutation.isPending ||
+              clearRoleDefaultsMutation.isPending
+            }
             onSaveRoleDefaults={saveRoleModelDefaults}
             onApplyRoleDefaults={applyRoleModelDefaults}
             onClearRoleDefaults={clearRoleModelDefaults}
@@ -855,6 +921,7 @@ function DiscussionModelSetupPanel({
   onPerspectiveModelOverrideChange,
   roleDefaultsSaved,
   roleDefaultsStatus,
+  roleDefaultsPending,
   onSaveRoleDefaults,
   onApplyRoleDefaults,
   onClearRoleDefaults,
@@ -879,6 +946,7 @@ function DiscussionModelSetupPanel({
   onPerspectiveModelOverrideChange: (participantId: string, model: string) => void;
   roleDefaultsSaved: boolean;
   roleDefaultsStatus: RoleModelDefaultsStatus;
+  roleDefaultsPending: boolean;
   onSaveRoleDefaults: () => void;
   onApplyRoleDefaults: () => void;
   onClearRoleDefaults: () => void;
@@ -1042,7 +1110,7 @@ function DiscussionModelSetupPanel({
               <strong>{t("Role model defaults")}</strong>
               <p>
                 {t(
-                  "Save non-secret role model choices in this browser so the next model-backed discussion starts with the same setup."
+                  "Save non-secret role model choices to the local service so future model-backed discussions start with the same setup."
                 )}
               </p>
             </div>
@@ -1050,7 +1118,7 @@ function DiscussionModelSetupPanel({
               <button
                 type="button"
                 className="du-secondary-button"
-                disabled={selectedSource !== "model-backed"}
+                disabled={selectedSource !== "model-backed" || roleDefaultsPending}
                 onClick={onSaveRoleDefaults}
               >
                 {t("Save as default role setup")}
@@ -1058,7 +1126,11 @@ function DiscussionModelSetupPanel({
               <button
                 type="button"
                 className="du-secondary-button"
-                disabled={selectedSource !== "model-backed" || !roleDefaultsSaved}
+                disabled={
+                  selectedSource !== "model-backed" ||
+                  !roleDefaultsSaved ||
+                  roleDefaultsPending
+                }
                 onClick={onApplyRoleDefaults}
               >
                 {t("Apply saved role setup")}
@@ -1066,7 +1138,7 @@ function DiscussionModelSetupPanel({
               <button
                 type="button"
                 className="du-secondary-button"
-                disabled={!roleDefaultsSaved}
+                disabled={!roleDefaultsSaved || roleDefaultsPending}
                 onClick={onClearRoleDefaults}
               >
                 {t("Clear saved role setup")}
@@ -1578,97 +1650,19 @@ function getRoleModelDefaultsStatusMessage(
 ): string {
   switch (status) {
     case "saved":
-      return "Saved role defaults for future discussions. API keys and base URLs are not stored here.";
+      return "Saved role defaults to the local service. API keys and base URLs are not stored here.";
     case "loaded":
       return "Applied the saved role setup to this discussion.";
     case "cleared":
-      return "Cleared saved role defaults. Current discussion fields are unchanged.";
+      return "Cleared saved role defaults from the local service. Current discussion fields are unchanged.";
     case "unavailable":
-      return "Role defaults could not be saved in this browser. You can still create this discussion.";
+      return "Role defaults could not be changed in the local service. You can still create this discussion.";
     case "idle":
     default:
       return saved
-        ? "Saved role defaults are available for this browser."
+        ? "Saved role defaults are available from the local service."
         : "No saved role defaults yet. API keys and base URLs are never saved here.";
   }
-}
-
-function readRoleModelDefaults(): RoleModelDefaults | undefined {
-  try {
-    const rawDefaults = globalThis.localStorage?.getItem(ROLE_MODEL_DEFAULTS_STORAGE_KEY);
-
-    if (!rawDefaults) {
-      return undefined;
-    }
-
-    const parsed = JSON.parse(rawDefaults) as unknown;
-
-    return parseRoleModelDefaults(parsed);
-  } catch {
-    return undefined;
-  }
-}
-
-function writeRoleModelDefaults(defaults: RoleModelDefaults): boolean {
-  try {
-    globalThis.localStorage?.setItem(
-      ROLE_MODEL_DEFAULTS_STORAGE_KEY,
-      JSON.stringify(normalizeRoleModelDefaults(defaults))
-    );
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function clearStoredRoleModelDefaults(): boolean {
-  try {
-    globalThis.localStorage?.removeItem(ROLE_MODEL_DEFAULTS_STORAGE_KEY);
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function parseRoleModelDefaults(value: unknown): RoleModelDefaults | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return undefined;
-  }
-
-  return normalizeRoleModelDefaults(value as Partial<RoleModelDefaults>);
-}
-
-function normalizeRoleModelDefaults(value: Partial<RoleModelDefaults>): RoleModelDefaults {
-  return {
-    perspectiveCount: value.perspectiveCount === 3 ? 3 : 2,
-    modelOverride: normalizeModelInput(value.modelOverride),
-    reviewModelOverride: normalizeModelInput(value.reviewModelOverride),
-    customPerspectiveModelsEnabled: Boolean(value.customPerspectiveModelsEnabled),
-    perspectiveModelOverrides: sanitizePerspectiveModelOverrides(
-      value.perspectiveModelOverrides
-    )
-  };
-}
-
-function sanitizePerspectiveModelOverrides(
-  overrides: unknown
-): ProviderBackedPerspectiveModelOverrides {
-  if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    DISCUSSION_PERSPECTIVE_MODEL_FIELDS.map((field) => [
-      field.participantId,
-      normalizeModelInput((overrides as Record<string, unknown>)[field.participantId])
-    ]).filter(([, model]) => Boolean(model))
-  );
-}
-
-function normalizeModelInput(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
 }
 
 function describeDiscussionModelSetup(

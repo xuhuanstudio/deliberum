@@ -197,6 +197,12 @@ import {
   type McpToolFetchLike
 } from "../src";
 import {
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_MODEL_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_A_MODEL_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_COUNT_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULT_REVIEW_MODEL_ENV_VAR,
+  OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_BEGIN,
+  OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_END,
   OPENAI_COMPATIBLE_SETUP_ENV_BEGIN,
   OPENAI_COMPATIBLE_SETUP_ENV_END,
   loadManagedDaemonSetupEnvFile
@@ -2843,6 +2849,190 @@ describe("daemon API", () => {
     }
   });
 
+  it("saves non-secret model role defaults through safe local setup routes", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "deliberum-role-defaults-"));
+    const envFilePath = join(tempDir, ".env");
+    const apiKey = "sk-local-web-setup-secret";
+    const activeEnv: Record<string, string | undefined> = {
+      [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: apiKey,
+      [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://api.example.test",
+      [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "saved-provider-model"
+    };
+
+    try {
+      const daemonApp = createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        setupEnvFilePath: envFilePath,
+        openAICompatibleEnv: activeEnv
+      });
+
+      const saveResponse = await daemonApp.app.request(
+        "/runtime/setup/model-role-defaults",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            perspectiveCount: 3,
+            modelOverride: "role-first-response-model",
+            reviewModelOverride: "role-review-model",
+            customPerspectiveModelsEnabled: true,
+            perspectiveModelOverrides: {
+              "provider-perspective-a": "role-perspective-a-model",
+              ignored: "ignored-model"
+            }
+          })
+        }
+      );
+      const saveBody = (await saveResponse.json()) as {
+        profileId: string;
+        status: string;
+        managedEnvFile: string;
+        configuredFields: string[];
+        activeInCurrentDaemon: boolean;
+        safety: string[];
+      };
+      const envContent = readFileSync(envFilePath, "utf8");
+
+      expect(saveResponse.status).toBe(201);
+      expectNoStore(saveResponse);
+      expect(saveBody).toEqual({
+        profileId: "openai-compatible",
+        status: "saved",
+        managedEnvFile: "local-daemon-env",
+        configuredFields: [
+          "perspectiveCount",
+          "customPerspectiveModelsEnabled",
+          "modelOverride",
+          "reviewModelOverride",
+          "perspectiveModelOverrides"
+        ],
+        restartRequired: false,
+        activeInCurrentDaemon: true,
+        safety: [
+          "Role model defaults were written to the local daemon env file.",
+          "Only non-secret model role choices are stored.",
+          "The setup was applied to the current local daemon process."
+        ]
+      });
+      expect(JSON.stringify(saveBody)).not.toContain(apiKey);
+      expect(JSON.stringify(saveBody)).not.toContain("https://api.example.test");
+      expect(JSON.stringify(saveBody)).not.toContain(OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID);
+      expect(envContent).toContain(OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_BEGIN);
+      expect(envContent).toContain(OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_END);
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_COUNT_ENV_VAR}=3`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_ROLE_DEFAULT_MODEL_ENV_VAR}=role-first-response-model`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_ROLE_DEFAULT_REVIEW_MODEL_ENV_VAR}=role-review-model`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_ROLE_DEFAULT_PERSPECTIVE_A_MODEL_ENV_VAR}=role-perspective-a-model`
+      );
+      expect(envContent).not.toContain(apiKey);
+      expect(envContent).not.toContain("https://api.example.test");
+      expect(envContent).not.toContain(OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID);
+      expect(activeEnv[OPENAI_COMPATIBLE_ROLE_DEFAULT_MODEL_ENV_VAR]).toBe(
+        "role-first-response-model"
+      );
+
+      const readResponse = await daemonApp.app.request(
+        "/runtime/setup/model-role-defaults"
+      );
+      const readBody = (await readResponse.json()) as {
+        status: string;
+        defaults?: {
+          perspectiveCount: number;
+          modelOverride: string;
+          reviewModelOverride: string;
+          customPerspectiveModelsEnabled: boolean;
+          perspectiveModelOverrides: Record<string, string>;
+        };
+      };
+      const readText = JSON.stringify(readBody);
+
+      expect(readResponse.status).toBe(200);
+      expect(readBody).toEqual({
+        profileId: "openai-compatible",
+        status: "configured",
+        defaults: {
+          perspectiveCount: 3,
+          modelOverride: "role-first-response-model",
+          reviewModelOverride: "role-review-model",
+          customPerspectiveModelsEnabled: true,
+          perspectiveModelOverrides: {
+            "provider-perspective-a": "role-perspective-a-model"
+          }
+        },
+        safety: [
+          "Role model defaults contain non-secret model choices only.",
+          "Provider API keys, base URLs, and provider config ids are not returned."
+        ]
+      });
+      expect(readText).not.toContain(apiKey);
+      expect(readText).not.toContain("https://api.example.test");
+      expect(readText).not.toContain(OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID);
+
+      const clearResponse = await daemonApp.app.request(
+        "/runtime/setup/model-role-defaults",
+        {
+          method: "DELETE"
+        }
+      );
+      const clearBody = (await clearResponse.json()) as {
+        status: string;
+      };
+      const clearedEnvContent = readFileSync(envFilePath, "utf8");
+
+      expect(clearResponse.status).toBe(200);
+      expect(clearBody).toEqual({
+        profileId: "openai-compatible",
+        status: "cleared",
+        managedEnvFile: "local-daemon-env",
+        configuredFields: [],
+        restartRequired: false,
+        activeInCurrentDaemon: true,
+        safety: [
+          "Role model defaults were removed from the local daemon env file.",
+          "Only non-secret model role choices were cleared.",
+          "The current local daemon process was cleared."
+        ]
+      });
+      expect(clearedEnvContent).not.toContain(OPENAI_COMPATIBLE_ROLE_DEFAULTS_ENV_BEGIN);
+      expect(activeEnv[OPENAI_COMPATIBLE_ROLE_DEFAULT_MODEL_ENV_VAR]).toBeUndefined();
+      expect(
+        (await (
+          await daemonApp.app.request("/runtime/setup/model-role-defaults")
+        ).json()) as { status: string }
+      ).toEqual({
+        profileId: "openai-compatible",
+        status: "empty",
+        safety: [
+          "Role model defaults contain non-secret model choices only.",
+          "Provider API keys, base URLs, and provider config ids are not returned."
+        ]
+      });
+
+      const auditText = JSON.stringify(daemonApp.operationAuditLog.list({ limit: 20 }));
+      expect(auditText).toContain("runtime_model_role_defaults_save");
+      expect(auditText).toContain("runtime_model_role_defaults_read");
+      expect(auditText).toContain("runtime_model_role_defaults_clear");
+      expect(auditText).not.toContain(apiKey);
+      expect(auditText).not.toContain("https://api.example.test");
+      expect(auditText).not.toContain("role-first-response-model");
+    } finally {
+      rmSync(tempDir, {
+        recursive: true,
+        force: true
+      });
+    }
+  });
+
   it("loads the Web-managed provider setup block when the daemon starts", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "deliberum-setup-"));
     const envFilePath = join(tempDir, ".env");
@@ -3787,9 +3977,9 @@ describe("daemon API", () => {
     })).toEqual(["http://127.0.0.1:5180", "http://localhost:5180"]);
   });
 
-  it("handles local Web dev preflight for run requests without wildcard CORS", async () => {
+  it("handles local Web dev preflight for mutating requests without wildcard CORS", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
-    const response = await daemonApp.app.request("/runs", {
+    const runResponse = await daemonApp.app.request("/runs", {
       method: "OPTIONS",
       headers: {
         Origin: "http://127.0.0.1:5173",
@@ -3797,15 +3987,35 @@ describe("daemon API", () => {
         "Access-Control-Request-Headers": "Content-Type"
       }
     });
+    const roleDefaultsResponse = await daemonApp.app.request(
+      "/runtime/setup/model-role-defaults",
+      {
+        method: "OPTIONS",
+        headers: {
+          Origin: "http://127.0.0.1:5173",
+          "Access-Control-Request-Method": "DELETE"
+        }
+      }
+    );
 
-    expect(response.status).toBe(204);
-    expect(response.headers.get("access-control-allow-origin")).toBe(
+    expect(runResponse.status).toBe(204);
+    expect(runResponse.headers.get("access-control-allow-origin")).toBe(
       "http://127.0.0.1:5173"
     );
-    expect(response.headers.get("access-control-allow-origin")).not.toBe("*");
-    expect(response.headers.get("access-control-allow-methods")).toBe("GET,POST,OPTIONS");
-    expect(response.headers.get("access-control-allow-headers")).toBe(
+    expect(runResponse.headers.get("access-control-allow-origin")).not.toBe("*");
+    expect(runResponse.headers.get("access-control-allow-methods")).toBe(
+      "GET,POST,DELETE,OPTIONS"
+    );
+    expect(runResponse.headers.get("access-control-allow-headers")).toBe(
       "Content-Type,Authorization"
+    );
+    expect(roleDefaultsResponse.status).toBe(204);
+    expect(roleDefaultsResponse.headers.get("access-control-allow-origin")).toBe(
+      "http://127.0.0.1:5173"
+    );
+    expect(roleDefaultsResponse.headers.get("access-control-allow-origin")).not.toBe("*");
+    expect(roleDefaultsResponse.headers.get("access-control-allow-methods")).toBe(
+      "GET,POST,DELETE,OPTIONS"
     );
   });
 
