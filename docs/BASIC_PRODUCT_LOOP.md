@@ -46,7 +46,7 @@ Updated: 2026-06-15.
 | 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
 | 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show `corepack pnpm build && corepack pnpm start:local` as the local start path. `smoke:local-start` verifies that script starts a daemon-served Web shell. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future installer work may simplify dependency installation, but the current local product start path is proven. |
 | 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, model, and structured review compatibility. | `verified` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The integrated Web product-loop test covers entering and saving API key, base URL, model, and the default structured review compatibility setting from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the daemon setup API. `smoke:web-product-loop` enters the same fields in a real browser against an isolated local daemon and safe mock provider. | Keep covered; continue real external-provider walkthroughs before release hardening. |
-| 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. A 2026-06-15 opt-in `smoke:web-release-readiness` run against a real external OpenAI-compatible provider verified the provider connection through Web before creating the discussion. The daemon applies a default verification timeout so Web can show a safe recovery error instead of waiting indefinitely, the Web setup page gives normal users recovery actions to review setup fields, retry Verify connection, or start a demo discussion while fixing setup, and the release-readiness smoke records Web-visible verification failure if a future provider run cannot verify. | Keep covered with repeated opt-in real-provider release-readiness runs; broaden provider coverage later. |
+| 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. A 2026-06-15 opt-in `smoke:web-release-readiness` run against a real external OpenAI-compatible provider verified the provider connection through Web before creating the discussion. The daemon applies a default verification timeout so Web can show a safe recovery error instead of waiting indefinitely, the Web setup page gives normal users recovery actions to review setup fields, retry Verify connection, or start a demo discussion while fixing setup, and the release-readiness smoke now verifies those Web-visible recovery actions if a real provider cannot verify. | Keep covered with repeated opt-in real-provider release-readiness runs; broaden provider coverage later. |
 | 7 | Start a model-backed discussion from Web. | `verified` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test creates a model-backed discussion. `smoke:product-loop` creates and starts a provider-backed run through the daemon API. `smoke:web-product-loop` reaches the model-backed start page from Setup / Models and creates the discussion in a real browser. The 2026-06-15 opt-in `smoke:web-release-readiness` run also started a model-backed discussion from the verified real-provider setup path. | Keep covered; future participant-management work should preserve this default path. |
 | 8 | See participant/model perspectives as readable contributions, not raw events. | `verified` | Discussion Room tests and walkthrough document cover readable room contributions. The integrated Web product-loop test confirms provider-backed Perspective A/B contributions after continuing. `smoke:product-loop` confirms sealed contribution events. `smoke:web-product-loop` confirms readable Perspective A/B text appears in the browser room timeline. | Keep covered; continue checking that default views do not regress into raw event views. |
 | 9 | See strongest current options. | `verified` | Discussion Room and outcome tests render strongest options/main perspectives in user language. The integrated Web product-loop test confirms a strongest option after continuation. `smoke:product-loop` verifies the daemon frontier contains a provider-backed strongest option. `smoke:web-product-loop` confirms the browser room and outcome show the provider-backed strongest option. | Keep covered; future UX work can improve scanning, but the loop step is proven. |
@@ -55,7 +55,7 @@ Updated: 2026-06-15.
 | 12 | See risks. | `verified` | Web tests cover risks and hide internal source language from default view. The integrated Web product-loop test confirms risk-review text appears. `smoke:product-loop` verifies final audit risk material reaches the compiled outcome. `smoke:web-product-loop` confirms risk entry points in the room and concrete risk text in the outcome. | Keep covered; future release-hardening should add real-provider risk text examples. |
 | 13 | See the current conclusion. | `verified` | Outcome pages render user-facing conclusion summaries and hide internal projection/event terms. The integrated Web product-loop test confirms the room reaches `Current conclusion: Ready to review`. `smoke:product-loop` verifies the daemon compiles a provider-backed current conclusion. `smoke:web-product-loop` opens the current conclusion page from the browser room and verifies the recommendation. | Keep covered; future work should improve conclusion readability only when it improves the main loop. |
 | 14 | See next recommended actions. | `verified` | Outcome and room tests render next recommended actions. The integrated Web product-loop test confirms user-facing action labels. `smoke:product-loop` verifies continuation suggestions in the provider-backed outcome. `smoke:web-product-loop` confirms the room links and outcome next recommended actions are visible from the browser path. | Keep covered; future actions should stay user-facing. |
-| 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion, verifies a transient first-response provider failure pauses in user-facing language, clicks Continue discussion again, and reaches reviewable conclusion material. `smoke:web-resilience` also verifies a safe failed-stage recovery path with Check model setup, retry, and new model-backed discussion actions. The 2026-06-15 opt-in `smoke:web-release-readiness` run completed the Continue discussion path with a real external provider and reached the reviewable room and outcome surfaces. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
+| 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion, verifies a transient first-response provider failure pauses in user-facing language, clicks Continue discussion again, and reaches reviewable conclusion material. `smoke:web-resilience` also verifies safe failed-stage and stopped-continuation recovery paths with Check model setup, retry, and new model-backed discussion actions. The 2026-06-15 opt-in `smoke:web-release-readiness` run completed the Continue discussion path with a real external provider and reached the reviewable room and outcome surfaces; the same smoke now verifies those recovery actions when a real-provider continuation returns `run_stage_failed`, `failed`, or `timed_out`. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
 | 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `verified` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, paused retry, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, low-level id labels, and provider error categories during the primary browser path. `smoke:web-release-readiness` scans the opt-in real-provider setup, start, room, retry, and outcome path for provider secrets, provider values, env var names, provider config ids, and low-level ids. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. `smoke:web-resilience` verifies paused, retryable continuation, setup-error, and failed-stage recovery states stay user-facing while raw stop reasons, stage error codes, and internal status codes remain behind Advanced details. | Keep covered; any new default route or retry state must extend the same safety scan before release. |
 
 ## Batch Gate
@@ -131,6 +131,12 @@ smallest verifiable change. Provider-specific compatibility that must be set by
 a normal user belongs in Setup / Models; lower-level diagnostics and env var
 names stay behind Advanced / Developer Mode.
 
+If provider verification fails, the smoke verifies the default Setup / Models
+view shows normal-user recovery actions: Review setup fields, Try Verify
+connection again, and Start demo discussion. This keeps provider setup failures
+actionable without printing provider secrets, base URLs, model values, or env
+var names.
+
 Command:
 
 ```bash
@@ -159,6 +165,13 @@ failures easier to reproduce without hand-written shell loops.
 Set `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3` to run the same walkthrough through
 the Broader review start path with Perspective A, Perspective B, and Perspective
 C. The default remains `2`, which verifies the focused two-perspective path.
+
+When a real-provider continuation stops with a recoverable failed stage
+(`run_stage_failed`, `failed`, or `timed_out`), the smoke verifies the default
+Web view shows normal-user recovery actions: Check model setup, Try Continue
+discussion again, and Start a new model-backed discussion. These checks keep
+recovery usability in the release-readiness path without exposing raw stage
+codes, provider values, or secrets.
 
 The smoke relies on Web setup's default Structured review compatibility option
 for organizer, reviewer, risk-review, and conclusion-writer stages. This keeps
@@ -575,6 +588,47 @@ Limit:
 
 - This is one Broader review pass against one provider. It does not replace
   repeated Broader review runs or broader provider coverage before release.
+
+### 2026-06-15 Provider Verification Failure Recovery Guard
+
+Scope: rows 6, 15, and 16 on the opt-in real-provider release-readiness path.
+
+Commands:
+
+- `node --check scripts/smoke-web-release-readiness-once.mjs`
+- `corepack pnpm lint:docs`
+- `corepack pnpm lint:language`
+- `corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Re-ran the Web-managed release-readiness walkthrough using the repository
+   local provider setup.
+2. The provider did not pass Web verification, so the walkthrough correctly
+   stopped before starting a model-backed discussion.
+3. The release-readiness smoke now verifies that this failure state still shows
+   normal-user recovery actions: Review setup fields, Try Verify connection
+   again, and Start demo discussion.
+4. The same smoke continues scanning the default setup view so provider secrets,
+   provider values, env var names, provider config ids, raw JSON, and low-level
+   ids stay out of the normal user path.
+5. The smoke now performs the same recovery-action guard when later Continue
+   discussion attempts stop with recoverable failed-stage states.
+
+Result:
+
+- The latest local real-provider walkthrough is blocked at provider
+  verification, but the default Web path gives normal users a safe recovery path
+  instead of exposing raw diagnostics or leaving them without a next action.
+- This improves release-readiness failure evidence; it does not count as a
+  successful real-provider end-to-end pass.
+
+Limit:
+
+- The current provider setup must verify successfully before rows 7 through 14
+  can be re-proven on this specific real-provider path. Continue with a verified
+  provider configuration, then re-run `corepack pnpm smoke:web-release-readiness`
+  and fix the next blocker that appears.
 
 ### 2026-06-15 Web Entry Smoke
 

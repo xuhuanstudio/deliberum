@@ -134,8 +134,10 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   ], releaseConfig.providerTimeoutMs);
 
   if (providerVerificationState !== "verified") {
+    await assertProviderVerificationRecoveryActions(page, "provider verification failure");
+    await assertDefaultViewSafety(page, "provider verification failure");
     throw new Error(
-      "Release readiness provider verification did not pass before the discussion start."
+      "Release readiness provider verification did not pass before the discussion start; Web showed provider recovery actions."
     );
   }
 
@@ -235,7 +237,8 @@ async function continueDiscussionUntilCompleted(page) {
       ),
       page.getByRole("button", { name: "Continue discussion" }).click()
     ]);
-    latestContinuationDebug = await summarizeStartResponse(startResponse, attempt);
+    const startSummary = await summarizeStartResponse(startResponse, attempt);
+    latestContinuationDebug = startSummary.debug;
     finalState = await waitForFirstVisible(page, [
       {
         label: "continued",
@@ -253,6 +256,13 @@ async function continueDiscussionUntilCompleted(page) {
 
     if (finalState === "continued") {
       return;
+    }
+
+    if (shouldExpectContinuationRecovery(finalState, startSummary.payload)) {
+      await assertContinuationRecoveryActions(page, `continuation attempt ${attempt}`);
+      await assertDefaultViewSafety(page, `continuation recovery attempt ${attempt}`, {
+        allowModelGeneratedLowLevelLanguage: true
+      });
     }
 
     if (attempt < releaseConfig.continueAttempts) {
@@ -276,18 +286,93 @@ async function summarizeStartResponse(response, attempt) {
   try {
     payload = await response.json();
   } catch (error) {
-    return [
-      `continuation attempt ${attempt}: start response HTTP ${response.status()}`,
-      `start response JSON parse failed: ${error.message}`
-    ].join("\n");
+    return {
+      debug: [
+        `continuation attempt ${attempt}: start response HTTP ${response.status()}`,
+        `start response JSON parse failed: ${error.message}`
+      ].join("\n"),
+      payload: undefined
+    };
   }
 
-  return redactSensitive(
-    [
-      `continuation attempt ${attempt}: start response HTTP ${response.status()}`,
-      JSON.stringify(summarizeStartPayload(payload), null, 2)
-    ].join("\n")
+  const summary = summarizeStartPayload(payload);
+
+  return {
+    debug: redactSensitive(
+      [
+        `continuation attempt ${attempt}: start response HTTP ${response.status()}`,
+        JSON.stringify(summary, null, 2)
+      ].join("\n")
+    ),
+    payload: summary
+  };
+}
+
+function shouldExpectContinuationRecovery(finalState, summary) {
+  if (!summary || typeof summary !== "object") {
+    return false;
+  }
+
+  if (finalState === "failed" && summary.error?.code === "run_stage_failed") {
+    return true;
+  }
+
+  return (
+    finalState === "paused" &&
+    summary.stopped === true &&
+    (summary.stopReason === "failed" || summary.stopReason === "timed_out")
   );
+}
+
+async function assertContinuationRecoveryActions(page, label) {
+  const recoveryRegion = page.getByRole("region", { name: "Discussion recovery options" });
+
+  await recoveryRegion.waitFor();
+  await recoveryRegion.getByText("Check model setup", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Try Continue discussion again", { exact: true }).waitFor();
+  await recoveryRegion
+    .getByText("Start a new model-backed discussion", { exact: true })
+    .waitFor();
+
+  await assertLinkHref(page, "Check model setup", "/setup/models", label);
+  await assertLinkHrefIncludes(
+    page,
+    "Start a new model-backed discussion",
+    "participants=model-backed",
+    label
+  );
+}
+
+async function assertProviderVerificationRecoveryActions(page, label) {
+  const recoveryRegion = page.getByRole("region", {
+    name: "Provider verification recovery options"
+  });
+
+  await recoveryRegion.waitFor();
+  await recoveryRegion.getByText("Review setup fields", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Try Verify connection again", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Start demo discussion", { exact: true }).waitFor();
+
+  await assertLinkHref(page, "Review setup fields", "#openai-setup-form", label);
+  await assertLinkHrefIncludes(page, "Start demo discussion", "participants=demo", label);
+}
+
+async function assertLinkHref(page, text, expectedHref, label) {
+  const href = await page.locator("a", { hasText: text }).first().getAttribute("href");
+
+  if (href !== expectedHref) {
+    throw new Error(`${label} expected ${text} link href ${expectedHref}, got ${href ?? "none"}.`);
+  }
+}
+
+async function assertLinkHrefIncludes(page, text, expectedSnippet, label) {
+  const href = await page.locator("a", { hasText: text }).first().getAttribute("href");
+
+  if (!href?.includes(expectedSnippet)) {
+    throw new Error(
+      `${label} expected ${text} link href to include ${expectedSnippet}, got ${href ?? "none"}.`
+    );
+  }
 }
 
 function summarizeStartPayload(payload) {
