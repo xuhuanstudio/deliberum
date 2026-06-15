@@ -31,7 +31,7 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 | --- | --- | --- | --- | --- |
 | 1 | Local install/start is reliable, documented, and repeatable across supported platforms. | `complete` | `README.md` declares macOS and Ubuntu Linux as the v1.0 source-checkout supported platforms with Node.js 24 or newer and Corepack-managed pnpm 11. The `ci:local-start` script runs `doctor:local`, `build`, and `smoke:local-start`. GitHub CI includes a `local-start-platforms` matrix on `ubuntu-latest` and `macos-latest`, so the supported-platform install/build/start path is verified outside the developer machine. | Keep covered; Windows and WSL2 remain unsupported until the local-start path is verified in CI. |
 | 2 | Web first-use, Setup / Models, participant readiness, and Discussion Room form one coherent product experience. | `complete` | `docs/V1_0_WEB_PRODUCT_COHERENCE_AUDIT.md` closes Gate 2 for the v1.0 supported Web scope. `smoke:web-entry` verifies the connected and unavailable first-use entry paths, desktop and mobile first-viewport product clarity, local service status, and default-view safety. `smoke:web-product-loop` verifies the Setup / Models provider setup, verification, participant readiness, role defaults, focused and broader start links, Start Discussion role/model assignment, Discussion Room continuation, current conclusion, and default-view safety across the product path. | Keep covered. Any new default Web route, start mode, recovery state, or outcome surface must extend the same coherence and safety evidence. |
-| 3 | Real OpenAI-compatible provider workflows are stable across repeated focused and broader-review release smokes. | `partial` | `docs/BASIC_PRODUCT_LOOP.md` records repeated focused and Broader review release smokes against one reachable real provider path. | Evidence is not broad enough across providers, slower responses, quota behavior, and longer repeated runs. |
+| 3 | Real OpenAI-compatible provider workflows are stable across repeated focused and broader-review release smokes. | `complete` | `docs/V1_0_REAL_PROVIDER_STABILITY_AUDIT.md` closes Gate 3 for the v1.0 supported OpenAI-compatible Web setup path. A temporary real provider passed three consecutive focused release smokes. Broader review then reproduced an `extraction_validation_failed` blocker after three first responses; the OpenAI-compatible extraction generator was fixed to validate traceability before returning provider output and to use the conservative organizer fallback when structured repair remains untraceable. After the fix, Broader review passed three consecutive release smokes. | Keep covered. Broader provider compatibility remains opt-in release evidence, while provider-specific rate limit, timeout, malformed output, and partial completion recovery evidence belongs to Gate 4. |
 | 4 | Provider setup, verification, failure recovery, rate limit, timeout, malformed output, and partial completion states are handled in normal-user language. | `partial` | Web recovery states and smokes cover verification failure, retryable continuation, failed stages, malformed structured output fallback, and partial first-response recovery. | Rate limit and provider-specific timeout behavior need explicit real-provider recovery evidence. |
 | 5 | Default UI never exposes secrets, raw JSON, env details, run/session/ledger/runtime/proposal/event/internal ids, or provider config ids. | `partial` | `smoke:web-product-loop`, `smoke:web-release-readiness`, `smoke:web-entry`, `smoke:web-boundaries`, and `smoke:web-resilience` scan current default paths. | Needs to remain enforced for any new model/participant management and production recovery paths. |
 | 6 | Advanced / Developer Mode preserves diagnostics without leading the normal user path. | `partial` | Current docs and smokes keep raw details behind Advanced / Developer Mode for existing default paths. | Needs a v1.0 audit after production setup, participant management, and storage recovery paths are added. |
@@ -44,21 +44,23 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 
 ## Next Production Batch
 
-The first production blocker is now gate 3: real OpenAI-compatible provider
-workflows are stable across repeated focused and broader-review release smokes.
-Gate 2 and Gate 7 are closed for the v1.0 supported Web scope, so the next
-batch should run release-readiness evidence instead of continuing Web coherence
-or participant-management polishing.
+The first production blocker is now gate 4: provider setup, verification,
+failure recovery, rate limit, timeout, malformed output, and partial completion
+states are handled in normal-user language. Gates 2, 3, and 7 are closed for
+the v1.0 supported Web scope, so the next batch should target real-provider
+recovery evidence rather than more focused/Broader stability smokes.
 
 Recommended narrow batch:
 
-1. Run the opt-in real-provider release-readiness smoke on the focused path.
-2. If focused remains stable, run the broader-review path with repeated runs
-   where practical.
-3. If a real Deliberum-side blocker is reproduced, fix only the first blocker
-   that prevents the normal user loop from completing.
-4. If no blocker is reproduced and the evidence is sufficient for the selected
-   pass, record the Gate 3 evidence and move to the next incomplete gate.
+1. Audit current recovery evidence for provider verification failures,
+   provider rate limits, timeouts, malformed structured output, failed stages,
+   and partial completion states.
+2. Reproduce the first missing or weak recovery path with a safe mock provider
+   or opt-in real provider where practical.
+3. Fix only the first normal-user recovery blocker if Deliberum fails to show a
+   clear safe recovery path.
+4. If the current evidence is sufficient for a recovery state, record that
+   evidence and move to the next Gate 4 gap.
 5. Do not record provider secrets, base URLs, model names, raw provider
    responses, or provider outputs.
 

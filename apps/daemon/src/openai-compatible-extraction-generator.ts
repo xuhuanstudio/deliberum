@@ -5,13 +5,15 @@ import {
 } from "@deliberum/adapters";
 import {
   ExtractionGeneratorResultSchema,
+  ExtractionGeneratorValidationError,
   type ExtractionContext,
   type ExtractionGenerator,
   type ExtractionGeneratorInput,
   type ExtractionGeneratorResult,
   type ExtractionRunErrorCategory,
   type ProviderRuntimeConfig,
-  type RunSafeDiagnostics
+  type RunSafeDiagnostics,
+  validateExtractionGeneratorResult
 } from "@deliberum/orchestrator";
 import { completeOpenAICompatibleStructuredJsonObject } from "./openai-compatible-structured-generator";
 
@@ -101,9 +103,12 @@ export class OpenAICompatibleExtractionGenerator implements ExtractionGenerator 
         new OpenAICompatibleExtractionGeneratorError(message, safeCategory, safeDiagnostics)
     });
 
-    const extraction = ExtractionGeneratorResultSchema.safeParse(parsed);
-    if (extraction.success) {
-      return extraction.data;
+    try {
+      return parseExtractionOutput(parsed, context);
+    } catch (error) {
+      if (!isRepairableExtractionOutputError(error)) {
+        throw error;
+      }
     }
 
     const retryParsed = await completeOpenAICompatibleStructuredJsonObject<ExtractionRunErrorCategory>({
@@ -122,10 +127,10 @@ export class OpenAICompatibleExtractionGenerator implements ExtractionGenerator 
     });
 
     try {
-      return parseExtractionOutput(retryParsed);
+      return parseExtractionOutput(retryParsed, context);
     } catch (error) {
       if (
-        isExtractionSchemaError(error) &&
+        isRepairableExtractionOutputError(error) &&
         completionConfig.requestOptions.responseFormat === "json_object"
       ) {
         return createFallbackExtractionResult(context);
@@ -279,7 +284,10 @@ function createExtractionSchemaRetryPrompt(): string {
   ].join(" ");
 }
 
-function parseExtractionOutput(parsed: unknown): ExtractionGeneratorResult {
+function parseExtractionOutput(
+  parsed: unknown,
+  context: ExtractionContext
+): ExtractionGeneratorResult {
   const extraction = ExtractionGeneratorResultSchema.safeParse(parsed);
   if (!extraction.success) {
     throw new OpenAICompatibleExtractionGeneratorError(
@@ -288,12 +296,26 @@ function parseExtractionOutput(parsed: unknown): ExtractionGeneratorResult {
     );
   }
 
+  try {
+    validateExtractionGeneratorResult(extraction.data, context);
+  } catch (error) {
+    if (error instanceof ExtractionGeneratorValidationError) {
+      throw new OpenAICompatibleExtractionGeneratorError(
+        "OpenAI-compatible extraction output did not pass traceability validation.",
+        "extraction_validation_failed"
+      );
+    }
+
+    throw error;
+  }
+
   return extraction.data;
 }
 
-function isExtractionSchemaError(error: unknown): boolean {
+function isRepairableExtractionOutputError(error: unknown): boolean {
   return error instanceof OpenAICompatibleExtractionGeneratorError &&
-    error.safeCategory === "extraction_output_invalid";
+    (error.safeCategory === "extraction_output_invalid" ||
+      error.safeCategory === "extraction_validation_failed");
 }
 
 function createFallbackExtractionResult(context: ExtractionContext): ExtractionGeneratorResult {

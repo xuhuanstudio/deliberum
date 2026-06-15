@@ -103,20 +103,20 @@ against one real external OpenAI-compatible provider. Treat this as Basic
 Product Loop evidence for the current provider path, not as broad provider
 compatibility or production-grade release readiness.
 
-The current convergence target is real-provider release hardening: continue
-running the release-readiness walkthrough through the Web-managed setup path,
-including the default Structured review compatibility option, across repeated
-passes and more OpenAI-compatible providers. Fix the first blocking normal-user
-recovery or completion step if provider verification, continuation, or
-finalization pauses or fails. The default Web path now has recovery guidance for
-safe failed-stage responses, OpenAI-compatible structured extraction has a
-conservative fallback when a provider returns JSON that still fails the
-organizer schema after retry, verification has a default timeout for
-non-responsive providers, and the default UI explains when the organizer
-fallback was used. The default model-backed review policy also preserves the
-user path when the reviewer challenges generated proposals: Deliberum can still
-compile a provisional conclusion while keeping challenges, objections, missing
-evidence, risks, and next actions visible for review.
+The current convergence target is real-provider recovery hardening. The
+repeated real-provider stability gate is now closed for the v1.0 supported
+OpenAI-compatible Web setup path, so the next release work should focus on
+provider verification failures, rate limits, timeouts, malformed output, failed
+stages, and partial completion states in normal-user language. The default Web
+path now has recovery guidance for safe failed-stage responses,
+OpenAI-compatible structured extraction has a conservative fallback when a
+provider returns JSON that still fails Deliberum organizer validation after
+retry, verification has a default timeout for non-responsive providers, and the
+default UI explains when the organizer fallback was used. The default
+model-backed review policy also preserves the user path when the reviewer
+challenges generated proposals: Deliberum can still compile a provisional
+conclusion while keeping challenges, objections, missing evidence, risks, and
+next actions visible for review.
 
 Release-readiness walkthrough requirements:
 
@@ -175,6 +175,17 @@ release-readiness smoke passed one fresh focused two-perspective run and one
 fresh Broader review three-perspective run. The recorded result intentionally
 omits the provider key, base URL, model name, raw provider response, and provider
 output.
+
+Latest 2026-06-16 Gate 3 evidence: a temporary real OpenAI-compatible provider
+reproduced a real Deliberum-side Broader review extraction validation blocker
+after three first responses. Deliberum now validates OpenAI-compatible
+organizer output against traceability and reference rules before returning it to
+the orchestration runner, retries invalid structured organizer output, and uses
+the existing conservative organizer fallback when structured repair remains
+untraceable. After the fix, the provider passed three consecutive focused
+release-readiness browser walkthroughs and three consecutive Broader review
+release-readiness browser walkthroughs. Exact provider values, raw provider
+responses, and provider output were intentionally omitted.
 
 Set `DELIBERUM_RELEASE_SMOKE_RUNS=3` or another positive integer to repeat the
 same browser walkthrough in fresh isolated local services. The command stops on

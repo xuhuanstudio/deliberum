@@ -11261,6 +11261,117 @@ describe("daemon API", () => {
     expect(serializedSafeState).not.toContain("stack");
   });
 
+  it("falls back to traceable extraction when structured provider repair stays untraceable", async () => {
+    const rejectedResponseMarker = "TRACEABILITY_REJECTED_EXTRACTION_FALLBACK_MARKER";
+    const untraceableOutput = JSON.stringify({
+      candidates: [
+        {
+          id: "provider-untraceable-candidate",
+          title: "Provider-backed extraction proposal",
+          description: "This proposal references source ids outside the revealed discussion.",
+          sourceEventIds: ["disallowed-source-event"],
+          status: "active",
+          supportedBy: ["provider-untraceable-claim"],
+          attackedBy: [],
+          qualityObligationIds: [],
+          assumptions: [],
+          tradeoffs: []
+        }
+      ],
+      claims: [
+        {
+          id: "provider-untraceable-claim",
+          content: "The organizer output should not be accepted with disallowed source ids.",
+          scope: "process",
+          sourceEventIds: ["disallowed-source-event"],
+          supports: ["provider-untraceable-candidate"]
+        }
+      ],
+      objections: [],
+      evidenceNeeds: [],
+      qualityObligations: [],
+      rationale: rejectedResponseMarker
+    });
+    const fetch = createOpenAICompatibleExtractionFetch({
+      contentTransforms: [
+        () => untraceableOutput,
+        () => untraceableOutput
+      ]
+    });
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true,
+      enableOpenAICompatibleProfile: true,
+      enableOpenAICompatibleExtraction: true,
+      openAICompatibleEnv: {
+        [OPENAI_COMPATIBLE_API_KEY_ENV_VAR]: "sk-openai-runtime-secret",
+        [OPENAI_COMPATIBLE_BASE_URL_ENV_VAR]: "https://constructor.example/api",
+        [OPENAI_COMPATIBLE_MODEL_ENV_VAR]: "constructor-model",
+        [OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR]: "json_object"
+      },
+      openAICompatibleFetch: fetch
+    });
+    const created = await createRun(daemonApp, openAICompatibleExtractionRunPlan());
+    const response = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      openAICompatibleExtractionStartRequest()
+    );
+    const body = (await response.clone().json()) as {
+      stages: Array<{
+        stage: string;
+        status?: string;
+        result: {
+          proposalResults?: Array<{
+            generatorId: string;
+            status: string;
+          }>;
+        };
+      }>;
+    };
+    const proposalEvent = daemonApp.eventStore
+      .listEvents(created.run.sessionId)
+      .find((event) => event.type === "extraction_proposed");
+    const serializedSafeState = JSON.stringify({
+      body,
+      detail: await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json(),
+      storedRun: daemonApp.runStore.getRun(created.run.runId),
+      proposalEvent,
+      events: daemonApp.eventStore.listEvents(created.run.sessionId)
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(body.stages.find((stage) => stage.stage === "extraction")).toMatchObject({
+      status: "completed",
+      result: {
+        proposalResults: [
+          expect.objectContaining({
+            generatorId: OPENAI_COMPATIBLE_EXTRACTION_GENERATOR_ID,
+            status: "proposed"
+          })
+        ]
+      }
+    });
+    expect(proposalEvent?.payload).toMatchObject({
+      candidates: [
+        expect.objectContaining({
+          id: "fallback-candidate-1",
+          status: "active"
+        })
+      ],
+      rationale: expect.stringContaining("conservative extraction fallback")
+    });
+    expect(serializedSafeState).not.toContain(rejectedResponseMarker);
+    expect(serializedSafeState).not.toContain("disallowed-source-event");
+    expect(serializedSafeState).not.toContain("sk-openai-runtime-secret");
+    expect(serializedSafeState).not.toContain("Authorization");
+    expect(serializedSafeState).not.toContain("Bearer");
+    expect(serializedSafeState).not.toContain("/Users/");
+    expect(serializedSafeState).not.toContain("stack");
+  });
+
   it("does not retry provider extraction HTTP failures", async () => {
     const fetch = createOpenAICompatibleExtractionFetch({
       ok: false,
