@@ -2358,6 +2358,10 @@ function isWebShellRoute(path: string): boolean {
     return true;
   }
 
+  if (path === "/setup/models") {
+    return true;
+  }
+
   if (/^\/runs\/[^/]+(?:\/outcome)?$/.test(path)) {
     return true;
   }

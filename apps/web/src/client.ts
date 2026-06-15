@@ -43,6 +43,8 @@ import {
 export type WebRuntimeEnv = {
   readonly VITE_DELIBERUM_DAEMON_URL?: string;
   readonly VITE_DELIBERUM_DAEMON_AUTH_TOKEN?: string;
+  readonly DEV?: boolean;
+  readonly PROD?: boolean;
 };
 
 export type WebDaemonClient = {
@@ -104,13 +106,20 @@ export type WebDaemonClient = {
 };
 
 export function resolveDaemonBaseUrl(
-  env: WebRuntimeEnv = import.meta.env as WebRuntimeEnv
+  env: WebRuntimeEnv = import.meta.env as WebRuntimeEnv,
+  browserOrigin = resolveBrowserOrigin()
 ): string {
   const configuredUrl = env.VITE_DELIBERUM_DAEMON_URL?.trim();
 
-  return configuredUrl && configuredUrl.length > 0
-    ? configuredUrl
-    : DEFAULT_DAEMON_BASE_URL;
+  if (configuredUrl && configuredUrl.length > 0) {
+    return configuredUrl;
+  }
+
+  if (env.PROD === true && browserOrigin && isHttpOrigin(browserOrigin)) {
+    return browserOrigin;
+  }
+
+  return DEFAULT_DAEMON_BASE_URL;
 }
 
 export function resolveDaemonAuthToken(
@@ -129,4 +138,12 @@ export function createWebDaemonClient(
     baseUrl,
     authToken
   });
+}
+
+function resolveBrowserOrigin(): string | undefined {
+  return typeof window === "undefined" ? undefined : window.location.origin;
+}
+
+function isHttpOrigin(value: string): boolean {
+  return value.startsWith("http://") || value.startsWith("https://");
 }

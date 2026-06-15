@@ -78,31 +78,24 @@ Use the [Basic Product Loop Completion Matrix](docs/BASIC_PRODUCT_LOOP.md) as
 the acceptance checklist for this path. The default Web loop is not complete
 until the matrix steps are verified with real browser evidence.
 
-1. Install dependencies and build the local packages.
+1. Install dependencies and build the local product.
 
    ```bash
    corepack pnpm install
    corepack pnpm build
    ```
 
-2. Start the local Deliberum service in one terminal.
+2. Start Deliberum locally.
 
    ```bash
-   mkdir -p .deliberum
-   DELIBERUM_ENABLE_LOCAL_PRESET=true \
-   DELIBERUM_DAEMON_SQLITE_PATH=.deliberum/deliberum.sqlite \
-   node apps/daemon/dist/index.js
+   corepack pnpm start:local
    ```
 
-   The local preset keeps a demo discussion path available while you configure a real model provider. The SQLite file keeps local discussion metadata across service restarts.
+   This starts one local service that serves the Web UI and stores local discussion metadata in `.deliberum/deliberum.sqlite`. The local preset keeps a demo discussion path available while you configure a real model provider.
 
-3. Start the Web UI in another terminal.
+3. Open the Web UI.
 
-   ```bash
-   corepack pnpm --filter @deliberum/web dev
-   ```
-
-   Open `http://127.0.0.1:5173/`. The home page should show whether the local service is connected and whether model-backed discussions are ready.
+   Open `http://127.0.0.1:3877/`. The home page should show whether the local service is connected and whether model-backed discussions are ready.
 
 4. Configure a real model provider from Web.
 
@@ -115,6 +108,8 @@ until the matrix steps are verified with real browser evidence.
    When setup is ready, use **Start model-backed discussion** or open `/runs/new?participants=model-backed`. Write the discussion question, create the discussion, open the room, then use **Continue discussion** to collect participant perspectives and review strongest options, open disagreements, evidence gaps, risks, the current conclusion, and next recommended actions.
 
 If you do not have a provider ready yet, use the demo discussion path first. The demo is useful for learning the room flow, but real decisions should use configured model-backed participants and verified provider setup.
+
+For Web UI development, you can still run the daemon and Vite dev server as separate processes. The normal local product path above uses the built Web shell served by the local daemon.
 
 For a release-readiness browser walkthrough against a real OpenAI-compatible provider, run the opt-in smoke after `corepack pnpm build`:
 

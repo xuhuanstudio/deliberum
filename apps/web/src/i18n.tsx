@@ -179,8 +179,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Run this command from the repository on this machine.":
     "\u5728\u8fd9\u53f0\u673a\u5668\u4e0a\u4ece\u4ed3\u5e93\u76ee\u5f55\u8fd0\u884c\u6b64\u547d\u4ee4\u3002",
   "Local service command": "\u672c\u5730\u670d\u52a1\u547d\u4ee4",
-  "This starts the local service only; model API keys are added from Web after it connects.":
-    "\u8fd9\u53ea\u4f1a\u542f\u52a8\u672c\u5730\u670d\u52a1\uff1b\u8fde\u63a5\u540e\u518d\u4ece Web \u6dfb\u52a0\u6a21\u578b API key\u3002",
+  "This starts the local Web and service; model API keys are added from Web after it connects.":
+    "\u8fd9\u4f1a\u542f\u52a8\u672c\u5730 Web \u548c\u672c\u5730\u670d\u52a1\uff1b\u8fde\u63a5\u540e\u518d\u4ece Web \u6dfb\u52a0\u6a21\u578b API key\u3002",
   "2. Return to Web": "2. \u8fd4\u56de Web",
   "Keep this page open, then use Check again after the service starts.":
     "\u4fdd\u6301\u6b64\u9875\u6253\u5f00\uff0c\u670d\u52a1\u542f\u52a8\u540e\u4f7f\u7528\u201c\u518d\u6b21\u68c0\u67e5\u201d\u3002",

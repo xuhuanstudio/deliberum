@@ -27,25 +27,22 @@ Build the workspace first:
 corepack pnpm build
 ```
 
-Start the local daemon with the deterministic local preset profile:
+Start the local Web product:
 
 ```bash
-DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js
-```
-
-In another terminal, start the Web UI:
-
-```bash
-corepack pnpm --filter @deliberum/web dev
+corepack pnpm start:local
 ```
 
 Open:
 
 ```text
-http://127.0.0.1:5173/runs/new
+http://127.0.0.1:3877/runs/new
 ```
 
-The local preset profile is for development and review only. It makes the walkthrough deterministic without using real provider credentials.
+The local start path serves the built Web UI from the local daemon, keeps local
+state under `.deliberum/`, and enables the local preset profile for development
+and review. The local preset makes the walkthrough deterministic without using
+real provider credentials.
 
 ## Walkthrough
 

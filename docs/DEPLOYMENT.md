@@ -38,14 +38,30 @@ For local/pre-production remote hardening, `DELIBERUM_DAEMON_AUTH_TOKEN=<token>`
 
 The Web UI is currently a separate React/Vite application. It reads daemon/client responses and does not own semantic deliberation state.
 
-For a local/pre-production single-process shell, build the workspace and start the daemon with `DELIBERUM_DAEMON_WEB_ASSETS_PATH=<web-dist-path>`:
+For a local/pre-production single-process shell, build the workspace and start
+the local Web product:
 
 ```bash
 corepack pnpm build
-DELIBERUM_DAEMON_WEB_ASSETS_PATH=apps/web/dist node apps/daemon/dist/index.js
+corepack pnpm start:local
 ```
 
-When this path is set, the daemon serves Vite assets under `/assets/*` and serves the Web shell for browser navigation requests that accept `text/html`, including refreshed Web routes such as `/runs` and `/sessions/:sessionId`. JSON API callers that do not request `text/html` keep receiving the existing daemon API responses on the same paths. The shell index is returned with no-store headers, hashed assets use immutable cache headers, and file paths are constrained to the configured asset root. This is local/pre-production static serving only; it does not add public hosting, production authorization, or multi-user sessions. The Web setup page can submit OpenAI-compatible API key, base URL, model, and structured review compatibility values to the local daemon so the daemon writes a marker-delimited local env block and applies the setup to the current daemon process when possible; saved secret values are not returned to Web.
+`start:local` sets the existing local defaults for the built Web asset path,
+SQLite state under `.deliberum/deliberum.sqlite`, and the deterministic local
+preset demo path unless the corresponding environment variables are already set.
+When the Web asset path is set, the daemon serves Vite assets under `/assets/*`
+and serves the Web shell for browser navigation requests that accept
+`text/html`, including refreshed Web routes such as `/runs` and
+`/sessions/:sessionId`. JSON API callers that do not request `text/html` keep
+receiving the existing daemon API responses on the same paths. The shell index
+is returned with no-store headers, hashed assets use immutable cache headers,
+and file paths are constrained to the configured asset root. This is
+local/pre-production static serving only; it does not add public hosting,
+production authorization, or multi-user sessions. The Web setup page can submit
+OpenAI-compatible API key, base URL, model, and structured review compatibility
+values to the local daemon so the daemon writes a marker-delimited local env
+block and applies the setup to the current daemon process when possible; saved
+secret values are not returned to Web.
 
 ## Local/pre-production container
 

@@ -198,7 +198,10 @@ Current supported mappings are `sealed_divergence`, `relation_mapping`, `red_tea
 
 Unsupported primitives return a safe unsupported-primitive error rather than pretending that a dedicated runner exists.
 
-For local development and testing only, run `corepack pnpm build` before using the built daemon examples below. Then the daemon can be started with:
+For the normal local Web product path, prefer `corepack pnpm start:local` after
+`corepack pnpm build`; it serves the built Web shell from the daemon and enables
+the deterministic local preset demo path. For lower-level local development and
+testing only, the built daemon can still be started directly with:
 
 ```bash
 DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js

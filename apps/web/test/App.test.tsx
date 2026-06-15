@@ -1052,10 +1052,17 @@ afterEach(() => {
 describe("@deliberum/web shell", () => {
   it("resolves daemon URL from explicit development env or local default", () => {
     expect(resolveDaemonBaseUrl({})).toBe("http://127.0.0.1:3877");
+    expect(resolveDaemonBaseUrl({ PROD: true }, "http://127.0.0.1:3999")).toBe(
+      "http://127.0.0.1:3999"
+    );
+    expect(resolveDaemonBaseUrl({ DEV: true }, "http://127.0.0.1:5173")).toBe(
+      "http://127.0.0.1:3877"
+    );
     expect(
       resolveDaemonBaseUrl({
+        PROD: true,
         VITE_DELIBERUM_DAEMON_URL: " http://127.0.0.1:4888 "
-      })
+      }, "http://127.0.0.1:3999")
     ).toBe("http://127.0.0.1:4888");
     expect(resolveDaemonAuthToken({})).toBeUndefined();
     expect(
@@ -1380,12 +1387,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Local service command")).toBeTruthy();
     expect(
       screen.getByText(
-        "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js"
+        "corepack pnpm build && corepack pnpm start:local"
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "This starts the local service only; model API keys are added from Web after it connects."
+        "This starts the local Web and service; model API keys are added from Web after it connects."
       )
     ).toBeTruthy();
     expect(
@@ -2169,12 +2176,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Local service command")).toBeTruthy();
     expect(
       screen.getByText(
-        "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js"
+        "corepack pnpm build && corepack pnpm start:local"
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "This starts the local service only; model API keys are added from Web after it connects."
+        "This starts the local Web and service; model API keys are added from Web after it connects."
       )
     ).toBeTruthy();
     expect(screen.getByText("3. Configure models in Web")).toBeTruthy();
@@ -3111,7 +3118,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Local service command")).toBeTruthy();
     expect(
       screen.getByText(
-        "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js"
+        "corepack pnpm build && corepack pnpm start:local"
       )
     ).toBeTruthy();
     expect(
@@ -4404,7 +4411,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Local service command")).toBeTruthy();
     expect(
       screen.getByText(
-        "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js"
+        "corepack pnpm build && corepack pnpm start:local"
       )
     ).toBeTruthy();
     expect(

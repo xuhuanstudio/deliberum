@@ -41,10 +41,10 @@ Updated: 2026-06-15.
 
 | # | Product loop step | Current status | Current evidence | Highest-priority gap |
 | --- | --- | --- | --- | --- |
-| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:5173/`; Web tests cover the shell and landing readiness states. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. | Keep covered; packaging and installer work can improve first-run convenience later. |
+| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:3877/` through `corepack pnpm start:local`; Web tests cover the shell and landing readiness states. `smoke:local-start` verifies the single-process local start script serves the built Web shell from the daemon. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. | Keep covered; packaging and installer work can improve first-run convenience later. |
 | 2 | Understand within 30 seconds that Deliberum is a multi-perspective deliberation product. | `verified` | README and default Web copy describe the human-first product. The landing page now leads with `Multi-perspective deliberation for better decisions`. `smoke:web-entry` verifies desktop and mobile first viewports include Deliberum, multi-perspective deliberation, independent perspectives, strongest options, and reviewable conclusion language. | Keep covered; future visual design work should preserve this first-viewport product signal. |
 | 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
-| 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show local service start commands. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future install work may simplify the command, but the current default path is proven. |
+| 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show `corepack pnpm build && corepack pnpm start:local` as the local start path. `smoke:local-start` verifies that script starts a daemon-served Web shell. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future installer work may simplify dependency installation, but the current local product start path is proven. |
 | 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, model, and structured review compatibility. | `verified` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The integrated Web product-loop test covers entering and saving API key, base URL, model, and the default structured review compatibility setting from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the daemon setup API. `smoke:web-product-loop` enters the same fields in a real browser against an isolated local daemon and safe mock provider. | Keep covered; continue real external-provider walkthroughs before release hardening. |
 | 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. | Keep covered; add provider-specific troubleshooting only if real provider walkthroughs expose a blocker. |
 | 7 | Start a model-backed discussion from Web. | `verified` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test creates a model-backed discussion. `smoke:product-loop` creates and starts a provider-backed run through the daemon API. `smoke:web-product-loop` reaches the model-backed start page from Setup / Models and creates the discussion in a real browser. | Keep covered; future participant-management work should preserve this default path. |
@@ -144,6 +144,35 @@ the release-readiness path aligned with what a normal local user can do in Web
 instead of requiring hidden environment variables.
 
 ## Recent Automated Evidence
+
+### 2026-06-15 Local Product Start Smoke
+
+Scope: rows 1 through 4, with supporting evidence for installable local-first
+startup.
+
+Commands:
+
+- `corepack pnpm smoke:local-start`
+
+Path covered:
+
+1. Starts `corepack pnpm start:local` on an isolated local port.
+2. Uses a temporary SQLite path so no local user data is touched.
+3. Waits for daemon health.
+4. Opens `/setup/models` through the daemon-served built Web shell.
+5. Confirms the start script prints the user-facing local Web URL.
+
+Result:
+
+- The default local product entry can now be started as one process after
+  `corepack pnpm build`.
+- The unavailable-service Web guide, README quickstart, deployment guide, and
+  discussion walkthrough now point to the same local product start path.
+
+Limit:
+
+- This is still source-checkout local startup, not a packaged desktop app or
+  installer. Future packaging can reduce dependency and build steps.
 
 ### 2026-06-15 Real Provider Release-Readiness Smoke
 

@@ -13,8 +13,7 @@ const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
 const landingTitle = "Multi-perspective deliberation for better decisions";
 const landingDescription =
   "Use Deliberum to frame a hard question, collect independent perspectives, compare the strongest options, keep disagreements visible, and turn the current state into a reviewable conclusion with next steps.";
-const localServiceCommand =
-  "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js";
+const localServiceCommand = "corepack pnpm build && corepack pnpm start:local";
 
 assertFile(daemonEntry);
 
@@ -126,7 +125,7 @@ async function verifyUnavailableEntry(browserInstance) {
   await page.getByText("Start the local service").first().waitFor();
   await page.getByText("Local service command").waitFor();
   await page.getByText(localServiceCommand).waitFor();
-  await page.getByText("This starts the local service only; model API keys are added from Web after it connects.").waitFor();
+  await page.getByText("This starts the local Web and service; model API keys are added from Web after it connects.").waitFor();
   await page.getByText("3. Configure models in Web").waitFor();
   await page.getByRole("button", { name: "Check again" }).waitFor();
   await assertNoHorizontalOverflow(page, "unavailable setup");

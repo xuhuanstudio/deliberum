@@ -2,7 +2,7 @@ import { StatusBanner } from "@deliberum/ui";
 import { useI18n } from "./i18n";
 
 const LOCAL_SERVICE_START_COMMAND =
-  "corepack pnpm build && DELIBERUM_ENABLE_LOCAL_PRESET=true node apps/daemon/dist/index.js" as const;
+  "corepack pnpm build && corepack pnpm start:local" as const;
 
 export function LocalServiceSetupGuide({
   compact = false,
@@ -39,7 +39,7 @@ export function LocalServiceSetupGuide({
             </pre>
             <p>
               {t(
-                "This starts the local service only; model API keys are added from Web after it connects."
+                "This starts the local Web and service; model API keys are added from Web after it connects."
               )}
             </p>
           </article>
