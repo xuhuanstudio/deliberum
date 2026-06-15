@@ -34,7 +34,7 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 | 3 | Real OpenAI-compatible provider workflows are stable across repeated focused and broader-review release smokes. | `complete` | `docs/V1_0_REAL_PROVIDER_STABILITY_AUDIT.md` closes Gate 3 for the v1.0 supported OpenAI-compatible Web setup path. A temporary real provider passed three consecutive focused release smokes. Broader review then reproduced an `extraction_validation_failed` blocker after three first responses; the OpenAI-compatible extraction generator was fixed to validate traceability before returning provider output and to use the conservative organizer fallback when structured repair remains untraceable. After the fix, Broader review passed three consecutive release smokes. | Keep covered. Broader provider compatibility remains opt-in release evidence, while provider-specific rate limit, timeout, malformed output, and partial completion recovery evidence belongs to Gate 4. |
 | 4 | Provider setup, verification, failure recovery, rate limit, timeout, malformed output, and partial completion states are handled in normal-user language. | `complete` | `smoke:web-resilience` verifies provider verification failure recovery, rate-limited provider verification recovery, timed-out provider verification recovery, retryable continuation, failed stages, and partial completion states in a browser against an isolated local daemon and safe local mock provider. Daemon and adapter tests cover safe provider error categories, including timeout and malformed output. Gate 3 evidence covers malformed structured output fallback and the fixed conservative recovery path after real-provider structured extraction output is untraceable. | Keep covered. Any new provider setup, verification, continuation, or recovery state must add the same normal-user recovery and default-view safety evidence. |
 | 5 | Default UI never exposes secrets, raw JSON, env details, run/session/ledger/runtime/proposal/event/internal ids, or provider config ids. | `complete` | `docs/V1_0_DEFAULT_UI_SAFETY_AUDIT.md` closes Gate 5 for the v1.0 supported default Web scope. `smoke:web-entry`, `smoke:web-boundaries`, `smoke:web-product-loop`, `smoke:web-resilience`, and opt-in `smoke:web-release-readiness` cover the current default routes, product loop, real-provider path, and recovery states with explicit default-view safety scans. This batch added direct `/runs` discussion-list coverage to remove the last indirect default-route evidence gap. | Keep covered. Any new default route, recovery state, outcome surface, setup surface, or participant-management surface must extend the same default-view safety scans. |
-| 6 | Advanced / Developer Mode preserves diagnostics without leading the normal user path. | `partial` | Current docs and smokes keep raw details behind Advanced / Developer Mode for existing default paths. | Needs a v1.0 audit after production setup, participant management, and storage recovery paths are added. |
+| 6 | Advanced / Developer Mode preserves diagnostics without leading the normal user path. | `complete` | `docs/V1_0_ADVANCED_MODE_AUDIT.md` closes Gate 6 for the v1.0 supported Web scope. `smoke:web-boundaries` verifies the landing page, Setup / Models, `/runs` discussion list, Discussion Room, current conclusion, legacy session overview, legacy session subviews, and explicit legacy ledger-events route keep diagnostics collapsed by default while preserving intentional Advanced / Developer Mode access. | Keep covered. Any new default Web surface, recovery state, setup surface, participant-management surface, or Advanced diagnostic panel must extend the same boundary smoke. |
 | 7 | Model / Participant Management supports understandable provider/model/role readiness and editing. | `complete` | `docs/V1_0_MODEL_PARTICIPANT_MANAGEMENT_AUDIT.md` closes Gate 7 for the v1.0 supported Web scope: one Web-managed OpenAI-compatible provider setup, with direct Setup / Models editing for default discussion depth, first-response model, review role model, and optional Perspective A/B/C model choices. The start page supports per-discussion role/model overrides, applying saved defaults, and creating model-backed run plans. `apps/web/test/App.test.tsx` and `smoke:web-product-loop` verify provider setup, provider verification, focused and broader model-backed starts, role-default save/apply/clear behavior, Setup / Models direct role-default editing, and default-view safety without API keys, base URLs, provider config ids, env var names, or raw internal data. | Keep covered. Multiple named provider accounts and simultaneous multi-provider Web editing are explicit post-v1.0 architecture work because current Web-managed provider setup is a single local daemon env block and would require new secret/named-provider storage semantics. |
 | 8 | README, quickstart, walkthrough, troubleshooting, release notes, and Basic Product Loop docs match the actual UI. | `partial` | README, Basic Product Loop, deployment, walkthrough, and v0.1 completion docs match the beta UI and smokes. | v1.0 release notes do not exist yet, and docs must be updated after production gates 1, 7, and 11 move. |
 | 9 | CI, tests, language lint, docs lint, product-loop smoke, Web smoke, and real-provider release-readiness evidence are green and current. | `partial` | Local `corepack pnpm run ci` and GitHub CI are green. CI now separates full Ubuntu validation from supported-platform local-start validation on Ubuntu and macOS. Real-provider release-readiness evidence is recorded. | Real-provider smoke remains opt-in outside default CI and broader provider coverage is still incomplete. |
@@ -44,24 +44,23 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 
 ## Next Production Batch
 
-The first production blocker is now gate 6: Advanced / Developer Mode must
-preserve diagnostics without leading the normal user path. Gates 2, 3, 4, 5,
-and 7 are closed for the v1.0 supported Web scope, so the next batch should
-audit Advanced entry points, default collapsed boundaries, and developer
-diagnostic availability without adding more runtime behavior.
+Gates 1 through 7 are complete for the current v1.0 supported scope. The next
+numbered incomplete gate is Gate 8, but its release notes and documentation
+alignment cannot be closed honestly until the storage compatibility, upgrade,
+backup, restore, and recovery policy in Gate 11 is defined and verified.
 
 Recommended narrow batch:
 
-1. Inventory current Advanced / Developer Mode entry points on landing,
-   Setup / Models, discussion list, Discussion Room, outcome, and legacy session
-   views.
-2. Verify that default paths keep those details collapsed while developers can
-   still inspect required diagnostics intentionally.
-3. Fix only the first reproduced case where Advanced details lead the normal
-   user path or where necessary diagnostics are no longer available.
-4. If current evidence is sufficient, record a Gate 6 closure audit.
-5. Do not add new diagnostics or runtime surfaces unless the audit proves an
-   existing v1.0 diagnostic requirement is missing.
+1. Target Gate 11: data/storage compatibility, upgrade path, and failure
+   recovery.
+2. Inventory the current SQLite stores, schema-version checks, ledger integrity
+   checks, local persistence docs, and existing storage tests.
+3. Identify the first production blocker for a local outside user upgrading or
+   recovering local data.
+4. Fix only that blocker, or if current behavior is sufficient, record the Gate
+   11 evidence and remaining limits.
+5. Do not add broad migration infrastructure unless the audit reproduces a
+   concrete v1.0 data/storage compatibility blocker that requires it.
 
 ## Stop Rule
 

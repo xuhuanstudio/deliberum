@@ -87,6 +87,11 @@ try {
     runId,
     sessionId
   });
+  await verifyLegacySessionSubviewBoundaries(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    runId,
+    sessionId
+  });
   await verifyLegacySessionBoundary(page, {
     webBaseUrl: `http://127.0.0.1:${webPort}`,
     runId,
@@ -243,6 +248,134 @@ async function verifyOutcomeAdvancedBoundary(page, { webBaseUrl, runId, sessionI
   await page.getByText("Candidate proposal event override").waitFor();
   await page.getByRole("heading", { name: "Raw outcome material" }).waitFor();
   await page.getByText(runId).first().waitFor();
+  await page.getByText(sessionId).first().waitFor();
+}
+
+async function verifyLegacySessionSubviewBoundaries(page, { webBaseUrl, runId, sessionId }) {
+  await verifyLegacySessionProjectionSubview(page, {
+    webBaseUrl,
+    runId,
+    sessionId,
+    path: "frontier",
+    heading: "Main perspectives",
+    defaultText: "Strongest current options",
+    defaultLabel: "legacy main perspectives default",
+    hiddenSnippets: ["Candidate Frontier projection", "Object id", "Proposal event"],
+    advancedHeading: "Candidate Frontier projection"
+  });
+
+  await verifyLegacySessionProjectionSubview(page, {
+    webBaseUrl,
+    runId,
+    sessionId,
+    path: "objections",
+    heading: "Open disagreements",
+    defaultText: "challenges, failure modes, or unresolved concerns",
+    defaultLabel: "legacy open disagreements default",
+    hiddenSnippets: ["Objection projection records", "Object id", "Proposal event"],
+    advancedHeading: "Objection projection records"
+  });
+
+  await verifyLegacySessionProjectionSubview(page, {
+    webBaseUrl,
+    runId,
+    sessionId,
+    path: "obligations",
+    heading: "Requirements this answer must satisfy",
+    defaultText: "Unanswered requirements should be resolved",
+    defaultLabel: "legacy requirements default",
+    hiddenSnippets: ["Quality obligation projection records", "Object id", "Proposal event"],
+    advancedHeading: "Quality obligation projection records"
+  });
+
+  await verifyLegacySessionFinalBoundary(page, {
+    webBaseUrl,
+    runId,
+    sessionId
+  });
+
+  await verifyLegacySessionResourcesBoundary(page, {
+    webBaseUrl,
+    runId,
+    sessionId
+  });
+}
+
+async function verifyLegacySessionProjectionSubview(
+  page,
+  {
+    webBaseUrl,
+    runId,
+    sessionId,
+    path,
+    heading,
+    defaultText,
+    defaultLabel,
+    hiddenSnippets,
+    advancedHeading
+  }
+) {
+  await page.goto(`${webBaseUrl}/sessions/${encodeURIComponent(sessionId)}/${path}`, {
+    waitUntil: "networkidle"
+  });
+  await page.getByRole("heading", { name: heading }).first().waitFor();
+  await page.getByText(defaultText).first().waitFor();
+  await assertNoHorizontalOverflow(page, defaultLabel);
+  await assertDefaultBoundarySafety(page, defaultLabel, {
+    runId,
+    sessionId
+  });
+
+  for (const snippet of hiddenSnippets) {
+    await assertHiddenFromDefault(page, snippet, defaultLabel);
+  }
+
+  await page.locator("details.du-advanced-panel > summary").last().click();
+  await page.getByRole("heading", { name: advancedHeading }).waitFor();
+}
+
+async function verifyLegacySessionFinalBoundary(page, { webBaseUrl, runId, sessionId }) {
+  await page.goto(`${webBaseUrl}/sessions/${encodeURIComponent(sessionId)}/final`, {
+    waitUntil: "networkidle"
+  });
+  await page.getByRole("heading", { name: "Current conclusion" }).first().waitFor();
+  await page.getByText("Review the current conclusion together").waitFor();
+  await assertNoHorizontalOverflow(page, "legacy current conclusion default");
+  await assertDefaultBoundarySafety(page, "legacy current conclusion default", {
+    runId,
+    sessionId
+  });
+  await assertHiddenFromDefault(
+    page,
+    "Candidate proposal event override",
+    "legacy current conclusion default"
+  );
+  await assertHiddenFromDefault(page, "Compiled outcome JSON", "legacy current conclusion default");
+  await assertHiddenFromDefault(page, "Final lifecycle controls", "legacy current conclusion default");
+
+  await page.locator("details.du-advanced-panel > summary").first().click();
+  await page.getByText("Candidate proposal event override").waitFor();
+  await page.getByRole("heading", { name: "Compiled outcome JSON" }).waitFor();
+  await page.getByText(sessionId).first().waitFor();
+}
+
+async function verifyLegacySessionResourcesBoundary(page, { webBaseUrl, runId, sessionId }) {
+  await page.goto(`${webBaseUrl}/sessions/${encodeURIComponent(sessionId)}/resources`, {
+    waitUntil: "networkidle"
+  });
+  await page.getByRole("heading", { name: "Evidence and verification" }).waitFor();
+  await page.getByText("Risks and missing evidence").waitFor();
+  await assertNoHorizontalOverflow(page, "legacy risks and evidence default");
+  await assertDefaultBoundarySafety(page, "legacy risks and evidence default", {
+    runId,
+    sessionId
+  });
+  await assertHiddenFromDefault(page, "Resource access posture", "legacy risks and evidence default");
+  await assertHiddenFromDefault(page, "Resource projection JSON", "legacy risks and evidence default");
+  await assertHiddenFromDefault(page, "Resource delivery audits", "legacy risks and evidence default");
+
+  await page.locator("details.du-advanced-panel > summary").last().click();
+  await page.getByRole("heading", { name: "Resource projection JSON" }).waitFor();
   await page.getByText(sessionId).first().waitFor();
 }
 
