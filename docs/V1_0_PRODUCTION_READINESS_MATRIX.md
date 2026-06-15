@@ -36,31 +36,26 @@ a v1.0 gate `complete` because the v0.1 local loop passed.
 | 5 | Default UI never exposes secrets, raw JSON, env details, run/session/ledger/runtime/proposal/event/internal ids, or provider config ids. | `complete` | `docs/V1_0_DEFAULT_UI_SAFETY_AUDIT.md` closes Gate 5 for the v1.0 supported default Web scope. `smoke:web-entry`, `smoke:web-boundaries`, `smoke:web-product-loop`, `smoke:web-resilience`, and opt-in `smoke:web-release-readiness` cover the current default routes, product loop, real-provider path, and recovery states with explicit default-view safety scans. This batch added direct `/runs` discussion-list coverage to remove the last indirect default-route evidence gap. | Keep covered. Any new default route, recovery state, outcome surface, setup surface, or participant-management surface must extend the same default-view safety scans. |
 | 6 | Advanced / Developer Mode preserves diagnostics without leading the normal user path. | `complete` | `docs/V1_0_ADVANCED_MODE_AUDIT.md` closes Gate 6 for the v1.0 supported Web scope. `smoke:web-boundaries` verifies the landing page, Setup / Models, `/runs` discussion list, Discussion Room, current conclusion, legacy session overview, legacy session subviews, and explicit legacy ledger-events route keep diagnostics collapsed by default while preserving intentional Advanced / Developer Mode access. | Keep covered. Any new default Web surface, recovery state, setup surface, participant-management surface, or Advanced diagnostic panel must extend the same boundary smoke. |
 | 7 | Model / Participant Management supports understandable provider/model/role readiness and editing. | `complete` | `docs/V1_0_MODEL_PARTICIPANT_MANAGEMENT_AUDIT.md` closes Gate 7 for the v1.0 supported Web scope: one Web-managed OpenAI-compatible provider setup, with direct Setup / Models editing for default discussion depth, first-response model, review role model, and optional Perspective A/B/C model choices. The start page supports per-discussion role/model overrides, applying saved defaults, and creating model-backed run plans. `apps/web/test/App.test.tsx` and `smoke:web-product-loop` verify provider setup, provider verification, focused and broader model-backed starts, role-default save/apply/clear behavior, Setup / Models direct role-default editing, and default-view safety without API keys, base URLs, provider config ids, env var names, or raw internal data. | Keep covered. Multiple named provider accounts and simultaneous multi-provider Web editing are explicit post-v1.0 architecture work because current Web-managed provider setup is a single local daemon env block and would require new secret/named-provider storage semantics. |
-| 8 | README, quickstart, walkthrough, troubleshooting, release notes, and Basic Product Loop docs match the actual UI. | `partial` | README, Basic Product Loop, deployment, walkthrough, and v0.1 completion docs match the beta UI and smokes. | v1.0 release notes do not exist yet, and docs must be updated after production gates 1, 7, and 11 move. |
+| 8 | README, quickstart, walkthrough, troubleshooting, release notes, and Basic Product Loop docs match the actual UI. | `partial` | README, Basic Product Loop, deployment, walkthrough, v0.1 completion docs, and Gate 11 storage recovery docs now match the current beta and v1.0 gate evidence. | v1.0 release notes do not exist yet, and the docs need one focused release-alignment pass after Gate 11 moved. |
 | 9 | CI, tests, language lint, docs lint, product-loop smoke, Web smoke, and real-provider release-readiness evidence are green and current. | `partial` | Local `corepack pnpm run ci` and GitHub CI are green. CI now separates full Ubuntu validation from supported-platform local-start validation on Ubuntu and macOS. Real-provider release-readiness evidence is recorded. | Real-provider smoke remains opt-in outside default CI and broader provider coverage is still incomplete. |
-| 10 | No known normal-user blocker remains in install, startup, setup, verification, discussion start, continuation, conclusion review, or recovery. | `partial` | v0.1 evidence shows no known blocker in the local beta loop with a reachable provider; unreachable provider setup shows safe recovery. Supported-platform local-start verification now covers macOS and Ubuntu Linux. | Production blockers remain in broader provider behavior, participant management, and data/storage recovery. |
-| 11 | Data/storage compatibility, upgrade path, and failure recovery are documented and tested enough for production use. | `partial` | SQLite stores reject unsupported schema versions in targeted tests, ledger integrity checks exist, and deployment docs describe local/pre-production persistence modes. | No v1.0 storage compatibility policy, migration/upgrade path, backup/restore runbook, or production recovery test matrix exists yet. |
+| 10 | No known normal-user blocker remains in install, startup, setup, verification, discussion start, continuation, conclusion review, or recovery. | `partial` | v0.1 evidence shows no known blocker in the local beta loop with a reachable provider; unreachable provider setup shows safe recovery. Supported-platform local-start verification now covers macOS and Ubuntu Linux. Gate 11 storage recovery smoke reproduced and fixed the SQLite process-lock recovery blocker. | Needs one post-Gate 11 release-wide blocker audit across install, startup, setup, verification, discussion start, continuation, conclusion review, and recovery before this gate can close. |
+| 11 | Data/storage compatibility, upgrade path, and failure recovery are documented and tested enough for production use. | `complete` | `docs/STORAGE_RECOVERY.md` defines the v1.0 local storage compatibility policy, backup runbook, restore runbook, failure recovery steps, and post-v1.0 storage limits. `docs/V1_0_STORAGE_RECOVERY_AUDIT.md` closes Gate 11. `smoke:storage-recovery` is now part of default CI: it starts a SQLite-backed daemon with process lock enabled, completes a local preset discussion, stops the daemon, copies SQLite database and WAL sidecars, starts a restored daemon, and verifies run catalog, run record, run events, projections, compiled current conclusion, deployment posture, operation audit, and valid ledger integrity. The batch reproduced and fixed the first blocker: SIGTERM did not call `server.close()`, leaving an active SQLite process lock in the backup. Existing SQLite/JSON store tests cover unsupported schema rejection and invalid persisted data failure. | Keep covered. Future schema changes must add migration and backup evidence before users open existing local data. |
 | 12 | A v1.0 release report confirms evidence, known limits, supported paths, and post-v1.0 backlog. | `missing` | `docs/V0_1_OPEN_BETA_COMPLETION_REPORT.md` exists for v0.1 only. | v1.0 completion report must wait until gates 1 through 11 are complete. |
 
 ## Next Production Batch
 
-Gates 1 through 7 are complete for the current v1.0 supported scope. The next
-numbered incomplete gate is Gate 8, but its release notes and documentation
-alignment cannot be closed honestly until the storage compatibility, upgrade,
-backup, restore, and recovery policy in Gate 11 is defined and verified.
+Gates 1 through 7 and Gate 11 are complete for the current v1.0 supported
+scope. The next numbered incomplete gate is Gate 8.
 
 Recommended narrow batch:
 
-1. Target Gate 11: data/storage compatibility, upgrade path, and failure
-   recovery.
-2. Inventory the current SQLite stores, schema-version checks, ledger integrity
-   checks, local persistence docs, and existing storage tests.
-3. Identify the first production blocker for a local outside user upgrading or
-   recovering local data.
-4. Fix only that blocker, or if current behavior is sufficient, record the Gate
-   11 evidence and remaining limits.
-5. Do not add broad migration infrastructure unless the audit reproduces a
-   concrete v1.0 data/storage compatibility blocker that requires it.
+1. Target Gate 8: README, quickstart, walkthrough, troubleshooting, release
+   notes, and Basic Product Loop docs match the actual UI and current v1.0 gate
+   evidence.
+2. Inventory README, quickstart, Web walkthrough, Basic Product Loop,
+   deployment, storage recovery, v0.1 report, and v1.0 audit docs.
+3. Fix the first actual mismatch or missing release-note artifact.
+4. Do not use documentation to claim unverified product behavior.
 
 ## Stop Rule
 

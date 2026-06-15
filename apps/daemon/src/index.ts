@@ -29,5 +29,34 @@ import { pathToFileURL } from "node:url";
 import { startDaemon } from "./server";
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  startDaemon();
+  const daemon = startDaemon();
+  let shuttingDown = false;
+
+  const shutdown = (signal: NodeJS.Signals): void => {
+    if (shuttingDown) {
+      return;
+    }
+
+    shuttingDown = true;
+    const timeout = setTimeout(() => {
+      console.error(`Timed out while stopping Deliberum daemon after ${signal}.`);
+      process.exit(1);
+    }, 5000);
+    timeout.unref?.();
+
+    daemon.server.close((error?: Error) => {
+      clearTimeout(timeout);
+
+      if (error) {
+        console.error(`Failed to stop Deliberum daemon after ${signal}: ${error.message}`);
+        process.exit(1);
+        return;
+      }
+
+      process.exit(0);
+    });
+  };
+
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
 }

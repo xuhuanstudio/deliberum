@@ -26,6 +26,11 @@ The daemon also exposes `GET /runtime/deployment-posture` as a no-store safe dia
 
 For local/pre-production durable storage, set `DELIBERUM_DAEMON_SQLITE_PATH=<path>`. The daemon will use SQLite-backed stores for session ledger events, run metadata, explicitly registered resource broker metadata/content, resource access grant state, and safe operation audit metadata in that database, with WAL mode, a busy timeout, and local connection-level writer serialization. `DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK=true` adds a cooperative single-daemon process lock for that SQLite file, with `DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK_TTL_MS` and `DELIBERUM_DAEMON_SQLITE_PROCESS_LOCK_HEARTBEAT_MS` controlling stale-lock recovery. This guard reduces accidental concurrent daemon ownership of one local database but is not production distributed multi-writer coordination.
 
+For v1.0 storage compatibility, backup, restore, and recovery steps, see
+[Storage Compatibility and Recovery](STORAGE_RECOVERY.md). Stop the daemon
+before copying SQLite files, keep the main database and any WAL sidecar files
+together, and verify `ledger-integrity` after restore.
+
 The resource access base URL defaults to the daemon's local host and port. If `DELIBERUM_RESOURCE_ACCESS_BASE_URL` is configured to a non-local URL, `DELIBERUM_RESOURCE_ACCESS_ALLOW_REMOTE=true` must also be set. Public resource access base URLs must use HTTPS. Set `DELIBERUM_RESOURCE_ACCESS_SIGNING_SECRET` to require HMAC-signed daemon access URLs for generated resource access grants; the key stays runtime-only and posture reports only whether signing is configured.
 
 For local development fallback without SQLite, `DELIBERUM_DAEMON_EVENT_STORE_PATH=<path>` opts into the shared JSON EventStore for daemon event ledger persistence, `DELIBERUM_DAEMON_RUN_STORE_PATH=<path>` opts into JSON run metadata persistence, and `DELIBERUM_DAEMON_OPERATION_AUDIT_PATH=<path>` opts into JSON operation audit log persistence. Use the event/run JSON paths together when the local run workspace must survive daemon restarts.
