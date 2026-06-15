@@ -35,3 +35,39 @@ jobs:
 
       - name: Validate
         run: pnpm run ci
+
+  local-start-platforms:
+    name: Local start (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.5.2
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install browser for local-start smoke on Linux
+        if: runner.os == 'Linux'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install browser for local-start smoke
+        if: runner.os != 'Linux'
+        run: pnpm exec playwright install chromium
+
+      - name: Verify local start
+        run: pnpm run ci:local-start
