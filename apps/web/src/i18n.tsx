@@ -200,6 +200,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Configure OpenAI-compatible provider": "\u914d\u7f6e OpenAI-compatible \u63d0\u4f9b\u65b9",
   "Save the provider API key, base URL, and model to this machine so future discussions can use real model participants.":
     "\u5c06\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c model \u4fdd\u5b58\u5230\u8fd9\u53f0\u673a\u5668\uff0c\u8ba9\u540e\u7eed\u8ba8\u8bba\u53ef\u4ee5\u4f7f\u7528\u771f\u5b9e\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
+  "Structured review compatibility": "\u7ed3\u6784\u5316\u5ba1\u8bae\u517c\u5bb9\u6027",
+  "Recommended for real providers so Deliberum can organize options, disagreements, evidence gaps, risks, conclusions, and next actions more reliably.":
+    "\u5efa\u8bae\u771f\u5b9e\u63d0\u4f9b\u65b9\u542f\u7528\uff0c\u8ba9 Deliberum \u66f4\u7a33\u5b9a\u5730\u6574\u7406\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u3001\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u3002",
   "Model management": "\u6a21\u578b\u7ba1\u7406",
   "Current model setup": "\u5f53\u524d\u6a21\u578b\u8bbe\u7f6e",
   "Ready and verified": "\u5df2\u5c31\u7eea\u4e14\u5df2\u9a8c\u8bc1",

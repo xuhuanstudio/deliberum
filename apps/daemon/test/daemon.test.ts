@@ -2642,7 +2642,7 @@ describe("daemon API", () => {
         profileId: "openai-compatible",
         status: "saved",
         managedEnvFile: "local-daemon-env",
-        configuredFields: ["apiKey", "baseUrl", "model"],
+        configuredFields: ["apiKey", "baseUrl", "model", "structuredReview"],
         restartRequired: false,
         activeInCurrentDaemon: true,
         safety: [
@@ -2670,6 +2670,25 @@ describe("daemon API", () => {
       expect(envContent).toContain(
         `${OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`
       );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR}=json_object`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR}=json_object`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR}=json_object`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR}=json_object`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR}=max_completion_tokens`
+      );
+      expect(envContent).toContain(
+        `${OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR}=4096`
+      );
+      expect(envContent).toContain(`${OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR}=0`);
       expect(envContent).toContain(
         `${OPENAI_COMPATIBLE_BASE_URL_ENV_VAR}=https://api.example.test`
       );
@@ -2742,6 +2761,68 @@ describe("daemon API", () => {
           })
         ])
       );
+    } finally {
+      rmSync(tempDir, {
+        recursive: true,
+        force: true
+      });
+    }
+  });
+
+  it("can save OpenAI-compatible setup without structured review compatibility when disabled", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "deliberum-setup-"));
+    const envFilePath = join(tempDir, ".env");
+    const activeEnv: Record<string, string | undefined> = {
+      [OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR]: "json_object",
+      [OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR]: "json_object",
+      [OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR]: "json_object",
+      [OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR]: "json_object",
+      [OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR]: "max_completion_tokens",
+      [OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR]: "4096",
+      [OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR]: "0"
+    };
+
+    try {
+      const daemonApp = createDaemonApp({
+        idGenerator: createIds(),
+        clock,
+        setupEnvFilePath: envFilePath,
+        openAICompatibleEnv: activeEnv
+      });
+
+      const response = await daemonApp.app.request("/runtime/setup/openai-compatible", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          apiKey: "sk-local-web-setup-secret",
+          baseUrl: "https://api.example.test/v1",
+          model: "model-for-web-setup",
+          structuredReview: false
+        })
+      });
+      const body = (await response.json()) as {
+        configuredFields: string[];
+      };
+      const envContent = readFileSync(envFilePath, "utf8");
+
+      expect(response.status).toBe(201);
+      expect(body.configuredFields).toEqual(["apiKey", "baseUrl", "model"]);
+      expect(envContent).not.toContain(OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR);
+      expect(envContent).not.toContain(OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR);
+      expect(envContent).not.toContain(OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR);
+      expect(envContent).not.toContain(OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR);
+      expect(envContent).not.toContain(OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR);
+      expect(envContent).not.toContain(OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR);
+      expect(envContent).not.toContain(OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR);
+      expect(activeEnv[OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR]).toBeUndefined();
+      expect(activeEnv[OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR]).toBeUndefined();
+      expect(activeEnv[OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR]).toBeUndefined();
+      expect(activeEnv[OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR]).toBeUndefined();
+      expect(activeEnv[OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR]).toBeUndefined();
+      expect(activeEnv[OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR]).toBeUndefined();
+      expect(activeEnv[OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR]).toBeUndefined();
     } finally {
       rmSync(tempDir, {
         recursive: true,

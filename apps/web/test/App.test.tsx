@@ -272,7 +272,7 @@ function createClient(overrides: Partial<WebDaemonClient> = {}): WebDaemonClient
       profileId: "openai-compatible",
       status: "saved",
       managedEnvFile: "local-daemon-env",
-      configuredFields: ["apiKey", "baseUrl", "model"],
+      configuredFields: ["apiKey", "baseUrl", "model", "structuredReview"],
       restartRequired: false,
       activeInCurrentDaemon: true,
       safety: ["The setup was applied to the current local daemon process."]
@@ -1469,6 +1469,15 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByLabelText("Provider API key")).toBeTruthy();
+    expect(screen.getByText("Structured review compatibility")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Recommended for real providers so Deliberum can organize options, disagreements, evidence gaps, risks, conclusions, and next actions more reliably."
+      )
+    ).toBeTruthy();
+    expect(
+      (screen.getByLabelText(/Structured review compatibility/) as HTMLInputElement).checked
+    ).toBe(true);
     expect(screen.getByRole("button", { name: "Save model setup" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Check readiness" })).toBeTruthy();
     expect(
@@ -1512,7 +1521,8 @@ describe("@deliberum/web shell", () => {
       expect(client.saveOpenAICompatibleSetup).toHaveBeenCalledWith({
         apiKey: "sk-web-setup-secret",
         baseUrl: "https://api.example.test/v1",
-        model: "web-setup-model"
+        model: "web-setup-model",
+        structuredReview: true
       })
     );
     expect(await screen.findByText("Model setup saved locally")).toBeTruthy();
@@ -1565,6 +1575,25 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("DELIBERUM_HTTP_TEMPLATE_URL")).toBeTruthy();
     expect(screen.getByText("DELIBERUM_MCP_TOOL_URL, DELIBERUM_MCP_TOOL_NAME")).toBeTruthy();
     expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
+  });
+
+  it("localizes structured review setup in Simplified Chinese", async () => {
+    renderApp("/setup/models", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "\u8bbe\u7f6e / \u6a21\u578b" })
+    ).toBeTruthy();
+    expect(
+      await screen.findByText("\u7ed3\u6784\u5316\u5ba1\u8bae\u517c\u5bb9\u6027")
+    ).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "\u5efa\u8bae\u771f\u5b9e\u63d0\u4f9b\u65b9\u542f\u7528\uff0c\u8ba9 Deliberum \u66f4\u7a33\u5b9a\u5730\u6574\u7406\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u3001\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u3002"
+      )
+    ).toBeTruthy();
+    expect(screen.queryByText("Structured review compatibility")).toBeNull();
   });
 
   it("walks model-backed setup through discussion review without default internals", async () => {
@@ -1978,6 +2007,9 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Local service connected")).toBeTruthy();
     expect(screen.getByText("Configure OpenAI-compatible provider")).toBeTruthy();
     expect(screen.getByLabelText("Provider API key")).toBeTruthy();
+    expect(
+      (screen.getByLabelText(/Structured review compatibility/) as HTMLInputElement).checked
+    ).toBe(true);
 
     fireEvent.change(screen.getByLabelText("Provider API key"), {
       target: {
@@ -1999,7 +2031,8 @@ describe("@deliberum/web shell", () => {
       expect(client.saveOpenAICompatibleSetup).toHaveBeenCalledWith({
         apiKey: "sk-product-loop-secret",
         baseUrl: "https://api.product-loop.test/v1",
-        model: "product-loop-model"
+        model: "product-loop-model",
+        structuredReview: true
       })
     );
     expect(await screen.findByText("Model setup saved locally")).toBeTruthy();

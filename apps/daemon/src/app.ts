@@ -789,7 +789,8 @@ export function createDaemonApp(options: DaemonAppOptions = {}): DaemonApp {
         setup: {
           apiKey: body.apiKey,
           baseUrl: body.baseUrl,
-          model: body.model
+          model: body.model,
+          structuredReview: body.structuredReview
         }
       });
 

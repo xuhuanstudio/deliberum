@@ -6,13 +6,20 @@ import {
   OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID,
   OPENAI_COMPATIBLE_EXTRACTION_ENV_VAR,
   OPENAI_COMPATIBLE_EXTRACTION_PROVIDER_CONFIG_ID_ENV_VAR,
+  OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR,
+  OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR,
   OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR,
+  OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR,
   OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR,
   OPENAI_COMPATIBLE_FINALIZATION_ENV_VAR,
+  OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR,
   OPENAI_COMPATIBLE_MODEL_ENV_VAR,
   OPENAI_COMPATIBLE_PROFILE_ENV_VAR,
+  OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR,
   OPENAI_COMPATIBLE_REVIEW_ENV_VAR,
-  OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR
+  OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR,
+  OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR,
+  OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR
 } from "./openai-compatible-profile";
 
 export const OPENAI_COMPATIBLE_SETUP_ENV_BEGIN =
@@ -25,13 +32,14 @@ export type OpenAICompatibleSetupInput = {
   apiKey: unknown;
   baseUrl: unknown;
   model: unknown;
+  structuredReview?: unknown;
 };
 
 export type OpenAICompatibleSetupResult = {
   profileId: "openai-compatible";
   status: "saved";
   managedEnvFile: "local-daemon-env";
-  configuredFields: Array<"apiKey" | "baseUrl" | "model">;
+  configuredFields: Array<"apiKey" | "baseUrl" | "model" | "structuredReview">;
   restartRequired: boolean;
   activeInCurrentDaemon: boolean;
   safety: string[];
@@ -77,7 +85,9 @@ export async function writeOpenAICompatibleSetupEnv(input: {
     profileId: "openai-compatible",
     status: "saved",
     managedEnvFile: "local-daemon-env",
-    configuredFields: ["apiKey", "baseUrl", "model"],
+    configuredFields: setup.structuredReview
+      ? ["apiKey", "baseUrl", "model", "structuredReview"]
+      : ["apiKey", "baseUrl", "model"],
     restartRequired: !activeInCurrentDaemon,
     activeInCurrentDaemon,
     safety: activeInCurrentDaemon
@@ -152,6 +162,7 @@ function createOpenAICompatibleSetupBlock(input: {
   apiKey: string;
   baseUrl: string;
   model: string;
+  structuredReview: boolean;
 }): string {
   return `${[
     OPENAI_COMPATIBLE_SETUP_ENV_BEGIN,
@@ -166,6 +177,17 @@ function createOpenAICompatibleSetupBlock(input: {
     `${OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`,
     `${OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`,
     `${OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR}=${OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID}`,
+    ...(input.structuredReview
+      ? [
+          `${OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR}=json_object`,
+          `${OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR}=json_object`,
+          `${OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR}=json_object`,
+          `${OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR}=json_object`,
+          `${OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR}=max_completion_tokens`,
+          `${OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR}=4096`,
+          `${OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR}=0`
+        ]
+      : []),
     `${OPENAI_COMPATIBLE_BASE_URL_ENV_VAR}=${formatEnvAssignmentValue(input.baseUrl)}`,
     `${OPENAI_COMPATIBLE_MODEL_ENV_VAR}=${formatEnvAssignmentValue(input.model)}`,
     `${OPENAI_COMPATIBLE_API_KEY_ENV_VAR}=${formatEnvAssignmentValue(input.apiKey)}`,
@@ -177,11 +199,13 @@ function normalizeOpenAICompatibleSetup(input: OpenAICompatibleSetupInput): {
   apiKey: string;
   baseUrl: string;
   model: string;
+  structuredReview: boolean;
 } {
   return {
     apiKey: normalizeSecretValue(input.apiKey, "API key"),
     baseUrl: normalizeOpenAICompatibleBaseUrlValue(input.baseUrl),
-    model: normalizeNonSecretTextValue(input.model, "Model")
+    model: normalizeNonSecretTextValue(input.model, "Model"),
+    structuredReview: normalizeOptionalBooleanValue(input.structuredReview, true)
   };
 }
 
@@ -191,6 +215,7 @@ function applyNormalizedOpenAICompatibleSetupToEnv(
     apiKey: string;
     baseUrl: string;
     model: string;
+    structuredReview: boolean;
   }
 ): void {
   env[OPENAI_COMPATIBLE_PROFILE_ENV_VAR] = "true";
@@ -205,9 +230,41 @@ function applyNormalizedOpenAICompatibleSetupToEnv(
     OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID;
   env[OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR] =
     OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID;
+  applyOpenAICompatibleStructuredReviewSetupToEnv(env, setup.structuredReview);
   env[OPENAI_COMPATIBLE_BASE_URL_ENV_VAR] = setup.baseUrl;
   env[OPENAI_COMPATIBLE_MODEL_ENV_VAR] = setup.model;
   env[OPENAI_COMPATIBLE_API_KEY_ENV_VAR] = setup.apiKey;
+}
+
+function applyOpenAICompatibleStructuredReviewSetupToEnv(
+  env: Record<string, string | undefined>,
+  enabled: boolean
+): void {
+  const structuredReviewEnvVars = [
+    OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR,
+    OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR,
+    OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR,
+    OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR,
+    OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR,
+    OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR,
+    OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR
+  ];
+
+  if (!enabled) {
+    for (const name of structuredReviewEnvVars) {
+      delete env[name];
+    }
+
+    return;
+  }
+
+  env[OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR] = "json_object";
+  env[OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR] = "json_object";
+  env[OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR] = "json_object";
+  env[OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR] = "json_object";
+  env[OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR] = "max_completion_tokens";
+  env[OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR] = "4096";
+  env[OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR] = "0";
 }
 
 function mergeDaemonEnvBlock(existingContent: string | undefined, block: string): string {
@@ -377,6 +434,18 @@ function normalizeNonSecretTextValue(value: unknown, label: string): string {
   return normalized;
 }
 
+function normalizeOptionalBooleanValue(value: unknown, fallback: boolean): boolean {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (typeof value !== "boolean") {
+    throw new SetupEnvError("setup_value_invalid", "Structured review must be true or false.");
+  }
+
+  return value;
+}
+
 function normalizeTextValue(value: unknown, label: string): string {
   if (typeof value !== "string") {
     throw new SetupEnvError("setup_value_invalid", `${label} must be a string.`);
@@ -443,6 +512,13 @@ function isManagedSetupEnvVar(name: string): boolean {
     name === OPENAI_COMPATIBLE_REVIEW_PROVIDER_CONFIG_ID_ENV_VAR ||
     name === OPENAI_COMPATIBLE_FINAL_CANDIDATE_PROVIDER_CONFIG_ID_ENV_VAR ||
     name === OPENAI_COMPATIBLE_FINAL_AUDIT_PROVIDER_CONFIG_ID_ENV_VAR ||
+    name === OPENAI_COMPATIBLE_EXTRACTION_RESPONSE_FORMAT_ENV_VAR ||
+    name === OPENAI_COMPATIBLE_REVIEW_RESPONSE_FORMAT_ENV_VAR ||
+    name === OPENAI_COMPATIBLE_FINAL_CANDIDATE_RESPONSE_FORMAT_ENV_VAR ||
+    name === OPENAI_COMPATIBLE_FINAL_AUDIT_RESPONSE_FORMAT_ENV_VAR ||
+    name === OPENAI_COMPATIBLE_TOKEN_PARAMETER_ENV_VAR ||
+    name === OPENAI_COMPATIBLE_MAX_COMPLETION_TOKENS_ENV_VAR ||
+    name === OPENAI_COMPATIBLE_TEMPERATURE_ENV_VAR ||
     name === OPENAI_COMPATIBLE_BASE_URL_ENV_VAR ||
     name === OPENAI_COMPATIBLE_MODEL_ENV_VAR ||
     name === OPENAI_COMPATIBLE_API_KEY_ENV_VAR

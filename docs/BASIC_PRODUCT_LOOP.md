@@ -45,7 +45,7 @@ Updated: 2026-06-15.
 | 2 | Understand within 30 seconds that Deliberum is a multi-perspective deliberation product. | `verified` | README and default Web copy describe the human-first product. The landing page now leads with `Multi-perspective deliberation for better decisions`. `smoke:web-entry` verifies desktop and mobile first viewports include Deliberum, multi-perspective deliberation, independent perspectives, strongest options, and reviewable conclusion language. | Keep covered; future visual design work should preserve this first-viewport product signal. |
 | 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
 | 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show local service start commands. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future install work may simplify the command, but the current default path is proven. |
-| 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, and model. | `verified` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The integrated Web product-loop test covers entering and saving API key, base URL, and model from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the daemon setup API. `smoke:web-product-loop` enters the same fields in a real browser against an isolated local daemon and safe mock provider. | Keep covered; run a real external-provider walkthrough before release hardening. |
+| 5 | Configure an OpenAI-compatible provider from Web: API key, base URL, model, and structured review compatibility. | `verified` | `/setup/models` supports provider setup fields and tests cover saving without showing secrets. The integrated Web product-loop test covers entering and saving API key, base URL, model, and the default structured review compatibility setting from Web without rendering the secret in default text. `smoke:product-loop` saves provider setup through the daemon setup API. `smoke:web-product-loop` enters the same fields in a real browser against an isolated local daemon and safe mock provider. | Keep covered; continue real external-provider walkthroughs before release hardening. |
 | 6 | Verify the provider connection. | `verified` | Web and daemon tests cover provider verification and require verification before model-backed starts. The integrated Web product-loop test verifies the provider before exposing model-backed start links. `smoke:product-loop` verifies a local OpenAI-compatible mock provider. `smoke:web-product-loop` clicks Verify connection from Web and waits for provider readiness before starting. | Keep covered; add provider-specific troubleshooting only if real provider walkthroughs expose a blocker. |
 | 7 | Start a model-backed discussion from Web. | `verified` | `/runs/new?participants=model-backed` is tested, including the verified-provider gate. The integrated Web product-loop test creates a model-backed discussion. `smoke:product-loop` creates and starts a provider-backed run through the daemon API. `smoke:web-product-loop` reaches the model-backed start page from Setup / Models and creates the discussion in a real browser. | Keep covered; future participant-management work should preserve this default path. |
 | 8 | See participant/model perspectives as readable contributions, not raw events. | `verified` | Discussion Room tests and walkthrough document cover readable room contributions. The integrated Web product-loop test confirms provider-backed Perspective A/B contributions after continuing. `smoke:product-loop` confirms sealed contribution events. `smoke:web-product-loop` confirms readable Perspective A/B text appears in the browser room timeline. | Keep covered; continue checking that default views do not regress into raw event views. |
@@ -101,12 +101,10 @@ Rows 1 through 16 now have direct automated and browser evidence. The opt-in
 release-readiness walkthrough has also been run against a real
 OpenAI-compatible provider.
 
-The next highest-value convergence batch is to productize structured-output
-readiness in Web setup. The real-provider walkthrough can complete when
-non-secret structured-output compatibility settings are enabled, but the plain
-Web setup path still exposes only API key, base URL, and model. A normal user
-should be able to understand and verify whether the provider is ready for both
-chat responses and Deliberum's structured review stages.
+The current convergence target is real-provider repeatability: run the
+release-readiness walkthrough through the Web-managed setup path, including the
+default Structured review compatibility option, and fix the first blocking
+normal-user recovery step if the provider still pauses or fails.
 
 Release-readiness walkthrough requirements:
 
@@ -117,9 +115,9 @@ Release-readiness walkthrough requirements:
 4. record the first blocker that a normal outside user would hit.
 
 If the walkthrough fails, fix the first blocking product-loop step with the
-smallest verifiable change. If it requires non-secret compatibility settings,
-record that as a Web setup/product gap rather than hiding it as an operator-only
-detail.
+smallest verifiable change. Provider-specific compatibility that must be set by
+a normal user belongs in Setup / Models; lower-level diagnostics and env var
+names stay behind Advanced / Developer Mode.
 
 Command:
 
@@ -135,19 +133,10 @@ provider secret, network access, and provider quota. The smoke accepts a provide
 base URL and normalizes common `/v1` and `/v1/chat/completions` inputs before
 submitting setup through Web.
 
-For providers that need explicit structured JSON behavior during the organizer,
-reviewer, risk-review, and conclusion-writer stages, use the non-secret
-compatibility settings:
-
-```bash
-DELIBERUM_RELEASE_SMOKE_EXTRACTION_RESPONSE_FORMAT=json_object \
-DELIBERUM_RELEASE_SMOKE_REVIEW_RESPONSE_FORMAT=json_object \
-DELIBERUM_RELEASE_SMOKE_FINAL_CANDIDATE_RESPONSE_FORMAT=json_object \
-DELIBERUM_RELEASE_SMOKE_FINAL_AUDIT_RESPONSE_FORMAT=json_object \
-DELIBERUM_RELEASE_SMOKE_MAX_COMPLETION_TOKENS=4096 \
-DELIBERUM_RELEASE_SMOKE_TEMPERATURE=0 \
-corepack pnpm smoke:web-release-readiness
-```
+The smoke relies on Web setup's default Structured review compatibility option
+for organizer, reviewer, risk-review, and conclusion-writer stages. This keeps
+the release-readiness path aligned with what a normal local user can do in Web
+instead of requiring hidden environment variables.
 
 ## Recent Automated Evidence
 
@@ -184,14 +173,56 @@ Result:
 - The same Web path completed when existing non-secret structured-output
   compatibility settings were enabled for extraction, review, final candidate,
   and final audit stages.
-- The immediate product gap is therefore Web-visible structured-output readiness
-  and troubleshooting for real providers, not another runtime subsystem.
+- The immediate product gap was Web-visible structured-output readiness and
+  troubleshooting for real providers, not another runtime subsystem.
+
+Follow-up:
+
+- Web setup now includes a default Structured review compatibility option. A
+  later release-readiness smoke completed through the Web-managed setup path
+  without hidden structured-output environment variables.
 
 Limit:
 
 - This pass used one real OpenAI-compatible provider. Broader provider coverage,
-  Web-managed structured-output compatibility settings, and clearer normal-user
-  recovery remain release blockers.
+  repeated release-readiness smoke runs, and clearer normal-user recovery remain
+  release blockers.
+
+### 2026-06-15 Web-Managed Structured Review Release Smoke
+
+Scope: rows 5 through 15 against the same real external OpenAI-compatible
+provider, using the normal Web setup path.
+
+Command:
+
+- `corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Opened `/setup/models` in Chromium.
+2. Entered API key, base URL, and model through Web.
+3. Kept the default Structured review compatibility option enabled.
+4. Saved setup, checked readiness, and verified the provider connection.
+5. Started a model-backed discussion from Web.
+6. Continued the discussion to participant first responses, strongest current
+   options, open disagreements, missing evidence, risks, current conclusion, and
+   next recommended actions.
+7. Opened the current conclusion page.
+8. Scanned default setup, start, room, and outcome text for secrets, provider
+   values, env var names, and low-level ids.
+
+Result:
+
+- Passed once with `DELIBERUM_RELEASE_SMOKE_CONTINUE_ATTEMPTS=1`.
+- Passed again with the default retry budget.
+- The smoke did not pass hidden structured-output compatibility env vars into
+  the daemon; the compatibility settings came from Web setup.
+
+Limit:
+
+- An earlier run in the same batch exposed an intermittent real-provider
+  partial first-response failure followed by a 400 on retry. The default path can
+  now complete, but provider failure recovery remains a release-hardening gap.
 
 ### 2026-06-15 Web Entry Smoke
 

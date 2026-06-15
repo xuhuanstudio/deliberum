@@ -144,7 +144,7 @@ describe("DeliberumDaemonClient", () => {
       profileId: "openai-compatible",
       status: "saved",
       managedEnvFile: "local-daemon-env",
-      configuredFields: ["apiKey", "baseUrl", "model"],
+      configuredFields: ["apiKey", "baseUrl", "model", "structuredReview"],
       restartRequired: false,
       activeInCurrentDaemon: true,
       safety: ["The setup was applied to the current local daemon process."]
@@ -153,7 +153,8 @@ describe("DeliberumDaemonClient", () => {
     const input = {
       apiKey: "sk-client-test-secret",
       baseUrl: "https://api.example.test/v1",
-      model: "client-test-model"
+      model: "client-test-model",
+      structuredReview: true
     };
 
     const result = await daemonClient.saveOpenAICompatibleSetup(input);
@@ -169,7 +170,7 @@ describe("DeliberumDaemonClient", () => {
       profileId: "openai-compatible",
       status: "saved",
       managedEnvFile: "local-daemon-env",
-      configuredFields: ["apiKey", "baseUrl", "model"],
+      configuredFields: ["apiKey", "baseUrl", "model", "structuredReview"],
       restartRequired: false,
       activeInCurrentDaemon: true,
       safety: ["The setup was applied to the current local daemon process."]

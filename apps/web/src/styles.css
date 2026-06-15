@@ -1279,6 +1279,48 @@ textarea:focus-visible {
   padding: 11px 12px;
 }
 
+.du-provider-setup-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-surface);
+  padding: 11px 12px;
+}
+
+.du-provider-setup-form .du-provider-setup-option {
+  color: var(--du-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.du-provider-setup-option input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--du-accent);
+}
+
+.du-provider-setup-option span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.du-provider-setup-option strong {
+  color: var(--du-ink);
+  line-height: 1.3;
+}
+
+.du-provider-setup-option small {
+  color: var(--du-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.42;
+}
+
 .du-provider-setup-form-note {
   display: grid;
   gap: 10px;

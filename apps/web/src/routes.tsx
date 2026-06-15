@@ -1646,7 +1646,8 @@ function SetupModelsPanel({
   const [openAISetupInput, setOpenAISetupInput] = useState({
     apiKey: "",
     baseUrl: "",
-    model: ""
+    model: "",
+    structuredReview: true
   });
   const localPreset = setupPlan.profiles.find((profile) => profile.id === "local-preset");
   const providerProfiles = setupPlan.profiles.filter((profile) => profile.id !== "local-preset");
@@ -1905,6 +1906,7 @@ type OpenAICompatibleSetupFormInput = {
   apiKey: string;
   baseUrl: string;
   model: string;
+  structuredReview: boolean;
 };
 
 function ProviderSetupChecklist({
@@ -2559,6 +2561,28 @@ function OpenAICompatibleSetupForm({
             }}
             placeholder="gpt-4.1-mini"
           />
+          <label className="du-provider-setup-option" htmlFor="openai-compatible-structured-review">
+            <input
+              id="openai-compatible-structured-review"
+              type="checkbox"
+              checked={input.structuredReview}
+              onChange={(event) => {
+                const structuredReview = event.currentTarget.checked;
+                onInputChange((current) => ({
+                  ...current,
+                  structuredReview
+                }));
+              }}
+            />
+            <span>
+              <strong>{t("Structured review compatibility")}</strong>
+              <small>
+                {t(
+                  "Recommended for real providers so Deliberum can organize options, disagreements, evidence gaps, risks, conclusions, and next actions more reliably."
+                )}
+              </small>
+            </span>
+          </label>
           <div className="du-action-row">
             <button type="submit" disabled={!canSubmit}>
               {pending ? t("Saving setup") : t("Save model setup")}

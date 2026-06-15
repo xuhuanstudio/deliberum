@@ -101,11 +101,18 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
   await page.getByText("Local service connected").waitFor();
   await page.getByText("Configure OpenAI-compatible provider").waitFor();
+  await page.getByText("Structured review compatibility").waitFor();
   await assertDefaultViewSafety(page, "setup start");
 
   await page.getByLabel("Provider API key").fill(releaseConfig.apiKey);
   await page.getByLabel("Base URL").fill(releaseConfig.providerBaseUrl);
   await page.getByRole("textbox", { name: "Model" }).fill(releaseConfig.model);
+  const structuredReview = page.getByRole("checkbox", {
+    name: /Structured review compatibility/
+  });
+  if (!(await structuredReview.isChecked())) {
+    await structuredReview.check();
+  }
   await page.getByRole("button", { name: "Save model setup" }).click();
   await page.getByText("Model setup saved locally").waitFor();
   await page.getByRole("button", { name: "Check readiness" }).click();
@@ -481,9 +488,6 @@ function buildOptionalProviderCompatibilityEnv() {
   const mappings = [
     ["DELIBERUM_RELEASE_SMOKE_ENDPOINT_PATH", "DELIBERUM_OPENAI_ENDPOINT_PATH"],
     ["DELIBERUM_RELEASE_SMOKE_TIMEOUT_MS", "DELIBERUM_OPENAI_TIMEOUT_MS"],
-    ["DELIBERUM_RELEASE_SMOKE_TOKEN_PARAMETER", "DELIBERUM_OPENAI_TOKEN_PARAMETER"],
-    ["DELIBERUM_RELEASE_SMOKE_MAX_COMPLETION_TOKENS", "DELIBERUM_OPENAI_MAX_COMPLETION_TOKENS"],
-    ["DELIBERUM_RELEASE_SMOKE_TEMPERATURE", "DELIBERUM_OPENAI_TEMPERATURE"],
     ["DELIBERUM_RELEASE_SMOKE_TOP_P", "DELIBERUM_OPENAI_TOP_P"],
     ["DELIBERUM_RELEASE_SMOKE_STREAM", "DELIBERUM_OPENAI_STREAM"],
     ["DELIBERUM_RELEASE_SMOKE_THINKING", "DELIBERUM_OPENAI_THINKING"],
@@ -494,22 +498,6 @@ function buildOptionalProviderCompatibilityEnv() {
     [
       "DELIBERUM_RELEASE_SMOKE_PRESENCE_PENALTY",
       "DELIBERUM_OPENAI_PRESENCE_PENALTY"
-    ],
-    [
-      "DELIBERUM_RELEASE_SMOKE_EXTRACTION_RESPONSE_FORMAT",
-      "DELIBERUM_OPENAI_EXTRACTION_RESPONSE_FORMAT"
-    ],
-    [
-      "DELIBERUM_RELEASE_SMOKE_REVIEW_RESPONSE_FORMAT",
-      "DELIBERUM_OPENAI_REVIEW_RESPONSE_FORMAT"
-    ],
-    [
-      "DELIBERUM_RELEASE_SMOKE_FINAL_CANDIDATE_RESPONSE_FORMAT",
-      "DELIBERUM_OPENAI_FINAL_CANDIDATE_RESPONSE_FORMAT"
-    ],
-    [
-      "DELIBERUM_RELEASE_SMOKE_FINAL_AUDIT_RESPONSE_FORMAT",
-      "DELIBERUM_OPENAI_FINAL_AUDIT_RESPONSE_FORMAT"
     ]
   ];
   const env = {};

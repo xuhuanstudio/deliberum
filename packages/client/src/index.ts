@@ -68,13 +68,14 @@ export type OpenAICompatibleSetupRequest = {
   apiKey: string;
   baseUrl: string;
   model: string;
+  structuredReview?: boolean;
 };
 
 export type OpenAICompatibleSetupResponse = {
   profileId: "openai-compatible";
   status: "saved";
   managedEnvFile: "local-daemon-env";
-  configuredFields: Array<"apiKey" | "baseUrl" | "model">;
+  configuredFields: Array<"apiKey" | "baseUrl" | "model" | "structuredReview">;
   restartRequired: boolean;
   activeInCurrentDaemon: boolean;
   safety: string[];

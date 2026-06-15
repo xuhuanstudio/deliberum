@@ -106,7 +106,7 @@ until the matrix steps are verified with real browser evidence.
 
 4. Configure a real model provider from Web.
 
-   Open `/setup/models`, then use **Configure OpenAI-compatible provider** to enter the provider API key, base URL, and model. Save the setup, check readiness, and use **Verify connection** before relying on a real model-backed discussion.
+   Open `/setup/models`, then use **Configure OpenAI-compatible provider** to enter the provider API key, base URL, and model. Keep **Structured review compatibility** enabled for most real providers so Deliberum can organize options, disagreements, evidence gaps, risks, conclusions, and next actions reliably. Save the setup, check readiness, and use **Verify connection** before relying on a real model-backed discussion.
 
    Saved API keys stay on this machine. The default Web UI does not show saved secrets, env var names, provider config ids, raw JSON, or runtime details; those remain behind Advanced / Developer Mode.
 
@@ -125,9 +125,7 @@ DELIBERUM_RELEASE_SMOKE_MODEL=provider-model \
 corepack pnpm smoke:web-release-readiness
 ```
 
-Some providers need explicit structured-output compatibility settings for the review stages. When a real-provider pass pauses at the discussion organizer, use the same command with non-secret compatibility settings such as `DELIBERUM_RELEASE_SMOKE_EXTRACTION_RESPONSE_FORMAT=json_object`, `DELIBERUM_RELEASE_SMOKE_REVIEW_RESPONSE_FORMAT=json_object`, `DELIBERUM_RELEASE_SMOKE_FINAL_CANDIDATE_RESPONSE_FORMAT=json_object`, `DELIBERUM_RELEASE_SMOKE_FINAL_AUDIT_RESPONSE_FORMAT=json_object`, `DELIBERUM_RELEASE_SMOKE_MAX_COMPLETION_TOKENS=4096`, and `DELIBERUM_RELEASE_SMOKE_TEMPERATURE=0`.
-
-This command starts an isolated local daemon and Web UI, configures the provider through Web, verifies the connection, starts and continues a model-backed discussion, opens the current conclusion, and scans the default UI for secrets and low-level ids. It is not part of default CI because it needs a real provider key and network access.
+This command starts an isolated local daemon and Web UI, configures the provider through Web with Structured review compatibility enabled by default, verifies the connection, starts and continues a model-backed discussion, opens the current conclusion, and scans the default UI for secrets and low-level ids. It is not part of default CI because it needs a real provider key and network access.
 
 ## Documentation
 
