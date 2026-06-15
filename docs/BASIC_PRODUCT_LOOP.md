@@ -648,6 +648,56 @@ Limit:
   compatibility, long-run stability, quota resilience, or production-grade
   release readiness.
 
+### 2026-06-15 Release Candidate Provider Stability Recheck
+
+Scope: rows 5 through 16 against the same explicit temporary real external
+OpenAI-compatible provider configuration, with a repository-local provider
+verification recovery precheck.
+
+Commands:
+
+- `DELIBERUM_RELEASE_SMOKE_RUNS=5 corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Re-ran the repository-local provider setup first. It did not pass provider
+   verification because the configured endpoint could not be reached, and the
+   smoke verified that Setup / Models still showed normal-user recovery actions
+   instead of exposing provider values or low-level diagnostics.
+2. Re-ran the focused two-perspective release-readiness browser walkthrough
+   against an explicit temporary reachable provider configuration supplied only
+   through environment variables.
+3. Re-ran the Broader review three-perspective release-readiness browser
+   walkthrough against the same temporary provider configuration.
+4. Each successful walkthrough opened `/setup/models`, entered provider setup
+   through Web, verified the provider connection, started a model-backed
+   discussion, continued to readable perspectives, strongest options, open
+   disagreements, missing evidence, risks, current conclusion, and next
+   recommended actions, then opened the Current Conclusion page.
+5. Each successful walkthrough reused the default-view safety scans for setup,
+   start, room, retry, and outcome surfaces so provider secrets, provider
+   values, env var names, provider config ids, raw JSON, and low-level ids
+   stayed out of the normal user path.
+
+Result:
+
+- The repository-local provider path remained blocked at provider verification,
+  with safe normal-user recovery actions visible.
+- The explicit temporary reachable provider path passed five consecutive
+  focused two-perspective runs in fresh isolated local services.
+- The same provider path passed three consecutive Broader review
+  three-perspective runs in fresh isolated local services.
+- No new Deliberum-side product-loop blocker was reproduced, so this batch only
+  records release-candidate stability evidence instead of changing product or
+  runtime behavior.
+
+Limit:
+
+- This strengthens repeatability evidence for one reachable real provider. It
+  still does not prove broad OpenAI-compatible provider coverage, quota
+  resilience, latency tolerance, or production-grade release readiness.
+
 ### 2026-06-15 Provider Verification Failure Recovery Guard
 
 Scope: rows 6, 15, and 16 on the opt-in real-provider release-readiness path.
