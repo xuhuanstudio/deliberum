@@ -410,7 +410,7 @@ async function assertProviderVerificationRecoveryActions(page, label) {
   await recoveryRegion.getByText("Try Verify connection again", { exact: true }).waitFor();
   await recoveryRegion.getByText("Start demo discussion", { exact: true }).waitFor();
 
-  await assertLinkHref(page, "Review setup fields", "#openai-setup-form", label);
+  await assertLinkHref(page, "Review setup fields", "#setup-provider-form", label);
   await assertLinkHrefIncludes(page, "Start demo discussion", "participants=demo", label);
 }
 
