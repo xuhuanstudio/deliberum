@@ -72,7 +72,9 @@ Current v1.0 gate evidence includes:
 - SQLite storage backup, restore, process-lock shutdown, and ledger-integrity
   recovery evidence;
 - current local CI, GitHub CI, Web smoke, storage recovery smoke, and opt-in
-  real-provider focused and Broader release-readiness evidence.
+  real-provider focused and Broader release-readiness evidence;
+- no known normal-user blocker remains across the supported install, startup,
+  setup, verification, discussion, conclusion review, and recovery path.
 
 The authoritative gate tracker remains
 [v1.0 Production Readiness Matrix](V1_0_PRODUCTION_READINESS_MATRIX.md).
@@ -93,11 +95,8 @@ These are intentionally outside the v1.0 supported scope:
 
 ## Current Remaining Release Gates
 
-The remaining gates are:
+The remaining gate is:
 
-- Gate 10: no known normal-user blocker remains across install, startup, setup,
-  verification, discussion start, continuation, conclusion review, and
-  recovery;
 - Gate 12: final v1.0 completion report with evidence, known limits, supported
   paths, and post-v1.0 backlog.
 
