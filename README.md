@@ -124,6 +124,18 @@ If you do not have a provider ready yet, use the demo discussion path first. The
 
 For Web UI development, you can still run the daemon and Vite dev server as separate processes. The normal local product path above uses the built Web shell served by the local daemon.
 
+### Troubleshooting local startup
+
+Use these checks before changing runtime settings or filing an issue:
+
+- **Prerequisite check fails**: install Node.js 24 or newer, enable Corepack, then rerun `node scripts/check-local-prerequisites.mjs`. The check prints the next install/build/start command when the local toolchain is ready.
+- **Dependencies or build fail**: run `corepack pnpm install`, then `corepack pnpm doctor:local`, then `corepack pnpm build`. Do not skip the build step; `start:local` serves the built Web shell.
+- **`start:local` says the Web build is missing**: run `corepack pnpm build` again, then restart with `corepack pnpm start:local`.
+- **Port 3877 is already in use**: start on another local port, for example `DELIBERUM_PORT=3888 corepack pnpm start:local`, then open the URL printed by the command.
+- **The Web UI says the local service is unavailable**: keep the `start:local` terminal running, open the printed local URL, and use **Check again** in Setup / Models after the service responds.
+- **Provider verification fails**: review the API key, base URL, model, and Structured review compatibility setting in `/setup/models`, make sure the provider endpoint is reachable, then use **Verify connection** again. You can start a demo discussion while fixing provider setup.
+- **A real provider discussion pauses or fails**: use the default recovery actions such as **Check model setup**, **Try Continue discussion again**, or **Start a new model-backed discussion**. Do not paste API keys, full provider responses, or raw model output into issues or logs.
+
 For a release-readiness browser walkthrough against a real OpenAI-compatible provider, run the opt-in smoke after `corepack pnpm build`:
 
 ```bash
