@@ -6324,6 +6324,102 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("stack");
   });
 
+  it("guides recovery from failed discussion stages without exposing internals", async () => {
+    const error = new Error("Run stage could not be processed safely.");
+    Object.assign(error, {
+      code: "run_stage_failed",
+      status: 400
+    });
+    renderApp(
+      "/runs/run-1",
+      createClient({
+        startRun: vi.fn(async () => {
+          throw error;
+        }),
+        getRun: vi.fn(async () => ({
+          run: providerBackedRunDetail
+        }))
+      })
+    );
+
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    expect(await screen.findByText("Discussion could not continue")).toBeTruthy();
+    expect(
+      screen.getAllByText(
+        "A model or review step could not finish safely. Check model setup, then try Continue discussion again. If the same discussion keeps failing after partial responses, start a new model-backed discussion."
+      ).length
+    ).toBeGreaterThan(0);
+    const recovery = await screen.findByRole("region", {
+      name: "Discussion recovery options"
+    });
+    expect(recovery.textContent ?? "").toContain("Keep the discussion recoverable");
+    expect(recovery.textContent ?? "").toContain("Check model setup");
+    expect(recovery.textContent ?? "").toContain("Try Continue discussion again");
+    expect(recovery.textContent ?? "").toContain("Start a new model-backed discussion");
+
+    const setupLink = Array.from(recovery.querySelectorAll("a")).find((link) =>
+      link.textContent?.includes("Check model setup")
+    );
+    const startLink = Array.from(recovery.querySelectorAll("a")).find((link) =>
+      link.textContent?.includes("Start a new model-backed discussion")
+    );
+    expect(setupLink?.getAttribute("href")).toBe("/setup/models");
+    expect(startLink?.getAttribute("href")).toContain("/runs/new");
+    expect(startLink?.getAttribute("href")).toContain("participants=model-backed");
+    expect(document.body.textContent ?? "").not.toContain("run_stage_failed");
+    expect(document.body.textContent ?? "").not.toContain("Run stage could not be processed safely.");
+    expect(document.body.textContent ?? "").not.toContain("stack");
+  });
+
+  it("localizes failed discussion stage recovery guidance to Simplified Chinese", async () => {
+    const zhContinue = "\u7ee7\u7eed\u8ba8\u8bba";
+    const zhCouldNotContinue = "\u8ba8\u8bba\u65e0\u6cd5\u7ee7\u7eed";
+    const zhDetail =
+      "\u6709\u4e00\u4e2a\u6a21\u578b\u6216\u5ba1\u67e5\u6b65\u9aa4\u672a\u80fd\u5b89\u5168\u5b8c\u6210\u3002\u8bf7\u5148\u68c0\u67e5\u6a21\u578b\u8bbe\u7f6e\uff0c\u7136\u540e\u518d\u5c1d\u8bd5\u201c\u7ee7\u7eed\u8ba8\u8bba\u201d\u3002\u5982\u679c\u540c\u4e00\u8ba8\u8bba\u5728\u90e8\u5206\u56de\u5e94\u540e\u6301\u7eed\u5931\u8d25\uff0c\u8bf7\u5f00\u59cb\u4e00\u4e2a\u65b0\u7684\u6a21\u578b\u652f\u6301\u8ba8\u8bba\u3002";
+    const zhRegion = "\u8ba8\u8bba\u6062\u590d\u9009\u9879";
+    const zhHeading = "\u4fdd\u6301\u8ba8\u8bba\u53ef\u6062\u590d";
+    const zhSetup = "\u68c0\u67e5\u6a21\u578b\u8bbe\u7f6e";
+    const zhRetry = "\u518d\u6b21\u5c1d\u8bd5\u7ee7\u7eed\u8ba8\u8bba";
+    const zhStart = "\u5f00\u59cb\u65b0\u7684\u6a21\u578b\u652f\u6301\u8ba8\u8bba";
+    const error = new Error("Run stage could not be processed safely.");
+    Object.assign(error, {
+      code: "run_stage_failed",
+      status: 400
+    });
+    renderApp(
+      "/runs/run-1",
+      createClient({
+        startRun: vi.fn(async () => {
+          throw error;
+        }),
+        getRun: vi.fn(async () => ({
+          run: providerBackedRunDetail
+        }))
+      }),
+      {
+        initialLanguage: "zh-CN"
+      }
+    );
+
+    expect(await screen.findByRole("button", { name: zhContinue })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: zhContinue }));
+
+    expect(await screen.findByText(zhCouldNotContinue)).toBeTruthy();
+    expect(screen.getAllByText(zhDetail).length).toBeGreaterThan(0);
+    const recovery = await screen.findByRole("region", {
+      name: zhRegion
+    });
+    expect(recovery.textContent ?? "").toContain(zhHeading);
+    expect(recovery.textContent ?? "").toContain(zhSetup);
+    expect(recovery.textContent ?? "").toContain(zhRetry);
+    expect(recovery.textContent ?? "").toContain(zhStart);
+    expect(document.body.textContent ?? "").not.toContain("run_stage_failed");
+    expect(document.body.textContent ?? "").not.toContain("Run stage could not be processed safely.");
+    expect(document.body.textContent ?? "").not.toContain("stack");
+  });
+
   it("renders compiled run output as a provisional outcome", async () => {
     const client = renderApp("/runs/run-1/outcome");
 

@@ -16,6 +16,8 @@ const dummyApiKey = "smoke-web-resilience-token";
 const modelName = "smoke-web-resilience-model";
 const pausedQuestion =
   "Should Deliberum keep paused discussion updates readable and safe?";
+const stageFailureQuestion =
+  "Should Deliberum keep failed discussion steps recoverable?";
 
 assertFile(clientEntry);
 assertFile(daemonEntry);
@@ -70,6 +72,15 @@ try {
     "sessionId",
     "setup error session id"
   );
+  const stageFailureRun = await client.createRun({
+    runPlan: buildProviderBackedStageFailureRunPlan()
+  });
+  const stageFailureRunId = readString(stageFailureRun.run, "runId", "stage failure run id");
+  const stageFailureSessionId = readString(
+    stageFailureRun.session,
+    "sessionId",
+    "stage failure session id"
+  );
 
   await waitForHttpOk(`http://127.0.0.1:${webPort}/`, () => web.exited);
 
@@ -94,6 +105,12 @@ try {
     providerBaseUrl,
     runId: setupErrorRunId,
     sessionId: setupErrorSessionId
+  });
+  await verifyStageFailureRecovery(page, {
+    webBaseUrl: `http://127.0.0.1:${webPort}`,
+    providerBaseUrl,
+    runId: stageFailureRunId,
+    sessionId: stageFailureSessionId
   });
 } catch (error) {
   if (daemon.exited) {
@@ -211,6 +228,65 @@ async function verifyRetryableSetupError(page, { webBaseUrl, providerBaseUrl, ru
   });
 }
 
+async function verifyStageFailureRecovery(page, { webBaseUrl, providerBaseUrl, runId, sessionId }) {
+  await page.goto(`${webBaseUrl}/runs/${encodeURIComponent(runId)}`, {
+    waitUntil: "networkidle"
+  });
+  await page.getByRole("heading", { name: stageFailureQuestion }).first().waitFor();
+  await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await assertNoHorizontalOverflow(page, "stage failure before update");
+  await assertDefaultResilienceSafety(page, "stage failure before update", {
+    providerBaseUrl,
+    runId,
+    sessionId
+  });
+
+  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByText("Discussion could not continue").waitFor();
+  await page
+    .getByText(
+      "A model or review step could not finish safely. Check model setup, then try Continue discussion again. If the same discussion keeps failing after partial responses, start a new model-backed discussion."
+    )
+    .waitFor();
+  const recoveryRegion = page.getByRole("region", { name: "Discussion recovery options" });
+  await recoveryRegion.waitFor();
+  await recoveryRegion.getByText("Check model setup", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Try Continue discussion again", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Start a new model-backed discussion", { exact: true }).waitFor();
+
+  await assertLinkHref(page, "Check model setup", "/setup/models", "stage failure recovery");
+  await assertLinkHrefIncludes(
+    page,
+    "Start a new model-backed discussion",
+    "participants=model-backed",
+    "stage failure recovery"
+  );
+  await assertNoHorizontalOverflow(page, "stage failure recovery");
+  await assertDefaultResilienceSafety(page, "stage failure recovery", {
+    providerBaseUrl,
+    runId,
+    sessionId
+  });
+}
+
+async function assertLinkHref(page, text, expectedHref, label) {
+  const href = await page.locator("a", { hasText: text }).first().getAttribute("href");
+
+  if (href !== expectedHref) {
+    throw new Error(`${label} expected ${text} link href ${expectedHref}, got ${href ?? "none"}.`);
+  }
+}
+
+async function assertLinkHrefIncludes(page, text, expectedSnippet, label) {
+  const href = await page.locator("a", { hasText: text }).first().getAttribute("href");
+
+  if (!href?.includes(expectedSnippet)) {
+    throw new Error(
+      `${label} expected ${text} link href to include ${expectedSnippet}, got ${href ?? "none"}.`
+    );
+  }
+}
+
 async function assertHiddenFromDefault(page, snippet, label) {
   const bodyText = await page.locator("body").innerText();
 
@@ -240,6 +316,9 @@ async function assertDefaultResilienceSafety(page, label, { providerBaseUrl, run
     "orchestration_component_unavailable",
     "waiting_for_generators",
     "extraction_output_invalid",
+    "run_stage_failed",
+    "Run stage could not be processed safely.",
+    "budget_exceeded",
     "provider_http_error",
     "raw JSON",
     "Raw stage metadata",
@@ -263,8 +342,28 @@ async function assertDefaultResilienceSafety(page, label, { providerBaseUrl, run
 
 function buildProviderBackedPausedRunPlan() {
   return {
-    title: `Discussion: ${pausedQuestion}`,
-    topic: pausedQuestion,
+    ...buildProviderBackedRunPlan(pausedQuestion),
+    budget: {
+      maxEvents: 40,
+      maxProviderCalls: 10
+    }
+  };
+}
+
+function buildProviderBackedStageFailureRunPlan() {
+  return {
+    ...buildProviderBackedRunPlan(stageFailureQuestion),
+    budget: {
+      maxEvents: 40,
+      maxProviderCalls: 0
+    }
+  };
+}
+
+function buildProviderBackedRunPlan(question) {
+  return {
+    title: `Discussion: ${question}`,
+    topic: question,
     goals: [
       "Confirm paused and retryable states stay readable for normal users.",
       "Keep technical status details out of the default Web view."
@@ -296,10 +395,6 @@ function buildProviderBackedPausedRunPlan() {
         providerConfigId: "openai-main"
       }
     ],
-    budget: {
-      maxEvents: 40,
-      maxProviderCalls: 10
-    },
     timeouts: {
       participantMs: 90000,
       overallMs: 240000

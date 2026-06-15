@@ -1307,6 +1307,23 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u6709\u4e00\u4e2a\u5f15\u5bfc\u6b65\u9aa4\u9700\u8981\u5904\u7406\uff0cDeliberum \u624d\u80fd\u7ee7\u7eed\u5b8c\u6574\u8ba8\u8bba\u3002",
   "The discussion paused before every requested step finished. Open Advanced details for the technical reason.":
     "\u8ba8\u8bba\u5728\u6240\u6709\u8bf7\u6c42\u6b65\u9aa4\u5b8c\u6210\u524d\u5df2\u6682\u505c\u3002\u8bf7\u6253\u5f00\u9ad8\u7ea7\u8be6\u60c5\u67e5\u770b\u6280\u672f\u539f\u56e0\u3002",
+  "A model or review step could not finish safely. Check model setup, then try Continue discussion again. If the same discussion keeps failing after partial responses, start a new model-backed discussion.":
+    "\u6709\u4e00\u4e2a\u6a21\u578b\u6216\u5ba1\u67e5\u6b65\u9aa4\u672a\u80fd\u5b89\u5168\u5b8c\u6210\u3002\u8bf7\u5148\u68c0\u67e5\u6a21\u578b\u8bbe\u7f6e\uff0c\u7136\u540e\u518d\u5c1d\u8bd5\u201c\u7ee7\u7eed\u8ba8\u8bba\u201d\u3002\u5982\u679c\u540c\u4e00\u8ba8\u8bba\u5728\u90e8\u5206\u56de\u5e94\u540e\u6301\u7eed\u5931\u8d25\uff0c\u8bf7\u5f00\u59cb\u4e00\u4e2a\u65b0\u7684\u6a21\u578b\u652f\u6301\u8ba8\u8bba\u3002",
+  "Discussion recovery options": "\u8ba8\u8bba\u6062\u590d\u9009\u9879",
+  "Recovery options": "\u6062\u590d\u9009\u9879",
+  "Keep the discussion recoverable": "\u4fdd\u6301\u8ba8\u8bba\u53ef\u6062\u590d",
+  "Use these steps when a provider returns only part of the discussion or a review step fails before Deliberum can rebuild the conclusion.":
+    "\u5f53\u63d0\u4f9b\u65b9\u53ea\u8fd4\u56de\u90e8\u5206\u8ba8\u8bba\u5185\u5bb9\uff0c\u6216\u5ba1\u67e5\u6b65\u9aa4\u5728 Deliberum \u91cd\u5efa\u7ed3\u8bba\u524d\u5931\u8d25\u65f6\uff0c\u8bf7\u6309\u8fd9\u4e9b\u6b65\u9aa4\u5904\u7406\u3002",
+  "Check model setup": "\u68c0\u67e5\u6a21\u578b\u8bbe\u7f6e",
+  "Verify the provider connection and structured review compatibility.":
+    "\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u8fde\u63a5\u548c\u7ed3\u6784\u5316\u5ba1\u8bae\u517c\u5bb9\u6027\u3002",
+  "Try Continue discussion again": "\u518d\u6b21\u5c1d\u8bd5\u7ee7\u7eed\u8ba8\u8bba",
+  "Retry the current discussion after setup is confirmed.":
+    "\u786e\u8ba4\u8bbe\u7f6e\u540e\uff0c\u91cd\u8bd5\u5f53\u524d\u8ba8\u8bba\u3002",
+  "If it repeats": "\u5982\u679c\u91cd\u590d\u51fa\u73b0",
+  "Start a new model-backed discussion": "\u5f00\u59cb\u65b0\u7684\u6a21\u578b\u652f\u6301\u8ba8\u8bba",
+  "Use a fresh discussion when partial provider results keep blocking review.":
+    "\u5f53\u63d0\u4f9b\u65b9\u7684\u90e8\u5206\u7ed3\u679c\u6301\u7eed\u963b\u585e\u5ba1\u67e5\u65f6\uff0c\u8bf7\u4f7f\u7528\u65b0\u8ba8\u8bba\u3002",
   "No visible discussion steps": "\u6ca1\u6709\u53ef\u89c1\u8ba8\u8bba\u6b65\u9aa4",
   "No user-facing step updates were returned for this request.":
     "\u672c\u6b21\u8bf7\u6c42\u6ca1\u6709\u8fd4\u56de\u9762\u5411\u7528\u6237\u7684\u6b65\u9aa4\u66f4\u65b0\u3002",

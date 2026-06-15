@@ -2733,11 +2733,14 @@ function StartRunForm({
       </AdvancedDetails>
       {inputError ? <StatusBanner tone="error" title={inputError} /> : null}
       {startMutation.isError ? (
-        <StatusBanner
-          tone="error"
-          title={t("Discussion could not continue")}
-          detail={formatRunStartErrorMessage(startMutation.error)}
-        />
+        <>
+          <StatusBanner
+            tone="error"
+            title={t("Discussion could not continue")}
+            detail={t(formatRunStartErrorMessage(startMutation.error))}
+          />
+          <RunStartRecoveryActions error={startMutation.error} />
+        </>
       ) : null}
       {startMutation.data ? (
         <section
@@ -7231,7 +7234,56 @@ function formatRunStartErrorMessage(error: Error | null | undefined): string {
     return "This discussion cannot continue because the required setup is unavailable. Open Advanced mode to inspect setup details before retrying.";
   }
 
+  if (getErrorCode(error) === "run_stage_failed") {
+    return "A model or review step could not finish safely. Check model setup, then try Continue discussion again. If the same discussion keeps failing after partial responses, start a new model-backed discussion.";
+  }
+
   return formatSafeErrorMessage(error);
+}
+
+function RunStartRecoveryActions({ error }: { error: Error | null | undefined }) {
+  const { t } = useI18n();
+
+  if (getErrorCode(error) !== "run_stage_failed") {
+    return null;
+  }
+
+  return (
+    <section className="du-run-recovery-actions" aria-label={t("Discussion recovery options")}>
+      <div>
+        <p className="du-kicker">{t("Recovery options")}</p>
+        <h4>{t("Keep the discussion recoverable")}</h4>
+        <p>
+          {t(
+            "Use these steps when a provider returns only part of the discussion or a review step fails before Deliberum can rebuild the conclusion."
+          )}
+        </p>
+      </div>
+      <div className="du-run-recovery-grid">
+        <Link className="du-run-recovery-card" to="/setup/models">
+          <span>{t("First")}</span>
+          <strong>{t("Check model setup")}</strong>
+          <p>{t("Verify the provider connection and structured review compatibility.")}</p>
+        </Link>
+        <a className="du-run-recovery-card" href="#continue-discussion">
+          <span>{t("Then")}</span>
+          <strong>{t("Try Continue discussion again")}</strong>
+          <p>{t("Retry the current discussion after setup is confirmed.")}</p>
+        </a>
+        <Link
+          className="du-run-recovery-card du-run-recovery-primary"
+          to="/runs/new"
+          search={{
+            participants: "model-backed"
+          }}
+        >
+          <span>{t("If it repeats")}</span>
+          <strong>{t("Start a new model-backed discussion")}</strong>
+          <p>{t("Use a fresh discussion when partial provider results keep blocking review.")}</p>
+        </Link>
+      </div>
+    </section>
+  );
 }
 
 function getErrorCode(error: unknown): string | undefined {

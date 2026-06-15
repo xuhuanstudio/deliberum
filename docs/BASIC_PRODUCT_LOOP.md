@@ -55,8 +55,8 @@ Updated: 2026-06-15.
 | 12 | See risks. | `verified` | Web tests cover risks and hide internal source language from default view. The integrated Web product-loop test confirms risk-review text appears. `smoke:product-loop` verifies final audit risk material reaches the compiled outcome. `smoke:web-product-loop` confirms risk entry points in the room and concrete risk text in the outcome. | Keep covered; future release-hardening should add real-provider risk text examples. |
 | 13 | See the current conclusion. | `verified` | Outcome pages render user-facing conclusion summaries and hide internal projection/event terms. The integrated Web product-loop test confirms the room reaches `Current conclusion: Ready to review`. `smoke:product-loop` verifies the daemon compiles a provider-backed current conclusion. `smoke:web-product-loop` opens the current conclusion page from the browser room and verifies the recommendation. | Keep covered; future work should improve conclusion readability only when it improves the main loop. |
 | 14 | See next recommended actions. | `verified` | Outcome and room tests render next recommended actions. The integrated Web product-loop test confirms user-facing action labels. `smoke:product-loop` verifies continuation suggestions in the provider-backed outcome. `smoke:web-product-loop` confirms the room links and outcome next recommended actions are visible from the browser path. | Keep covered; future actions should stay user-facing. |
-| 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion in the browser and reaches reviewable conclusion material. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
-| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `verified` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, and low-level id labels during the primary browser path. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. `smoke:web-resilience` verifies paused, retryable continuation, and setup-error states stay user-facing while raw stop reasons and internal status codes remain behind Advanced details. | Keep covered; any new default route or retry state must extend the same safety scan before release. |
+| 15 | Continue or update the discussion using user-facing actions. | `verified` | Web action labels include Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion. The integrated Web product-loop test uses Continue discussion and verifies model-backed review requests. `smoke:product-loop` verifies the full start request against a real local daemon and local mock provider. `smoke:web-product-loop` clicks Continue discussion in the browser and reaches reviewable conclusion material. `smoke:web-resilience` now also verifies a safe failed-stage recovery path with Check model setup, retry, and new model-backed discussion actions. | Keep covered; later batches can test additional update actions beyond the primary continue path. |
+| 16 | Complete the default path without seeing run/session/ledger/runtime/proposal/event/internal ids, raw JSON, env details, provider config ids, or secrets. | `verified` | Tests cover known default views and recent fixes hide internal outcome wording while preserving Advanced details. `smoke:web-product-loop` scans setup, start, room, and outcome pages for secrets, env names, provider config ids, object ids, raw JSON, and low-level id labels during the primary browser path. `smoke:web-entry` adds landing, connected readiness, and local-service-unavailable setup scans. `smoke:web-boundaries` verifies the default landing and legacy session user view hide session ids, ledger/raw entries, runtime/env details, and internal object ids until Advanced / Developer Mode or the ledger events view is explicitly opened. `smoke:web-resilience` verifies paused, retryable continuation, setup-error, and failed-stage recovery states stay user-facing while raw stop reasons, stage error codes, and internal status codes remain behind Advanced details. | Keep covered; any new default route or retry state must extend the same safety scan before release. |
 
 ## Batch Gate
 
@@ -104,7 +104,10 @@ OpenAI-compatible provider.
 The current convergence target is real-provider repeatability: run the
 release-readiness walkthrough through the Web-managed setup path, including the
 default Structured review compatibility option, and fix the first blocking
-normal-user recovery step if the provider still pauses or fails.
+normal-user recovery or completion step if the provider still pauses or fails.
+The default Web path now has recovery guidance for safe failed-stage responses,
+but repeated real-provider walkthroughs are still needed before release
+hardening can be considered complete.
 
 Release-readiness walkthrough requirements:
 
@@ -375,8 +378,8 @@ Limit:
 
 ### 2026-06-15 Paused, Retryable, And Error-State Walkthrough
 
-Scope: row 16, with focused evidence for paused continuation results,
-retryable user actions, and setup-error states.
+Scope: rows 15 and 16, with focused evidence for paused continuation results,
+retryable user actions, setup-error states, and failed-stage recovery.
 
 Automated browser smoke:
 
@@ -390,7 +393,9 @@ Setup:
 - one model-backed discussion whose extraction response deliberately pauses the
   run with an invalid organizer response;
 - one local-preset discussion whose continuation cannot run because the required
-  local setup is unavailable.
+  local setup is unavailable;
+- one model-backed discussion whose continuation safely fails before provider
+  dispatch because the run budget does not allow first responses.
 
 Path verified in the browser:
 
@@ -406,6 +411,10 @@ Path verified in the browser:
    raw daemon error.
 6. Used `Continue discussion` again as the retry action and confirmed the retry
    path kept the same default-view safety boundary.
+7. Opened the failed-stage discussion room.
+8. Used `Continue discussion` and confirmed the default error explained the
+   model or review step could not finish safely, then offered Check model setup,
+   retry, and Start a new model-backed discussion recovery actions.
 
 Default-view safety checks:
 
@@ -413,8 +422,8 @@ Default-view safety checks:
 - did not show OpenAI or local preset env var names;
 - did not show provider config ids or internal adapter ids;
 - did not show run or session ids;
-- did not show raw stop reasons, registry errors, or stack text before Advanced
-  was opened.
+- did not show raw stop reasons, stage error codes, budget errors, registry
+  errors, or stack text before Advanced was opened.
 
 ### 2026-06-15 Default And Advanced Boundary Walkthrough
 
