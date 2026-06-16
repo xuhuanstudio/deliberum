@@ -5322,12 +5322,20 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Discussion brief updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
+    expect(screen.getAllByText("Discussion phase").length).toBeGreaterThan(0);
+    expect(document.querySelectorAll(".du-room-phase-separator").length).toBeGreaterThan(0);
+    expect(document.querySelector(".du-room-activity-group-header")).toBeNull();
     const stageSummaries = Array.from(
       document.querySelectorAll('[aria-label="Stage activity summary"]')
     ).map((summary) => summary.textContent ?? "");
     expect(stageSummaries.join(" ")).toContain("1 update");
     expect(stageSummaries.join(" ")).toContain("No participant contributions");
     expect(stageSummaries.join(" ")).toContain("1 participant contribution");
+    expect(
+      document
+        .querySelector('[aria-label="Stage activity summary"]')
+        ?.classList.contains("du-sr-only")
+    ).toBe(true);
     expect(
       screen.getByText("The room starts by making the question, goals, and constraints visible.")
     ).toBeTruthy();
@@ -5689,6 +5697,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Main perspective and disagreement updates" })).toBeTruthy();
+    expect(document.querySelectorAll(".du-room-phase-separator").length).toBeGreaterThan(0);
+    expect(document.querySelector(".du-room-activity-group-header")).toBeNull();
     expect(screen.getAllByText("Main perspectives and disagreements").length).toBeGreaterThan(0);
     expect(
       screen.getByText("The room organizes strongest options and keeps challenges visible.")

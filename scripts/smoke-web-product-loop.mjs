@@ -294,6 +294,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Model-backed discussion continued").waitFor();
   await page.getByText("Conversation transcript").waitFor();
   await page.getByText("What the room said and did").waitFor();
+  await page.getByText("Discussion phase").first().waitFor();
   await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Participant first responses").waitFor();
   await page.getByText("This browser perspective supports the verified provider path.").first().waitFor();

@@ -4431,11 +4431,14 @@ function DiscussionRoomTimeline({
                   aria-label={t(phaseView.updatesLabel)}
                   key={group.phase}
                 >
-                  <div className="du-room-activity-group-header">
-                    <p className="du-kicker">{t(phaseView.label)}</p>
-                    <p>{t(phaseView.detail)}</p>
+                  <div className="du-room-phase-separator">
+                    <div className="du-room-phase-copy">
+                      <p className="du-kicker">{t("Discussion phase")}</p>
+                      <h5>{t(phaseView.label)}</h5>
+                      <p>{t(phaseView.detail)}</p>
+                    </div>
                     <div
-                      className="du-room-activity-group-meta"
+                      className="du-room-activity-group-meta du-sr-only"
                       aria-label={t("Stage activity summary")}
                     >
                       <span>

@@ -1615,6 +1615,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "What the room said and did": "\u8ba8\u8bba\u5ba4\u8bf4\u4e86\u4ec0\u4e48\u3001\u505a\u4e86\u4ec0\u4e48",
   "Participant messages and room updates appear in order.":
     "\u53c2\u4e0e\u8005\u53d1\u8a00\u548c\u8ba8\u8bba\u5ba4\u66f4\u65b0\u4f1a\u6309\u987a\u5e8f\u663e\u793a\u3002",
+  "Discussion phase": "\u8ba8\u8bba\u9636\u6bb5",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",
   "Readable discussion flow": "\u53ef\u8bfb\u8ba8\u8bba\u6d41\u7a0b",
   "Discussion brief updates": "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0",
