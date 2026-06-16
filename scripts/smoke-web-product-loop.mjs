@@ -277,6 +277,8 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     expectedStatus: "Next step",
     expectedNextAction: "Next: continue guided discussion"
   });
+  await page.locator(".du-room-system-message").first().waitFor();
+  await page.getByText("Shared the discussion brief", { exact: true }).waitFor();
   await page.getByText("How this discussion will continue").click();
   await page.getByText("Model-backed discussion").first().waitFor();
   await assertBriefDetailsCollapsed(page, "discussion room before continuation");
@@ -307,9 +309,22 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     expectedStatus: "Conclusion ready",
     expectedNextAction: "Next: review current conclusion"
   });
+  await page
+    .locator(".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble")
+    .first()
+    .waitFor();
+  await page
+    .locator(".du-room-system-message")
+    .filter({ hasText: "Made first responses visible" })
+    .waitFor();
   await page.getByText("Conversation transcript").waitFor();
   await page.getByText("What the room said and did").waitFor();
   await page.getByText("Discussion phase").first().waitFor();
+  await page.getByText("Evidence checker", { exact: true }).waitFor();
+  await page.getByText("Reviewed evidence gaps", { exact: true }).waitFor();
+  await page
+    .getByText("1 evidence gap still needs checking before relying on the conclusion.")
+    .waitFor();
   await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Participant first responses").waitFor();
   await page.getByText("This browser perspective supports the verified provider path.").first().waitFor();

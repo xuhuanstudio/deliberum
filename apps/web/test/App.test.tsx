@@ -4549,6 +4549,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("list", { name: "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u66f4\u65b0" })).toBeTruthy();
     expect(screen.getByText("\u5206\u4eab\u4e86\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
     expect(screen.getByText("\u63d0\u4ea4\u4e86\u5c01\u5b58\u7684\u521d\u59cb\u56de\u5e94")).toBeTruthy();
+    const localizedSystemMessages = Array.from(
+      document.querySelectorAll('[aria-label="\u8ba8\u8bba\u5ba4\u66f4\u65b0"]')
+    ).map((message) => message.textContent ?? "");
+    expect(localizedSystemMessages.length).toBeGreaterThan(0);
+    expect(localizedSystemMessages.join(" ")).toContain("\u8ba8\u8bba\u5ba4");
+    expect(localizedSystemMessages.join(" ")).toContain("\u5206\u4eab\u4e86\u8ba8\u8bba\u7b80\u62a5");
     const localizedStageSummaries = Array.from(
       document.querySelectorAll('[aria-label="\u9636\u6bb5\u6d3b\u52a8\u6458\u8981"]')
     ).map((summary) => summary.textContent ?? "");
@@ -5430,6 +5436,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Discussion brief updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Evidence and verification updates" })).toBeTruthy();
+    expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
+    expect(screen.getByText("Reviewed evidence gaps")).toBeTruthy();
+    expect(
+      screen.getByText("1 evidence gap still needs checking before relying on the conclusion.")
+    ).toBeTruthy();
     expect(screen.getAllByText("Discussion phase").length).toBeGreaterThan(0);
     expect(document.querySelectorAll(".du-room-phase-separator").length).toBeGreaterThan(0);
     expect(
@@ -5439,6 +5451,23 @@ describe("@deliberum/web shell", () => {
     ).toBe(true);
     expect(document.querySelector(".du-room-activity-group-header")).toBeNull();
     expect(document.querySelector(".du-room-activity-meta")).toBeNull();
+    const systemMessages = Array.from(document.querySelectorAll(".du-room-system-message"));
+    expect(systemMessages.length).toBeGreaterThan(0);
+    expect(systemMessages[0]?.textContent ?? "").toContain("Discussion room");
+    expect(systemMessages[0]?.textContent ?? "").toContain("Shared the discussion brief");
+    expect(
+      document.querySelector(".du-room-activity-item[data-speaker='room'] .du-room-activity-avatar")
+    ).toBeNull();
+    expect(
+      document.querySelector(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-activity-avatar"
+      )
+    ).toBeTruthy();
+    expect(
+      document.querySelector(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble"
+      )
+    ).toBeTruthy();
     expect(document.querySelectorAll(".du-room-message-header").length).toBeGreaterThan(0);
     expect(document.querySelectorAll(".du-room-message-detail").length).toBeGreaterThan(0);
     expect(document.querySelectorAll(".du-room-message-action").length).toBeGreaterThan(0);
@@ -5855,6 +5884,10 @@ describe("@deliberum/web shell", () => {
     ).toBeNull();
     expect(screen.getByText("Shared a first response")).toBeTruthy();
     expect(screen.getByText("Made first responses visible")).toBeTruthy();
+    const providerSystemMessages = Array.from(
+      document.querySelectorAll(".du-room-system-message")
+    ).map((message) => message.textContent ?? "");
+    expect(providerSystemMessages.join(" ")).toContain("Made first responses visible");
     expect(screen.getAllByText("Organized the strongest options").length).toBeGreaterThan(0);
     expect(screen.getByText("Kept this material in the room")).toBeTruthy();
     expect(screen.getByText("Drafted the current conclusion")).toBeTruthy();
@@ -5868,9 +5901,15 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Review coordinator")).toBeTruthy();
     expect(screen.getByText("Conclusion writer")).toBeTruthy();
     expect(screen.getByText("Risk reviewer")).toBeTruthy();
+    expect(screen.getByText("Evidence checker")).toBeTruthy();
+    expect(screen.getByText("Reviewed evidence gaps")).toBeTruthy();
+    expect(
+      screen.getByText("1 evidence gap still needs checking before relying on the conclusion.")
+    ).toBeTruthy();
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Main perspective and disagreement updates" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Evidence and verification updates" })).toBeTruthy();
     expect(document.querySelectorAll(".du-room-phase-separator").length).toBeGreaterThan(0);
     expect(document.querySelector(".du-room-activity-group-header")).toBeNull();
     expect(screen.getAllByText("Main perspectives and disagreements").length).toBeGreaterThan(0);
@@ -5999,6 +6038,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u53c2\u4e0e\u8005\u521d\u59cb\u56de\u5e94")).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u6700\u521d\u8bf4\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7ec4\u7ec7\u8005")).toBeTruthy();
+    expect(screen.getByText("\u8bc1\u636e\u6838\u67e5\u8005")).toBeTruthy();
+    expect(screen.getByText("\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u4ecd\u6709 1 \u4e2a\u8bc1\u636e\u7f3a\u53e3\u9700\u8981\u6838\u67e5\u3002"
+      )
+    ).toBeTruthy();
     expect(screen.getByText("\u7ed3\u8bba\u8d77\u8349\u8005")).toBeTruthy();
     const roomText = document.querySelector(".du-room-layout")?.textContent ?? "";
     expect(roomText).not.toContain("local-preset-alpha");

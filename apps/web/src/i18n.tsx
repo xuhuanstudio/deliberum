@@ -1652,6 +1652,14 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Evidence and verification updates": "\u8bc1\u636e\u4e0e\u6838\u67e5\u66f4\u65b0",
   "Evidence checks and missing information are kept visible before relying on a conclusion.":
     "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u8bc1\u636e\u6838\u67e5\u548c\u7f3a\u5931\u4fe1\u606f\u4f1a\u4fdd\u6301\u53ef\u89c1\u3002",
+  "Evidence gaps reviewed": "\u8bc1\u636e\u7f3a\u53e3\u5df2\u5ba1\u9605",
+  "Reviewed evidence gaps": "\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3",
+  "No evidence gaps are visible in the current room summary.":
+    "\u5f53\u524d\u8ba8\u8bba\u5ba4\u6458\u8981\u4e2d\u6ca1\u6709\u53ef\u89c1\u7684\u8bc1\u636e\u7f3a\u53e3\u3002",
+  "{count} evidence gap still needs checking before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u4ecd\u6709 {count} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u9700\u8981\u6838\u67e5\u3002",
+  "{count} evidence gaps still need checking before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u4ecd\u6709 {count} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u9700\u8981\u6838\u67e5\u3002",
   "Current conclusion and risk review": "\u5f53\u524d\u7ed3\u8bba\u4e0e\u98ce\u9669\u5ba1\u67e5",
   "The room drafts a conclusion and records risks or boundaries for review.":
     "\u8ba8\u8bba\u5ba4\u4f1a\u8d77\u8349\u7ed3\u8bba\uff0c\u5e76\u8bb0\u5f55\u98ce\u9669\u6216\u8fb9\u754c\u4ee5\u4f9b\u5ba1\u67e5\u3002",

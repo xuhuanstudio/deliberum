@@ -205,6 +205,7 @@ type RoomActivityItem = {
   title: string;
   action: string;
   detail: string;
+  detailValues?: Record<string, string | number>;
   tone: "neutral" | "ok" | "warning";
   phase: RoomActivityPhaseId;
 };
@@ -4501,8 +4502,13 @@ function DiscussionRoomTimeline({
   const conclusion = describeStageStatus(
     getDiscussionStageStatus(run, "latestFinalizationStatus", "finalization")
   );
-  const participantResponses = getParticipantFirstResponses(activities);
-  const activityGroups = groupRoomActivitiesByPhase(activities);
+  const roomActivities = ensureEvidenceGapReviewActivity(activities, {
+    run,
+    mainPerspectiveCount,
+    unresolvedEvidenceCount
+  });
+  const participantResponses = getParticipantFirstResponses(roomActivities);
+  const activityGroups = groupRoomActivitiesByPhase(roomActivities);
   const progressView = describeDiscussionRoomProgress({
     run,
     mainPerspectiveCount,
@@ -4540,7 +4546,7 @@ function DiscussionRoomTimeline({
             title={t("Could not load room activity")}
             detail={formatSafeErrorMessage(activityQuery.error)}
           />
-        ) : activities.length === 0 ? (
+        ) : roomActivities.length === 0 ? (
           <EmptyState
             title={t("No room activity visible yet")}
             description={t(
@@ -4594,27 +4600,41 @@ function DiscussionRoomTimeline({
                   <ol className="du-room-activity" aria-label={t(phaseView.updatesLabel)}>
                     {group.activities.map((activity, index) => {
                       const activityPhaseView = describeRoomActivityPhase(activity.phase);
+                      const roomSpeaker = isRoomSpeaker(activity.speaker);
 
                       return (
                         <li
                           className="du-room-activity-item"
-                          data-speaker={
-                            isRoomSpeaker(activity.speaker) ? "room" : "participant"
-                          }
+                          data-speaker={roomSpeaker ? "room" : "participant"}
                           data-tone={activity.tone}
                           key={`${activity.title}:${index}`}
                         >
-                          <span className="du-room-activity-avatar" aria-hidden="true">
-                            {formatSpeakerInitials(t(activity.speaker))}
-                          </span>
-                          <div className="du-room-activity-bubble">
-                            <div className="du-room-message-header">
+                          {roomSpeaker ? (
+                            <div
+                              className="du-room-system-message"
+                              aria-label={t("Room update")}
+                            >
                               <strong>{t(activity.speaker)}</strong>
-                              <span>{t(activityPhaseView.label)}</span>
+                              <span>{t(activity.action)}</span>
+                              <p>{t(activity.detail, activity.detailValues)}</p>
                             </div>
-                            <p className="du-room-message-detail">{t(activity.detail)}</p>
-                            <p className="du-room-message-action">{t(activity.action)}</p>
-                          </div>
+                          ) : (
+                            <>
+                              <span className="du-room-activity-avatar" aria-hidden="true">
+                                {formatSpeakerInitials(t(activity.speaker))}
+                              </span>
+                              <div className="du-room-activity-bubble">
+                                <div className="du-room-message-header">
+                                  <strong>{t(activity.speaker)}</strong>
+                                  <span>{t(activityPhaseView.label)}</span>
+                                </div>
+                                <p className="du-room-message-detail">
+                                  {t(activity.detail, activity.detailValues)}
+                                </p>
+                                <p className="du-room-message-action">{t(activity.action)}</p>
+                              </div>
+                            </>
+                          )}
                         </li>
                       );
                     })}
@@ -4871,6 +4891,64 @@ function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityI
     .sort(compareRunEvents)
     .map((event) => createRoomActivityItem(event, run))
     .filter((activity): activity is RoomActivityItem => Boolean(activity));
+}
+
+function ensureEvidenceGapReviewActivity(
+  activities: RoomActivityItem[],
+  {
+    run,
+    mainPerspectiveCount,
+    unresolvedEvidenceCount
+  }: {
+    run: unknown;
+    mainPerspectiveCount: number;
+    unresolvedEvidenceCount: number;
+  }
+): RoomActivityItem[] {
+  if (
+    activities.some((activity) => activity.phase === "evidence") ||
+    !hasVisibleReviewMaterial(activities, run, mainPerspectiveCount)
+  ) {
+    return activities;
+  }
+
+  return [
+    ...activities,
+    {
+      speaker: "Evidence checker",
+      title: "Evidence gaps reviewed",
+      action: "Reviewed evidence gaps",
+      detail:
+        unresolvedEvidenceCount === 0
+          ? "No evidence gaps are visible in the current room summary."
+          : unresolvedEvidenceCount === 1
+            ? "{count} evidence gap still needs checking before relying on the conclusion."
+            : "{count} evidence gaps still need checking before relying on the conclusion.",
+      detailValues: { count: unresolvedEvidenceCount },
+      tone: unresolvedEvidenceCount > 0 ? "warning" : "ok",
+      phase: "evidence"
+    }
+  ];
+}
+
+function hasVisibleReviewMaterial(
+  activities: RoomActivityItem[],
+  run: unknown,
+  mainPerspectiveCount: number
+): boolean {
+  if (
+    activities.some(
+      (activity) => activity.phase === "perspectives" || activity.phase === "conclusion"
+    )
+  ) {
+    return true;
+  }
+
+  return (
+    mainPerspectiveCount > 0 ||
+    isCompletedDiscussionStatus(getRecordValue(run, "latestExtractionStatus")) ||
+    isCompletedDiscussionStatus(getRecordValue(run, "latestFinalizationStatus"))
+  );
 }
 
 function groupRoomActivitiesByPhase(activities: RoomActivityItem[]): RoomActivityGroup[] {

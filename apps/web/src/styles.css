@@ -2095,6 +2095,11 @@ textarea:focus-visible {
   padding: 0;
 }
 
+.du-room-activity-item[data-speaker="room"] {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+
 .du-room-activity-avatar {
   display: grid;
   width: 32px;
@@ -2117,6 +2122,46 @@ textarea:focus-visible {
   border: 1px solid var(--du-line);
   border-radius: 8px;
   padding: 12px 14px;
+}
+
+.du-room-system-message {
+  display: grid;
+  gap: 5px;
+  justify-items: center;
+  max-width: 640px;
+  min-width: 0;
+  border: 1px solid #e4d6bd;
+  border-radius: 8px;
+  background: #fbfaf6;
+  color: var(--du-muted);
+  padding: 9px 12px;
+  text-align: center;
+}
+
+.du-room-system-message strong,
+.du-room-system-message span,
+.du-room-system-message p {
+  margin: 0;
+}
+
+.du-room-system-message strong {
+  color: var(--du-ink);
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+
+.du-room-system-message span {
+  color: var(--du-accent-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.du-room-system-message p {
+  max-width: 58ch;
+  color: var(--du-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
 .du-room-activity-item[data-speaker="participant"] .du-room-activity-avatar {
@@ -2175,6 +2220,10 @@ textarea:focus-visible {
   color: var(--du-ink);
   font-size: 0.96rem;
   line-height: 1.52;
+}
+
+.du-room-activity-item[data-speaker="participant"] .du-room-message-detail {
+  font-size: 1rem;
 }
 
 .du-room-message-action {
