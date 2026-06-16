@@ -5738,9 +5738,16 @@ describe("@deliberum/web shell", () => {
     const firstRoomMessage = document.querySelector(
       ".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble"
     );
+    const firstRoomMessageHeader = firstRoomMessage?.querySelector(".du-room-message-header");
     const firstRoomMessageDetail = firstRoomMessage?.querySelector(".du-room-message-detail");
     const firstRoomMessageAction = firstRoomMessage?.querySelector(".du-room-message-action");
+    const firstRoomMessagePhase = firstRoomMessage?.querySelector(".du-room-message-phase");
+    expect(firstRoomMessageHeader).toBeTruthy();
     expect(firstRoomMessageDetail).toBeTruthy();
+    expect(firstRoomMessagePhase).toBeTruthy();
+    expect(firstRoomMessageHeader?.contains(firstRoomMessageAction as Node)).toBe(true);
+    expect(firstRoomMessageAction?.tagName).toBe("SPAN");
+    expect(firstRoomMessageDetail?.previousElementSibling).toBe(firstRoomMessageHeader);
     expect(firstRoomMessageAction?.textContent ?? "").toContain(
       "Submitted a sealed first response"
     );

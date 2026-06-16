@@ -4916,9 +4916,13 @@ function DiscussionRoomTimeline({
                               >
                                 <div className="du-room-message-header">
                                   <strong>{t(activity.speaker)}</strong>
-                                  <span>{t(activityPhaseView.label)}</span>
+                                  <span className="du-room-message-phase">
+                                    {t(activityPhaseView.label)}
+                                  </span>
+                                  <span className="du-room-message-action">
+                                    {t(activity.action)}
+                                  </span>
                                 </div>
-                                <p className="du-room-message-action">{t(activity.action)}</p>
                                 <p className="du-room-message-detail">
                                   {t(activity.detail, activity.detailValues)}
                                 </p>

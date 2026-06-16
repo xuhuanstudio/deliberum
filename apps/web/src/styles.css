@@ -2619,6 +2619,15 @@ textarea:focus-visible {
   color: #6f4f19;
 }
 
+.du-room-message-action {
+  border-color: #eadfcb;
+  background: #fbfaf6;
+  color: var(--du-muted);
+  font-size: 0.68rem;
+  line-height: 1.15;
+  padding: 3px 6px;
+}
+
 .du-room-message-detail {
   color: var(--du-ink);
   font-size: 0.96rem;
@@ -2627,13 +2636,6 @@ textarea:focus-visible {
 
 .du-room-activity-item[data-speaker="participant"] .du-room-message-detail {
   font-size: 1rem;
-}
-
-.du-room-message-action {
-  color: var(--du-muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1.3;
 }
 
 .du-room-next-turn {
