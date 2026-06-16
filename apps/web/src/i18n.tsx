@@ -878,6 +878,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Fill first responses request": "\u586b\u5145\u521d\u59cb\u56de\u5e94\u8bf7\u6c42",
   "Collect independent first responses only; finish review role setup before generating strongest options or a conclusion.":
     "\u4ec5\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff1b\u751f\u6210\u6700\u5f3a\u9009\u9879\u6216\u7ed3\u8bba\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u5ba1\u67e5\u89d2\u8272\u8bbe\u7f6e\u3002",
+  "Collect independent first responses only; complete Setup / Models before generating strongest options or a conclusion.":
+    "\u4ec5\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff1b\u751f\u6210\u6700\u5f3a\u9009\u9879\u6216\u7ed3\u8bba\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u8bbe\u7f6e / \u6a21\u578b\u3002",
   "First responses collected": "\u5df2\u6536\u96c6\u521d\u59cb\u56de\u5e94",
   "The discussion collected independent first responses. Finish review role setup before organizing options or drafting a conclusion.":
     "\u8ba8\u8bba\u5df2\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u6574\u7406\u9009\u9879\u6216\u8d77\u8349\u7ed3\u8bba\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u5ba1\u67e5\u89d2\u8272\u8bbe\u7f6e\u3002",
@@ -1617,6 +1619,19 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion actions": "\u8ba8\u8bba\u52a8\u4f5c",
   "Read room messages": "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u6d88\u606f",
   "Discussion action composer": "\u8ba8\u8bba\u64cd\u4f5c\u7f16\u8f91\u533a",
+  "Room actions": "\u8ba8\u8bba\u5ba4\u52a8\u4f5c",
+  "What should happen next?": "\u63a5\u4e0b\u6765\u8981\u505a\u4ec0\u4e48\uff1f",
+  "Choose a short room action after reading the latest messages.":
+    "\u8bfb\u5b8c\u6700\u65b0\u6d88\u606f\u540e\uff0c\u9009\u62e9\u4e00\u4e2a\u7b80\u77ed\u7684\u8ba8\u8bba\u5ba4\u52a8\u4f5c\u3002",
+  "Message the room": "\u7ed9\u8ba8\u8bba\u5ba4\u53d1\u6d88\u606f",
+  "Ask the room to continue from the discussion brief.":
+    "\u8ba9\u8ba8\u8bba\u5ba4\u4ece\u8ba8\u8bba\u7b80\u62a5\u7ee7\u7eed\u3002",
+  "Update from the current room state.":
+    "\u6839\u636e\u5f53\u524d\u8ba8\u8bba\u5ba4\u72b6\u6001\u66f4\u65b0\u3002",
+  "Continue the room from here.":
+    "\u4ece\u8fd9\u91cc\u7ee7\u7eed\u8ba8\u8bba\u5ba4\u3002",
+  "Review actions appear after participants respond.":
+    "\u53c2\u4e0e\u8005\u56de\u5e94\u540e\uff0c\u5ba1\u9605\u52a8\u4f5c\u4f1a\u51fa\u73b0\u3002",
   "Next in the room": "\u8ba8\u8bba\u5ba4\u4e2d\u7684\u4e0b\u4e00\u6b65",
   "The room has enough material for review. Start with the conclusion, then choose whether to inspect disagreements, check evidence, or update the discussion.":
     "\u8ba8\u8bba\u5ba4\u5df2\u6709\u8db3\u591f\u6750\u6599\u53ef\u4f9b\u5ba1\u9605\u3002\u8bf7\u5148\u4ece\u7ed3\u8bba\u5f00\u59cb\uff0c\u7136\u540e\u9009\u62e9\u662f\u5426\u68c0\u67e5\u5206\u6b67\u3001\u6838\u67e5\u8bc1\u636e\u6216\u66f4\u65b0\u8ba8\u8bba\u3002",

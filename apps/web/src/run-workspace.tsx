@@ -3068,22 +3068,45 @@ function StartRunForm({
     continuationSetup.primaryResultTitle ?? continuationView.primaryResultTitle;
   const primaryResultDetail =
     continuationSetup.primaryResultDetail ?? continuationView.primaryResultDetail;
+  const isRoomComposer = variant === "room-composer";
+  const roomComposerTitle = continuationView.reviewReady
+    ? "What should happen next?"
+    : "Message the room";
+  const roomComposerDetail = continuationView.reviewReady
+    ? "Choose a short room action after reading the latest messages."
+    : "Ask the room to continue from the discussion brief.";
+  const roomPrimaryActionDetail = continuationSetup.primaryActionDetail?.includes(
+    "first responses only"
+  )
+    ? continuationSetup.primaryActionDetail
+    : continuationView.reviewReady
+      ? "Update from the current room state."
+      : "Continue the room from here.";
   const formContent = (
     <>
       <div
         className={`du-discussion-actions${
-          variant === "room-composer" ? " du-discussion-actions-room" : ""
+          isRoomComposer ? " du-discussion-actions-room" : ""
         }`}
-        aria-label={t("Discussion action composer")}
+        aria-label={t(isRoomComposer ? "Room actions" : "Discussion action composer")}
       >
         <div className="du-discussion-actions-heading">
-          <p className="du-kicker">{t("Discussion action composer")}</p>
-          {variant === "room-composer" ? (
+          {isRoomComposer ? (
             <>
-              <h4>{t(continuationView.title)}</h4>
-              <p>{t(continuationView.description)}</p>
+              <span className="du-room-composer-avatar" aria-hidden="true">
+                DR
+              </span>
+              <div>
+                <p className="du-kicker">{t("Room actions")}</p>
+                <h4>{t(roomComposerTitle)}</h4>
+                <p>{t(roomComposerDetail)}</p>
+              </div>
             </>
-          ) : null}
+          ) : (
+            <>
+              <p className="du-kicker">{t("Discussion action composer")}</p>
+            </>
+          )}
         </div>
         <div className="du-discussion-action-list">
           <button
@@ -3098,119 +3121,164 @@ function StartRunForm({
             }
             disabled={startMutation.isPending}
           >
-            <span className="du-discussion-action-badge-row">
-              <span className="du-discussion-action-badge">{t("Recommended")}</span>
-              <span className="du-discussion-action-badge">{t("Updates discussion")}</span>
-            </span>
             <strong>{t(continuationView.primaryLabel)}</strong>
-            <span>{t(primaryActionDetail)}</span>
-            <span className="du-discussion-action-result">
-              {t(
-                continuationView.reviewReady
-                  ? "After it finishes, review the updated timeline and current conclusion."
-                  : "After it finishes, review the updated timeline and next recommended action."
-              )}
-            </span>
-          </button>
-          {continuationView.reviewReady ? (
-            <>
-              <button
-                type="button"
-                className="du-discussion-action-button du-discussion-action-secondary"
-                aria-label={t("Ask for stronger options")}
-                onClick={() => startRecommendedPipeline(strongerOptionsFeedback)}
-                disabled={startMutation.isPending}
-              >
+            {isRoomComposer ? (
+              <small>{t(roomPrimaryActionDetail)}</small>
+            ) : (
+              <>
                 <span className="du-discussion-action-badge-row">
+                  <span className="du-discussion-action-badge">{t("Recommended")}</span>
                   <span className="du-discussion-action-badge">{t("Updates discussion")}</span>
                 </span>
-                <strong>{t("Ask for stronger options")}</strong>
-                <span>
+                <span>{t(primaryActionDetail)}</span>
+                <span className="du-discussion-action-result">
                   {t(
-                    "Refresh the discussion so the strongest current options can be compared and improved."
+                    continuationView.reviewReady
+                      ? "After it finishes, review the updated timeline and current conclusion."
+                      : "After it finishes, review the updated timeline and next recommended action."
                   )}
                 </span>
-                <span className="du-discussion-action-result">
-                  {t("After it finishes, compare the refreshed strongest options.")}
-                </span>
-              </button>
-              <a
-                className="du-discussion-action-button du-discussion-action-secondary"
-                href="#open-disagreements"
-                aria-label={t("Review disagreements")}
-              >
-                <span className="du-discussion-action-badge-row">
-                  <span className="du-discussion-action-badge du-discussion-action-badge-muted">
-                    {t("Review only")}
+              </>
+            )}
+          </button>
+          {continuationView.reviewReady ? (
+            isRoomComposer ? (
+              <>
+                <button
+                  type="button"
+                  className="du-discussion-action-button du-discussion-action-secondary"
+                  aria-label={t("Ask for stronger options")}
+                  onClick={() => startRecommendedPipeline(strongerOptionsFeedback)}
+                  disabled={startMutation.isPending}
+                >
+                  <strong>{t("Ask for stronger options")}</strong>
+                </button>
+                <a
+                  className="du-discussion-action-button du-discussion-action-secondary"
+                  href="#open-disagreements"
+                  aria-label={t("Review disagreements")}
+                >
+                  <strong>{t("Review disagreements")}</strong>
+                </a>
+                <a
+                  className="du-discussion-action-button du-discussion-action-secondary"
+                  href="#answer-requirements"
+                  aria-label={t("Confirm answer requirements")}
+                >
+                  <strong>{t("Confirm answer requirements")}</strong>
+                </a>
+                <a
+                  className="du-discussion-action-button du-discussion-action-secondary"
+                  href="#evidence-gaps"
+                  aria-label={t("Check evidence")}
+                >
+                  <strong>{t("Check evidence")}</strong>
+                </a>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="du-discussion-action-button du-discussion-action-secondary"
+                  aria-label={t("Ask for stronger options")}
+                  onClick={() => startRecommendedPipeline(strongerOptionsFeedback)}
+                  disabled={startMutation.isPending}
+                >
+                  <span className="du-discussion-action-badge-row">
+                    <span className="du-discussion-action-badge">{t("Updates discussion")}</span>
                   </span>
-                </span>
-                <strong>{t("Review disagreements")}</strong>
-                <span>
-                  {t("Jump to unresolved objections that still constrain the conclusion.")}
-                </span>
-                <span className="du-discussion-action-result">
-                  {t("Jump only; this does not change the discussion.")}
-                </span>
-              </a>
-              <a
-                className="du-discussion-action-button du-discussion-action-secondary"
-                href="#answer-requirements"
-                aria-label={t("Confirm answer requirements")}
-              >
-                <span className="du-discussion-action-badge-row">
-                  <span className="du-discussion-action-badge du-discussion-action-badge-muted">
-                    {t("Review only")}
+                  <strong>{t("Ask for stronger options")}</strong>
+                  <span>
+                    {t(
+                      "Refresh the discussion so the strongest current options can be compared and improved."
+                    )}
                   </span>
-                </span>
-                <strong>{t("Confirm answer requirements")}</strong>
-                <span>
-                  {t(
-                    "Review requirements that must be satisfied or acknowledged before relying on the conclusion."
-                  )}
-                </span>
-                <span className="du-discussion-action-result">
-                  {t("Jump only; this does not change the discussion.")}
-                </span>
-              </a>
-              <a
-                className="du-discussion-action-button du-discussion-action-secondary"
-                href="#evidence-gaps"
-                aria-label={t("Check evidence")}
-              >
-                <span className="du-discussion-action-badge-row">
-                  <span className="du-discussion-action-badge du-discussion-action-badge-muted">
-                    {t("Review only")}
+                  <span className="du-discussion-action-result">
+                    {t("After it finishes, compare the refreshed strongest options.")}
                   </span>
-                </span>
-                <strong>{t("Check evidence")}</strong>
-                <span>
-                  {t("Review missing or unchecked evidence before relying on the answer.")}
-                </span>
-                <span className="du-discussion-action-result">
-                  {t("Jump only; this does not change the discussion.")}
-                </span>
-              </a>
-            </>
+                </button>
+                <a
+                  className="du-discussion-action-button du-discussion-action-secondary"
+                  href="#open-disagreements"
+                  aria-label={t("Review disagreements")}
+                >
+                  <span className="du-discussion-action-badge-row">
+                    <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                      {t("Review only")}
+                    </span>
+                  </span>
+                  <strong>{t("Review disagreements")}</strong>
+                  <span>
+                    {t("Jump to unresolved objections that still constrain the conclusion.")}
+                  </span>
+                  <span className="du-discussion-action-result">
+                    {t("Jump only; this does not change the discussion.")}
+                  </span>
+                </a>
+                <a
+                  className="du-discussion-action-button du-discussion-action-secondary"
+                  href="#answer-requirements"
+                  aria-label={t("Confirm answer requirements")}
+                >
+                  <span className="du-discussion-action-badge-row">
+                    <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                      {t("Review only")}
+                    </span>
+                  </span>
+                  <strong>{t("Confirm answer requirements")}</strong>
+                  <span>
+                    {t(
+                      "Review requirements that must be satisfied or acknowledged before relying on the conclusion."
+                    )}
+                  </span>
+                  <span className="du-discussion-action-result">
+                    {t("Jump only; this does not change the discussion.")}
+                  </span>
+                </a>
+                <a
+                  className="du-discussion-action-button du-discussion-action-secondary"
+                  href="#evidence-gaps"
+                  aria-label={t("Check evidence")}
+                >
+                  <span className="du-discussion-action-badge-row">
+                    <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                      {t("Review only")}
+                    </span>
+                  </span>
+                  <strong>{t("Check evidence")}</strong>
+                  <span>{t("Review missing or unchecked evidence before relying on the answer.")}</span>
+                  <span className="du-discussion-action-result">
+                    {t("Jump only; this does not change the discussion.")}
+                  </span>
+                </a>
+              </>
+            )
           ) : (
-            <article
-              className="du-discussion-action-button du-discussion-action-secondary du-discussion-action-note"
-              aria-label={t("Review actions unlock later")}
-            >
-              <span className="du-discussion-action-badge-row">
-                <span className="du-discussion-action-badge du-discussion-action-badge-muted">
-                  {t("Available after first update")}
+            isRoomComposer ? (
+              <p className="du-room-composer-note">
+                {t("Review actions appear after participants respond.")}
+              </p>
+            ) : (
+              <article
+                className="du-discussion-action-button du-discussion-action-secondary du-discussion-action-note"
+                aria-label={t("Review actions unlock later")}
+              >
+                <span className="du-discussion-action-badge-row">
+                  <span className="du-discussion-action-badge du-discussion-action-badge-muted">
+                    {t("Available after first update")}
+                  </span>
                 </span>
-              </span>
-              <strong>{t("Review actions unlock later")}</strong>
-              <span>
-                {t(
-                  "After the room has perspectives, disagreements, evidence gaps, risks, and a draft conclusion, review actions will appear here."
-                )}
-              </span>
-              <span className="du-discussion-action-result">
-                {t("For now, continue the discussion to create those materials.")}
-              </span>
-            </article>
+                <strong>{t("Review actions unlock later")}</strong>
+                <span>
+                  {t(
+                    "After the room has perspectives, disagreements, evidence gaps, risks, and a draft conclusion, review actions will appear here."
+                  )}
+                </span>
+                <span className="du-discussion-action-result">
+                  {t("For now, continue the discussion to create those materials.")}
+                </span>
+              </article>
+            )
           )}
         </div>
       </div>
@@ -3320,7 +3388,7 @@ function StartRunForm({
       <section
         id="continue-discussion"
         className="du-room-composer"
-        aria-label={t("Discussion action composer")}
+        aria-label={t("Room actions")}
       >
         {formContent}
       </section>
