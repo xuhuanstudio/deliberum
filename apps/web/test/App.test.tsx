@@ -4531,6 +4531,13 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba")).toBeTruthy();
     expect(screen.getAllByText("\u8ba8\u8bba\u5ba4").length).toBeGreaterThan(0);
+    const localizedRoomStatus = screen.getByRole("status", {
+      name: "\u8ba8\u8bba\u5ba4\u72b6\u6001"
+    });
+    expect(localizedRoomStatus.textContent ?? "").toContain("\u7ed3\u8bba\u5df2\u5c31\u7eea");
+    expect(localizedRoomStatus.textContent ?? "").toContain(
+      "\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba"
+    );
     expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5\u8be6\u60c5")).toBeTruthy();
     expect(
       (document.querySelector(".du-room-brief") as HTMLDetailsElement | null)?.open
@@ -5286,13 +5293,14 @@ describe("@deliberum/web shell", () => {
     const pageActionsText = document.querySelector(".du-page-actions")?.textContent ?? "";
     expect(pageActionsText).toContain("View current conclusion");
     expect(pageActionsText).toContain("Update conclusion");
-    const primaryDiscussionActions = screen.getByRole("navigation", {
-      name: "Primary discussion actions"
-    });
-    expect(primaryDiscussionActions.textContent ?? "").toContain(
-      "Review current conclusion"
-    );
-    expect(primaryDiscussionActions.textContent ?? "").toContain("Update conclusion");
+    const roomStatus = screen.getByRole("status", { name: "Room status" });
+    expect(roomStatus.textContent ?? "").toContain("Discussion room");
+    expect(roomStatus.textContent ?? "").toContain("Conclusion ready");
+    expect(roomStatus.textContent ?? "").toContain("Next: review current conclusion");
+    expect(document.querySelector(".du-room-status-cue")).toBeTruthy();
+    expect(
+      screen.queryByRole("navigation", { name: "Primary discussion actions" })
+    ).toBeNull();
     expect(screen.getByText("Discussion action composer")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Update conclusion" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
@@ -5339,6 +5347,7 @@ describe("@deliberum/web shell", () => {
     const progressDetails = timeline?.querySelector(".du-room-progress-details");
     const roomLayout = document.querySelector(".du-room-layout");
     const roomMain = document.querySelector(".du-room-main");
+    const roomStatusCue = document.querySelector(".du-room-status-cue");
     const roomComposer = document.querySelector(".du-room-composer");
     const roomBrief = document.querySelector(".du-room-brief") as HTMLDetailsElement | null;
     const roomOutputs = document.querySelector(".du-room-outputs-section");
@@ -5350,13 +5359,21 @@ describe("@deliberum/web shell", () => {
     expect(progressDetails).toBeTruthy();
     expect(roomLayout).toBeTruthy();
     expect(roomMain).toBeTruthy();
+    expect(roomStatusCue).toBeTruthy();
     expect(roomComposer).toBeTruthy();
     expect(roomBrief).toBeTruthy();
     expect(roomOutputs).toBeTruthy();
     expect(reviewDrawer).toBeTruthy();
     expect(roomBrief?.open).toBe(false);
     expect(reviewDrawer?.open).toBe(false);
+    expect(roomMain?.contains(roomStatusCue as Node)).toBe(true);
     expect(roomMain?.contains(roomComposer as Node)).toBe(true);
+    expect(
+      Boolean(
+        roomStatusCue?.compareDocumentPosition(timeline as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
     expect(document.querySelector(".du-room-brief-body")?.closest("details")).toBe(roomBrief);
     expect(document.querySelector(".du-discussion-dashboard-grid")?.closest("details")).toBe(
       reviewDrawer
@@ -5799,7 +5816,10 @@ describe("@deliberum/web shell", () => {
               authorId: "openai-compatible-final-auditor",
               createdAt: "2026-06-10T00:00:08.000Z",
               payload: {
-                summary: "Provider-backed conclusions remain provisional until reviewed."
+                summary: "Provider-backed conclusions remain provisional until reviewed.",
+                risks: [
+                  "Provider-backed conclusions may still miss real rollout constraints."
+                ]
               },
               basedOnEventIds: ["provider-final-candidate-event"],
               trace: {}
@@ -5839,6 +5859,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Kept this material in the room")).toBeTruthy();
     expect(screen.getByText("Drafted the current conclusion")).toBeTruthy();
     expect(screen.getByText("Reviewed risks")).toBeTruthy();
+    expect(
+      screen.getByText("Provider-backed conclusions may still miss real rollout constraints.")
+    ).toBeTruthy();
+    expect(
+      screen.queryByText("A risk review was recorded for the current conclusion.")
+    ).toBeNull();
     expect(screen.getByText("Review coordinator")).toBeTruthy();
     expect(screen.getByText("Conclusion writer")).toBeTruthy();
     expect(screen.getByText("Risk reviewer")).toBeTruthy();
@@ -6358,13 +6384,13 @@ describe("@deliberum/web shell", () => {
     expect(document.querySelector(".du-page-actions")?.textContent ?? "").toContain(
       "Continue discussion"
     );
-    const primaryDiscussionActions = screen.getByRole("navigation", {
-      name: "Primary discussion actions"
-    });
-    expect(primaryDiscussionActions.textContent ?? "").toContain("Continue discussion");
-    expect(primaryDiscussionActions.textContent ?? "").not.toContain(
-      "Review current conclusion"
-    );
+    const roomStatus = screen.getByRole("status", { name: "Room status" });
+    expect(roomStatus.textContent ?? "").toContain("Discussion room");
+    expect(roomStatus.textContent ?? "").toContain("Next step");
+    expect(roomStatus.textContent ?? "").toContain("Next: continue guided discussion");
+    expect(
+      screen.queryByRole("navigation", { name: "Primary discussion actions" })
+    ).toBeNull();
     expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();

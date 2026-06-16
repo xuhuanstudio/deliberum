@@ -272,6 +272,11 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Create discussion" }).click();
   await page.getByRole("heading", { name: "Discussion room" }).waitFor();
   await page.locator(".du-room-composer").waitFor();
+  await assertRoomStatusCue(page, {
+    label: "discussion room before continuation",
+    expectedStatus: "Next step",
+    expectedNextAction: "Next: continue guided discussion"
+  });
   await page.getByText("How this discussion will continue").click();
   await page.getByText("Model-backed discussion").first().waitFor();
   await assertBriefDetailsCollapsed(page, "discussion room before continuation");
@@ -297,6 +302,11 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Model-backed discussion continued").waitFor();
   await assertRoomUpdateMessage(page, "discussion room after continuation");
+  await assertRoomStatusCue(page, {
+    label: "discussion room after continuation",
+    expectedStatus: "Conclusion ready",
+    expectedNextAction: "Next: review current conclusion"
+  });
   await page.getByText("Conversation transcript").waitFor();
   await page.getByText("What the room said and did").waitFor();
   await page.getByText("Discussion phase").first().waitFor();
@@ -313,6 +323,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page
     .getByText("Confirm browser evidence before treating the conclusion as stable.")
+    .first()
+    .waitFor();
+  await page
+    .getByText("Browser-backed conclusions remain provisional until risks are reviewed.")
     .first()
     .waitFor();
   const roomOutputSummary = page.locator("details.du-room-outputs-section");
@@ -356,6 +370,23 @@ async function assertRoomUpdateMessage(page, label) {
     await roomUpdate.getByRole("heading", { name: "What the room did" }).waitFor();
   } catch (error) {
     throw new Error(`${label} did not render the latest update as a room message.`, {
+      cause: error
+    });
+  }
+}
+
+async function assertRoomStatusCue(page, { label, expectedStatus, expectedNextAction }) {
+  const roomStatus = page.getByRole("status", { name: "Room status" });
+  try {
+    await roomStatus.waitFor();
+    await roomStatus.getByText("Discussion room", { exact: true }).waitFor();
+    await roomStatus.getByText(expectedStatus, { exact: true }).waitFor();
+    await roomStatus.getByText(expectedNextAction, { exact: true }).waitFor();
+    if ((await page.getByRole("navigation", { name: "Primary discussion actions" }).count()) !== 0) {
+      throw new Error("The old in-room action navigation is still visible.");
+    }
+  } catch (error) {
+    throw new Error(`${label} did not render a single readable room status cue.`, {
       cause: error
     });
   }

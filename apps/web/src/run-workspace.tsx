@@ -4160,14 +4160,14 @@ function RunQualityOverview({
       )}
     >
       <QueryState query={queryState}>
-        <DiscussionRoomActionBar runId={runId} reviewReady={continuationView.reviewReady} />
-        <StatusBanner
-          tone={continuationView.reviewReady ? "ok" : "warning"}
-          title={nextActionTitle}
-          detail={nextActionDetail}
-        />
         <div className="du-room-layout">
           <div className="du-room-main">
+            <DiscussionRoomStatusCue
+              statusLabel={continuationView.reviewReady ? t("Conclusion ready") : t("Next step")}
+              title={nextActionTitle}
+              detail={nextActionDetail}
+              ready={continuationView.reviewReady}
+            />
             <DiscussionRoomTimeline
               run={run}
               activities={roomActivities}
@@ -4365,32 +4365,38 @@ function RunQualityOverview({
   );
 }
 
-function DiscussionRoomActionBar({
-  runId,
-  reviewReady
+function DiscussionRoomStatusCue({
+  statusLabel,
+  title,
+  detail,
+  ready
 }: {
-  runId: string;
-  reviewReady: boolean;
+  statusLabel: string;
+  title: string;
+  detail: string;
+  ready: boolean;
 }) {
   const { t } = useI18n();
 
   return (
-    <nav className="du-room-action-bar" aria-label={t("Primary discussion actions")}>
-      {reviewReady ? (
-        <>
-          <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-            {t("Review current conclusion")}
-          </Link>
-          <a className="du-action-link du-secondary-link" href="#continue-discussion">
-            {t("Update conclusion")}
-          </a>
-        </>
-      ) : (
-        <a className="du-action-link" href="#continue-discussion">
-          {t("Continue discussion")}
-        </a>
-      )}
-    </nav>
+    <section
+      className="du-room-status-cue"
+      aria-label={t("Room status")}
+      data-state={ready ? "ready" : "pending"}
+      role="status"
+    >
+      <span className="du-room-activity-avatar" aria-hidden="true">
+        DR
+      </span>
+      <div className="du-room-activity-bubble">
+        <div className="du-room-message-header">
+          <strong>{t("Discussion room")}</strong>
+          <span>{statusLabel}</span>
+        </div>
+        <p className="du-room-message-detail">{title}</p>
+        <p className="du-room-message-action">{detail}</p>
+      </div>
+    </section>
   );
 }
 
@@ -5083,15 +5089,27 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       speaker,
       title: "Risk review recorded",
       action: "Reviewed risks",
-      detail:
-        getFirstStringRecordValue(payload, ["summary", "rationale"]) ??
-        "A risk review was recorded for the current conclusion.",
+      detail: describeFinalAuditPayload(payload),
       tone: "warning",
       phase: "conclusion"
     };
   }
 
   return null;
+}
+
+function describeFinalAuditPayload(payload: unknown): string {
+  return (
+    getFirstStringFromRecordArrays(payload, [
+      "risks",
+      "findings",
+      "limitations",
+      "omissions",
+      "continuationSuggestions"
+    ]) ??
+    getFirstStringRecordValue(payload, ["summary", "rationale"]) ??
+    "A risk review was recorded for the current conclusion."
+  );
 }
 
 function getRoomEventSpeaker(event: unknown, run: unknown): string {
@@ -6241,6 +6259,21 @@ function getFirstStringRecordValue(record: unknown, keys: readonly string[]): st
 
     if (value) {
       return value;
+    }
+  }
+
+  return undefined;
+}
+
+function getFirstStringFromRecordArrays(
+  record: unknown,
+  keys: readonly string[]
+): string | undefined {
+  for (const key of keys) {
+    const firstValue = getStringArray(getRecordValue(record, key))[0];
+
+    if (firstValue) {
+      return firstValue;
     }
   }
 

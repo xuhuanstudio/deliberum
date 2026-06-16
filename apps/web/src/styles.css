@@ -1657,6 +1657,28 @@ textarea:focus-visible {
   margin-top: 0;
 }
 
+.du-room-status-cue {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  min-width: 0;
+  margin: 0 0 2px;
+}
+
+.du-room-status-cue .du-room-activity-bubble {
+  max-width: none;
+  background: #fffefa;
+}
+
+.du-room-status-cue[data-state="ready"] .du-room-activity-bubble {
+  border-left: 4px solid var(--du-accent);
+}
+
+.du-room-status-cue[data-state="pending"] .du-room-activity-bubble {
+  border-left: 4px solid #b7791f;
+}
+
 .du-room-brief {
   gap: 0;
   background: #f8fff9;
@@ -2319,18 +2341,6 @@ textarea:focus-visible {
 .du-room-contribution p:not(.du-kicker) {
   color: var(--du-muted);
   line-height: 1.5;
-}
-
-.du-room-action-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  margin: -2px 0 2px;
-}
-
-.du-room-action-bar .du-action-link {
-  min-height: 42px;
 }
 
 .du-room-focus {
@@ -4031,44 +4041,40 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .du-room-action-bar {
-    align-items: stretch;
-  }
-
-  .du-room-action-bar .du-action-link {
-    width: 100%;
-  }
-
   .du-room-main {
     display: contents;
   }
 
-  .du-room-timeline {
+  .du-room-status-cue {
     order: 1;
   }
 
-  .du-room-composer {
+  .du-room-timeline {
     order: 2;
   }
 
-  .du-room-focus {
+  .du-room-composer {
     order: 3;
+  }
+
+  .du-room-focus {
+    order: 4;
     position: static;
   }
 
   .du-room-brief {
-    order: 4;
-  }
-
-  .du-room-outputs-section {
     order: 5;
   }
 
-  .du-room-options-section {
+  .du-room-outputs-section {
     order: 6;
   }
 
-  .du-room-contributions {
+  .du-room-options-section {
     order: 7;
+  }
+
+  .du-room-contributions {
+    order: 8;
   }
 }

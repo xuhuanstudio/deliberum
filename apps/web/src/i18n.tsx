@@ -1015,6 +1015,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "A reviewable outcome with open disagreements, risks, missing evidence, and next steps.":
     "\u5305\u542b\u672a\u89e3\u51b3\u5206\u6b67\u3001\u98ce\u9669\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u4e0b\u4e00\u6b65\u7684\u53ef\u5ba1\u9605\u7ed3\u679c\u3002",
   "Discussion room": "\u8ba8\u8bba\u5ba4",
+  "Room status": "\u8ba8\u8bba\u5ba4\u72b6\u6001",
+  "Conclusion ready": "\u7ed3\u8bba\u5df2\u5c31\u7eea",
   "A human-readable room view of the brief, participant perspectives, discussion flow, unresolved disagreements, missing evidence, current conclusion, and next actions.":
     "\u9762\u5411\u4eba\u7684\u8ba8\u8bba\u5ba4\u89c6\u56fe\uff0c\u5c55\u793a\u7b80\u62a5\u3001\u53c2\u4e0e\u8005\u89c6\u89d2\u3001\u8ba8\u8bba\u6d41\u7a0b\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u3001\u5f53\u524d\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u3002",
   "Next: review current conclusion": "\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba",
