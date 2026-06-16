@@ -426,22 +426,12 @@ async function assertDiscussionRoomOverview(page, { label, expectedNextAction })
   try {
     await overview.waitFor();
     await overview.getByText("Discussion room", { exact: true }).waitFor();
-    await overview.getByText("Current phase", { exact: true }).waitFor();
-    await overview.getByText("Review queue", { exact: true }).waitFor();
     await overview.getByText(expectedNextAction, { exact: true }).waitFor();
-    const memberStrip = overview.locator("[aria-label='Room participants']");
-    await memberStrip.waitFor();
-    const latestMessages = memberStrip.getByRole("list", { name: "Latest participant messages" });
-
-    if ((await latestMessages.count()) > 0) {
-      await memberStrip.getByText("Latest messages", { exact: true }).waitFor();
-      await memberStrip.getByText("Who spoke most recently", { exact: true }).waitFor();
-      await latestMessages.waitFor();
-    } else {
-      await memberStrip.getByText("Participant messages are the main thread").waitFor();
-      await memberStrip.getByText("Perspective A", { exact: true }).waitFor();
-      await memberStrip.getByText("Perspective B", { exact: true }).waitFor();
-    }
+    const chatShell = page.locator(".du-room-chat-shell");
+    await chatShell.waitFor();
+    await chatShell.getByRole("region", { name: "Conversation transcript" }).waitFor();
+    await chatShell.locator(".du-room-action-rail").waitFor();
+    await chatShell.getByText("Reply to the room", { exact: true }).waitFor();
   } catch (error) {
     throw new Error(`${label} did not render a readable discussion room overview.`, {
       cause: error
@@ -794,6 +784,7 @@ async function assertMobileDiscussionRoomShell(page, label) {
     const header = document.querySelector(".du-room-header");
     const strip = document.querySelector(".du-room-action-strip");
     const timeline = document.querySelector("[aria-label='Discussion timeline']");
+    const chatShell = document.querySelector(".du-room-chat-shell");
     const transcript = document.querySelector("#room-conversation-transcript");
     const nextAction = document.querySelector("#room-next-action");
     const composer = document.querySelector(".du-room-composer");
@@ -811,6 +802,7 @@ async function assertMobileDiscussionRoomShell(page, label) {
       threadSummary: rectFor(".du-room-thread-summary"),
       threadIntro: rectFor(".du-room-thread-intro"),
       phaseSeparator: rectFor(".du-room-phase-separator"),
+      chatShell: rectFor(".du-room-chat-shell"),
       hasStrip: Boolean(strip),
       hasActionRail: Boolean(actionRail),
       timeline: rectFor("[aria-label='Discussion timeline']"),
@@ -824,12 +816,20 @@ async function assertMobileDiscussionRoomShell(page, label) {
         timelineBeforeComposer:
           Boolean(timeline && composer) && elements.indexOf(timeline) < elements.indexOf(composer),
         timelineContainsComposer: Boolean(timeline && composer && timeline.contains(composer)),
+        chatShellContainsTranscript: Boolean(
+          chatShell && transcript && chatShell.contains(transcript)
+        ),
+        chatShellContainsActionRail: Boolean(
+          chatShell && actionRail && chatShell.contains(actionRail)
+        ),
         transcriptContainsComposer: Boolean(transcript && composer && transcript.contains(composer)),
         actionRailContainsComposer: Boolean(actionRail && composer && actionRail.contains(composer)),
-        composerBeforeTranscript:
-          Boolean(composer && transcript) && elements.indexOf(composer) < elements.indexOf(transcript),
+        transcriptBeforeComposer:
+          Boolean(transcript && composer) && elements.indexOf(transcript) < elements.indexOf(composer),
         transcriptBeforeNextAction:
           Boolean(transcript && nextAction) && elements.indexOf(transcript) < elements.indexOf(nextAction),
+        nextActionBeforeComposer:
+          Boolean(nextAction && composer) && elements.indexOf(nextAction) < elements.indexOf(composer),
         composerBeforeProgress:
           Boolean(composer && progressDetails) &&
           elements.indexOf(composer) < elements.indexOf(progressDetails)
@@ -856,6 +856,7 @@ async function assertMobileDiscussionRoomShell(page, label) {
     metrics.threadIntro.height > 54 ||
     !metrics.phaseSeparator ||
     metrics.phaseSeparator.height > 42 ||
+    !metrics.chatShell ||
     !metrics.order.headerBeforeTimeline ||
     metrics.hasStrip ||
     !metrics.timeline ||
@@ -865,10 +866,13 @@ async function assertMobileDiscussionRoomShell(page, label) {
     !metrics.order.timelineBeforeNextAction ||
     !metrics.order.timelineBeforeComposer ||
     !metrics.order.timelineContainsComposer ||
+    !metrics.order.chatShellContainsTranscript ||
+    !metrics.order.chatShellContainsActionRail ||
     metrics.order.transcriptContainsComposer ||
     !metrics.order.actionRailContainsComposer ||
-    !metrics.order.composerBeforeTranscript ||
+    !metrics.order.transcriptBeforeComposer ||
     !metrics.order.transcriptBeforeNextAction ||
+    !metrics.order.nextActionBeforeComposer ||
     !metrics.order.composerBeforeProgress ||
     metrics.documentWidth > metrics.viewportWidth + 1
   ) {

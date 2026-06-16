@@ -1646,6 +1646,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   You: "\u4f60",
   "Room actions": "\u8ba8\u8bba\u5ba4\u52a8\u4f5c",
   "Room quick replies": "\u8ba8\u8bba\u5ba4\u5feb\u6377\u56de\u590d",
+  "Room conversation": "\u8ba8\u8bba\u5ba4\u5bf9\u8bdd",
   "Quick replies": "\u5feb\u6377\u56de\u590d",
   "Reply to the room": "\u56de\u590d\u8ba8\u8bba\u5ba4",
   "Choose a quick reply to review or move the discussion forward.":

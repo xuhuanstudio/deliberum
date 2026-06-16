@@ -597,8 +597,7 @@ textarea:focus-visible {
 
 @media (max-width: 720px) {
   .du-room-action-rail {
-    top: 0;
-    padding: 2px 0 4px;
+    padding: 7px 8px 8px;
   }
 
   .du-room-action-rail .du-room-composer-copy {
@@ -1964,7 +1963,7 @@ textarea:focus-visible {
 }
 
 .du-room-header-status-grid {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
@@ -1993,7 +1992,7 @@ textarea:focus-visible {
 }
 
 .du-room-member-strip {
-  display: flex;
+  display: none;
   flex-wrap: nowrap;
   gap: 8px;
   align-items: center;
@@ -2201,14 +2200,14 @@ textarea:focus-visible {
 }
 
 .du-room-action-rail {
-  position: sticky;
-  top: 8px;
-  z-index: 14;
+  position: static;
+  z-index: 4;
   display: grid;
   min-width: 0;
-  margin: -2px 0 2px;
-  padding: 4px 0 6px;
-  background: linear-gradient(180deg, var(--du-bg) 0%, rgb(245 243 237 / 0.92) 72%, rgb(245 243 237 / 0));
+  margin: 0;
+  border-top: 1px solid var(--du-line);
+  background: #fffefa;
+  padding: 8px 10px 10px;
 }
 
 .du-room-action-rail .du-room-composer[data-placement="room-action-dock"] {
@@ -2220,6 +2219,16 @@ textarea:focus-visible {
 
 .du-room-action-rail .du-continuation-details {
   display: none;
+}
+
+.du-room-chat-shell {
+  display: grid;
+  grid-template-rows: minmax(280px, 1fr) auto;
+  height: clamp(420px, calc(100vh - 268px), 640px);
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fdfbf6;
 }
 
 .du-room-brief {
@@ -2496,6 +2505,15 @@ textarea:focus-visible {
 .du-room-stage-wrap {
   display: grid;
   gap: 8px;
+}
+
+.du-room-chat-shell .du-room-activity-wrap {
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px;
+  scroll-padding: 12px;
+  scrollbar-width: thin;
 }
 
 .du-room-response-wrap h5,
@@ -5124,6 +5142,10 @@ textarea:focus-visible {
 
   .du-room-header {
     order: 1;
+  }
+
+  .du-room-chat-shell {
+    height: clamp(420px, calc(100vh - 164px), 620px);
   }
 
   .du-room-timeline {

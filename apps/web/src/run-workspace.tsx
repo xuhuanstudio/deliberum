@@ -4949,208 +4949,210 @@ function DiscussionRoomTimeline({
           )}
         </p>
       </div>
-      <div className="du-room-action-rail" aria-label={t("Room quick replies")}>
-        {roomComposer}
-      </div>
-      <div id="room-conversation-transcript" className="du-room-activity-wrap">
-        <div className="du-room-thread-intro du-sr-only">
-          <p className="du-kicker">{t("Conversation transcript")}</p>
-          <h5>{t("What the room said and did")}</h5>
-          <p>{t("Participant messages and room updates appear in order.")}</p>
-        </div>
-        {activityQuery.isLoading ? (
-          <StatusBanner title={t("Loading room activity")} />
-        ) : activityQuery.isError ? (
-          <StatusBanner
-            tone="warning"
-            title={t("Could not load room activity")}
-            detail={formatSafeErrorMessage(activityQuery.error)}
-          />
-        ) : roomActivities.length === 0 ? (
-          <EmptyState
-            title={t("No room activity visible yet")}
-            description={t(
-              "Continue the discussion so the room can show participant responses and discussion updates."
-            )}
-          />
-        ) : (
-          <div
-            className="du-room-activity-groups"
-            role="region"
-            aria-label={t("Conversation transcript")}
-          >
-            {activityGroups.map((group) => {
-              const roundLabel =
-                group.kind === "brief"
-                  ? t("Discussion brief")
-                  : t("Discussion round {round}", { round: group.round });
-              const roundStep =
-                group.kind === "brief"
-                  ? t("Room opening")
-                  : t("Round {round}", { round: group.round });
-              const roundDetail =
-                group.kind === "brief"
-                  ? t("The room starts by making the question, goals, and constraints visible.")
-                  : t("Participants answer first; review roles respond in the same room.");
-              const updatesLabel =
-                group.kind === "brief"
-                  ? t("Discussion brief updates")
-                  : t("Discussion round {round} messages", { round: group.round });
-
-              return (
-                <section
-                  className="du-room-activity-group"
-                  data-round={group.kind === "brief" ? "brief" : group.round}
-                  aria-label={updatesLabel}
-                  key={`${group.kind}:${group.round}`}
-                >
-                  <div className="du-room-round-separator du-room-phase-separator">
-                    <div className="du-room-round-copy du-room-phase-copy">
-                      <p className="du-kicker du-sr-only">{t("Discussion round marker")}</p>
-                      <p className="du-kicker du-room-phase-step">
-                        {roundStep}
-                      </p>
-                      <h5>{roundLabel}</h5>
-                      <p className="du-room-phase-detail">{roundDetail}</p>
-                    </div>
-                    <div
-                      className="du-room-activity-group-meta du-sr-only"
-                      aria-label={t("Stage activity summary")}
-                    >
-                      <span>
-                        {describeOutputCount(
-                          t,
-                          group.activities.length,
-                          "update",
-                          "updates"
-                        )}
-                      </span>
-                      <span>
-                        {describeOutputCount(
-                          t,
-                          countParticipantActivities(group.activities),
-                          "participant contribution",
-                          "participant contributions"
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                  <ol className="du-room-activity" aria-label={updatesLabel}>
-                    {group.activities.map((activity, index) => {
-                      const conversationCue = describeRoomActivityConversationCue(
-                        activity,
-                        group.round
-                      );
-                      const replyLine = describeRoomActivityReplyLine(
-                        activity,
-                        group.activities,
-                        index,
-                        group.round
-                      );
-                      const roomSpeaker = isRoomSpeaker(activity.speaker);
-                      const userSpeaker = isUserSpeaker(activity.speaker);
-
-                      return (
-                        <li
-                          className="du-room-activity-item"
-                          data-speaker={
-                            roomSpeaker ? "room" : userSpeaker ? "user" : "participant"
-                          }
-                          data-tone={activity.tone}
-                          key={`${activity.title}:${index}`}
-                        >
-                          {roomSpeaker ? (
-                            <div
-                              className="du-room-system-message"
-                              aria-label={t("Room update")}
-                            >
-                              <strong>{t(activity.speaker)}</strong>
-                              <span>{t(activity.action)}</span>
-                              <p>{t(activity.detail, activity.detailValues)}</p>
-                            </div>
-                          ) : userSpeaker ? (
-                            <>
-                              <div
-                                className="du-room-activity-bubble"
-                                aria-label={`${t(activity.speaker)}: ${t(
-                                  activity.detail,
-                                  activity.detailValues
-                                )}`}
-                              >
-                                <div className="du-room-message-header">
-                                  <strong>{t(activity.speaker)}</strong>
-                                  <small className="du-room-message-context">
-                                    <span>{t(activity.action)}</span>
-                                    <span aria-hidden="true">·</span>
-                                    <span>{t(conversationCue)}</span>
-                                  </small>
-                                </div>
-                                {replyLine ? (
-                                  <p className="du-room-message-reply">
-                                    {t(
-                                      replyLine.text,
-                                      translateRoomActivityValues(t, replyLine.values)
-                                    )}
-                                  </p>
-                                ) : null}
-                                <p className="du-room-message-detail">
-                                  {t(activity.detail, activity.detailValues)}
-                                </p>
-                              </div>
-                              <span className="du-room-activity-avatar" aria-hidden="true">
-                                {formatSpeakerInitials(t(activity.speaker))}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="du-room-activity-avatar" aria-hidden="true">
-                                {formatSpeakerInitials(t(activity.speaker))}
-                              </span>
-                              <div
-                                className="du-room-activity-bubble"
-                                aria-label={`${t(activity.speaker)}: ${t(
-                                  activity.detail,
-                                  activity.detailValues
-                                )}`}
-                              >
-                                <div className="du-room-message-header">
-                                  <strong>{t(activity.speaker)}</strong>
-                                  <small className="du-room-message-context">
-                                    <span>{t(activity.action)}</span>
-                                    <span aria-hidden="true">·</span>
-                                    <span>{t(conversationCue)}</span>
-                                  </small>
-                                </div>
-                                {replyLine ? (
-                                  <p className="du-room-message-reply">
-                                    {t(
-                                      replyLine.text,
-                                      translateRoomActivityValues(t, replyLine.values)
-                                    )}
-                                  </p>
-                                ) : null}
-                                <p className="du-room-message-detail">
-                                  {t(activity.detail, activity.detailValues)}
-                                </p>
-                              </div>
-                            </>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </section>
-              );
-            })}
+      <div className="du-room-chat-shell" aria-label={t("Room conversation")}>
+        <div id="room-conversation-transcript" className="du-room-activity-wrap">
+          <div className="du-room-thread-intro du-sr-only">
+            <p className="du-kicker">{t("Conversation transcript")}</p>
+            <h5>{t("What the room said and did")}</h5>
+            <p>{t("Participant messages and room updates appear in order.")}</p>
           </div>
-        )}
-        <DiscussionRoomNextTurnPrompt
-          runId={runId}
-          reviewReady={reviewReady}
-          openDisagreementCount={openDisagreementCount}
-          unresolvedEvidenceCount={unresolvedEvidenceCount}
-          openRequirementCount={openRequirementCount}
-        />
+          {activityQuery.isLoading ? (
+            <StatusBanner title={t("Loading room activity")} />
+          ) : activityQuery.isError ? (
+            <StatusBanner
+              tone="warning"
+              title={t("Could not load room activity")}
+              detail={formatSafeErrorMessage(activityQuery.error)}
+            />
+          ) : roomActivities.length === 0 ? (
+            <EmptyState
+              title={t("No room activity visible yet")}
+              description={t(
+                "Continue the discussion so the room can show participant responses and discussion updates."
+              )}
+            />
+          ) : (
+            <div
+              className="du-room-activity-groups"
+              role="region"
+              aria-label={t("Conversation transcript")}
+            >
+              {activityGroups.map((group) => {
+                const roundLabel =
+                  group.kind === "brief"
+                    ? t("Discussion brief")
+                    : t("Discussion round {round}", { round: group.round });
+                const roundStep =
+                  group.kind === "brief"
+                    ? t("Room opening")
+                    : t("Round {round}", { round: group.round });
+                const roundDetail =
+                  group.kind === "brief"
+                    ? t("The room starts by making the question, goals, and constraints visible.")
+                    : t("Participants answer first; review roles respond in the same room.");
+                const updatesLabel =
+                  group.kind === "brief"
+                    ? t("Discussion brief updates")
+                    : t("Discussion round {round} messages", { round: group.round });
+
+                return (
+                  <section
+                    className="du-room-activity-group"
+                    data-round={group.kind === "brief" ? "brief" : group.round}
+                    aria-label={updatesLabel}
+                    key={`${group.kind}:${group.round}`}
+                  >
+                    <div className="du-room-round-separator du-room-phase-separator">
+                      <div className="du-room-round-copy du-room-phase-copy">
+                        <p className="du-kicker du-sr-only">{t("Discussion round marker")}</p>
+                        <p className="du-kicker du-room-phase-step">
+                          {roundStep}
+                        </p>
+                        <h5>{roundLabel}</h5>
+                        <p className="du-room-phase-detail">{roundDetail}</p>
+                      </div>
+                      <div
+                        className="du-room-activity-group-meta du-sr-only"
+                        aria-label={t("Stage activity summary")}
+                      >
+                        <span>
+                          {describeOutputCount(
+                            t,
+                            group.activities.length,
+                            "update",
+                            "updates"
+                          )}
+                        </span>
+                        <span>
+                          {describeOutputCount(
+                            t,
+                            countParticipantActivities(group.activities),
+                            "participant contribution",
+                            "participant contributions"
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <ol className="du-room-activity" aria-label={updatesLabel}>
+                      {group.activities.map((activity, index) => {
+                        const conversationCue = describeRoomActivityConversationCue(
+                          activity,
+                          group.round
+                        );
+                        const replyLine = describeRoomActivityReplyLine(
+                          activity,
+                          group.activities,
+                          index,
+                          group.round
+                        );
+                        const roomSpeaker = isRoomSpeaker(activity.speaker);
+                        const userSpeaker = isUserSpeaker(activity.speaker);
+
+                        return (
+                          <li
+                            className="du-room-activity-item"
+                            data-speaker={
+                              roomSpeaker ? "room" : userSpeaker ? "user" : "participant"
+                            }
+                            data-tone={activity.tone}
+                            key={`${activity.title}:${index}`}
+                          >
+                            {roomSpeaker ? (
+                              <div
+                                className="du-room-system-message"
+                                aria-label={t("Room update")}
+                              >
+                                <strong>{t(activity.speaker)}</strong>
+                                <span>{t(activity.action)}</span>
+                                <p>{t(activity.detail, activity.detailValues)}</p>
+                              </div>
+                            ) : userSpeaker ? (
+                              <>
+                                <div
+                                  className="du-room-activity-bubble"
+                                  aria-label={`${t(activity.speaker)}: ${t(
+                                    activity.detail,
+                                    activity.detailValues
+                                  )}`}
+                                >
+                                  <div className="du-room-message-header">
+                                    <strong>{t(activity.speaker)}</strong>
+                                    <small className="du-room-message-context">
+                                      <span>{t(activity.action)}</span>
+                                      <span aria-hidden="true">·</span>
+                                      <span>{t(conversationCue)}</span>
+                                    </small>
+                                  </div>
+                                  {replyLine ? (
+                                    <p className="du-room-message-reply">
+                                      {t(
+                                        replyLine.text,
+                                        translateRoomActivityValues(t, replyLine.values)
+                                      )}
+                                    </p>
+                                  ) : null}
+                                  <p className="du-room-message-detail">
+                                    {t(activity.detail, activity.detailValues)}
+                                  </p>
+                                </div>
+                                <span className="du-room-activity-avatar" aria-hidden="true">
+                                  {formatSpeakerInitials(t(activity.speaker))}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="du-room-activity-avatar" aria-hidden="true">
+                                  {formatSpeakerInitials(t(activity.speaker))}
+                                </span>
+                                <div
+                                  className="du-room-activity-bubble"
+                                  aria-label={`${t(activity.speaker)}: ${t(
+                                    activity.detail,
+                                    activity.detailValues
+                                  )}`}
+                                >
+                                  <div className="du-room-message-header">
+                                    <strong>{t(activity.speaker)}</strong>
+                                    <small className="du-room-message-context">
+                                      <span>{t(activity.action)}</span>
+                                      <span aria-hidden="true">·</span>
+                                      <span>{t(conversationCue)}</span>
+                                    </small>
+                                  </div>
+                                  {replyLine ? (
+                                    <p className="du-room-message-reply">
+                                      {t(
+                                        replyLine.text,
+                                        translateRoomActivityValues(t, replyLine.values)
+                                      )}
+                                    </p>
+                                  ) : null}
+                                  <p className="du-room-message-detail">
+                                    {t(activity.detail, activity.detailValues)}
+                                  </p>
+                                </div>
+                              </>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+          <DiscussionRoomNextTurnPrompt
+            runId={runId}
+            reviewReady={reviewReady}
+            openDisagreementCount={openDisagreementCount}
+            unresolvedEvidenceCount={unresolvedEvidenceCount}
+            openRequirementCount={openRequirementCount}
+          />
+        </div>
+        <div className="du-room-action-rail" aria-label={t("Room quick replies")}>
+          {roomComposer}
+        </div>
       </div>
       <details className="du-room-progress-details">
         <summary>

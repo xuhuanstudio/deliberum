@@ -5570,6 +5570,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("What the room said and did")).toBeTruthy();
     expect(screen.getByText("Participant messages and room updates appear in order.")).toBeTruthy();
     const timeline = document.querySelector('[aria-label="Discussion timeline"]');
+    const chatShell = timeline?.querySelector(".du-room-chat-shell");
     const transcript = timeline?.querySelector(".du-room-activity-wrap");
     const threadSummary = timeline?.querySelector(".du-room-thread-summary");
     const threadIntro = transcript?.querySelector(".du-room-thread-intro");
@@ -5591,6 +5592,7 @@ describe("@deliberum/web shell", () => {
     ) as HTMLDetailsElement | null;
     const detailPanels = document.querySelector('[aria-label="Discussion detail panels"]');
     expect(timeline).toBeTruthy();
+    expect(chatShell).toBeTruthy();
     expect(transcript).toBeTruthy();
     expect(transcript?.getAttribute("id")).toBe("room-conversation-transcript");
     expect(threadSummary).toBeTruthy();
@@ -5621,6 +5623,8 @@ describe("@deliberum/web shell", () => {
     expect(roomMain?.contains(roomHeader as Node)).toBe(true);
     expect(roomMain?.contains(roomComposer as Node)).toBe(true);
     expect(timeline?.contains(roomComposer as Node)).toBe(true);
+    expect(chatShell?.contains(transcript as Node)).toBe(true);
+    expect(chatShell?.contains(roomActionRail as Node)).toBe(true);
     expect(transcript?.contains(roomComposer as Node)).toBe(false);
     expect(roomActionRail?.contains(roomComposer as Node)).toBe(true);
     expect(screen.queryByRole("navigation", { name: "Discussion actions" })).toBeNull();
@@ -5637,7 +5641,7 @@ describe("@deliberum/web shell", () => {
     expect(document.querySelector(".du-discussion-next-actions")?.closest("details")).toBeNull();
     expect(
       Boolean(
-        roomComposer?.compareDocumentPosition(transcript as Node) &
+        transcript?.compareDocumentPosition(roomComposer as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
