@@ -1890,17 +1890,17 @@ export function RunDetailPage() {
           {sessionId ? (
             <DiscussionDetailPanelsDrawer>
               <RunProjectionPanels sessionId={sessionId} />
+              <DiscussionSetupDetails run={run} />
+              <RunProgressDetails run={run} />
             </DiscussionDetailPanelsDrawer>
           ) : null}
-          {sessionId ? (
-            <DiscussionSetupDetails run={run} />
-          ) : (
+          {!sessionId ? (
             <>
               <RunBriefPanel run={run} />
               <RunSummary run={run} />
             </>
-          )}
-          <RunProgressDetails run={run} />
+          ) : null}
+          {!sessionId ? <RunProgressDetails run={run} /> : null}
           <AdvancedDetails
             summary="Advanced / Developer Mode"
             description="Adaptive primitive suggestions, process proposal lifecycle, explicit execution readiness, and internal proposal ids for developer inspection."
@@ -4467,7 +4467,6 @@ function RunQualityOverview({
             />
             <DiscussionRoomTimeline
               runId={runId}
-              run={run}
               reviewReady={continuationView.reviewReady}
               activities={visibleRoomActivities}
               activityQuery={{
@@ -4475,23 +4474,11 @@ function RunQualityOverview({
                 isError: eventsQuery.isError,
                 error: eventsQuery.error
               }}
-              mainPerspectiveCount={candidates.length}
               openDisagreementCount={unresolvedObjections}
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
               openRequirementCount={openObligations}
-              progressView={progressView}
               roomComposer={discussionComposer}
             />
-            <DiscussionRoomBrief run={run} />
-            <DiscussionRoomOutputs
-              runId={runId}
-              reviewReady={continuationView.reviewReady}
-              mainPerspectiveCount={candidates.length}
-              openDisagreementCount={unresolvedObjections}
-              openRequirementCount={openObligations}
-              unresolvedEvidenceCount={unresolvedEvidenceNeeds}
-            />
-            <DiscussionOptionsList candidates={candidates} />
           </div>
           <DiscussionRoomFocusPanel
             runId={runId}
@@ -4501,80 +4488,154 @@ function RunQualityOverview({
             openRequirementCount={openObligations}
           />
         </div>
-        <details
-          className="du-room-review-drawer"
-          aria-label={t("Review status summary")}
-        >
-          <summary>
-            <span>{t("Review status summary")}</span>
-            <small>
+        <DiscussionRoomSecondaryDetails
+          runId={runId}
+          run={run}
+          reviewReady={continuationView.reviewReady}
+          activities={visibleRoomActivities}
+          progressView={progressView}
+          candidates={candidates}
+          obligations={obligations}
+          evidenceNeeds={evidenceNeeds}
+          openDisagreementCount={unresolvedObjections}
+          unresolvedEvidenceCount={unresolvedEvidenceNeeds}
+          openRequirementCount={openObligations}
+        />
+      </QueryState>
+    </DataPanel>
+  );
+}
+
+function DiscussionRoomSecondaryDetails({
+  runId,
+  run,
+  reviewReady,
+  activities,
+  progressView,
+  candidates,
+  obligations,
+  evidenceNeeds,
+  openDisagreementCount,
+  unresolvedEvidenceCount,
+  openRequirementCount
+}: {
+  runId: string;
+  run: unknown;
+  reviewReady: boolean;
+  activities: RoomActivityItem[];
+  progressView: DiscussionRoomProgressView;
+  candidates: unknown[];
+  obligations: unknown[];
+  evidenceNeeds: unknown[];
+  openDisagreementCount: number;
+  unresolvedEvidenceCount: number;
+  openRequirementCount: number;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <details
+      className="du-room-review-drawer du-room-secondary-details"
+      aria-label={t("Room details")}
+    >
+      <summary>
+        <span>{t("Room details")}</span>
+        <small>
+          {t(
+            "Open brief, progress, options, and report-style review details after reading the conversation."
+          )}
+        </small>
+      </summary>
+      <div className="du-room-review-drawer-body du-room-secondary-details-body">
+        <DiscussionRoomBrief run={run} />
+        <DiscussionRoomProgressDetails
+          run={run}
+          activities={activities}
+          progressView={progressView}
+          mainPerspectiveCount={candidates.length}
+          openDisagreementCount={openDisagreementCount}
+          unresolvedEvidenceCount={unresolvedEvidenceCount}
+          openRequirementCount={openRequirementCount}
+        />
+        <DiscussionRoomOutputs
+          runId={runId}
+          reviewReady={reviewReady}
+          mainPerspectiveCount={candidates.length}
+          openDisagreementCount={openDisagreementCount}
+          openRequirementCount={openRequirementCount}
+          unresolvedEvidenceCount={unresolvedEvidenceCount}
+        />
+        <DiscussionOptionsList candidates={candidates} />
+        <section className="du-room-secondary-section" aria-label={t("Review status summary")}>
+          <div className="du-section-label">
+            <p className="du-kicker">{t("Review status summary")}</p>
+            <h4>{t("What to check before relying on the answer")}</h4>
+            <p>
               {t(
-                "Open the report-style status summary after reading the room conversation."
+                "Use this report-style status summary after reading the room conversation."
               )}
-            </small>
-          </summary>
-          <div className="du-room-review-drawer-body">
-            <div className="du-discussion-dashboard-grid">
-              {continuationView.reviewReady ? (
-                <Link
-                  className="du-quality-summary-item du-quality-summary-primary"
-                  to="/runs/$runId/outcome"
-                  params={{ runId }}
-                >
-                  <span>{t("Ready")}</span>
-                  <strong>{t("Current conclusion")}</strong>
-                  <p>
-                    {t(
-                      "A reviewable conclusion is available with risks, evidence gaps, and next actions."
-                    )}
-                  </p>
-                </Link>
-              ) : (
-                <div
-                  className="du-quality-summary-item du-quality-summary-primary du-quality-summary-static"
-                  role="status"
-                  aria-label={t("Current conclusion not ready")}
-                >
-                  <span>{t("Not ready")}</span>
-                  <strong>{t("Current conclusion")}</strong>
-                  <p>{t("The discussion needs more guided work before a conclusion is useful.")}</p>
-                </div>
-              )}
-              <QualitySummaryLink
-                title={t("Main perspectives")}
-                detail={t("Strong options stay visible without collapsing into one hidden authority.")}
-                metric={String(candidates.length)}
-                targetId="main-perspectives"
-              />
-              <QualitySummaryLink
-                title={t("Open disagreements")}
-                detail={t("Unresolved objections that still constrain the current conclusion.")}
-                metric={String(unresolvedObjections)}
-                targetId="open-disagreements"
-              />
-              <QualitySummaryLink
-                title={t("Requirements to satisfy")}
-                detail={t("Explicit obligations that keep the output correct, complete, and bounded.")}
-                metric={`${openObligations}/${obligations.length}`}
-                targetId="answer-requirements"
-              />
-              <QualitySummaryLink
-                title={t("Evidence gaps")}
-                detail={t(
-                  "Missing or unchecked evidence that should be resolved before relying on the answer."
-                )}
-                metric={`${unresolvedEvidenceNeeds}/${evidenceNeeds.length}`}
-                targetId="evidence-gaps"
-              />
-            </div>
+            </p>
           </div>
-        </details>
-        <div
-          className="du-readable-list du-discussion-next-actions"
+          <div className="du-discussion-dashboard-grid">
+            {reviewReady ? (
+              <Link
+                className="du-quality-summary-item du-quality-summary-primary"
+                to="/runs/$runId/outcome"
+                params={{ runId }}
+              >
+                <span>{t("Ready")}</span>
+                <strong>{t("Current conclusion")}</strong>
+                <p>
+                  {t(
+                    "A reviewable conclusion is available with risks, evidence gaps, and next actions."
+                  )}
+                </p>
+              </Link>
+            ) : (
+              <div
+                className="du-quality-summary-item du-quality-summary-primary du-quality-summary-static"
+                role="status"
+                aria-label={t("Current conclusion not ready")}
+              >
+                <span>{t("Not ready")}</span>
+                <strong>{t("Current conclusion")}</strong>
+                <p>{t("The discussion needs more guided work before a conclusion is useful.")}</p>
+              </div>
+            )}
+            <QualitySummaryLink
+              title={t("Main perspectives")}
+              detail={t("Strong options stay visible without collapsing into one hidden authority.")}
+              metric={String(candidates.length)}
+              targetId="main-perspectives"
+            />
+            <QualitySummaryLink
+              title={t("Open disagreements")}
+              detail={t("Unresolved objections that still constrain the current conclusion.")}
+              metric={String(openDisagreementCount)}
+              targetId="open-disagreements"
+            />
+            <QualitySummaryLink
+              title={t("Requirements to satisfy")}
+              detail={t("Explicit obligations that keep the output correct, complete, and bounded.")}
+              metric={`${openRequirementCount}/${obligations.length}`}
+              targetId="answer-requirements"
+            />
+            <QualitySummaryLink
+              title={t("Evidence gaps")}
+              detail={t(
+                "Missing or unchecked evidence that should be resolved before relying on the answer."
+              )}
+              metric={`${unresolvedEvidenceCount}/${evidenceNeeds.length}`}
+              targetId="evidence-gaps"
+            />
+          </div>
+        </section>
+        <section
+          className="du-readable-list du-discussion-next-actions du-room-secondary-section"
           aria-label={t("Next recommended actions")}
         >
           <h4>{t("Next recommended actions")}</h4>
-          {continuationView.reviewReady ? (
+          {reviewReady ? (
             <article className="du-readable-item">
               <p className="du-kicker">{t("Step 1")}</p>
               <h4>{t("Review current conclusion")}</h4>
@@ -4600,7 +4661,7 @@ function RunQualityOverview({
               </p>
             </article>
           )}
-          {unresolvedObjections > 0 ? (
+          {openDisagreementCount > 0 ? (
             <article className="du-readable-item">
               <p className="du-kicker">{t("Check")}</p>
               <h4>{t("Review open disagreements")}</h4>
@@ -4616,7 +4677,7 @@ function RunQualityOverview({
               </div>
             </article>
           ) : null}
-          {unresolvedEvidenceNeeds > 0 ? (
+          {unresolvedEvidenceCount > 0 ? (
             <article className="du-readable-item">
               <p className="du-kicker">{t("Check")}</p>
               <h4>{t("Resolve evidence gaps")}</h4>
@@ -4632,7 +4693,7 @@ function RunQualityOverview({
               </div>
             </article>
           ) : null}
-          {openObligations > 0 ? (
+          {openRequirementCount > 0 ? (
             <article className="du-readable-item">
               <p className="du-kicker">{t("Check")}</p>
               <h4>{t("Confirm answer requirements")}</h4>
@@ -4659,9 +4720,9 @@ function RunQualityOverview({
               </p>
             </article>
           ) : null}
-        </div>
-      </QueryState>
-    </DataPanel>
+        </section>
+      </div>
+    </details>
   );
 }
 
@@ -4895,19 +4956,15 @@ function formatTranslatedList(t: TranslateFunction, values: string[]): string {
 
 function DiscussionRoomTimeline({
   runId,
-  run,
   reviewReady,
   activities,
   activityQuery,
-  mainPerspectiveCount,
   openDisagreementCount,
   unresolvedEvidenceCount,
   openRequirementCount,
-  progressView,
   roomComposer
 }: {
   runId: string;
-  run: unknown;
   reviewReady: boolean;
   activities: RoomActivityItem[];
   activityQuery: {
@@ -4915,26 +4972,14 @@ function DiscussionRoomTimeline({
     isError: boolean;
     error: Error | null;
   };
-  mainPerspectiveCount: number;
   openDisagreementCount: number;
   unresolvedEvidenceCount: number;
   openRequirementCount: number;
-  progressView: DiscussionRoomProgressView;
   roomComposer: ReactNode;
 }) {
   const { t } = useI18n();
-  const independentResponses = describeStageStatus(
-    getDiscussionStageStatus(run, "sealedDivergenceStatus", "sealedDivergence")
-  );
-  const mainPerspectives = describeStageStatus(
-    getDiscussionStageStatus(run, "latestExtractionStatus", "extraction")
-  );
-  const conclusion = describeStageStatus(
-    getDiscussionStageStatus(run, "latestFinalizationStatus", "finalization")
-  );
   const roomActivities = activities;
   const conversationActivities = addUserContinuationTurnActivity(roomActivities);
-  const participantResponses = getParticipantFirstResponses(conversationActivities);
   const activityGroups = groupRoomActivitiesByRound(conversationActivities);
 
   return (
@@ -5183,127 +5228,162 @@ function DiscussionRoomTimeline({
           {roomComposer}
         </div>
       </div>
-      <details className="du-room-progress-details">
-        <summary>
-          <span>{t("Room progress and stages")}</span>
-          <small>{t("Current phase, first responses, and stage checklist")}</small>
-        </summary>
-        <div className="du-room-progress-details-body">
-          <div
-            className="du-room-progress-summary"
-            data-state={progressView.tone}
-            role="region"
-            aria-label={t("Room progress summary")}
-          >
-            <article className="du-room-progress-primary">
-              <p className="du-kicker">{t("Current phase")}</p>
-              <h5>{t(progressView.phaseTitle)}</h5>
-              <p>{t(progressView.phaseDetail)}</p>
-            </article>
-            <article>
-              <p className="du-kicker">{t("Next checkpoint")}</p>
-              <h5>{t(progressView.nextTitle)}</h5>
-              <p>{t(progressView.nextDetail)}</p>
-            </article>
-            <article className="du-room-progress-checks">
-              <p className="du-kicker">{t("Review before relying")}</p>
-              <div>
-                <span>{t("Open disagreements")}</span>
-                <strong>{openDisagreementCount}</strong>
-              </div>
-              <div>
-                <span>{t("Missing evidence")}</span>
-                <strong>{unresolvedEvidenceCount}</strong>
-              </div>
-              <div>
-                <span>{t("Requirements to satisfy")}</span>
-                <strong>{openRequirementCount}</strong>
-              </div>
-            </article>
-          </div>
-          {participantResponses.length > 0 ? (
-            <div className="du-room-response-wrap" aria-label={t("Participant first responses")}>
-              <div>
-                <p className="du-kicker">{t("Participant first responses")}</p>
-                <h5>{t("What participants said first")}</h5>
-                <p>
-                  {t(
-                    "These are the separate first responses before the room organized options, disagreements, and evidence needs."
-                  )}
-                </p>
-              </div>
-              <div className="du-room-response-grid">
-                {participantResponses.map((response, index) => (
-                  <article
-                    className="du-room-response-card"
-                    data-tone={response.tone}
-                    key={`${response.speaker}:${response.detail}:${index}`}
-                  >
-                    <p className="du-kicker">{t("Independent response")}</p>
-                    <h5>{t(response.speaker)}</h5>
-                    <p>{t(response.detail)}</p>
-                  </article>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <div className="du-room-stage-wrap">
-            <p className="du-kicker">{t("Core discussion stages")}</p>
-            <h5>{t("Structured deliberation progress")}</h5>
-          </div>
-          <ol className="du-room-flow">
-            <DiscussionRoomFlowStep
-              label={t("Discussion brief")}
-              status={t("Ready")}
-              detail={t(
-                "The question, goals, and constraints are visible before discussion work begins."
-              )}
-            />
-            <DiscussionRoomFlowStep
-              label={t("Independent first responses")}
-              status={t(independentResponses.label)}
-              detail={t(independentResponses.detail)}
-            />
-            <DiscussionRoomFlowStep
-              label={t("Participant perspectives")}
-              status={t(mainPerspectives.label)}
-              detail={t(
-                mainPerspectiveCount === 1
-                  ? "{count} readable perspective is visible in the room."
-                  : "{count} readable perspectives are visible in the room.",
-                { count: mainPerspectiveCount }
-              )}
-            />
-            <DiscussionRoomFlowStep
-              label={t("Disagreements and evidence")}
-              status={
-                openDisagreementCount + unresolvedEvidenceCount > 0
-                  ? t("Needs review")
-                  : t("No open items visible")
-              }
-              detail={t(
-                openDisagreementCount === 1 && unresolvedEvidenceCount === 1
-                  ? "{disagreements} open disagreement and {evidence} evidence gap are visible."
-                  : openDisagreementCount === 1
-                    ? "{disagreements} open disagreement and {evidence} evidence gaps are visible."
-                    : unresolvedEvidenceCount === 1
-                      ? "{disagreements} open disagreements and {evidence} evidence gap are visible."
-                      : "{disagreements} open disagreements and {evidence} evidence gaps are visible.",
-                {
-                  disagreements: openDisagreementCount,
-                  evidence: unresolvedEvidenceCount
-                }
-              )}
-            />
-            <DiscussionRoomFlowStep
-              label={t("Current conclusion")}
-              status={t(conclusion.label)}
-              detail={t(conclusion.detail)}
-            />
-          </ol>
-        </div>
-      </details>
     </section>
+  );
+}
+
+function DiscussionRoomProgressDetails({
+  run,
+  activities,
+  progressView,
+  mainPerspectiveCount,
+  openDisagreementCount,
+  unresolvedEvidenceCount,
+  openRequirementCount
+}: {
+  run: unknown;
+  activities: RoomActivityItem[];
+  progressView: DiscussionRoomProgressView;
+  mainPerspectiveCount: number;
+  openDisagreementCount: number;
+  unresolvedEvidenceCount: number;
+  openRequirementCount: number;
+}) {
+  const { t } = useI18n();
+  const independentResponses = describeStageStatus(
+    getDiscussionStageStatus(run, "sealedDivergenceStatus", "sealedDivergence")
+  );
+  const mainPerspectives = describeStageStatus(
+    getDiscussionStageStatus(run, "latestExtractionStatus", "extraction")
+  );
+  const conclusion = describeStageStatus(
+    getDiscussionStageStatus(run, "latestFinalizationStatus", "finalization")
+  );
+  const participantResponses = getParticipantFirstResponses(
+    addUserContinuationTurnActivity(activities)
+  );
+
+  return (
+    <details className="du-room-progress-details">
+      <summary>
+        <span>{t("Room progress and stages")}</span>
+        <small>{t("Current phase, first responses, and stage checklist")}</small>
+      </summary>
+      <div className="du-room-progress-details-body">
+        <div
+          className="du-room-progress-summary"
+          data-state={progressView.tone}
+          role="region"
+          aria-label={t("Room progress summary")}
+        >
+          <article className="du-room-progress-primary">
+            <p className="du-kicker">{t("Current phase")}</p>
+            <h5>{t(progressView.phaseTitle)}</h5>
+            <p>{t(progressView.phaseDetail)}</p>
+          </article>
+          <article>
+            <p className="du-kicker">{t("Next checkpoint")}</p>
+            <h5>{t(progressView.nextTitle)}</h5>
+            <p>{t(progressView.nextDetail)}</p>
+          </article>
+          <article className="du-room-progress-checks">
+            <p className="du-kicker">{t("Review before relying")}</p>
+            <div>
+              <span>{t("Open disagreements")}</span>
+              <strong>{openDisagreementCount}</strong>
+            </div>
+            <div>
+              <span>{t("Missing evidence")}</span>
+              <strong>{unresolvedEvidenceCount}</strong>
+            </div>
+            <div>
+              <span>{t("Requirements to satisfy")}</span>
+              <strong>{openRequirementCount}</strong>
+            </div>
+          </article>
+        </div>
+        {participantResponses.length > 0 ? (
+          <div className="du-room-response-wrap" aria-label={t("Participant first responses")}>
+            <div>
+              <p className="du-kicker">{t("Participant first responses")}</p>
+              <h5>{t("What participants said first")}</h5>
+              <p>
+                {t(
+                  "These are the separate first responses before the room organized options, disagreements, and evidence needs."
+                )}
+              </p>
+            </div>
+            <div className="du-room-response-grid">
+              {participantResponses.map((response, index) => (
+                <article
+                  className="du-room-response-card"
+                  data-tone={response.tone}
+                  key={`${response.speaker}:${response.detail}:${index}`}
+                >
+                  <p className="du-kicker">{t("Independent response")}</p>
+                  <h5>{t(response.speaker)}</h5>
+                  <p>{t(response.detail)}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <div className="du-room-stage-wrap">
+          <p className="du-kicker">{t("Core discussion stages")}</p>
+          <h5>{t("Structured deliberation progress")}</h5>
+        </div>
+        <ol className="du-room-flow">
+          <DiscussionRoomFlowStep
+            label={t("Discussion brief")}
+            status={t("Ready")}
+            detail={t(
+              "The question, goals, and constraints are visible before discussion work begins."
+            )}
+          />
+          <DiscussionRoomFlowStep
+            label={t("Independent first responses")}
+            status={t(independentResponses.label)}
+            detail={t(independentResponses.detail)}
+          />
+          <DiscussionRoomFlowStep
+            label={t("Participant perspectives")}
+            status={t(mainPerspectives.label)}
+            detail={t(
+              mainPerspectiveCount === 1
+                ? "{count} readable perspective is visible in the room."
+                : "{count} readable perspectives are visible in the room.",
+              { count: mainPerspectiveCount }
+            )}
+          />
+          <DiscussionRoomFlowStep
+            label={t("Disagreements and evidence")}
+            status={
+              openDisagreementCount + unresolvedEvidenceCount > 0
+                ? t("Needs review")
+                : t("No open items visible")
+            }
+            detail={t(
+              openDisagreementCount === 1 && unresolvedEvidenceCount === 1
+                ? "{disagreements} open disagreement and {evidence} evidence gap are visible."
+                : openDisagreementCount === 1
+                  ? "{disagreements} open disagreement and {evidence} evidence gaps are visible."
+                  : unresolvedEvidenceCount === 1
+                    ? "{disagreements} open disagreements and {evidence} evidence gap are visible."
+                    : "{disagreements} open disagreements and {evidence} evidence gaps are visible.",
+              {
+                disagreements: openDisagreementCount,
+                evidence: unresolvedEvidenceCount
+              }
+            )}
+          />
+          <DiscussionRoomFlowStep
+            label={t("Current conclusion")}
+            status={t(conclusion.label)}
+            detail={t(conclusion.detail)}
+          />
+        </ol>
+      </div>
+    </details>
   );
 }
 

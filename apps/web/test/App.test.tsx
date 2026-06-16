@@ -4697,10 +4697,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\uff1a\u53ef\u5ba1\u9605")).toBeTruthy();
     expect(screen.getAllByText("\u4e0b\u4e00\u6b65\u52a8\u4f5c").length).toBeGreaterThan(0);
     expect(screen.getByText("\u9700\u8981\u5ba1\u9605\u7684\u5185\u5bb9")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u5ba4\u8be6\u60c5")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u9605\u8bfb\u5bf9\u8bdd\u540e\uff0c\u518d\u6253\u5f00\u7b80\u62a5\u3001\u8fdb\u5ea6\u3001\u9009\u9879\u548c\u62a5\u544a\u5f0f\u5ba1\u9605\u8be6\u60c5\u3002"
+      )
+    ).toBeTruthy();
     expect(screen.getByText("\u5ba1\u9605\u72b6\u6001\u6458\u8981")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u5bf9\u8bdd\u540e\uff0c\u518d\u6253\u5f00\u62a5\u544a\u5f0f\u72b6\u6001\u6458\u8981\u3002"
+        "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u5bf9\u8bdd\u540e\uff0c\u518d\u4f7f\u7528\u8fd9\u4e2a\u62a5\u544a\u5f0f\u72b6\u6001\u6458\u8981\u3002"
       )
     ).toBeTruthy();
     expect(
@@ -5579,7 +5585,7 @@ describe("@deliberum/web shell", () => {
     const transcript = timeline?.querySelector(".du-room-activity-wrap");
     const threadSummary = timeline?.querySelector(".du-room-thread-summary");
     const threadIntro = transcript?.querySelector(".du-room-thread-intro");
-    const progressDetails = timeline?.querySelector(".du-room-progress-details");
+    const progressDetailsInTimeline = timeline?.querySelector(".du-room-progress-details");
     const nextRoomAction = timeline?.querySelector("#room-next-action");
     const roomActionRail = timeline?.querySelector(".du-room-action-rail");
     const roomLayout = document.querySelector(".du-room-layout");
@@ -5589,9 +5595,10 @@ describe("@deliberum/web shell", () => {
     const roomComposer = document.querySelector(".du-room-composer");
     const roomBrief = document.querySelector(".du-room-brief") as HTMLDetailsElement | null;
     const roomOutputs = document.querySelector(".du-room-outputs-section");
-    const reviewDrawer = document.querySelector(
-      ".du-room-review-drawer"
+    const roomDetailsDrawer = document.querySelector(
+      ".du-room-secondary-details"
     ) as HTMLDetailsElement | null;
+    const progressDetails = roomDetailsDrawer?.querySelector(".du-room-progress-details");
     const detailPanelsDrawer = document.querySelector(
       ".du-room-detail-panels-drawer"
     ) as HTMLDetailsElement | null;
@@ -5602,6 +5609,7 @@ describe("@deliberum/web shell", () => {
     expect(transcript?.getAttribute("id")).toBe("room-conversation-transcript");
     expect(threadSummary).toBeTruthy();
     expect(threadIntro).toBeTruthy();
+    expect(progressDetailsInTimeline).toBeNull();
     expect(progressDetails).toBeTruthy();
     expect(nextRoomAction).toBeTruthy();
     expect(roomActionRail).toBeTruthy();
@@ -5612,11 +5620,11 @@ describe("@deliberum/web shell", () => {
     expect(roomComposer).toBeTruthy();
     expect(roomBrief).toBeTruthy();
     expect(roomOutputs).toBeTruthy();
-    expect(reviewDrawer).toBeTruthy();
+    expect(roomDetailsDrawer).toBeTruthy();
     expect(detailPanelsDrawer).toBeTruthy();
     expect(detailPanels).toBeTruthy();
     expect(roomBrief?.open).toBe(false);
-    expect(reviewDrawer?.open).toBe(false);
+    expect(roomDetailsDrawer?.open).toBe(false);
     expect(detailPanelsDrawer?.open).toBe(false);
     expect(screen.getByText("Detailed review panels")).toBeTruthy();
     expect(
@@ -5641,9 +5649,11 @@ describe("@deliberum/web shell", () => {
     ).toBe(true);
     expect(document.querySelector(".du-room-brief-body")?.closest("details")).toBe(roomBrief);
     expect(document.querySelector(".du-discussion-dashboard-grid")?.closest("details")).toBe(
-      reviewDrawer
+      roomDetailsDrawer
     );
-    expect(document.querySelector(".du-discussion-next-actions")?.closest("details")).toBeNull();
+    expect(document.querySelector(".du-discussion-next-actions")?.closest("details")).toBe(
+      roomDetailsDrawer
+    );
     expect(
       Boolean(
         transcript?.compareDocumentPosition(roomComposer as Node) &
@@ -5680,12 +5690,14 @@ describe("@deliberum/web shell", () => {
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
+    fireEvent.click(screen.getByText("Room details"));
+    expect(roomDetailsDrawer?.open).toBe(true);
     fireEvent.click(screen.getByText("Discussion brief details"));
     expect(roomBrief?.open).toBe(true);
     expect(screen.getByText("What is being discussed")).toBeTruthy();
     expect(
       Boolean(
-        roomLayout?.compareDocumentPosition(reviewDrawer as Node) &
+        roomLayout?.compareDocumentPosition(roomDetailsDrawer as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
@@ -5923,10 +5935,9 @@ describe("@deliberum/web shell", () => {
     );
     expect(screen.getByText("Review status summary")).toBeTruthy();
     expect(
-      screen.getByText("Open the report-style status summary after reading the room conversation.")
+      screen.getByText("Use this report-style status summary after reading the room conversation.")
     ).toBeTruthy();
-    fireEvent.click(screen.getByText("Review status summary"));
-    expect(reviewDrawer?.open).toBe(true);
+    expect(roomDetailsDrawer?.open).toBe(true);
     expect(screen.getAllByText("Review current conclusion").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Ready").length).toBeGreaterThan(0);

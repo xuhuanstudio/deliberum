@@ -307,6 +307,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   const updatedSteps = page.getByRole("region", { name: "Updated discussion steps" });
   await updatedSteps.waitFor();
   await updatedSteps.getByText("Needs attention", { exact: true }).waitFor();
+  await openRoomDetails(page, "discussion room after transient participant failure");
   await page.getByText("Room progress and stages", { exact: true }).click();
   await page
     .getByRole("region", { name: "Room progress summary" })
@@ -361,6 +362,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page
     .getByText("Review queue: 1 open disagreements, 1 missing evidence, 1 requirements to satisfy.")
     .waitFor();
+  await openRoomDetails(page, "discussion room after continuation");
   await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Participant first responses", { exact: true }).waitFor();
   await page.getByText("This browser perspective supports the verified provider path.").first().waitFor();
@@ -395,6 +397,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   if (await roomOutputSummary.evaluate((element) => element.open)) {
     throw new Error("Discussion room output summary should be collapsed by default.");
   }
+  await openRoomDetails(page, "discussion room output summary");
   await page.getByText("Room output summary", { exact: true }).click();
   await page.getByText("What the room has produced").waitFor();
   await page.getByText("Current conclusion: Ready to review").waitFor();
@@ -527,6 +530,22 @@ async function openRoomUpdateDetails(page, label) {
     }
   } catch (error) {
     throw new Error(`${label} could not open detailed room update.`, {
+      cause: error
+    });
+  }
+}
+
+async function openRoomDetails(page, label) {
+  const details = page.locator("details.du-room-secondary-details");
+
+  try {
+    await details.waitFor({ state: "attached" });
+
+    if (!(await details.evaluate((element) => element.open))) {
+      await details.getByText("Room details", { exact: true }).click();
+    }
+  } catch (error) {
+    throw new Error(`${label} could not open room details.`, {
       cause: error
     });
   }
@@ -1055,9 +1074,17 @@ async function assertRoomHeaderStatus(page, { label, expectedStatus, expectedNex
 }
 
 async function assertBriefDetailsCollapsed(page, label) {
+  const roomDetails = page.locator("details.du-room-secondary-details");
   const briefDetails = page.locator(".du-room-brief");
 
-  await page.getByText("Discussion brief details").waitFor();
+  await roomDetails.getByText("Room details", { exact: true }).waitFor();
+  await briefDetails.waitFor({ state: "attached" });
+
+  const roomDetailsOpen = await roomDetails.evaluate((element) => element.open === true);
+
+  if (roomDetailsOpen) {
+    throw new Error(`${label} should keep room details collapsed by default.`);
+  }
 
   const open = await briefDetails.evaluate((element) => element.open === true);
 

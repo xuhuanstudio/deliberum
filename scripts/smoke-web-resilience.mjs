@@ -186,6 +186,7 @@ async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, run
   const updatedSteps = page.getByRole("region", { name: "Updated discussion steps" });
   await updatedSteps.waitFor();
   await updatedSteps.getByText("Needs attention", { exact: true }).waitFor();
+  await openRoomDetails(page, "paused continuation result");
   await page.getByText("Room progress and stages", { exact: true }).click();
   await page
     .getByRole("region", { name: "Room progress summary" })
@@ -413,6 +414,22 @@ async function openRoomUpdateDetails(page, label) {
     }
   } catch (error) {
     throw new Error(`${label} could not open detailed room update.`, {
+      cause: error
+    });
+  }
+}
+
+async function openRoomDetails(page, label) {
+  const details = page.locator("details.du-room-secondary-details");
+
+  try {
+    await details.waitFor({ state: "attached" });
+
+    if (!(await details.evaluate((element) => element.open))) {
+      await details.getByText("Room details", { exact: true }).click();
+    }
+  } catch (error) {
+    throw new Error(`${label} could not open room details.`, {
       cause: error
     });
   }

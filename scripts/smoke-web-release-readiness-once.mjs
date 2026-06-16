@@ -182,6 +182,8 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
 
   await continueDiscussionUntilCompleted(page);
 
+  await openRoomDetails(page, "discussion room after continuation");
+  await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Participant first responses").waitFor();
   if (releaseConfig.perspectiveCount === 3) {
     await page.getByText("Perspective C").first().waitFor();
@@ -190,6 +192,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   if (await roomOutputSummary.evaluate((element) => element.open)) {
     throw new Error("Discussion room output summary should be collapsed by default.");
   }
+  await openRoomDetails(page, "discussion room output summary");
   await page.getByText("Room output summary", { exact: true }).click();
   await page.getByText("What the room has produced").waitFor();
   await page.getByText("Strongest current options").first().waitFor();
@@ -242,14 +245,38 @@ async function selectPerspectiveDepth(page) {
 }
 
 async function assertBriefDetailsCollapsed(page, label) {
+  const roomDetails = page.locator("details.du-room-secondary-details");
   const briefDetails = page.locator(".du-room-brief");
 
-  await page.getByText("Discussion brief details").waitFor();
+  await roomDetails.getByText("Room details", { exact: true }).waitFor();
+  await briefDetails.waitFor({ state: "attached" });
+
+  const roomDetailsOpen = await roomDetails.evaluate((element) => element.open === true);
+
+  if (roomDetailsOpen) {
+    throw new Error(`${label} should keep room details collapsed by default.`);
+  }
 
   const open = await briefDetails.evaluate((element) => element.open === true);
 
   if (open) {
     throw new Error(`${label} should keep discussion brief details collapsed by default.`);
+  }
+}
+
+async function openRoomDetails(page, label) {
+  const details = page.locator("details.du-room-secondary-details");
+
+  try {
+    await details.waitFor({ state: "attached" });
+
+    if (!(await details.evaluate((element) => element.open))) {
+      await details.getByText("Room details", { exact: true }).click();
+    }
+  } catch (error) {
+    throw new Error(`${label} could not open room details.`, {
+      cause: error
+    });
   }
 }
 
