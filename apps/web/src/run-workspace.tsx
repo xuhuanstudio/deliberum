@@ -5779,9 +5779,6 @@ function DiscussionRoomFocusPanel({
   const { t } = useI18n();
   const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
   const nextActionLabel = reviewReady ? "Review current conclusion" : "Continue discussion";
-  const nextActionDetail = reviewReady
-    ? "Open the conclusion, then check disagreements, evidence, risks, and requirements before relying on it."
-    : "Continue the guided flow to produce perspectives, disagreements, evidence checks, risks, and a conclusion.";
 
   return (
     <aside
@@ -5794,18 +5791,10 @@ function DiscussionRoomFocusPanel({
         <h4>{t("Current conclusion: {status}", {
           status: reviewReady ? t("Ready to review") : t("Not ready yet")
         })}</h4>
-        <p>
-          {reviewReady
-            ? t(
-                "Review the conclusion together with disagreements, evidence gaps, risks, and next actions."
-              )
-            : t("Continue the discussion before treating any answer as a conclusion.")}
-        </p>
       </div>
       <div className="du-room-focus-section du-room-focus-next">
         <p className="du-kicker">{t("Next action")}</p>
         <strong>{t(nextActionLabel)}</strong>
-        <p>{t(nextActionDetail)}</p>
         <div className="du-action-row">
           {reviewReady ? (
             <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
@@ -5820,31 +5809,25 @@ function DiscussionRoomFocusPanel({
       </div>
       <div className="du-room-focus-section du-room-focus-checklist">
         <h5>{t("What to review")}</h5>
-        <a href="#open-disagreements" data-state={openDisagreementCount > 0 ? "needs-review" : "clear"}>
-          <span>{t("Open disagreements")}</span>
-          <strong>{openDisagreementCount}</strong>
-          <p>{t("Unresolved objections that still constrain the current conclusion.")}</p>
-        </a>
-        <a href="#evidence-gaps" data-state={unresolvedEvidenceCount > 0 ? "needs-review" : "clear"}>
-          <span>{t("Missing evidence")}</span>
-          <strong>{unresolvedEvidenceCount}</strong>
-          <p>{t("Missing or unchecked evidence that should be resolved before relying on the answer.")}</p>
-        </a>
-        <a href="#answer-requirements" data-state={openRequirementCount > 0 ? "needs-review" : "clear"}>
-          <span>{t("Requirements to satisfy")}</span>
-          <strong>{openRequirementCount}</strong>
-          <p>{t("Explicit obligations that keep the output correct, complete, and bounded.")}</p>
-        </a>
-        <div data-state={openItemCount > 0 ? "needs-review" : "clear"}>
-          <span>{t("Risks")}</span>
-          <strong>
-            {openItemCount > 0 ? t("Review needed") : t("No open blockers visible")}
-          </strong>
-          <p>
-            {openItemCount > 0
-              ? t("Open items remain visible here so the conclusion is not treated as final.")
-              : t("No unresolved blockers are visible in the room summary.")}
-          </p>
+        <div className="du-room-focus-queue">
+          <a href="#open-disagreements" data-state={openDisagreementCount > 0 ? "needs-review" : "clear"}>
+            <span>{t("Open disagreements")}</span>
+            <strong>{openDisagreementCount}</strong>
+          </a>
+          <a href="#evidence-gaps" data-state={unresolvedEvidenceCount > 0 ? "needs-review" : "clear"}>
+            <span>{t("Missing evidence")}</span>
+            <strong>{unresolvedEvidenceCount}</strong>
+          </a>
+          <a href="#answer-requirements" data-state={openRequirementCount > 0 ? "needs-review" : "clear"}>
+            <span>{t("Requirements to satisfy")}</span>
+            <strong>{openRequirementCount}</strong>
+          </a>
+          <div data-state={openItemCount > 0 ? "needs-review" : "clear"}>
+            <span>{t("Risks")}</span>
+            <strong>
+              {openItemCount > 0 ? t("Review needed") : t("No open blockers visible")}
+            </strong>
+          </div>
         </div>
       </div>
     </aside>

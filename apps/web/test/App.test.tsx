@@ -5643,16 +5643,26 @@ describe("@deliberum/web shell", () => {
         "These options synthesize the discussion so far. Individual participant statements remain in the timeline above."
       )
     ).toBeTruthy();
-    expect(screen.getByRole("complementary", { name: "Current room summary" })).toBeTruthy();
+    const currentRoomSummary = screen.getByRole("complementary", {
+      name: "Current room summary"
+    });
+    expect(currentRoomSummary).toBeTruthy();
     expect(screen.getByText("Decision workspace")).toBeTruthy();
     expect(screen.getByText("Current conclusion: Ready to review")).toBeTruthy();
     expect(screen.getAllByText("Next action").length).toBeGreaterThan(0);
     expect(screen.getByText("What to review")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Open items remain visible here so the conclusion is not treated as final."
-      )
-    ).toBeTruthy();
+    expect(currentRoomSummary.querySelector(".du-room-focus-queue")).toBeTruthy();
+    expect(currentRoomSummary.textContent ?? "").toContain("Open disagreements");
+    expect(currentRoomSummary.textContent ?? "").toContain("Missing evidence");
+    expect(currentRoomSummary.textContent ?? "").toContain("Requirements to satisfy");
+    expect(currentRoomSummary.textContent ?? "").toContain("Risks");
+    expect(currentRoomSummary.textContent ?? "").toContain("Review needed");
+    expect(currentRoomSummary.textContent ?? "").not.toContain(
+      "Open items remain visible here so the conclusion is not treated as final."
+    );
+    expect(currentRoomSummary.textContent ?? "").not.toContain(
+      "Missing or unchecked evidence that should be resolved before relying on the answer."
+    );
     expect(screen.getByText("Review status summary")).toBeTruthy();
     expect(
       screen.getByText("Open the report-style status summary after reading the room conversation.")
