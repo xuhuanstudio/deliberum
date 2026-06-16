@@ -1615,6 +1615,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u51c6\u5907\u597d\u540e\uff0c\u5c06\u7ed3\u8bba\u4e0e\u98ce\u9669\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u4e00\u8d77\u5ba1\u9605\u3002",
   Recommended: "\u63a8\u8350",
   "Discussion actions": "\u8ba8\u8bba\u52a8\u4f5c",
+  "Read room messages": "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u6d88\u606f",
   "Discussion action composer": "\u8ba8\u8bba\u64cd\u4f5c\u7f16\u8f91\u533a",
   "Ask for stronger options": "\u8981\u6c42\u66f4\u5f3a\u9009\u9879",
   "Refresh the discussion so the strongest current options can be compared and improved.":

@@ -4271,6 +4271,7 @@ function RunQualityOverview({
               detail={nextActionDetail}
               ready={continuationView.reviewReady}
             />
+            <DiscussionRoomActionStrip runId={runId} reviewReady={continuationView.reviewReady} />
             <DiscussionRoomTimeline
               run={run}
               activities={roomActivities}
@@ -4500,6 +4501,43 @@ function DiscussionRoomStatusCue({
         <p className="du-room-message-action">{detail}</p>
       </div>
     </section>
+  );
+}
+
+function DiscussionRoomActionStrip({
+  runId,
+  reviewReady
+}: {
+  runId: string;
+  reviewReady: boolean;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <nav className="du-room-action-strip" aria-label={t("Discussion actions")}>
+      <span>{t("Next action")}</span>
+      {reviewReady ? (
+        <>
+          <Link
+            className="du-room-action-strip-primary"
+            to="/runs/$runId/outcome"
+            params={{ runId }}
+          >
+            {t("Review current conclusion")}
+          </Link>
+          <a href="#continue-discussion">{t("Update conclusion")}</a>
+          <a href="#open-disagreements">{t("Review disagreements")}</a>
+          <a href="#evidence-gaps">{t("Check evidence")}</a>
+        </>
+      ) : (
+        <>
+          <a className="du-room-action-strip-primary" href="#continue-discussion">
+            {t("Continue discussion")}
+          </a>
+          <a href="#discussion-timeline">{t("Read room messages")}</a>
+        </>
+      )}
+    </nav>
   );
 }
 

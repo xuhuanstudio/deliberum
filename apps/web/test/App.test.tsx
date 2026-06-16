@@ -2250,8 +2250,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Open conclusion")).toBeTruthy();
     expect(screen.getByText("Review evidence")).toBeTruthy();
     expect(screen.getByText("View disagreements")).toBeTruthy();
-    expect(screen.getByText("Review disagreements")).toBeTruthy();
-    expect(screen.getByText("Check evidence")).toBeTruthy();
+    expect(screen.getAllByText("Review disagreements").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Check evidence").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Update conclusion").length).toBeGreaterThan(0);
 
     const defaultPageText = document.body.textContent ?? "";
@@ -4597,6 +4597,15 @@ describe("@deliberum/web shell", () => {
     expect(localizedActionPath.textContent ?? "").toContain("\u9009\u62e9\u8ddf\u8fdb\u52a8\u4f5c");
     const localizedDiscussionActionsText =
       document.querySelector(".du-discussion-actions")?.textContent ?? "";
+    const localizedRoomActionStrip = screen.getByRole("navigation", {
+      name: "\u8ba8\u8bba\u52a8\u4f5c"
+    });
+    expect(localizedRoomActionStrip).toBeTruthy();
+    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u4e0b\u4e00\u6b65\u52a8\u4f5c");
+    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba");
+    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u66f4\u65b0\u7ed3\u8bba");
+    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u5ba1\u9605\u5206\u6b67");
+    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u68c0\u67e5\u8bc1\u636e");
     expect(localizedDiscussionActionsText).toContain("\u66f4\u65b0\u8ba8\u8bba");
     expect(localizedDiscussionActionsText).toContain("\u4ec5\u67e5\u770b");
     expect(localizedDiscussionActionsText).toContain(
@@ -4610,7 +4619,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("complementary", { name: "\u5f53\u524d\u8ba8\u8bba\u6458\u8981" })).toBeTruthy();
     expect(screen.getByText("\u51b3\u7b56\u5de5\u4f5c\u533a")).toBeTruthy();
     expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\uff1a\u53ef\u5ba1\u9605")).toBeTruthy();
-    expect(screen.getByText("\u4e0b\u4e00\u6b65\u52a8\u4f5c")).toBeTruthy();
+    expect(screen.getAllByText("\u4e0b\u4e00\u6b65\u52a8\u4f5c").length).toBeGreaterThan(0);
     expect(screen.getByText("\u9700\u8981\u5ba1\u9605\u7684\u5185\u5bb9")).toBeTruthy();
     expect(screen.getByText("\u5ba1\u9605\u72b6\u6001\u6458\u8981")).toBeTruthy();
     expect(
@@ -5342,14 +5351,21 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Discussion action composer")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Update conclusion" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Review disagreements" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Confirm answer requirements" })).toBeTruthy();
+    const discussionActions = document.querySelector(".du-discussion-actions") as HTMLElement;
     expect(
-      screen.getByRole("link", { name: "Confirm answer requirements" }).getAttribute("href")
+      within(discussionActions).getByRole("link", { name: "Review disagreements" })
+    ).toBeTruthy();
+    expect(
+      within(discussionActions).getByRole("link", { name: "Confirm answer requirements" })
+    ).toBeTruthy();
+    expect(
+      within(discussionActions)
+        .getByRole("link", { name: "Confirm answer requirements" })
+        .getAttribute("href")
     ).toBe("#answer-requirements");
-    expect(screen.getByRole("link", { name: "Check evidence" })).toBeTruthy();
+    expect(within(discussionActions).getByRole("link", { name: "Check evidence" })).toBeTruthy();
     const discussionActionsText =
-      document.querySelector(".du-discussion-actions")?.textContent ?? "";
+      discussionActions.textContent ?? "";
     expect(discussionActionsText).toContain("Updates discussion");
     expect(discussionActionsText).toContain("Review only");
     expect(discussionActionsText).toContain(
@@ -5386,6 +5402,7 @@ describe("@deliberum/web shell", () => {
     const roomLayout = document.querySelector(".du-room-layout");
     const roomMain = document.querySelector(".du-room-main");
     const roomStatusCue = document.querySelector(".du-room-status-cue");
+    const roomActionStrip = document.querySelector(".du-room-action-strip");
     const roomComposer = document.querySelector(".du-room-composer");
     const roomBrief = document.querySelector(".du-room-brief") as HTMLDetailsElement | null;
     const roomOutputs = document.querySelector(".du-room-outputs-section");
@@ -5402,6 +5419,7 @@ describe("@deliberum/web shell", () => {
     expect(roomLayout).toBeTruthy();
     expect(roomMain).toBeTruthy();
     expect(roomStatusCue).toBeTruthy();
+    expect(roomActionStrip).toBeTruthy();
     expect(roomComposer).toBeTruthy();
     expect(roomBrief).toBeTruthy();
     expect(roomOutputs).toBeTruthy();
@@ -5419,10 +5437,17 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(detailPanels?.closest("details")).toBe(detailPanelsDrawer);
     expect(roomMain?.contains(roomStatusCue as Node)).toBe(true);
+    expect(roomMain?.contains(roomActionStrip as Node)).toBe(true);
     expect(roomMain?.contains(roomComposer as Node)).toBe(true);
+    expect(screen.getByRole("navigation", { name: "Discussion actions" })).toBeTruthy();
+    expect(roomActionStrip?.textContent ?? "").toContain("Next action");
+    expect(roomActionStrip?.textContent ?? "").toContain("Review current conclusion");
+    expect(roomActionStrip?.textContent ?? "").toContain("Update conclusion");
+    expect(roomActionStrip?.textContent ?? "").toContain("Review disagreements");
+    expect(roomActionStrip?.textContent ?? "").toContain("Check evidence");
     expect(
       Boolean(
-        roomStatusCue?.compareDocumentPosition(timeline as Node) &
+        roomStatusCue?.compareDocumentPosition(roomActionStrip as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
@@ -5431,6 +5456,12 @@ describe("@deliberum/web shell", () => {
       reviewDrawer
     );
     expect(document.querySelector(".du-discussion-next-actions")?.closest("details")).toBeNull();
+    expect(
+      Boolean(
+        roomActionStrip?.compareDocumentPosition(timeline as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
     expect(
       Boolean(
         transcript?.compareDocumentPosition(progressDetails as Node) &
@@ -5584,7 +5615,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("complementary", { name: "Current room summary" })).toBeTruthy();
     expect(screen.getByText("Decision workspace")).toBeTruthy();
     expect(screen.getByText("Current conclusion: Ready to review")).toBeTruthy();
-    expect(screen.getByText("Next action")).toBeTruthy();
+    expect(screen.getAllByText("Next action").length).toBeGreaterThan(0);
     expect(screen.getByText("What to review")).toBeTruthy();
     expect(
       screen.getByText(
@@ -6516,6 +6547,13 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.queryByRole("navigation", { name: "Primary discussion actions" })
     ).toBeNull();
+    const pendingRoomActionStrip = screen.getByRole("navigation", {
+      name: "Discussion actions"
+    });
+    expect(pendingRoomActionStrip).toBeTruthy();
+    expect(pendingRoomActionStrip.textContent ?? "").toContain("Next action");
+    expect(pendingRoomActionStrip.textContent ?? "").toContain("Continue discussion");
+    expect(pendingRoomActionStrip.textContent ?? "").toContain("Read room messages");
     expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();

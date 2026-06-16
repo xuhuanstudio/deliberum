@@ -1707,7 +1707,9 @@ textarea:focus-visible {
 }
 
 .du-room-main > .du-room-composer {
+  border-left: 4px solid var(--du-accent);
   margin-top: 0;
+  scroll-margin-top: 18px;
 }
 
 .du-room-status-cue {
@@ -1730,6 +1732,57 @@ textarea:focus-visible {
 
 .du-room-status-cue[data-state="pending"] .du-room-activity-bubble {
   border-left: 4px solid #b7791f;
+}
+
+.du-room-action-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid var(--du-line);
+  border-left: 4px solid var(--du-accent);
+  border-radius: 8px;
+  background: #f8fff9;
+  padding: 10px 12px;
+}
+
+.du-room-action-strip span {
+  color: var(--du-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.du-room-action-strip a {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--du-line);
+  border-radius: 999px;
+  background: var(--du-surface);
+  color: var(--du-ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.2;
+  padding: 8px 11px;
+  text-decoration: none;
+}
+
+.du-room-action-strip a:hover {
+  background: #edf5f2;
+}
+
+.du-room-action-strip .du-room-action-strip-primary {
+  border-color: var(--du-accent);
+  background: var(--du-accent);
+  color: #ffffff;
+}
+
+.du-room-action-strip .du-room-action-strip-primary:hover {
+  background: var(--du-accent-strong);
 }
 
 .du-room-brief {
@@ -4285,5 +4338,15 @@ textarea:focus-visible {
 
   .du-room-detail-panels-drawer > summary small {
     text-align: left;
+  }
+
+  .du-room-action-strip {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .du-room-action-strip span,
+  .du-room-action-strip a {
+    flex: 0 0 auto;
   }
 }
