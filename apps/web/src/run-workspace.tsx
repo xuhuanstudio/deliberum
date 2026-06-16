@@ -3080,12 +3080,10 @@ function StartRunForm({
   const primaryResultDetail =
     continuationSetup.primaryResultDetail ?? continuationView.primaryResultDetail;
   const isRoomComposer = variant === "room-composer";
-  const roomComposerTitle = continuationView.reviewReady
-    ? "What should happen next?"
-    : "Message the room";
+  const roomComposerTitle = "Reply to the room";
   const roomComposerDetail = continuationView.reviewReady
-    ? "Choose a short room action after reading the latest messages."
-    : "Ask the room to continue from the discussion brief.";
+    ? "Choose a quick reply to review or move the discussion forward."
+    : "Choose Continue discussion to let participants respond.";
   const roomPrimaryActionDetail = continuationSetup.primaryActionDetail?.includes(
     "first responses only"
   )
@@ -3104,7 +3102,7 @@ function StartRunForm({
         className={`du-discussion-actions${
           isRoomComposer ? " du-discussion-actions-room" : ""
         }`}
-        aria-label={t(isRoomComposer ? "Room actions" : "Discussion action composer")}
+        aria-label={t(isRoomComposer ? "Room quick replies" : "Discussion action composer")}
       >
         <div className="du-discussion-actions-heading">
           {isRoomComposer ? (
@@ -3113,7 +3111,7 @@ function StartRunForm({
                 DR
               </span>
               <div className="du-room-composer-copy">
-                <p className="du-kicker">{t("Room actions")}</p>
+                <p className="du-kicker">{t("Quick replies")}</p>
                 <h4>{t(roomComposerTitle)}</h4>
                 <p>{t(roomComposerDetail)}</p>
               </div>
@@ -3405,7 +3403,7 @@ function StartRunForm({
         id="continue-discussion"
         className="du-room-composer"
         data-placement="room-action-dock"
-        aria-label={t("Room actions")}
+        aria-label={t("Room quick replies")}
       >
         {formContent}
       </section>

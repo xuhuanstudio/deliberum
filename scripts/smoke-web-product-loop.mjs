@@ -699,6 +699,7 @@ async function assertRoomComposerShellCompact(
     const details = element.querySelector(".du-continuation-details");
     const avatar = element.querySelector(".du-room-composer-avatar");
     const rect = element.getBoundingClientRect();
+    const text = element.textContent ?? "";
 
     return {
       composerHeight: rect.height,
@@ -706,7 +707,14 @@ async function assertRoomComposerShellCompact(
       actionListHeight: actionList?.getBoundingClientRect().height ?? 0,
       detailsOpen: Boolean(details?.open),
       hasAvatar: Boolean(avatar),
-      actionCount: actionList?.querySelectorAll(".du-discussion-action-button").length ?? 0
+      actionCount: actionList?.querySelectorAll(".du-discussion-action-button").length ?? 0,
+      composerLabel: element.getAttribute("aria-label"),
+      actionLabel: element
+        .querySelector(".du-discussion-actions-room")
+        ?.getAttribute("aria-label"),
+      hasQuickReplies: text.includes("Quick replies") && text.includes("Reply to the room"),
+      hasOldActionPanelCopy:
+        text.includes("Room actions") || text.includes("What should happen next?")
     };
   });
 
@@ -716,7 +724,11 @@ async function assertRoomComposerShellCompact(
     metrics.actionListHeight > maxActionListHeight ||
     metrics.detailsOpen ||
     !metrics.hasAvatar ||
-    metrics.actionCount === 0
+    metrics.actionCount === 0 ||
+    metrics.composerLabel !== "Room quick replies" ||
+    metrics.actionLabel !== "Room quick replies" ||
+    !metrics.hasQuickReplies ||
+    metrics.hasOldActionPanelCopy
   ) {
     throw new Error(
       `${label} should keep room actions shaped like a compact chat composer, got ${JSON.stringify(

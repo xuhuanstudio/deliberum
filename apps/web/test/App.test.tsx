@@ -4671,8 +4671,10 @@ describe("@deliberum/web shell", () => {
       document.querySelector(".du-discussion-actions")?.textContent ?? "";
     expect(screen.queryByRole("navigation", { name: "\u8ba8\u8bba\u52a8\u4f5c" })).toBeNull();
     expect(document.querySelector(".du-room-action-strip")).toBeNull();
-    expect(localizedDiscussionActionsText).toContain("\u8ba8\u8bba\u5ba4\u52a8\u4f5c");
-    expect(localizedDiscussionActionsText).toContain("\u63a5\u4e0b\u6765\u8981\u505a\u4ec0\u4e48\uff1f");
+    expect(localizedDiscussionActionsText).toContain("\u5feb\u6377\u56de\u590d");
+    expect(localizedDiscussionActionsText).toContain("\u56de\u590d\u8ba8\u8bba\u5ba4");
+    expect(localizedDiscussionActionsText).not.toContain("\u8ba8\u8bba\u5ba4\u52a8\u4f5c");
+    expect(localizedDiscussionActionsText).not.toContain("\u63a5\u4e0b\u6765\u8981\u505a\u4ec0\u4e48\uff1f");
     expect(localizedDiscussionActionsText).not.toContain("\u66f4\u65b0\u8ba8\u8bba");
     expect(localizedDiscussionActionsText).not.toContain("\u4ec5\u67e5\u770b");
     expect(localizedDiscussionActionsText).not.toContain(
@@ -5498,9 +5500,11 @@ describe("@deliberum/web shell", () => {
       screen.queryByRole("navigation", { name: "Primary discussion actions" })
     ).toBeNull();
     expect(screen.queryByRole("region", { name: "Discussion action composer" })).toBeNull();
-    expect(screen.getByRole("region", { name: "Room actions" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Room quick replies" })).toBeTruthy();
     expect(screen.queryByText("Discussion action composer")).toBeNull();
-    expect(screen.getByText("Room actions")).toBeTruthy();
+    expect(screen.getByText("Quick replies")).toBeTruthy();
+    expect(screen.getByText("Reply to the room")).toBeTruthy();
+    expect(screen.queryByText("Room actions")).toBeNull();
     expect(document.querySelector(".du-room-composer-copy")).toBeTruthy();
     expect(document.querySelector(".du-room-composer-avatar")).toBeTruthy();
     expect(document.querySelector(".du-room-composer")?.getAttribute("data-placement")).toBe(
@@ -5510,9 +5514,9 @@ describe("@deliberum/web shell", () => {
       (document.querySelector(".du-room-composer .du-continuation-details") as HTMLDetailsElement)
         ?.open
     ).toBe(false);
-    expect(screen.getByText("What should happen next?")).toBeTruthy();
+    expect(screen.queryByText("What should happen next?")).toBeNull();
     expect(
-      screen.getByText("Choose a short room action after reading the latest messages.")
+      screen.getByText("Choose a quick reply to review or move the discussion forward.")
     ).toBeTruthy();
     expect(
       screen.getByText("Update from the current room state.")
@@ -6754,8 +6758,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Confirm answer requirements" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Check evidence" })).toBeNull();
-    expect(screen.getByText("Message the room")).toBeTruthy();
-    expect(screen.getByText("Ask the room to continue from the discussion brief.")).toBeTruthy();
+    expect(screen.getByText("Reply to the room")).toBeTruthy();
+    expect(screen.getByText("Choose Continue discussion to let participants respond.")).toBeTruthy();
+    expect(screen.queryByText("Message the room")).toBeNull();
     expect(
       screen.getByText("Continue the room from here.")
     ).toBeTruthy();
@@ -7276,10 +7281,12 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Discussion action composer" })).toBeNull();
-    expect(screen.getByRole("region", { name: "Room actions" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Room quick replies" })).toBeTruthy();
     expect(screen.queryByText("Discussion action composer")).toBeNull();
-    expect(screen.getByText("Room actions")).toBeTruthy();
-    expect(screen.getByText("Message the room")).toBeTruthy();
+    expect(screen.getByText("Quick replies")).toBeTruthy();
+    expect(screen.getByText("Reply to the room")).toBeTruthy();
+    expect(screen.queryByText("Room actions")).toBeNull();
+    expect(screen.queryByText("Message the room")).toBeNull();
     expect(document.querySelector(".du-room-composer")).toBeTruthy();
     expect(document.querySelector(".du-room-composer-copy")).toBeTruthy();
     expect(document.querySelector(".du-room-composer-avatar")).toBeTruthy();
