@@ -4353,9 +4353,7 @@ function RunQualityOverview({
   return (
     <DataPanel
       title={t("Discussion room")}
-      description={t(
-        "A human-readable room view of the brief, participant perspectives, discussion flow, unresolved disagreements, missing evidence, current conclusion, and next actions."
-      )}
+      description={t("Read the room conversation, then choose the next action.")}
     >
       <QueryState query={queryState}>
         <div className="du-room-layout">

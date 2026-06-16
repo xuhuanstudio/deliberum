@@ -1793,6 +1793,10 @@ textarea:focus-visible {
   margin-top: 12px;
 }
 
+.du-room-timeline {
+  gap: 8px;
+}
+
 .du-room-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 0.36fr);
@@ -1809,19 +1813,19 @@ textarea:focus-visible {
 
 .du-room-header {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   overflow: hidden;
   border: 1px solid #d7c8af;
   border-radius: 8px;
   background: #fffefa;
-  padding: 12px;
+  padding: 10px 12px;
 }
 
 .du-room-header-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
-  gap: 12px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, auto);
+  gap: 10px;
+  align-items: center;
   min-width: 0;
 }
 
@@ -1835,8 +1839,12 @@ textarea:focus-visible {
 
 .du-room-header-main h4 {
   margin-top: 3px;
-  font-size: 1.18rem;
+  font-size: 1.08rem;
   line-height: 1.25;
+}
+
+.du-room-header-main p:not(.du-kicker) {
+  display: none;
 }
 
 .du-room-header-main p:not(.du-kicker),
@@ -1902,31 +1910,36 @@ textarea:focus-visible {
 
 .du-room-header-status-grid article {
   display: grid;
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
   background: var(--du-surface);
-  padding: 10px;
+  padding: 8px 10px;
 }
 
 .du-room-header-status-grid strong {
   overflow-wrap: anywhere;
   color: var(--du-ink);
-  font-size: 0.98rem;
+  font-size: 0.9rem;
   line-height: 1.28;
 }
 
+.du-room-header-status-grid p {
+  display: none;
+}
+
 .du-room-member-strip {
-  display: grid;
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
+  align-items: center;
   min-width: 0;
-  border-top: 1px solid var(--du-line);
-  padding-top: 10px;
 }
 
 .du-room-member-strip-heading {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 5px;
   align-items: baseline;
   min-width: 0;
 }
@@ -1943,36 +1956,35 @@ textarea:focus-visible {
   gap: 8px;
   min-width: 0;
   overflow-x: auto;
-  padding-bottom: 2px;
   scrollbar-width: thin;
 }
 
 .du-room-member-chip {
   display: inline-grid;
   flex: 0 0 auto;
-  grid-template-columns: 28px minmax(0, auto);
+  grid-template-columns: 24px minmax(0, auto);
   grid-template-rows: auto auto;
   gap: 1px 8px;
   align-items: center;
-  max-width: 220px;
+  max-width: 180px;
   min-width: 0;
   border: 1px solid var(--du-line);
   border-radius: 999px;
   background: #ffffff;
-  padding: 6px 10px 6px 6px;
+  padding: 4px 9px 4px 4px;
 }
 
 .du-room-member-chip > span {
   display: grid;
   grid-row: 1 / span 2;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   place-items: center;
   border: 1px solid #d7e9df;
   border-radius: 50%;
   background: #e5f4ee;
   color: var(--du-accent-strong);
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   font-weight: 900;
 }
 
@@ -2313,7 +2325,7 @@ textarea:focus-visible {
   flex-wrap: wrap;
   gap: 5px;
   align-items: baseline;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid var(--du-line);
   border-radius: 8px;
   background: #fbfaf6;
@@ -2321,15 +2333,12 @@ textarea:focus-visible {
 
 .du-room-thread-summary h4 {
   flex: 1 1 220px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1.25;
 }
 
 .du-room-thread-summary p:not(.du-kicker) {
-  flex: 1 0 100%;
-  color: var(--du-muted);
-  font-size: 0.88rem;
-  line-height: 1.35;
+  display: none;
 }
 
 .du-room-thread-intro {
@@ -2353,9 +2362,7 @@ textarea:focus-visible {
 }
 
 .du-room-thread-intro p:not(.du-kicker) {
-  color: var(--du-muted);
-  font-size: 0.82rem;
-  line-height: 1.35;
+  display: none;
 }
 
 @media (max-width: 720px) {
@@ -2364,14 +2371,8 @@ textarea:focus-visible {
     padding: 8px 10px;
   }
 
-  .du-room-thread-summary p:not(.du-kicker),
-  .du-room-thread-intro p:not(.du-kicker) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
+  .du-room-thread-summary h4 {
+    flex-basis: 160px;
   }
 }
 
@@ -2432,7 +2433,7 @@ textarea:focus-visible {
   gap: 8px;
   align-items: center;
   min-width: 0;
-  margin: 3px 0 0;
+  margin: 0;
   color: var(--du-muted);
 }
 
@@ -2451,7 +2452,7 @@ textarea:focus-visible {
   justify-content: center;
   min-width: 0;
   max-width: min(100%, 620px);
-  padding: 5px 10px;
+  padding: 4px 9px;
   border: 1px solid var(--du-line);
   border-radius: 999px;
   background: #fbfaf6;
@@ -2944,24 +2945,22 @@ textarea:focus-visible {
 }
 
 .du-room-focus h4 {
-  font-size: 1.08rem;
+  font-size: 1rem;
 }
 
 .du-room-focus h5 {
-  font-size: 0.94rem;
+  font-size: 0.86rem;
 }
 
 .du-room-focus p:not(.du-kicker) {
-  margin-top: 8px;
-  color: var(--du-muted);
-  line-height: 1.45;
+  display: none;
 }
 
 .du-room-focus-section {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   min-width: 0;
-  padding: 14px;
+  padding: 10px;
   border-bottom: 1px solid var(--du-line);
 }
 
@@ -2974,7 +2973,7 @@ textarea:focus-visible {
 }
 
 .du-room-focus-next strong {
-  font-size: 1.02rem;
+  font-size: 0.95rem;
 }
 
 .du-room-focus-next .du-action-row {
@@ -2983,8 +2982,8 @@ textarea:focus-visible {
 
 .du-room-focus-checklist {
   display: grid;
-  gap: 10px;
-  padding: 14px;
+  gap: 6px;
+  padding: 10px;
   background: #fffefa;
 }
 
@@ -2996,21 +2995,21 @@ textarea:focus-visible {
 .du-room-focus-queue {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .du-room-focus-queue a,
 .du-room-focus-queue div {
   display: grid;
   align-content: space-between;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
   background: var(--du-surface);
   border: 1px solid var(--du-line);
   border-radius: 8px;
   color: var(--du-ink);
-  min-height: 64px;
-  padding: 10px;
+  min-height: 46px;
+  padding: 6px;
   text-decoration: none;
 }
 
@@ -3022,13 +3021,14 @@ textarea:focus-visible {
 
 .du-room-focus-queue span {
   color: var(--du-muted);
-  font-size: 0.76rem;
+  font-size: 0.68rem;
   font-weight: 700;
   line-height: 1.25;
   text-transform: uppercase;
 }
 
 .du-room-focus-queue strong {
+  font-size: 0.82rem;
   overflow-wrap: anywhere;
   line-height: 1.25;
 }

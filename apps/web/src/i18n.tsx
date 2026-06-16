@@ -1021,6 +1021,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Conclusion ready": "\u7ed3\u8bba\u5df2\u5c31\u7eea",
   "A human-readable room view of the brief, participant perspectives, discussion flow, unresolved disagreements, missing evidence, current conclusion, and next actions.":
     "\u9762\u5411\u4eba\u7684\u8ba8\u8bba\u5ba4\u89c6\u56fe\uff0c\u5c55\u793a\u7b80\u62a5\u3001\u53c2\u4e0e\u8005\u89c6\u89d2\u3001\u8ba8\u8bba\u6d41\u7a0b\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u3001\u5f53\u524d\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Read the room conversation, then choose the next action.":
+    "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u5bf9\u8bdd\uff0c\u7136\u540e\u9009\u62e9\u4e0b\u4e00\u6b65\u52a8\u4f5c\u3002",
   "Next: review current conclusion": "\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba",
   "Next: continue guided discussion": "\u4e0b\u4e00\u6b65\uff1a\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba",
   "Start with the conclusion, then inspect disagreements, requirements, and missing evidence before relying on it.":

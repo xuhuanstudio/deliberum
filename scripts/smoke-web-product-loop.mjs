@@ -290,6 +290,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await assertRoomComposerShellCompact(page, "discussion room before continuation after setup details");
   await assertBriefDetailsCollapsed(page, "discussion room before continuation");
   await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await assertDesktopRoomConversationFirstView(page, "discussion room before continuation");
   await assertComposerActionsCompact(page, "discussion room before continuation", {
     maxActionListHeight: 120,
     maxButtonHeight: 64
@@ -799,6 +800,68 @@ async function assertMobileDiscussionRoomShell(page, label) {
     metrics.documentWidth > metrics.viewportWidth + 1
   ) {
     throw new Error(`${label} should keep mobile room chrome compact, got ${JSON.stringify(metrics)}.`);
+  }
+}
+
+async function assertDesktopRoomConversationFirstView(page, label) {
+  const previousViewport = page.viewportSize() ?? { width: 1280, height: 720 };
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.locator("#room-conversation-transcript").waitFor();
+  await page.locator(".du-room-system-message").first().waitFor();
+
+  const metrics = await page.evaluate(() => {
+    const rectFor = (selector) => {
+      const element = document.querySelector(selector);
+
+      if (!element) {
+        return null;
+      }
+
+      const rect = element.getBoundingClientRect();
+
+      return {
+        top: rect.top,
+        bottom: rect.bottom,
+        height: rect.height,
+        width: rect.width
+      };
+    };
+
+    return {
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      documentWidth: document.documentElement.scrollWidth,
+      header: rectFor(".du-room-header"),
+      threadSummary: rectFor(".du-room-thread-summary"),
+      transcript: rectFor("#room-conversation-transcript"),
+      firstRoomMessage: rectFor(".du-room-system-message"),
+      focusPanel: rectFor(".du-room-focus")
+    };
+  });
+
+  await page.setViewportSize(previousViewport);
+  await page.locator(".du-room-composer").waitFor();
+
+  if (
+    !metrics.header ||
+    metrics.header.height > 220 ||
+    !metrics.threadSummary ||
+    metrics.threadSummary.height > 70 ||
+    !metrics.transcript ||
+    metrics.transcript.top > metrics.viewportHeight ||
+    !metrics.firstRoomMessage ||
+    metrics.firstRoomMessage.top > metrics.viewportHeight ||
+    !metrics.focusPanel ||
+    metrics.focusPanel.height > 400 ||
+    metrics.documentWidth > metrics.viewportWidth + 1
+  ) {
+    throw new Error(
+      `${label} should show the room transcript in the desktop first view, got ${JSON.stringify(
+        metrics
+      )}.`
+    );
   }
 }
 
