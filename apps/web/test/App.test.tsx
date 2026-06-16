@@ -4660,6 +4660,25 @@ describe("@deliberum/web shell", () => {
     expect(latestUpdate.textContent ?? "").toContain(
       "\u8bf7\u5148\u5ba1\u9605\u6b64\u8ba8\u8bba\u5ba4\u66f4\u65b0\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002"
     );
+    const updateShortcuts = screen.getByRole("navigation", {
+      name: "\u8ba8\u8bba\u5ba4\u66f4\u65b0\u5feb\u6377\u5165\u53e3"
+    });
+    expect(updateShortcuts.textContent ?? "").toContain(
+      "\u5ba1\u9605\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf"
+    );
+    expect(updateShortcuts.textContent ?? "").toContain("\u5ba1\u9605\u8ba8\u8bba\u4ea7\u51fa");
+    expect(updateShortcuts.textContent ?? "").toContain("\u67e5\u770b\u5f53\u524d\u7ed3\u8bba");
+    const updateDetails = latestUpdate.querySelector(
+      ".du-room-update-details"
+    ) as HTMLDetailsElement | null;
+    expect(updateDetails).toBeTruthy();
+    expect(updateDetails?.open).toBe(false);
+    expect(latestUpdate.textContent ?? "").toContain("\u67e5\u770b\u8be6\u7ec6\u66f4\u65b0");
+    expect(latestUpdate.textContent ?? "").toContain(
+      "\u5982\u679c\u9700\u8981\u5b8c\u6574\u52a8\u4f5c\u7ed3\u679c\uff0c\u53ef\u6253\u5f00\u8be6\u7ec6\u6b65\u9aa4\u6458\u8981\u3002"
+    );
+    fireEvent.click(screen.getByText("\u67e5\u770b\u8be6\u7ec6\u66f4\u65b0"));
+    expect(updateDetails?.open).toBe(true);
     const resultHandoff = await screen.findByRole("region", {
       name: "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84"
     });
@@ -5669,6 +5688,23 @@ describe("@deliberum/web shell", () => {
         "The guided update ran with the current brief. Review the updated conclusion, disagreements, requirements, and evidence before relying on it."
       )
     ).toBeTruthy();
+    const updateShortcuts = screen.getByRole("navigation", {
+      name: "Room update shortcuts"
+    });
+    expect(updateShortcuts.textContent ?? "").toContain("Review updated timeline");
+    expect(updateShortcuts.textContent ?? "").toContain("Review discussion outputs");
+    expect(updateShortcuts.textContent ?? "").toContain("View current conclusion");
+    const updateDetails = latestUpdate.querySelector(
+      ".du-room-update-details"
+    ) as HTMLDetailsElement | null;
+    expect(updateDetails).toBeTruthy();
+    expect(updateDetails?.open).toBe(false);
+    expect(latestUpdate.textContent ?? "").toContain("Review detailed update");
+    expect(latestUpdate.textContent ?? "").toContain(
+      "Open the detailed step summary if you want the full action result."
+    );
+    fireEvent.click(screen.getByText("Review detailed update"));
+    expect(updateDetails?.open).toBe(true);
     const resultHandoff = screen.getByRole("region", { name: "Post-update review path" });
     expect(resultHandoff).toBeTruthy();
     expect(latestUpdate.contains(resultHandoff)).toBe(true);

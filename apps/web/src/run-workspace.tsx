@@ -3700,28 +3700,75 @@ function StartResult({
   const conclusionReviewReady =
     reviewReadyBeforeUpdate || isStartResultConclusionReviewReady(result, stages);
   const roomMessage = presentation === "room-message";
+  const resultTitle =
+    stopped === true ? t("Discussion paused") : t(feedback?.title ?? "Discussion steps completed");
+  const resultDetail =
+    stopped === true
+      ? t(
+          "The discussion stopped before every requested step finished. Review the visible steps below or open Advanced details for the technical reason."
+        )
+      : t(
+          feedback?.detail ??
+            (conclusionReviewReady
+              ? "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
+              : "The guided discussion update was recorded. Review the visible steps and continue the discussion before relying on a conclusion.")
+        );
+
+  if (roomMessage) {
+    return (
+      <div className="du-start-result du-start-result-room">
+        <StatusBanner
+          tone={stopped === true ? "warning" : "ok"}
+          title={resultTitle}
+          detail={resultDetail}
+        />
+        {stopped === true ? (
+          <StatusBanner
+            tone="warning"
+            title={t("Stop reason")}
+            detail={t(describeStartResultStopReason(getRecordValue(result, "stopReason")))}
+          />
+        ) : null}
+        <RunStartRecoveryActions show={isRecoverableStoppedStartResult(result)} />
+        <RoomUpdateShortcuts
+          runId={runId}
+          conclusionReviewReady={conclusionReviewReady}
+        />
+        <details className="du-room-update-details">
+          <summary>{t("Review detailed update")}</summary>
+          <p>{t("Open the detailed step summary if you want the full action result.")}</p>
+          <div className="du-room-update-details-body">
+            <DiscussionResultHandoff
+              runId={runId}
+              conclusionReviewReady={conclusionReviewReady}
+              roomMessage
+            />
+            <ReadableStageResultList stages={readableStages} roomMessage />
+            <AdvancedDetails
+              summary="Advanced / Developer Mode"
+              panelLabel="Raw stage metadata"
+              description="Raw execution stages, round ids, and event ids returned by the local runtime."
+              lazy
+            >
+              <RecordCollection
+                title="Raw stage metadata"
+                records={stages}
+                emptyTitle="No stages returned"
+                emptyDescription="No stage metadata was returned for this request."
+              />
+            </AdvancedDetails>
+          </div>
+        </details>
+      </div>
+    );
+  }
 
   return (
-    <div className={`du-start-result${roomMessage ? " du-start-result-room" : ""}`}>
+    <div className="du-start-result">
       <StatusBanner
         tone={stopped === true ? "warning" : "ok"}
-        title={
-          stopped === true
-            ? t("Discussion paused")
-            : t(feedback?.title ?? "Discussion steps completed")
-        }
-        detail={
-          stopped === true
-            ? t(
-                "The discussion stopped before every requested step finished. Review the visible steps below or open Advanced details for the technical reason."
-              )
-            : t(
-                feedback?.detail ??
-                  (conclusionReviewReady
-                    ? "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
-                    : "The guided discussion update was recorded. Review the visible steps and continue the discussion before relying on a conclusion.")
-              )
-        }
+        title={resultTitle}
+        detail={resultDetail}
       />
       {stopped === true ? (
         <StatusBanner
@@ -3751,6 +3798,40 @@ function StartResult({
         />
       </AdvancedDetails>
     </div>
+  );
+}
+
+function RoomUpdateShortcuts({
+  runId,
+  conclusionReviewReady
+}: {
+  runId: string;
+  conclusionReviewReady: boolean;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <nav className="du-room-update-shortcuts" aria-label={t("Room update shortcuts")}>
+      <a href="#discussion-timeline" aria-label={t("Review updated timeline")}>
+        {t("Review updated timeline")}
+      </a>
+      <a href="#discussion-outputs" aria-label={t("Review discussion outputs")}>
+        {t("Review discussion outputs")}
+      </a>
+      {conclusionReviewReady ? (
+        <Link
+          to="/runs/$runId/outcome"
+          params={{ runId }}
+          aria-label={t("View current conclusion")}
+        >
+          {t("View current conclusion")}
+        </Link>
+      ) : (
+        <a href="#continue-discussion" aria-label={t("Continue discussion")}>
+          {t("Continue discussion")}
+        </a>
+      )}
+    </nav>
   );
 }
 

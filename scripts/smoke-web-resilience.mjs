@@ -182,6 +182,7 @@ async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, run
       "A guided step is still waiting on model work. Review visible progress or try again after checking setup."
     )
     .waitFor();
+  await openRoomUpdateDetails(page, "paused continuation result");
   await page.getByRole("region", { name: "Updated discussion steps" }).waitFor();
   await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Needs attention").first().waitFor();
@@ -378,12 +379,29 @@ async function assertRoomUpdateMessage(page, label) {
     await roomUpdate.getByText("Room update", { exact: true }).waitFor();
     await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
     await roomUpdate.getByText("Review this room update").waitFor();
-    await roomUpdate.getByText("Room handoff", { exact: true }).waitFor();
-    await roomUpdate.getByRole("heading", { name: "Back to the room" }).waitFor();
-    await roomUpdate.getByText("Room progress", { exact: true }).waitFor();
-    await roomUpdate.getByRole("heading", { name: "What the room did" }).waitFor();
+    const shortcuts = roomUpdate.getByRole("navigation", { name: "Room update shortcuts" });
+    await shortcuts.waitFor();
+    await shortcuts.getByRole("link", { name: "Review updated timeline" }).waitFor();
+    await shortcuts.getByRole("link", { name: "Review discussion outputs" }).waitFor();
+    await roomUpdate.getByText("Review detailed update", { exact: true }).waitFor();
   } catch (error) {
     throw new Error(`${label} did not render the latest update as a room message.`, {
+      cause: error
+    });
+  }
+}
+
+async function openRoomUpdateDetails(page, label) {
+  const details = page.locator("#latest-discussion-update.du-room-update-message .du-room-update-details");
+
+  try {
+    await details.waitFor();
+
+    if (!(await details.evaluate((element) => element.open))) {
+      await details.getByText("Review detailed update", { exact: true }).click();
+    }
+  } catch (error) {
+    throw new Error(`${label} could not open detailed room update.`, {
       cause: error
     });
   }

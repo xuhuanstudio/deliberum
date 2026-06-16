@@ -1495,6 +1495,10 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Latest discussion update": "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0",
   "Room update": "\u8ba8\u8bba\u5ba4\u66f4\u65b0",
   "The room just updated": "\u8ba8\u8bba\u5ba4\u521a\u521a\u66f4\u65b0",
+  "Room update shortcuts": "\u8ba8\u8bba\u5ba4\u66f4\u65b0\u5feb\u6377\u5165\u53e3",
+  "Review detailed update": "\u67e5\u770b\u8be6\u7ec6\u66f4\u65b0",
+  "Open the detailed step summary if you want the full action result.":
+    "\u5982\u679c\u9700\u8981\u5b8c\u6574\u52a8\u4f5c\u7ed3\u679c\uff0c\u53ef\u6253\u5f00\u8be6\u7ec6\u6b65\u9aa4\u6458\u8981\u3002",
   "Review this result first, then return to the timeline, outputs, or current conclusion.":
     "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u5f53\u524d\u7ed3\u8bba\u3002",
   "Review this result first, then return to the timeline, outputs, or next recommended action.":
