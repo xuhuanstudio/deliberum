@@ -4850,7 +4850,7 @@ function DiscussionRoomTimeline({
       className="du-room-section du-room-timeline"
       aria-label={t("Discussion timeline")}
     >
-      <div className="du-section-label du-room-thread-summary">
+      <div className="du-section-label du-room-thread-summary du-sr-only">
         <p className="du-kicker">{t("Discussion timeline")}</p>
         <h4>{t("What has happened in the room")}</h4>
         <p>
@@ -4860,7 +4860,7 @@ function DiscussionRoomTimeline({
         </p>
       </div>
       <div id="room-conversation-transcript" className="du-room-activity-wrap">
-        <div className="du-room-thread-intro">
+        <div className="du-room-thread-intro du-sr-only">
           <p className="du-kicker">{t("Conversation transcript")}</p>
           <h5>{t("What the room said and did")}</h5>
           <p>{t("Participant messages and room updates appear in order.")}</p>
@@ -4962,12 +4962,11 @@ function DiscussionRoomTimeline({
                               >
                                 <div className="du-room-message-header">
                                   <strong>{t(activity.speaker)}</strong>
-                                  <span className="du-room-message-phase">
-                                    {t(activityPhaseView.label)}
-                                  </span>
-                                  <span className="du-room-message-action">
-                                    {t(activity.action)}
-                                  </span>
+                                  <small className="du-room-message-context">
+                                    <span>{t(activity.action)}</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span>{t(activityPhaseView.label)}</span>
+                                  </small>
                                 </div>
                                 <p className="du-room-message-detail">
                                   {t(activity.detail, activity.detailValues)}
@@ -4991,12 +4990,11 @@ function DiscussionRoomTimeline({
                               >
                                 <div className="du-room-message-header">
                                   <strong>{t(activity.speaker)}</strong>
-                                  <span className="du-room-message-phase">
-                                    {t(activityPhaseView.label)}
-                                  </span>
-                                  <span className="du-room-message-action">
-                                    {t(activity.action)}
-                                  </span>
+                                  <small className="du-room-message-context">
+                                    <span>{t(activity.action)}</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span>{t(activityPhaseView.label)}</span>
+                                  </small>
                                 </div>
                                 <p className="du-room-message-detail">
                                   {t(activity.detail, activity.detailValues)}

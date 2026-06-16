@@ -4628,7 +4628,7 @@ describe("@deliberum/web shell", () => {
     expect(localizedStageSummaries.join(" ")).toContain("1 \u4e2a\u53c2\u4e0e\u8005\u8d21\u732e");
     expect(
       document.querySelectorAll(
-        ".du-room-activity-item[data-speaker='participant'] .du-room-message-action"
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-context"
       ).length
     ).toBeGreaterThan(0);
     expect(
@@ -5688,6 +5688,12 @@ describe("@deliberum/web shell", () => {
     expect(roomProgressSummary.textContent ?? "").toContain("Missing evidence");
     expect(roomProgressSummary.textContent ?? "").toContain("Requirements to satisfy");
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
+    expect(document.querySelector(".du-room-thread-summary")?.classList.contains("du-sr-only")).toBe(
+      true
+    );
+    expect(document.querySelector(".du-room-thread-intro")?.classList.contains("du-sr-only")).toBe(
+      true
+    );
     expect(screen.getByRole("region", { name: "Next in the room" })).toBeTruthy();
     expect(
       screen.getByText(
@@ -5756,9 +5762,19 @@ describe("@deliberum/web shell", () => {
     expect(document.querySelectorAll(".du-room-message-detail").length).toBeGreaterThan(0);
     expect(
       document.querySelectorAll(
-        ".du-room-activity-item[data-speaker='participant'] .du-room-message-action"
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-context"
       ).length
     ).toBeGreaterThan(0);
+    expect(
+      document.querySelector(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-action"
+      )
+    ).toBeNull();
+    expect(
+      document.querySelector(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-phase"
+      )
+    ).toBeNull();
     expect(document.querySelector(".du-room-message-title")).toBeNull();
     const firstRoomMessage = document.querySelector(
       ".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble"
@@ -5771,17 +5787,17 @@ describe("@deliberum/web shell", () => {
     ).toBe(true);
     const firstRoomMessageHeader = firstRoomMessage?.querySelector(".du-room-message-header");
     const firstRoomMessageDetail = firstRoomMessage?.querySelector(".du-room-message-detail");
-    const firstRoomMessageAction = firstRoomMessage?.querySelector(".du-room-message-action");
-    const firstRoomMessagePhase = firstRoomMessage?.querySelector(".du-room-message-phase");
+    const firstRoomMessageContext = firstRoomMessage?.querySelector(".du-room-message-context");
     expect(firstRoomMessageHeader).toBeTruthy();
     expect(firstRoomMessageDetail).toBeTruthy();
-    expect(firstRoomMessagePhase).toBeTruthy();
-    expect(firstRoomMessageHeader?.contains(firstRoomMessageAction as Node)).toBe(true);
-    expect(firstRoomMessageAction?.tagName).toBe("SPAN");
+    expect(firstRoomMessageContext).toBeTruthy();
+    expect(firstRoomMessageHeader?.contains(firstRoomMessageContext as Node)).toBe(true);
+    expect(firstRoomMessageContext?.tagName).toBe("SMALL");
     expect(firstRoomMessageDetail?.previousElementSibling).toBe(firstRoomMessageHeader);
-    expect(firstRoomMessageAction?.textContent ?? "").toContain(
+    expect(firstRoomMessageContext?.textContent ?? "").toContain(
       "Submitted a sealed first response"
     );
+    expect(firstRoomMessageContext?.textContent ?? "").toContain("Independent first responses");
     const stageSummaries = Array.from(
       document.querySelectorAll('[aria-label="Stage activity summary"]')
     ).map((summary) => summary.textContent ?? "");

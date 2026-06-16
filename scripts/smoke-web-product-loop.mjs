@@ -308,26 +308,24 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     )
     .waitFor();
   await openRoomUpdateDetails(page, "discussion room after transient participant failure");
-  await page.getByRole("region", { name: "Updated discussion steps" }).waitFor();
+  const updatedSteps = page.getByRole("region", { name: "Updated discussion steps" });
+  await updatedSteps.waitFor();
+  await updatedSteps.getByText("Needs attention", { exact: true }).waitFor();
   await page.getByText("Room progress and stages", { exact: true }).click();
-  await page.getByText("Needs attention").first().waitFor();
+  await page
+    .getByRole("region", { name: "Room progress summary" })
+    .getByText("Discussion step needs attention", { exact: true })
+    .waitFor();
   await page.getByText("Room progress and stages", { exact: true }).click();
   await assertDefaultViewSafety(page, "discussion room after transient participant failure", {
     providerBaseUrl
   });
 
   await page.getByRole("button", { name: "Continue discussion" }).click();
-  await assertRoomHeaderStatus(page, {
-    label: "discussion room after continuation",
-    expectedStatus: "Conclusion ready",
-    expectedNextAction: "Review current conclusion"
-  });
+  await page.getByRole("link", { name: "Review current conclusion" }).first().waitFor();
+  await assertRoomConversationShellAfterMessages(page, "discussion room after continuation");
   await assertNoSuccessfulRoomUpdateReceipt(page, "discussion room after continuation");
   await assertConversationTranscriptReturnedToViewport(page, "discussion room after continuation");
-  await assertDiscussionRoomOverview(page, {
-    label: "discussion room after continuation",
-    expectedNextAction: "Review current conclusion"
-  });
   await page
     .locator(".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble")
     .first()
@@ -337,11 +335,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .locator(".du-room-system-message")
     .filter({ hasText: "Made first responses visible" })
     .waitFor();
-  await page.getByText("Conversation transcript").waitFor();
-  await page.getByText("What the room said and did").waitFor();
-  await page.getByText("Discussion phase").first().waitFor();
+  await page.locator("#room-conversation-transcript").waitFor();
+  await page.getByText("Room step 2", { exact: true }).waitFor();
+  await page.getByText("Independent first responses", { exact: true }).first().waitFor();
   await assertRoomMessageFlowCompact(page, "discussion room after continuation");
-  await assertRoomLatestMessagesPreview(page, "discussion room after continuation");
   await page.getByText("Next in the room", { exact: true }).waitFor();
   await page
     .locator("#room-conversation-transcript")
@@ -359,19 +356,21 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("This browser perspective supports the verified provider path.").first().waitFor();
   await assertDetailedReviewPanelsCollapsed(page, "discussion room after continuation");
   await openDetailedReviewPanels(page, "discussion room after continuation");
-  await page
+  const detailedReviewPanels = page.locator("details.du-room-detail-panels-drawer");
+  await detailedReviewPanels
     .getByText("Use the verified provider path for reviewable browser discussions")
     .first()
     .waitFor();
-  await page
+  await detailedReviewPanels
     .getByText("The browser walkthrough still needs to prove evidence gaps stay visible.")
     .first()
     .waitFor();
-  await page
+  await detailedReviewPanels
     .getByText("Confirm browser evidence before treating the conclusion as stable.")
     .first()
     .waitFor();
   await page
+    .locator("#room-conversation-transcript")
     .getByText("Browser-backed conclusions remain provisional until risks are reviewed.")
     .first()
     .waitFor();
@@ -903,37 +902,47 @@ async function assertDesktopRoomConversationFirstView(page, label) {
   }
 }
 
-async function assertRoomLatestMessagesPreview(page, label) {
+async function assertRoomConversationShellAfterMessages(page, label) {
   const previousViewport = page.viewportSize() ?? { width: 1280, height: 720 };
 
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.getByText("Latest messages", { exact: true }).waitFor();
-  await page.getByText("Who spoke most recently", { exact: true }).waitFor();
-  await page.locator(".du-room-message-preview").first().waitFor();
+  await page.locator("#room-conversation-transcript").waitFor();
+  await page
+    .locator(".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble")
+    .first()
+    .waitFor();
 
   const metrics = await page.evaluate(() => {
-    const previews = Array.from(document.querySelectorAll(".du-room-message-preview"));
-    const firstPreview = previews[0]?.getBoundingClientRect();
+    const firstParticipant = document
+      .querySelector(".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble")
+      ?.getBoundingClientRect();
+    const roomHeader = document.querySelector(".du-room-header");
 
     return {
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
       documentWidth: document.documentElement.scrollWidth,
-      previewCount: previews.length,
-      firstPreview: firstPreview
+      roomHeaderDisplay: roomHeader ? getComputedStyle(roomHeader).display : null,
+      firstParticipant: firstParticipant
         ? {
-            top: firstPreview.top,
-            bottom: firstPreview.bottom,
-            height: firstPreview.height,
-            width: firstPreview.width
+            top: firstParticipant.top,
+            bottom: firstParticipant.bottom,
+            height: firstParticipant.height,
+            width: firstParticipant.width
           }
         : null,
-      hasInternalIds: previews.some((preview) =>
-        /(?:run|session|ledger|runtime|proposal|event|internal|adapter)[_-]?[a-z0-9-]{4,}/i.test(
-          preview.textContent ?? ""
-        )
-      )
+      messageContextCount: document.querySelectorAll(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-context"
+      ).length,
+      messageActionChipCount: document.querySelectorAll(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-action"
+      ).length,
+      messagePhaseChipCount: document.querySelectorAll(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-phase"
+      ).length,
+      outputSummaryOpen: document.querySelector(".du-room-outputs-section")?.hasAttribute("open"),
+      focusPanelVisible: Boolean(document.querySelector(".du-room-focus"))
     };
   });
 
@@ -941,15 +950,20 @@ async function assertRoomLatestMessagesPreview(page, label) {
   await page.locator(".du-room-composer").waitFor();
 
   if (
-    metrics.previewCount < 2 ||
-    !metrics.firstPreview ||
-    metrics.firstPreview.top > metrics.viewportHeight ||
-    metrics.firstPreview.height > 92 ||
+    metrics.roomHeaderDisplay !== "none" ||
+    !metrics.firstParticipant ||
+    metrics.firstParticipant.top < 0 ||
+    metrics.firstParticipant.bottom > metrics.viewportHeight + 8 ||
+    metrics.messageContextCount < 1 ||
+    metrics.messageActionChipCount !== 0 ||
+    metrics.messagePhaseChipCount !== 0 ||
+    metrics.outputSummaryOpen ||
+    !metrics.focusPanelVisible ||
     metrics.documentWidth > metrics.viewportWidth + 1 ||
-    metrics.hasInternalIds
+    metrics.firstParticipant.height > 180
   ) {
     throw new Error(
-      `${label} should show recent participant messages in the first-view room header, got ${JSON.stringify(
+      `${label} should show participant messages as the first-view room conversation, got ${JSON.stringify(
         metrics
       )}.`
     );
