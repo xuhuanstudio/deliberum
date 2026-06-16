@@ -4698,14 +4698,28 @@ describe("@deliberum/web shell", () => {
     const updateDetails = latestUpdate.querySelector(
       ".du-room-update-details"
     ) as HTMLDetailsElement | null;
+    const updateDetailsBody = latestUpdate.querySelector(
+      ".du-room-update-details-body"
+    ) as HTMLElement | null;
     expect(updateDetails).toBeTruthy();
+    expect(updateDetailsBody).toBeTruthy();
     expect(updateDetails?.open).toBe(false);
+    expect(
+      updateDetailsBody?.matches(
+        ".du-room-update-details:not([open]) > .du-room-update-details-body"
+      )
+    ).toBe(true);
     expect(latestUpdate.textContent ?? "").toContain("\u67e5\u770b\u8be6\u7ec6\u66f4\u65b0");
     expect(latestUpdate.textContent ?? "").toContain(
       "\u5982\u679c\u9700\u8981\u5b8c\u6574\u52a8\u4f5c\u7ed3\u679c\uff0c\u53ef\u6253\u5f00\u8be6\u7ec6\u6b65\u9aa4\u6458\u8981\u3002"
     );
     fireEvent.click(screen.getByText("\u67e5\u770b\u8be6\u7ec6\u66f4\u65b0"));
     expect(updateDetails?.open).toBe(true);
+    expect(
+      updateDetailsBody?.matches(
+        ".du-room-update-details:not([open]) > .du-room-update-details-body"
+      )
+    ).toBe(false);
     const resultHandoff = await screen.findByRole("region", {
       name: "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84"
     });
@@ -5806,14 +5820,28 @@ describe("@deliberum/web shell", () => {
     const updateDetails = latestUpdate.querySelector(
       ".du-room-update-details"
     ) as HTMLDetailsElement | null;
+    const updateDetailsBody = latestUpdate.querySelector(
+      ".du-room-update-details-body"
+    ) as HTMLElement | null;
     expect(updateDetails).toBeTruthy();
+    expect(updateDetailsBody).toBeTruthy();
     expect(updateDetails?.open).toBe(false);
+    expect(
+      updateDetailsBody?.matches(
+        ".du-room-update-details:not([open]) > .du-room-update-details-body"
+      )
+    ).toBe(true);
     expect(latestUpdate.textContent ?? "").toContain("Review detailed update");
     expect(latestUpdate.textContent ?? "").toContain(
       "Open the detailed step summary if you want the full action result."
     );
     fireEvent.click(screen.getByText("Review detailed update"));
     expect(updateDetails?.open).toBe(true);
+    expect(
+      updateDetailsBody?.matches(
+        ".du-room-update-details:not([open]) > .du-room-update-details-body"
+      )
+    ).toBe(false);
     const resultHandoff = screen.getByRole("region", { name: "Post-update review path" });
     expect(resultHandoff).toBeTruthy();
     expect(latestUpdate.contains(resultHandoff)).toBe(true);

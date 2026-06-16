@@ -4041,6 +4041,10 @@ textarea:focus-visible {
   padding: 12px;
 }
 
+.du-room-update-details:not([open]) > .du-room-update-details-body {
+  display: none;
+}
+
 .du-start-result,
 .du-projection-section {
   display: grid;
