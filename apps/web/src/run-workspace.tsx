@@ -1833,6 +1833,7 @@ export function RunDetailPage() {
   return (
     <RunWorkspaceShell runId={runId} showConclusionNav={reviewReady}>
       <ViewFrame
+        className="du-run-detail-view"
         eyebrow={t("User Mode")}
         title={t(formatRunDisplayTitle(run))}
         description={t(

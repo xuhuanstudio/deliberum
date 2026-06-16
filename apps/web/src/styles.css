@@ -4224,17 +4224,63 @@ textarea:focus-visible {
 
   .du-sidebar {
     position: static;
+    width: 100%;
+    min-width: 0;
     min-height: auto;
     border-right: 0;
     border-bottom: 1px solid var(--du-line);
+    gap: 12px;
+    padding: 14px 22px;
+  }
+
+  .du-brand {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .du-brand-mark {
+    height: 30px;
+  }
+
+  .du-brand h1 {
+    font-size: 1.08rem;
+  }
+
+  .du-brand .du-kicker {
+    margin-bottom: 2px;
   }
 
   .du-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .du-nav-link {
+    flex: 0 0 auto;
+    border: 1px solid transparent;
+    padding: 8px 10px 8px 16px;
+  }
+
+  .du-sidebar-footer {
+    min-width: 0;
+    margin-top: 0;
+  }
+
+  .du-language-switcher {
+    grid-template-columns: auto minmax(140px, 1fr);
+    align-items: center;
+  }
+
+  .du-language-switcher select {
+    min-height: 32px;
   }
 
   .du-main {
-    padding: 22px;
+    width: 100%;
+    padding: 16px 22px 22px;
   }
 
   .du-product-grid {
@@ -4242,7 +4288,48 @@ textarea:focus-visible {
   }
 
   .du-page-header {
-    display: block;
+    display: grid;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .du-page-header h2 {
+    font-size: clamp(1.35rem, 6.5vw, 1.8rem);
+    line-height: 1.04;
+  }
+
+  .du-page-header p {
+    margin-top: 8px;
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .du-page-actions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .du-action-link {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0 12px;
+  }
+
+  .du-panel-heading {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 12px;
+  }
+
+  .du-panel-heading p {
+    display: none;
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .du-run-detail-view > .du-page-header p:not(.du-kicker) {
+    display: none;
   }
 
   .du-session-form-row,
@@ -4303,33 +4390,37 @@ textarea:focus-visible {
     order: 1;
   }
 
-  .du-room-timeline {
+  .du-room-action-strip {
     order: 2;
   }
 
-  .du-room-composer {
+  .du-room-timeline {
     order: 3;
   }
 
-  .du-room-focus {
+  .du-room-composer {
     order: 4;
+  }
+
+  .du-room-focus {
+    order: 5;
     position: static;
   }
 
   .du-room-brief {
-    order: 5;
-  }
-
-  .du-room-outputs-section {
     order: 6;
   }
 
-  .du-room-options-section {
+  .du-room-outputs-section {
     order: 7;
   }
 
-  .du-room-contributions {
+  .du-room-options-section {
     order: 8;
+  }
+
+  .du-room-contributions {
+    order: 9;
   }
 
   .du-room-detail-panels-drawer > summary {

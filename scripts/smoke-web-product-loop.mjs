@@ -288,6 +288,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     maxButtonHeight: 64
   });
   await assertDefaultViewSafety(page, "discussion room before continuation", { providerBaseUrl });
+  await assertMobileDiscussionRoomShell(page, "discussion room mobile before continuation");
 
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Discussion paused", { exact: true }).waitFor();
@@ -522,6 +523,78 @@ async function assertComposerActionsCompact(
     throw new Error(
       `${label} should keep room actions compact, got ${JSON.stringify(metrics)}.`
     );
+  }
+}
+
+async function assertMobileDiscussionRoomShell(page, label) {
+  const desktopViewport = page.viewportSize() ?? { width: 1280, height: 900 };
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.locator(".du-room-action-strip").waitFor();
+  await page.locator("[aria-label='Discussion timeline']").waitFor();
+
+  const metrics = await page.evaluate(() => {
+    const rectFor = (selector) => {
+      const element = document.querySelector(selector);
+
+      if (!element) {
+        return null;
+      }
+
+      const rect = element.getBoundingClientRect();
+
+      return {
+        top: rect.top,
+        bottom: rect.bottom,
+        height: rect.height,
+        width: rect.width
+      };
+    };
+    const elements = Array.from(document.querySelectorAll("*"));
+    const status = document.querySelector(".du-room-status-cue");
+    const strip = document.querySelector(".du-room-action-strip");
+    const timeline = document.querySelector("[aria-label='Discussion timeline']");
+
+    return {
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      sidebar: rectFor(".du-sidebar"),
+      pageHeader: rectFor(".du-page-header"),
+      panelHeading: rectFor(".du-panel-heading"),
+      roomLayout: rectFor(".du-room-layout"),
+      status: rectFor(".du-room-status-cue"),
+      strip: rectFor(".du-room-action-strip"),
+      timeline: rectFor("[aria-label='Discussion timeline']"),
+      order: {
+        statusBeforeStrip:
+          Boolean(status && strip) && elements.indexOf(status) < elements.indexOf(strip),
+        stripBeforeTimeline:
+          Boolean(strip && timeline) && elements.indexOf(strip) < elements.indexOf(timeline)
+      }
+    };
+  });
+
+  await page.setViewportSize(desktopViewport);
+  await page.locator(".du-room-composer").waitFor();
+
+  if (
+    !metrics.sidebar ||
+    metrics.sidebar.height > 190 ||
+    !metrics.pageHeader ||
+    metrics.pageHeader.height > 230 ||
+    !metrics.panelHeading ||
+    metrics.panelHeading.height > 110 ||
+    !metrics.roomLayout ||
+    metrics.roomLayout.top > 620 ||
+    !metrics.status ||
+    !metrics.strip ||
+    !metrics.timeline ||
+    !metrics.order.statusBeforeStrip ||
+    !metrics.order.stripBeforeTimeline ||
+    metrics.documentWidth > metrics.viewportWidth + 1
+  ) {
+    throw new Error(`${label} should keep mobile room chrome compact, got ${JSON.stringify(metrics)}.`);
   }
 }
 

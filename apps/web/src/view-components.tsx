@@ -15,6 +15,7 @@ export type ViewFrameProps = {
   title: string;
   description: string;
   actions?: ReactNode;
+  className?: string;
   children: ReactNode;
 };
 
@@ -32,10 +33,11 @@ export function ViewFrame({
   title,
   description,
   actions,
+  className,
   children
 }: ViewFrameProps) {
   return (
-    <div className="du-view">
+    <div className={className ? `du-view ${className}` : "du-view"}>
       <PageHeader
         eyebrow={eyebrow}
         title={title}
