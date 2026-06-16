@@ -283,6 +283,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Model-backed discussion").first().waitFor();
   await assertBriefDetailsCollapsed(page, "discussion room before continuation");
   await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await assertComposerActionsCompact(page, "discussion room before continuation", {
+    maxActionListHeight: 120,
+    maxButtonHeight: 64
+  });
   await assertDefaultViewSafety(page, "discussion room before continuation", { providerBaseUrl });
 
   await page.getByRole("button", { name: "Continue discussion" }).click();
@@ -361,6 +365,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("link", { name: "Review disagreements", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Check evidence", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Update conclusion", exact: true }).first().waitFor();
+  await assertComposerActionsCompact(page, "discussion room after continuation", {
+    maxActionListHeight: 240,
+    maxButtonHeight: 64
+  });
   await assertDefaultViewSafety(page, "discussion room after continuation", { providerBaseUrl });
 
   await page.getByRole("link", { name: "View current conclusion", exact: true }).first().click();
@@ -416,6 +424,35 @@ async function assertTimelineReturnedToViewport(page, label) {
       `${label} should return the viewport to the discussion timeline, got ${JSON.stringify(
         metrics
       )}.`
+    );
+  }
+}
+
+async function assertComposerActionsCompact(
+  page,
+  label,
+  { maxActionListHeight, maxButtonHeight }
+) {
+  const metrics = await page.locator(".du-discussion-actions-room").evaluate((element) => {
+    const actionList = element.querySelector(".du-discussion-action-list");
+    const buttons = Array.from(element.querySelectorAll(".du-discussion-action-button"));
+
+    return {
+      actionListHeight: actionList?.getBoundingClientRect().height ?? 0,
+      buttonHeights: buttons.map((button) => button.getBoundingClientRect().height),
+      buttonCount: buttons.length
+    };
+  });
+
+  const tallestButton = Math.max(0, ...metrics.buttonHeights);
+
+  if (
+    metrics.buttonCount === 0 ||
+    metrics.actionListHeight > maxActionListHeight ||
+    tallestButton > maxButtonHeight
+  ) {
+    throw new Error(
+      `${label} should keep room actions compact, got ${JSON.stringify(metrics)}.`
     );
   }
 }
