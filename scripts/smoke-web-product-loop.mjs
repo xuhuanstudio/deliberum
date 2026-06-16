@@ -274,7 +274,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.locator(".du-room-composer").waitFor();
   await page.getByText("How this discussion will continue").click();
   await page.getByText("Model-backed discussion").first().waitFor();
-  await page.getByText("What is being discussed").waitFor();
+  await assertBriefDetailsCollapsed(page, "discussion room before continuation");
   await page.getByRole("button", { name: "Continue discussion" }).waitFor();
   await assertDefaultViewSafety(page, "discussion room before continuation", { providerBaseUrl });
 
@@ -353,6 +353,18 @@ async function assertRoomUpdateMessage(page, label) {
     throw new Error(`${label} did not render the latest update as a room message.`, {
       cause: error
     });
+  }
+}
+
+async function assertBriefDetailsCollapsed(page, label) {
+  const briefDetails = page.locator(".du-room-brief");
+
+  await page.getByText("Discussion brief details").waitFor();
+
+  const open = await briefDetails.evaluate((element) => element.open === true);
+
+  if (open) {
+    throw new Error(`${label} should keep discussion brief details collapsed by default.`);
   }
 }
 

@@ -2169,7 +2169,7 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.createRun).toHaveBeenCalled());
     expect(await screen.findByText("Discussion room")).toBeTruthy();
     expect(await screen.findByText("Model-backed discussion")).toBeTruthy();
-    expect(screen.getByText("What is being discussed")).toBeTruthy();
+    expect(screen.getByText("Discussion brief details")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
     expect(screen.queryByText("Use the verified provider for reviewable discussions")).toBeNull();
 
@@ -4525,12 +4525,17 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba")).toBeTruthy();
     expect(screen.getAllByText("\u8ba8\u8bba\u5ba4").length).toBeGreaterThan(0);
-    expect(screen.getByText("\u6b63\u5728\u8ba8\u8bba\u4ec0\u4e48")).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5\u8be6\u60c5")).toBeTruthy();
+    expect(
+      (document.querySelector(".du-room-brief") as HTMLDetailsElement | null)?.open
+    ).toBe(false);
     expect(screen.getByText("\u8ba8\u8bba\u65f6\u95f4\u7ebf")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u5ba4\u4e2d\u53d1\u751f\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByRole("region", { name: "\u5bf9\u8bdd\u8bb0\u5f55" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u66f4\u65b0" })).toBeTruthy();
+    expect(screen.getByText("\u5206\u4eab\u4e86\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
+    expect(screen.getByText("\u63d0\u4ea4\u4e86\u5c01\u5b58\u7684\u521d\u59cb\u56de\u5e94")).toBeTruthy();
     const localizedStageSummaries = Array.from(
       document.querySelectorAll('[aria-label="\u9636\u6bb5\u6d3b\u52a8\u6458\u8981"]')
     ).map((summary) => summary.textContent ?? "");
@@ -4731,12 +4736,12 @@ describe("@deliberum/web shell", () => {
     );
 
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
-    await waitFor(() =>
-      expect(document.querySelector(".du-room-brief")?.textContent ?? "").toContain(
-        "\u6211\u4eec\u5e94\u5982\u4f55\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5ba1\u67e5\u5b83\uff1f"
-      )
-    );
-
+    expect(await screen.findByText("\u8ba8\u8bba\u7b80\u62a5\u8be6\u60c5")).toBeTruthy();
+    const briefDetails = document.querySelector(".du-room-brief") as HTMLDetailsElement | null;
+    expect(briefDetails).toBeTruthy();
+    expect(briefDetails?.open).toBe(false);
+    fireEvent.click(screen.getByText("\u8ba8\u8bba\u7b80\u62a5\u8be6\u60c5"));
+    expect(briefDetails?.open).toBe(true);
     const briefText = document.querySelector(".du-room-brief")?.textContent ?? "";
     expect(briefText).toContain(
       "\u6211\u4eec\u5e94\u5982\u4f55\u5728\u4f9d\u8d56\u62df\u8bae\u53d1\u5e03\u524d\u5ba1\u67e5\u5b83\uff1f"
@@ -4952,7 +4957,7 @@ describe("@deliberum/web shell", () => {
 
     await waitFor(() => expect(client.createRun).toHaveBeenCalledWith({ runPlan }));
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
-    expect(await screen.findByText("What is being discussed")).toBeTruthy();
+    expect(await screen.findByText("Discussion brief details")).toBeTruthy();
     expect(screen.getAllByText("Discussion room").length).toBeGreaterThan(0);
     expect(document.body.textContent ?? "").not.toContain("internal run id");
     expect(screen.queryByRole("link", { name: "Open discussion room" })).toBeNull();
@@ -5026,7 +5031,7 @@ describe("@deliberum/web shell", () => {
       })
     );
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
-    expect(await screen.findByText("What is being discussed")).toBeTruthy();
+    expect(await screen.findByText("Discussion brief details")).toBeTruthy();
     expect(screen.getAllByText("Discussion room").length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Open discussion room" })).toBeNull();
     expect(screen.queryByText("Discussion created")).toBeNull();
@@ -5308,7 +5313,7 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("Ledger events")).toBeTruthy();
     expect(screen.getByText("7 recorded lifecycle events")).toBeTruthy();
     expect(screen.getAllByText("Discussion room").length).toBeGreaterThan(0);
-    expect(screen.getByText("What is being discussed")).toBeTruthy();
+    expect(screen.getByText("Discussion brief details")).toBeTruthy();
     expect(screen.getByText("Discussion timeline")).toBeTruthy();
     expect(screen.getByText("What has happened in the room")).toBeTruthy();
     expect(screen.getByText("Conversation transcript")).toBeTruthy();
@@ -5320,7 +5325,7 @@ describe("@deliberum/web shell", () => {
     const roomLayout = document.querySelector(".du-room-layout");
     const roomMain = document.querySelector(".du-room-main");
     const roomComposer = document.querySelector(".du-room-composer");
-    const roomBrief = document.querySelector(".du-room-brief");
+    const roomBrief = document.querySelector(".du-room-brief") as HTMLDetailsElement | null;
     const roomOutputs = document.querySelector(".du-room-outputs-section");
     const reviewDrawer = document.querySelector(
       ".du-room-review-drawer"
@@ -5334,8 +5339,10 @@ describe("@deliberum/web shell", () => {
     expect(roomBrief).toBeTruthy();
     expect(roomOutputs).toBeTruthy();
     expect(reviewDrawer).toBeTruthy();
+    expect(roomBrief?.open).toBe(false);
     expect(reviewDrawer?.open).toBe(false);
     expect(roomMain?.contains(roomComposer as Node)).toBe(true);
+    expect(document.querySelector(".du-room-brief-body")?.closest("details")).toBe(roomBrief);
     expect(document.querySelector(".du-discussion-dashboard-grid")?.closest("details")).toBe(
       reviewDrawer
     );
@@ -5364,6 +5371,9 @@ describe("@deliberum/web shell", () => {
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
+    fireEvent.click(screen.getByText("Discussion brief details"));
+    expect(roomBrief?.open).toBe(true);
+    expect(screen.getByText("What is being discussed")).toBeTruthy();
     expect(
       Boolean(
         roomLayout?.compareDocumentPosition(reviewDrawer as Node) &
@@ -5399,15 +5409,16 @@ describe("@deliberum/web shell", () => {
     expect(document.querySelector(".du-room-activity-meta")).toBeNull();
     expect(document.querySelectorAll(".du-room-message-header").length).toBeGreaterThan(0);
     expect(document.querySelectorAll(".du-room-message-detail").length).toBeGreaterThan(0);
-    expect(document.querySelectorAll(".du-room-message-title").length).toBeGreaterThan(0);
+    expect(document.querySelectorAll(".du-room-message-action").length).toBeGreaterThan(0);
+    expect(document.querySelector(".du-room-message-title")).toBeNull();
     const firstRoomMessage = document.querySelector(".du-room-activity-bubble");
     const firstRoomMessageDetail = firstRoomMessage?.querySelector(".du-room-message-detail");
-    const firstRoomMessageTitle = firstRoomMessage?.querySelector(".du-room-message-title");
+    const firstRoomMessageAction = firstRoomMessage?.querySelector(".du-room-message-action");
     expect(firstRoomMessageDetail).toBeTruthy();
-    expect(firstRoomMessageTitle).toBeTruthy();
+    expect(firstRoomMessageAction).toBeTruthy();
     expect(
       Boolean(
-        firstRoomMessageDetail?.compareDocumentPosition(firstRoomMessageTitle as Node) &
+        firstRoomMessageDetail?.compareDocumentPosition(firstRoomMessageAction as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
@@ -5426,8 +5437,8 @@ describe("@deliberum/web shell", () => {
       screen.getByText("The room starts by making the question, goals, and constraints visible.")
     ).toBeTruthy();
     expect(screen.getByText("Participants respond separately before comparing answers.")).toBeTruthy();
-    expect(screen.getByText("Discussion brief published")).toBeTruthy();
-    expect(screen.getByText("Independent response submitted")).toBeTruthy();
+    expect(screen.getByText("Shared the discussion brief")).toBeTruthy();
+    expect(screen.getByText("Submitted a sealed first response")).toBeTruthy();
     expect(
       screen.getByText(
         "This response is sealed until the independent first responses are revealed."
@@ -5798,8 +5809,12 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.queryByText("This participant response is available for review in the room.")
     ).toBeNull();
-    expect(screen.getByText("Independent first responses revealed")).toBeTruthy();
-    expect(screen.getAllByText("Main perspectives organized").length).toBeGreaterThan(1);
+    expect(screen.getByText("Shared a first response")).toBeTruthy();
+    expect(screen.getByText("Made first responses visible")).toBeTruthy();
+    expect(screen.getAllByText("Organized the strongest options").length).toBeGreaterThan(0);
+    expect(screen.getByText("Kept this material in the room")).toBeTruthy();
+    expect(screen.getByText("Drafted the current conclusion")).toBeTruthy();
+    expect(screen.getByText("Reviewed risks")).toBeTruthy();
     expect(screen.getByText("Review coordinator")).toBeTruthy();
     expect(screen.getByText("Conclusion writer")).toBeTruthy();
     expect(screen.getByText("Risk reviewer")).toBeTruthy();

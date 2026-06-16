@@ -1658,24 +1658,78 @@ textarea:focus-visible {
 }
 
 .du-room-brief {
-  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.8fr);
-  align-items: stretch;
+  gap: 0;
   background: #f8fff9;
   border: 1px solid var(--du-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.du-room-brief > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  cursor: pointer;
+  color: var(--du-ink);
+  font-weight: 800;
+  list-style: none;
+  padding: 14px 16px;
+}
+
+.du-room-brief > summary::-webkit-details-marker {
+  display: none;
+}
+
+.du-room-brief > summary::after {
+  content: "+";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: var(--du-muted);
+  font-size: 1.1rem;
+}
+
+.du-room-brief[open] > summary::after {
+  content: "-";
+}
+
+.du-room-brief > summary:hover {
+  background: var(--du-surface-muted);
+}
+
+.du-room-brief > summary span {
+  min-width: 0;
+}
+
+.du-room-brief > summary small {
+  grid-column: 1;
+  overflow-wrap: anywhere;
+  color: var(--du-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.du-room-brief-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.8fr);
+  gap: 14px;
+  align-items: stretch;
+  border-top: 1px solid var(--du-line);
   padding: 18px;
 }
 
-.du-room-brief h4,
-.du-room-brief p {
+.du-room-brief-body h4,
+.du-room-brief-body p {
   margin: 0;
 }
 
-.du-room-brief h4 {
+.du-room-brief-body h4 {
   font-size: 1.12rem;
   line-height: 1.35;
 }
 
-.du-room-brief p:not(.du-kicker) {
+.du-room-brief-body p:not(.du-kicker) {
   margin-top: 8px;
   color: var(--du-muted);
   line-height: 1.5;
@@ -2101,7 +2155,7 @@ textarea:focus-visible {
   line-height: 1.52;
 }
 
-.du-room-message-title {
+.du-room-message-action {
   color: var(--du-muted);
   font-size: 0.78rem;
   font-weight: 800;
@@ -3905,7 +3959,7 @@ textarea:focus-visible {
   .du-discussion-form-grid,
   .du-discussion-dashboard-grid,
   .du-room-layout,
-  .du-room-brief,
+  .du-room-brief-body,
   .du-room-progress-summary,
   .du-room-output-grid,
   .du-room-response-grid,

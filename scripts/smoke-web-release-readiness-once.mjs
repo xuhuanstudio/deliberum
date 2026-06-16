@@ -168,7 +168,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByRole("button", { name: "Create discussion" }).click();
   await page.getByText("Discussion room").waitFor();
   await page.getByText("Model-backed discussion").first().waitFor();
-  await page.getByText("What is being discussed").waitFor();
+  await assertBriefDetailsCollapsed(page, "discussion room before continuation");
   await page
     .getByText(
       releaseConfig.perspectiveCount === 3
@@ -234,6 +234,18 @@ async function selectPerspectiveDepth(page) {
   await page
     .getByText("Perspective A, Perspective B, and Perspective C will answer independently.")
     .waitFor();
+}
+
+async function assertBriefDetailsCollapsed(page, label) {
+  const briefDetails = page.locator(".du-room-brief");
+
+  await page.getByText("Discussion brief details").waitFor();
+
+  const open = await briefDetails.evaluate((element) => element.open === true);
+
+  if (open) {
+    throw new Error(`${label} should keep discussion brief details collapsed by default.`);
+  }
 }
 
 async function continueDiscussionUntilCompleted(page) {

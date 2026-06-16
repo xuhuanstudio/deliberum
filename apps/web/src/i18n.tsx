@@ -1026,6 +1026,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review status summary": "\u5ba1\u9605\u72b6\u6001\u6458\u8981",
   "Open the report-style status summary after reading the room conversation.":
     "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u5bf9\u8bdd\u540e\uff0c\u518d\u6253\u5f00\u62a5\u544a\u5f0f\u72b6\u6001\u6458\u8981\u3002",
+  "Discussion brief details": "\u8ba8\u8bba\u7b80\u62a5\u8be6\u60c5",
   "What is being discussed": "\u6b63\u5728\u8ba8\u8bba\u4ec0\u4e48",
   "The room keeps the brief, participant perspectives, disagreements, missing evidence, risks, current conclusion, and next actions visible together.":
     "\u8ba8\u8bba\u5ba4\u4f1a\u628a\u7b80\u62a5\u3001\u53c2\u4e0e\u8005\u89c6\u89d2\u3001\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u3001\u98ce\u9669\u3001\u5f53\u524d\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u4e00\u8d77\u5c55\u793a\u3002",
@@ -1691,33 +1692,44 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Core discussion stages": "\u6838\u5fc3\u8ba8\u8bba\u9636\u6bb5",
   "Structured deliberation progress": "\u7ed3\u6784\u5316\u5ba1\u8bae\u8fdb\u5ea6",
   "Discussion brief published": "\u8ba8\u8bba\u7b80\u62a5\u5df2\u53d1\u5e03",
+  "Shared the discussion brief": "\u5206\u4eab\u4e86\u8ba8\u8bba\u7b80\u62a5",
   "The discussion brief is available for everyone in the room.":
     "\u8ba8\u8bba\u5ba4\u4e2d\u7684\u6240\u6709\u4eba\u90fd\u53ef\u4ee5\u67e5\u770b\u8ba8\u8bba\u7b80\u62a5\u3002",
   "Independent first responses opened": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u5df2\u5f00\u542f",
+  "Opened independent first responses": "\u5f00\u542f\u4e86\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
   "Participants can respond separately before seeing one another's answers.":
     "\u53c2\u4e0e\u8005\u53ef\u4ee5\u5148\u5206\u522b\u56de\u5e94\uff0c\u518d\u770b\u5230\u5f7c\u6b64\u7b54\u6848\u3002",
   "Independent response submitted": "\u72ec\u7acb\u56de\u5e94\u5df2\u63d0\u4ea4",
+  "Submitted a sealed first response": "\u63d0\u4ea4\u4e86\u5c01\u5b58\u7684\u521d\u59cb\u56de\u5e94",
+  "Shared a first response": "\u5206\u4eab\u4e86\u521d\u59cb\u56de\u5e94",
   "This response is sealed until the independent first responses are revealed.":
     "\u5728\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u63ed\u793a\u524d\uff0c\u6b64\u56de\u5e94\u4fdd\u6301\u5c01\u5b58\u3002",
   "Independent first responses revealed": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u5df2\u63ed\u793a",
+  "Made first responses visible": "\u5c06\u521d\u59cb\u56de\u5e94\u8bbe\u4e3a\u53ef\u89c1",
   "The independent responses are now available for review.":
     "\u72ec\u7acb\u56de\u5e94\u73b0\u5728\u53ef\u4f9b\u5ba1\u9605\u3002",
   "Main perspectives organized": "\u4e3b\u8981\u89c2\u70b9\u5df2\u6574\u7406",
+  "Organized the strongest options": "\u6574\u7406\u4e86\u6700\u5f3a\u9009\u9879",
   "The revealed responses were organized into options, disagreements, requirements, and evidence needs.":
     "\u5df2\u63ed\u793a\u56de\u5e94\u88ab\u6574\u7406\u4e3a\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002",
   "Discussion material accepted for review": "\u8ba8\u8bba\u6750\u6599\u5df2\u63a5\u53d7\u5ba1\u9605",
+  "Kept this material in the room": "\u5c06\u8fd9\u4efd\u6750\u6599\u7559\u5728\u8ba8\u8bba\u5ba4\u4e2d",
   "The room accepted this discussion material as part of the current working view.":
     "\u8ba8\u8bba\u5ba4\u5df2\u5c06\u8fd9\u4efd\u8ba8\u8bba\u6750\u6599\u7eb3\u5165\u5f53\u524d\u5de5\u4f5c\u89c6\u56fe\u3002",
   "Open disagreement recorded": "\u672a\u89e3\u51b3\u5206\u6b67\u5df2\u8bb0\u5f55",
+  "Raised an open disagreement": "\u63d0\u51fa\u4e86\u672a\u89e3\u51b3\u5206\u6b67",
   "A challenge was recorded against the current discussion material.":
     "\u5df2\u9488\u5bf9\u5f53\u524d\u8ba8\u8bba\u6750\u6599\u8bb0\u5f55\u4e00\u6761\u6311\u6218\u3002",
   "Evidence check recorded": "\u8bc1\u636e\u6838\u67e5\u5df2\u8bb0\u5f55",
+  "Checked evidence": "\u6838\u67e5\u4e86\u8bc1\u636e",
   "An evidence check result was added to the discussion.":
     "\u4e00\u6761\u8bc1\u636e\u6838\u67e5\u7ed3\u679c\u5df2\u52a0\u5165\u8ba8\u8bba\u3002",
   "Current conclusion drafted": "\u5f53\u524d\u7ed3\u8bba\u5df2\u8d77\u8349",
+  "Drafted the current conclusion": "\u8d77\u8349\u4e86\u5f53\u524d\u7ed3\u8bba",
   "A reviewable conclusion draft was prepared from the current discussion material.":
     "\u5df2\u6839\u636e\u5f53\u524d\u8ba8\u8bba\u6750\u6599\u51c6\u5907\u53ef\u5ba1\u9605\u7684\u7ed3\u8bba\u8349\u7a3f\u3002",
   "Risk review recorded": "\u98ce\u9669\u5ba1\u67e5\u5df2\u8bb0\u5f55",
+  "Reviewed risks": "\u5ba1\u9605\u4e86\u98ce\u9669",
   "A risk review was recorded for the current conclusion.":
     "\u5df2\u4e3a\u5f53\u524d\u7ed3\u8bba\u8bb0\u5f55\u4e00\u6761\u98ce\u9669\u5ba1\u67e5\u3002",
   "This participant response is available for review in the room.":

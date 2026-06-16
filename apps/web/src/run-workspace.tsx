@@ -203,6 +203,7 @@ type TranslateFunction = (message: string, values?: Record<string, string | numb
 type RoomActivityItem = {
   speaker: string;
   title: string;
+  action: string;
   detail: string;
   tone: "neutral" | "ok" | "warning";
   phase: RoomActivityPhaseId;
@@ -4404,39 +4405,45 @@ function DiscussionRoomBrief({ run }: { run: unknown }) {
   );
 
   return (
-    <section className="du-room-brief" aria-label={t("What is being discussed")}>
-      <div>
-        <p className="du-kicker">{t("What is being discussed")}</p>
-        <h4>{t(question)}</h4>
-        <p>
-          {t(
-            "The room keeps the brief, participant perspectives, disagreements, missing evidence, risks, current conclusion, and next actions visible together."
-          )}
-        </p>
+    <details className="du-room-brief" aria-label={t("Discussion brief details")}>
+      <summary>
+        <span>{t("Discussion brief details")}</span>
+        <small>{t(question)}</small>
+      </summary>
+      <div className="du-room-brief-body">
+        <div>
+          <p className="du-kicker">{t("What is being discussed")}</p>
+          <h4>{t(question)}</h4>
+          <p>
+            {t(
+              "The room keeps the brief, participant perspectives, disagreements, missing evidence, risks, current conclusion, and next actions visible together."
+            )}
+          </p>
+        </div>
+        <div className="du-room-brief-grid">
+          <RoomBriefItem
+            label={t("Goals")}
+            value={goals.length > 0 ? formatTranslatedList(t, goals) : t("No goals listed yet.")}
+          />
+          <RoomBriefItem
+            label={t("Constraints")}
+            value={
+              constraints.length > 0
+                ? formatTranslatedList(t, constraints)
+                : t("No constraints listed yet.")
+            }
+          />
+          <RoomBriefItem
+            label={t("Expected result")}
+            value={
+              expectedResult.length > 0
+                ? formatTranslatedList(t, expectedResult)
+                : t("No expected result listed yet.")
+            }
+          />
+        </div>
       </div>
-      <div className="du-room-brief-grid">
-        <RoomBriefItem
-          label={t("Goals")}
-          value={goals.length > 0 ? formatTranslatedList(t, goals) : t("No goals listed yet.")}
-        />
-        <RoomBriefItem
-          label={t("Constraints")}
-          value={
-            constraints.length > 0
-              ? formatTranslatedList(t, constraints)
-              : t("No constraints listed yet.")
-          }
-        />
-        <RoomBriefItem
-          label={t("Expected result")}
-          value={
-            expectedResult.length > 0
-              ? formatTranslatedList(t, expectedResult)
-              : t("No expected result listed yet.")
-          }
-        />
-      </div>
-    </section>
+    </details>
   );
 }
 
@@ -4596,7 +4603,7 @@ function DiscussionRoomTimeline({
                               <span>{t(activityPhaseView.label)}</span>
                             </div>
                             <p className="du-room-message-detail">{t(activity.detail)}</p>
-                            <p className="du-room-message-title">{t(activity.title)}</p>
+                            <p className="du-room-message-action">{t(activity.action)}</p>
                           </div>
                         </li>
                       );
@@ -4955,6 +4962,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker: "Discussion room",
       title: "Discussion brief published",
+      action: "Shared the discussion brief",
       detail:
         getFirstStringRecordValue(payload, ["topic", "question", "summary"]) ??
         "The discussion brief is available for everyone in the room.",
@@ -4967,6 +4975,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker: "Discussion room",
       title: "Independent first responses opened",
+      action: "Opened independent first responses",
       detail:
         "Participants can respond separately before seeing one another's answers.",
       tone: "neutral",
@@ -4978,6 +4987,9 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker,
       title: "Independent response submitted",
+      action: isRedactedPayload(payload)
+        ? "Submitted a sealed first response"
+        : "Shared a first response",
       detail: isRedactedPayload(payload)
         ? "This response is sealed until the independent first responses are revealed."
         : describeContributionPayload(payload),
@@ -4990,6 +5002,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker: "Discussion room",
       title: "Independent first responses revealed",
+      action: "Made first responses visible",
       detail: "The independent responses are now available for review.",
       tone: "ok",
       phase: "first-responses"
@@ -5000,6 +5013,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker,
       title: "Main perspectives organized",
+      action: "Organized the strongest options",
       detail:
         getStringRecordValue(payload, "rationale") ??
         "The revealed responses were organized into options, disagreements, requirements, and evidence needs.",
@@ -5012,6 +5026,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker,
       title: "Discussion material accepted for review",
+      action: "Kept this material in the room",
       detail:
         getStringRecordValue(payload, "rationale") ??
         "The room accepted this discussion material as part of the current working view.",
@@ -5024,6 +5039,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker,
       title: "Open disagreement recorded",
+      action: "Raised an open disagreement",
       detail:
         getStringRecordValue(payload, "reason") ??
         "A challenge was recorded against the current discussion material.",
@@ -5036,6 +5052,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker,
       title: "Evidence check recorded",
+      action: "Checked evidence",
       detail:
         getFirstStringRecordValue(payload, ["summary", "result", "status"]) ??
         "An evidence check result was added to the discussion.",
@@ -5048,6 +5065,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker,
       title: "Current conclusion drafted",
+      action: "Drafted the current conclusion",
       detail:
         getStringRecordValue(payload, "recommendation") ??
         "A reviewable conclusion draft was prepared from the current discussion material.",
@@ -5060,6 +5078,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
     return {
       speaker,
       title: "Risk review recorded",
+      action: "Reviewed risks",
       detail:
         getFirstStringRecordValue(payload, ["summary", "rationale"]) ??
         "A risk review was recorded for the current conclusion.",
