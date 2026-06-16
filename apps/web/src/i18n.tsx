@@ -1023,6 +1023,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5148\u67e5\u770b\u7ed3\u8bba\uff0c\u518d\u68c0\u67e5\u5206\u6b67\u3001\u8981\u6c42\u548c\u7f3a\u5931\u8bc1\u636e\uff0c\u7136\u540e\u518d\u51b3\u5b9a\u662f\u5426\u4f9d\u8d56\u5b83\u3002",
   "Continue the guided discussion so the main perspectives, disagreements, requirements, evidence, and conclusion can be produced.":
     "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba\uff0c\u4ee5\u751f\u6210\u4e3b\u8981\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8981\u6c42\u3001\u8bc1\u636e\u548c\u7ed3\u8bba\u3002",
+  "Review status summary": "\u5ba1\u9605\u72b6\u6001\u6458\u8981",
+  "Open the report-style status summary after reading the room conversation.":
+    "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u5bf9\u8bdd\u540e\uff0c\u518d\u6253\u5f00\u62a5\u544a\u5f0f\u72b6\u6001\u6458\u8981\u3002",
   "What is being discussed": "\u6b63\u5728\u8ba8\u8bba\u4ec0\u4e48",
   "The room keeps the brief, participant perspectives, disagreements, missing evidence, risks, current conclusion, and next actions visible together.":
     "\u8ba8\u8bba\u5ba4\u4f1a\u628a\u7b80\u62a5\u3001\u53c2\u4e0e\u8005\u89c6\u89d2\u3001\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u3001\u98ce\u9669\u3001\u5f53\u524d\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u4e00\u8d77\u5c55\u793a\u3002",

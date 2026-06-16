@@ -4579,6 +4579,15 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\uff1a\u53ef\u5ba1\u9605")).toBeTruthy();
     expect(screen.getByText("\u4e0b\u4e00\u6b65\u52a8\u4f5c")).toBeTruthy();
     expect(screen.getByText("\u9700\u8981\u5ba1\u9605\u7684\u5185\u5bb9")).toBeTruthy();
+    expect(screen.getByText("\u5ba1\u9605\u72b6\u6001\u6458\u8981")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u5bf9\u8bdd\u540e\uff0c\u518d\u6253\u5f00\u62a5\u544a\u5f0f\u72b6\u6001\u6458\u8981\u3002"
+      )
+    ).toBeTruthy();
+    expect(
+      (document.querySelector(".du-room-review-drawer") as HTMLDetailsElement | null)?.open
+    ).toBe(false);
     expect(screen.getByText("\u4e0b\u4e00\u6b65\uff1a\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba")).toBeTruthy();
     expect(screen.getAllByText("\u5f53\u524d\u7ed3\u8bba").length).toBeGreaterThan(0);
     expect(await screen.findByText("\u98ce\u9669\u4e0e\u7f3a\u5931\u8bc1\u636e")).toBeTruthy();
@@ -5313,6 +5322,9 @@ describe("@deliberum/web shell", () => {
     const roomComposer = document.querySelector(".du-room-composer");
     const roomBrief = document.querySelector(".du-room-brief");
     const roomOutputs = document.querySelector(".du-room-outputs-section");
+    const reviewDrawer = document.querySelector(
+      ".du-room-review-drawer"
+    ) as HTMLDetailsElement | null;
     expect(timeline).toBeTruthy();
     expect(transcript).toBeTruthy();
     expect(progressDetails).toBeTruthy();
@@ -5321,7 +5333,13 @@ describe("@deliberum/web shell", () => {
     expect(roomComposer).toBeTruthy();
     expect(roomBrief).toBeTruthy();
     expect(roomOutputs).toBeTruthy();
+    expect(reviewDrawer).toBeTruthy();
+    expect(reviewDrawer?.open).toBe(false);
     expect(roomMain?.contains(roomComposer as Node)).toBe(true);
+    expect(document.querySelector(".du-discussion-dashboard-grid")?.closest("details")).toBe(
+      reviewDrawer
+    );
+    expect(document.querySelector(".du-discussion-next-actions")?.closest("details")).toBeNull();
     expect(
       Boolean(
         transcript?.compareDocumentPosition(progressDetails as Node) &
@@ -5343,6 +5361,12 @@ describe("@deliberum/web shell", () => {
     expect(
       Boolean(
         roomComposer?.compareDocumentPosition(roomOutputs as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      Boolean(
+        roomLayout?.compareDocumentPosition(reviewDrawer as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
@@ -5440,6 +5464,12 @@ describe("@deliberum/web shell", () => {
         "Open items remain visible here so the conclusion is not treated as final."
       )
     ).toBeTruthy();
+    expect(screen.getByText("Review status summary")).toBeTruthy();
+    expect(
+      screen.getByText("Open the report-style status summary after reading the room conversation.")
+    ).toBeTruthy();
+    fireEvent.click(screen.getByText("Review status summary"));
+    expect(reviewDrawer?.open).toBe(true);
     expect(screen.getByText("Next: review current conclusion")).toBeTruthy();
     expect(screen.getAllByText("Current conclusion").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Ready").length).toBeGreaterThan(0);

@@ -1539,6 +1539,70 @@ textarea:focus-visible {
   margin-top: 12px;
 }
 
+.du-room-review-drawer {
+  display: grid;
+  gap: 0;
+  margin-top: 12px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+}
+
+.du-room-review-drawer > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  cursor: pointer;
+  color: var(--du-ink);
+  font-weight: 800;
+  list-style: none;
+  padding: 14px 16px;
+}
+
+.du-room-review-drawer > summary::-webkit-details-marker {
+  display: none;
+}
+
+.du-room-review-drawer > summary::after {
+  content: "+";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: var(--du-muted);
+  font-size: 1.1rem;
+}
+
+.du-room-review-drawer[open] > summary::after {
+  content: "-";
+}
+
+.du-room-review-drawer > summary:hover {
+  background: var(--du-surface-muted);
+}
+
+.du-room-review-drawer > summary span {
+  min-width: 0;
+}
+
+.du-room-review-drawer > summary small {
+  grid-column: 1;
+  color: var(--du-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.du-room-review-drawer-body {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--du-line);
+  padding: 12px;
+}
+
+.du-room-review-drawer .du-discussion-dashboard-grid {
+  margin-top: 0;
+}
+
 .du-default-secondary-details {
   margin-top: 12px;
   border: 1px solid var(--du-line);

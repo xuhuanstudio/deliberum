@@ -4196,59 +4196,74 @@ function RunQualityOverview({
             openRequirementCount={openObligations}
           />
         </div>
-        <div className="du-discussion-dashboard-grid">
-          {continuationView.reviewReady ? (
-            <Link
-              className="du-quality-summary-item du-quality-summary-primary"
-              to="/runs/$runId/outcome"
-              params={{ runId }}
-            >
-              <span>{t("Ready")}</span>
-              <strong>{t("Current conclusion")}</strong>
-              <p>
-                {t(
-                  "A reviewable conclusion is available with risks, evidence gaps, and next actions."
+        <details
+          className="du-room-review-drawer"
+          aria-label={t("Review status summary")}
+        >
+          <summary>
+            <span>{t("Review status summary")}</span>
+            <small>
+              {t(
+                "Open the report-style status summary after reading the room conversation."
+              )}
+            </small>
+          </summary>
+          <div className="du-room-review-drawer-body">
+            <div className="du-discussion-dashboard-grid">
+              {continuationView.reviewReady ? (
+                <Link
+                  className="du-quality-summary-item du-quality-summary-primary"
+                  to="/runs/$runId/outcome"
+                  params={{ runId }}
+                >
+                  <span>{t("Ready")}</span>
+                  <strong>{t("Current conclusion")}</strong>
+                  <p>
+                    {t(
+                      "A reviewable conclusion is available with risks, evidence gaps, and next actions."
+                    )}
+                  </p>
+                </Link>
+              ) : (
+                <div
+                  className="du-quality-summary-item du-quality-summary-primary du-quality-summary-static"
+                  role="status"
+                  aria-label={t("Current conclusion not ready")}
+                >
+                  <span>{t("Not ready")}</span>
+                  <strong>{t("Current conclusion")}</strong>
+                  <p>{t("The discussion needs more guided work before a conclusion is useful.")}</p>
+                </div>
+              )}
+              <QualitySummaryLink
+                title={t("Main perspectives")}
+                detail={t("Strong options stay visible without collapsing into one hidden authority.")}
+                metric={String(candidates.length)}
+                targetId="main-perspectives"
+              />
+              <QualitySummaryLink
+                title={t("Open disagreements")}
+                detail={t("Unresolved objections that still constrain the current conclusion.")}
+                metric={String(unresolvedObjections)}
+                targetId="open-disagreements"
+              />
+              <QualitySummaryLink
+                title={t("Requirements to satisfy")}
+                detail={t("Explicit obligations that keep the output correct, complete, and bounded.")}
+                metric={`${openObligations}/${obligations.length}`}
+                targetId="answer-requirements"
+              />
+              <QualitySummaryLink
+                title={t("Evidence gaps")}
+                detail={t(
+                  "Missing or unchecked evidence that should be resolved before relying on the answer."
                 )}
-              </p>
-            </Link>
-          ) : (
-            <div
-              className="du-quality-summary-item du-quality-summary-primary du-quality-summary-static"
-              role="status"
-              aria-label={t("Current conclusion not ready")}
-            >
-              <span>{t("Not ready")}</span>
-              <strong>{t("Current conclusion")}</strong>
-              <p>{t("The discussion needs more guided work before a conclusion is useful.")}</p>
+                metric={`${unresolvedEvidenceNeeds}/${evidenceNeeds.length}`}
+                targetId="evidence-gaps"
+              />
             </div>
-          )}
-          <QualitySummaryLink
-            title={t("Main perspectives")}
-            detail={t("Strong options stay visible without collapsing into one hidden authority.")}
-            metric={String(candidates.length)}
-            targetId="main-perspectives"
-          />
-          <QualitySummaryLink
-            title={t("Open disagreements")}
-            detail={t("Unresolved objections that still constrain the current conclusion.")}
-            metric={String(unresolvedObjections)}
-            targetId="open-disagreements"
-          />
-          <QualitySummaryLink
-            title={t("Requirements to satisfy")}
-            detail={t("Explicit obligations that keep the output correct, complete, and bounded.")}
-            metric={`${openObligations}/${obligations.length}`}
-            targetId="answer-requirements"
-          />
-          <QualitySummaryLink
-            title={t("Evidence gaps")}
-            detail={t(
-              "Missing or unchecked evidence that should be resolved before relying on the answer."
-            )}
-            metric={`${unresolvedEvidenceNeeds}/${evidenceNeeds.length}`}
-            targetId="evidence-gaps"
-          />
-        </div>
+          </div>
+        </details>
         <div
           className="du-readable-list du-discussion-next-actions"
           aria-label={t("Next recommended actions")}
