@@ -3014,8 +3014,8 @@ function StartRunForm({
 
     const scrollTarget =
       variant === "room-composer" && typeof document !== "undefined"
-        ? document.getElementById("discussion-timeline") ??
-          document.getElementById("room-conversation-transcript") ??
+        ? document.getElementById("room-conversation-transcript") ??
+          document.getElementById("discussion-timeline") ??
           latestUpdateRef.current
         : latestUpdateRef.current;
 
@@ -5037,6 +5037,11 @@ function DiscussionRoomTimeline({
                   <ol className="du-room-activity" aria-label={updatesLabel}>
                     {group.activities.map((activity, index) => {
                       const conversationCue = describeRoomActivityConversationCue(activity);
+                      const replyLine = describeRoomActivityReplyLine(
+                        activity,
+                        group.activities,
+                        index
+                      );
                       const roomSpeaker = isRoomSpeaker(activity.speaker);
                       const userSpeaker = isUserSpeaker(activity.speaker);
 
@@ -5075,6 +5080,14 @@ function DiscussionRoomTimeline({
                                     <span>{t(conversationCue)}</span>
                                   </small>
                                 </div>
+                                {replyLine ? (
+                                  <p className="du-room-message-reply">
+                                    {t(
+                                      replyLine.text,
+                                      translateRoomActivityValues(t, replyLine.values)
+                                    )}
+                                  </p>
+                                ) : null}
                                 <p className="du-room-message-detail">
                                   {t(activity.detail, activity.detailValues)}
                                 </p>
@@ -5103,6 +5116,14 @@ function DiscussionRoomTimeline({
                                     <span>{t(conversationCue)}</span>
                                   </small>
                                 </div>
+                                {replyLine ? (
+                                  <p className="du-room-message-reply">
+                                    {t(
+                                      replyLine.text,
+                                      translateRoomActivityValues(t, replyLine.values)
+                                    )}
+                                  </p>
+                                ) : null}
                                 <p className="du-room-message-detail">
                                   {t(activity.detail, activity.detailValues)}
                                 </p>
@@ -5783,6 +5804,115 @@ function describeRoomActivityConversationCue(activity: RoomActivityItem): string
   }
 
   return "Responding in the discussion room";
+}
+
+function describeRoomActivityReplyLine(
+  activity: RoomActivityItem,
+  roundActivities: RoomActivityItem[],
+  index: number
+): { text: string; values?: Record<string, string | number> } | null {
+  if (isRoomSpeaker(activity.speaker)) {
+    return null;
+  }
+
+  if (isUserSpeaker(activity.speaker)) {
+    return null;
+  }
+
+  if (activity.sourceType === "sealed_contribution_submitted") {
+    return {
+      text: "Replying to the discussion brief before seeing other participants"
+    };
+  }
+
+  if (activity.sourceType === "extraction_proposed") {
+    const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    return previousSpeaker
+      ? {
+          text: "Building on {speaker}'s first response",
+          values: { speaker: previousSpeaker }
+        }
+      : {
+          text: "Building on the participant first responses"
+        };
+  }
+
+  if (activity.sourceType === "proposal_accepted") {
+    return {
+      text: "Keeping the organized options in the room for review"
+    };
+  }
+
+  if (
+    activity.sourceType === "proposal_challenged" ||
+    activity.sourceType === "synthetic_open_disagreement"
+  ) {
+    return {
+      text: "Challenging the current strongest option"
+    };
+  }
+
+  if (
+    activity.sourceType === "evidence_result_recorded" ||
+    activity.sourceType === "synthetic_evidence_gap_review"
+  ) {
+    return {
+      text: "Checking the evidence behind the current claim"
+    };
+  }
+
+  if (activity.sourceType === "final_candidate_proposed") {
+    return {
+      text: "Synthesizing perspectives, disagreements, and evidence checks"
+    };
+  }
+
+  if (activity.sourceType === "final_audit_recorded") {
+    return {
+      text: "Reviewing risks in the draft conclusion"
+    };
+  }
+
+  return {
+    text: "Responding to the previous room message"
+  };
+}
+
+function findPreviousRoomParticipantSpeaker(
+  activities: RoomActivityItem[],
+  index: number
+): string | undefined {
+  for (let position = index - 1; position >= 0; position -= 1) {
+    const activity = activities[position];
+
+    if (
+      activity &&
+      !isRoomSpeaker(activity.speaker) &&
+      !isUserSpeaker(activity.speaker) &&
+      activity.sourceType === "sealed_contribution_submitted"
+    ) {
+      return activity.speaker;
+    }
+  }
+
+  return undefined;
+}
+
+function translateRoomActivityValues(
+  t: TranslateFunction,
+  values: Record<string, string | number> | undefined
+): Record<string, string | number> | undefined {
+  if (!values) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [
+      key,
+      typeof value === "string" ? t(value) : value
+    ])
+  );
 }
 
 function isRoomSpeaker(speaker: string): boolean {

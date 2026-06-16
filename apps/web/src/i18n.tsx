@@ -1722,6 +1722,18 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Synthesizing the current room": "\u7efc\u5408\u5f53\u524d\u8ba8\u8bba\u5ba4",
   "Reviewing risks before relying on it": "\u5728\u4f9d\u8d56\u524d\u5ba1\u67e5\u98ce\u9669",
   "Responding in the discussion room": "\u5728\u8ba8\u8bba\u5ba4\u4e2d\u56de\u5e94",
+  "Replying to the discussion brief before seeing other participants":
+    "\u5728\u770b\u5230\u5176\u4ed6\u53c2\u4e0e\u8005\u4e4b\u524d\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5",
+  "Building on {speaker}'s first response": "\u57fa\u4e8e {speaker} \u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
+  "Building on the participant first responses": "\u57fa\u4e8e\u53c2\u4e0e\u8005\u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
+  "Keeping the organized options in the room for review":
+    "\u5c06\u5df2\u6574\u7406\u7684\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u4e2d\u4f9b\u5ba1\u9605",
+  "Challenging the current strongest option": "\u6311\u6218\u5f53\u524d\u6700\u5f3a\u9009\u9879",
+  "Checking the evidence behind the current claim": "\u68c0\u67e5\u5f53\u524d\u8bba\u65ad\u80cc\u540e\u7684\u8bc1\u636e",
+  "Synthesizing perspectives, disagreements, and evidence checks":
+    "\u7efc\u5408\u89c2\u70b9\u3001\u5206\u6b67\u548c\u8bc1\u636e\u68c0\u67e5",
+  "Reviewing risks in the draft conclusion": "\u5ba1\u67e5\u7ed3\u8bba\u8349\u7a3f\u4e2d\u7684\u98ce\u9669",
+  "Responding to the previous room message": "\u56de\u5e94\u4e0a\u4e00\u6761\u8ba8\u8bba\u5ba4\u6d88\u606f",
   "Discussion phase": "\u8ba8\u8bba\u9636\u6bb5",
   "Room step {step}": "\u8ba8\u8bba\u5ba4\u6b65\u9aa4 {step}",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",

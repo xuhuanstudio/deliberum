@@ -594,10 +594,6 @@ async function assertConversationTranscriptReturnedToViewport(page, label) {
     metrics.transcriptTop < -24 ||
     metrics.transcriptTop > metrics.viewportHeight * 0.65 ||
     metrics.transcriptBottom <= 240 ||
-    metrics.actionRailTop === null ||
-    metrics.actionRailTop < -24 ||
-    metrics.actionRailBottom === null ||
-    metrics.actionRailBottom > metrics.viewportHeight * 0.65 ||
     (metrics.firstParticipantTop !== null &&
       metrics.firstParticipantTop > metrics.viewportHeight) ||
     metrics.timelineBottom === null ||

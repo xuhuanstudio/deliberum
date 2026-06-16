@@ -229,6 +229,7 @@ export function buildGuidedDiscussionRunPlan(
   const expectedOutcomes = parseBriefLines(input.expectedOutcomeText);
   const title = formatDiscussionTitle(topic);
   const defaultCopy = getDefaultBriefCopy(topic);
+  const outputLanguage = detectDiscussionOutputLanguage(topic);
 
   return {
     ...cloneJsonObject(LOCAL_PRESET_RUN_PLAN),
@@ -240,7 +241,7 @@ export function buildGuidedDiscussionRunPlan(
       ...defaultCopy.localConstraints
     ]),
     output: {
-      language: "same as discussion question",
+      language: outputLanguage,
       style: "clear",
       expectations: uniqueBriefLines(
         expectedOutcomes.length > 0
@@ -262,6 +263,7 @@ export function buildProviderBackedDiscussionRunPlan(
   const expectedOutcomes = parseBriefLines(input.expectedOutcomeText);
   const title = formatDiscussionTitle(topic);
   const defaultCopy = getDefaultBriefCopy(topic);
+  const outputLanguage = detectDiscussionOutputLanguage(topic);
   const perspectiveCount = options.perspectiveCount ?? 2;
   const perspectives = PROVIDER_BACKED_PERSPECTIVES.slice(0, perspectiveCount);
   const modelId = options.modelId?.trim();
@@ -314,7 +316,7 @@ export function buildProviderBackedDiscussionRunPlan(
     providerConfigs,
     timeouts: PROVIDER_BACKED_DISCUSSION_TIMEOUTS,
     output: {
-      language: "same as discussion question",
+      language: outputLanguage,
       style: "clear",
       expectations: uniqueBriefLines(
         expectedOutcomes.length > 0
@@ -377,6 +379,10 @@ function uniqueBriefLines(lines: string[]): string[] {
 
 function getDefaultBriefCopy(topic: string): DefaultBriefCopy {
   return isSimplifiedChineseText(topic) ? DEFAULT_BRIEF_COPY.zhCn : DEFAULT_BRIEF_COPY.en;
+}
+
+function detectDiscussionOutputLanguage(topic: string): "English" | "Simplified Chinese" {
+  return isSimplifiedChineseText(topic) ? "Simplified Chinese" : "English";
 }
 
 export function formatPresetJson(value: unknown): string {
