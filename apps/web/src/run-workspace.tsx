@@ -1848,6 +1848,7 @@ export function RunDetailPage() {
         description={t(
           "Start or continue a discussion, then review the current conclusion, main perspectives, open disagreements, risks, missing evidence, and next recommended actions."
         )}
+        hideHeader={Boolean(sessionId)}
         actions={
           reviewReady ? (
             <>
@@ -3089,12 +3090,13 @@ function StartRunForm({
   const roomComposerDetail = continuationView.reviewReady
     ? "Choose a quick reply to review or move the discussion forward."
     : "Choose Continue discussion to let participants respond.";
+  const primaryActionLabel = isRoomComposer ? "Continue discussion" : continuationView.primaryLabel;
   const roomPrimaryActionDetail = continuationSetup.primaryActionDetail?.includes(
     "first responses only"
   )
     ? continuationSetup.primaryActionDetail
     : continuationView.reviewReady
-      ? "Update from the current room state."
+      ? "Start another readable round from the current room state."
       : "Continue the room from here.";
   const shouldShowLatestDiscussionUpdate =
     Boolean(startMutation.data) &&
@@ -3131,7 +3133,7 @@ function StartRunForm({
           <button
             type="button"
             className="du-discussion-action-button"
-            aria-label={t(continuationView.primaryLabel)}
+            aria-label={t(primaryActionLabel)}
             onClick={() =>
               startRecommendedPipeline({
                 title: primaryResultTitle,
@@ -3140,7 +3142,7 @@ function StartRunForm({
             }
             disabled={startMutation.isPending}
           >
-            <strong>{t(continuationView.primaryLabel)}</strong>
+            <strong>{t(primaryActionLabel)}</strong>
             {isRoomComposer ? (
               <small>{t(roomPrimaryActionDetail)}</small>
             ) : (
@@ -4448,6 +4450,7 @@ function RunQualityOverview({
     <DataPanel
       title={t("Discussion room")}
       description={t("Read the room conversation, then choose the next action.")}
+      hideHeader
     >
       <QueryState query={queryState}>
         <div className="du-room-layout">
@@ -4990,6 +4993,7 @@ function DiscussionRoomTimeline({
                   group.kind === "brief"
                     ? t("The room starts by making the question, goals, and constraints visible.")
                     : t("Participants answer first; review roles respond in the same room.");
+                const roundExchangeDetail = describeRoomRoundExchangeDetail(group);
                 const updatesLabel =
                   group.kind === "brief"
                     ? t("Discussion brief updates")
@@ -5010,6 +5014,9 @@ function DiscussionRoomTimeline({
                         </p>
                         <h5>{roundLabel}</h5>
                         <p className="du-room-phase-detail">{roundDetail}</p>
+                        <p className="du-room-round-exchange">
+                          {t(roundExchangeDetail)}
+                        </p>
                       </div>
                       <div
                         className="du-room-activity-group-meta du-sr-only"
@@ -5040,6 +5047,12 @@ function DiscussionRoomTimeline({
                           group.round
                         );
                         const replyLine = describeRoomActivityReplyLine(
+                          activity,
+                          group.activities,
+                          index,
+                          group.round
+                        );
+                        const addressLine = describeRoomActivityAddressLine(
                           activity,
                           group.activities,
                           index,
@@ -5083,6 +5096,14 @@ function DiscussionRoomTimeline({
                                       <span>{t(conversationCue)}</span>
                                     </small>
                                   </div>
+                                  {addressLine ? (
+                                    <p className="du-room-message-address">
+                                      {t(
+                                        addressLine.text,
+                                        translateRoomActivityValues(t, addressLine.values)
+                                      )}
+                                    </p>
+                                  ) : null}
                                   {replyLine ? (
                                     <p className="du-room-message-reply">
                                       {t(
@@ -5119,6 +5140,14 @@ function DiscussionRoomTimeline({
                                       <span>{t(conversationCue)}</span>
                                     </small>
                                   </div>
+                                  {addressLine ? (
+                                    <p className="du-room-message-address">
+                                      {t(
+                                        addressLine.text,
+                                        translateRoomActivityValues(t, addressLine.values)
+                                      )}
+                                    </p>
+                                  ) : null}
                                   {replyLine ? (
                                     <p className="du-room-message-reply">
                                       {t(
@@ -5754,6 +5783,18 @@ function countParticipantActivities(activities: RoomActivityItem[]): number {
   ).length;
 }
 
+function describeRoomRoundExchangeDetail(group: RoomActivityGroup): string {
+  if (group.kind === "brief") {
+    return "The brief is pinned first so every participant responds to the same question.";
+  }
+
+  if (group.round > 1) {
+    return "This follow-up round continues from the previous room state so new participant, reviewer, and evidence messages stay together.";
+  }
+
+  return "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies.";
+}
+
 function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhaseView {
   if (phase === "brief") {
     return {
@@ -5853,6 +5894,97 @@ function describeRoomActivityConversationCue(activity: RoomActivityItem, round: 
   }
 
   return "Responding in the discussion room";
+}
+
+function describeRoomActivityAddressLine(
+  activity: RoomActivityItem,
+  roundActivities: RoomActivityItem[],
+  index: number,
+  round: number
+): { text: string; values?: Record<string, string | number> } | null {
+  if (isRoomSpeaker(activity.speaker)) {
+    return null;
+  }
+
+  if (isUserSpeaker(activity.speaker)) {
+    return {
+      text: "To the room"
+    };
+  }
+
+  if (activity.sourceType === "sealed_contribution_submitted") {
+    const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    if (round > 1) {
+      return previousSpeaker
+        ? {
+            text: "Replying in round {round} after {speaker}",
+            values: { round, speaker: previousSpeaker }
+          }
+        : {
+            text: "Replying in round {round} to the previous room state",
+            values: { round }
+          };
+    }
+
+    return previousSpeaker
+      ? {
+          text: "Independent reply now compared with {speaker}",
+          values: { speaker: previousSpeaker }
+        }
+      : {
+          text: "To the discussion brief"
+        };
+  }
+
+  if (
+    activity.sourceType === "synthetic_round_handoff" ||
+    activity.sourceType === "extraction_proposed"
+  ) {
+    return {
+      text: "To the participant first responses"
+    };
+  }
+
+  if (activity.sourceType === "proposal_accepted") {
+    return {
+      text: "To the organized options"
+    };
+  }
+
+  if (
+    activity.sourceType === "proposal_challenged" ||
+    activity.sourceType === "synthetic_open_disagreement"
+  ) {
+    return {
+      text: "To the strongest current option"
+    };
+  }
+
+  if (
+    activity.sourceType === "evidence_result_recorded" ||
+    activity.sourceType === "synthetic_evidence_gap_review"
+  ) {
+    return {
+      text: "To the claim that still needs evidence"
+    };
+  }
+
+  if (activity.sourceType === "final_candidate_proposed") {
+    return {
+      text: "To the whole room"
+    };
+  }
+
+  if (activity.sourceType === "final_audit_recorded") {
+    return {
+      text: "To the draft conclusion"
+    };
+  }
+
+  return {
+    text: "To the previous message"
+  };
 }
 
 function describeRoomActivityReplyLine(

@@ -74,16 +74,19 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
 export type DataPanelProps = {
   title: string;
   description?: string;
+  hideHeader?: boolean;
   children: ReactNode;
 };
 
-export function DataPanel({ title, description, children }: DataPanelProps) {
+export function DataPanel({ title, description, hideHeader = false, children }: DataPanelProps) {
   return (
     <section className="du-panel">
-      <div className="du-panel-heading">
-        <h3>{title}</h3>
-        {description ? <p>{description}</p> : null}
-      </div>
+      {hideHeader ? null : (
+        <div className="du-panel-heading">
+          <h3>{title}</h3>
+          {description ? <p>{description}</p> : null}
+        </div>
+      )}
       {children}
     </section>
   );

@@ -16,6 +16,7 @@ export type ViewFrameProps = {
   description: string;
   actions?: ReactNode;
   className?: string;
+  hideHeader?: boolean;
   children: ReactNode;
 };
 
@@ -34,16 +35,19 @@ export function ViewFrame({
   description,
   actions,
   className,
+  hideHeader = false,
   children
 }: ViewFrameProps) {
   return (
     <div className={className ? `du-view ${className}` : "du-view"}>
-      <PageHeader
-        eyebrow={eyebrow}
-        title={title}
-        description={description}
-        actions={actions}
-      />
+      {hideHeader ? null : (
+        <PageHeader
+          eyebrow={eyebrow}
+          title={title}
+          description={description}
+          actions={actions}
+        />
+      )}
       <div className="du-view-body">{children}</div>
     </div>
   );

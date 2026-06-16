@@ -200,8 +200,11 @@ async function verifyRunWorkspaceAdvancedBoundary(page, { webBaseUrl, runId, ses
   await page.goto(`${webBaseUrl}/runs/${encodeURIComponent(runId)}`, {
     waitUntil: "networkidle"
   });
-  await page.getByRole("heading", { name: "Discussion room" }).waitFor();
-  await page.getByRole("link", { name: "View current conclusion", exact: true }).first().waitFor();
+  await page.locator(".du-room-chat-shell").waitFor();
+  await page
+    .locator("#room-next-action")
+    .getByRole("link", { name: "Review current conclusion", exact: true })
+    .waitFor();
   await assertNoHorizontalOverflow(page, "discussion room default");
   await assertDefaultBoundarySafety(page, "discussion room default", {
     runId,

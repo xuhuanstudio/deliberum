@@ -52,6 +52,18 @@ describe("@deliberum/ui presentation primitives", () => {
     expect(markup).toContain("message");
   });
 
+  it("can hide a data panel heading while keeping its children", () => {
+    const markup = renderToStaticMarkup(
+      <DataPanel title="Events" description="Developer-facing records" hideHeader>
+        <p>Readable room content</p>
+      </DataPanel>
+    );
+
+    expect(markup).toContain("Readable room content");
+    expect(markup).not.toContain("Developer-facing records");
+    expect(markup).not.toContain("<h3>Events</h3>");
+  });
+
   it("renders empty, status, and key-value states", () => {
     const markup = renderToStaticMarkup(
       <>

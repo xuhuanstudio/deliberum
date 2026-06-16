@@ -1661,6 +1661,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u8ba9\u8ba8\u8bba\u5ba4\u4ece\u8ba8\u8bba\u7b80\u62a5\u7ee7\u7eed\u3002",
   "Update from the current room state.":
     "\u6839\u636e\u5f53\u524d\u8ba8\u8bba\u5ba4\u72b6\u6001\u66f4\u65b0\u3002",
+  "Start another readable round from the current room state.":
+    "\u4ece\u5f53\u524d\u8ba8\u8bba\u5ba4\u72b6\u6001\u5f00\u59cb\u53e6\u4e00\u8f6e\u53ef\u8bfb\u8ba8\u8bba\u3002",
   "Continue the room from here.":
     "\u4ece\u8fd9\u91cc\u7ee7\u7eed\u8ba8\u8bba\u5ba4\u3002",
   "Review actions appear after participants respond.":
@@ -1709,6 +1711,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion round {round} messages": "\u8ba8\u8bba\u7b2c {round} \u8f6e\u53d1\u8a00",
   "Participants answer first; review roles respond in the same room.":
     "\u53c2\u4e0e\u8005\u5148\u56de\u7b54\uff0c\u5ba1\u67e5\u89d2\u8272\u5728\u540c\u4e00\u8ba8\u8bba\u5ba4\u91cc\u63a5\u7740\u56de\u5e94\u3002",
+  "The brief is pinned first so every participant responds to the same question.":
+    "\u5148\u56fa\u5b9a\u8ba8\u8bba\u7b80\u62a5\uff0c\u8ba9\u6bcf\u4e2a\u53c2\u4e0e\u8005\u56de\u5e94\u540c\u4e00\u4e2a\u95ee\u9898\u3002",
+  "This follow-up round continues from the previous room state so new participant, reviewer, and evidence messages stay together.":
+    "\u8fd9\u4e2a\u540e\u7eed\u56de\u5408\u4f1a\u4ece\u4e0a\u4e00\u6b21\u8ba8\u8bba\u5ba4\u72b6\u6001\u7ee7\u7eed\uff0c\u8ba9\u65b0\u7684\u53c2\u4e0e\u8005\u3001\u5ba1\u67e5\u8005\u548c\u8bc1\u636e\u53d1\u8a00\u4fdd\u6301\u5728\u540c\u4e00\u8f6e\u4e2d\u3002",
+  "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies.":
+    "\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5\uff1b\u7136\u540e\u7ec4\u7ec7\u8005\u3001\u5ba1\u67e5\u8005\u548c\u8bc1\u636e\u68c0\u67e5\u8005\u4ee5\u804a\u5929\u5f0f\u56de\u590d\u52a0\u5165\u3002",
   "Starting another room round": "\u5f00\u59cb\u65b0\u4e00\u8f6e\u8ba8\u8bba",
   "Setting the shared brief": "\u8bbe\u5b9a\u5171\u540c\u7b80\u62a5",
   "Inviting independent first responses": "\u9080\u8bf7\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
@@ -1724,6 +1732,21 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Synthesizing the current room": "\u7efc\u5408\u5f53\u524d\u8ba8\u8bba\u5ba4",
   "Reviewing risks before relying on it": "\u5728\u4f9d\u8d56\u524d\u5ba1\u67e5\u98ce\u9669",
   "Responding in the discussion room": "\u5728\u8ba8\u8bba\u5ba4\u4e2d\u56de\u5e94",
+  "To the room": "\u53d1\u7ed9\u8ba8\u8bba\u5ba4",
+  "To the discussion brief": "\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5",
+  "Independent reply now compared with {speaker}":
+    "\u72ec\u7acb\u56de\u5e94\uff0c\u73b0\u5728\u4e0e {speaker} \u4e00\u8d77\u6bd4\u8f83",
+  "Replying in round {round} after {speaker}":
+    "\u5728\u7b2c {round} \u8f6e\u4e2d\u63a5\u7740 {speaker} \u56de\u5e94",
+  "Replying in round {round} to the previous room state":
+    "\u5728\u7b2c {round} \u8f6e\u4e2d\u56de\u5e94\u4e0a\u4e00\u6b21\u8ba8\u8bba\u5ba4\u72b6\u6001",
+  "To the participant first responses": "\u56de\u5e94\u53c2\u4e0e\u8005\u7684\u521d\u59cb\u56de\u5e94",
+  "To the organized options": "\u56de\u5e94\u5df2\u6574\u7406\u7684\u9009\u9879",
+  "To the strongest current option": "\u56de\u5e94\u5f53\u524d\u6700\u5f3a\u9009\u9879",
+  "To the claim that still needs evidence": "\u56de\u5e94\u4ecd\u9700\u8bc1\u636e\u7684\u8bba\u65ad",
+  "To the whole room": "\u56de\u5e94\u6574\u4e2a\u8ba8\u8bba\u5ba4",
+  "To the draft conclusion": "\u56de\u5e94\u7ed3\u8bba\u8349\u7a3f",
+  "To the previous message": "\u56de\u5e94\u4e0a\u4e00\u6761\u53d1\u8a00",
   "Replying to the discussion brief before seeing other participants":
     "\u5728\u770b\u5230\u5176\u4ed6\u53c2\u4e0e\u8005\u4e4b\u524d\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5",
   "Adding a follow-up perspective alongside {speaker}":
