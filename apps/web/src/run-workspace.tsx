@@ -240,6 +240,7 @@ const DISCUSSION_PERSPECTIVE_MODEL_FIELDS: DiscussionPerspectiveModelField[] = [
 ];
 type RoomActivityGroup = {
   phase: RoomActivityPhaseId;
+  step: number;
   activities: RoomActivityItem[];
 };
 type DiscussionRoomProgressView = {
@@ -3403,6 +3404,7 @@ function StartRunForm({
       <section
         id="continue-discussion"
         className="du-room-composer"
+        data-placement="room-action-dock"
         aria-label={t("Room actions")}
       >
         {formContent}
@@ -4856,8 +4858,11 @@ function DiscussionRoomTimeline({
                   <div className="du-room-phase-separator">
                     <div className="du-room-phase-copy">
                       <p className="du-kicker du-sr-only">{t("Discussion phase")}</p>
+                      <p className="du-kicker du-room-phase-step">
+                        {t("Room step {step}", { step: group.step })}
+                      </p>
                       <h5>{t(phaseView.label)}</h5>
-                      <p>{t(phaseView.detail)}</p>
+                      <p className="du-room-phase-detail">{t(phaseView.detail)}</p>
                     </div>
                     <div
                       className="du-room-activity-group-meta du-sr-only"
@@ -5344,11 +5349,15 @@ function groupRoomActivitiesByPhase(activities: RoomActivityItem[]): RoomActivit
       ? [
           {
             phase,
+            step: 0,
             activities: groupActivities
           }
         ]
       : [];
-  });
+  }).map((group, index) => ({
+    ...group,
+    step: index + 1
+  }));
 }
 
 function countParticipantActivities(activities: RoomActivityItem[]): number {

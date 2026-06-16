@@ -5502,6 +5502,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Room actions")).toBeTruthy();
     expect(document.querySelector(".du-room-composer-copy")).toBeTruthy();
     expect(document.querySelector(".du-room-composer-avatar")).toBeTruthy();
+    expect(document.querySelector(".du-room-composer")?.getAttribute("data-placement")).toBe(
+      "room-action-dock"
+    );
     expect(
       (document.querySelector(".du-room-composer .du-continuation-details") as HTMLDetailsElement)
         ?.open
@@ -5702,12 +5705,21 @@ describe("@deliberum/web shell", () => {
       screen.getByText("1 evidence gap still needs checking before relying on the conclusion.")
     ).toBeTruthy();
     expect(screen.getAllByText("Discussion phase").length).toBeGreaterThan(0);
+    expect(screen.getByText("Room step 1")).toBeTruthy();
+    expect(screen.getByText("Room step 2")).toBeTruthy();
     expect(document.querySelectorAll(".du-room-phase-separator").length).toBeGreaterThan(0);
     expect(
       document
-        .querySelector(".du-room-phase-copy .du-kicker")
-        ?.classList.contains("du-sr-only")
-    ).toBe(true);
+        .querySelector(".du-room-phase-copy .du-sr-only")
+        ?.textContent
+    ).toContain("Discussion phase");
+    expect(document.querySelector(".du-room-phase-step")?.textContent ?? "").toContain(
+      "Room step 1"
+    );
+    expect(document.querySelector(".du-room-phase-step")?.classList.contains("du-sr-only")).toBe(
+      false
+    );
+    expect(document.querySelector(".du-room-phase-detail")).toBeTruthy();
     expect(document.querySelector(".du-room-activity-group-header")).toBeNull();
     expect(document.querySelector(".du-room-activity-meta")).toBeNull();
     const systemMessages = Array.from(document.querySelectorAll(".du-room-system-message"));
