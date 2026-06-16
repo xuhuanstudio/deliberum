@@ -4420,8 +4420,9 @@ function RunQualityOverview({
   const roomActivities = createRoomActivityItems(asArray(eventsQuery.data?.events), run);
   const unresolvedEvidenceNeeds = evidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
   const unresolvedObjections = countRecordsWithoutStatus(objections, "resolved");
+  const conversationalRoomActivities = ensureRoundHandoffActivities(roomActivities);
   const visibleRoomActivities = ensureOpenDisagreementActivity(
-    ensureEvidenceGapReviewActivity(roomActivities, {
+    ensureEvidenceGapReviewActivity(conversationalRoomActivities, {
       run,
       mainPerspectiveCount: candidates.length,
       unresolvedEvidenceCount: unresolvedEvidenceNeeds
@@ -5036,11 +5037,15 @@ function DiscussionRoomTimeline({
                   </div>
                   <ol className="du-room-activity" aria-label={updatesLabel}>
                     {group.activities.map((activity, index) => {
-                      const conversationCue = describeRoomActivityConversationCue(activity);
+                      const conversationCue = describeRoomActivityConversationCue(
+                        activity,
+                        group.round
+                      );
                       const replyLine = describeRoomActivityReplyLine(
                         activity,
                         group.activities,
-                        index
+                        index,
+                        group.round
                       );
                       const roomSpeaker = isRoomSpeaker(activity.speaker);
                       const userSpeaker = isUserSpeaker(activity.speaker);
@@ -5527,6 +5532,42 @@ function addUserContinuationTurnActivity(activities: RoomActivityItem[]): RoomAc
   return nextActivities;
 }
 
+function ensureRoundHandoffActivities(activities: RoomActivityItem[]): RoomActivityItem[] {
+  if (!activities.some((activity) => activity.sourceType === "sealed_batch_revealed")) {
+    return activities;
+  }
+
+  const nextActivities: RoomActivityItem[] = [];
+  let insertedForCurrentRound = false;
+
+  for (const activity of activities) {
+    if (
+      activity.sourceType === "user_continuation_requested" ||
+      activity.sourceType === "sealed_batch_opened"
+    ) {
+      insertedForCurrentRound = false;
+    }
+
+    nextActivities.push(activity);
+
+    if (activity.sourceType === "sealed_batch_revealed" && !insertedForCurrentRound) {
+      nextActivities.push({
+        speaker: "Discussion organizer",
+        title: "First responses connected",
+        action: "Connected the first responses",
+        detail:
+          "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps.",
+        tone: "neutral",
+        phase: "perspectives",
+        sourceType: "synthetic_round_handoff"
+      });
+      insertedForCurrentRound = true;
+    }
+  }
+
+  return nextActivities;
+}
+
 function ensureEvidenceGapReviewActivity(
   activities: RoomActivityItem[],
   {
@@ -5752,7 +5793,7 @@ function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhas
   };
 }
 
-function describeRoomActivityConversationCue(activity: RoomActivityItem): string {
+function describeRoomActivityConversationCue(activity: RoomActivityItem, round: number): string {
   if (isUserSpeaker(activity.speaker)) {
     return "Starting another room round";
   }
@@ -5766,11 +5807,17 @@ function describeRoomActivityConversationCue(activity: RoomActivityItem): string
   }
 
   if (activity.sourceType === "sealed_contribution_submitted") {
-    return "Responding to the discussion brief";
+    return round > 1
+      ? "Responding to the previous discussion round"
+      : "Responding to the discussion brief";
   }
 
   if (activity.sourceType === "sealed_batch_revealed") {
     return "Bringing the first responses into the room";
+  }
+
+  if (activity.sourceType === "synthetic_round_handoff") {
+    return "Connecting participant messages";
   }
 
   if (activity.sourceType === "extraction_proposed") {
@@ -5809,7 +5856,8 @@ function describeRoomActivityConversationCue(activity: RoomActivityItem): string
 function describeRoomActivityReplyLine(
   activity: RoomActivityItem,
   roundActivities: RoomActivityItem[],
-  index: number
+  index: number,
+  round: number
 ): { text: string; values?: Record<string, string | number> } | null {
   if (isRoomSpeaker(activity.speaker)) {
     return null;
@@ -5820,8 +5868,32 @@ function describeRoomActivityReplyLine(
   }
 
   if (activity.sourceType === "sealed_contribution_submitted") {
+    const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    if (previousSpeaker) {
+      return {
+        text:
+          round > 1
+            ? "Adding a follow-up perspective alongside {speaker}"
+            : "Adding a separate first response alongside {speaker}",
+        values: { speaker: previousSpeaker }
+      };
+    }
+
+    if (round > 1) {
+      return {
+        text: "Responding to the previous discussion round"
+      };
+    }
+
     return {
       text: "Replying to the discussion brief before seeing other participants"
+    };
+  }
+
+  if (activity.sourceType === "synthetic_round_handoff") {
+    return {
+      text: "Responding after the first responses were revealed"
     };
   }
 

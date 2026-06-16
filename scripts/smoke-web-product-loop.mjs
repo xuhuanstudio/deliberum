@@ -331,6 +331,17 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .locator(".du-room-system-message")
     .filter({ hasText: "Made first responses visible" })
     .waitFor();
+  await page
+    .locator("#room-conversation-transcript")
+    .getByText("Connected the first responses", { exact: true })
+    .waitFor();
+  await page
+    .locator("#room-conversation-transcript")
+    .getByText(
+      "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps.",
+      { exact: true }
+    )
+    .waitFor();
   await page.locator("#room-conversation-transcript").waitFor();
   await page.getByText("Discussion round 1", { exact: true }).waitFor();
   const conversationTranscript = page.locator("#room-conversation-transcript");

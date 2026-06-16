@@ -6204,6 +6204,14 @@ describe("@deliberum/web shell", () => {
     ).toBeNull();
     expect(screen.getAllByText("Shared a first response").length).toBeGreaterThan(0);
     expect(screen.getByText("Made first responses visible")).toBeTruthy();
+    expect(screen.getByText("Connected the first responses")).toBeTruthy();
+    expect(screen.getByText("Connecting participant messages")).toBeTruthy();
+    expect(screen.getByText("Responding after the first responses were revealed")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps."
+      )
+    ).toBeTruthy();
     const providerSystemMessages = Array.from(
       document.querySelectorAll(".du-room-system-message")
     ).map((message) => message.textContent ?? "");
@@ -6308,23 +6316,36 @@ describe("@deliberum/web shell", () => {
               trace: {}
             },
             {
-              id: "round-one-revealed",
-              type: "sealed_batch_revealed",
+              id: "round-one-response-b",
+              type: "sealed_contribution_submitted",
               sequence: 3,
               visibility: "public",
-              authorId: "system",
+              authorId: "local-preset-beta",
               createdAt: "2026-06-10T00:00:03.000Z",
+              payload: {
+                position: "Round one adds a separate concern about evidence quality."
+              },
+              basedOnEventIds: ["round-one-opened"],
+              trace: {}
+            },
+            {
+              id: "round-one-revealed",
+              type: "sealed_batch_revealed",
+              sequence: 4,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:04.000Z",
               payload: {},
-              basedOnEventIds: ["round-one-response"],
+              basedOnEventIds: ["round-one-response", "round-one-response-b"],
               trace: {}
             },
             {
               id: "round-one-extraction",
               type: "extraction_proposed",
-              sequence: 4,
+              sequence: 5,
               visibility: "public",
               authorId: "local-preset-extractor",
-              createdAt: "2026-06-10T00:00:04.000Z",
+              createdAt: "2026-06-10T00:00:05.000Z",
               payload: {
                 rationale: "Round one organized the first responses into reviewable options."
               },
@@ -6334,10 +6355,10 @@ describe("@deliberum/web shell", () => {
             {
               id: "round-two-opened",
               type: "sealed_batch_opened",
-              sequence: 5,
+              sequence: 6,
               visibility: "public",
               authorId: "system",
-              createdAt: "2026-06-10T00:00:05.000Z",
+              createdAt: "2026-06-10T00:00:06.000Z",
               payload: {},
               basedOnEventIds: ["round-one-extraction"],
               trace: {}
@@ -6345,10 +6366,10 @@ describe("@deliberum/web shell", () => {
             {
               id: "round-two-response",
               type: "sealed_contribution_submitted",
-              sequence: 6,
+              sequence: 7,
               visibility: "public",
               authorId: "local-preset-beta",
-              createdAt: "2026-06-10T00:00:06.000Z",
+              createdAt: "2026-06-10T00:00:07.000Z",
               payload: {
                 position: "Round two responds that evidence should be checked before launch."
               },
@@ -6358,10 +6379,10 @@ describe("@deliberum/web shell", () => {
             {
               id: "round-two-revealed",
               type: "sealed_batch_revealed",
-              sequence: 7,
+              sequence: 8,
               visibility: "public",
               authorId: "system",
-              createdAt: "2026-06-10T00:00:07.000Z",
+              createdAt: "2026-06-10T00:00:08.000Z",
               payload: {},
               basedOnEventIds: ["round-two-response"],
               trace: {}
@@ -6369,10 +6390,10 @@ describe("@deliberum/web shell", () => {
             {
               id: "round-two-extraction",
               type: "extraction_proposed",
-              sequence: 8,
+              sequence: 9,
               visibility: "public",
               authorId: "local-preset-extractor",
-              createdAt: "2026-06-10T00:00:08.000Z",
+              createdAt: "2026-06-10T00:00:09.000Z",
               payload: {
                 rationale: "Round two organized the follow-up into updated options."
               },
@@ -6385,20 +6406,29 @@ describe("@deliberum/web shell", () => {
     );
 
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
-    expect(await screen.findByRole("list", { name: "Discussion round 1 messages" })).toBeTruthy();
+    const roundOne = await screen.findByRole("list", { name: "Discussion round 1 messages" });
     expect(screen.getByRole("list", { name: "Discussion round 2 messages" })).toBeTruthy();
     expect(screen.getByText("Discussion round 2")).toBeTruthy();
     expect(screen.getByText("The room continued again from the current conclusion and open questions.")).toBeTruthy();
+    expect(roundOne.textContent ?? "").toContain(
+      "Round one adds a separate concern about evidence quality."
+    );
+    expect(roundOne.textContent ?? "").toContain(
+      "Adding a separate first response alongside Perspective A"
+    );
+    expect(roundOne.textContent ?? "").toContain("Connected the first responses");
     const roundTwo = screen.getByRole("list", { name: "Discussion round 2 messages" });
     expect(roundTwo.textContent ?? "").toContain(
       "Round two responds that evidence should be checked before launch."
     );
     expect(roundTwo.textContent ?? "").toContain("Asked the room to continue");
     expect(roundTwo.textContent ?? "").toContain("Starting another room round");
-    expect(roundTwo.textContent ?? "").toContain("Responding to the discussion brief");
-    expect(roundTwo.textContent ?? "").toContain(
+    expect(roundTwo.textContent ?? "").toContain("Responding to the previous discussion round");
+    expect(roundTwo.textContent ?? "").not.toContain("Responding to the discussion brief");
+    expect(roundTwo.textContent ?? "").not.toContain(
       "Replying to the discussion brief before seeing other participants"
     );
+    expect(roundTwo.textContent ?? "").toContain("Connected the first responses");
     expect(roundTwo.textContent ?? "").toContain("Building on the first responses");
     expect(roundTwo.textContent ?? "").toContain("Building on Perspective B's first response");
     expect((document.querySelector(".du-room-layout")?.textContent ?? "")).not.toContain(

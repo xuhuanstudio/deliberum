@@ -1714,6 +1714,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Responding to the discussion brief": "\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5",
   "Bringing the first responses into the room":
     "\u5c06\u521d\u59cb\u56de\u5e94\u5e26\u5165\u8ba8\u8bba\u5ba4",
+  "Connecting participant messages": "\u6b63\u5728\u8fde\u63a5\u53c2\u4e0e\u8005\u53d1\u8a00",
   "Building on the first responses": "\u57fa\u4e8e\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
   "Responding to the strongest current options":
     "\u56de\u5e94\u5f53\u524d\u6700\u5f3a\u9009\u9879",
@@ -1724,6 +1725,13 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Responding in the discussion room": "\u5728\u8ba8\u8bba\u5ba4\u4e2d\u56de\u5e94",
   "Replying to the discussion brief before seeing other participants":
     "\u5728\u770b\u5230\u5176\u4ed6\u53c2\u4e0e\u8005\u4e4b\u524d\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5",
+  "Adding a follow-up perspective alongside {speaker}":
+    "\u5728 {speaker} \u65c1\u8fb9\u8865\u5145\u4e00\u4e2a\u540e\u7eed\u89c6\u89d2",
+  "Adding a separate first response alongside {speaker}":
+    "\u5728 {speaker} \u65c1\u8fb9\u8865\u5145\u4e00\u4e2a\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
+  "Responding to the previous discussion round": "\u56de\u5e94\u4e0a\u4e00\u8f6e\u8ba8\u8bba",
+  "Responding after the first responses were revealed":
+    "\u5728\u521d\u59cb\u56de\u5e94\u63ed\u793a\u540e\u63a5\u7740\u56de\u5e94",
   "Building on {speaker}'s first response": "\u57fa\u4e8e {speaker} \u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
   "Building on the participant first responses": "\u57fa\u4e8e\u53c2\u4e0e\u8005\u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
   "Keeping the organized options in the room for review":
@@ -1737,6 +1745,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion phase": "\u8ba8\u8bba\u9636\u6bb5",
   "Room step {step}": "\u8ba8\u8bba\u5ba4\u6b65\u9aa4 {step}",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",
+  "Connected the first responses": "\u8fde\u63a5\u4e86\u521d\u59cb\u56de\u5e94",
+  "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps.":
+    "\u521d\u59cb\u56de\u5e94\u5df2\u53ef\u89c1\u3002\u6211\u4f1a\u5148\u628a\u8fd9\u4e9b\u56de\u5e94\u8fde\u8d77\u6765\uff0c\u7136\u540e\u8ba8\u8bba\u5ba4\u518d\u6bd4\u8f83\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002",
   "Readable discussion flow": "\u53ef\u8bfb\u8ba8\u8bba\u6d41\u7a0b",
   "Discussion brief updates": "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0",
   "The room starts by making the question, goals, and constraints visible.":
