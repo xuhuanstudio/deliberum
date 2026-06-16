@@ -1638,6 +1638,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Reviews risks": "\u5ba1\u9605\u98ce\u9669",
   "Drafts conclusion": "\u8d77\u8349\u7ed3\u8bba",
   Participant: "\u53c2\u4e0e\u8005",
+  You: "\u4f60",
   "Room actions": "\u8ba8\u8bba\u5ba4\u52a8\u4f5c",
   "What should happen next?": "\u63a5\u4e0b\u6765\u8981\u505a\u4ec0\u4e48\uff1f",
   "Choose a short room action after reading the latest messages.":
@@ -1651,6 +1652,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u4ece\u8fd9\u91cc\u7ee7\u7eed\u8ba8\u8bba\u5ba4\u3002",
   "Review actions appear after participants respond.":
     "\u53c2\u4e0e\u8005\u56de\u5e94\u540e\uff0c\u5ba1\u9605\u52a8\u4f5c\u4f1a\u51fa\u73b0\u3002",
+  "Asked the room to continue": "\u8981\u6c42\u8ba8\u8bba\u5ba4\u7ee7\u7eed",
+  "The room continued from your brief before participants responded.":
+    "\u53c2\u4e0e\u8005\u56de\u5e94\u524d\uff0c\u8ba8\u8bba\u5ba4\u5148\u4ece\u4f60\u7684\u7b80\u62a5\u7ee7\u7eed\u3002",
   "Next in the room": "\u8ba8\u8bba\u5ba4\u4e2d\u7684\u4e0b\u4e00\u6b65",
   "The room has enough material for review. Start with the conclusion, then choose whether to inspect disagreements, check evidence, or update the discussion.":
     "\u8ba8\u8bba\u5ba4\u5df2\u6709\u8db3\u591f\u6750\u6599\u53ef\u4f9b\u5ba1\u9605\u3002\u8bf7\u5148\u4ece\u7ed3\u8bba\u5f00\u59cb\uff0c\u7136\u540e\u9009\u62e9\u662f\u5426\u68c0\u67e5\u5206\u6b67\u3001\u6838\u67e5\u8bc1\u636e\u6216\u66f4\u65b0\u8ba8\u8bba\u3002",

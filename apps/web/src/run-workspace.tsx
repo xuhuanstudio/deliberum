@@ -4800,8 +4800,9 @@ function DiscussionRoomTimeline({
     mainPerspectiveCount,
     unresolvedEvidenceCount
   });
-  const participantResponses = getParticipantFirstResponses(roomActivities);
-  const activityGroups = groupRoomActivitiesByPhase(roomActivities);
+  const conversationActivities = addUserContinuationTurnActivity(roomActivities);
+  const participantResponses = getParticipantFirstResponses(conversationActivities);
+  const activityGroups = groupRoomActivitiesByPhase(conversationActivities);
 
   return (
     <section
@@ -4890,11 +4891,14 @@ function DiscussionRoomTimeline({
                     {group.activities.map((activity, index) => {
                       const activityPhaseView = describeRoomActivityPhase(activity.phase);
                       const roomSpeaker = isRoomSpeaker(activity.speaker);
+                      const userSpeaker = isUserSpeaker(activity.speaker);
 
                       return (
                         <li
                           className="du-room-activity-item"
-                          data-speaker={roomSpeaker ? "room" : "participant"}
+                          data-speaker={
+                            roomSpeaker ? "room" : userSpeaker ? "user" : "participant"
+                          }
                           data-tone={activity.tone}
                           key={`${activity.title}:${index}`}
                         >
@@ -4907,6 +4911,32 @@ function DiscussionRoomTimeline({
                               <span>{t(activity.action)}</span>
                               <p>{t(activity.detail, activity.detailValues)}</p>
                             </div>
+                          ) : userSpeaker ? (
+                            <>
+                              <div
+                                className="du-room-activity-bubble"
+                                aria-label={`${t(activity.speaker)}: ${t(
+                                  activity.detail,
+                                  activity.detailValues
+                                )}`}
+                              >
+                                <div className="du-room-message-header">
+                                  <strong>{t(activity.speaker)}</strong>
+                                  <span className="du-room-message-phase">
+                                    {t(activityPhaseView.label)}
+                                  </span>
+                                  <span className="du-room-message-action">
+                                    {t(activity.action)}
+                                  </span>
+                                </div>
+                                <p className="du-room-message-detail">
+                                  {t(activity.detail, activity.detailValues)}
+                                </p>
+                              </div>
+                              <span className="du-room-activity-avatar" aria-hidden="true">
+                                {formatSpeakerInitials(t(activity.speaker))}
+                              </span>
+                            </>
                           ) : (
                             <>
                               <span className="du-room-activity-avatar" aria-hidden="true">
@@ -5275,6 +5305,32 @@ function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityI
     .filter((activity): activity is RoomActivityItem => Boolean(activity));
 }
 
+function addUserContinuationTurnActivity(activities: RoomActivityItem[]): RoomActivityItem[] {
+  const firstParticipantResponseIndex = activities.findIndex(
+    (activity) =>
+      activity.phase === "first-responses" &&
+      activity.title === "Independent response submitted" &&
+      !isRoomSpeaker(activity.speaker)
+  );
+
+  if (firstParticipantResponseIndex < 0) {
+    return activities;
+  }
+
+  const userTurn: RoomActivityItem = {
+    speaker: "You",
+    title: "Continue discussion requested",
+    action: "Asked the room to continue",
+    detail: "The room continued from your brief before participants responded.",
+    tone: "neutral",
+    phase: "first-responses"
+  };
+  const nextActivities = [...activities];
+  nextActivities.splice(firstParticipantResponseIndex, 0, userTurn);
+
+  return nextActivities;
+}
+
 function ensureEvidenceGapReviewActivity(
   activities: RoomActivityItem[],
   {
@@ -5361,7 +5417,9 @@ function groupRoomActivitiesByPhase(activities: RoomActivityItem[]): RoomActivit
 }
 
 function countParticipantActivities(activities: RoomActivityItem[]): number {
-  return activities.filter((activity) => !isRoomSpeaker(activity.speaker)).length;
+  return activities.filter(
+    (activity) => !isRoomSpeaker(activity.speaker) && !isUserSpeaker(activity.speaker)
+  ).length;
 }
 
 function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhaseView {
@@ -5407,6 +5465,10 @@ function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhas
 
 function isRoomSpeaker(speaker: string): boolean {
   return normalizeActorLabel(speaker) === "discussion-room";
+}
+
+function isUserSpeaker(speaker: string): boolean {
+  return normalizeActorLabel(speaker) === "you";
 }
 
 function formatSpeakerInitials(speaker: string): string {
@@ -5584,7 +5646,7 @@ function getDiscussionRoomMembers(run: unknown, activities: RoomActivityItem[]):
   function addMember(label: string | undefined, detail?: string) {
     const safeLabel = getSafeRoomMemberLabel(label);
 
-    if (!safeLabel || isRoomSpeaker(safeLabel)) {
+    if (!safeLabel || isRoomSpeaker(safeLabel) || isUserSpeaker(safeLabel)) {
       return;
     }
 

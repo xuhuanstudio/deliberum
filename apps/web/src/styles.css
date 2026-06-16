@@ -2519,6 +2519,11 @@ textarea:focus-visible {
   justify-items: center;
 }
 
+.du-room-activity-item[data-speaker="user"] {
+  grid-template-columns: minmax(0, 1fr) 34px;
+  justify-items: end;
+}
+
 .du-room-activity-avatar {
   display: grid;
   width: 32px;
@@ -2589,8 +2594,22 @@ textarea:focus-visible {
   color: #6f4f19;
 }
 
+.du-room-activity-item[data-speaker="user"] .du-room-activity-avatar {
+  grid-column: 2;
+  background: #e5f4ee;
+  border-color: #cfe7dd;
+  color: var(--du-accent-strong);
+}
+
 .du-room-activity-item[data-speaker="participant"] .du-room-activity-bubble {
   background: var(--du-surface);
+}
+
+.du-room-activity-item[data-speaker="user"] .du-room-activity-bubble {
+  grid-column: 1;
+  grid-row: 1;
+  background: #effaf4;
+  border-color: #cfe7dd;
 }
 
 .du-room-activity-item[data-tone="warning"] .du-room-activity-bubble {
@@ -2633,6 +2652,15 @@ textarea:focus-visible {
 .du-room-activity-item[data-speaker="participant"] .du-room-message-header span {
   border-color: #e4d6bd;
   color: #6f4f19;
+}
+
+.du-room-activity-item[data-speaker="user"] .du-room-message-header {
+  justify-content: flex-end;
+}
+
+.du-room-activity-item[data-speaker="user"] .du-room-message-header span {
+  border-color: #cfe7dd;
+  color: var(--du-accent-strong);
 }
 
 .du-room-message-action {

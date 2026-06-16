@@ -5726,6 +5726,15 @@ describe("@deliberum/web shell", () => {
     expect(systemMessages.length).toBeGreaterThan(0);
     expect(systemMessages[0]?.textContent ?? "").toContain("Discussion room");
     expect(systemMessages[0]?.textContent ?? "").toContain("Shared the discussion brief");
+    const userTurn = document.querySelector(
+      ".du-room-activity-item[data-speaker='user'] .du-room-activity-bubble"
+    );
+    expect(userTurn).toBeTruthy();
+    expect(userTurn?.textContent ?? "").toContain("You");
+    expect(userTurn?.textContent ?? "").toContain("Asked the room to continue");
+    expect(userTurn?.textContent ?? "").toContain(
+      "The room continued from your brief before participants responded."
+    );
     expect(
       document.querySelector(".du-room-activity-item[data-speaker='room'] .du-room-activity-avatar")
     ).toBeNull();
@@ -5750,6 +5759,12 @@ describe("@deliberum/web shell", () => {
     const firstRoomMessage = document.querySelector(
       ".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble"
     );
+    expect(
+      Boolean(
+        userTurn?.compareDocumentPosition(firstRoomMessage as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
     const firstRoomMessageHeader = firstRoomMessage?.querySelector(".du-room-message-header");
     const firstRoomMessageDetail = firstRoomMessage?.querySelector(".du-room-message-detail");
     const firstRoomMessageAction = firstRoomMessage?.querySelector(".du-room-message-action");

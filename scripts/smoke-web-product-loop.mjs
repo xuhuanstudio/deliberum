@@ -331,6 +331,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .locator(".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble")
     .first()
     .waitFor();
+  await assertUserContinuationTurn(page, "discussion room after continuation");
   await page
     .locator(".du-room-system-message")
     .filter({ hasText: "Made first responses visible" })
@@ -471,6 +472,23 @@ async function assertNoSuccessfulRoomUpdateReceipt(page, label) {
 
   if (roomUpdateCount !== 0) {
     throw new Error(`${label} should return to the room thread without a duplicate success receipt.`);
+  }
+}
+
+async function assertUserContinuationTurn(page, label) {
+  const userTurn = page.locator(".du-room-activity-item[data-speaker='user'] .du-room-activity-bubble");
+
+  try {
+    await userTurn.waitFor();
+    await userTurn.getByText("You", { exact: true }).waitFor();
+    await userTurn.getByText("Asked the room to continue", { exact: true }).waitFor();
+    await userTurn
+      .getByText("The room continued from your brief before participants responded.", { exact: true })
+      .waitFor();
+  } catch (error) {
+    throw new Error(`${label} did not show the user's room action as a chat turn.`, {
+      cause: error
+    });
   }
 }
 
