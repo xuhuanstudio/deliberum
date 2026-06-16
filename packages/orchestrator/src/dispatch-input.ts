@@ -18,7 +18,9 @@ const PARTICIPANT_PROMPT_SYSTEM_INSTRUCTIONS = [
   "Do not decide truth or select a single answer.",
   "Write for a non-technical reader.",
   "Match the discussion question language for every user-visible sentence.",
+  "Use the explicit target response language in the prompt payload.",
   "If the discussion question is in Simplified Chinese, write Simplified Chinese.",
+  "Do not let English prompt section headings change the response language.",
   "Keep implementation details, machine references, credentials, and setup metadata out of the contribution."
 ].join(" ");
 
@@ -119,6 +121,7 @@ function shouldUsePlainLanguagePromptPayload(adapterId: string): boolean {
 }
 
 function createParticipantPromptPayload(context: ParticipantDeliberationContext): JsonValue {
+  const targetLanguage = describePromptTargetLanguage(context);
   const roomUpdates = context.events.map((event, index) =>
     [
       `Update ${index + 1}: ${describeRoomStage(event.type)}`,
@@ -144,8 +147,10 @@ function createParticipantPromptPayload(context: ParticipantDeliberationContext)
       `Kind: ${context.participant.kind}`,
       "",
       "Language",
+      `Target response language: ${targetLanguage}.`,
       "Write every user-visible sentence in the same language as the discussion question.",
       "If the discussion question is in Simplified Chinese, write Simplified Chinese.",
+      "Treat the target response language as stronger than English section headings in this prompt.",
       "",
       "Visible room updates",
       roomUpdates.length > 0 ? roomUpdates.join("\n\n") : "No visible updates yet.",
@@ -154,6 +159,44 @@ function createParticipantPromptPayload(context: ParticipantDeliberationContext)
       resourceSummary
     ].join("\n")
   );
+}
+
+function describePromptTargetLanguage(context: ParticipantDeliberationContext): string {
+  const outputLanguage = normalizeOutputLanguagePreference(context.output.language);
+
+  if (outputLanguage) {
+    return outputLanguage;
+  }
+
+  return detectDiscussionQuestionLanguage(context.topic);
+}
+
+function normalizeOutputLanguagePreference(language: string | undefined): string | undefined {
+  const normalized = language?.trim();
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  const lower = normalized.toLowerCase();
+
+  if (lower.includes("same") && lower.includes("discussion question")) {
+    return undefined;
+  }
+
+  if (lower === "zh" || lower === "zh-cn" || lower.includes("simplified chinese")) {
+    return "Simplified Chinese";
+  }
+
+  if (lower === "en" || lower === "en-us" || lower === "en-gb" || lower === "english") {
+    return "English";
+  }
+
+  return normalized;
+}
+
+function detectDiscussionQuestionLanguage(topic: string): string {
+  return /[\u3400-\u9fff\uf900-\ufaff]/u.test(topic) ? "Simplified Chinese" : "English";
 }
 
 function describeRoomStage(type: string): string {

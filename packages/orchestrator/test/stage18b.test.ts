@@ -566,15 +566,25 @@ describe("buildParticipantDispatchInput", () => {
       "Match the discussion question language for every user-visible sentence."
     );
     expect(envelope.adapterContext.instructions).toContain(
+      "Use the explicit target response language in the prompt payload."
+    );
+    expect(envelope.adapterContext.instructions).toContain(
       "If the discussion question is in Simplified Chinese, write Simplified Chinese."
+    );
+    expect(envelope.adapterContext.instructions).toContain(
+      "Do not let English prompt section headings change the response language."
     );
     expect(envelope.adapterInput.instructions).toContain(
       "Answer in the same language as the discussion question."
     );
     expect(adapterInputText).toContain(chineseQuestion);
     expect(adapterInputText).toContain("Language");
+    expect(adapterInputText).toContain("Target response language: Simplified Chinese.");
     expect(adapterInputText).toContain(
       "Write every user-visible sentence in the same language as the discussion question."
+    );
+    expect(adapterInputText).toContain(
+      "Treat the target response language as stronger than English section headings in this prompt."
     );
     expect(adapterInputText).toContain("Simplified Chinese");
     expect(adapterInputText).not.toContain("run-1");
