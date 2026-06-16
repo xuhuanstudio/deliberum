@@ -336,6 +336,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Conversation transcript").waitFor();
   await page.getByText("What the room said and did").waitFor();
   await page.getByText("Discussion phase").first().waitFor();
+  await assertRoomMessageFlowCompact(page, "discussion room after continuation");
   await page.getByText("Next in the room", { exact: true }).waitFor();
   await page.getByText("Evidence checker", { exact: true }).waitFor();
   await page
@@ -549,6 +550,66 @@ async function assertConversationTranscriptReturnedToViewport(page, label) {
   }
 }
 
+async function assertRoomMessageFlowCompact(
+  page,
+  label,
+  { maxSummaryHeight = 118, maxIntroHeight = 54, maxPhaseHeight = 42 } = {}
+) {
+  await page.locator(".du-room-thread-summary").waitFor();
+  await page.locator(".du-room-thread-intro").waitFor();
+  await page.locator(".du-room-phase-separator").first().waitFor();
+
+  const metrics = await page.evaluate(() => {
+    const rectFor = (selector) => {
+      const element = document.querySelector(selector);
+
+      if (!element) {
+        return null;
+      }
+
+      const rect = element.getBoundingClientRect();
+
+      return {
+        height: rect.height,
+        width: rect.width
+      };
+    };
+    const phaseSeparators = Array.from(document.querySelectorAll(".du-room-phase-separator"));
+    const phaseDetails = Array.from(
+      document.querySelectorAll(".du-room-phase-copy p:not(.du-kicker)")
+    );
+
+    return {
+      summary: rectFor(".du-room-thread-summary"),
+      intro: rectFor(".du-room-thread-intro"),
+      phaseHeights: phaseSeparators.map((element) => element.getBoundingClientRect().height),
+      hiddenPhaseDetailCount: phaseDetails.filter(
+        (element) => getComputedStyle(element).display === "none"
+      ).length,
+      phaseDetailCount: phaseDetails.length
+    };
+  });
+
+  const tallestPhase = Math.max(0, ...metrics.phaseHeights);
+
+  if (
+    !metrics.summary ||
+    metrics.summary.height > maxSummaryHeight ||
+    !metrics.intro ||
+    metrics.intro.height > maxIntroHeight ||
+    metrics.phaseHeights.length === 0 ||
+    tallestPhase > maxPhaseHeight ||
+    metrics.phaseDetailCount === 0 ||
+    metrics.hiddenPhaseDetailCount !== metrics.phaseDetailCount
+  ) {
+    throw new Error(
+      `${label} should keep the visible message thread compact, got ${JSON.stringify(
+        metrics
+      )}.`
+    );
+  }
+}
+
 async function assertComposerActionsCompact(
   page,
   label,
@@ -618,6 +679,9 @@ async function assertMobileDiscussionRoomShell(page, label) {
       panelHeading: rectFor(".du-panel-heading"),
       roomLayout: rectFor(".du-room-layout"),
       header: rectFor(".du-room-header"),
+      threadSummary: rectFor(".du-room-thread-summary"),
+      threadIntro: rectFor(".du-room-thread-intro"),
+      phaseSeparator: rectFor(".du-room-phase-separator"),
       hasStrip: Boolean(strip),
       timeline: rectFor("[aria-label='Discussion timeline']"),
       nextAction: rectFor("#room-next-action"),
@@ -646,6 +710,12 @@ async function assertMobileDiscussionRoomShell(page, label) {
     !metrics.roomLayout ||
     metrics.roomLayout.top > 620 ||
     !metrics.header ||
+    !metrics.threadSummary ||
+    metrics.threadSummary.height > 118 ||
+    !metrics.threadIntro ||
+    metrics.threadIntro.height > 54 ||
+    !metrics.phaseSeparator ||
+    metrics.phaseSeparator.height > 42 ||
     !metrics.order.headerBeforeTimeline ||
     metrics.hasStrip ||
     !metrics.timeline ||

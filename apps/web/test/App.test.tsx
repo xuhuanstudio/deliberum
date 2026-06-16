@@ -5514,6 +5514,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Participant messages and room updates appear in order.")).toBeTruthy();
     const timeline = document.querySelector('[aria-label="Discussion timeline"]');
     const transcript = timeline?.querySelector(".du-room-activity-wrap");
+    const threadSummary = timeline?.querySelector(".du-room-thread-summary");
+    const threadIntro = transcript?.querySelector(".du-room-thread-intro");
     const progressDetails = timeline?.querySelector(".du-room-progress-details");
     const nextRoomAction = timeline?.querySelector("#room-next-action");
     const roomLayout = document.querySelector(".du-room-layout");
@@ -5533,6 +5535,8 @@ describe("@deliberum/web shell", () => {
     expect(timeline).toBeTruthy();
     expect(transcript).toBeTruthy();
     expect(transcript?.getAttribute("id")).toBe("room-conversation-transcript");
+    expect(threadSummary).toBeTruthy();
+    expect(threadIntro).toBeTruthy();
     expect(progressDetails).toBeTruthy();
     expect(nextRoomAction).toBeTruthy();
     expect(roomLayout).toBeTruthy();

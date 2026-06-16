@@ -4799,7 +4799,7 @@ function DiscussionRoomTimeline({
       className="du-room-section du-room-timeline"
       aria-label={t("Discussion timeline")}
     >
-      <div className="du-section-label">
+      <div className="du-section-label du-room-thread-summary">
         <p className="du-kicker">{t("Discussion timeline")}</p>
         <h4>{t("What has happened in the room")}</h4>
         <p>
@@ -4809,7 +4809,7 @@ function DiscussionRoomTimeline({
         </p>
       </div>
       <div id="room-conversation-transcript" className="du-room-activity-wrap">
-        <div>
+        <div className="du-room-thread-intro">
           <p className="du-kicker">{t("Conversation transcript")}</p>
           <h5>{t("What the room said and did")}</h5>
           <p>{t("Participant messages and room updates appear in order.")}</p>

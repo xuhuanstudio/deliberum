@@ -2240,6 +2240,73 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 
+.du-room-thread-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+}
+
+.du-room-thread-summary h4 {
+  flex: 1 1 220px;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.du-room-thread-summary p:not(.du-kicker) {
+  flex: 1 0 100%;
+  color: var(--du-muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.du-room-thread-intro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  align-items: baseline;
+  min-width: 0;
+  padding: 0 2px;
+}
+
+.du-room-thread-intro .du-kicker,
+.du-room-thread-intro h5,
+.du-room-thread-intro p:not(.du-kicker) {
+  flex: 0 1 auto;
+}
+
+.du-room-thread-intro h5 {
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.du-room-thread-intro p:not(.du-kicker) {
+  color: var(--du-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .du-room-thread-summary {
+    gap: 4px 8px;
+    padding: 8px 10px;
+  }
+
+  .du-room-thread-summary p:not(.du-kicker),
+  .du-room-thread-intro p:not(.du-kicker) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
 .du-room-response-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2282,22 +2349,22 @@ textarea:focus-visible {
 
 .du-room-activity-groups {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .du-room-activity-group {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
 .du-room-phase-separator {
   display: grid;
-  grid-template-columns: minmax(28px, 1fr) minmax(0, auto) minmax(28px, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(18px, 1fr) minmax(0, auto) minmax(18px, 1fr);
+  gap: 8px;
   align-items: center;
   min-width: 0;
-  margin: 6px 0 2px;
+  margin: 3px 0 0;
   color: var(--du-muted);
 }
 
@@ -2309,11 +2376,17 @@ textarea:focus-visible {
 }
 
 .du-room-phase-copy {
-  display: grid;
-  gap: 3px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
   min-width: 0;
-  max-width: 520px;
-  text-align: center;
+  max-width: min(100%, 520px);
+  padding: 4px 9px;
+  border: 1px solid var(--du-line);
+  border-radius: 999px;
+  background: #fbfaf6;
+  text-align: left;
 }
 
 .du-room-phase-copy h5,
@@ -2323,11 +2396,12 @@ textarea:focus-visible {
 
 .du-room-phase-copy h5 {
   color: var(--du-ink);
-  font-size: 0.9rem;
-  line-height: 1.35;
+  font-size: 0.8rem;
+  line-height: 1.2;
 }
 
 .du-room-phase-copy p:not(.du-kicker) {
+  display: none;
   color: var(--du-muted);
   font-size: 0.82rem;
   line-height: 1.45;
