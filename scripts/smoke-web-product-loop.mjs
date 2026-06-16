@@ -383,7 +383,8 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("What the room has produced").waitFor();
   await page.getByText("Current conclusion: Ready to review").waitFor();
   await page.getByRole("heading", { name: "Next recommended actions", exact: true }).waitFor();
-  await page.getByText("Risks").first().waitFor();
+  await roomOutputSummary.getByText("Missing evidence", { exact: true }).waitFor();
+  await page.locator(".du-room-focus").getByText("Risks", { exact: true }).waitFor();
   await page.getByRole("link", { name: "View current conclusion", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Review evidence", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "View disagreements", exact: true }).first().waitFor();
@@ -859,6 +860,8 @@ async function assertDesktopRoomConversationFirstView(page, label) {
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
       documentWidth: document.documentElement.scrollWidth,
+      pageHeader: rectFor(".du-page-header"),
+      panelHeading: rectFor(".du-panel-heading"),
       header: rectFor(".du-room-header"),
       threadSummary: rectFor(".du-room-thread-summary"),
       transcript: rectFor("#room-conversation-transcript"),
@@ -871,6 +874,10 @@ async function assertDesktopRoomConversationFirstView(page, label) {
   await page.locator(".du-room-composer").waitFor();
 
   if (
+    !metrics.pageHeader ||
+    metrics.pageHeader.height > 120 ||
+    !metrics.panelHeading ||
+    metrics.panelHeading.height > 54 ||
     !metrics.header ||
     metrics.header.height > 220 ||
     !metrics.threadSummary ||

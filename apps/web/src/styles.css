@@ -337,6 +337,43 @@ textarea:focus-visible {
   gap: 10px;
 }
 
+.du-run-detail-view > .du-page-header {
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.du-run-detail-view > .du-page-header > div:first-child {
+  min-width: 0;
+}
+
+.du-run-detail-view > .du-page-header .du-kicker,
+.du-run-detail-view > .du-page-header p:not(.du-kicker) {
+  display: none;
+}
+
+.du-run-detail-view > .du-page-header h2 {
+  max-width: 720px;
+  overflow-wrap: anywhere;
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+  line-height: 1.15;
+}
+
+.du-run-detail-view > .du-page-header .du-page-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.du-run-detail-view > .du-page-header .du-action-link {
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .du-action-link {
   display: inline-flex;
   align-items: center;
@@ -3380,6 +3417,18 @@ textarea:focus-visible {
   margin: 0;
   color: var(--du-muted);
   font-size: 0.86rem;
+}
+
+.du-run-detail-view .du-view-body > .du-panel > .du-panel-heading {
+  padding: 10px 12px;
+}
+
+.du-run-detail-view .du-view-body > .du-panel > .du-panel-heading h3 {
+  font-size: 0.9rem;
+}
+
+.du-run-detail-view .du-view-body > .du-panel > .du-panel-heading p {
+  display: none;
 }
 
 .du-session-form {
