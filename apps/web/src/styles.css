@@ -3426,6 +3426,47 @@ textarea:focus-visible {
   border-top-color: var(--du-accent);
 }
 
+.du-room-update-message {
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.du-room-update-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #cfe7dd;
+  border-radius: 50%;
+  background: #e5f4ee;
+  color: var(--du-accent-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.du-room-update-body {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.du-room-update-message .du-room-update-body {
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #f8fff9;
+  padding: 14px 16px;
+}
+
+.du-room-update-message .du-section-label {
+  border-top-color: transparent;
+  padding-top: 0;
+}
+
+.du-room-update-message .du-start-result {
+  padding: 0;
+}
+
 .du-start-result,
 .du-projection-section {
   display: grid;

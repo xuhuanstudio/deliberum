@@ -4611,9 +4611,12 @@ describe("@deliberum/web shell", () => {
       name: "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0"
     });
     expect(latestUpdate).toBeTruthy();
-    expect(latestUpdate.textContent ?? "").toContain("\u53d1\u751f\u4e86\u4ec0\u4e48\u53d8\u5316");
+    expect(latestUpdate.classList.contains("du-room-update-message")).toBe(true);
+    expect(latestUpdate.querySelector(".du-room-update-avatar")).toBeTruthy();
+    expect(latestUpdate.textContent ?? "").toContain("\u8ba8\u8bba\u5ba4\u66f4\u65b0");
+    expect(latestUpdate.textContent ?? "").toContain("\u8ba8\u8bba\u5ba4\u521a\u521a\u66f4\u65b0");
     expect(latestUpdate.textContent ?? "").toContain(
-      "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002"
+      "\u8bf7\u5148\u5ba1\u9605\u6b64\u8ba8\u8bba\u5ba4\u66f4\u65b0\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002"
     );
     const resultHandoff = await screen.findByRole("region", {
       name: "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84"
@@ -5483,9 +5486,12 @@ describe("@deliberum/web shell", () => {
     });
     expect(latestUpdate).toBeTruthy();
     expect(latestUpdate.getAttribute("id")).toBe("latest-discussion-update");
-    expect(latestUpdate.textContent ?? "").toContain("What just changed");
+    expect(latestUpdate.classList.contains("du-room-update-message")).toBe(true);
+    expect(latestUpdate.querySelector(".du-room-update-avatar")).toBeTruthy();
+    expect(latestUpdate.textContent ?? "").toContain("Room update");
+    expect(latestUpdate.textContent ?? "").toContain("The room just updated");
     expect(latestUpdate.textContent ?? "").toContain(
-      "Review this result first, then return to the timeline, outputs, or next recommended action."
+      "Review this room update, then return to the timeline, outputs, or next recommended action."
     );
     expect(await screen.findByText("Discussion update completed")).toBeTruthy();
     expect(

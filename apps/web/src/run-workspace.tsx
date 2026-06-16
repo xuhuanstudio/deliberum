@@ -3252,25 +3252,38 @@ function StartRunForm({
       {startMutation.data ? (
         <section
           id="latest-discussion-update"
-          className="du-latest-discussion-update"
+          className={`du-latest-discussion-update${
+            variant === "room-composer" ? " du-room-update-message" : ""
+          }`}
           aria-label={t("Latest discussion update")}
           ref={latestUpdateRef}
         >
-          <div className="du-section-label">
-            <p className="du-kicker">{t("Latest discussion update")}</p>
-            <h4>{t("What just changed")}</h4>
-            <p>
-              {t(
-                "Review this result first, then return to the timeline, outputs, or next recommended action."
-              )}
-            </p>
+          {variant === "room-composer" ? (
+            <span className="du-room-update-avatar" aria-hidden="true">
+              DR
+            </span>
+          ) : null}
+          <div className="du-room-update-body">
+            <div className="du-section-label">
+              <p className="du-kicker">
+                {t(variant === "room-composer" ? "Room update" : "Latest discussion update")}
+              </p>
+              <h4>{t(variant === "room-composer" ? "The room just updated" : "What just changed")}</h4>
+              <p>
+                {t(
+                  variant === "room-composer"
+                    ? "Review this room update, then return to the timeline, outputs, or next recommended action."
+                    : "Review this result first, then return to the timeline, outputs, or next recommended action."
+                )}
+              </p>
+            </div>
+            <StartResult
+              result={startMutation.data}
+              runId={runId}
+              feedback={startFeedback}
+              reviewReadyBeforeUpdate={continuationView.reviewReady}
+            />
           </div>
-          <StartResult
-            result={startMutation.data}
-            runId={runId}
-            feedback={startFeedback}
-            reviewReadyBeforeUpdate={continuationView.reviewReady}
-          />
         </section>
       ) : null}
     </>

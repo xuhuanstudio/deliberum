@@ -175,6 +175,7 @@ async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, run
 
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Discussion paused").waitFor();
+  await assertRoomUpdateMessage(page, "paused continuation result");
   await page.getByText("Stop reason", { exact: true }).waitFor();
   await page
     .getByText(
@@ -366,6 +367,19 @@ async function assertLinkHrefIncludes(page, text, expectedSnippet, label) {
     throw new Error(
       `${label} expected ${text} link href to include ${expectedSnippet}, got ${href ?? "none"}.`
     );
+  }
+}
+
+async function assertRoomUpdateMessage(page, label) {
+  const roomUpdate = page.locator("#latest-discussion-update.du-room-update-message");
+  await roomUpdate.waitFor();
+  await roomUpdate.locator(".du-room-update-avatar").waitFor();
+  await roomUpdate.getByText("Room update", { exact: true }).waitFor();
+  await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
+
+  const roomUpdateText = await roomUpdate.innerText();
+  if (!roomUpdateText.includes("Review this room update")) {
+    throw new Error(`${label} did not render the latest update as a room message.`);
   }
 }
 

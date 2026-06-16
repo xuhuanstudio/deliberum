@@ -280,6 +280,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
 
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Discussion paused", { exact: true }).waitFor();
+  await assertRoomUpdateMessage(page, "discussion room after transient participant failure");
   await page
     .getByText(
       "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again."
@@ -295,6 +296,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
 
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Model-backed discussion continued").waitFor();
+  await assertRoomUpdateMessage(page, "discussion room after continuation");
   await page.getByText("Conversation transcript").waitFor();
   await page.getByText("What the room said and did").waitFor();
   await page.getByText("Discussion phase").first().waitFor();
@@ -333,6 +335,19 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("The browser walkthrough still needs to prove evidence gaps stay visible.").waitFor();
   await page.getByText("Run another browser walkthrough after UI changes.").waitFor();
   await assertDefaultViewSafety(page, "current conclusion", { providerBaseUrl });
+}
+
+async function assertRoomUpdateMessage(page, label) {
+  const roomUpdate = page.locator("#latest-discussion-update.du-room-update-message");
+  await roomUpdate.waitFor();
+  await roomUpdate.locator(".du-room-update-avatar").waitFor();
+  await roomUpdate.getByText("Room update", { exact: true }).waitFor();
+  await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
+
+  const roomUpdateText = await roomUpdate.innerText();
+  if (!roomUpdateText.includes("Review this room update")) {
+    throw new Error(`${label} did not render the latest update as a room message.`);
+  }
 }
 
 async function assertStartLink(locator, { label, perspectiveCount }) {
