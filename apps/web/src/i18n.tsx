@@ -1630,6 +1630,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "In the room": "\u623f\u95f4\u4e2d",
   "Room participants": "\u623f\u95f4\u53c2\u4e0e\u8005",
   "Participant messages are the main thread": "\u53c2\u4e0e\u8005\u53d1\u8a00\u662f\u4e3b\u7ebf",
+  "Latest messages": "\u6700\u65b0\u53d1\u8a00",
+  "Who spoke most recently": "\u6700\u8fd1\u8c01\u53d1\u4e86\u8a00",
+  "Latest participant messages": "\u6700\u65b0\u53c2\u4e0e\u8005\u53d1\u8a00",
   "+{count} more": "\u8fd8\u6709 {count} \u4e2a",
   "Participants appear here after setup or first room activity.":
     "\u8bbe\u7f6e\u5b8c\u6210\u6216\u8ba8\u8bba\u5ba4\u9996\u6b21\u6d3b\u52a8\u540e\uff0c\u53c2\u4e0e\u8005\u4f1a\u663e\u793a\u5728\u8fd9\u91cc\u3002",

@@ -341,9 +341,14 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("What the room said and did").waitFor();
   await page.getByText("Discussion phase").first().waitFor();
   await assertRoomMessageFlowCompact(page, "discussion room after continuation");
+  await assertRoomLatestMessagesPreview(page, "discussion room after continuation");
   await page.getByText("Next in the room", { exact: true }).waitFor();
-  await page.getByText("Evidence checker", { exact: true }).waitFor();
   await page
+    .locator("#room-conversation-transcript")
+    .getByText("Evidence checker", { exact: true })
+    .waitFor();
+  await page
+    .locator("#room-conversation-transcript")
     .getByText("1 evidence gap still needs checking before relying on the conclusion.")
     .waitFor();
   await page
@@ -411,14 +416,22 @@ async function assertDiscussionRoomOverview(page, { label, expectedNextAction })
   try {
     await overview.waitFor();
     await overview.getByText("Discussion room", { exact: true }).waitFor();
-    await overview.getByText("Participant messages are the main thread").waitFor();
     await overview.getByText("Current phase", { exact: true }).waitFor();
     await overview.getByText("Review queue", { exact: true }).waitFor();
     await overview.getByText(expectedNextAction, { exact: true }).waitFor();
     const memberStrip = overview.locator("[aria-label='Room participants']");
     await memberStrip.waitFor();
-    await memberStrip.getByText("Perspective A", { exact: true }).waitFor();
-    await memberStrip.getByText("Perspective B", { exact: true }).waitFor();
+    const latestMessages = memberStrip.getByRole("list", { name: "Latest participant messages" });
+
+    if ((await latestMessages.count()) > 0) {
+      await memberStrip.getByText("Latest messages", { exact: true }).waitFor();
+      await memberStrip.getByText("Who spoke most recently", { exact: true }).waitFor();
+      await latestMessages.waitFor();
+    } else {
+      await memberStrip.getByText("Participant messages are the main thread").waitFor();
+      await memberStrip.getByText("Perspective A", { exact: true }).waitFor();
+      await memberStrip.getByText("Perspective B", { exact: true }).waitFor();
+    }
   } catch (error) {
     throw new Error(`${label} did not render a readable discussion room overview.`, {
       cause: error
@@ -872,6 +885,59 @@ async function assertDesktopRoomConversationFirstView(page, label) {
   ) {
     throw new Error(
       `${label} should show the room transcript in the desktop first view, got ${JSON.stringify(
+        metrics
+      )}.`
+    );
+  }
+}
+
+async function assertRoomLatestMessagesPreview(page, label) {
+  const previousViewport = page.viewportSize() ?? { width: 1280, height: 720 };
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByText("Latest messages", { exact: true }).waitFor();
+  await page.getByText("Who spoke most recently", { exact: true }).waitFor();
+  await page.locator(".du-room-message-preview").first().waitFor();
+
+  const metrics = await page.evaluate(() => {
+    const previews = Array.from(document.querySelectorAll(".du-room-message-preview"));
+    const firstPreview = previews[0]?.getBoundingClientRect();
+
+    return {
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      documentWidth: document.documentElement.scrollWidth,
+      previewCount: previews.length,
+      firstPreview: firstPreview
+        ? {
+            top: firstPreview.top,
+            bottom: firstPreview.bottom,
+            height: firstPreview.height,
+            width: firstPreview.width
+          }
+        : null,
+      hasInternalIds: previews.some((preview) =>
+        /(?:run|session|ledger|runtime|proposal|event|internal|adapter)[_-]?[a-z0-9-]{4,}/i.test(
+          preview.textContent ?? ""
+        )
+      )
+    };
+  });
+
+  await page.setViewportSize(previousViewport);
+  await page.locator(".du-room-composer").waitFor();
+
+  if (
+    metrics.previewCount < 2 ||
+    !metrics.firstPreview ||
+    metrics.firstPreview.top > metrics.viewportHeight ||
+    metrics.firstPreview.height > 92 ||
+    metrics.documentWidth > metrics.viewportWidth + 1 ||
+    metrics.hasInternalIds
+  ) {
+    throw new Error(
+      `${label} should show recent participant messages in the first-view room header, got ${JSON.stringify(
         metrics
       )}.`
     );

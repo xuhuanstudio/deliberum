@@ -2233,8 +2233,9 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(
-      screen.getByText("Provider-backed conclusions remain provisional until risks are reviewed.")
-    ).toBeTruthy();
+      screen.getAllByText("Provider-backed conclusions remain provisional until risks are reviewed.")
+        .length
+    ).toBeGreaterThan(0);
     const discussionOutputs = document.querySelector(
       ".du-room-outputs-section"
     ) as HTMLDetailsElement | null;
@@ -4590,10 +4591,8 @@ describe("@deliberum/web shell", () => {
       name: "\u8ba8\u8bba\u5ba4\u6982\u89c8"
     });
     expect(localizedRoomOverview).toBeTruthy();
-    expect(localizedRoomOverview.textContent ?? "").toContain("\u623f\u95f4\u4e2d");
-    expect(localizedRoomOverview.textContent ?? "").toContain(
-      "\u53c2\u4e0e\u8005\u53d1\u8a00\u662f\u4e3b\u7ebf"
-    );
+    expect(localizedRoomOverview.textContent ?? "").toContain("\u6700\u65b0\u53d1\u8a00");
+    expect(localizedRoomOverview.textContent ?? "").toContain("\u6700\u8fd1\u8c01\u53d1\u4e86\u8a00");
     expect(localizedRoomOverview.textContent ?? "").toContain("\u5f53\u524d\u9636\u6bb5");
     expect(localizedRoomOverview.textContent ?? "").toContain("\u5ba1\u9605\u961f\u5217");
     expect(
@@ -5483,7 +5482,8 @@ describe("@deliberum/web shell", () => {
     const roomOverview = screen.getByRole("region", { name: "Discussion room overview" });
     expect(roomOverview).toBeTruthy();
     expect(roomOverview.textContent ?? "").toContain("Discussion room");
-    expect(roomOverview.textContent ?? "").toContain("Participant messages are the main thread");
+    expect(roomOverview.textContent ?? "").toContain("Latest messages");
+    expect(roomOverview.textContent ?? "").toContain("Who spoke most recently");
     expect(roomOverview.textContent ?? "").toContain("Current phase");
     expect(roomOverview.textContent ?? "").toContain("Review queue");
     expect(roomOverview.textContent ?? "").toContain("Review current conclusion");
@@ -5491,7 +5491,8 @@ describe("@deliberum/web shell", () => {
     expect(roomStatus.textContent ?? "").toContain("Conclusion ready");
     expect(roomStatus.textContent ?? "").toContain("Review current conclusion");
     expect(document.querySelector('[aria-label="Room participants"]')).toBeTruthy();
-    expect(screen.getByText("In the room")).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Latest participant messages" })).toBeTruthy();
+    expect(document.querySelectorAll(".du-room-message-preview").length).toBeGreaterThan(0);
     expect(document.querySelector(".du-room-status-cue")).toBeNull();
     expect(
       screen.queryByRole("navigation", { name: "Primary discussion actions" })
@@ -5704,8 +5705,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
     expect(screen.getByText("Reviewed evidence gaps")).toBeTruthy();
     expect(
-      screen.getByText("1 evidence gap still needs checking before relying on the conclusion.")
-    ).toBeTruthy();
+      screen.getAllByText("1 evidence gap still needs checking before relying on the conclusion.")
+        .length
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("Discussion phase").length).toBeGreaterThan(0);
     expect(screen.getByText("Room step 1")).toBeTruthy();
     expect(screen.getByText("Room step 2")).toBeTruthy();
@@ -6170,8 +6172,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Drafted the current conclusion")).toBeTruthy();
     expect(screen.getByText("Reviewed risks")).toBeTruthy();
     expect(
-      screen.getByText("Provider-backed conclusions may still miss real rollout constraints.")
-    ).toBeTruthy();
+      screen.getAllByText("Provider-backed conclusions may still miss real rollout constraints.").length
+    ).toBeGreaterThan(0);
     expect(
       screen.queryByText("A risk review was recorded for the current conclusion.")
     ).toBeNull();
@@ -6181,8 +6183,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
     expect(screen.getByText("Reviewed evidence gaps")).toBeTruthy();
     expect(
-      screen.getByText("1 evidence gap still needs checking before relying on the conclusion.")
-    ).toBeTruthy();
+      screen.getAllByText("1 evidence gap still needs checking before relying on the conclusion.")
+        .length
+    ).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Main perspective and disagreement updates" })).toBeTruthy();
@@ -6312,6 +6315,9 @@ describe("@deliberum/web shell", () => {
 
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
     expect((await screen.findAllByText("\u89c6\u89d2 A")).length).toBeGreaterThan(0);
+    expect(screen.getByText("\u6700\u65b0\u53d1\u8a00")).toBeTruthy();
+    expect(screen.getByText("\u6700\u8fd1\u8c01\u53d1\u4e86\u8a00")).toBeTruthy();
+    expect(screen.getByRole("list", { name: "\u6700\u65b0\u53c2\u4e0e\u8005\u53d1\u8a00" })).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u521d\u59cb\u56de\u5e94")).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u6700\u521d\u8bf4\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getAllByText("\u8ba8\u8bba\u7ec4\u7ec7\u8005").length).toBeGreaterThan(0);
@@ -6324,10 +6330,10 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3")).toBeTruthy();
     expect(
-      screen.getByText(
+      screen.getAllByText(
         "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u4ecd\u6709 1 \u4e2a\u8bc1\u636e\u7f3a\u53e3\u9700\u8981\u6838\u67e5\u3002"
-      )
-    ).toBeTruthy();
+      ).length
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("\u7ed3\u8bba\u8d77\u8349\u8005").length).toBeGreaterThan(0);
     const roomText = document.querySelector(".du-room-layout")?.textContent ?? "";
     expect(roomText).not.toContain("local-preset-alpha");

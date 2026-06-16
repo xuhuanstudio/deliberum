@@ -4595,6 +4595,8 @@ function DiscussionRoomHeader({
   const allMembers = getDiscussionRoomMembers(run, activities);
   const members = allMembers.slice(0, 6);
   const hiddenMemberCount = Math.max(0, allMembers.length - members.length);
+  const latestMessages = getLatestRoomMessagePreviews(activities, 2);
+  const hasLatestMessages = latestMessages.length > 0;
   const nextActionLabel = reviewReady ? "Review current conclusion" : "Continue discussion";
   const statusLabel = reviewReady ? "Conclusion ready" : "Next step";
   const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
@@ -4658,12 +4660,46 @@ function DiscussionRoomHeader({
           </p>
         </article>
       </div>
-      <div className="du-room-member-strip" aria-label={t("Room participants")}>
+      <div
+        className="du-room-member-strip"
+        data-mode={hasLatestMessages ? "messages" : "members"}
+        aria-label={t("Room participants")}
+      >
         <div className="du-room-member-strip-heading">
-          <span>{t("In the room")}</span>
-          <strong>{t("Participant messages are the main thread")}</strong>
+          <span>{t(hasLatestMessages ? "Latest messages" : "In the room")}</span>
+          <strong>
+            {t(
+              hasLatestMessages
+                ? "Who spoke most recently"
+                : "Participant messages are the main thread"
+            )}
+          </strong>
         </div>
-        {members.length > 0 ? (
+        {hasLatestMessages ? (
+          <ol className="du-room-message-preview-list" aria-label={t("Latest participant messages")}>
+            {latestMessages.map((message) => {
+              const phaseView = describeRoomActivityPhase(message.phase);
+
+              return (
+                <li
+                  className="du-room-message-preview"
+                  key={`${message.speaker}:${message.phase}:${message.detail}`}
+                >
+                  <span className="du-room-message-preview-avatar" aria-hidden="true">
+                    {formatSpeakerInitials(t(message.speaker))}
+                  </span>
+                  <div>
+                    <div className="du-room-message-preview-header">
+                      <strong>{t(message.speaker)}</strong>
+                      <small>{t(phaseView.label)}</small>
+                    </div>
+                    <p>{t(message.detail, message.detailValues)}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        ) : members.length > 0 ? (
           <div className="du-room-member-list">
             {members.map((member) => (
               <span className="du-room-member-chip" key={`${member.name}:${member.detail}`}>
@@ -5289,6 +5325,21 @@ function getParticipantFirstResponses(activities: RoomActivityItem[]): RoomActiv
       activity.detail !==
         "This response is sealed until the independent first responses are revealed."
   );
+}
+
+function getLatestRoomMessagePreviews(
+  activities: RoomActivityItem[],
+  maxMessages: number
+): RoomActivityItem[] {
+  return activities
+    .filter(
+      (activity) =>
+        !isRoomSpeaker(activity.speaker) &&
+        !isUserSpeaker(activity.speaker) &&
+        activity.detail !==
+          "This response is sealed until the independent first responses are revealed."
+    )
+    .slice(-maxMessages);
 }
 
 const ROOM_ACTIVITY_PHASE_ORDER: readonly RoomActivityPhaseId[] = [
