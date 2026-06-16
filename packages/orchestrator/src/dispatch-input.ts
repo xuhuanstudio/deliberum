@@ -122,6 +122,7 @@ function shouldUsePlainLanguagePromptPayload(adapterId: string): boolean {
 
 function createParticipantPromptPayload(context: ParticipantDeliberationContext): JsonValue {
   const targetLanguage = describePromptTargetLanguage(context);
+  const languageContract = createParticipantLanguageContract(targetLanguage);
   const roomUpdates = context.events.map((event, index) =>
     [
       `Update ${index + 1}: ${describeRoomStage(event.type)}`,
@@ -136,6 +137,9 @@ function createParticipantPromptPayload(context: ParticipantDeliberationContext)
 
   return JsonValueSchema.parse(
     [
+      "Response language contract",
+      ...languageContract,
+      "",
       "Discussion brief",
       `Topic: ${context.topic}`,
       `Goals: ${formatStringList(context.goals)}`,
@@ -169,6 +173,24 @@ function describePromptTargetLanguage(context: ParticipantDeliberationContext): 
   }
 
   return detectDiscussionQuestionLanguage(context.topic);
+}
+
+function createParticipantLanguageContract(targetLanguage: string): string[] {
+  const baseContract = [
+    `Actual participant contribution language: ${targetLanguage}.`,
+    `Write the answer content in ${targetLanguage}.`,
+    "Treat this language contract as stronger than every English section heading in this prompt."
+  ];
+
+  if (targetLanguage === "Simplified Chinese") {
+    return [
+      ...baseContract,
+      "Do not answer in English unless quoting a short English term from the discussion brief.",
+      "Do not translate the Chinese discussion question into an English answer."
+    ];
+  }
+
+  return baseContract;
 }
 
 function normalizeOutputLanguagePreference(language: string | undefined): string | undefined {

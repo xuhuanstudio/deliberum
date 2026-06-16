@@ -13,6 +13,7 @@ import {
   clearOpenAICompatibleProviderVerified,
   markOpenAICompatibleProviderVerified
 } from "../src/openai-compatible-verification";
+import { buildProviderBackedDiscussionRunPlan } from "../src/run-presets";
 
 const projection = {
   version: "1" as const,
@@ -4075,6 +4076,56 @@ describe("@deliberum/web shell", () => {
     expect(JSON.stringify(runPlan)).not.toContain("Use built-in sample participants only.");
   });
 
+  it("uses the discussion question language for model-backed default brief text", async () => {
+    const chineseTopic = "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u771f\u5b9e\u6a21\u578b\u5ba1\u67e5\uff1f";
+    const chineseLanguageInstruction =
+      "\u6240\u6709\u53c2\u4e0e\u8005\u56de\u5e94\u3001\u5ba1\u67e5\u8bf4\u660e\u548c\u7ed3\u8bba\u90fd\u5e94\u4f7f\u7528\u8ba8\u8bba\u95ee\u9898\u7684\u540c\u4e00\u79cd\u8bed\u8a00\u3002";
+    const runPlan = buildProviderBackedDiscussionRunPlan(
+      {
+        question: chineseTopic,
+        goalsText: "",
+        constraintsText: "",
+        expectedOutcomeText: ""
+      },
+      {
+        adapterId: "openai-compatible",
+        providerConfigId: "openai-main",
+        apiKeyEnvVar: "DELIBERUM_OPENAI_API_KEY"
+      },
+      {
+        perspectiveCount: 3
+      }
+    );
+    const serializedRunPlan = JSON.stringify(runPlan);
+
+    expect(runPlan).toEqual(
+      expect.objectContaining({
+        topic: chineseTopic,
+        goals: expect.arrayContaining([
+          "\u6bd4\u8f83\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",
+          "\u4fdd\u6301\u672a\u89e3\u51b3\u5206\u6b67\u548c\u7f3a\u5931\u8bc1\u636e\u53ef\u89c1\u3002"
+        ]),
+        constraints: expect.arrayContaining([
+          chineseLanguageInstruction,
+          "\u4f7f\u7528\u672c\u673a\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
+          "\u4f7f\u7528\u672c\u673a\u670d\u52a1\u4e2d\u7684\u4e09\u4e2a\u72ec\u7acb\u6a21\u578b\u89c6\u89d2\u3002",
+          "\u8ba9\u6a21\u578b\u670d\u52a1\u51ed\u636e\u4fdd\u5b58\u5728\u672c\u673a\uff0c\u4e0d\u8fdb\u5165\u8ba8\u8bba\u5185\u5bb9\u3002"
+        ]),
+        output: expect.objectContaining({
+          language: "same as discussion question",
+          expectations: expect.arrayContaining([
+            "\u5c55\u793a\u5f53\u524d\u7ed3\u8bba\u3002",
+            "\u5217\u51fa\u4e3b\u8981\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u98ce\u9669\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
+            chineseLanguageInstruction
+          ])
+        })
+      })
+    );
+    expect(serializedRunPlan).not.toContain("Use configured model-backed participants from the local service.");
+    expect(serializedRunPlan).not.toContain("Use three independent model-backed perspectives from the local service.");
+    expect(serializedRunPlan).not.toContain("Keep provider credentials saved locally and out of the discussion.");
+  });
+
   it("opens broader model-backed review from the setup start link", async () => {
     markOpenAICompatibleProviderVerified();
     const client = createClient();
@@ -5126,31 +5177,48 @@ describe("@deliberum/web shell", () => {
 
   it("asks participants to answer in the same language as the discussion question", async () => {
     const client = renderApp("/runs/new");
+    const chineseTopic = "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u65b0\u529f\u80fd\u53d1\u5e03\uff1f";
+    const chineseLanguageInstruction =
+      "\u6240\u6709\u53c2\u4e0e\u8005\u56de\u5e94\u3001\u5ba1\u67e5\u8bf4\u660e\u548c\u7ed3\u8bba\u90fd\u5e94\u4f7f\u7528\u8ba8\u8bba\u95ee\u9898\u7684\u540c\u4e00\u79cd\u8bed\u8a00\u3002";
 
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     fireEvent.change(screen.getByLabelText("Discussion question"), {
       target: {
-        value: "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u65b0\u529f\u80fd\u53d1\u5e03\uff1f"
+        value: chineseTopic
       }
     });
     fireEvent.click(screen.getByRole("button", { name: "Create discussion" }));
 
-    await waitFor(() =>
-      expect(client.createRun).toHaveBeenCalledWith({
-        runPlan: expect.objectContaining({
-          topic: "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u65b0\u529f\u80fd\u53d1\u5e03\uff1f",
-          constraints: expect.arrayContaining([
-            "Write all participant responses, review notes, and conclusions in the same language as the discussion question."
-          ]),
-          output: expect.objectContaining({
-            language: "same as discussion question",
-            expectations: expect.arrayContaining([
-              "Write all participant responses, review notes, and conclusions in the same language as the discussion question."
-            ])
-          })
+    await waitFor(() => expect(client.createRun).toHaveBeenCalled());
+    const createRunInput = vi.mocked(client.createRun).mock.calls[0]?.[0];
+    const runPlan = createRunInput?.runPlan as Record<string, unknown>;
+    const serializedRunPlan = JSON.stringify(runPlan);
+
+    expect(runPlan).toEqual(
+      expect.objectContaining({
+        topic: chineseTopic,
+        goals: expect.arrayContaining([
+          "\u6bd4\u8f83\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",
+          "\u4fdd\u6301\u672a\u89e3\u51b3\u5206\u6b67\u548c\u7f3a\u5931\u8bc1\u636e\u53ef\u89c1\u3002"
+        ]),
+        constraints: expect.arrayContaining([
+          chineseLanguageInstruction,
+          "\u4f7f\u7528\u5185\u7f6e\u793a\u4f8b\u53c2\u4e0e\u8005\u3002",
+          "\u5728\u4eba\u5de5\u5ba1\u9605\u524d\uff0c\u5c06\u7ed3\u8bba\u89c6\u4e3a\u4e34\u65f6\u7ed3\u8bba\u3002"
+        ]),
+        output: expect.objectContaining({
+          language: "same as discussion question",
+          expectations: expect.arrayContaining([
+            "\u5c55\u793a\u5f53\u524d\u7ed3\u8bba\u3002",
+            "\u5217\u51fa\u4e3b\u8981\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u98ce\u9669\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
+            chineseLanguageInstruction
+          ])
         })
       })
     );
+    expect(serializedRunPlan).not.toContain("Compare the strongest current options.");
+    expect(serializedRunPlan).not.toContain("Use built-in sample participants only.");
+    expect(serializedRunPlan).not.toContain("Show the current conclusion.");
   });
 
   it("guides start discussion users when the local service is unavailable", async () => {

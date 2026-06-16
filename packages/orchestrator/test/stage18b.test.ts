@@ -578,6 +578,17 @@ describe("buildParticipantDispatchInput", () => {
       "Answer in the same language as the discussion question."
     );
     expect(adapterInputText).toContain(chineseQuestion);
+    expect(adapterInputText).toContain("Response language contract");
+    expect(adapterInputText).toContain(
+      "Actual participant contribution language: Simplified Chinese."
+    );
+    expect(adapterInputText).toContain("Write the answer content in Simplified Chinese.");
+    expect(adapterInputText).toContain(
+      "Do not answer in English unless quoting a short English term from the discussion brief."
+    );
+    expect(adapterInputText).toContain(
+      "Do not translate the Chinese discussion question into an English answer."
+    );
     expect(adapterInputText).toContain("Language");
     expect(adapterInputText).toContain("Target response language: Simplified Chinese.");
     expect(adapterInputText).toContain(
