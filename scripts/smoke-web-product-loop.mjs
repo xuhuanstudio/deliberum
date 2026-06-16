@@ -293,7 +293,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Discussion paused", { exact: true }).waitFor();
   await assertRoomUpdateMessage(page, "discussion room after transient participant failure");
-  await assertNextRoomActionReturnedToViewport(page, "discussion room after transient participant failure");
+  await assertConversationTranscriptReturnedToViewport(page, "discussion room after transient participant failure");
   await page
     .getByText(
       "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again."
@@ -311,7 +311,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Model-backed discussion continued").waitFor();
   await assertRoomUpdateMessage(page, "discussion room after continuation");
-  await assertNextRoomActionReturnedToViewport(page, "discussion room after continuation");
+  await assertConversationTranscriptReturnedToViewport(page, "discussion room after continuation");
   await assertRoomStatusCue(page, {
     label: "discussion room after continuation",
     expectedStatus: "Conclusion ready",
@@ -472,37 +472,41 @@ async function openDetailedReviewPanels(page, label) {
   }
 }
 
-async function assertNextRoomActionReturnedToViewport(page, label) {
-  await page.getByText("Next in the room", { exact: true }).waitFor();
+async function assertConversationTranscriptReturnedToViewport(page, label) {
+  await page.getByText("Conversation transcript", { exact: true }).waitFor();
 
-  const metrics = await page.locator("#room-next-action").evaluate((element) => {
+  const metrics = await page.locator("#room-conversation-transcript").evaluate((element) => {
     const rect = element.getBoundingClientRect();
     const timelineRect = document
       .querySelector("#discussion-timeline")
+      ?.getBoundingClientRect();
+    const nextActionRect = document
+      .querySelector("#room-next-action")
       ?.getBoundingClientRect();
     const updateRect = document
       .querySelector("#latest-discussion-update")
       ?.getBoundingClientRect();
 
     return {
-      nextActionTop: rect.top,
-      nextActionBottom: rect.bottom,
+      transcriptTop: rect.top,
+      transcriptBottom: rect.bottom,
       timelineTop: timelineRect?.top ?? null,
       timelineBottom: timelineRect?.bottom ?? null,
+      nextActionTop: nextActionRect?.top ?? null,
       updateTop: updateRect?.top ?? null,
       viewportHeight: window.innerHeight
     };
   });
 
   if (
-    metrics.nextActionTop < -24 ||
-    metrics.nextActionTop > metrics.viewportHeight * 0.55 ||
-    metrics.nextActionBottom <= 120 ||
+    metrics.transcriptTop < -24 ||
+    metrics.transcriptTop > metrics.viewportHeight * 0.35 ||
+    metrics.transcriptBottom <= 240 ||
     metrics.timelineBottom === null ||
-    metrics.timelineBottom <= 120
+    metrics.timelineBottom <= 240
   ) {
     throw new Error(
-      `${label} should return the viewport to the next room action, got ${JSON.stringify(
+      `${label} should return the viewport to the conversation transcript, got ${JSON.stringify(
         metrics
       )}.`
     );

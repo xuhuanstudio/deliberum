@@ -5433,6 +5433,7 @@ describe("@deliberum/web shell", () => {
     const detailPanels = document.querySelector('[aria-label="Discussion detail panels"]');
     expect(timeline).toBeTruthy();
     expect(transcript).toBeTruthy();
+    expect(transcript?.getAttribute("id")).toBe("room-conversation-transcript");
     expect(progressDetails).toBeTruthy();
     expect(nextRoomAction).toBeTruthy();
     expect(roomLayout).toBeTruthy();
@@ -5777,7 +5778,9 @@ describe("@deliberum/web shell", () => {
     expect(latestUpdate.getAttribute("id")).toBe("latest-discussion-update");
     expect(latestUpdate.classList.contains("du-room-update-message")).toBe(true);
     expect(latestUpdate.querySelector(".du-room-update-avatar")).toBeTruthy();
-    await waitFor(() => expect(scrollTargets).toContain("room-next-action"));
+    expect(document.querySelector("#room-conversation-transcript")).toBeTruthy();
+    await waitFor(() => expect(scrollTargets).toContain("room-conversation-transcript"));
+    expect(scrollTargets).not.toContain("room-next-action");
     expect(scrollTargets).not.toContain("discussion-timeline");
     expect(scrollTargets).not.toContain("latest-discussion-update");
     expect(latestUpdate.textContent ?? "").toContain("Room update");
@@ -5795,6 +5798,11 @@ describe("@deliberum/web shell", () => {
       name: "Room update shortcuts"
     });
     expect(updateShortcuts.textContent ?? "").toContain("Review updated timeline");
+    expect(
+      within(updateShortcuts)
+        .getByRole("link", { name: "Review updated timeline" })
+        .getAttribute("href")
+    ).toBe("#room-conversation-transcript");
     expect(updateShortcuts.textContent ?? "").toContain("Review discussion outputs");
     expect(updateShortcuts.textContent ?? "").toContain("View current conclusion");
     const updateDetails = latestUpdate.querySelector(
@@ -5836,7 +5844,7 @@ describe("@deliberum/web shell", () => {
     );
     expect(resultHandoffLinks).toEqual(
       expect.arrayContaining([
-        "#discussion-timeline",
+        "#room-conversation-transcript",
         "#discussion-outputs",
         "/runs/run-1/outcome"
       ])
@@ -6603,6 +6611,11 @@ describe("@deliberum/web shell", () => {
     expect(pendingRoomActionStrip.textContent ?? "").toContain("Next action");
     expect(pendingRoomActionStrip.textContent ?? "").toContain("Continue discussion");
     expect(pendingRoomActionStrip.textContent ?? "").toContain("Read room messages");
+    expect(
+      within(pendingRoomActionStrip)
+        .getByRole("link", { name: "Read room messages" })
+        .getAttribute("href")
+    ).toBe("#room-conversation-transcript");
     expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();

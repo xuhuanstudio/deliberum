@@ -3004,7 +3004,7 @@ function StartRunForm({
 
     const scrollTarget =
       variant === "room-composer" && typeof document !== "undefined"
-        ? document.getElementById("room-next-action") ??
+        ? document.getElementById("room-conversation-transcript") ??
           document.getElementById("discussion-timeline") ??
           latestUpdateRef.current
         : latestUpdateRef.current;
@@ -3887,7 +3887,7 @@ function RoomUpdateShortcuts({
 
   return (
     <nav className="du-room-update-shortcuts" aria-label={t("Room update shortcuts")}>
-      <a href="#discussion-timeline" aria-label={t("Review updated timeline")}>
+      <a href="#room-conversation-transcript" aria-label={t("Review updated timeline")}>
         {t("Review updated timeline")}
       </a>
       <a href="#discussion-outputs" aria-label={t("Review discussion outputs")}>
@@ -3972,7 +3972,7 @@ function DiscussionResultHandoff({
       <div className="du-result-handoff-grid">
         <a
           className="du-result-handoff-card"
-          href="#discussion-timeline"
+          href="#room-conversation-transcript"
           aria-label={t("Review updated timeline")}
         >
           <span>{t("First")}</span>
@@ -4607,7 +4607,7 @@ function DiscussionRoomActionStrip({
           <a className="du-room-action-strip-primary" href="#continue-discussion">
             {t("Continue discussion")}
           </a>
-          <a href="#discussion-timeline">{t("Read room messages")}</a>
+          <a href="#room-conversation-transcript">{t("Read room messages")}</a>
         </>
       )}
     </nav>
@@ -4749,7 +4749,7 @@ function DiscussionRoomTimeline({
           )}
         </p>
       </div>
-      <div className="du-room-activity-wrap">
+      <div id="room-conversation-transcript" className="du-room-activity-wrap">
         <div>
           <p className="du-kicker">{t("Conversation transcript")}</p>
           <h5>{t("What the room said and did")}</h5>
