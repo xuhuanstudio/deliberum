@@ -2014,12 +2014,12 @@ textarea:focus-visible {
   padding: 8px 12px;
 }
 
-.du-room-main > .du-room-composer {
+.du-room-composer[data-placement="room-action-dock"] {
   position: sticky;
   bottom: 12px;
   z-index: 12;
   border-left: 4px solid var(--du-accent);
-  margin-top: 0;
+  margin-top: 2px;
   box-shadow: 0 -10px 24px rgb(31 44 39 / 0.08);
   scroll-margin-top: 18px;
 }

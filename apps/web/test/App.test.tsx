@@ -5612,6 +5612,8 @@ describe("@deliberum/web shell", () => {
     expect(detailPanels?.closest("details")).toBe(detailPanelsDrawer);
     expect(roomMain?.contains(roomHeader as Node)).toBe(true);
     expect(roomMain?.contains(roomComposer as Node)).toBe(true);
+    expect(timeline?.contains(roomComposer as Node)).toBe(true);
+    expect(transcript?.contains(roomComposer as Node)).toBe(true);
     expect(screen.queryByRole("navigation", { name: "Discussion actions" })).toBeNull();
     expect(
       Boolean(
@@ -5632,19 +5634,19 @@ describe("@deliberum/web shell", () => {
     ).toBe(true);
     expect(
       Boolean(
-        nextRoomAction?.compareDocumentPosition(progressDetails as Node) &
+        nextRoomAction?.compareDocumentPosition(roomComposer as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      Boolean(
+        roomComposer?.compareDocumentPosition(progressDetails as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
     expect(
       Boolean(
         transcript?.compareDocumentPosition(progressDetails as Node) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-      )
-    ).toBe(true);
-    expect(
-      Boolean(
-        timeline?.compareDocumentPosition(roomComposer as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);

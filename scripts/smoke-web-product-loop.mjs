@@ -742,8 +742,10 @@ async function assertMobileDiscussionRoomShell(page, label) {
     const header = document.querySelector(".du-room-header");
     const strip = document.querySelector(".du-room-action-strip");
     const timeline = document.querySelector("[aria-label='Discussion timeline']");
+    const transcript = document.querySelector("#room-conversation-transcript");
     const nextAction = document.querySelector("#room-next-action");
     const composer = document.querySelector(".du-room-composer");
+    const progressDetails = document.querySelector(".du-room-progress-details");
 
     return {
       viewportWidth: window.innerWidth,
@@ -766,7 +768,14 @@ async function assertMobileDiscussionRoomShell(page, label) {
         timelineBeforeNextAction:
           Boolean(timeline && nextAction) && elements.indexOf(timeline) < elements.indexOf(nextAction),
         timelineBeforeComposer:
-          Boolean(timeline && composer) && elements.indexOf(timeline) < elements.indexOf(composer)
+          Boolean(timeline && composer) && elements.indexOf(timeline) < elements.indexOf(composer),
+        timelineContainsComposer: Boolean(timeline && composer && timeline.contains(composer)),
+        transcriptContainsComposer: Boolean(transcript && composer && transcript.contains(composer)),
+        nextBeforeComposer:
+          Boolean(nextAction && composer) && elements.indexOf(nextAction) < elements.indexOf(composer),
+        composerBeforeProgress:
+          Boolean(composer && progressDetails) &&
+          elements.indexOf(composer) < elements.indexOf(progressDetails)
       }
     };
   });
@@ -797,6 +806,10 @@ async function assertMobileDiscussionRoomShell(page, label) {
     !metrics.composer ||
     !metrics.order.timelineBeforeNextAction ||
     !metrics.order.timelineBeforeComposer ||
+    !metrics.order.timelineContainsComposer ||
+    !metrics.order.transcriptContainsComposer ||
+    !metrics.order.nextBeforeComposer ||
+    !metrics.order.composerBeforeProgress ||
     metrics.documentWidth > metrics.viewportWidth + 1
   ) {
     throw new Error(`${label} should keep mobile room chrome compact, got ${JSON.stringify(metrics)}.`);

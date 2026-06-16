@@ -4383,8 +4383,8 @@ function RunQualityOverview({
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
               openRequirementCount={openObligations}
               progressView={progressView}
+              roomComposer={discussionComposer}
             />
-            {discussionComposer}
             <DiscussionRoomBrief run={run} />
             <DiscussionRoomOutputs
               runId={runId}
@@ -4766,7 +4766,8 @@ function DiscussionRoomTimeline({
   openDisagreementCount,
   unresolvedEvidenceCount,
   openRequirementCount,
-  progressView
+  progressView,
+  roomComposer
 }: {
   runId: string;
   run: unknown;
@@ -4782,6 +4783,7 @@ function DiscussionRoomTimeline({
   unresolvedEvidenceCount: number;
   openRequirementCount: number;
   progressView: DiscussionRoomProgressView;
+  roomComposer: ReactNode;
 }) {
   const { t } = useI18n();
   const independentResponses = describeStageStatus(
@@ -4978,6 +4980,7 @@ function DiscussionRoomTimeline({
           unresolvedEvidenceCount={unresolvedEvidenceCount}
           openRequirementCount={openRequirementCount}
         />
+        {roomComposer}
       </div>
       <details className="du-room-progress-details">
         <summary>
