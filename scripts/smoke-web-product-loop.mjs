@@ -283,8 +283,11 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   });
   await page.locator(".du-room-system-message").first().waitFor();
   await page.getByText("Shared the discussion brief", { exact: true }).waitFor();
+  await assertRoomComposerShellCompact(page, "discussion room before continuation");
   await page.getByText("How this discussion will continue").click();
   await page.getByText("Model-backed discussion").first().waitFor();
+  await page.getByText("How this discussion will continue").click();
+  await assertRoomComposerShellCompact(page, "discussion room before continuation after setup details");
   await assertBriefDetailsCollapsed(page, "discussion room before continuation");
   await page.getByRole("button", { name: "Continue discussion" }).waitFor();
   await assertComposerActionsCompact(page, "discussion room before continuation", {
@@ -313,14 +316,13 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   });
 
   await page.getByRole("button", { name: "Continue discussion" }).click();
-  await page.getByText("Model-backed discussion continued").waitFor();
-  await assertRoomUpdateMessage(page, "discussion room after continuation");
-  await assertConversationTranscriptReturnedToViewport(page, "discussion room after continuation");
   await assertRoomHeaderStatus(page, {
     label: "discussion room after continuation",
     expectedStatus: "Conclusion ready",
     expectedNextAction: "Review current conclusion"
   });
+  await assertNoSuccessfulRoomUpdateReceipt(page, "discussion room after continuation");
+  await assertConversationTranscriptReturnedToViewport(page, "discussion room after continuation");
   await assertDiscussionRoomOverview(page, {
     label: "discussion room after continuation",
     expectedNextAction: "Review current conclusion"
@@ -384,6 +386,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await assertComposerActionsCompact(page, "discussion room after continuation", {
     maxActionListHeight: 240,
     maxButtonHeight: 64
+  });
+  await assertRoomComposerShellCompact(page, "discussion room after continuation", {
+    maxComposerHeight: 260,
+    maxActionListHeight: 150
   });
   await assertDefaultViewSafety(page, "discussion room after continuation", { providerBaseUrl });
 
@@ -457,6 +463,14 @@ async function assertRoomUpdateMessage(page, label) {
     throw new Error(`${label} did not render the latest update as a room message.`, {
       cause: error
     });
+  }
+}
+
+async function assertNoSuccessfulRoomUpdateReceipt(page, label) {
+  const roomUpdateCount = await page.locator("#latest-discussion-update.du-room-update-message").count();
+
+  if (roomUpdateCount !== 0) {
+    throw new Error(`${label} should return to the room thread without a duplicate success receipt.`);
   }
 }
 
@@ -635,6 +649,47 @@ async function assertComposerActionsCompact(
   ) {
     throw new Error(
       `${label} should keep room actions compact, got ${JSON.stringify(metrics)}.`
+    );
+  }
+}
+
+async function assertRoomComposerShellCompact(
+  page,
+  label,
+  { maxComposerHeight = 230, maxCopyHeight = 88, maxActionListHeight = 96 } = {}
+) {
+  await page.locator(".du-room-composer").waitFor();
+  await page.locator(".du-room-composer-copy").waitFor();
+
+  const metrics = await page.locator(".du-room-composer").evaluate((element) => {
+    const copy = element.querySelector(".du-room-composer-copy");
+    const actionList = element.querySelector(".du-discussion-action-list");
+    const details = element.querySelector(".du-continuation-details");
+    const avatar = element.querySelector(".du-room-composer-avatar");
+    const rect = element.getBoundingClientRect();
+
+    return {
+      composerHeight: rect.height,
+      copyHeight: copy?.getBoundingClientRect().height ?? 0,
+      actionListHeight: actionList?.getBoundingClientRect().height ?? 0,
+      detailsOpen: Boolean(details?.open),
+      hasAvatar: Boolean(avatar),
+      actionCount: actionList?.querySelectorAll(".du-discussion-action-button").length ?? 0
+    };
+  });
+
+  if (
+    metrics.composerHeight > maxComposerHeight ||
+    metrics.copyHeight > maxCopyHeight ||
+    metrics.actionListHeight > maxActionListHeight ||
+    metrics.detailsOpen ||
+    !metrics.hasAvatar ||
+    metrics.actionCount === 0
+  ) {
+    throw new Error(
+      `${label} should keep room actions shaped like a compact chat composer, got ${JSON.stringify(
+        metrics
+      )}.`
     );
   }
 }

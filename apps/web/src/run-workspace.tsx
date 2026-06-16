@@ -2989,6 +2989,7 @@ function StartRunForm({
   const latestUpdateRef = useRef<HTMLElement | null>(null);
   const [startRequestText, setStartRequestText] = useState(recommendedStartRequestText);
   const [startFeedback, setStartFeedback] = useState<DiscussionStartFeedback | null>(null);
+  const [showAdvancedStartResult, setShowAdvancedStartResult] = useState(false);
   const [inputError, setInputError] = useState<string | null>(null);
   const startMutation = useMutation({
     mutationFn: (startRequest: Record<string, unknown>) => client.startRun(runId, startRequest),
@@ -3044,6 +3045,7 @@ function StartRunForm({
     }
 
     setStartFeedback(null);
+    setShowAdvancedStartResult(true);
     setInputError(null);
     startMutation.mutate(parsed.value);
   }
@@ -3059,6 +3061,7 @@ function StartRunForm({
 
   function startRecommendedPipeline(feedback: DiscussionStartFeedback) {
     setStartFeedback(feedback);
+    setShowAdvancedStartResult(false);
     setInputError(null);
     setStartRequestText(recommendedStartRequestText);
     startMutation.mutate(cloneJsonObject(continuationSetup.startRequest));
@@ -3089,6 +3092,11 @@ function StartRunForm({
     : continuationView.reviewReady
       ? "Update from the current room state."
       : "Continue the room from here.";
+  const shouldShowLatestDiscussionUpdate =
+    Boolean(startMutation.data) &&
+    (!isRoomComposer ||
+      getRecordValue(startMutation.data, "stopped") === true ||
+      showAdvancedStartResult);
   const formContent = (
     <>
       <div
@@ -3103,7 +3111,7 @@ function StartRunForm({
               <span className="du-room-composer-avatar" aria-hidden="true">
                 DR
               </span>
-              <div>
+              <div className="du-room-composer-copy">
                 <p className="du-kicker">{t("Room actions")}</p>
                 <h4>{t(roomComposerTitle)}</h4>
                 <p>{t(roomComposerDetail)}</p>
@@ -3303,13 +3311,13 @@ function StartRunForm({
           <GuidedDiscussionActionPath reviewReady={continuationView.reviewReady} />
         </div>
       </details>
-      <div className="du-action-row">
-        {continuationView.reviewReady ? (
+      {continuationView.reviewReady && !isRoomComposer ? (
+        <div className="du-action-row">
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
             {t("View current conclusion")}
           </Link>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <AdvancedDetails
         summary="Advanced / Developer Mode"
         panelLabel="Advanced start request"
@@ -3349,7 +3357,7 @@ function StartRunForm({
           <RunStartRecoveryActions error={startMutation.error} />
         </>
       ) : null}
-      {startMutation.data ? (
+      {shouldShowLatestDiscussionUpdate ? (
         <section
           id="latest-discussion-update"
           className={`du-latest-discussion-update${
