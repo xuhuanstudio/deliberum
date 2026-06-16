@@ -186,7 +186,12 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   if (releaseConfig.perspectiveCount === 3) {
     await page.getByText("Perspective C").first().waitFor();
   }
-  await page.getByRole("region", { name: "Discussion outputs" }).waitFor();
+  const roomOutputSummary = page.locator("details.du-room-outputs-section");
+  if (await roomOutputSummary.evaluate((element) => element.open)) {
+    throw new Error("Discussion room output summary should be collapsed by default.");
+  }
+  await page.getByText("Room output summary", { exact: true }).click();
+  await page.getByText("What the room has produced").waitFor();
   await page.getByText("Strongest current options").first().waitFor();
   await page.getByText("Open disagreements").first().waitFor();
   await page.getByText("Missing evidence").first().waitFor();

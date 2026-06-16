@@ -2169,6 +2169,65 @@ textarea:focus-visible {
   background: var(--du-line);
 }
 
+.du-room-output-summary {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-surface);
+}
+
+.du-room-output-summary > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  cursor: pointer;
+  color: var(--du-text);
+  font-weight: 800;
+  list-style: none;
+  padding: 14px 16px;
+}
+
+.du-room-output-summary > summary::-webkit-details-marker {
+  display: none;
+}
+
+.du-room-output-summary > summary::after {
+  content: "+";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: end;
+  color: var(--du-muted);
+  font-size: 1.1rem;
+}
+
+.du-room-output-summary[open] > summary::after {
+  content: "-";
+}
+
+.du-room-output-summary > summary small {
+  color: var(--du-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.du-room-output-summary > summary:hover {
+  background: #edf5f2;
+}
+
+.du-room-output-summary-body {
+  display: grid;
+  gap: 14px;
+  padding: 0 16px 16px;
+}
+
+.du-room-output-summary-body .du-section-label {
+  border-top: 0;
+  padding-top: 0;
+}
+
 .du-room-output-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

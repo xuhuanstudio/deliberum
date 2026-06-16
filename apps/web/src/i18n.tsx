@@ -1038,9 +1038,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Follow the room like a structured conversation: brief, independent first responses, main perspectives, disagreements, evidence checks, and conclusion review.":
     "\u50cf\u9605\u8bfb\u7ed3\u6784\u5316\u5bf9\u8bdd\u4e00\u6837\u8ddf\u8fdb\u8ba8\u8bba\u5ba4\uff1a\u7b80\u62a5\u3001\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3001\u4e3b\u8981\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8bc1\u636e\u6838\u67e5\u548c\u7ed3\u8bba\u5ba1\u9605\u3002",
   "Discussion outputs": "\u8ba8\u8bba\u4ea7\u51fa",
+  "Room output summary": "\u8ba8\u8bba\u5ba4\u4ea7\u51fa\u6458\u8981",
+  "Quick links to options, disagreements, evidence, and conclusion":
+    "\u5feb\u901f\u8df3\u8f6c\u5230\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u548c\u7ed3\u8bba",
   "What the room has produced": "\u8ba8\u8bba\u5ba4\u5df2\u7ecf\u4ea7\u51fa\u4e86\u4ec0\u4e48",
-  "Use this as the bridge from the discussion timeline to the current decision material.":
-    "\u7528\u5b83\u628a\u8ba8\u8bba\u65f6\u95f4\u7ebf\u8fde\u63a5\u5230\u5f53\u524d\u51b3\u7b56\u6750\u6599\u3002",
+  "Open these shortcuts after reading the room conversation.":
+    "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u5bf9\u8bdd\u540e\uff0c\u518d\u6253\u5f00\u8fd9\u4e9b\u5feb\u6377\u8df3\u8f6c\u3002",
   "option ready to compare": "\u53ef\u6bd4\u8f83\u9009\u9879",
   "options ready to compare": "\u53ef\u6bd4\u8f83\u9009\u9879",
   "open disagreement to review": "\u5f85\u5ba1\u9605\u5206\u6b67",

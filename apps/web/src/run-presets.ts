@@ -70,6 +70,9 @@ export const LOCAL_PRESET_START_REQUEST = {
   }
 };
 
+const LOCAL_PRESET_ACCEPTANCE_RATIONALE_ZH_CN =
+  "\u63a5\u53d7\u672c\u6b21\u6f14\u793a\u4e2d\u6ca1\u6709\u516c\u5f00\u6311\u6218\u7684\u793a\u4f8b\u8ba8\u8bba\u6750\u6599\u3002";
+
 export type GuidedDiscussionRunPlanInput = {
   question: string;
   goalsText: string;
@@ -92,6 +95,25 @@ export type ProviderBackedDiscussionPlanOptions = {
   reviewModelId?: string;
   perspectiveModels?: ProviderBackedPerspectiveModelOverrides;
 };
+
+export function buildLocalPresetStartRequest(topic?: string): Record<string, unknown> {
+  if (!topic || !isSimplifiedChineseText(topic)) {
+    return LOCAL_PRESET_START_REQUEST;
+  }
+
+  const startRequest = cloneJsonObject(LOCAL_PRESET_START_REQUEST);
+  const review = startRequest.review;
+
+  if (isRecord(review)) {
+    const acceptancePolicy = review.acceptancePolicy;
+
+    if (isRecord(acceptancePolicy)) {
+      acceptancePolicy.rationale = LOCAL_PRESET_ACCEPTANCE_RATIONALE_ZH_CN;
+    }
+  }
+
+  return startRequest;
+}
 
 const PROVIDER_BACKED_DISCUSSION_TIMEOUTS = {
   participantMs: 90000,
@@ -323,4 +345,12 @@ function formatDiscussionTitle(topic: string): string {
 
 function cloneJsonObject(value: unknown): Record<string, unknown> {
   return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+}
+
+function isSimplifiedChineseText(value: string): boolean {
+  return /[\u3400-\u9fff]/u.test(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

@@ -49,7 +49,7 @@ import {
 import {
   LOCAL_PRESET_DISCUSSION_BRIEF,
   LOCAL_PRESET_RUN_PLAN,
-  LOCAL_PRESET_START_REQUEST,
+  buildLocalPresetStartRequest,
   buildGuidedDiscussionRunPlan,
   buildProviderBackedDiscussionRunPlan,
   formatPresetJson,
@@ -2972,10 +2972,9 @@ function StartRunForm({
     runtimeProfilesQuery.isError ? "error" : runtimeProfilesQuery.isLoading ? "loading" : "ready",
     runtimeProfilesQuery.data
   );
+  const recommendedStartRequestText = formatPresetJson(continuationSetup.startRequest);
   const latestUpdateRef = useRef<HTMLElement | null>(null);
-  const [startRequestText, setStartRequestText] = useState(
-    formatPresetJson(continuationSetup.startRequest)
-  );
+  const [startRequestText, setStartRequestText] = useState(recommendedStartRequestText);
   const [startFeedback, setStartFeedback] = useState<DiscussionStartFeedback | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
   const startMutation = useMutation({
@@ -3018,18 +3017,18 @@ function StartRunForm({
   }
 
   useEffect(() => {
-    setStartRequestText(formatPresetJson(continuationSetup.startRequest));
-  }, [continuationSetup.startRequest]);
+    setStartRequestText(recommendedStartRequestText);
+  }, [recommendedStartRequestText]);
 
   function fillRecommendedStartRequest() {
     setInputError(null);
-    setStartRequestText(formatPresetJson(continuationSetup.startRequest));
+    setStartRequestText(recommendedStartRequestText);
   }
 
   function startRecommendedPipeline(feedback: DiscussionStartFeedback) {
     setStartFeedback(feedback);
     setInputError(null);
-    setStartRequestText(formatPresetJson(continuationSetup.startRequest));
+    setStartRequestText(recommendedStartRequestText);
     startMutation.mutate(cloneJsonObject(continuationSetup.startRequest));
   }
 
@@ -3319,6 +3318,11 @@ function describeDiscussionContinuationSetup(
   setupStatus: DiscussionContinuationSetupStatus,
   runtimeProfiles: RuntimeProfilesResponse | undefined
 ): DiscussionContinuationSetupView {
+  const topic =
+    getStringRecordValue(run, "topic") ??
+    getStringRecordValue(getRecordValue(run, "plan"), "topic");
+  const topicAwareLocalPresetStartRequest = buildLocalPresetStartRequest(topic);
+
   if (setupStatus === "loading") {
     return {
       title: "Checking continuation setup",
@@ -3327,7 +3331,7 @@ function describeDiscussionContinuationSetup(
       note:
         "The recommended request updates after the daemon returns safe setup status.",
       tone: "neutral",
-      startRequest: LOCAL_PRESET_START_REQUEST,
+      startRequest: topicAwareLocalPresetStartRequest,
       fillLabel: "Fill recommended continuation request"
     };
   }
@@ -3340,7 +3344,7 @@ function describeDiscussionContinuationSetup(
       note:
         "Open Setup / Models after the daemon is reachable to verify real provider readiness.",
       tone: "warning",
-      startRequest: LOCAL_PRESET_START_REQUEST,
+      startRequest: topicAwareLocalPresetStartRequest,
       fillLabel: "Fill recommended continuation request"
     };
   }
@@ -3396,7 +3400,7 @@ function describeDiscussionContinuationSetup(
       note:
         "Configure a model provider in Setup / Models before relying on real model-backed results.",
       tone: "warning",
-      startRequest: LOCAL_PRESET_START_REQUEST,
+      startRequest: topicAwareLocalPresetStartRequest,
       fillLabel: "Fill recommended continuation request"
     };
   }
@@ -5224,88 +5228,90 @@ function DiscussionRoomOutputs({
   const { t } = useI18n();
 
   return (
-    <section
+    <details
       id="discussion-outputs"
-      className="du-room-section du-room-outputs-section"
-      aria-label={t("Discussion outputs")}
+      className="du-room-section du-room-outputs-section du-room-output-summary"
+      aria-label={t("Room output summary")}
     >
-      <div className="du-section-label">
-        <p className="du-kicker">{t("Discussion outputs")}</p>
-        <h4>{t("What the room has produced")}</h4>
-        <p>
-          {t(
-            "Use this as the bridge from the discussion timeline to the current decision material."
+      <summary>
+        <span>{t("Room output summary")}</span>
+        <small>{t("Quick links to options, disagreements, evidence, and conclusion")}</small>
+      </summary>
+      <div className="du-room-output-summary-body">
+        <div className="du-section-label">
+          <p className="du-kicker">{t("Discussion outputs")}</p>
+          <h4>{t("What the room has produced")}</h4>
+          <p>{t("Open these shortcuts after reading the room conversation.")}</p>
+        </div>
+        <div className="du-room-output-grid">
+          <DiscussionRoomOutputLink
+            href="#main-perspectives"
+            metric={String(mainPerspectiveCount)}
+            title={t("Strongest current options")}
+            detail={describeOutputCount(
+              t,
+              mainPerspectiveCount,
+              "option ready to compare",
+              "options ready to compare"
+            )}
+          />
+          <DiscussionRoomOutputLink
+            href="#open-disagreements"
+            metric={String(openDisagreementCount)}
+            title={t("Open disagreements")}
+            detail={describeOutputCount(
+              t,
+              openDisagreementCount,
+              "open disagreement to review",
+              "open disagreements to review"
+            )}
+          />
+          <DiscussionRoomOutputLink
+            href="#answer-requirements"
+            metric={String(openRequirementCount)}
+            title={t("Requirements to satisfy")}
+            detail={describeOutputCount(
+              t,
+              openRequirementCount,
+              "answer requirement to confirm",
+              "answer requirements to confirm"
+            )}
+          />
+          <DiscussionRoomOutputLink
+            href="#evidence-gaps"
+            metric={String(unresolvedEvidenceCount)}
+            title={t("Missing evidence")}
+            detail={describeOutputCount(
+              t,
+              unresolvedEvidenceCount,
+              "evidence gap to check",
+              "evidence gaps to check"
+            )}
+          />
+          {reviewReady ? (
+            <Link
+              className="du-room-output-item du-room-output-primary"
+              to="/runs/$runId/outcome"
+              params={{ runId }}
+            >
+              <span>{t("Ready")}</span>
+              <strong>{t("Current conclusion")}</strong>
+              <p>{t("A reviewable conclusion is ready with risks and next actions.")}</p>
+            </Link>
+          ) : (
+            <div
+              className="du-room-output-item du-room-output-primary"
+              role="status"
+              aria-label={t("Current conclusion not ready")}
+            >
+              <span>{t("Not ready")}</span>
+              <strong>{t("Current conclusion")}</strong>
+              <p>{t("Continue the discussion before relying on a conclusion.")}</p>
+            </div>
           )}
-        </p>
+        </div>
       </div>
-      <div className="du-room-output-grid">
-        <DiscussionRoomOutputLink
-          href="#main-perspectives"
-          metric={String(mainPerspectiveCount)}
-          title={t("Strongest current options")}
-          detail={describeOutputCount(
-            t,
-            mainPerspectiveCount,
-            "option ready to compare",
-            "options ready to compare"
-          )}
-        />
-        <DiscussionRoomOutputLink
-          href="#open-disagreements"
-          metric={String(openDisagreementCount)}
-          title={t("Open disagreements")}
-          detail={describeOutputCount(
-            t,
-            openDisagreementCount,
-            "open disagreement to review",
-            "open disagreements to review"
-          )}
-        />
-        <DiscussionRoomOutputLink
-          href="#answer-requirements"
-          metric={String(openRequirementCount)}
-          title={t("Requirements to satisfy")}
-          detail={describeOutputCount(
-            t,
-            openRequirementCount,
-            "answer requirement to confirm",
-            "answer requirements to confirm"
-          )}
-        />
-        <DiscussionRoomOutputLink
-          href="#evidence-gaps"
-          metric={String(unresolvedEvidenceCount)}
-          title={t("Missing evidence")}
-          detail={describeOutputCount(
-            t,
-            unresolvedEvidenceCount,
-            "evidence gap to check",
-            "evidence gaps to check"
-          )}
-        />
-        {reviewReady ? (
-          <Link
-            className="du-room-output-item du-room-output-primary"
-            to="/runs/$runId/outcome"
-            params={{ runId }}
-          >
-            <span>{t("Ready")}</span>
-            <strong>{t("Current conclusion")}</strong>
-            <p>{t("A reviewable conclusion is ready with risks and next actions.")}</p>
-          </Link>
-        ) : (
-          <div
-            className="du-room-output-item du-room-output-primary"
-            role="status"
-            aria-label={t("Current conclusion not ready")}
-          >
-            <span>{t("Not ready")}</span>
-            <strong>{t("Current conclusion")}</strong>
-            <p>{t("Continue the discussion before relying on a conclusion.")}</p>
-          </div>
-        )}
-      </div>
-    </section>
+    </details>
   );
 }
 

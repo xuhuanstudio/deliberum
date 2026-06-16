@@ -9333,6 +9333,59 @@ describe("daemon API", () => {
     expectSafeRunApiPayload(outcomeBody);
   });
 
+  it("keeps local preset room material in the discussion question language", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true
+    });
+    const topic = "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u8fd9\u4e2a\u65b0\u529f\u80fd\u53d1\u5e03\uff1f";
+    const created = await createRun(daemonApp, {
+      ...localPresetRunPlan(),
+      topic,
+      goals: ["\u6bd4\u8f83\u6700\u7a33\u59a5\u7684\u53d1\u5e03\u5ba1\u67e5\u8def\u5f84\u3002"],
+      constraints: ["\u4fdd\u6301\u7ed3\u8bba\u4e3a\u4e34\u65f6\u7ed3\u8bba\u3002"],
+      output: {
+        language: "same as discussion question",
+        style: "clear",
+        expectations: ["\u5217\u51fa\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002"]
+      }
+    });
+    const startResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      localPresetStartRequest(topic)
+    );
+    const startBody = await startResponse.json();
+    const eventsBody = await (
+      await daemonApp.app.request(`/runs/${created.run.runId}/events`)
+    ).json();
+    const frontier = await (
+      await daemonApp.app.request(`/sessions/${created.run.sessionId}/frontier`)
+    ).json();
+    const outcomeBody = await (
+      await daemonApp.app.request(`/runs/${created.run.runId}/outcome`)
+    ).json();
+    const publicPayload = JSON.stringify({
+      startBody,
+      eventsBody,
+      frontier,
+      outcomeBody
+    });
+
+    expect(startResponse.status).toBe(200);
+    expect(publicPayload).toContain("\u5728\u4f9d\u8d56\u5efa\u8bae\u524d\uff0c\u5206\u9636\u6bb5\u5ba1\u67e5\u8fd9\u6b21\u53d1\u5e03\u3002");
+    expect(publicPayload).toContain("\u63a5\u53d7\u672c\u6b21\u6f14\u793a\u4e2d\u6ca1\u6709\u516c\u5f00\u6311\u6218\u7684\u793a\u4f8b\u8ba8\u8bba\u6750\u6599\u3002");
+    expect(publicPayload).toContain("\u5206\u9636\u6bb5\u53d1\u5e03\u5ba1\u67e5");
+    expect(publicPayload).toContain("\u5728\u4f9d\u8d56\u8fd9\u6b21\u53d1\u5e03\u524d\uff0c\u91c7\u7528\u5206\u9636\u6bb5\u5ba1\u67e5\u8def\u5f84\u3002");
+    expect(publicPayload).toContain("\u56e2\u961f\u53ef\u80fd\u4f1a\u628a\u793a\u4f8b\u6f14\u793a\u8bef\u8ba4\u4e3a\u5173\u4e8e\u771f\u5b9e\u53d1\u5e03\u7684\u51b3\u7b56\u3002");
+    expect(publicPayload).not.toContain("Review the rollout in stages before relying on the recommendation.");
+    expect(publicPayload).not.toContain("Accept sample discussion material that has no open challenge in this walkthrough.");
+    expect(publicPayload).not.toContain("Use a staged review path before relying on the rollout.");
+    expect(publicPayload).not.toContain("A team could mistake the sample walkthrough for a decision about its real rollout.");
+    expectSafeRunApiPayload(publicPayload);
+  });
+
   it("keeps the OpenAI-compatible provider profile disabled by default", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
     const created = await createRun(daemonApp, openAICompatibleRunPlan());

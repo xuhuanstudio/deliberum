@@ -2235,10 +2235,16 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText("Provider-backed conclusions remain provisional until risks are reviewed.")
     ).toBeTruthy();
-    const discussionOutputs = screen.getByRole("region", { name: "Discussion outputs" });
-    expect(discussionOutputs.textContent ?? "").toContain("1 option ready to compare");
-    expect(discussionOutputs.textContent ?? "").toContain("1 open disagreement to review");
-    expect(discussionOutputs.textContent ?? "").toContain("1 evidence gap to check");
+    const discussionOutputs = document.querySelector(
+      ".du-room-outputs-section"
+    ) as HTMLDetailsElement | null;
+    expect(discussionOutputs).toBeTruthy();
+    expect(discussionOutputs?.open).toBe(false);
+    fireEvent.click(screen.getByText("Room output summary"));
+    expect(discussionOutputs?.open).toBe(true);
+    expect(discussionOutputs?.textContent ?? "").toContain("1 option ready to compare");
+    expect(discussionOutputs?.textContent ?? "").toContain("1 open disagreement to review");
+    expect(discussionOutputs?.textContent ?? "").toContain("1 evidence gap to check");
     expect(screen.getByText("Current conclusion: Ready to review")).toBeTruthy();
     expect(screen.getByText("Next recommended actions")).toBeTruthy();
     expect(screen.getByText("Open conclusion")).toBeTruthy();
@@ -4549,17 +4555,26 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5f53\u524d\u7ed3\u8bba\u53ef\u5ba1\u9605")).toBeTruthy();
     expect(screen.getByText("\u4e0b\u4e00\u4e2a\u68c0\u67e5\u70b9")).toBeTruthy();
     expect(screen.getByText("\u4f9d\u8d56\u524d\u9700\u5ba1\u9605")).toBeTruthy();
-    const localizedDiscussionOutputs = screen.getByRole("region", {
-      name: "\u8ba8\u8bba\u4ea7\u51fa"
-    });
+    const localizedDiscussionOutputs = document.querySelector(
+      ".du-room-outputs-section"
+    ) as HTMLDetailsElement | null;
     expect(localizedDiscussionOutputs).toBeTruthy();
-    expect(localizedDiscussionOutputs.textContent ?? "").toContain(
+    expect(localizedDiscussionOutputs?.open).toBe(false);
+    expect(screen.getByText("\u8ba8\u8bba\u5ba4\u4ea7\u51fa\u6458\u8981")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u5feb\u901f\u8df3\u8f6c\u5230\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u548c\u7ed3\u8bba"
+      )
+    ).toBeTruthy();
+    fireEvent.click(screen.getByText("\u8ba8\u8bba\u5ba4\u4ea7\u51fa\u6458\u8981"));
+    expect(localizedDiscussionOutputs?.open).toBe(true);
+    expect(localizedDiscussionOutputs?.textContent ?? "").toContain(
       "\u8ba8\u8bba\u5ba4\u5df2\u7ecf\u4ea7\u51fa\u4e86\u4ec0\u4e48"
     );
-    expect(localizedDiscussionOutputs.textContent ?? "").toContain(
-      "\u7528\u5b83\u628a\u8ba8\u8bba\u65f6\u95f4\u7ebf\u8fde\u63a5\u5230\u5f53\u524d\u51b3\u7b56\u6750\u6599\u3002"
+    expect(localizedDiscussionOutputs?.textContent ?? "").toContain(
+      "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u5bf9\u8bdd\u540e\uff0c\u518d\u6253\u5f00\u8fd9\u4e9b\u5feb\u6377\u8df3\u8f6c\u3002"
     );
-    expect(localizedDiscussionOutputs.textContent ?? "").toContain("1 \u4e2a\u53ef\u6bd4\u8f83\u9009\u9879");
+    expect(localizedDiscussionOutputs?.textContent ?? "").toContain("1 \u4e2a\u53ef\u6bd4\u8f83\u9009\u9879");
     const localizedActionPath = screen.getByRole("region", {
       name: "\u63a8\u8350\u64cd\u4f5c\u8def\u5f84"
     });
@@ -5445,17 +5460,26 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByText("Core discussion stages")).toBeTruthy();
-    const discussionOutputs = screen.getByRole("region", { name: "Discussion outputs" });
+    const discussionOutputs = document.querySelector(
+      ".du-room-outputs-section"
+    ) as HTMLDetailsElement | null;
     expect(discussionOutputs).toBeTruthy();
-    expect(discussionOutputs.textContent ?? "").toContain("What the room has produced");
-    expect(discussionOutputs.textContent ?? "").toContain(
-      "Use this as the bridge from the discussion timeline to the current decision material."
+    expect(discussionOutputs?.open).toBe(false);
+    expect(screen.getByText("Room output summary")).toBeTruthy();
+    expect(
+      screen.getByText("Quick links to options, disagreements, evidence, and conclusion")
+    ).toBeTruthy();
+    fireEvent.click(screen.getByText("Room output summary"));
+    expect(discussionOutputs?.open).toBe(true);
+    expect(discussionOutputs?.textContent ?? "").toContain("What the room has produced");
+    expect(discussionOutputs?.textContent ?? "").toContain(
+      "Open these shortcuts after reading the room conversation."
     );
-    expect(discussionOutputs.textContent ?? "").toContain("1 option ready to compare");
-    expect(discussionOutputs.textContent ?? "").toContain("1 open disagreement to review");
-    expect(discussionOutputs.textContent ?? "").toContain("1 answer requirement to confirm");
-    expect(discussionOutputs.textContent ?? "").toContain("1 evidence gap to check");
-    expect(discussionOutputs.textContent ?? "").toContain(
+    expect(discussionOutputs?.textContent ?? "").toContain("1 option ready to compare");
+    expect(discussionOutputs?.textContent ?? "").toContain("1 open disagreement to review");
+    expect(discussionOutputs?.textContent ?? "").toContain("1 answer requirement to confirm");
+    expect(discussionOutputs?.textContent ?? "").toContain("1 evidence gap to check");
+    expect(discussionOutputs?.textContent ?? "").toContain(
       "A reviewable conclusion is ready with risks and next actions."
     );
     expect(screen.getByText("What the strongest options say now")).toBeTruthy();
@@ -6376,6 +6400,75 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("No work has been recorded for that part of the discussion.")).toBeTruthy();
   });
 
+  it("uses the discussion question language for local preset continuation requests", async () => {
+    const topic = "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u8fd9\u4e2a\u65b0\u529f\u80fd\u53d1\u5e03\uff1f";
+    const chineseLocalPresetRun = {
+      ...localPresetNotStartedRunDetail,
+      title: `Discussion: ${topic}`,
+      topic,
+      plan: {
+        ...localPresetNotStartedRunDetail.plan,
+        topic
+      }
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: chineseLocalPresetRun
+        })),
+        getRunEvents: vi.fn(async () => ({
+          runId: chineseLocalPresetRun.runId,
+          sessionId: chineseLocalPresetRun.sessionId,
+          events: [
+            {
+              id: "topic-event",
+              type: "topic_contract_published",
+              sequence: 0,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:00.000Z",
+              payload: {
+                topic
+              },
+              basedOnEventIds: [],
+              trace: {}
+            }
+          ]
+        })),
+        startRun: vi.fn(async () => ({
+          run: {
+            ...chineseLocalPresetRun,
+            status: "running"
+          },
+          stages: [
+            {
+              stage: "sealed_divergence",
+              executionStatus: "executed",
+              status: "completed"
+            }
+          ],
+          stopped: false
+        }))
+      })
+    );
+
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    const startRequest = vi.mocked(client.startRun).mock.calls[0]?.[1];
+    const startRequestText = JSON.stringify(startRequest);
+
+    expect(startRequestText).toContain(
+      "\u63a5\u53d7\u672c\u6b21\u6f14\u793a\u4e2d\u6ca1\u6709\u516c\u5f00\u6311\u6218\u7684\u793a\u4f8b\u8ba8\u8bba\u6750\u6599\u3002"
+    );
+    expect(startRequestText).not.toContain(
+      "Accept sample discussion material that has no open challenge in this walkthrough."
+    );
+    expect(document.body.textContent ?? "").not.toContain("providerConfigId");
+  });
+
   it("maps processing stage statuses to user-facing language before conclusion review", async () => {
     const processingRun = {
       ...runDetail,
@@ -6820,12 +6913,16 @@ describe("@deliberum/web shell", () => {
       "Jump only; this does not change the discussion."
     );
     fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
-    fireEvent.change(await screen.findByLabelText("Advanced start request JSON"), {
+    const advancedStartRequestInput = (await screen.findByLabelText(
+      "Advanced start request JSON"
+    )) as HTMLTextAreaElement;
+    fireEvent.input(advancedStartRequestInput, {
       target: {
         value: JSON.stringify(startRequest)
       }
     });
-    fireEvent.click(screen.getByRole("button", { name: "Start run" }));
+    expect(advancedStartRequestInput.value).toBe(JSON.stringify(startRequest));
+    fireEvent.submit(advancedStartRequestInput.closest("form") as HTMLFormElement);
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledWith("run-1", startRequest));
     expect(await screen.findByText("Discussion steps completed")).toBeTruthy();

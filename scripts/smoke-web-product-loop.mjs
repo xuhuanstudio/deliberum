@@ -315,7 +315,12 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .getByText("Confirm browser evidence before treating the conclusion as stable.")
     .first()
     .waitFor();
-  await page.getByRole("region", { name: "Discussion outputs" }).waitFor();
+  const roomOutputSummary = page.locator("details.du-room-outputs-section");
+  if (await roomOutputSummary.evaluate((element) => element.open)) {
+    throw new Error("Discussion room output summary should be collapsed by default.");
+  }
+  await page.getByText("Room output summary", { exact: true }).click();
+  await page.getByText("What the room has produced").waitFor();
   await page.getByText("Current conclusion: Ready to review").waitFor();
   await page.getByRole("heading", { name: "Next recommended actions", exact: true }).waitFor();
   await page.getByText("Risks").first().waitFor();
