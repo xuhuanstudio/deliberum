@@ -3004,7 +3004,9 @@ function StartRunForm({
 
     const scrollTarget =
       variant === "room-composer" && typeof document !== "undefined"
-        ? document.getElementById("discussion-timeline") ?? latestUpdateRef.current
+        ? document.getElementById("room-next-action") ??
+          document.getElementById("discussion-timeline") ??
+          latestUpdateRef.current
         : latestUpdateRef.current;
 
     const scrollToTarget = () => {
@@ -4274,7 +4276,9 @@ function RunQualityOverview({
             />
             <DiscussionRoomActionStrip runId={runId} reviewReady={continuationView.reviewReady} />
             <DiscussionRoomTimeline
+              runId={runId}
               run={run}
+              reviewReady={continuationView.reviewReady}
               activities={roomActivities}
               activityQuery={{
                 isLoading: eventsQuery.isLoading,
@@ -4613,7 +4617,9 @@ function formatTranslatedList(t: TranslateFunction, values: string[]): string {
 }
 
 function DiscussionRoomTimeline({
+  runId,
   run,
+  reviewReady,
   activities,
   activityQuery,
   mainPerspectiveCount,
@@ -4621,7 +4627,9 @@ function DiscussionRoomTimeline({
   unresolvedEvidenceCount,
   openRequirementCount
 }: {
+  runId: string;
   run: unknown;
+  reviewReady: boolean;
   activities: RoomActivityItem[];
   activityQuery: {
     isLoading: boolean;
@@ -4790,6 +4798,13 @@ function DiscussionRoomTimeline({
             })}
           </div>
         )}
+        <DiscussionRoomNextTurnPrompt
+          runId={runId}
+          reviewReady={reviewReady}
+          openDisagreementCount={openDisagreementCount}
+          unresolvedEvidenceCount={unresolvedEvidenceCount}
+          openRequirementCount={openRequirementCount}
+        />
       </div>
       <details className="du-room-progress-details">
         <summary>
@@ -4911,6 +4926,82 @@ function DiscussionRoomTimeline({
           </ol>
         </div>
       </details>
+    </section>
+  );
+}
+
+function DiscussionRoomNextTurnPrompt({
+  runId,
+  reviewReady,
+  openDisagreementCount,
+  unresolvedEvidenceCount,
+  openRequirementCount
+}: {
+  runId: string;
+  reviewReady: boolean;
+  openDisagreementCount: number;
+  unresolvedEvidenceCount: number;
+  openRequirementCount: number;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <section
+      id="room-next-action"
+      className="du-room-next-turn"
+      aria-label={t("Next in the room")}
+    >
+      <span className="du-room-activity-avatar" aria-hidden="true">
+        DR
+      </span>
+      <div className="du-room-next-turn-bubble">
+        <div className="du-room-message-header">
+          <strong>{t("Discussion room")}</strong>
+          <span>{t("Next in the room")}</span>
+        </div>
+        <div className="du-room-next-turn-copy">
+          <h5>{t(reviewReady ? "Review the current conclusion" : "Continue discussion")}</h5>
+          <p>
+            {t(
+              reviewReady
+                ? "The room has enough material for review. Start with the conclusion, then choose whether to inspect disagreements, check evidence, or update the discussion."
+                : "The brief is in the room. Continue to collect participant perspectives, disagreements, evidence checks, risks, and a current conclusion."
+            )}
+          </p>
+        </div>
+        <div className="du-room-next-turn-actions">
+          {reviewReady ? (
+            <>
+              <Link
+                className="du-room-next-turn-primary"
+                to="/runs/$runId/outcome"
+                params={{ runId }}
+              >
+                {t("Review current conclusion")}
+              </Link>
+              <a href="#open-disagreements">{t("Review disagreements")}</a>
+              <a href="#evidence-gaps">{t("Check evidence")}</a>
+              <a href="#continue-discussion">{t("Update conclusion")}</a>
+            </>
+          ) : (
+            <a className="du-room-next-turn-primary" href="#continue-discussion">
+              {t("Continue discussion")}
+            </a>
+          )}
+        </div>
+        {reviewReady ? (
+          <p className="du-room-next-turn-meta">
+            {t(
+              "Review queue: {disagreements} open disagreements, {evidence} missing evidence, {requirements} requirements to satisfy.",
+              {
+                disagreements: openDisagreementCount,
+                evidence: unresolvedEvidenceCount,
+                requirements: openRequirementCount
+              }
+            )}
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }

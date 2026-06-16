@@ -293,7 +293,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Discussion paused", { exact: true }).waitFor();
   await assertRoomUpdateMessage(page, "discussion room after transient participant failure");
-  await assertTimelineReturnedToViewport(page, "discussion room after transient participant failure");
+  await assertNextRoomActionReturnedToViewport(page, "discussion room after transient participant failure");
   await page
     .getByText(
       "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again."
@@ -311,7 +311,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Model-backed discussion continued").waitFor();
   await assertRoomUpdateMessage(page, "discussion room after continuation");
-  await assertTimelineReturnedToViewport(page, "discussion room after continuation");
+  await assertNextRoomActionReturnedToViewport(page, "discussion room after continuation");
   await assertRoomStatusCue(page, {
     label: "discussion room after continuation",
     expectedStatus: "Conclusion ready",
@@ -328,9 +328,13 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Conversation transcript").waitFor();
   await page.getByText("What the room said and did").waitFor();
   await page.getByText("Discussion phase").first().waitFor();
+  await page.getByText("Next in the room", { exact: true }).waitFor();
   await page.getByText("Evidence checker", { exact: true }).waitFor();
   await page
     .getByText("1 evidence gap still needs checking before relying on the conclusion.")
+    .waitFor();
+  await page
+    .getByText("Review queue: 1 open disagreements, 1 missing evidence, 1 requirements to satisfy.")
     .waitFor();
   await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Participant first responses").waitFor();
@@ -468,28 +472,37 @@ async function openDetailedReviewPanels(page, label) {
   }
 }
 
-async function assertTimelineReturnedToViewport(page, label) {
-  const metrics = await page.locator("#discussion-timeline").evaluate((element) => {
+async function assertNextRoomActionReturnedToViewport(page, label) {
+  await page.getByText("Next in the room", { exact: true }).waitFor();
+
+  const metrics = await page.locator("#room-next-action").evaluate((element) => {
     const rect = element.getBoundingClientRect();
+    const timelineRect = document
+      .querySelector("#discussion-timeline")
+      ?.getBoundingClientRect();
     const updateRect = document
       .querySelector("#latest-discussion-update")
       ?.getBoundingClientRect();
 
     return {
-      timelineTop: rect.top,
-      timelineBottom: rect.bottom,
+      nextActionTop: rect.top,
+      nextActionBottom: rect.bottom,
+      timelineTop: timelineRect?.top ?? null,
+      timelineBottom: timelineRect?.bottom ?? null,
       updateTop: updateRect?.top ?? null,
       viewportHeight: window.innerHeight
     };
   });
 
   if (
-    metrics.timelineTop < -24 ||
-    metrics.timelineTop > metrics.viewportHeight * 0.32 ||
+    metrics.nextActionTop < -24 ||
+    metrics.nextActionTop > metrics.viewportHeight * 0.55 ||
+    metrics.nextActionBottom <= 120 ||
+    metrics.timelineBottom === null ||
     metrics.timelineBottom <= 120
   ) {
     throw new Error(
-      `${label} should return the viewport to the discussion timeline, got ${JSON.stringify(
+      `${label} should return the viewport to the next room action, got ${JSON.stringify(
         metrics
       )}.`
     );
@@ -554,6 +567,7 @@ async function assertMobileDiscussionRoomShell(page, label) {
     const status = document.querySelector(".du-room-status-cue");
     const strip = document.querySelector(".du-room-action-strip");
     const timeline = document.querySelector("[aria-label='Discussion timeline']");
+    const nextAction = document.querySelector("#room-next-action");
 
     return {
       viewportWidth: window.innerWidth,
@@ -565,11 +579,14 @@ async function assertMobileDiscussionRoomShell(page, label) {
       status: rectFor(".du-room-status-cue"),
       strip: rectFor(".du-room-action-strip"),
       timeline: rectFor("[aria-label='Discussion timeline']"),
+      nextAction: rectFor("#room-next-action"),
       order: {
         statusBeforeStrip:
           Boolean(status && strip) && elements.indexOf(status) < elements.indexOf(strip),
         stripBeforeTimeline:
-          Boolean(strip && timeline) && elements.indexOf(strip) < elements.indexOf(timeline)
+          Boolean(strip && timeline) && elements.indexOf(strip) < elements.indexOf(timeline),
+        timelineBeforeNextAction:
+          Boolean(timeline && nextAction) && elements.indexOf(timeline) < elements.indexOf(nextAction)
       }
     };
   });
@@ -589,8 +606,10 @@ async function assertMobileDiscussionRoomShell(page, label) {
     !metrics.status ||
     !metrics.strip ||
     !metrics.timeline ||
+    !metrics.nextAction ||
     !metrics.order.statusBeforeStrip ||
     !metrics.order.stripBeforeTimeline ||
+    !metrics.order.timelineBeforeNextAction ||
     metrics.documentWidth > metrics.viewportWidth + 1
   ) {
     throw new Error(`${label} should keep mobile room chrome compact, got ${JSON.stringify(metrics)}.`);

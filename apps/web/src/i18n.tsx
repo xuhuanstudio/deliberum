@@ -1617,6 +1617,13 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion actions": "\u8ba8\u8bba\u52a8\u4f5c",
   "Read room messages": "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u6d88\u606f",
   "Discussion action composer": "\u8ba8\u8bba\u64cd\u4f5c\u7f16\u8f91\u533a",
+  "Next in the room": "\u8ba8\u8bba\u5ba4\u4e2d\u7684\u4e0b\u4e00\u6b65",
+  "The room has enough material for review. Start with the conclusion, then choose whether to inspect disagreements, check evidence, or update the discussion.":
+    "\u8ba8\u8bba\u5ba4\u5df2\u6709\u8db3\u591f\u6750\u6599\u53ef\u4f9b\u5ba1\u9605\u3002\u8bf7\u5148\u4ece\u7ed3\u8bba\u5f00\u59cb\uff0c\u7136\u540e\u9009\u62e9\u662f\u5426\u68c0\u67e5\u5206\u6b67\u3001\u6838\u67e5\u8bc1\u636e\u6216\u66f4\u65b0\u8ba8\u8bba\u3002",
+  "The brief is in the room. Continue to collect participant perspectives, disagreements, evidence checks, risks, and a current conclusion.":
+    "\u8ba8\u8bba\u7b80\u62a5\u5df2\u8fdb\u5165\u8ba8\u8bba\u5ba4\u3002\u7ee7\u7eed\u6536\u96c6\u53c2\u4e0e\u8005\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8bc1\u636e\u6838\u67e5\u3001\u98ce\u9669\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
+  "Review queue: {disagreements} open disagreements, {evidence} missing evidence, {requirements} requirements to satisfy.":
+    "\u5ba1\u9605\u961f\u5217\uff1a{disagreements} \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u3001{evidence} \u4e2a\u7f3a\u5931\u8bc1\u636e\u3001{requirements} \u4e2a\u9700\u6ee1\u8db3\u7684\u8981\u6c42\u3002",
   "Ask for stronger options": "\u8981\u6c42\u66f4\u5f3a\u9009\u9879",
   "Refresh the discussion so the strongest current options can be compared and improved.":
     "\u5237\u65b0\u8ba8\u8bba\uff0c\u4ee5\u6bd4\u8f83\u5e76\u6539\u8fdb\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",

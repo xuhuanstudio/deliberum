@@ -2339,6 +2339,89 @@ textarea:focus-visible {
   line-height: 1.3;
 }
 
+.du-room-next-turn {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  min-width: 0;
+  margin-top: 2px;
+  scroll-margin-top: 18px;
+}
+
+.du-room-next-turn-bubble {
+  display: grid;
+  gap: 10px;
+  max-width: 760px;
+  min-width: 0;
+  border: 1px solid var(--du-line);
+  border-left: 4px solid var(--du-accent);
+  border-radius: 8px;
+  background: #f8fff9;
+  padding: 13px 14px;
+}
+
+.du-room-next-turn-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.du-room-next-turn-copy h5,
+.du-room-next-turn-copy p,
+.du-room-next-turn-meta {
+  margin: 0;
+}
+
+.du-room-next-turn-copy h5 {
+  color: var(--du-ink);
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.du-room-next-turn-copy p,
+.du-room-next-turn-meta {
+  color: var(--du-muted);
+  line-height: 1.45;
+}
+
+.du-room-next-turn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.du-room-next-turn-actions a {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--du-line);
+  border-radius: 999px;
+  background: var(--du-surface);
+  color: var(--du-ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.2;
+  padding: 8px 11px;
+  text-decoration: none;
+}
+
+.du-room-next-turn-actions a:hover {
+  background: #edf5f2;
+}
+
+.du-room-next-turn-actions .du-room-next-turn-primary {
+  border-color: var(--du-accent);
+  background: var(--du-accent);
+  color: #ffffff;
+}
+
+.du-room-next-turn-actions .du-room-next-turn-primary:hover {
+  background: var(--du-accent-strong);
+}
+
 .du-room-contributions {
   display: grid;
   gap: 1px;

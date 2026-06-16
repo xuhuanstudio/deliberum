@@ -5404,6 +5404,7 @@ describe("@deliberum/web shell", () => {
     const timeline = document.querySelector('[aria-label="Discussion timeline"]');
     const transcript = timeline?.querySelector(".du-room-activity-wrap");
     const progressDetails = timeline?.querySelector(".du-room-progress-details");
+    const nextRoomAction = timeline?.querySelector("#room-next-action");
     const roomLayout = document.querySelector(".du-room-layout");
     const roomMain = document.querySelector(".du-room-main");
     const roomStatusCue = document.querySelector(".du-room-status-cue");
@@ -5421,6 +5422,7 @@ describe("@deliberum/web shell", () => {
     expect(timeline).toBeTruthy();
     expect(transcript).toBeTruthy();
     expect(progressDetails).toBeTruthy();
+    expect(nextRoomAction).toBeTruthy();
     expect(roomLayout).toBeTruthy();
     expect(roomMain).toBeTruthy();
     expect(roomStatusCue).toBeTruthy();
@@ -5464,6 +5466,18 @@ describe("@deliberum/web shell", () => {
     expect(
       Boolean(
         roomActionStrip?.compareDocumentPosition(timeline as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      Boolean(
+        transcript?.compareDocumentPosition(nextRoomAction as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      Boolean(
+        nextRoomAction?.compareDocumentPosition(progressDetails as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
@@ -5516,6 +5530,17 @@ describe("@deliberum/web shell", () => {
     expect(roomProgressSummary.textContent ?? "").toContain("Missing evidence");
     expect(roomProgressSummary.textContent ?? "").toContain("Requirements to satisfy");
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Next in the room" })).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The room has enough material for review. Start with the conclusion, then choose whether to inspect disagreements, check evidence, or update the discussion."
+      )
+    ).toBeTruthy();
+    const nextRoomActionText = nextRoomAction?.textContent ?? "";
+    expect(nextRoomActionText).toContain("Review queue:");
+    expect(nextRoomActionText).toContain("open disagreements");
+    expect(nextRoomActionText).toContain("missing evidence");
+    expect(nextRoomActionText).toContain("requirements to satisfy");
     expect(screen.getByRole("list", { name: "Discussion brief updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Evidence and verification updates" })).toBeTruthy();
@@ -5740,7 +5765,8 @@ describe("@deliberum/web shell", () => {
     expect(latestUpdate.getAttribute("id")).toBe("latest-discussion-update");
     expect(latestUpdate.classList.contains("du-room-update-message")).toBe(true);
     expect(latestUpdate.querySelector(".du-room-update-avatar")).toBeTruthy();
-    await waitFor(() => expect(scrollTargets).toContain("discussion-timeline"));
+    await waitFor(() => expect(scrollTargets).toContain("room-next-action"));
+    expect(scrollTargets).not.toContain("discussion-timeline");
     expect(scrollTargets).not.toContain("latest-discussion-update");
     expect(latestUpdate.textContent ?? "").toContain("Room update");
     expect(latestUpdate.textContent ?? "").toContain("The room just updated");
@@ -6154,6 +6180,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u53c2\u4e0e\u8005\u6700\u521d\u8bf4\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7ec4\u7ec7\u8005")).toBeTruthy();
     expect(screen.getByText("\u8bc1\u636e\u6838\u67e5\u8005")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "\u8ba8\u8bba\u5ba4\u4e2d\u7684\u4e0b\u4e00\u6b65" })).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u8ba8\u8bba\u5ba4\u5df2\u6709\u8db3\u591f\u6750\u6599\u53ef\u4f9b\u5ba1\u9605\u3002\u8bf7\u5148\u4ece\u7ed3\u8bba\u5f00\u59cb\uff0c\u7136\u540e\u9009\u62e9\u662f\u5426\u68c0\u67e5\u5206\u6b67\u3001\u6838\u67e5\u8bc1\u636e\u6216\u66f4\u65b0\u8ba8\u8bba\u3002"
+      )
+    ).toBeTruthy();
     expect(screen.queryByText("\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3")).toBeNull();
     expect(
       screen.getByText(
