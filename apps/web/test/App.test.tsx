@@ -5347,7 +5347,27 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
     expect(screen.getAllByText("Discussion phase").length).toBeGreaterThan(0);
     expect(document.querySelectorAll(".du-room-phase-separator").length).toBeGreaterThan(0);
+    expect(
+      document
+        .querySelector(".du-room-phase-copy .du-kicker")
+        ?.classList.contains("du-sr-only")
+    ).toBe(true);
     expect(document.querySelector(".du-room-activity-group-header")).toBeNull();
+    expect(document.querySelector(".du-room-activity-meta")).toBeNull();
+    expect(document.querySelectorAll(".du-room-message-header").length).toBeGreaterThan(0);
+    expect(document.querySelectorAll(".du-room-message-detail").length).toBeGreaterThan(0);
+    expect(document.querySelectorAll(".du-room-message-title").length).toBeGreaterThan(0);
+    const firstRoomMessage = document.querySelector(".du-room-activity-bubble");
+    const firstRoomMessageDetail = firstRoomMessage?.querySelector(".du-room-message-detail");
+    const firstRoomMessageTitle = firstRoomMessage?.querySelector(".du-room-message-title");
+    expect(firstRoomMessageDetail).toBeTruthy();
+    expect(firstRoomMessageTitle).toBeTruthy();
+    expect(
+      Boolean(
+        firstRoomMessageDetail?.compareDocumentPosition(firstRoomMessageTitle as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
     const stageSummaries = Array.from(
       document.querySelectorAll('[aria-label="Stage activity summary"]')
     ).map((summary) => summary.textContent ?? "");

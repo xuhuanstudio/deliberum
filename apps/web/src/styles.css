@@ -1901,7 +1901,7 @@ textarea:focus-visible {
 
 .du-room-phase-copy {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
   max-width: 520px;
   text-align: center;
@@ -1914,13 +1914,13 @@ textarea:focus-visible {
 
 .du-room-phase-copy h5 {
   color: var(--du-ink);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.35;
 }
 
 .du-room-phase-copy p:not(.du-kicker) {
   color: var(--du-muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   line-height: 1.45;
 }
 
@@ -1944,8 +1944,8 @@ textarea:focus-visible {
 
 .du-room-activity-item {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
   align-items: start;
   min-width: 0;
   padding: 0;
@@ -1966,12 +1966,13 @@ textarea:focus-visible {
 
 .du-room-activity-bubble {
   display: grid;
-  gap: 8px;
+  gap: 7px;
+  max-width: 760px;
   min-width: 0;
   background: #f8fff9;
   border: 1px solid var(--du-line);
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 12px 14px;
 }
 
 .du-room-activity-item[data-speaker="participant"] .du-room-activity-avatar {
@@ -1993,32 +1994,50 @@ textarea:focus-visible {
   border-left: 4px solid #2f7d62;
 }
 
-.du-room-activity-item h5,
 .du-room-activity-item p {
   margin: 0;
 }
 
-.du-room-activity-item h5 {
-  font-size: 1rem;
-  line-height: 1.35;
-}
-
-.du-room-activity-item p:not(.du-kicker) {
-  color: var(--du-muted);
-  line-height: 1.5;
-}
-
-.du-room-activity-meta {
+.du-room-message-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
   align-items: center;
 }
 
-.du-room-activity-meta span {
+.du-room-message-header strong {
+  color: var(--du-ink);
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+
+.du-room-message-header span {
+  border: 1px solid #d7e9df;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--du-accent-strong);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.15;
+  padding: 4px 7px;
+}
+
+.du-room-activity-item[data-speaker="participant"] .du-room-message-header span {
+  border-color: #e4d6bd;
+  color: #6f4f19;
+}
+
+.du-room-message-detail {
+  color: var(--du-ink);
+  font-size: 0.96rem;
+  line-height: 1.52;
+}
+
+.du-room-message-title {
   color: var(--du-muted);
-  font-size: 0.76rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
 .du-room-contributions {

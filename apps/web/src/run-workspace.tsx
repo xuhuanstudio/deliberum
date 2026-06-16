@@ -4533,7 +4533,7 @@ function DiscussionRoomTimeline({
                 >
                   <div className="du-room-phase-separator">
                     <div className="du-room-phase-copy">
-                      <p className="du-kicker">{t("Discussion phase")}</p>
+                      <p className="du-kicker du-sr-only">{t("Discussion phase")}</p>
                       <h5>{t(phaseView.label)}</h5>
                       <p>{t(phaseView.detail)}</p>
                     </div>
@@ -4576,12 +4576,12 @@ function DiscussionRoomTimeline({
                             {formatSpeakerInitials(t(activity.speaker))}
                           </span>
                           <div className="du-room-activity-bubble">
-                            <div className="du-room-activity-meta">
-                              <p className="du-kicker">{t(activity.speaker)}</p>
+                            <div className="du-room-message-header">
+                              <strong>{t(activity.speaker)}</strong>
                               <span>{t(activityPhaseView.label)}</span>
                             </div>
-                            <h5>{t(activity.title)}</h5>
-                            <p>{t(activity.detail)}</p>
+                            <p className="du-room-message-detail">{t(activity.detail)}</p>
+                            <p className="du-room-message-title">{t(activity.title)}</p>
                           </div>
                         </li>
                       );
