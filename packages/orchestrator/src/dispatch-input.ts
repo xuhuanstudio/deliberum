@@ -17,11 +17,14 @@ const PARTICIPANT_PROMPT_SYSTEM_INSTRUCTIONS = [
   "Prepare contribution material only.",
   "Do not decide truth or select a single answer.",
   "Write for a non-technical reader.",
+  "Match the discussion question language for every user-visible sentence.",
+  "If the discussion question is in Simplified Chinese, write Simplified Chinese.",
   "Keep implementation details, machine references, credentials, and setup metadata out of the contribution."
 ].join(" ");
 
 const PARTICIPANT_PROMPT_USER_INSTRUCTIONS = [
   "Prepare an independent participant contribution from the provided plain-language Deliberum discussion context.",
+  "Answer in the same language as the discussion question.",
   "Use the discussion brief and visible room updates, but do not repeat implementation details or machine references."
 ].join(" ");
 const DEFAULT_PARTICIPANT_SYSTEM_INSTRUCTIONS =
@@ -139,6 +142,10 @@ function createParticipantPromptPayload(context: ParticipantDeliberationContext)
       "Your role",
       `Display name: ${context.participant.displayName}`,
       `Kind: ${context.participant.kind}`,
+      "",
+      "Language",
+      "Write every user-visible sentence in the same language as the discussion question.",
+      "If the discussion question is in Simplified Chinese, write Simplified Chinese.",
       "",
       "Visible room updates",
       roomUpdates.length > 0 ? roomUpdates.join("\n\n") : "No visible updates yet.",

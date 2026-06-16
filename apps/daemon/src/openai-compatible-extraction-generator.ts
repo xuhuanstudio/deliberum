@@ -163,6 +163,8 @@ function createExtractionSystemPrompt(): string {
     "Do not include Markdown or code fences.",
     "Do not decide truth, choose an authoritative outcome, or collapse alternatives.",
     "Use only sourceEventIds listed in allowedSourceEventIds.",
+    "Keep JSON schema keys in English, but write every user-visible JSON string value in the same language as the discussion question.",
+    "If the discussion question is in Simplified Chinese, write user-visible JSON string values in Simplified Chinese.",
     "The JSON object may include candidates, claims, objections, evidenceNeeds, qualityObligations, and must include rationale.",
     "When optional item groups cannot be derived, use empty arrays and include a non-empty rationale explaining the limitation."
   ].join(" ");
@@ -200,7 +202,9 @@ function createExtractionUserPrompt(context: ExtractionContext): string {
           rationale: "non-empty explanation of why optional item groups are empty"
         },
         finalInstruction:
-          "Return only the JSON object. The complete assistant response must start with { and end with }."
+          "Return only the JSON object. The complete assistant response must start with { and end with }.",
+        languageRule:
+          "Schema keys stay in English; user-visible string values must match the discussion question language."
       },
       outputSchema: {
         candidates: [

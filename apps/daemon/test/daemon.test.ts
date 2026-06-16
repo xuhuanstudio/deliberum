@@ -1269,7 +1269,7 @@ function createOpenAICompatibleExtractionFetch(options: {
 
 function findExtractionContextPayload(
   messages: Array<{ role: string; content: string }>
-): { allowedSourceEventIds: string[] } | undefined {
+): { allowedSourceEventIds: string[]; languageRule?: string } | undefined {
   for (const message of messages) {
     if (message.role !== "user") {
       continue;
@@ -1278,13 +1278,15 @@ function findExtractionContextPayload(
     try {
       const parsed = JSON.parse(message.content) as {
         allowedSourceEventIds?: unknown;
+        responseContract?: unknown;
       };
 
       if (Array.isArray(parsed.allowedSourceEventIds)) {
         return {
           allowedSourceEventIds: parsed.allowedSourceEventIds.filter(
             (eventId): eventId is string => typeof eventId === "string"
-          )
+          ),
+          languageRule: readResponseContractLanguageRule(parsed.responseContract)
         };
       }
     } catch {
@@ -1337,7 +1339,7 @@ function createOpenAICompatibleReviewFetch(options: {
 
 function findReviewContextPayload(
   messages: Array<{ role: string; content: string }>
-): { allowedProposalEventIds: string[] } | undefined {
+): { allowedProposalEventIds: string[]; languageRule?: string } | undefined {
   for (const message of messages) {
     if (message.role !== "user") {
       continue;
@@ -1346,13 +1348,15 @@ function findReviewContextPayload(
     try {
       const parsed = JSON.parse(message.content) as {
         allowedProposalEventIds?: unknown;
+        responseContract?: unknown;
       };
 
       if (Array.isArray(parsed.allowedProposalEventIds)) {
         return {
           allowedProposalEventIds: parsed.allowedProposalEventIds.filter(
             (eventId): eventId is string => typeof eventId === "string"
-          )
+          ),
+          languageRule: readResponseContractLanguageRule(parsed.responseContract)
         };
       }
     } catch {
@@ -1439,7 +1443,7 @@ function createOpenAICompatibleFinalAuditContent(
 
 function findFinalCandidateContextPayload(
   messages: Array<{ role: string; content: string }>
-): { allowedCandidateIds: string[] } | undefined {
+): { allowedCandidateIds: string[]; languageRule?: string } | undefined {
   for (const message of messages) {
     if (message.role !== "user") {
       continue;
@@ -1448,13 +1452,15 @@ function findFinalCandidateContextPayload(
     try {
       const parsed = JSON.parse(message.content) as {
         allowedCandidateIds?: unknown;
+        responseContract?: unknown;
       };
 
       if (Array.isArray(parsed.allowedCandidateIds)) {
         return {
           allowedCandidateIds: parsed.allowedCandidateIds.filter(
             (candidateId): candidateId is string => typeof candidateId === "string"
-          )
+          ),
+          languageRule: readResponseContractLanguageRule(parsed.responseContract)
         };
       }
     } catch {
@@ -1471,6 +1477,7 @@ function findFinalAuditContextPayload(
   allowedUnresolvedObjectionIds: string[];
   allowedQualityObligationIds: string[];
   allowedEvidenceNeedIds: string[];
+  languageRule?: string;
 } | undefined {
   for (const message of messages) {
     if (message.role !== "user") {
@@ -1482,6 +1489,7 @@ function findFinalAuditContextPayload(
         allowedUnresolvedObjectionIds?: unknown;
         allowedQualityObligationIds?: unknown;
         allowedEvidenceNeedIds?: unknown;
+        responseContract?: unknown;
       };
 
       if (
@@ -1498,7 +1506,8 @@ function findFinalAuditContextPayload(
           ),
           allowedEvidenceNeedIds: parsed.allowedEvidenceNeedIds.filter(
             (id): id is string => typeof id === "string"
-          )
+          ),
+          languageRule: readResponseContractLanguageRule(parsed.responseContract)
         };
       }
     } catch {
@@ -1507,6 +1516,16 @@ function findFinalAuditContextPayload(
   }
 
   return undefined;
+}
+
+function readResponseContractLanguageRule(responseContract: unknown): string | undefined {
+  if (!isRecord(responseContract)) {
+    return undefined;
+  }
+
+  return typeof responseContract.languageRule === "string"
+    ? responseContract.languageRule
+    : undefined;
 }
 
 function getOpenAICompatibleFetchCall(
@@ -10569,6 +10588,7 @@ describe("daemon API", () => {
       messages: Array<{ role: string; content: string }>;
       response_format?: unknown;
     };
+    const extractionPromptPayload = findExtractionContextPayload(requestBody.messages);
     const serializedSafeState = JSON.stringify({
       start: body,
       detail: await (await daemonApp.app.request(`/runs/${created.run.runId}`)).json(),
@@ -10607,6 +10627,13 @@ describe("daemon API", () => {
         role: "user"
       })
     ]);
+    expect(requestBody.messages[0].content).toContain(
+      "write every user-visible JSON string value in the same language as the discussion question"
+    );
+    expect(requestBody.messages[0].content).toContain("Simplified Chinese");
+    expect(extractionPromptPayload?.languageRule).toBe(
+      "Schema keys stay in English; user-visible string values must match the discussion question language."
+    );
     expect(requestBody.response_format).toBeUndefined();
     expect(frontier).toMatchObject({
       candidates: [
@@ -11800,7 +11827,14 @@ describe("daemon API", () => {
       "Challenges must target only proposal event IDs listed in allowedProposalEventIds."
     );
     expect(requestBody.messages[0].content).toContain("Return only review challenges and notes.");
+    expect(requestBody.messages[0].content).toContain(
+      "write every user-visible JSON string value in the same language as the discussion question"
+    );
+    expect(requestBody.messages[0].content).toContain("Simplified Chinese");
     expect(reviewPromptPayload?.allowedProposalEventIds.length).toBeGreaterThan(0);
+    expect(reviewPromptPayload?.languageRule).toBe(
+      "Schema keys stay in English; user-visible string values must match the discussion question language."
+    );
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(serializedSafeState).not.toContain(secret);
     expect(serializedSafeState).not.toContain("Authorization");
@@ -12207,7 +12241,14 @@ describe("daemon API", () => {
     expect(candidateRequestBody.messages[0].content).toContain(
       "The final candidate is a proposal, not an authoritative answer."
     );
+    expect(candidateRequestBody.messages[0].content).toContain(
+      "write every user-visible JSON string value in the same language as the discussion question"
+    );
+    expect(candidateRequestBody.messages[0].content).toContain("Simplified Chinese");
     expect(candidatePromptPayload?.allowedCandidateIds.length).toBeGreaterThan(0);
+    expect(candidatePromptPayload?.languageRule).toBe(
+      "Schema keys stay in English; user-visible string values must match the discussion question language."
+    );
     expect(auditUrl).toBe("https://final-audit-runtime.example/api/chat/completions");
     expect(auditRequestBody.model).toBe("final-audit-runtime-model");
     expect(auditRequestBody.response_format).toEqual({
@@ -12216,7 +12257,14 @@ describe("daemon API", () => {
     expect(auditRequestBody.messages[0].content).toContain(
       "The final audit records limitations, unresolved issues, risks, omissions, and continuation suggestions only."
     );
+    expect(auditRequestBody.messages[0].content).toContain(
+      "write every user-visible JSON string value in the same language as the discussion question"
+    );
+    expect(auditRequestBody.messages[0].content).toContain("Simplified Chinese");
     expect(auditPromptPayload).toBeDefined();
+    expect(auditPromptPayload?.languageRule).toBe(
+      "Schema keys stay in English; user-visible string values must match the discussion question language."
+    );
     expect(outcome).toMatchObject({
       status: "compiled",
       draftStatus: "provisional"

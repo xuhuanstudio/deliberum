@@ -125,6 +125,8 @@ function createReviewSystemPrompt(): string {
     "Do not decide truth, select winners, rank candidates, score options, or return final answers.",
     "Return only review challenges and notes.",
     "Challenges must target only proposal event IDs listed in allowedProposalEventIds.",
+    "Keep JSON schema keys in English, but write every user-visible JSON string value in the same language as the discussion question.",
+    "If the discussion question is in Simplified Chinese, write user-visible JSON string values in Simplified Chinese.",
     "When no challenge is warranted, return an empty challenges array and a notes array explaining the limitation."
   ].join(" ");
 }
@@ -179,7 +181,9 @@ function createReviewUserPrompt(context: ProposalReviewContext): string {
           notes: ["non-empty explanation of why no challenge is proposed"]
         },
         finalInstruction:
-          "Return only the JSON object. The complete assistant response must start with { and end with }."
+          "Return only the JSON object. The complete assistant response must start with { and end with }.",
+        languageRule:
+          "Schema keys stay in English; user-visible string values must match the discussion question language."
       }
     },
     null,

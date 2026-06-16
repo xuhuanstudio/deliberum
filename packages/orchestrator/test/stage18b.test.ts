@@ -86,14 +86,14 @@ function createIds(ids: string[]) {
   return () => ids[index++] ?? `generated-${index}`;
 }
 
-function createFixture() {
+function createFixture(runPlan: ReturnType<typeof createRunPlan> = createRunPlan()) {
   const eventStore = new InMemoryEventStore({
     clock: () => "2026-06-10T00:00:01.000Z"
   });
   const runStore = new InMemoryRunStore();
   const result = createDeliberationRun(
     {
-      runPlan: createRunPlan()
+      runPlan
     },
     {
       eventStore,
@@ -528,6 +528,58 @@ describe("buildParticipantDispatchInput", () => {
     expect(adapterInputText).not.toContain(runtimeSecret);
     expect(JSON.stringify(runStore.getRun(run.id))).not.toContain(runtimeSecret);
     expect(JSON.stringify(eventStore.listEvents(run.sessionId))).not.toContain(runtimeSecret);
+  });
+
+  it("passes discussion-language instructions into OpenAI-compatible participant prompts", () => {
+    const chineseQuestion = "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u65b0\u529f\u80fd\u53d1\u5e03\uff1f";
+    const plan = {
+      ...createRunPlan(),
+      title: "\u4e2d\u6587\u53d1\u5e03\u8bc4\u4f30",
+      topic: chineseQuestion,
+      goals: ["\u5f62\u6210\u53ef\u5ba1\u9605\u7684\u9636\u6bb5\u6027\u7ed3\u8bba"],
+      constraints: [
+        "Write all participant responses, review notes, and conclusions in the same language as the discussion question."
+      ],
+      output: {
+        language: "same as discussion question",
+        style: "clear",
+        expectations: [
+          "Write all participant responses, review notes, and conclusions in the same language as the discussion question."
+        ]
+      }
+    };
+    const { eventStore, run } = createFixture(plan);
+    const registry = new AdapterRegistry([createAdapter("openai-compatible")]);
+
+    const envelope = buildParticipantDispatchInput({
+      run,
+      eventStore,
+      adapterRegistry: registry,
+      participantId: "participant-cli",
+      env: {
+        DELIBERUM_OPENAI_API_KEY: "sk-dispatch-secret"
+      }
+    });
+    const adapterInputText = JSON.stringify(envelope.adapterInput);
+
+    expect(envelope.adapterContext.instructions).toContain(
+      "Match the discussion question language for every user-visible sentence."
+    );
+    expect(envelope.adapterContext.instructions).toContain(
+      "If the discussion question is in Simplified Chinese, write Simplified Chinese."
+    );
+    expect(envelope.adapterInput.instructions).toContain(
+      "Answer in the same language as the discussion question."
+    );
+    expect(adapterInputText).toContain(chineseQuestion);
+    expect(adapterInputText).toContain("Language");
+    expect(adapterInputText).toContain(
+      "Write every user-visible sentence in the same language as the discussion question."
+    );
+    expect(adapterInputText).toContain("Simplified Chinese");
+    expect(adapterInputText).not.toContain("run-1");
+    expect(adapterInputText).not.toContain("session-1");
+    expect(adapterInputText).not.toContain("sk-dispatch-secret");
   });
 
   it("does not treat adapter output as truth", () => {

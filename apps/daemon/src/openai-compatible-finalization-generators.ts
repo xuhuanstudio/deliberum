@@ -198,6 +198,8 @@ function createFinalCandidateSystemPrompt(): string {
     "Do not decide truth, select a winner, rank candidates, score options, vote, or return a final answer.",
     "The final candidate is a proposal, not an authoritative answer.",
     "Use only candidateIds listed in allowedCandidateIds.",
+    "Keep JSON schema keys in English, but write every user-visible JSON string value in the same language as the discussion question.",
+    "If the discussion question is in Simplified Chinese, write user-visible JSON string values in Simplified Chinese.",
     "When limitations or applicability conditions are unclear, use empty arrays and include a non-empty rationale."
   ].join(" ");
 }
@@ -243,7 +245,9 @@ function createFinalCandidateUserPrompt(context: FinalizationContext): string {
           rationale: "non-empty explanation of uncertainty or limitation"
         },
         finalInstruction:
-          "Return only the JSON object. The complete assistant response must start with { and end with }."
+          "Return only the JSON object. The complete assistant response must start with { and end with }.",
+        languageRule:
+          "Schema keys stay in English; user-visible string values must match the discussion question language."
       }
     },
     null,
@@ -277,6 +281,8 @@ function createFinalAuditSystemPrompt(): string {
     "Do not decide truth, act as a judge, select winners, rank candidates, score options, vote, or return a final answer.",
     "The final audit records limitations, unresolved issues, risks, omissions, and continuation suggestions only.",
     "Use only IDs listed in allowedUnresolvedObjectionIds, allowedQualityObligationIds, and allowedEvidenceNeedIds.",
+    "Keep JSON schema keys in English, but write every user-visible JSON string value in the same language as the discussion question.",
+    "If the discussion question is in Simplified Chinese, write user-visible JSON string values in Simplified Chinese.",
     "When an item group has no material, return an empty array for that group."
   ].join(" ");
 }
@@ -340,7 +346,9 @@ function createFinalAuditUserPrompt(
           continuationSuggestions: []
         },
         finalInstruction:
-          "Return only the JSON object. The complete assistant response must start with { and end with }."
+          "Return only the JSON object. The complete assistant response must start with { and end with }.",
+        languageRule:
+          "Schema keys stay in English; user-visible string values must match the discussion question language."
       }
     },
     null,
