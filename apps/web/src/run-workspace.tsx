@@ -3033,8 +3033,8 @@ function StartRunForm({
       title={t(continuationView.title)}
       description={t(continuationView.description)}
     >
-      <div className="du-discussion-actions" aria-label={t("Discussion actions")}>
-        <p className="du-kicker">{t("Discussion actions")}</p>
+      <div className="du-discussion-actions" aria-label={t("Discussion action composer")}>
+        <p className="du-kicker">{t("Discussion action composer")}</p>
         <div className="du-discussion-action-list">
           <button
             type="button"
@@ -4394,68 +4394,11 @@ function DiscussionRoomTimeline({
           )}
         </p>
       </div>
-      <div
-        className="du-room-progress-summary"
-        data-state={progressView.tone}
-        role="region"
-        aria-label={t("Room progress summary")}
-      >
-        <article className="du-room-progress-primary">
-          <p className="du-kicker">{t("Current phase")}</p>
-          <h5>{t(progressView.phaseTitle)}</h5>
-          <p>{t(progressView.phaseDetail)}</p>
-        </article>
-        <article>
-          <p className="du-kicker">{t("Next checkpoint")}</p>
-          <h5>{t(progressView.nextTitle)}</h5>
-          <p>{t(progressView.nextDetail)}</p>
-        </article>
-        <article className="du-room-progress-checks">
-          <p className="du-kicker">{t("Review before relying")}</p>
-          <div>
-            <span>{t("Open disagreements")}</span>
-            <strong>{openDisagreementCount}</strong>
-          </div>
-          <div>
-            <span>{t("Missing evidence")}</span>
-            <strong>{unresolvedEvidenceCount}</strong>
-          </div>
-          <div>
-            <span>{t("Requirements to satisfy")}</span>
-            <strong>{openRequirementCount}</strong>
-          </div>
-        </article>
-      </div>
-      {participantResponses.length > 0 ? (
-        <div className="du-room-response-wrap" aria-label={t("Participant first responses")}>
-          <div>
-            <p className="du-kicker">{t("Participant first responses")}</p>
-            <h5>{t("What participants said first")}</h5>
-            <p>
-              {t(
-                "These are the separate first responses before the room organized options, disagreements, and evidence needs."
-              )}
-            </p>
-          </div>
-          <div className="du-room-response-grid">
-            {participantResponses.map((response, index) => (
-              <article
-                className="du-room-response-card"
-                data-tone={response.tone}
-                key={`${response.speaker}:${response.detail}:${index}`}
-              >
-                <p className="du-kicker">{t("Independent response")}</p>
-                <h5>{t(response.speaker)}</h5>
-                <p>{t(response.detail)}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      ) : null}
       <div className="du-room-activity-wrap">
         <div>
-          <p className="du-kicker">{t("Room activity")}</p>
-          <h5>{t("Readable discussion flow")}</h5>
+          <p className="du-kicker">{t("Conversation transcript")}</p>
+          <h5>{t("What the room said and did")}</h5>
+          <p>{t("Participant messages and room updates appear in order.")}</p>
         </div>
         {activityQuery.isLoading ? (
           <StatusBanner title={t("Loading room activity")} />
@@ -4547,60 +4490,126 @@ function DiscussionRoomTimeline({
           </div>
         )}
       </div>
-      <div className="du-room-stage-wrap">
-        <p className="du-kicker">{t("Core discussion stages")}</p>
-        <h5>{t("Structured deliberation progress")}</h5>
-      </div>
-      <ol className="du-room-flow">
-        <DiscussionRoomFlowStep
-          label={t("Discussion brief")}
-          status={t("Ready")}
-          detail={t(
-            "The question, goals, and constraints are visible before discussion work begins."
-          )}
-        />
-        <DiscussionRoomFlowStep
-          label={t("Independent first responses")}
-          status={t(independentResponses.label)}
-          detail={t(independentResponses.detail)}
-        />
-        <DiscussionRoomFlowStep
-          label={t("Participant perspectives")}
-          status={t(mainPerspectives.label)}
-          detail={t(
-            mainPerspectiveCount === 1
-              ? "{count} readable perspective is visible in the room."
-              : "{count} readable perspectives are visible in the room.",
-            { count: mainPerspectiveCount }
-          )}
-        />
-        <DiscussionRoomFlowStep
-          label={t("Disagreements and evidence")}
-          status={
-            openDisagreementCount + unresolvedEvidenceCount > 0
-              ? t("Needs review")
-              : t("No open items visible")
-          }
-          detail={t(
-            openDisagreementCount === 1 && unresolvedEvidenceCount === 1
-              ? "{disagreements} open disagreement and {evidence} evidence gap are visible."
-              : openDisagreementCount === 1
-                ? "{disagreements} open disagreement and {evidence} evidence gaps are visible."
-                : unresolvedEvidenceCount === 1
-                  ? "{disagreements} open disagreements and {evidence} evidence gap are visible."
-                  : "{disagreements} open disagreements and {evidence} evidence gaps are visible.",
-            {
-              disagreements: openDisagreementCount,
-              evidence: unresolvedEvidenceCount
-            }
-          )}
-        />
-        <DiscussionRoomFlowStep
-          label={t("Current conclusion")}
-          status={t(conclusion.label)}
-          detail={t(conclusion.detail)}
-        />
-      </ol>
+      <details className="du-room-progress-details">
+        <summary>
+          <span>{t("Room progress and stages")}</span>
+          <small>{t("Current phase, first responses, and stage checklist")}</small>
+        </summary>
+        <div className="du-room-progress-details-body">
+          <div
+            className="du-room-progress-summary"
+            data-state={progressView.tone}
+            role="region"
+            aria-label={t("Room progress summary")}
+          >
+            <article className="du-room-progress-primary">
+              <p className="du-kicker">{t("Current phase")}</p>
+              <h5>{t(progressView.phaseTitle)}</h5>
+              <p>{t(progressView.phaseDetail)}</p>
+            </article>
+            <article>
+              <p className="du-kicker">{t("Next checkpoint")}</p>
+              <h5>{t(progressView.nextTitle)}</h5>
+              <p>{t(progressView.nextDetail)}</p>
+            </article>
+            <article className="du-room-progress-checks">
+              <p className="du-kicker">{t("Review before relying")}</p>
+              <div>
+                <span>{t("Open disagreements")}</span>
+                <strong>{openDisagreementCount}</strong>
+              </div>
+              <div>
+                <span>{t("Missing evidence")}</span>
+                <strong>{unresolvedEvidenceCount}</strong>
+              </div>
+              <div>
+                <span>{t("Requirements to satisfy")}</span>
+                <strong>{openRequirementCount}</strong>
+              </div>
+            </article>
+          </div>
+          {participantResponses.length > 0 ? (
+            <div className="du-room-response-wrap" aria-label={t("Participant first responses")}>
+              <div>
+                <p className="du-kicker">{t("Participant first responses")}</p>
+                <h5>{t("What participants said first")}</h5>
+                <p>
+                  {t(
+                    "These are the separate first responses before the room organized options, disagreements, and evidence needs."
+                  )}
+                </p>
+              </div>
+              <div className="du-room-response-grid">
+                {participantResponses.map((response, index) => (
+                  <article
+                    className="du-room-response-card"
+                    data-tone={response.tone}
+                    key={`${response.speaker}:${response.detail}:${index}`}
+                  >
+                    <p className="du-kicker">{t("Independent response")}</p>
+                    <h5>{t(response.speaker)}</h5>
+                    <p>{t(response.detail)}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div className="du-room-stage-wrap">
+            <p className="du-kicker">{t("Core discussion stages")}</p>
+            <h5>{t("Structured deliberation progress")}</h5>
+          </div>
+          <ol className="du-room-flow">
+            <DiscussionRoomFlowStep
+              label={t("Discussion brief")}
+              status={t("Ready")}
+              detail={t(
+                "The question, goals, and constraints are visible before discussion work begins."
+              )}
+            />
+            <DiscussionRoomFlowStep
+              label={t("Independent first responses")}
+              status={t(independentResponses.label)}
+              detail={t(independentResponses.detail)}
+            />
+            <DiscussionRoomFlowStep
+              label={t("Participant perspectives")}
+              status={t(mainPerspectives.label)}
+              detail={t(
+                mainPerspectiveCount === 1
+                  ? "{count} readable perspective is visible in the room."
+                  : "{count} readable perspectives are visible in the room.",
+                { count: mainPerspectiveCount }
+              )}
+            />
+            <DiscussionRoomFlowStep
+              label={t("Disagreements and evidence")}
+              status={
+                openDisagreementCount + unresolvedEvidenceCount > 0
+                  ? t("Needs review")
+                  : t("No open items visible")
+              }
+              detail={t(
+                openDisagreementCount === 1 && unresolvedEvidenceCount === 1
+                  ? "{disagreements} open disagreement and {evidence} evidence gap are visible."
+                  : openDisagreementCount === 1
+                    ? "{disagreements} open disagreement and {evidence} evidence gaps are visible."
+                    : unresolvedEvidenceCount === 1
+                      ? "{disagreements} open disagreements and {evidence} evidence gap are visible."
+                      : "{disagreements} open disagreements and {evidence} evidence gaps are visible.",
+                {
+                  disagreements: openDisagreementCount,
+                  evidence: unresolvedEvidenceCount
+                }
+              )}
+            />
+            <DiscussionRoomFlowStep
+              label={t("Current conclusion")}
+              status={t(conclusion.label)}
+              detail={t(conclusion.detail)}
+            />
+          </ol>
+        </div>
+      </details>
     </section>
   );
 }

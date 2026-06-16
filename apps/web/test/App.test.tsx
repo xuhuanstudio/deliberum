@@ -2207,7 +2207,8 @@ describe("@deliberum/web shell", () => {
         "Model participants and review roles updated the readable timeline and conclusion materials."
       )
     ).toBeTruthy();
-    expect(await screen.findByText("Participant first responses")).toBeTruthy();
+    fireEvent.click(await screen.findByText("Room progress and stages"));
+    expect(screen.getByText("Participant first responses")).toBeTruthy();
     expect(
       screen.getAllByText(
         "Use the configured provider only after verification and visible review material are ready."
@@ -5250,7 +5251,7 @@ describe("@deliberum/web shell", () => {
       "Review current conclusion"
     );
     expect(primaryDiscussionActions.textContent ?? "").toContain("Update conclusion");
-    expect(screen.getByText("Discussion actions")).toBeTruthy();
+    expect(screen.getByText("Discussion action composer")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Update conclusion" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review disagreements" })).toBeTruthy();
@@ -5288,6 +5289,22 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("What is being discussed")).toBeTruthy();
     expect(screen.getByText("Discussion timeline")).toBeTruthy();
     expect(screen.getByText("What has happened in the room")).toBeTruthy();
+    expect(screen.getByText("Conversation transcript")).toBeTruthy();
+    expect(screen.getByText("What the room said and did")).toBeTruthy();
+    expect(screen.getByText("Participant messages and room updates appear in order.")).toBeTruthy();
+    const timeline = document.querySelector('[aria-label="Discussion timeline"]');
+    const transcript = timeline?.querySelector(".du-room-activity-wrap");
+    const progressDetails = timeline?.querySelector(".du-room-progress-details");
+    expect(timeline).toBeTruthy();
+    expect(transcript).toBeTruthy();
+    expect(progressDetails).toBeTruthy();
+    expect(
+      Boolean(
+        transcript?.compareDocumentPosition(progressDetails as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    fireEvent.click(screen.getByText("Room progress and stages"));
     const roomProgressSummary = screen.getByRole("region", {
       name: "Room progress summary"
     });
@@ -5302,8 +5319,6 @@ describe("@deliberum/web shell", () => {
     expect(roomProgressSummary.textContent ?? "").toContain("Open disagreements");
     expect(roomProgressSummary.textContent ?? "").toContain("Missing evidence");
     expect(roomProgressSummary.textContent ?? "").toContain("Requirements to satisfy");
-    expect(screen.getByText("Room activity")).toBeTruthy();
-    expect(screen.getByText("Readable discussion flow")).toBeTruthy();
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Discussion brief updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
@@ -5648,6 +5663,7 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getAllByText("CLI-first validation exercises the lifecycle directly.").length
     ).toBeGreaterThan(0);
+    fireEvent.click(screen.getByText("Room progress and stages"));
     expect(screen.getByText("Participant first responses")).toBeTruthy();
     expect(screen.getByText("What participants said first")).toBeTruthy();
     expect(
@@ -6175,6 +6191,7 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByText("Created: discussion exists, deliberation steps have not started.")).toBeTruthy();
     expect(await screen.findByText("Next: continue guided discussion")).toBeTruthy();
+    fireEvent.click(await screen.findByText("Room progress and stages"));
     expect(await screen.findByText("Collecting first perspectives")).toBeTruthy();
     expect(screen.getByText("Collect independent first responses")).toBeTruthy();
     expect(
@@ -6637,7 +6654,7 @@ describe("@deliberum/web shell", () => {
     };
 
     expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    expect(screen.getByText("Discussion actions")).toBeTruthy();
+    expect(screen.getByText("Discussion action composer")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Confirm answer requirements" })).toBeNull();

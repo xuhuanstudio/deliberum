@@ -1587,6 +1587,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u51c6\u5907\u597d\u540e\uff0c\u5c06\u7ed3\u8bba\u4e0e\u98ce\u9669\u3001\u7f3a\u5931\u8bc1\u636e\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u4e00\u8d77\u5ba1\u9605\u3002",
   Recommended: "\u63a8\u8350",
   "Discussion actions": "\u8ba8\u8bba\u52a8\u4f5c",
+  "Discussion action composer": "\u8ba8\u8bba\u64cd\u4f5c\u7f16\u8f91\u533a",
   "Ask for stronger options": "\u8981\u6c42\u66f4\u5f3a\u9009\u9879",
   "Refresh the discussion so the strongest current options can be compared and improved.":
     "\u5237\u65b0\u8ba8\u8bba\uff0c\u4ee5\u6bd4\u8f83\u5e76\u6539\u8fdb\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002",
@@ -1611,6 +1612,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Independent response": "\u72ec\u7acb\u56de\u5e94",
   "Room activity": "\u8ba8\u8bba\u5ba4\u6d3b\u52a8",
   "Conversation transcript": "\u5bf9\u8bdd\u8bb0\u5f55",
+  "What the room said and did": "\u8ba8\u8bba\u5ba4\u8bf4\u4e86\u4ec0\u4e48\u3001\u505a\u4e86\u4ec0\u4e48",
+  "Participant messages and room updates appear in order.":
+    "\u53c2\u4e0e\u8005\u53d1\u8a00\u548c\u8ba8\u8bba\u5ba4\u66f4\u65b0\u4f1a\u6309\u987a\u5e8f\u663e\u793a\u3002",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",
   "Readable discussion flow": "\u53ef\u8bfb\u8ba8\u8bba\u6d41\u7a0b",
   "Discussion brief updates": "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0",
@@ -1665,6 +1669,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "No room activity visible yet": "\u5c1a\u65e0\u53ef\u89c1\u8ba8\u8bba\u5ba4\u6d3b\u52a8",
   "Continue the discussion so the room can show participant responses and discussion updates.":
     "\u7ee7\u7eed\u8ba8\u8bba\u540e\uff0c\u8ba8\u8bba\u5ba4\u4f1a\u663e\u793a\u53c2\u4e0e\u8005\u56de\u5e94\u548c\u8ba8\u8bba\u66f4\u65b0\u3002",
+  "Room progress and stages": "\u8ba8\u8bba\u8fdb\u5ea6\u4e0e\u9636\u6bb5",
+  "Current phase, first responses, and stage checklist":
+    "\u5f53\u524d\u9636\u6bb5\u3001\u9996\u8f6e\u56de\u5e94\u548c\u9636\u6bb5\u6e05\u5355",
   "Core discussion stages": "\u6838\u5fc3\u8ba8\u8bba\u9636\u6bb5",
   "Structured deliberation progress": "\u7ed3\u6784\u5316\u5ba1\u8bae\u8fdb\u5ea6",
   "Discussion brief published": "\u8ba8\u8bba\u7b80\u62a5\u5df2\u53d1\u5e03",
