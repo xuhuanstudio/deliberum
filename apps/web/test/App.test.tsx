@@ -5309,12 +5309,19 @@ describe("@deliberum/web shell", () => {
     const transcript = timeline?.querySelector(".du-room-activity-wrap");
     const progressDetails = timeline?.querySelector(".du-room-progress-details");
     const roomLayout = document.querySelector(".du-room-layout");
+    const roomMain = document.querySelector(".du-room-main");
     const roomComposer = document.querySelector(".du-room-composer");
+    const roomBrief = document.querySelector(".du-room-brief");
+    const roomOutputs = document.querySelector(".du-room-outputs-section");
     expect(timeline).toBeTruthy();
     expect(transcript).toBeTruthy();
     expect(progressDetails).toBeTruthy();
     expect(roomLayout).toBeTruthy();
+    expect(roomMain).toBeTruthy();
     expect(roomComposer).toBeTruthy();
+    expect(roomBrief).toBeTruthy();
+    expect(roomOutputs).toBeTruthy();
+    expect(roomMain?.contains(roomComposer as Node)).toBe(true);
     expect(
       Boolean(
         transcript?.compareDocumentPosition(progressDetails as Node) &
@@ -5323,7 +5330,19 @@ describe("@deliberum/web shell", () => {
     ).toBe(true);
     expect(
       Boolean(
-        roomLayout?.compareDocumentPosition(roomComposer as Node) &
+        timeline?.compareDocumentPosition(roomComposer as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      Boolean(
+        roomComposer?.compareDocumentPosition(roomBrief as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      Boolean(
+        roomComposer?.compareDocumentPosition(roomOutputs as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);

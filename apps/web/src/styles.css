@@ -1589,6 +1589,10 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+.du-room-main > .du-room-composer {
+  margin-top: 0;
+}
+
 .du-room-brief {
   grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.8fr);
   align-items: stretch;
@@ -3850,11 +3854,6 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .du-room-focus {
-    order: 1;
-    position: static;
-  }
-
   .du-room-action-bar {
     align-items: stretch;
   }
@@ -3867,15 +3866,32 @@ textarea:focus-visible {
     display: contents;
   }
 
-  .du-room-brief {
+  .du-room-timeline {
+    order: 1;
+  }
+
+  .du-room-composer {
     order: 2;
   }
 
-  .du-room-section {
+  .du-room-focus {
     order: 3;
+    position: static;
+  }
+
+  .du-room-brief {
+    order: 4;
+  }
+
+  .du-room-outputs-section {
+    order: 5;
+  }
+
+  .du-room-options-section {
+    order: 6;
   }
 
   .du-room-contributions {
-    order: 4;
+    order: 7;
   }
 }

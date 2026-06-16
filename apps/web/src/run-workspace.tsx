@@ -4176,6 +4176,7 @@ function RunQualityOverview({
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
               openRequirementCount={openObligations}
             />
+            {discussionComposer}
             <DiscussionRoomBrief run={run} />
             <DiscussionRoomOutputs
               runId={runId}
@@ -4340,7 +4341,6 @@ function RunQualityOverview({
           ) : null}
         </div>
       </QueryState>
-      {discussionComposer}
     </DataPanel>
   );
 }
@@ -4482,7 +4482,7 @@ function DiscussionRoomTimeline({
   return (
     <section
       id="discussion-timeline"
-      className="du-room-section"
+      className="du-room-section du-room-timeline"
       aria-label={t("Discussion timeline")}
     >
       <div className="du-section-label">
@@ -5192,7 +5192,7 @@ function DiscussionRoomOutputs({
   return (
     <section
       id="discussion-outputs"
-      className="du-room-section"
+      className="du-room-section du-room-outputs-section"
       aria-label={t("Discussion outputs")}
     >
       <div className="du-section-label">
@@ -5316,7 +5316,10 @@ function DiscussionOptionsList({ candidates }: { candidates: unknown[] }) {
   const organizerFallbackVisible = hasConservativeOrganizerFallback(candidates);
 
   return (
-    <section className="du-room-section" aria-label={t("Strongest current options")}>
+    <section
+      className="du-room-section du-room-options-section"
+      aria-label={t("Strongest current options")}
+    >
       <div className="du-section-label">
         <p className="du-kicker">{t("Strongest current options")}</p>
         <h4>{t("What the strongest options say now")}</h4>
