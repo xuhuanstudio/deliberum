@@ -603,6 +603,10 @@ function getExistingRound(
   }
 
   if (run.sealedDivergenceRound.roundId !== roundId) {
+    if (run.sealedDivergenceRound.status === "revealed") {
+      return undefined;
+    }
+
     throw new RunSealedDivergenceRoundError(
       "round_conflict",
       "A different sealed divergence round already exists for this run."

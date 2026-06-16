@@ -1701,6 +1701,27 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "What the room said and did": "\u8ba8\u8bba\u5ba4\u8bf4\u4e86\u4ec0\u4e48\u3001\u505a\u4e86\u4ec0\u4e48",
   "Participant messages and room updates appear in order.":
     "\u53c2\u4e0e\u8005\u53d1\u8a00\u548c\u8ba8\u8bba\u5ba4\u66f4\u65b0\u4f1a\u6309\u987a\u5e8f\u663e\u793a\u3002",
+  "Discussion round marker": "\u8ba8\u8bba\u56de\u5408\u6807\u8bb0",
+  "Room opening": "\u8ba8\u8bba\u5ba4\u5f00\u573a",
+  "Round {round}": "\u7b2c {round} \u8f6e",
+  "Discussion round {round}": "\u8ba8\u8bba\u7b2c {round} \u8f6e",
+  "Discussion round {round} messages": "\u8ba8\u8bba\u7b2c {round} \u8f6e\u53d1\u8a00",
+  "Participants answer first; review roles respond in the same room.":
+    "\u53c2\u4e0e\u8005\u5148\u56de\u7b54\uff0c\u5ba1\u67e5\u89d2\u8272\u5728\u540c\u4e00\u8ba8\u8bba\u5ba4\u91cc\u63a5\u7740\u56de\u5e94\u3002",
+  "Starting another room round": "\u5f00\u59cb\u65b0\u4e00\u8f6e\u8ba8\u8bba",
+  "Setting the shared brief": "\u8bbe\u5b9a\u5171\u540c\u7b80\u62a5",
+  "Inviting independent first responses": "\u9080\u8bf7\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
+  "Responding to the discussion brief": "\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5",
+  "Bringing the first responses into the room":
+    "\u5c06\u521d\u59cb\u56de\u5e94\u5e26\u5165\u8ba8\u8bba\u5ba4",
+  "Building on the first responses": "\u57fa\u4e8e\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
+  "Responding to the strongest current options":
+    "\u56de\u5e94\u5f53\u524d\u6700\u5f3a\u9009\u9879",
+  "Challenging the current direction": "\u6311\u6218\u5f53\u524d\u65b9\u5411",
+  "Checking evidence before the conclusion": "\u5728\u7ed3\u8bba\u524d\u6838\u67e5\u8bc1\u636e",
+  "Synthesizing the current room": "\u7efc\u5408\u5f53\u524d\u8ba8\u8bba\u5ba4",
+  "Reviewing risks before relying on it": "\u5728\u4f9d\u8d56\u524d\u5ba1\u67e5\u98ce\u9669",
+  "Responding in the discussion room": "\u5728\u8ba8\u8bba\u5ba4\u4e2d\u56de\u5e94",
   "Discussion phase": "\u8ba8\u8bba\u9636\u6bb5",
   "Room step {step}": "\u8ba8\u8bba\u5ba4\u6b65\u9aa4 {step}",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",
@@ -1796,9 +1817,14 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "The room accepted this discussion material as part of the current working view.":
     "\u8ba8\u8bba\u5ba4\u5df2\u5c06\u8fd9\u4efd\u8ba8\u8bba\u6750\u6599\u7eb3\u5165\u5f53\u524d\u5de5\u4f5c\u89c6\u56fe\u3002",
   "Open disagreement recorded": "\u672a\u89e3\u51b3\u5206\u6b67\u5df2\u8bb0\u5f55",
+  "Open disagreement surfaced": "\u5df2\u63d0\u51fa\u672a\u89e3\u51b3\u5206\u6b67",
   "Raised an open disagreement": "\u63d0\u51fa\u4e86\u672a\u89e3\u51b3\u5206\u6b67",
   "A challenge was recorded against the current discussion material.":
     "\u5df2\u9488\u5bf9\u5f53\u524d\u8ba8\u8bba\u6750\u6599\u8bb0\u5f55\u4e00\u6761\u6311\u6218\u3002",
+  "{count} open disagreement still needs resolution before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u4ecd\u6709 {count} \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u9700\u8981\u5904\u7406\u3002",
+  "{count} open disagreements still need resolution before relying on the conclusion.":
+    "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u4ecd\u6709 {count} \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u9700\u8981\u5904\u7406\u3002",
   "Evidence check recorded": "\u8bc1\u636e\u6838\u67e5\u5df2\u8bb0\u5f55",
   "Checked evidence": "\u6838\u67e5\u4e86\u8bc1\u636e",
   "An evidence check result was added to the discussion.":
@@ -1808,6 +1834,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "A reviewable conclusion draft was prepared from the current discussion material.":
     "\u5df2\u6839\u636e\u5f53\u524d\u8ba8\u8bba\u6750\u6599\u51c6\u5907\u53ef\u5ba1\u9605\u7684\u7ed3\u8bba\u8349\u7a3f\u3002",
   "Risk review recorded": "\u98ce\u9669\u5ba1\u67e5\u5df2\u8bb0\u5f55",
+  "The room continued again from the current conclusion and open questions.":
+    "\u8ba8\u8bba\u5ba4\u4ece\u5f53\u524d\u7ed3\u8bba\u548c\u672a\u89e3\u95ee\u9898\u7ee7\u7eed\u4e86\u65b0\u4e00\u8f6e\u3002",
   "Reviewed risks": "\u5ba1\u9605\u4e86\u98ce\u9669",
   "A risk review was recorded for the current conclusion.":
     "\u5df2\u4e3a\u5f53\u524d\u7ed3\u8bba\u8bb0\u5f55\u4e00\u6761\u98ce\u9669\u5ba1\u67e5\u3002",

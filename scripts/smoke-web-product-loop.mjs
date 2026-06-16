@@ -336,8 +336,11 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .filter({ hasText: "Made first responses visible" })
     .waitFor();
   await page.locator("#room-conversation-transcript").waitFor();
-  await page.getByText("Room step 2", { exact: true }).waitFor();
-  await page.getByText("Independent first responses", { exact: true }).first().waitFor();
+  await page.getByText("Discussion round 1", { exact: true }).waitFor();
+  const conversationTranscript = page.locator("#room-conversation-transcript");
+  await conversationTranscript.getByText("Opened independent first responses", { exact: true }).waitFor();
+  await conversationTranscript.getByText("Responding to the discussion brief", { exact: true }).first().waitFor();
+  await conversationTranscript.getByText("Challenging the current direction", { exact: true }).first().waitFor();
   await assertRoomMessageFlowCompact(page, "discussion room after continuation");
   await page.getByText("Next in the room", { exact: true }).waitFor();
   await page

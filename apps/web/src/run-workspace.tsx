@@ -211,6 +211,7 @@ type RoomActivityItem = {
   detailValues?: Record<string, string | number>;
   tone: "neutral" | "ok" | "warning";
   phase: RoomActivityPhaseId;
+  sourceType: string;
 };
 type RoomActivityPhaseId =
   | "brief"
@@ -239,8 +240,8 @@ const DISCUSSION_PERSPECTIVE_MODEL_FIELDS: DiscussionPerspectiveModelField[] = [
   }
 ];
 type RoomActivityGroup = {
-  phase: RoomActivityPhaseId;
-  step: number;
+  kind: "brief" | "discussion";
+  round: number;
   activities: RoomActivityItem[];
 };
 type DiscussionRoomProgressView = {
@@ -3064,8 +3065,12 @@ function StartRunForm({
     setStartFeedback(feedback);
     setShowAdvancedStartResult(false);
     setInputError(null);
-    setStartRequestText(recommendedStartRequestText);
-    startMutation.mutate(cloneJsonObject(continuationSetup.startRequest));
+    const startRequest = prepareUserFacingContinuationStartRequest(
+      continuationSetup.startRequest,
+      run
+    );
+    setStartRequestText(formatPresetJson(startRequest));
+    startMutation.mutate(startRequest);
   }
 
   const strongerOptionsFeedback = {
@@ -3528,6 +3533,88 @@ function describeDiscussionContinuationSetup(
     primaryResultDetail:
       "The discussion collected independent first responses. Complete setup before organizing options or drafting a conclusion."
   };
+}
+
+function prepareUserFacingContinuationStartRequest(
+  startRequest: Record<string, unknown>,
+  run: unknown
+): Record<string, unknown> {
+  const nextStartRequest = cloneJsonObject(startRequest);
+
+  if (!isDiscussionReviewReady(run)) {
+    return nextStartRequest;
+  }
+
+  const roundToken = createUserContinuationRoundToken(run);
+  const sealedRoundId = setStartRequestRoundId(
+    nextStartRequest,
+    "sealedDivergence",
+    `${roundToken}-first-responses`
+  );
+  const extractionRoundId = setStartRequestRoundId(
+    nextStartRequest,
+    "extraction",
+    `${roundToken}-options`
+  );
+  const reviewRoundId = setStartRequestRoundId(
+    nextStartRequest,
+    "review",
+    `${roundToken}-review`
+  );
+  setStartRequestRoundId(nextStartRequest, "evidenceCheck", `${roundToken}-evidence`);
+  setStartRequestRoundId(nextStartRequest, "candidateRepair", `${roundToken}-repair`);
+  setStartRequestRoundId(nextStartRequest, "finalization", `${roundToken}-conclusion`);
+
+  const extraction = getMutableStartRequestStage(nextStartRequest, "extraction");
+  if (extraction && sealedRoundId) {
+    extraction.sealedDivergenceRoundId = sealedRoundId;
+  }
+
+  const review = getMutableStartRequestStage(nextStartRequest, "review");
+  if (review && extractionRoundId) {
+    review.extractionRoundId = extractionRoundId;
+  }
+
+  const finalization = getMutableStartRequestStage(nextStartRequest, "finalization");
+  if (finalization && reviewRoundId) {
+    finalization.proposalReviewRoundId = reviewRoundId;
+  }
+
+  return nextStartRequest;
+}
+
+function setStartRequestRoundId(
+  startRequest: Record<string, unknown>,
+  key: string,
+  roundId: string
+): string | undefined {
+  const stage = getMutableStartRequestStage(startRequest, key);
+
+  if (!stage) {
+    return undefined;
+  }
+
+  stage.roundId = roundId;
+
+  return roundId;
+}
+
+function createUserContinuationRoundToken(run: unknown): string {
+  const eventCount = getRecordValue(getRecordValue(run, "ledger"), "eventCount");
+  const eventSuffix = typeof eventCount === "number" ? eventCount : "next";
+
+  return `web-round-${eventSuffix}-${Date.now().toString(36)}`;
+}
+
+function getMutableStartRequestStage(
+  startRequest: Record<string, unknown>,
+  key: string
+): Record<string, unknown> | undefined {
+  const value = startRequest[key];
+
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 function describeDiscussionParticipantSource(run: unknown): DiscussionParticipantSourceView {
@@ -4332,12 +4419,20 @@ function RunQualityOverview({
   const evidenceNeeds = asArray(resourcesQuery.data?.evidenceNeeds);
   const roomActivities = createRoomActivityItems(asArray(eventsQuery.data?.events), run);
   const unresolvedEvidenceNeeds = evidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
-  const visibleRoomActivities = ensureEvidenceGapReviewActivity(roomActivities, {
-    run,
-    mainPerspectiveCount: candidates.length,
-    unresolvedEvidenceCount: unresolvedEvidenceNeeds
-  });
   const unresolvedObjections = countRecordsWithoutStatus(objections, "resolved");
+  const visibleRoomActivities = ensureOpenDisagreementActivity(
+    ensureEvidenceGapReviewActivity(roomActivities, {
+      run,
+      mainPerspectiveCount: candidates.length,
+      unresolvedEvidenceCount: unresolvedEvidenceNeeds
+    }),
+    {
+      run,
+      mainPerspectiveCount: candidates.length,
+      openDisagreementCount: unresolvedObjections,
+      objections
+    }
+  );
   const openObligations = countRecordsWithoutStatus(obligations, "satisfied");
   const continuationView = describeDiscussionContinuation(run);
   const progressView = describeDiscussionRoomProgress({
@@ -4833,14 +4928,10 @@ function DiscussionRoomTimeline({
   const conclusion = describeStageStatus(
     getDiscussionStageStatus(run, "latestFinalizationStatus", "finalization")
   );
-  const roomActivities = ensureEvidenceGapReviewActivity(activities, {
-    run,
-    mainPerspectiveCount,
-    unresolvedEvidenceCount
-  });
+  const roomActivities = activities;
   const conversationActivities = addUserContinuationTurnActivity(roomActivities);
   const participantResponses = getParticipantFirstResponses(conversationActivities);
-  const activityGroups = groupRoomActivitiesByPhase(conversationActivities);
+  const activityGroups = groupRoomActivitiesByRound(conversationActivities);
 
   return (
     <section
@@ -4885,23 +4976,38 @@ function DiscussionRoomTimeline({
             aria-label={t("Conversation transcript")}
           >
             {activityGroups.map((group) => {
-              const phaseView = describeRoomActivityPhase(group.phase);
+              const roundLabel =
+                group.kind === "brief"
+                  ? t("Discussion brief")
+                  : t("Discussion round {round}", { round: group.round });
+              const roundStep =
+                group.kind === "brief"
+                  ? t("Room opening")
+                  : t("Round {round}", { round: group.round });
+              const roundDetail =
+                group.kind === "brief"
+                  ? t("The room starts by making the question, goals, and constraints visible.")
+                  : t("Participants answer first; review roles respond in the same room.");
+              const updatesLabel =
+                group.kind === "brief"
+                  ? t("Discussion brief updates")
+                  : t("Discussion round {round} messages", { round: group.round });
 
               return (
                 <section
                   className="du-room-activity-group"
-                  data-phase={group.phase}
-                  aria-label={t(phaseView.updatesLabel)}
-                  key={group.phase}
+                  data-round={group.kind === "brief" ? "brief" : group.round}
+                  aria-label={updatesLabel}
+                  key={`${group.kind}:${group.round}`}
                 >
-                  <div className="du-room-phase-separator">
-                    <div className="du-room-phase-copy">
-                      <p className="du-kicker du-sr-only">{t("Discussion phase")}</p>
+                  <div className="du-room-round-separator du-room-phase-separator">
+                    <div className="du-room-round-copy du-room-phase-copy">
+                      <p className="du-kicker du-sr-only">{t("Discussion round marker")}</p>
                       <p className="du-kicker du-room-phase-step">
-                        {t("Room step {step}", { step: group.step })}
+                        {roundStep}
                       </p>
-                      <h5>{t(phaseView.label)}</h5>
-                      <p className="du-room-phase-detail">{t(phaseView.detail)}</p>
+                      <h5>{roundLabel}</h5>
+                      <p className="du-room-phase-detail">{roundDetail}</p>
                     </div>
                     <div
                       className="du-room-activity-group-meta du-sr-only"
@@ -4925,9 +5031,9 @@ function DiscussionRoomTimeline({
                       </span>
                     </div>
                   </div>
-                  <ol className="du-room-activity" aria-label={t(phaseView.updatesLabel)}>
+                  <ol className="du-room-activity" aria-label={updatesLabel}>
                     {group.activities.map((activity, index) => {
-                      const activityPhaseView = describeRoomActivityPhase(activity.phase);
+                      const conversationCue = describeRoomActivityConversationCue(activity);
                       const roomSpeaker = isRoomSpeaker(activity.speaker);
                       const userSpeaker = isUserSpeaker(activity.speaker);
 
@@ -4963,7 +5069,7 @@ function DiscussionRoomTimeline({
                                   <small className="du-room-message-context">
                                     <span>{t(activity.action)}</span>
                                     <span aria-hidden="true">·</span>
-                                    <span>{t(activityPhaseView.label)}</span>
+                                    <span>{t(conversationCue)}</span>
                                   </small>
                                 </div>
                                 <p className="du-room-message-detail">
@@ -4991,7 +5097,7 @@ function DiscussionRoomTimeline({
                                   <small className="du-room-message-context">
                                     <span>{t(activity.action)}</span>
                                     <span aria-hidden="true">·</span>
-                                    <span>{t(activityPhaseView.label)}</span>
+                                    <span>{t(conversationCue)}</span>
                                   </small>
                                 </div>
                                 <p className="du-room-message-detail">
@@ -5342,14 +5448,6 @@ function getLatestRoomMessagePreviews(
     .slice(-maxMessages);
 }
 
-const ROOM_ACTIVITY_PHASE_ORDER: readonly RoomActivityPhaseId[] = [
-  "brief",
-  "first-responses",
-  "perspectives",
-  "evidence",
-  "conclusion"
-];
-
 function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityItem[] {
   return [...events]
     .sort(compareRunEvents)
@@ -5358,27 +5456,50 @@ function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityI
 }
 
 function addUserContinuationTurnActivity(activities: RoomActivityItem[]): RoomActivityItem[] {
-  const firstParticipantResponseIndex = activities.findIndex(
-    (activity) =>
-      activity.phase === "first-responses" &&
-      activity.title === "Independent response submitted" &&
-      !isRoomSpeaker(activity.speaker)
-  );
-
-  if (firstParticipantResponseIndex < 0) {
+  if (
+    !activities.some(
+      (activity) =>
+        activity.sourceType === "sealed_batch_opened" ||
+        (activity.phase === "first-responses" &&
+          activity.title === "Independent response submitted" &&
+          !isRoomSpeaker(activity.speaker))
+    )
+  ) {
     return activities;
   }
 
-  const userTurn: RoomActivityItem = {
-    speaker: "You",
-    title: "Continue discussion requested",
-    action: "Asked the room to continue",
-    detail: "The room continued from your brief before participants responded.",
-    tone: "neutral",
-    phase: "first-responses"
-  };
-  const nextActivities = [...activities];
-  nextActivities.splice(firstParticipantResponseIndex, 0, userTurn);
+  const nextActivities: RoomActivityItem[] = [];
+  let insertedBeforeFirstResponseWithoutOpen = false;
+  let userTurnCount = 0;
+
+  for (const activity of activities) {
+    const shouldInsertBeforeOpenedRound = activity.sourceType === "sealed_batch_opened";
+    const shouldInsertBeforeFirstResponse =
+      !insertedBeforeFirstResponseWithoutOpen &&
+      activity.phase === "first-responses" &&
+      activity.title === "Independent response submitted" &&
+      !isRoomSpeaker(activity.speaker) &&
+      !activities.some((entry) => entry.sourceType === "sealed_batch_opened");
+
+    if (shouldInsertBeforeOpenedRound || shouldInsertBeforeFirstResponse) {
+      userTurnCount += 1;
+      insertedBeforeFirstResponseWithoutOpen = true;
+      nextActivities.push({
+        speaker: "You",
+        title: "Continue discussion requested",
+        action: "Asked the room to continue",
+        detail:
+          userTurnCount === 1
+            ? "The room continued from your brief before participants responded."
+            : "The room continued again from the current conclusion and open questions.",
+        tone: "neutral",
+        phase: "first-responses",
+        sourceType: "user_continuation_requested"
+      });
+    }
+
+    nextActivities.push(activity);
+  }
 
   return nextActivities;
 }
@@ -5402,23 +5523,106 @@ function ensureEvidenceGapReviewActivity(
     return activities;
   }
 
-  return [
-    ...activities,
-    {
-      speaker: "Evidence checker",
-      title: "Evidence gaps reviewed",
-      action: "Reviewed evidence gaps",
-      detail:
-        unresolvedEvidenceCount === 0
-          ? "No evidence gaps are visible in the current room summary."
-          : unresolvedEvidenceCount === 1
-            ? "{count} evidence gap still needs checking before relying on the conclusion."
-            : "{count} evidence gaps still need checking before relying on the conclusion.",
-      detailValues: { count: unresolvedEvidenceCount },
-      tone: unresolvedEvidenceCount > 0 ? "warning" : "ok",
-      phase: "evidence"
-    }
-  ];
+  return insertRoomReviewActivity(activities, {
+    speaker: "Evidence checker",
+    title: "Evidence gaps reviewed",
+    action: "Reviewed evidence gaps",
+    detail:
+      unresolvedEvidenceCount === 0
+        ? "No evidence gaps are visible in the current room summary."
+        : unresolvedEvidenceCount === 1
+          ? "{count} evidence gap still needs checking before relying on the conclusion."
+          : "{count} evidence gaps still need checking before relying on the conclusion.",
+    detailValues: { count: unresolvedEvidenceCount },
+    tone: unresolvedEvidenceCount > 0 ? "warning" : "ok",
+    phase: "evidence",
+    sourceType: "synthetic_evidence_gap_review"
+  });
+}
+
+function ensureOpenDisagreementActivity(
+  activities: RoomActivityItem[],
+  {
+    run,
+    mainPerspectiveCount,
+    openDisagreementCount,
+    objections
+  }: {
+    run: unknown;
+    mainPerspectiveCount: number;
+    openDisagreementCount: number;
+    objections: unknown[];
+  }
+): RoomActivityItem[] {
+  if (
+    openDisagreementCount <= 0 ||
+    activities.some((activity) => activity.sourceType === "proposal_challenged") ||
+    activities.some((activity) => activity.sourceType === "synthetic_open_disagreement") ||
+    !hasVisibleReviewMaterial(activities, run, mainPerspectiveCount)
+  ) {
+    return activities;
+  }
+
+  return insertRoomReviewActivity(activities, {
+    speaker: "Reviewer",
+    title: "Open disagreement surfaced",
+    action: "Raised an open disagreement",
+    ...describeOpenDisagreementActivityDetail(objections, openDisagreementCount),
+    tone: "warning",
+    phase: "perspectives",
+    sourceType: "synthetic_open_disagreement"
+  });
+}
+
+function insertRoomReviewActivity(
+  activities: RoomActivityItem[],
+  activity: RoomActivityItem
+): RoomActivityItem[] {
+  const insertBeforeIndex = activities.findIndex(
+    (entry) => entry.phase === "evidence" || entry.phase === "conclusion"
+  );
+
+  if (insertBeforeIndex < 0) {
+    return [...activities, activity];
+  }
+
+  const nextActivities = [...activities];
+  nextActivities.splice(insertBeforeIndex, 0, activity);
+
+  return nextActivities;
+}
+
+function describeOpenDisagreementActivityDetail(
+  objections: unknown[],
+  openDisagreementCount: number
+): Pick<RoomActivityItem, "detail" | "detailValues"> {
+  const firstOpenObjection = objections
+    .map((objection) => getRecordValue(objection, "object") ?? objection)
+    .find((objection) => getRecordValue(objection, "status") !== "resolved");
+  const detail = getFirstStringRecordValue(firstOpenObjection, [
+    "summary",
+    "title",
+    "claim",
+    "failureMode",
+    "reason",
+    "description",
+    "consequence",
+    "impact",
+    "mitigation",
+    "text"
+  ]);
+
+  if (detail) {
+    return { detail };
+  }
+
+  return {
+    detail:
+      openDisagreementCount === 1
+        ? "{count} open disagreement still needs resolution before relying on the conclusion."
+        : "{count} open disagreements still need resolution before relying on the conclusion.",
+    detailValues: { count: openDisagreementCount }
+  };
 }
 
 function hasVisibleReviewMaterial(
@@ -5441,31 +5645,41 @@ function hasVisibleReviewMaterial(
   );
 }
 
-function groupRoomActivitiesByPhase(activities: RoomActivityItem[]): RoomActivityGroup[] {
-  const grouped = new Map<RoomActivityPhaseId, RoomActivityItem[]>(
-    ROOM_ACTIVITY_PHASE_ORDER.map((phase) => [phase, []])
-  );
+function groupRoomActivitiesByRound(activities: RoomActivityItem[]): RoomActivityGroup[] {
+  const groups: RoomActivityGroup[] = [];
+  const briefActivities: RoomActivityItem[] = [];
+  let currentRound: RoomActivityGroup | null = null;
+  let roundCount = 0;
 
   for (const activity of activities) {
-    grouped.get(activity.phase)?.push(activity);
+    if (activity.phase === "brief") {
+      briefActivities.push(activity);
+      continue;
+    }
+
+    if (activity.sourceType === "user_continuation_requested" || currentRound === null) {
+      roundCount += 1;
+      currentRound = {
+        kind: "discussion",
+        round: roundCount,
+        activities: []
+      };
+      groups.push(currentRound);
+    }
+
+    currentRound.activities.push(activity);
   }
 
-  return ROOM_ACTIVITY_PHASE_ORDER.flatMap((phase) => {
-    const groupActivities = grouped.get(phase) ?? [];
-
-    return groupActivities.length > 0
-      ? [
-          {
-            phase,
-            step: 0,
-            activities: groupActivities
-          }
-        ]
-      : [];
-  }).map((group, index) => ({
-    ...group,
-    step: index + 1
-  }));
+  return briefActivities.length > 0
+    ? [
+        {
+          kind: "brief",
+          round: 0,
+          activities: briefActivities
+        },
+        ...groups
+      ]
+    : groups;
 }
 
 function countParticipantActivities(activities: RoomActivityItem[]): number {
@@ -5515,6 +5729,60 @@ function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhas
   };
 }
 
+function describeRoomActivityConversationCue(activity: RoomActivityItem): string {
+  if (isUserSpeaker(activity.speaker)) {
+    return "Starting another room round";
+  }
+
+  if (activity.sourceType === "topic_contract_published") {
+    return "Setting the shared brief";
+  }
+
+  if (activity.sourceType === "sealed_batch_opened") {
+    return "Inviting independent first responses";
+  }
+
+  if (activity.sourceType === "sealed_contribution_submitted") {
+    return "Responding to the discussion brief";
+  }
+
+  if (activity.sourceType === "sealed_batch_revealed") {
+    return "Bringing the first responses into the room";
+  }
+
+  if (activity.sourceType === "extraction_proposed") {
+    return "Building on the first responses";
+  }
+
+  if (activity.sourceType === "proposal_accepted") {
+    return "Responding to the strongest current options";
+  }
+
+  if (
+    activity.sourceType === "proposal_challenged" ||
+    activity.sourceType === "synthetic_open_disagreement"
+  ) {
+    return "Challenging the current direction";
+  }
+
+  if (
+    activity.sourceType === "evidence_result_recorded" ||
+    activity.sourceType === "synthetic_evidence_gap_review"
+  ) {
+    return "Checking evidence before the conclusion";
+  }
+
+  if (activity.sourceType === "final_candidate_proposed") {
+    return "Synthesizing the current room";
+  }
+
+  if (activity.sourceType === "final_audit_recorded") {
+    return "Reviewing risks before relying on it";
+  }
+
+  return "Responding in the discussion room";
+}
+
 function isRoomSpeaker(speaker: string): boolean {
   return normalizeActorLabel(speaker) === "discussion-room";
 }
@@ -5555,7 +5823,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
         getFirstStringRecordValue(payload, ["topic", "question", "summary"]) ??
         "The discussion brief is available for everyone in the room.",
       tone: "ok",
-      phase: "brief"
+      phase: "brief",
+      sourceType: type
     };
   }
 
@@ -5567,7 +5836,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       detail:
         "Participants can respond separately before seeing one another's answers.",
       tone: "neutral",
-      phase: "first-responses"
+      phase: "first-responses",
+      sourceType: type
     };
   }
 
@@ -5582,7 +5852,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
         ? "This response is sealed until the independent first responses are revealed."
         : describeContributionPayload(payload),
       tone: isRedactedPayload(payload) ? "warning" : "ok",
-      phase: "first-responses"
+      phase: "first-responses",
+      sourceType: type
     };
   }
 
@@ -5593,7 +5864,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       action: "Made first responses visible",
       detail: "The independent responses are now available for review.",
       tone: "ok",
-      phase: "first-responses"
+      phase: "first-responses",
+      sourceType: type
     };
   }
 
@@ -5606,7 +5878,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
         getStringRecordValue(payload, "rationale") ??
         "The revealed responses were organized into options, disagreements, requirements, and evidence needs.",
       tone: "ok",
-      phase: "perspectives"
+      phase: "perspectives",
+      sourceType: type
     };
   }
 
@@ -5619,7 +5892,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
         getStringRecordValue(payload, "rationale") ??
         "The room accepted this discussion material as part of the current working view.",
       tone: "ok",
-      phase: "perspectives"
+      phase: "perspectives",
+      sourceType: type
     };
   }
 
@@ -5632,7 +5906,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
         getStringRecordValue(payload, "reason") ??
         "A challenge was recorded against the current discussion material.",
       tone: "warning",
-      phase: "perspectives"
+      phase: "perspectives",
+      sourceType: type
     };
   }
 
@@ -5645,7 +5920,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
         getFirstStringRecordValue(payload, ["summary", "result", "status"]) ??
         "An evidence check result was added to the discussion.",
       tone: "ok",
-      phase: "evidence"
+      phase: "evidence",
+      sourceType: type
     };
   }
 
@@ -5658,7 +5934,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
         getStringRecordValue(payload, "recommendation") ??
         "A reviewable conclusion draft was prepared from the current discussion material.",
       tone: "ok",
-      phase: "conclusion"
+      phase: "conclusion",
+      sourceType: type
     };
   }
 
@@ -5669,7 +5946,8 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       action: "Reviewed risks",
       detail: describeFinalAuditPayload(payload),
       tone: "warning",
-      phase: "conclusion"
+      phase: "conclusion",
+      sourceType: type
     };
   }
 

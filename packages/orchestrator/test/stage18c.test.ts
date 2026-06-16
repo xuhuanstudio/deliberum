@@ -965,6 +965,61 @@ describe("runSealedDivergenceRound", () => {
     expect(eventStore.listEvents(run.sessionId)).toHaveLength(eventCount);
   });
 
+  it("starts a follow-up round after the previous round is revealed", async () => {
+    const { eventStore, runStore, run } = createFixture();
+    const adapterCli = createAdapter({ adapterId: "adapter-cli" });
+    const adapterWeb = createAdapter({ adapterId: "adapter-web" });
+    const registry = createRegistry([adapterCli, adapterWeb]);
+
+    const first = await runSealedDivergenceRound(
+      {
+        runId: run.id
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: registry,
+        idGenerator: runIds()
+      }
+    );
+
+    expect(first.run.status).toBe("revealed");
+
+    const second = await runSealedDivergenceRound(
+      {
+        runId: run.id,
+        roundId: "follow-up"
+      },
+      {
+        eventStore,
+        runStore,
+        adapterRegistry: registry,
+        idGenerator: createIds([
+          "followup-batch",
+          "followup-opened",
+          "followup-cli",
+          "followup-web",
+          "followup-revealed"
+        ])
+      }
+    );
+    const events = eventStore.listEvents(run.sessionId);
+
+    expect(second.executionStatus).toBe("executed");
+    expect(second.run.status).toBe("revealed");
+    expect(second.run.sealedDivergenceRound?.roundId).toBe("follow-up");
+    expect(second.run.sealedDivergenceRound?.batchId).toBe("followup-batch");
+    expect(getAdapterCallCount(adapterCli)).toBe(2);
+    expect(getAdapterCallCount(adapterWeb)).toBe(2);
+    expect(events.filter((event) => event.type === "sealed_batch_opened")).toHaveLength(2);
+    expect(events.filter((event) => event.type === "sealed_contribution_submitted")).toHaveLength(4);
+    expect(events.filter((event) => event.type === "sealed_batch_revealed")).toHaveLength(2);
+    expect(events.at(-1)).toMatchObject({
+      id: "followup-revealed",
+      type: "sealed_batch_revealed"
+    });
+  });
+
   it("respects Stage 18B context visibility during dispatch", async () => {
     const { eventStore, runStore, run } = createFixture();
     appendPrivateEvent(eventStore);

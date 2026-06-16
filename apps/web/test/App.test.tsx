@@ -4606,7 +4606,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u8ba8\u8bba\u5ba4\u4e2d\u53d1\u751f\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByRole("region", { name: "\u5bf9\u8bdd\u8bb0\u5f55" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0" })).toBeTruthy();
-    expect(screen.getByRole("list", { name: "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u66f4\u65b0" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "\u8ba8\u8bba\u7b2c 1 \u8f6e\u53d1\u8a00" })).toBeTruthy();
+    expect(screen.getByText("\u8ba8\u8bba\u7b2c 1 \u8f6e")).toBeTruthy();
     expect(screen.getByText("\u5206\u4eab\u4e86\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
     expect(screen.getByText("\u63d0\u4ea4\u4e86\u5c01\u5b58\u7684\u521d\u59cb\u56de\u5e94")).toBeTruthy();
     expect(
@@ -4625,7 +4626,7 @@ describe("@deliberum/web shell", () => {
     ).map((summary) => summary.textContent ?? "");
     expect(localizedStageSummaries.join(" ")).toContain("1 \u4e2a\u66f4\u65b0");
     expect(localizedStageSummaries.join(" ")).toContain("\u6ca1\u6709\u53c2\u4e0e\u8005\u8d21\u732e");
-    expect(localizedStageSummaries.join(" ")).toContain("1 \u4e2a\u53c2\u4e0e\u8005\u8d21\u732e");
+    expect(localizedStageSummaries.join(" ")).toContain("\u53c2\u4e0e\u8005\u8d21\u732e");
     expect(
       document.querySelectorAll(
         ".du-room-activity-item[data-speaker='participant'] .du-room-message-context"
@@ -5710,25 +5711,32 @@ describe("@deliberum/web shell", () => {
     expect(nextRoomActionText).toContain("missing evidence");
     expect(nextRoomActionText).toContain("requirements to satisfy");
     expect(screen.getByRole("list", { name: "Discussion brief updates" })).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Evidence and verification updates" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Discussion round 1 messages" })).toBeTruthy();
+    expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
+    expect(screen.getByText("Raised an open disagreement")).toBeTruthy();
+    expect(
+      screen.getAllByText(
+        "1 open disagreement still needs resolution before relying on the conclusion."
+      ).length
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
     expect(screen.getByText("Reviewed evidence gaps")).toBeTruthy();
     expect(
       screen.getAllByText("1 evidence gap still needs checking before relying on the conclusion.")
         .length
     ).toBeGreaterThan(0);
-    expect(screen.getAllByText("Discussion phase").length).toBeGreaterThan(0);
-    expect(screen.getByText("Room step 1")).toBeTruthy();
-    expect(screen.getByText("Room step 2")).toBeTruthy();
-    expect(document.querySelectorAll(".du-room-phase-separator").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Discussion round marker").length).toBeGreaterThan(0);
+    expect(screen.getByText("Room opening")).toBeTruthy();
+    expect(screen.getByText("Discussion round 1")).toBeTruthy();
+    expect(screen.getByText("Round 1")).toBeTruthy();
+    expect(document.querySelectorAll(".du-room-round-separator").length).toBeGreaterThan(0);
     expect(
       document
-        .querySelector(".du-room-phase-copy .du-sr-only")
+        .querySelector(".du-room-round-copy .du-sr-only")
         ?.textContent
-    ).toContain("Discussion phase");
+    ).toContain("Discussion round marker");
     expect(document.querySelector(".du-room-phase-step")?.textContent ?? "").toContain(
-      "Room step 1"
+      "Room opening"
     );
     expect(document.querySelector(".du-room-phase-step")?.classList.contains("du-sr-only")).toBe(
       false
@@ -5801,13 +5809,15 @@ describe("@deliberum/web shell", () => {
     expect(firstRoomMessageContext?.textContent ?? "").toContain(
       "Submitted a sealed first response"
     );
-    expect(firstRoomMessageContext?.textContent ?? "").toContain("Independent first responses");
+    expect(firstRoomMessageContext?.textContent ?? "").toContain(
+      "Responding to the discussion brief"
+    );
     const stageSummaries = Array.from(
       document.querySelectorAll('[aria-label="Stage activity summary"]')
     ).map((summary) => summary.textContent ?? "");
     expect(stageSummaries.join(" ")).toContain("1 update");
     expect(stageSummaries.join(" ")).toContain("No participant contributions");
-    expect(stageSummaries.join(" ")).toContain("1 participant contribution");
+    expect(stageSummaries.join(" ")).toContain("participant contributions");
     expect(
       document
         .querySelector('[aria-label="Stage activity summary"]')
@@ -5816,7 +5826,7 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText("The room starts by making the question, goals, and constraints visible.")
     ).toBeTruthy();
-    expect(screen.getByText("Participants respond separately before comparing answers.")).toBeTruthy();
+    expect(screen.getByText("Participants answer first; review roles respond in the same room.")).toBeTruthy();
     expect(screen.getByText("Shared the discussion brief")).toBeTruthy();
     expect(screen.getByText("Submitted a sealed first response")).toBeTruthy();
     expect(
@@ -6207,14 +6217,14 @@ describe("@deliberum/web shell", () => {
         .length
     ).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Main perspective and disagreement updates" })).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Evidence and verification updates" })).toBeTruthy();
-    expect(document.querySelectorAll(".du-room-phase-separator").length).toBeGreaterThan(0);
+    expect(screen.getByRole("list", { name: "Discussion round 1 messages" })).toBeTruthy();
+    expect(screen.getByText("Discussion round 1")).toBeTruthy();
+    expect(screen.getAllByText("Building on the first responses").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Checking evidence before the conclusion").length).toBeGreaterThan(0);
+    expect(document.querySelectorAll(".du-room-round-separator").length).toBeGreaterThan(0);
     expect(document.querySelector(".du-room-activity-group-header")).toBeNull();
-    expect(screen.getAllByText("Main perspectives and disagreements").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("The room organizes strongest options and keeps challenges visible.")
+      screen.getByText("Participants answer first; review roles respond in the same room.")
     ).toBeTruthy();
     expect(document.querySelector('.du-room-activity-item[data-speaker="room"]')).toBeTruthy();
     expect(
@@ -6231,6 +6241,146 @@ describe("@deliberum/web shell", () => {
     expect(roomText).not.toContain("openai-compatible");
     expect(roomText).not.toContain("Provider Review Coordinator");
     expect(roomText).not.toContain("provider-review-coordinator");
+  });
+
+  it("groups repeated continuation events as readable discussion rounds", async () => {
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRunEvents: vi.fn(async () => ({
+          runId: runDetail.runId,
+          sessionId: runDetail.sessionId,
+          events: [
+            {
+              id: "topic-event",
+              type: "topic_contract_published",
+              sequence: 0,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:00.000Z",
+              payload: {
+                topic: "Evaluate the local daemon run workspace"
+              },
+              basedOnEventIds: [],
+              trace: {}
+            },
+            {
+              id: "round-one-opened",
+              type: "sealed_batch_opened",
+              sequence: 1,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:01.000Z",
+              payload: {},
+              basedOnEventIds: ["topic-event"],
+              trace: {}
+            },
+            {
+              id: "round-one-response",
+              type: "sealed_contribution_submitted",
+              sequence: 2,
+              visibility: "public",
+              authorId: "local-preset-alpha",
+              createdAt: "2026-06-10T00:00:02.000Z",
+              payload: {
+                position: "Round one says the rollout should remain reversible."
+              },
+              basedOnEventIds: ["round-one-opened"],
+              trace: {}
+            },
+            {
+              id: "round-one-revealed",
+              type: "sealed_batch_revealed",
+              sequence: 3,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:03.000Z",
+              payload: {},
+              basedOnEventIds: ["round-one-response"],
+              trace: {}
+            },
+            {
+              id: "round-one-extraction",
+              type: "extraction_proposed",
+              sequence: 4,
+              visibility: "public",
+              authorId: "local-preset-extractor",
+              createdAt: "2026-06-10T00:00:04.000Z",
+              payload: {
+                rationale: "Round one organized the first responses into reviewable options."
+              },
+              basedOnEventIds: ["round-one-revealed"],
+              trace: {}
+            },
+            {
+              id: "round-two-opened",
+              type: "sealed_batch_opened",
+              sequence: 5,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:05.000Z",
+              payload: {},
+              basedOnEventIds: ["round-one-extraction"],
+              trace: {}
+            },
+            {
+              id: "round-two-response",
+              type: "sealed_contribution_submitted",
+              sequence: 6,
+              visibility: "public",
+              authorId: "local-preset-beta",
+              createdAt: "2026-06-10T00:00:06.000Z",
+              payload: {
+                position: "Round two responds that evidence should be checked before launch."
+              },
+              basedOnEventIds: ["round-two-opened"],
+              trace: {}
+            },
+            {
+              id: "round-two-revealed",
+              type: "sealed_batch_revealed",
+              sequence: 7,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:07.000Z",
+              payload: {},
+              basedOnEventIds: ["round-two-response"],
+              trace: {}
+            },
+            {
+              id: "round-two-extraction",
+              type: "extraction_proposed",
+              sequence: 8,
+              visibility: "public",
+              authorId: "local-preset-extractor",
+              createdAt: "2026-06-10T00:00:08.000Z",
+              payload: {
+                rationale: "Round two organized the follow-up into updated options."
+              },
+              basedOnEventIds: ["round-two-revealed"],
+              trace: {}
+            }
+          ]
+        }))
+      })
+    );
+
+    await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
+    expect(await screen.findByRole("list", { name: "Discussion round 1 messages" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Discussion round 2 messages" })).toBeTruthy();
+    expect(screen.getByText("Discussion round 2")).toBeTruthy();
+    expect(screen.getByText("The room continued again from the current conclusion and open questions.")).toBeTruthy();
+    const roundTwo = screen.getByRole("list", { name: "Discussion round 2 messages" });
+    expect(roundTwo.textContent ?? "").toContain(
+      "Round two responds that evidence should be checked before launch."
+    );
+    expect(roundTwo.textContent ?? "").toContain("Asked the room to continue");
+    expect(roundTwo.textContent ?? "").toContain("Starting another room round");
+    expect(roundTwo.textContent ?? "").toContain("Responding to the discussion brief");
+    expect(roundTwo.textContent ?? "").toContain("Building on the first responses");
+    expect((document.querySelector(".du-room-layout")?.textContent ?? "")).not.toContain(
+      "round-two-opened"
+    );
   });
 
   it("shows organizer fallback guidance in the discussion room", async () => {
@@ -7829,7 +7979,9 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Projection refreshed after start")).length).toBeGreaterThan(
       0
     );
-    expect(screen.getByText("Projection objection refreshed after start")).toBeTruthy();
+    expect(screen.getAllByText("Projection objection refreshed after start").length).toBeGreaterThan(
+      0
+    );
     expect(screen.getByText("Projection obligation refreshed after start")).toBeTruthy();
     expect(client.getFrontier).toHaveBeenCalledTimes(2);
     expect(client.getObjections).toHaveBeenCalledTimes(2);
