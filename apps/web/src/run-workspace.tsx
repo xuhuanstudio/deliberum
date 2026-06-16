@@ -4764,7 +4764,13 @@ function DiscussionRoomTimeline({
                               <span className="du-room-activity-avatar" aria-hidden="true">
                                 {formatSpeakerInitials(t(activity.speaker))}
                               </span>
-                              <div className="du-room-activity-bubble">
+                              <div
+                                className="du-room-activity-bubble"
+                                aria-label={`${t(activity.speaker)}: ${t(
+                                  activity.detail,
+                                  activity.detailValues
+                                )}`}
+                              >
                                 <div className="du-room-message-header">
                                   <strong>{t(activity.speaker)}</strong>
                                   <span>{t(activityPhaseView.label)}</span>
@@ -4772,7 +4778,6 @@ function DiscussionRoomTimeline({
                                 <p className="du-room-message-detail">
                                   {t(activity.detail, activity.detailValues)}
                                 </p>
-                                <p className="du-room-message-action">{t(activity.action)}</p>
                               </div>
                             </>
                           )}

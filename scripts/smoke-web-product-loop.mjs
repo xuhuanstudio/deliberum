@@ -329,7 +329,6 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("What the room said and did").waitFor();
   await page.getByText("Discussion phase").first().waitFor();
   await page.getByText("Evidence checker", { exact: true }).waitFor();
-  await page.getByText("Reviewed evidence gaps", { exact: true }).waitFor();
   await page
     .getByText("1 evidence gap still needs checking before relying on the conclusion.")
     .waitFor();

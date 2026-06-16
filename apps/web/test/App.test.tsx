@@ -4548,7 +4548,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("list", { name: "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u66f4\u65b0" })).toBeTruthy();
     expect(screen.getByText("\u5206\u4eab\u4e86\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
-    expect(screen.getByText("\u63d0\u4ea4\u4e86\u5c01\u5b58\u7684\u521d\u59cb\u56de\u5e94")).toBeTruthy();
+    expect(screen.queryByText("\u63d0\u4ea4\u4e86\u5c01\u5b58\u7684\u521d\u59cb\u56de\u5e94")).toBeNull();
+    expect(
+      screen.getByText(
+        "\u5728\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u63ed\u793a\u524d\uff0c\u6b64\u56de\u5e94\u4fdd\u6301\u5c01\u5b58\u3002"
+      )
+    ).toBeTruthy();
     const localizedSystemMessages = Array.from(
       document.querySelectorAll('[aria-label="\u8ba8\u8bba\u5ba4\u66f4\u65b0"]')
     ).map((message) => message.textContent ?? "");
@@ -5515,7 +5520,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("list", { name: "Independent first response updates" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Evidence and verification updates" })).toBeTruthy();
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
-    expect(screen.getByText("Reviewed evidence gaps")).toBeTruthy();
+    expect(screen.queryByText("Reviewed evidence gaps")).toBeNull();
     expect(
       screen.getByText("1 evidence gap still needs checking before relying on the conclusion.")
     ).toBeTruthy();
@@ -5547,19 +5552,19 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(document.querySelectorAll(".du-room-message-header").length).toBeGreaterThan(0);
     expect(document.querySelectorAll(".du-room-message-detail").length).toBeGreaterThan(0);
-    expect(document.querySelectorAll(".du-room-message-action").length).toBeGreaterThan(0);
+    expect(
+      document.querySelectorAll(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-action"
+      ).length
+    ).toBe(0);
     expect(document.querySelector(".du-room-message-title")).toBeNull();
-    const firstRoomMessage = document.querySelector(".du-room-activity-bubble");
+    const firstRoomMessage = document.querySelector(
+      ".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble"
+    );
     const firstRoomMessageDetail = firstRoomMessage?.querySelector(".du-room-message-detail");
     const firstRoomMessageAction = firstRoomMessage?.querySelector(".du-room-message-action");
     expect(firstRoomMessageDetail).toBeTruthy();
-    expect(firstRoomMessageAction).toBeTruthy();
-    expect(
-      Boolean(
-        firstRoomMessageDetail?.compareDocumentPosition(firstRoomMessageAction as Node) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-      )
-    ).toBe(true);
+    expect(firstRoomMessageAction).toBeNull();
     const stageSummaries = Array.from(
       document.querySelectorAll('[aria-label="Stage activity summary"]')
     ).map((summary) => summary.textContent ?? "");
@@ -5576,7 +5581,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("Participants respond separately before comparing answers.")).toBeTruthy();
     expect(screen.getByText("Shared the discussion brief")).toBeTruthy();
-    expect(screen.getByText("Submitted a sealed first response")).toBeTruthy();
+    expect(screen.queryByText("Submitted a sealed first response")).toBeNull();
     expect(
       screen.getByText(
         "This response is sealed until the independent first responses are revealed."
@@ -5992,16 +5997,16 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.queryByText("This participant response is available for review in the room.")
     ).toBeNull();
-    expect(screen.getByText("Shared a first response")).toBeTruthy();
+    expect(screen.queryByText("Shared a first response")).toBeNull();
     expect(screen.getByText("Made first responses visible")).toBeTruthy();
     const providerSystemMessages = Array.from(
       document.querySelectorAll(".du-room-system-message")
     ).map((message) => message.textContent ?? "");
     expect(providerSystemMessages.join(" ")).toContain("Made first responses visible");
-    expect(screen.getAllByText("Organized the strongest options").length).toBeGreaterThan(0);
-    expect(screen.getByText("Kept this material in the room")).toBeTruthy();
-    expect(screen.getByText("Drafted the current conclusion")).toBeTruthy();
-    expect(screen.getByText("Reviewed risks")).toBeTruthy();
+    expect(screen.queryByText("Organized the strongest options")).toBeNull();
+    expect(screen.queryByText("Kept this material in the room")).toBeNull();
+    expect(screen.queryByText("Drafted the current conclusion")).toBeNull();
+    expect(screen.queryByText("Reviewed risks")).toBeNull();
     expect(
       screen.getByText("Provider-backed conclusions may still miss real rollout constraints.")
     ).toBeTruthy();
@@ -6012,7 +6017,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Conclusion writer")).toBeTruthy();
     expect(screen.getByText("Risk reviewer")).toBeTruthy();
     expect(screen.getByText("Evidence checker")).toBeTruthy();
-    expect(screen.getByText("Reviewed evidence gaps")).toBeTruthy();
+    expect(screen.queryByText("Reviewed evidence gaps")).toBeNull();
     expect(
       screen.getByText("1 evidence gap still needs checking before relying on the conclusion.")
     ).toBeTruthy();
@@ -6149,7 +6154,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u53c2\u4e0e\u8005\u6700\u521d\u8bf4\u4e86\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7ec4\u7ec7\u8005")).toBeTruthy();
     expect(screen.getByText("\u8bc1\u636e\u6838\u67e5\u8005")).toBeTruthy();
-    expect(screen.getByText("\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3")).toBeTruthy();
+    expect(screen.queryByText("\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3")).toBeNull();
     expect(
       screen.getByText(
         "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u4ecd\u6709 1 \u4e2a\u8bc1\u636e\u7f3a\u53e3\u9700\u8981\u6838\u67e5\u3002"
