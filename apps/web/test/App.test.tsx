@@ -2202,11 +2202,9 @@ describe("@deliberum/web shell", () => {
       )
     );
     expect(await screen.findByText("Model-backed discussion continued")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Model participants and review roles updated the readable timeline and conclusion materials."
-      )
-    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain(
+      "Model participants and review roles updated the readable timeline and conclusion materials."
+    );
     fireEvent.click(await screen.findByText("Room progress and stages"));
     expect(screen.getByText("Participant first responses")).toBeTruthy();
     expect(
@@ -4684,7 +4682,7 @@ describe("@deliberum/web shell", () => {
     expect(latestUpdate.querySelector(".du-room-update-avatar")).toBeTruthy();
     expect(latestUpdate.textContent ?? "").toContain("\u8ba8\u8bba\u5ba4\u66f4\u65b0");
     expect(latestUpdate.textContent ?? "").toContain("\u8ba8\u8bba\u5ba4\u521a\u521a\u66f4\u65b0");
-    expect(latestUpdate.textContent ?? "").toContain(
+    expect(latestUpdate.textContent ?? "").not.toContain(
       "\u8bf7\u5148\u5ba1\u9605\u6b64\u8ba8\u8bba\u5ba4\u66f4\u65b0\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002"
     );
     const updateShortcuts = screen.getByRole("navigation", {
@@ -5797,15 +5795,13 @@ describe("@deliberum/web shell", () => {
     expect(scrollTargets).not.toContain("latest-discussion-update");
     expect(latestUpdate.textContent ?? "").toContain("Room update");
     expect(latestUpdate.textContent ?? "").toContain("The room just updated");
-    expect(latestUpdate.textContent ?? "").toContain(
+    expect(latestUpdate.textContent ?? "").not.toContain(
       "Review this room update, then return to the timeline, outputs, or next recommended action."
     );
     expect(await screen.findByText("Discussion update completed")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "The guided update ran with the current brief. Review the updated conclusion, disagreements, requirements, and evidence before relying on it."
-      )
-    ).toBeTruthy();
+    expect(latestUpdate.textContent ?? "").not.toContain(
+      "The guided update ran with the current brief. Review the updated conclusion, disagreements, requirements, and evidence before relying on it."
+    );
     const updateShortcuts = screen.getByRole("navigation", {
       name: "Room update shortcuts"
     });
@@ -5880,11 +5876,9 @@ describe("@deliberum/web shell", () => {
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(2));
     expect(await screen.findByText("Stronger options requested")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "The guided update ran so the strongest current options can be compared again before relying on the conclusion."
-      )
-    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain(
+      "The guided update ran so the strongest current options can be compared again before relying on the conclusion."
+    );
     expect(document.body.textContent ?? "").not.toContain("event-2");
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
       configurable: true,
@@ -7391,11 +7385,9 @@ describe("@deliberum/web shell", () => {
       )
     );
     expect(await screen.findByText("Model-backed discussion continued")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Model participants and review roles updated the readable timeline and conclusion materials."
-      )
-    ).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain(
+      "Model participants and review roles updated the readable timeline and conclusion materials."
+    );
   });
 
   it("degrades provider-backed continuation to first responses when review roles are not ready", async () => {

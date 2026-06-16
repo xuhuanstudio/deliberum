@@ -378,12 +378,18 @@ async function assertRoomUpdateMessage(page, label) {
     await roomUpdate.locator(".du-room-update-avatar").waitFor();
     await roomUpdate.getByText("Room update", { exact: true }).waitFor();
     await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
-    await roomUpdate.getByText("Review this room update").waitFor();
     const shortcuts = roomUpdate.getByRole("navigation", { name: "Room update shortcuts" });
     await shortcuts.waitFor();
     await shortcuts.getByRole("link", { name: "Review updated timeline" }).waitFor();
     await shortcuts.getByRole("link", { name: "Review discussion outputs" }).waitFor();
     await roomUpdate.getByText("Review detailed update", { exact: true }).waitFor();
+    const hasOldRoomReviewCopy = await roomUpdate.evaluate(
+      (element) => element.textContent?.includes("Review this room update") ?? false
+    );
+
+    if (hasOldRoomReviewCopy) {
+      throw new Error(`${label} should not show the old room update explainer by default.`);
+    }
   } catch (error) {
     throw new Error(`${label} did not render the latest update as a room message.`, {
       cause: error

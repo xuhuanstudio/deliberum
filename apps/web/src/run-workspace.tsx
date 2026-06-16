@@ -3362,13 +3362,13 @@ function StartRunForm({
                 {t(variant === "room-composer" ? "Room update" : "Latest discussion update")}
               </p>
               <h4>{t(variant === "room-composer" ? "The room just updated" : "What just changed")}</h4>
-              <p>
-                {t(
-                  variant === "room-composer"
-                    ? "Review this room update, then return to the timeline, outputs, or next recommended action."
-                    : "Review this result first, then return to the timeline, outputs, or next recommended action."
-                )}
-              </p>
+              {variant === "room-composer" ? null : (
+                <p>
+                  {t(
+                    "Review this result first, then return to the timeline, outputs, or next recommended action."
+                  )}
+                </p>
+              )}
             </div>
             <StartResult
               result={startMutation.data}
@@ -3775,8 +3775,9 @@ function StartResult({
   const conclusionReviewReady =
     reviewReadyBeforeUpdate || isStartResultConclusionReviewReady(result, stages);
   const roomMessage = presentation === "room-message";
-  const resultTitle =
-    stopped === true ? t("Discussion paused") : t(feedback?.title ?? "Discussion steps completed");
+  const resultTitleKey =
+    stopped === true ? "Discussion paused" : feedback?.title ?? "Discussion steps completed";
+  const resultTitle = t(resultTitleKey);
   const resultDetail =
     stopped === true
       ? t(
@@ -3788,6 +3789,10 @@ function StartResult({
               ? "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
               : "The guided discussion update was recorded. Review the visible steps and continue the discussion before relying on a conclusion.")
         );
+  const roomStatusDetail =
+    stopped === true || resultTitleKey === "First responses collected" || !conclusionReviewReady
+      ? resultDetail
+      : undefined;
 
   if (roomMessage) {
     return (
@@ -3795,7 +3800,7 @@ function StartResult({
         <StatusBanner
           tone={stopped === true ? "warning" : "ok"}
           title={resultTitle}
-          detail={resultDetail}
+          detail={roomStatusDetail}
         />
         {stopped === true ? (
           <StatusBanner

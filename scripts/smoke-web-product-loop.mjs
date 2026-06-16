@@ -395,7 +395,6 @@ async function assertRoomUpdateMessage(page, label) {
     await roomUpdate.locator(".du-room-update-avatar").waitFor();
     await roomUpdate.getByText("Room update", { exact: true }).waitFor();
     await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
-    await roomUpdate.getByText("Review this room update").waitFor();
     const shortcuts = roomUpdate.getByRole("navigation", { name: "Room update shortcuts" });
     await shortcuts.waitFor();
     await shortcuts.getByRole("link", { name: "Review updated timeline" }).waitFor();
@@ -407,11 +406,19 @@ async function assertRoomUpdateMessage(page, label) {
 
       return {
         height: rect.height,
-        detailsOpen: Boolean(details && details.open)
+        detailsOpen: Boolean(details && details.open),
+        hasOldRoomReviewCopy: element.textContent?.includes("Review this room update") ?? false,
+        hasGuidedSuccessDetail:
+          element.textContent?.includes("The guided update ran with the current brief") ?? false
       };
     });
 
-    if (metrics.detailsOpen || metrics.height > 520) {
+    if (
+      metrics.detailsOpen ||
+      metrics.hasOldRoomReviewCopy ||
+      metrics.hasGuidedSuccessDetail ||
+      metrics.height > 520
+    ) {
       throw new Error(
         `${label} should keep the room update compact by default, got ${JSON.stringify(metrics)}.`
       );
