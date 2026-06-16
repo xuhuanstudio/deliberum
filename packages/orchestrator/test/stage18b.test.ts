@@ -587,6 +587,12 @@ describe("buildParticipantDispatchInput", () => {
       "Do not answer in English unless quoting a short English term from the discussion brief."
     );
     expect(adapterInputText).toContain(
+      "\u91cd\u8981\uff1a\u8bf7\u7528\u7b80\u4f53\u4e2d\u6587\u64b0\u5199\u6240\u6709\u9762\u5411\u7528\u6237\u7684\u5185\u5bb9\u3002"
+    );
+    expect(adapterInputText).toContain(
+      "\u5982\u679c\u4e0b\u65b9\u51fa\u73b0\u82f1\u6587\u7ed3\u6784\u6807\u9898\uff0c\u5b83\u4eec\u53ea\u662f\u63d0\u793a\u7ed3\u6784\uff0c\u4e0d\u662f\u56de\u7b54\u8bed\u8a00\u3002"
+    );
+    expect(adapterInputText).toContain(
       "Do not translate the Chinese discussion question into an English answer."
     );
     expect(adapterInputText).toContain("Language");
