@@ -4339,16 +4339,6 @@ function RunQualityOverview({
     unresolvedEvidenceCount: unresolvedEvidenceNeeds,
     openRequirementCount: openObligations
   });
-  const nextActionTitle = continuationView.reviewReady
-    ? t("Next: review current conclusion")
-    : t("Next: continue guided discussion");
-  const nextActionDetail = continuationView.reviewReady
-    ? t(
-        "Start with the conclusion, then inspect disagreements, requirements, and missing evidence before relying on it."
-      )
-    : t(
-        "Continue the guided discussion so the main perspectives, disagreements, requirements, evidence, and conclusion can be produced."
-      );
 
   return (
     <DataPanel
@@ -4369,12 +4359,6 @@ function RunQualityOverview({
               openDisagreementCount={unresolvedObjections}
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
               openRequirementCount={openObligations}
-            />
-            <DiscussionRoomStatusCue
-              statusLabel={continuationView.reviewReady ? t("Conclusion ready") : t("Next step")}
-              title={nextActionTitle}
-              detail={nextActionDetail}
-              ready={continuationView.reviewReady}
             />
             <DiscussionRoomTimeline
               runId={runId}
@@ -4576,41 +4560,6 @@ function RunQualityOverview({
   );
 }
 
-function DiscussionRoomStatusCue({
-  statusLabel,
-  title,
-  detail,
-  ready
-}: {
-  statusLabel: string;
-  title: string;
-  detail: string;
-  ready: boolean;
-}) {
-  const { t } = useI18n();
-
-  return (
-    <section
-      className="du-room-status-cue"
-      aria-label={t("Room status")}
-      data-state={ready ? "ready" : "pending"}
-      role="status"
-    >
-      <span className="du-room-activity-avatar" aria-hidden="true">
-        DR
-      </span>
-      <div className="du-room-activity-bubble">
-        <div className="du-room-message-header">
-          <strong>{t("Discussion room")}</strong>
-          <span>{statusLabel}</span>
-        </div>
-        <p className="du-room-message-detail">{title}</p>
-        <p className="du-room-message-action">{detail}</p>
-      </div>
-    </section>
-  );
-}
-
 function DiscussionRoomHeader({
   runId,
   run,
@@ -4639,6 +4588,7 @@ function DiscussionRoomHeader({
   const members = allMembers.slice(0, 6);
   const hiddenMemberCount = Math.max(0, allMembers.length - members.length);
   const nextActionLabel = reviewReady ? "Review current conclusion" : "Continue discussion";
+  const statusLabel = reviewReady ? "Conclusion ready" : "Next step";
   const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
 
   return (
@@ -4653,8 +4603,13 @@ function DiscussionRoomHeader({
             )}
           </p>
         </div>
-        <div className="du-room-header-next">
-          <span>{t("Next action")}</span>
+        <div
+          className="du-room-header-next"
+          role="status"
+          aria-label={t("Room status")}
+          data-state={reviewReady ? "ready" : "pending"}
+        >
+          <span>{t(statusLabel)}</span>
           {reviewReady ? (
             <Link
               className="du-room-header-action"

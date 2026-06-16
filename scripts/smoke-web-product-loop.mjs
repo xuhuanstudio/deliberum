@@ -276,10 +276,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     label: "discussion room before continuation",
     expectedNextAction: "Continue discussion"
   });
-  await assertRoomStatusCue(page, {
+  await assertRoomHeaderStatus(page, {
     label: "discussion room before continuation",
     expectedStatus: "Next step",
-    expectedNextAction: "Next: continue guided discussion"
+    expectedNextAction: "Continue discussion"
   });
   await page.locator(".du-room-system-message").first().waitFor();
   await page.getByText("Shared the discussion brief", { exact: true }).waitFor();
@@ -316,10 +316,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Model-backed discussion continued").waitFor();
   await assertRoomUpdateMessage(page, "discussion room after continuation");
   await assertConversationTranscriptReturnedToViewport(page, "discussion room after continuation");
-  await assertRoomStatusCue(page, {
+  await assertRoomHeaderStatus(page, {
     label: "discussion room after continuation",
     expectedStatus: "Conclusion ready",
-    expectedNextAction: "Next: review current conclusion"
+    expectedNextAction: "Review current conclusion"
   });
   await assertDiscussionRoomOverview(page, {
     label: "discussion room after continuation",
@@ -604,7 +604,6 @@ async function assertMobileDiscussionRoomShell(page, label) {
       };
     };
     const elements = Array.from(document.querySelectorAll("*"));
-    const status = document.querySelector(".du-room-status-cue");
     const header = document.querySelector(".du-room-header");
     const strip = document.querySelector(".du-room-action-strip");
     const timeline = document.querySelector("[aria-label='Discussion timeline']");
@@ -619,16 +618,13 @@ async function assertMobileDiscussionRoomShell(page, label) {
       panelHeading: rectFor(".du-panel-heading"),
       roomLayout: rectFor(".du-room-layout"),
       header: rectFor(".du-room-header"),
-      status: rectFor(".du-room-status-cue"),
       hasStrip: Boolean(strip),
       timeline: rectFor("[aria-label='Discussion timeline']"),
       nextAction: rectFor("#room-next-action"),
       composer: rectFor(".du-room-composer"),
       order: {
-        headerBeforeStatus:
-          Boolean(header && status) && elements.indexOf(header) < elements.indexOf(status),
-        statusBeforeTimeline:
-          Boolean(status && timeline) && elements.indexOf(status) < elements.indexOf(timeline),
+        headerBeforeTimeline:
+          Boolean(header && timeline) && elements.indexOf(header) < elements.indexOf(timeline),
         timelineBeforeNextAction:
           Boolean(timeline && nextAction) && elements.indexOf(timeline) < elements.indexOf(nextAction),
         timelineBeforeComposer:
@@ -650,13 +646,11 @@ async function assertMobileDiscussionRoomShell(page, label) {
     !metrics.roomLayout ||
     metrics.roomLayout.top > 620 ||
     !metrics.header ||
-    !metrics.order.headerBeforeStatus ||
-    !metrics.status ||
+    !metrics.order.headerBeforeTimeline ||
     metrics.hasStrip ||
     !metrics.timeline ||
     !metrics.nextAction ||
     !metrics.composer ||
-    !metrics.order.statusBeforeTimeline ||
     !metrics.order.timelineBeforeNextAction ||
     !metrics.order.timelineBeforeComposer ||
     metrics.documentWidth > metrics.viewportWidth + 1
@@ -665,13 +659,17 @@ async function assertMobileDiscussionRoomShell(page, label) {
   }
 }
 
-async function assertRoomStatusCue(page, { label, expectedStatus, expectedNextAction }) {
-  const roomStatus = page.getByRole("status", { name: "Room status" });
+async function assertRoomHeaderStatus(page, { label, expectedStatus, expectedNextAction }) {
+  const overview = page.getByRole("region", { name: "Discussion room overview" });
   try {
+    await overview.waitFor();
+    const roomStatus = overview.getByRole("status", { name: "Room status" });
     await roomStatus.waitFor();
-    await roomStatus.getByText("Discussion room", { exact: true }).waitFor();
     await roomStatus.getByText(expectedStatus, { exact: true }).waitFor();
     await roomStatus.getByText(expectedNextAction, { exact: true }).waitFor();
+    if ((await page.locator(".du-room-status-cue").count()) !== 0) {
+      throw new Error("The duplicate room status cue is still visible.");
+    }
     if ((await page.getByRole("navigation", { name: "Primary discussion actions" }).count()) !== 0) {
       throw new Error("The old in-room action navigation is still visible.");
     }
@@ -679,7 +677,7 @@ async function assertRoomStatusCue(page, { label, expectedStatus, expectedNextAc
       throw new Error("The duplicate top room action strip is still visible.");
     }
   } catch (error) {
-    throw new Error(`${label} did not render a single readable room status cue.`, {
+    throw new Error(`${label} did not render a compact room header status.`, {
       cause: error
     });
   }
