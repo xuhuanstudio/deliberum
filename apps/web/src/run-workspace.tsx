@@ -4602,7 +4602,11 @@ function DiscussionRoomHeader({
   const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
 
   return (
-    <section className="du-room-header" aria-label={t("Discussion room overview")}>
+    <section
+      className="du-room-header"
+      data-mode={hasLatestMessages ? "messages" : "members"}
+      aria-label={t("Discussion room overview")}
+    >
       <div className="du-room-header-main">
         <div>
           <p className="du-kicker">{t("Discussion room")}</p>

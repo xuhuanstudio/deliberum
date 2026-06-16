@@ -866,6 +866,9 @@ async function assertDesktopRoomConversationFirstView(page, label) {
       threadSummary: rectFor(".du-room-thread-summary"),
       transcript: rectFor("#room-conversation-transcript"),
       firstRoomMessage: rectFor(".du-room-system-message"),
+      firstParticipantMessage: rectFor(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble"
+      ),
       focusPanel: rectFor(".du-room-focus")
     };
   });
@@ -886,6 +889,8 @@ async function assertDesktopRoomConversationFirstView(page, label) {
     metrics.transcript.top > metrics.viewportHeight ||
     !metrics.firstRoomMessage ||
     metrics.firstRoomMessage.top > metrics.viewportHeight ||
+    (metrics.firstParticipantMessage &&
+      metrics.firstParticipantMessage.bottom > metrics.viewportHeight + 8) ||
     !metrics.focusPanel ||
     metrics.focusPanel.height > 400 ||
     metrics.documentWidth > metrics.viewportWidth + 1
