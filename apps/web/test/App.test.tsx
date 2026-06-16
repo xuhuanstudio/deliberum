@@ -5634,6 +5634,14 @@ describe("@deliberum/web shell", () => {
   });
 
   it("shows action-specific feedback after guided discussion actions", async () => {
+    const scrollTargets: string[] = [];
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: function scrollIntoViewMock(this: HTMLElement) {
+        scrollTargets.push(this.id || this.getAttribute("aria-label") || this.className);
+      }
+    });
     const client = renderApp("/runs/run-1");
 
     expect(await screen.findByRole("button", { name: "Update conclusion" })).toBeTruthy();
@@ -5648,6 +5656,8 @@ describe("@deliberum/web shell", () => {
     expect(latestUpdate.getAttribute("id")).toBe("latest-discussion-update");
     expect(latestUpdate.classList.contains("du-room-update-message")).toBe(true);
     expect(latestUpdate.querySelector(".du-room-update-avatar")).toBeTruthy();
+    await waitFor(() => expect(scrollTargets).toContain("discussion-timeline"));
+    expect(scrollTargets).not.toContain("latest-discussion-update");
     expect(latestUpdate.textContent ?? "").toContain("Room update");
     expect(latestUpdate.textContent ?? "").toContain("The room just updated");
     expect(latestUpdate.textContent ?? "").toContain(
@@ -5703,6 +5713,10 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("event-2");
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: originalScrollIntoView
+    });
   });
 
   it("renders revealed participant responses as readable room activity", async () => {

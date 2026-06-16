@@ -2997,11 +2997,28 @@ function StartRunForm({
       typeof globalThis.matchMedia === "function" &&
       globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    latestUpdateRef.current?.scrollIntoView?.({
-      block: "start",
-      behavior: prefersReducedMotion ? "auto" : "smooth"
-    });
-  }, [startMutation.data]);
+    const scrollTarget =
+      variant === "room-composer" && typeof document !== "undefined"
+        ? document.getElementById("discussion-timeline") ?? latestUpdateRef.current
+        : latestUpdateRef.current;
+
+    const scrollToTarget = () => {
+      scrollTarget?.scrollIntoView?.({
+        block: "start",
+        behavior: variant === "room-composer" || prefersReducedMotion ? "auto" : "smooth"
+      });
+    };
+    const scrollTimers =
+      variant === "room-composer"
+        ? [globalThis.setTimeout(scrollToTarget, 0), globalThis.setTimeout(scrollToTarget, 160)]
+        : [globalThis.setTimeout(scrollToTarget, 0)];
+
+    return () => {
+      for (const scrollTimer of scrollTimers) {
+        globalThis.clearTimeout(scrollTimer);
+      }
+    };
+  }, [startMutation.data, variant]);
 
   function submitStartRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

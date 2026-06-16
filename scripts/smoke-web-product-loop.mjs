@@ -288,6 +288,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Discussion paused", { exact: true }).waitFor();
   await assertRoomUpdateMessage(page, "discussion room after transient participant failure");
+  await assertTimelineReturnedToViewport(page, "discussion room after transient participant failure");
   await page
     .getByText(
       "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again."
@@ -304,6 +305,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByText("Model-backed discussion continued").waitFor();
   await assertRoomUpdateMessage(page, "discussion room after continuation");
+  await assertTimelineReturnedToViewport(page, "discussion room after continuation");
   await assertRoomStatusCue(page, {
     label: "discussion room after continuation",
     expectedStatus: "Conclusion ready",
@@ -387,6 +389,34 @@ async function assertRoomUpdateMessage(page, label) {
     throw new Error(`${label} did not render the latest update as a room message.`, {
       cause: error
     });
+  }
+}
+
+async function assertTimelineReturnedToViewport(page, label) {
+  const metrics = await page.locator("#discussion-timeline").evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const updateRect = document
+      .querySelector("#latest-discussion-update")
+      ?.getBoundingClientRect();
+
+    return {
+      timelineTop: rect.top,
+      timelineBottom: rect.bottom,
+      updateTop: updateRect?.top ?? null,
+      viewportHeight: window.innerHeight
+    };
+  });
+
+  if (
+    metrics.timelineTop < -24 ||
+    metrics.timelineTop > metrics.viewportHeight * 0.32 ||
+    metrics.timelineBottom <= 120
+  ) {
+    throw new Error(
+      `${label} should return the viewport to the discussion timeline, got ${JSON.stringify(
+        metrics
+      )}.`
+    );
   }
 }
 
