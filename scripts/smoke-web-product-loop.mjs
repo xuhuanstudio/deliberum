@@ -272,6 +272,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Create discussion" }).click();
   await page.getByRole("heading", { name: "Discussion room" }).waitFor();
   await page.locator(".du-room-composer").waitFor();
+  await assertDiscussionRoomOverview(page, {
+    label: "discussion room before continuation",
+    expectedNextAction: "Continue discussion"
+  });
   await assertRoomStatusCue(page, {
     label: "discussion room before continuation",
     expectedStatus: "Next step",
@@ -316,6 +320,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     label: "discussion room after continuation",
     expectedStatus: "Conclusion ready",
     expectedNextAction: "Next: review current conclusion"
+  });
+  await assertDiscussionRoomOverview(page, {
+    label: "discussion room after continuation",
+    expectedNextAction: "Review current conclusion"
   });
   await page
     .locator(".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble")
@@ -386,6 +394,27 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("The browser walkthrough still needs to prove evidence gaps stay visible.").waitFor();
   await page.getByText("Run another browser walkthrough after UI changes.").waitFor();
   await assertDefaultViewSafety(page, "current conclusion", { providerBaseUrl });
+}
+
+async function assertDiscussionRoomOverview(page, { label, expectedNextAction }) {
+  const overview = page.getByRole("region", { name: "Discussion room overview" });
+
+  try {
+    await overview.waitFor();
+    await overview.getByText("Discussion room", { exact: true }).waitFor();
+    await overview.getByText("Participant messages are the main thread").waitFor();
+    await overview.getByText("Current phase", { exact: true }).waitFor();
+    await overview.getByText("Review queue", { exact: true }).waitFor();
+    await overview.getByText(expectedNextAction, { exact: true }).waitFor();
+    const memberStrip = overview.locator("[aria-label='Room participants']");
+    await memberStrip.waitFor();
+    await memberStrip.getByText("Perspective A", { exact: true }).waitFor();
+    await memberStrip.getByText("Perspective B", { exact: true }).waitFor();
+  } catch (error) {
+    throw new Error(`${label} did not render a readable discussion room overview.`, {
+      cause: error
+    });
+  }
 }
 
 async function assertRoomUpdateMessage(page, label) {
@@ -576,6 +605,7 @@ async function assertMobileDiscussionRoomShell(page, label) {
     };
     const elements = Array.from(document.querySelectorAll("*"));
     const status = document.querySelector(".du-room-status-cue");
+    const header = document.querySelector(".du-room-header");
     const strip = document.querySelector(".du-room-action-strip");
     const timeline = document.querySelector("[aria-label='Discussion timeline']");
     const nextAction = document.querySelector("#room-next-action");
@@ -588,12 +618,15 @@ async function assertMobileDiscussionRoomShell(page, label) {
       pageHeader: rectFor(".du-page-header"),
       panelHeading: rectFor(".du-panel-heading"),
       roomLayout: rectFor(".du-room-layout"),
+      header: rectFor(".du-room-header"),
       status: rectFor(".du-room-status-cue"),
       hasStrip: Boolean(strip),
       timeline: rectFor("[aria-label='Discussion timeline']"),
       nextAction: rectFor("#room-next-action"),
       composer: rectFor(".du-room-composer"),
       order: {
+        headerBeforeStatus:
+          Boolean(header && status) && elements.indexOf(header) < elements.indexOf(status),
         statusBeforeTimeline:
           Boolean(status && timeline) && elements.indexOf(status) < elements.indexOf(timeline),
         timelineBeforeNextAction:
@@ -616,6 +649,8 @@ async function assertMobileDiscussionRoomShell(page, label) {
     metrics.panelHeading.height > 110 ||
     !metrics.roomLayout ||
     metrics.roomLayout.top > 620 ||
+    !metrics.header ||
+    !metrics.order.headerBeforeStatus ||
     !metrics.status ||
     metrics.hasStrip ||
     !metrics.timeline ||

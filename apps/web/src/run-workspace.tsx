@@ -111,6 +111,9 @@ const USER_FACING_ACTOR_LABELS: Record<string, string> = {
   "openai-compatible-final-candidate": "Conclusion writer",
   "openai-compatible-reviewer": "Review coordinator",
   "provider-review-coordinator": "Review coordinator",
+  "provider-perspective-a": "Perspective A",
+  "provider-perspective-b": "Perspective B",
+  "provider-perspective-c": "Perspective C",
   "perspective-a": "Perspective A",
   "perspective-b": "Perspective B",
   "process-coordinator": "Review coordinator",
@@ -245,6 +248,10 @@ type DiscussionRoomProgressView = {
   phaseDetail: string;
   nextTitle: string;
   nextDetail: string;
+};
+type DiscussionRoomMember = {
+  name: string;
+  detail: string;
 };
 
 export function RunsListPage() {
@@ -4316,10 +4323,22 @@ function RunQualityOverview({
   const obligations = asArray(obligationsQuery.data?.qualityObligations);
   const evidenceNeeds = asArray(resourcesQuery.data?.evidenceNeeds);
   const roomActivities = createRoomActivityItems(asArray(eventsQuery.data?.events), run);
+  const unresolvedEvidenceNeeds = evidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
+  const visibleRoomActivities = ensureEvidenceGapReviewActivity(roomActivities, {
+    run,
+    mainPerspectiveCount: candidates.length,
+    unresolvedEvidenceCount: unresolvedEvidenceNeeds
+  });
   const unresolvedObjections = countRecordsWithoutStatus(objections, "resolved");
   const openObligations = countRecordsWithoutStatus(obligations, "satisfied");
-  const unresolvedEvidenceNeeds = evidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
   const continuationView = describeDiscussionContinuation(run);
+  const progressView = describeDiscussionRoomProgress({
+    run,
+    mainPerspectiveCount: candidates.length,
+    openDisagreementCount: unresolvedObjections,
+    unresolvedEvidenceCount: unresolvedEvidenceNeeds,
+    openRequirementCount: openObligations
+  });
   const nextActionTitle = continuationView.reviewReady
     ? t("Next: review current conclusion")
     : t("Next: continue guided discussion");
@@ -4341,6 +4360,16 @@ function RunQualityOverview({
       <QueryState query={queryState}>
         <div className="du-room-layout">
           <div className="du-room-main">
+            <DiscussionRoomHeader
+              runId={runId}
+              run={run}
+              reviewReady={continuationView.reviewReady}
+              progressView={progressView}
+              activities={visibleRoomActivities}
+              openDisagreementCount={unresolvedObjections}
+              unresolvedEvidenceCount={unresolvedEvidenceNeeds}
+              openRequirementCount={openObligations}
+            />
             <DiscussionRoomStatusCue
               statusLabel={continuationView.reviewReady ? t("Conclusion ready") : t("Next step")}
               title={nextActionTitle}
@@ -4351,7 +4380,7 @@ function RunQualityOverview({
               runId={runId}
               run={run}
               reviewReady={continuationView.reviewReady}
-              activities={roomActivities}
+              activities={visibleRoomActivities}
               activityQuery={{
                 isLoading: eventsQuery.isLoading,
                 isError: eventsQuery.isError,
@@ -4361,6 +4390,7 @@ function RunQualityOverview({
               openDisagreementCount={unresolvedObjections}
               unresolvedEvidenceCount={unresolvedEvidenceNeeds}
               openRequirementCount={openObligations}
+              progressView={progressView}
             />
             {discussionComposer}
             <DiscussionRoomBrief run={run} />
@@ -4581,6 +4611,118 @@ function DiscussionRoomStatusCue({
   );
 }
 
+function DiscussionRoomHeader({
+  runId,
+  run,
+  reviewReady,
+  progressView,
+  activities,
+  openDisagreementCount,
+  unresolvedEvidenceCount,
+  openRequirementCount
+}: {
+  runId: string;
+  run: unknown;
+  reviewReady: boolean;
+  progressView: DiscussionRoomProgressView;
+  activities: RoomActivityItem[];
+  openDisagreementCount: number;
+  unresolvedEvidenceCount: number;
+  openRequirementCount: number;
+}) {
+  const { t } = useI18n();
+  const question =
+    getStringRecordValue(run, "topic") ??
+    getStringRecordValue(getRecordValue(run, "plan"), "topic") ??
+    "Discussion brief";
+  const allMembers = getDiscussionRoomMembers(run, activities);
+  const members = allMembers.slice(0, 6);
+  const hiddenMemberCount = Math.max(0, allMembers.length - members.length);
+  const nextActionLabel = reviewReady ? "Review current conclusion" : "Continue discussion";
+  const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
+
+  return (
+    <section className="du-room-header" aria-label={t("Discussion room overview")}>
+      <div className="du-room-header-main">
+        <div>
+          <p className="du-kicker">{t("Discussion room")}</p>
+          <h4>{t(question)}</h4>
+          <p>
+            {t(
+              "Participants discuss the brief in order while the room keeps conclusions, disagreements, evidence gaps, risks, and next actions visible."
+            )}
+          </p>
+        </div>
+        <div className="du-room-header-next">
+          <span>{t("Next action")}</span>
+          {reviewReady ? (
+            <Link
+              className="du-room-header-action"
+              to="/runs/$runId/outcome"
+              params={{ runId }}
+            >
+              {t(nextActionLabel)}
+            </Link>
+          ) : (
+            <a className="du-room-header-action" href="#continue-discussion">
+              {t(nextActionLabel)}
+            </a>
+          )}
+        </div>
+      </div>
+      <div className="du-room-header-status-grid">
+        <article>
+          <span>{t("Current phase")}</span>
+          <strong>{t(progressView.phaseTitle)}</strong>
+          <p>{t(progressView.nextDetail)}</p>
+        </article>
+        <article>
+          <span>{t("Review queue")}</span>
+          <strong>
+            {openItemCount === 0
+              ? t("No open blockers visible")
+              : t(
+                  openItemCount === 1
+                    ? "{count} open item to review"
+                    : "{count} open items to review",
+                  { count: openItemCount }
+                )}
+          </strong>
+          <p>
+            {t(
+              "Disagreements, missing evidence, requirements, and risks stay visible while the room continues."
+            )}
+          </p>
+        </article>
+      </div>
+      <div className="du-room-member-strip" aria-label={t("Room participants")}>
+        <div className="du-room-member-strip-heading">
+          <span>{t("In the room")}</span>
+          <strong>{t("Participant messages are the main thread")}</strong>
+        </div>
+        {members.length > 0 ? (
+          <div className="du-room-member-list">
+            {members.map((member) => (
+              <span className="du-room-member-chip" key={`${member.name}:${member.detail}`}>
+                <span aria-hidden="true">{formatSpeakerInitials(t(member.name))}</span>
+                <strong>{t(member.name)}</strong>
+                <small>{t(member.detail)}</small>
+              </span>
+            ))}
+            {hiddenMemberCount > 0 ? (
+              <span className="du-room-member-chip du-room-member-chip-more">
+                <strong>{t("+{count} more", { count: hiddenMemberCount })}</strong>
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <p>{t("Participants appear here after setup or first room activity.")}</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function DiscussionRoomBrief({ run }: { run: unknown }) {
   const { t } = useI18n();
   const question =
@@ -4660,7 +4802,8 @@ function DiscussionRoomTimeline({
   mainPerspectiveCount,
   openDisagreementCount,
   unresolvedEvidenceCount,
-  openRequirementCount
+  openRequirementCount,
+  progressView
 }: {
   runId: string;
   run: unknown;
@@ -4675,6 +4818,7 @@ function DiscussionRoomTimeline({
   openDisagreementCount: number;
   unresolvedEvidenceCount: number;
   openRequirementCount: number;
+  progressView: DiscussionRoomProgressView;
 }) {
   const { t } = useI18n();
   const independentResponses = describeStageStatus(
@@ -4693,13 +4837,6 @@ function DiscussionRoomTimeline({
   });
   const participantResponses = getParticipantFirstResponses(roomActivities);
   const activityGroups = groupRoomActivitiesByPhase(roomActivities);
-  const progressView = describeDiscussionRoomProgress({
-    run,
-    mainPerspectiveCount,
-    openDisagreementCount,
-    unresolvedEvidenceCount,
-    openRequirementCount
-  });
 
   return (
     <section
@@ -5461,6 +5598,120 @@ function describeFinalAuditPayload(payload: unknown): string {
     getFirstStringRecordValue(payload, ["summary", "rationale"]) ??
     "A risk review was recorded for the current conclusion."
   );
+}
+
+function getDiscussionRoomMembers(run: unknown, activities: RoomActivityItem[]): DiscussionRoomMember[] {
+  const members: DiscussionRoomMember[] = [];
+  const seen = new Set<string>();
+  const participants = asArray(getRecordValue(getRecordValue(run, "plan"), "participants"));
+
+  function addMember(label: string | undefined, detail?: string) {
+    const safeLabel = getSafeRoomMemberLabel(label);
+
+    if (!safeLabel || isRoomSpeaker(safeLabel)) {
+      return;
+    }
+
+    const key = normalizeActorLabel(safeLabel);
+
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    members.push({
+      name: safeLabel,
+      detail: detail ?? describeRoomMemberRole(safeLabel)
+    });
+  }
+
+  for (const participant of participants) {
+    const id = getStringRecordValue(participant, "id");
+    const displayName = getFirstStringRecordValue(participant, ["displayName", "name", "label"]);
+
+    addMember(
+      getUserFacingActorLabel(id) ??
+        getUserFacingActorLabel(displayName) ??
+        displayName ??
+        getUserFacingActorLabel(getStringRecordValue(participant, "adapterId"))
+    );
+  }
+
+  for (const activity of activities) {
+    addMember(activity.speaker, describeRoomMemberRole(activity.speaker, activity.phase));
+  }
+
+  return members;
+}
+
+function getSafeRoomMemberLabel(label: string | undefined): string | undefined {
+  const userFacingLabel = getUserFacingActorLabel(label);
+
+  if (userFacingLabel) {
+    return userFacingLabel;
+  }
+
+  const trimmed = label?.trim();
+
+  if (!trimmed || isInternalRoomMemberLabel(trimmed)) {
+    return undefined;
+  }
+
+  return trimmed;
+}
+
+function isInternalRoomMemberLabel(label: string): boolean {
+  const normalized = normalizeActorLabel(label);
+
+  return (
+    normalized === "openai-compatible" ||
+    normalized.includes("provider-config") ||
+    normalized.includes("providerconfig") ||
+    normalized.includes("openai-main") ||
+    normalized.includes("adapter") ||
+    normalized.includes("runtime") ||
+    normalized.includes("ledger") ||
+    normalized.includes("event-id") ||
+    normalized.includes("session-id") ||
+    normalized.includes("run-id")
+  );
+}
+
+function describeRoomMemberRole(
+  label: string,
+  phase?: RoomActivityPhaseId
+): string {
+  const normalized = normalizeActorLabel(label);
+
+  if (normalized.startsWith("perspective-") || normalized.startsWith("participant-")) {
+    return "Independent perspective";
+  }
+
+  if (normalized === "discussion-organizer") {
+    return "Organizes strongest options";
+  }
+
+  if (
+    normalized === "reviewer" ||
+    normalized === "review-coordinator" ||
+    normalized === "option-reviewer"
+  ) {
+    return "Reviews disagreements";
+  }
+
+  if (normalized === "evidence-checker" || phase === "evidence") {
+    return "Checks evidence";
+  }
+
+  if (normalized === "risk-reviewer") {
+    return "Reviews risks";
+  }
+
+  if (normalized === "conclusion-writer" || phase === "conclusion") {
+    return "Drafts conclusion";
+  }
+
+  return "Participant";
 }
 
 function getRoomEventSpeaker(event: unknown, run: unknown): string {
