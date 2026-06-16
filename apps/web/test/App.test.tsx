@@ -4607,15 +4607,8 @@ describe("@deliberum/web shell", () => {
     expect(localizedActionPath.textContent ?? "").toContain("\u9009\u62e9\u8ddf\u8fdb\u52a8\u4f5c");
     const localizedDiscussionActionsText =
       document.querySelector(".du-discussion-actions")?.textContent ?? "";
-    const localizedRoomActionStrip = screen.getByRole("navigation", {
-      name: "\u8ba8\u8bba\u52a8\u4f5c"
-    });
-    expect(localizedRoomActionStrip).toBeTruthy();
-    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u4e0b\u4e00\u6b65\u52a8\u4f5c");
-    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u5ba1\u9605\u5f53\u524d\u7ed3\u8bba");
-    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u66f4\u65b0\u7ed3\u8bba");
-    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u5ba1\u9605\u5206\u6b67");
-    expect(localizedRoomActionStrip.textContent ?? "").toContain("\u68c0\u67e5\u8bc1\u636e");
+    expect(screen.queryByRole("navigation", { name: "\u8ba8\u8bba\u52a8\u4f5c" })).toBeNull();
+    expect(document.querySelector(".du-room-action-strip")).toBeNull();
     expect(localizedDiscussionActionsText).toContain("\u8ba8\u8bba\u5ba4\u52a8\u4f5c");
     expect(localizedDiscussionActionsText).toContain("\u63a5\u4e0b\u6765\u8981\u505a\u4ec0\u4e48\uff1f");
     expect(localizedDiscussionActionsText).not.toContain("\u66f4\u65b0\u8ba8\u8bba");
@@ -5444,7 +5437,7 @@ describe("@deliberum/web shell", () => {
     expect(roomLayout).toBeTruthy();
     expect(roomMain).toBeTruthy();
     expect(roomStatusCue).toBeTruthy();
-    expect(roomActionStrip).toBeTruthy();
+    expect(roomActionStrip).toBeNull();
     expect(roomComposer).toBeTruthy();
     expect(roomBrief).toBeTruthy();
     expect(roomOutputs).toBeTruthy();
@@ -5462,17 +5455,11 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(detailPanels?.closest("details")).toBe(detailPanelsDrawer);
     expect(roomMain?.contains(roomStatusCue as Node)).toBe(true);
-    expect(roomMain?.contains(roomActionStrip as Node)).toBe(true);
     expect(roomMain?.contains(roomComposer as Node)).toBe(true);
-    expect(screen.getByRole("navigation", { name: "Discussion actions" })).toBeTruthy();
-    expect(roomActionStrip?.textContent ?? "").toContain("Next action");
-    expect(roomActionStrip?.textContent ?? "").toContain("Review current conclusion");
-    expect(roomActionStrip?.textContent ?? "").toContain("Update conclusion");
-    expect(roomActionStrip?.textContent ?? "").toContain("Review disagreements");
-    expect(roomActionStrip?.textContent ?? "").toContain("Check evidence");
+    expect(screen.queryByRole("navigation", { name: "Discussion actions" })).toBeNull();
     expect(
       Boolean(
-        roomStatusCue?.compareDocumentPosition(roomActionStrip as Node) &
+        roomStatusCue?.compareDocumentPosition(timeline as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
@@ -5481,12 +5468,6 @@ describe("@deliberum/web shell", () => {
       reviewDrawer
     );
     expect(document.querySelector(".du-discussion-next-actions")?.closest("details")).toBeNull();
-    expect(
-      Boolean(
-        roomActionStrip?.compareDocumentPosition(timeline as Node) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-      )
-    ).toBe(true);
     expect(
       Boolean(
         transcript?.compareDocumentPosition(nextRoomAction as Node) &
@@ -6611,18 +6592,10 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.queryByRole("navigation", { name: "Primary discussion actions" })
     ).toBeNull();
-    const pendingRoomActionStrip = screen.getByRole("navigation", {
-      name: "Discussion actions"
-    });
-    expect(pendingRoomActionStrip).toBeTruthy();
-    expect(pendingRoomActionStrip.textContent ?? "").toContain("Next action");
-    expect(pendingRoomActionStrip.textContent ?? "").toContain("Continue discussion");
-    expect(pendingRoomActionStrip.textContent ?? "").toContain("Read room messages");
-    expect(
-      within(pendingRoomActionStrip)
-        .getByRole("link", { name: "Read room messages" })
-        .getAttribute("href")
-    ).toBe("#room-conversation-transcript");
+    expect(screen.queryByRole("navigation", { name: "Discussion actions" })).toBeNull();
+    const pendingNextRoomAction = screen.getByRole("region", { name: "Next in the room" });
+    expect(pendingNextRoomAction.textContent ?? "").toContain("Continue discussion");
+    expect(document.querySelector(".du-room-action-strip")).toBeNull();
     expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();

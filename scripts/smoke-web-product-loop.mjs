@@ -547,8 +547,8 @@ async function assertMobileDiscussionRoomShell(page, label) {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.locator(".du-room-action-strip").waitFor();
   await page.locator("[aria-label='Discussion timeline']").waitFor();
+  await page.locator(".du-room-composer").waitFor();
 
   const metrics = await page.evaluate(() => {
     const rectFor = (selector) => {
@@ -572,6 +572,7 @@ async function assertMobileDiscussionRoomShell(page, label) {
     const strip = document.querySelector(".du-room-action-strip");
     const timeline = document.querySelector("[aria-label='Discussion timeline']");
     const nextAction = document.querySelector("#room-next-action");
+    const composer = document.querySelector(".du-room-composer");
 
     return {
       viewportWidth: window.innerWidth,
@@ -581,16 +582,17 @@ async function assertMobileDiscussionRoomShell(page, label) {
       panelHeading: rectFor(".du-panel-heading"),
       roomLayout: rectFor(".du-room-layout"),
       status: rectFor(".du-room-status-cue"),
-      strip: rectFor(".du-room-action-strip"),
+      hasStrip: Boolean(strip),
       timeline: rectFor("[aria-label='Discussion timeline']"),
       nextAction: rectFor("#room-next-action"),
+      composer: rectFor(".du-room-composer"),
       order: {
-        statusBeforeStrip:
-          Boolean(status && strip) && elements.indexOf(status) < elements.indexOf(strip),
-        stripBeforeTimeline:
-          Boolean(strip && timeline) && elements.indexOf(strip) < elements.indexOf(timeline),
+        statusBeforeTimeline:
+          Boolean(status && timeline) && elements.indexOf(status) < elements.indexOf(timeline),
         timelineBeforeNextAction:
-          Boolean(timeline && nextAction) && elements.indexOf(timeline) < elements.indexOf(nextAction)
+          Boolean(timeline && nextAction) && elements.indexOf(timeline) < elements.indexOf(nextAction),
+        timelineBeforeComposer:
+          Boolean(timeline && composer) && elements.indexOf(timeline) < elements.indexOf(composer)
       }
     };
   });
@@ -608,12 +610,13 @@ async function assertMobileDiscussionRoomShell(page, label) {
     !metrics.roomLayout ||
     metrics.roomLayout.top > 620 ||
     !metrics.status ||
-    !metrics.strip ||
+    metrics.hasStrip ||
     !metrics.timeline ||
     !metrics.nextAction ||
-    !metrics.order.statusBeforeStrip ||
-    !metrics.order.stripBeforeTimeline ||
+    !metrics.composer ||
+    !metrics.order.statusBeforeTimeline ||
     !metrics.order.timelineBeforeNextAction ||
+    !metrics.order.timelineBeforeComposer ||
     metrics.documentWidth > metrics.viewportWidth + 1
   ) {
     throw new Error(`${label} should keep mobile room chrome compact, got ${JSON.stringify(metrics)}.`);
@@ -629,6 +632,9 @@ async function assertRoomStatusCue(page, { label, expectedStatus, expectedNextAc
     await roomStatus.getByText(expectedNextAction, { exact: true }).waitFor();
     if ((await page.getByRole("navigation", { name: "Primary discussion actions" }).count()) !== 0) {
       throw new Error("The old in-room action navigation is still visible.");
+    }
+    if ((await page.getByRole("navigation", { name: "Discussion actions" }).count()) !== 0) {
+      throw new Error("The duplicate top room action strip is still visible.");
     }
   } catch (error) {
     throw new Error(`${label} did not render a single readable room status cue.`, {
