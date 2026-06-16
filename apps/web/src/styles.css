@@ -3315,6 +3315,77 @@ textarea:focus-visible {
   opacity: 0.78;
 }
 
+.du-start-result-room {
+  gap: 14px;
+}
+
+.du-result-handoff-room {
+  border-color: #d7e9df;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.du-result-handoff-room .du-result-handoff-grid {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.du-result-handoff-room .du-result-handoff-card {
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #f8fff9;
+}
+
+.du-result-handoff-room .du-result-handoff-card:hover {
+  background: #f0faf4;
+}
+
+.du-result-handoff-room .du-result-handoff-primary {
+  border-color: var(--du-accent);
+  background: #e7f4ed;
+  color: var(--du-accent-strong);
+}
+
+.du-result-handoff-room .du-result-handoff-primary:hover {
+  background: #dceee6;
+}
+
+.du-readable-stage-result-room {
+  gap: 10px;
+}
+
+.du-readable-stage-result-room .du-section-label {
+  border-top-color: transparent;
+  padding-top: 0;
+}
+
+.du-room-stage-list {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  background: transparent;
+}
+
+.du-room-stage-message {
+  border: 1px solid var(--du-line);
+  border-left: 4px solid var(--du-accent);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px 14px;
+}
+
+.du-room-stage-message span:first-child {
+  color: var(--du-ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.du-room-stage-message strong {
+  color: var(--du-accent-strong);
+}
+
 .du-run-recovery-actions,
 .du-provider-recovery-actions {
   display: grid;

@@ -1493,13 +1493,21 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review this room update, then return to the timeline, outputs, or next recommended action.":
     "\u8bf7\u5148\u5ba1\u9605\u6b64\u8ba8\u8bba\u5ba4\u66f4\u65b0\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
   "Updated discussion steps": "\u5df2\u66f4\u65b0\u7684\u8ba8\u8bba\u6b65\u9aa4",
+  "Room progress": "\u8ba8\u8bba\u5ba4\u8fdb\u5c55",
+  "What the room did": "\u8ba8\u8bba\u5ba4\u521a\u521a\u505a\u4e86\u4ec0\u4e48",
   "What changed": "\u53d1\u751f\u4e86\u4ec0\u4e48\u53d8\u5316",
   "Readable summary of the discussion work that just ran.":
     "\u521a\u521a\u8fd0\u884c\u7684\u8ba8\u8bba\u5de5\u4f5c\u7684\u53ef\u8bfb\u6458\u8981\u3002",
+  "Each line is a discussion step that just changed.":
+    "\u6bcf\u4e00\u884c\u90fd\u662f\u521a\u521a\u53d8\u66f4\u7684\u8ba8\u8bba\u6b65\u9aa4\u3002",
   "Post-update review path": "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84",
+  "Room handoff": "\u8ba8\u8bba\u5ba4\u63a5\u529b",
+  "Back to the room": "\u56de\u5230\u8ba8\u8bba\u5ba4",
   "What to review next": "\u63a5\u4e0b\u6765\u5ba1\u9605\u4ec0\u4e48",
   "Use these links to return from the completed action to the room view.":
     "\u7528\u8fd9\u4e9b\u94fe\u63a5\u4ece\u5df2\u5b8c\u6210\u7684\u52a8\u4f5c\u56de\u5230\u8ba8\u8bba\u5ba4\u89c6\u56fe\u3002",
+  "Use these room links to review what changed without leaving the discussion flow.":
+    "\u4f7f\u7528\u8fd9\u4e9b\u8ba8\u8bba\u5ba4\u94fe\u63a5\u5ba1\u9605\u521a\u521a\u53d8\u66f4\u7684\u5185\u5bb9\uff0c\u4e0d\u7528\u79bb\u5f00\u8ba8\u8bba\u6d41\u3002",
   First: "\u9996\u5148",
   Finally: "\u6700\u540e",
   Next: "\u4e0b\u4e00\u6b65",

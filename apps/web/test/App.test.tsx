@@ -4623,12 +4623,22 @@ describe("@deliberum/web shell", () => {
     });
     expect(resultHandoff).toBeTruthy();
     expect(latestUpdate.contains(resultHandoff)).toBe(true);
-    expect(resultHandoff.textContent ?? "").toContain("\u63a5\u4e0b\u6765\u5ba1\u9605\u4ec0\u4e48");
+    expect(resultHandoff.classList.contains("du-result-handoff-room")).toBe(true);
+    expect(resultHandoff.textContent ?? "").toContain("\u8ba8\u8bba\u5ba4\u63a5\u529b");
+    expect(resultHandoff.textContent ?? "").toContain("\u56de\u5230\u8ba8\u8bba\u5ba4");
     expect(resultHandoff.textContent ?? "").toContain(
       "\u5ba1\u9605\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf"
     );
     expect(resultHandoff.textContent ?? "").toContain("\u5ba1\u9605\u8ba8\u8bba\u4ea7\u51fa");
     expect(resultHandoff.textContent ?? "").toContain("\u67e5\u770b\u5f53\u524d\u7ed3\u8bba");
+    const updatedSteps = screen.getByRole("region", {
+      name: "\u5df2\u66f4\u65b0\u7684\u8ba8\u8bba\u6b65\u9aa4"
+    });
+    expect(updatedSteps.classList.contains("du-readable-stage-result-room")).toBe(true);
+    expect(updatedSteps.textContent ?? "").toContain("\u8ba8\u8bba\u5ba4\u8fdb\u5c55");
+    expect(updatedSteps.textContent ?? "").toContain(
+      "\u8ba8\u8bba\u5ba4\u521a\u521a\u505a\u4e86\u4ec0\u4e48"
+    );
   });
 
   it("localizes the post-action handoff before a conclusion is ready", async () => {
@@ -5502,10 +5512,24 @@ describe("@deliberum/web shell", () => {
     const resultHandoff = screen.getByRole("region", { name: "Post-update review path" });
     expect(resultHandoff).toBeTruthy();
     expect(latestUpdate.contains(resultHandoff)).toBe(true);
-    expect(resultHandoff.textContent ?? "").toContain("What to review next");
+    expect(resultHandoff.classList.contains("du-result-handoff-room")).toBe(true);
+    expect(resultHandoff.textContent ?? "").toContain("Room handoff");
+    expect(resultHandoff.textContent ?? "").toContain("Back to the room");
+    expect(resultHandoff.textContent ?? "").toContain(
+      "Use these room links to review what changed without leaving the discussion flow."
+    );
     expect(resultHandoff.textContent ?? "").toContain("Review updated timeline");
     expect(resultHandoff.textContent ?? "").toContain("Review discussion outputs");
     expect(resultHandoff.textContent ?? "").toContain("View current conclusion");
+    const updatedSteps = screen.getByRole("region", { name: "Updated discussion steps" });
+    expect(updatedSteps.classList.contains("du-readable-stage-result-room")).toBe(true);
+    expect(updatedSteps.textContent ?? "").toContain("Room progress");
+    expect(updatedSteps.textContent ?? "").toContain("What the room did");
+    expect(updatedSteps.textContent ?? "").toContain(
+      "Each line is a discussion step that just changed."
+    );
+    expect(updatedSteps.querySelector(".du-room-stage-list")).toBeTruthy();
+    expect(updatedSteps.querySelector(".du-room-stage-message")).toBeTruthy();
     expect(screen.getAllByText("1 evidence gap to check").length).toBeGreaterThan(0);
     expect(screen.getAllByText("1/1").length).toBeGreaterThan(0);
     const resultHandoffLinks = Array.from(resultHandoff.querySelectorAll("a")).map((link) =>
@@ -6435,8 +6459,9 @@ describe("@deliberum/web shell", () => {
         "A guided step is still waiting on model work. Review visible progress or try again after checking setup."
       )
     ).toBeTruthy();
-    expect(screen.getByText("Updated discussion steps")).toBeTruthy();
     const updatedSteps = screen.getByRole("region", { name: "Updated discussion steps" });
+    expect(updatedSteps.classList.contains("du-readable-stage-result-room")).toBe(true);
+    expect(updatedSteps.textContent ?? "").toContain("Room progress");
     expect(updatedSteps.textContent ?? "").toContain("Main perspectives");
     expect(updatedSteps.textContent ?? "").toContain("Needs attention");
     expect(updatedSteps.textContent ?? "").not.toContain("Main perspectivesUpdated");
@@ -6510,8 +6535,9 @@ describe("@deliberum/web shell", () => {
         "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again."
       )
     ).toBeTruthy();
-    expect(screen.getByText("Updated discussion steps")).toBeTruthy();
     const updatedSteps = screen.getByRole("region", { name: "Updated discussion steps" });
+    expect(updatedSteps.classList.contains("du-readable-stage-result-room")).toBe(true);
+    expect(updatedSteps.textContent ?? "").toContain("Room progress");
     expect(updatedSteps.textContent ?? "").toContain("Independent first responses");
     expect(updatedSteps.textContent ?? "").toContain("Needs attention");
     expect(document.body.textContent ?? "").not.toContain("waiting_for_participants");
@@ -6719,7 +6745,9 @@ describe("@deliberum/web shell", () => {
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledWith("run-1", startRequest));
     expect(await screen.findByText("Discussion steps completed")).toBeTruthy();
-    expect(screen.getByText("Updated discussion steps")).toBeTruthy();
+    const updatedSteps = screen.getByRole("region", { name: "Updated discussion steps" });
+    expect(updatedSteps.classList.contains("du-readable-stage-result-room")).toBe(true);
+    expect(updatedSteps.textContent ?? "").toContain("Room progress");
     expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
     const resultHandoff = screen.getByRole("region", { name: "Post-update review path" });
     expect(resultHandoff.textContent ?? "").toContain("Continue discussion");
@@ -7094,7 +7122,9 @@ describe("@deliberum/web shell", () => {
       )
     );
     expect(await screen.findByText("Discussion steps completed")).toBeTruthy();
-    expect(screen.getByText("Updated discussion steps")).toBeTruthy();
+    const updatedSteps = screen.getByRole("region", { name: "Updated discussion steps" });
+    expect(updatedSteps.classList.contains("du-readable-stage-result-room")).toBe(true);
+    expect(updatedSteps.textContent ?? "").toContain("Room progress");
     expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
   });
 

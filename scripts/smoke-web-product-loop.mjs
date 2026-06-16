@@ -339,14 +339,20 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
 
 async function assertRoomUpdateMessage(page, label) {
   const roomUpdate = page.locator("#latest-discussion-update.du-room-update-message");
-  await roomUpdate.waitFor();
-  await roomUpdate.locator(".du-room-update-avatar").waitFor();
-  await roomUpdate.getByText("Room update", { exact: true }).waitFor();
-  await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
-
-  const roomUpdateText = await roomUpdate.innerText();
-  if (!roomUpdateText.includes("Review this room update")) {
-    throw new Error(`${label} did not render the latest update as a room message.`);
+  try {
+    await roomUpdate.waitFor();
+    await roomUpdate.locator(".du-room-update-avatar").waitFor();
+    await roomUpdate.getByText("Room update", { exact: true }).waitFor();
+    await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
+    await roomUpdate.getByText("Review this room update").waitFor();
+    await roomUpdate.getByText("Room handoff", { exact: true }).waitFor();
+    await roomUpdate.getByRole("heading", { name: "Back to the room" }).waitFor();
+    await roomUpdate.getByText("Room progress", { exact: true }).waitFor();
+    await roomUpdate.getByRole("heading", { name: "What the room did" }).waitFor();
+  } catch (error) {
+    throw new Error(`${label} did not render the latest update as a room message.`, {
+      cause: error
+    });
   }
 }
 

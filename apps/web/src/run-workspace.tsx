@@ -3282,6 +3282,7 @@ function StartRunForm({
               runId={runId}
               feedback={startFeedback}
               reviewReadyBeforeUpdate={continuationView.reviewReady}
+              presentation={variant === "room-composer" ? "room-message" : "panel"}
             />
           </div>
         </section>
@@ -3660,12 +3661,14 @@ function StartResult({
   result,
   runId,
   feedback,
-  reviewReadyBeforeUpdate
+  reviewReadyBeforeUpdate,
+  presentation = "panel"
 }: {
   result: unknown;
   runId: string;
   feedback?: DiscussionStartFeedback | null;
   reviewReadyBeforeUpdate: boolean;
+  presentation?: "panel" | "room-message";
 }) {
   const { t } = useI18n();
   const stages = asArray(getRecordValue(result, "stages")).map(toStageMetadata);
@@ -3673,9 +3676,10 @@ function StartResult({
   const readableStages = stages.map(toReadableStageResult);
   const conclusionReviewReady =
     reviewReadyBeforeUpdate || isStartResultConclusionReviewReady(result, stages);
+  const roomMessage = presentation === "room-message";
 
   return (
-    <div className="du-start-result">
+    <div className={`du-start-result${roomMessage ? " du-start-result-room" : ""}`}>
       <StatusBanner
         tone={stopped === true ? "warning" : "ok"}
         title={
@@ -3707,8 +3711,9 @@ function StartResult({
       <DiscussionResultHandoff
         runId={runId}
         conclusionReviewReady={conclusionReviewReady}
+        roomMessage={roomMessage}
       />
-      <ReadableStageResultList stages={readableStages} />
+      <ReadableStageResultList stages={readableStages} roomMessage={roomMessage} />
       <AdvancedDetails
         summary="Advanced / Developer Mode"
         panelLabel="Raw stage metadata"
@@ -3758,19 +3763,32 @@ function isRecoverableStoppedStartResult(result: unknown): boolean {
 
 function DiscussionResultHandoff({
   runId,
-  conclusionReviewReady
+  conclusionReviewReady,
+  roomMessage
 }: {
   runId: string;
   conclusionReviewReady: boolean;
+  roomMessage: boolean;
 }) {
   const { t } = useI18n();
 
   return (
-    <section className="du-result-handoff" aria-label={t("Post-update review path")}>
+    <section
+      className={`du-result-handoff${roomMessage ? " du-result-handoff-room" : ""}`}
+      aria-label={t("Post-update review path")}
+    >
       <div>
-        <p className="du-kicker">{t("Post-update review path")}</p>
-        <h4>{t("What to review next")}</h4>
-        <p>{t("Use these links to return from the completed action to the room view.")}</p>
+        <p className="du-kicker">
+          {t(roomMessage ? "Room handoff" : "Post-update review path")}
+        </p>
+        <h4>{t(roomMessage ? "Back to the room" : "What to review next")}</h4>
+        <p>
+          {t(
+            roomMessage
+              ? "Use these room links to review what changed without leaving the discussion flow."
+              : "Use these links to return from the completed action to the room view."
+          )}
+        </p>
       </div>
       <div className="du-result-handoff-grid">
         <a
@@ -3848,7 +3866,13 @@ type ReadableStageResult = {
   detail: string;
 };
 
-function ReadableStageResultList({ stages }: { stages: ReadableStageResult[] }) {
+function ReadableStageResultList({
+  stages,
+  roomMessage = false
+}: {
+  stages: ReadableStageResult[];
+  roomMessage?: boolean;
+}) {
   const { t } = useI18n();
 
   if (stages.length === 0) {
@@ -3861,15 +3885,29 @@ function ReadableStageResultList({ stages }: { stages: ReadableStageResult[] }) 
   }
 
   return (
-    <section className="du-readable-stage-result" aria-label={t("Updated discussion steps")}>
+    <section
+      className={`du-readable-stage-result${roomMessage ? " du-readable-stage-result-room" : ""}`}
+      aria-label={t("Updated discussion steps")}
+    >
       <div className="du-section-label">
-        <p className="du-kicker">{t("Updated discussion steps")}</p>
-        <h4>{t("What changed")}</h4>
-        <p>{t("Readable summary of the discussion work that just ran.")}</p>
+        <p className="du-kicker">
+          {t(roomMessage ? "Room progress" : "Updated discussion steps")}
+        </p>
+        <h4>{t(roomMessage ? "What the room did" : "What changed")}</h4>
+        <p>
+          {t(
+            roomMessage
+              ? "Each line is a discussion step that just changed."
+              : "Readable summary of the discussion work that just ran."
+          )}
+        </p>
       </div>
-      <div className="du-stage-grid">
+      <div className={`du-stage-grid${roomMessage ? " du-room-stage-list" : ""}`}>
         {stages.map((stage, index) => (
-          <div className="du-stage-pill" key={`${stage.label}-${index}`}>
+          <div
+            className={`du-stage-pill${roomMessage ? " du-room-stage-message" : ""}`}
+            key={`${stage.label}-${index}`}
+          >
             <span>{t(stage.label)}</span>
             <strong>{t(stage.status)}</strong>
             <span>{t(stage.detail)}</span>
