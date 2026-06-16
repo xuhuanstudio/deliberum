@@ -5575,6 +5575,7 @@ describe("@deliberum/web shell", () => {
     const threadIntro = transcript?.querySelector(".du-room-thread-intro");
     const progressDetails = timeline?.querySelector(".du-room-progress-details");
     const nextRoomAction = timeline?.querySelector("#room-next-action");
+    const roomActionRail = timeline?.querySelector(".du-room-action-rail");
     const roomLayout = document.querySelector(".du-room-layout");
     const roomMain = document.querySelector(".du-room-main");
     const roomHeader = document.querySelector(".du-room-header");
@@ -5596,6 +5597,7 @@ describe("@deliberum/web shell", () => {
     expect(threadIntro).toBeTruthy();
     expect(progressDetails).toBeTruthy();
     expect(nextRoomAction).toBeTruthy();
+    expect(roomActionRail).toBeTruthy();
     expect(roomLayout).toBeTruthy();
     expect(roomMain).toBeTruthy();
     expect(roomHeader).toBeTruthy();
@@ -5619,7 +5621,8 @@ describe("@deliberum/web shell", () => {
     expect(roomMain?.contains(roomHeader as Node)).toBe(true);
     expect(roomMain?.contains(roomComposer as Node)).toBe(true);
     expect(timeline?.contains(roomComposer as Node)).toBe(true);
-    expect(transcript?.contains(roomComposer as Node)).toBe(true);
+    expect(transcript?.contains(roomComposer as Node)).toBe(false);
+    expect(roomActionRail?.contains(roomComposer as Node)).toBe(true);
     expect(screen.queryByRole("navigation", { name: "Discussion actions" })).toBeNull();
     expect(
       Boolean(
@@ -5634,13 +5637,13 @@ describe("@deliberum/web shell", () => {
     expect(document.querySelector(".du-discussion-next-actions")?.closest("details")).toBeNull();
     expect(
       Boolean(
-        transcript?.compareDocumentPosition(nextRoomAction as Node) &
+        roomComposer?.compareDocumentPosition(transcript as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
     expect(
       Boolean(
-        nextRoomAction?.compareDocumentPosition(roomComposer as Node) &
+        transcript?.compareDocumentPosition(nextRoomAction as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
@@ -5991,9 +5994,9 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledTimes(2));
     expect(document.querySelector("#room-conversation-transcript")).toBeTruthy();
-    await waitFor(() => expect(scrollTargets).toContain("room-conversation-transcript"));
+    await waitFor(() => expect(scrollTargets).toContain("discussion-timeline"));
     expect(scrollTargets).not.toContain("room-next-action");
-    expect(scrollTargets).not.toContain("discussion-timeline");
+    expect(scrollTargets).not.toContain("room-conversation-transcript");
     expect(scrollTargets).not.toContain("latest-discussion-update");
     expect(screen.queryByRole("region", { name: "Latest discussion update" })).toBeNull();
     expect(screen.queryByText("Discussion update completed")).toBeNull();

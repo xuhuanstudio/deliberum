@@ -3014,8 +3014,8 @@ function StartRunForm({
 
     const scrollTarget =
       variant === "room-composer" && typeof document !== "undefined"
-        ? document.getElementById("room-conversation-transcript") ??
-          document.getElementById("discussion-timeline") ??
+        ? document.getElementById("discussion-timeline") ??
+          document.getElementById("room-conversation-transcript") ??
           latestUpdateRef.current
         : latestUpdateRef.current;
 
@@ -4948,6 +4948,9 @@ function DiscussionRoomTimeline({
           )}
         </p>
       </div>
+      <div className="du-room-action-rail" aria-label={t("Room quick replies")}>
+        {roomComposer}
+      </div>
       <div id="room-conversation-transcript" className="du-room-activity-wrap">
         <div className="du-room-thread-intro du-sr-only">
           <p className="du-kicker">{t("Conversation transcript")}</p>
@@ -5122,7 +5125,6 @@ function DiscussionRoomTimeline({
           unresolvedEvidenceCount={unresolvedEvidenceCount}
           openRequirementCount={openRequirementCount}
         />
-        {roomComposer}
       </div>
       <details className="du-room-progress-details">
         <summary>

@@ -596,6 +596,25 @@ textarea:focus-visible {
 }
 
 @media (max-width: 720px) {
+  .du-room-action-rail {
+    top: 0;
+    padding: 2px 0 4px;
+  }
+
+  .du-room-action-rail .du-room-composer-copy {
+    padding: 6px 10px;
+  }
+
+  .du-room-action-rail .du-room-composer-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.66rem;
+  }
+
+  .du-room-action-rail .du-advanced-panel {
+    display: none;
+  }
+
   .du-discussion-actions-room .du-discussion-action-list {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -2179,6 +2198,28 @@ textarea:focus-visible {
   margin-top: 4px;
   padding: 6px 0 2px;
   scroll-margin-top: 18px;
+}
+
+.du-room-action-rail {
+  position: sticky;
+  top: 8px;
+  z-index: 14;
+  display: grid;
+  min-width: 0;
+  margin: -2px 0 2px;
+  padding: 4px 0 6px;
+  background: linear-gradient(180deg, var(--du-bg) 0%, rgb(245 243 237 / 0.92) 72%, rgb(245 243 237 / 0));
+}
+
+.du-room-action-rail .du-room-composer[data-placement="room-action-dock"] {
+  position: static;
+  bottom: auto;
+  margin-top: 0;
+  padding: 0;
+}
+
+.du-room-action-rail .du-continuation-details {
+  display: none;
 }
 
 .du-room-brief {

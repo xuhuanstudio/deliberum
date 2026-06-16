@@ -284,10 +284,6 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.locator(".du-room-system-message").first().waitFor();
   await page.getByText("Shared the discussion brief", { exact: true }).waitFor();
   await assertRoomComposerShellCompact(page, "discussion room before continuation");
-  await page.getByText("How this discussion will continue").click();
-  await page.getByText("Model-backed discussion").first().waitFor();
-  await page.getByText("How this discussion will continue").click();
-  await assertRoomComposerShellCompact(page, "discussion room before continuation after setup details");
   await assertBriefDetailsCollapsed(page, "discussion room before continuation");
   await page.getByRole("button", { name: "Continue discussion" }).waitFor();
   await assertDesktopRoomConversationFirstView(page, "discussion room before continuation");
@@ -563,8 +559,14 @@ async function assertConversationTranscriptReturnedToViewport(page, label) {
 
   const metrics = await page.locator("#room-conversation-transcript").evaluate((element) => {
     const rect = element.getBoundingClientRect();
+    const actionRailRect = document
+      .querySelector(".du-room-action-rail")
+      ?.getBoundingClientRect();
     const timelineRect = document
       .querySelector("#discussion-timeline")
+      ?.getBoundingClientRect();
+    const firstParticipantRect = document
+      .querySelector(".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble")
       ?.getBoundingClientRect();
     const nextActionRect = document
       .querySelector("#room-next-action")
@@ -576,8 +578,12 @@ async function assertConversationTranscriptReturnedToViewport(page, label) {
     return {
       transcriptTop: rect.top,
       transcriptBottom: rect.bottom,
+      actionRailTop: actionRailRect?.top ?? null,
+      actionRailBottom: actionRailRect?.bottom ?? null,
       timelineTop: timelineRect?.top ?? null,
       timelineBottom: timelineRect?.bottom ?? null,
+      firstParticipantTop: firstParticipantRect?.top ?? null,
+      firstParticipantBottom: firstParticipantRect?.bottom ?? null,
       nextActionTop: nextActionRect?.top ?? null,
       updateTop: updateRect?.top ?? null,
       viewportHeight: window.innerHeight
@@ -586,8 +592,14 @@ async function assertConversationTranscriptReturnedToViewport(page, label) {
 
   if (
     metrics.transcriptTop < -24 ||
-    metrics.transcriptTop > metrics.viewportHeight * 0.35 ||
+    metrics.transcriptTop > metrics.viewportHeight * 0.65 ||
     metrics.transcriptBottom <= 240 ||
+    metrics.actionRailTop === null ||
+    metrics.actionRailTop < -24 ||
+    metrics.actionRailBottom === null ||
+    metrics.actionRailBottom > metrics.viewportHeight * 0.65 ||
+    (metrics.firstParticipantTop !== null &&
+      metrics.firstParticipantTop > metrics.viewportHeight) ||
     metrics.timelineBottom === null ||
     metrics.timelineBottom <= 240
   ) {
@@ -703,12 +715,16 @@ async function assertRoomComposerShellCompact(
     const avatar = element.querySelector(".du-room-composer-avatar");
     const rect = element.getBoundingClientRect();
     const text = element.textContent ?? "";
+    const continuationDetailsVisible = Array.from(
+      element.querySelectorAll(".du-continuation-details")
+    ).some((entry) => getComputedStyle(entry).display !== "none");
 
     return {
       composerHeight: rect.height,
       copyHeight: copy?.getBoundingClientRect().height ?? 0,
       actionListHeight: actionList?.getBoundingClientRect().height ?? 0,
       detailsOpen: Boolean(details?.open),
+      continuationDetailsVisible,
       hasAvatar: Boolean(avatar),
       actionCount: actionList?.querySelectorAll(".du-discussion-action-button").length ?? 0,
       composerLabel: element.getAttribute("aria-label"),
@@ -726,6 +742,7 @@ async function assertRoomComposerShellCompact(
     metrics.copyHeight > maxCopyHeight ||
     metrics.actionListHeight > maxActionListHeight ||
     metrics.detailsOpen ||
+    metrics.continuationDetailsVisible ||
     !metrics.hasAvatar ||
     metrics.actionCount === 0 ||
     metrics.composerLabel !== "Room quick replies" ||
@@ -773,6 +790,7 @@ async function assertMobileDiscussionRoomShell(page, label) {
     const transcript = document.querySelector("#room-conversation-transcript");
     const nextAction = document.querySelector("#room-next-action");
     const composer = document.querySelector(".du-room-composer");
+    const actionRail = document.querySelector(".du-room-action-rail");
     const progressDetails = document.querySelector(".du-room-progress-details");
 
     return {
@@ -787,6 +805,7 @@ async function assertMobileDiscussionRoomShell(page, label) {
       threadIntro: rectFor(".du-room-thread-intro"),
       phaseSeparator: rectFor(".du-room-phase-separator"),
       hasStrip: Boolean(strip),
+      hasActionRail: Boolean(actionRail),
       timeline: rectFor("[aria-label='Discussion timeline']"),
       nextAction: rectFor("#room-next-action"),
       composer: rectFor(".du-room-composer"),
@@ -799,8 +818,11 @@ async function assertMobileDiscussionRoomShell(page, label) {
           Boolean(timeline && composer) && elements.indexOf(timeline) < elements.indexOf(composer),
         timelineContainsComposer: Boolean(timeline && composer && timeline.contains(composer)),
         transcriptContainsComposer: Boolean(transcript && composer && transcript.contains(composer)),
-        nextBeforeComposer:
-          Boolean(nextAction && composer) && elements.indexOf(nextAction) < elements.indexOf(composer),
+        actionRailContainsComposer: Boolean(actionRail && composer && actionRail.contains(composer)),
+        composerBeforeTranscript:
+          Boolean(composer && transcript) && elements.indexOf(composer) < elements.indexOf(transcript),
+        transcriptBeforeNextAction:
+          Boolean(transcript && nextAction) && elements.indexOf(transcript) < elements.indexOf(nextAction),
         composerBeforeProgress:
           Boolean(composer && progressDetails) &&
           elements.indexOf(composer) < elements.indexOf(progressDetails)
@@ -832,11 +854,14 @@ async function assertMobileDiscussionRoomShell(page, label) {
     !metrics.timeline ||
     !metrics.nextAction ||
     !metrics.composer ||
+    !metrics.hasActionRail ||
     !metrics.order.timelineBeforeNextAction ||
     !metrics.order.timelineBeforeComposer ||
     !metrics.order.timelineContainsComposer ||
-    !metrics.order.transcriptContainsComposer ||
-    !metrics.order.nextBeforeComposer ||
+    metrics.order.transcriptContainsComposer ||
+    !metrics.order.actionRailContainsComposer ||
+    !metrics.order.composerBeforeTranscript ||
+    !metrics.order.transcriptBeforeNextAction ||
     !metrics.order.composerBeforeProgress ||
     metrics.documentWidth > metrics.viewportWidth + 1
   ) {
@@ -904,7 +929,7 @@ async function assertDesktopRoomConversationFirstView(page, label) {
     !metrics.firstRoomMessage ||
     metrics.firstRoomMessage.top > metrics.viewportHeight ||
     (metrics.firstParticipantMessage &&
-      metrics.firstParticipantMessage.bottom > metrics.viewportHeight + 8) ||
+      metrics.firstParticipantMessage.bottom > metrics.viewportHeight + 32) ||
     !metrics.focusPanel ||
     metrics.focusPanel.height > 400 ||
     metrics.documentWidth > metrics.viewportWidth + 1
@@ -968,7 +993,7 @@ async function assertRoomConversationShellAfterMessages(page, label) {
     metrics.roomHeaderDisplay !== "none" ||
     !metrics.firstParticipant ||
     metrics.firstParticipant.top < 0 ||
-    metrics.firstParticipant.bottom > metrics.viewportHeight + 8 ||
+    metrics.firstParticipant.bottom > metrics.viewportHeight + 32 ||
     metrics.messageContextCount < 1 ||
     metrics.messageActionChipCount !== 0 ||
     metrics.messagePhaseChipCount !== 0 ||
