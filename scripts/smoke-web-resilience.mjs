@@ -182,7 +182,9 @@ async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, run
     )
     .waitFor();
   await page.getByRole("region", { name: "Updated discussion steps" }).waitFor();
+  await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Needs attention").first().waitFor();
+  await page.getByText("Room progress and stages", { exact: true }).click();
   await assertNoHorizontalOverflow(page, "paused continuation result");
   await assertDefaultResilienceSafety(page, "paused continuation result", {
     providerBaseUrl,

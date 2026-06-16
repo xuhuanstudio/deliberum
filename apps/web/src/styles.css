@@ -376,6 +376,43 @@ textarea:focus-visible {
   gap: 10px;
 }
 
+.du-discussion-actions-heading {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.du-discussion-actions-heading h4,
+.du-discussion-actions-heading p {
+  margin: 0;
+}
+
+.du-discussion-actions-heading h4 {
+  color: var(--du-ink);
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.du-discussion-actions-heading p:not(.du-kicker) {
+  color: var(--du-muted);
+  line-height: 1.5;
+}
+
+.du-room-composer {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 14px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #f8fff9;
+  padding: 16px;
+}
+
+.du-room-composer .du-continuation-details {
+  background: var(--du-surface);
+}
+
 .du-guided-action-path {
   display: grid;
   gap: 14px;

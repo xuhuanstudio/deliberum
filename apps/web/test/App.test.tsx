@@ -5295,12 +5295,22 @@ describe("@deliberum/web shell", () => {
     const timeline = document.querySelector('[aria-label="Discussion timeline"]');
     const transcript = timeline?.querySelector(".du-room-activity-wrap");
     const progressDetails = timeline?.querySelector(".du-room-progress-details");
+    const roomLayout = document.querySelector(".du-room-layout");
+    const roomComposer = document.querySelector(".du-room-composer");
     expect(timeline).toBeTruthy();
     expect(transcript).toBeTruthy();
     expect(progressDetails).toBeTruthy();
+    expect(roomLayout).toBeTruthy();
+    expect(roomComposer).toBeTruthy();
     expect(
       Boolean(
         transcript?.compareDocumentPosition(progressDetails as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      Boolean(
+        roomLayout?.compareDocumentPosition(roomComposer as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);
@@ -6665,6 +6675,7 @@ describe("@deliberum/web shell", () => {
 
     expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
     expect(screen.getByText("Discussion action composer")).toBeTruthy();
+    expect(document.querySelector(".du-room-composer")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Confirm answer requirements" })).toBeNull();

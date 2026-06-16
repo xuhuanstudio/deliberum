@@ -271,6 +271,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByLabel("Discussion question").fill(discussionQuestion);
   await page.getByRole("button", { name: "Create discussion" }).click();
   await page.getByRole("heading", { name: "Discussion room" }).waitFor();
+  await page.locator(".du-room-composer").waitFor();
   await page.getByText("How this discussion will continue").click();
   await page.getByText("Model-backed discussion").first().waitFor();
   await page.getByText("What is being discussed").waitFor();
@@ -285,7 +286,9 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     )
     .waitFor();
   await page.getByRole("region", { name: "Updated discussion steps" }).waitFor();
+  await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Needs attention").first().waitFor();
+  await page.getByText("Room progress and stages", { exact: true }).click();
   await assertDefaultViewSafety(page, "discussion room after transient participant failure", {
     providerBaseUrl
   });

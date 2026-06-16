@@ -1854,11 +1854,25 @@ export function RunDetailPage() {
         }
       >
         <QueryState query={runQuery}>
-          <div id="continue-discussion" className="du-workbench-anchor">
-            <StartRunForm runId={runId} sessionId={sessionId} run={run} />
-          </div>
           {sessionId ? (
-            <RunQualityOverview runId={runId} sessionId={sessionId} run={run} />
+            <RunQualityOverview
+              runId={runId}
+              sessionId={sessionId}
+              run={run}
+              discussionComposer={
+                <StartRunForm
+                  runId={runId}
+                  sessionId={sessionId}
+                  run={run}
+                  variant="room-composer"
+                />
+              }
+            />
+          ) : null}
+          {!sessionId ? (
+            <div id="continue-discussion" className="du-workbench-anchor">
+              <StartRunForm runId={runId} sessionId={sessionId} run={run} />
+            </div>
           ) : null}
           {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
           {sessionId ? (
@@ -2932,11 +2946,13 @@ function DiscussionContinuationSetupSummary({
 function StartRunForm({
   runId,
   sessionId,
-  run
+  run,
+  variant = "panel"
 }: {
   runId: string;
   sessionId?: string;
   run: unknown;
+  variant?: "panel" | "room-composer";
 }) {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
@@ -3027,14 +3043,23 @@ function StartRunForm({
     continuationSetup.primaryResultTitle ?? continuationView.primaryResultTitle;
   const primaryResultDetail =
     continuationSetup.primaryResultDetail ?? continuationView.primaryResultDetail;
-
-  return (
-    <DataPanel
-      title={t(continuationView.title)}
-      description={t(continuationView.description)}
-    >
-      <div className="du-discussion-actions" aria-label={t("Discussion action composer")}>
-        <p className="du-kicker">{t("Discussion action composer")}</p>
+  const formContent = (
+    <>
+      <div
+        className={`du-discussion-actions${
+          variant === "room-composer" ? " du-discussion-actions-room" : ""
+        }`}
+        aria-label={t("Discussion action composer")}
+      >
+        <div className="du-discussion-actions-heading">
+          <p className="du-kicker">{t("Discussion action composer")}</p>
+          {variant === "room-composer" ? (
+            <>
+              <h4>{t(continuationView.title)}</h4>
+              <p>{t(continuationView.description)}</p>
+            </>
+          ) : null}
+        </div>
         <div className="du-discussion-action-list">
           <button
             type="button"
@@ -3248,6 +3273,27 @@ function StartRunForm({
           />
         </section>
       ) : null}
+    </>
+  );
+
+  if (variant === "room-composer") {
+    return (
+      <section
+        id="continue-discussion"
+        className="du-room-composer"
+        aria-label={t("Discussion action composer")}
+      >
+        {formContent}
+      </section>
+    );
+  }
+
+  return (
+    <DataPanel
+      title={t(continuationView.title)}
+      description={t(continuationView.description)}
+    >
+      {formContent}
     </DataPanel>
   );
 }
@@ -3982,11 +4028,13 @@ function useOutcomeContextQueries(sessionId: string | undefined): {
 function RunQualityOverview({
   runId,
   sessionId,
-  run
+  run,
+  discussionComposer
 }: {
   runId: string;
   sessionId: string;
   run: unknown;
+  discussionComposer?: ReactNode;
 }) {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
@@ -4241,6 +4289,7 @@ function RunQualityOverview({
           ) : null}
         </div>
       </QueryState>
+      {discussionComposer}
     </DataPanel>
   );
 }
