@@ -3917,6 +3917,45 @@ textarea:focus-visible {
   padding: 16px;
 }
 
+.du-room-detail-panels-drawer {
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-surface);
+}
+
+.du-room-detail-panels-drawer > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 58px;
+  cursor: pointer;
+  padding: 14px 16px;
+}
+
+.du-room-detail-panels-drawer > summary span {
+  color: var(--du-ink);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.du-room-detail-panels-drawer > summary small {
+  min-width: 0;
+  color: var(--du-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.du-room-detail-panels-drawer-body {
+  border-top: 1px solid var(--du-line);
+}
+
+.du-room-detail-panels-drawer .du-projection-section {
+  padding: 0;
+}
+
 .du-follow-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -4238,5 +4277,13 @@ textarea:focus-visible {
 
   .du-room-contributions {
     order: 8;
+  }
+
+  .du-room-detail-panels-drawer > summary {
+    grid-template-columns: 1fr;
+  }
+
+  .du-room-detail-panels-drawer > summary small {
+    text-align: left;
   }
 }

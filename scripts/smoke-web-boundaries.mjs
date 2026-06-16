@@ -225,6 +225,7 @@ async function verifyRunWorkspaceAdvancedBoundary(page, { webBaseUrl, runId, ses
   await page.getByText("Process governance ledger").waitFor();
   await page.getByText(sessionId).first().waitFor();
 
+  await openDetailedReviewPanels(page, "discussion room Advanced detail panels");
   await page.locator('details[data-advanced-panel="Discussion detail metadata"] > summary').click();
   await page.getByText("Main perspectives metadata").waitFor();
   await page.getByText("Projection events").first().waitFor();
@@ -421,6 +422,22 @@ async function assertHiddenFromDefault(page, snippet, label) {
 
   if (bodyText.includes(snippet)) {
     throw new Error(`${label} exposed Advanced text before the user opened Advanced: ${snippet}`);
+  }
+}
+
+async function openDetailedReviewPanels(page, label) {
+  const details = page.locator("details.du-room-detail-panels-drawer");
+
+  try {
+    await details.waitFor();
+
+    if (!(await details.evaluate((element) => element.open))) {
+      await details.getByText("Detailed review panels", { exact: true }).click();
+    }
+  } catch (error) {
+    throw new Error(`${label} could not open detailed review panels.`, {
+      cause: error
+    });
   }
 }
 

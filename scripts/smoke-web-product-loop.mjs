@@ -335,6 +335,8 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Participant first responses").waitFor();
   await page.getByText("This browser perspective supports the verified provider path.").first().waitFor();
+  await assertDetailedReviewPanelsCollapsed(page, "discussion room after continuation");
+  await openDetailedReviewPanels(page, "discussion room after continuation");
   await page
     .getByText("Use the verified provider path for reviewable browser discussions")
     .first()
@@ -428,6 +430,39 @@ async function openRoomUpdateDetails(page, label) {
     }
   } catch (error) {
     throw new Error(`${label} could not open detailed room update.`, {
+      cause: error
+    });
+  }
+}
+
+async function assertDetailedReviewPanelsCollapsed(page, label) {
+  const details = page.locator("details.du-room-detail-panels-drawer");
+
+  try {
+    await details.waitFor();
+
+    const open = await details.evaluate((element) => element.open);
+    if (open) {
+      throw new Error("Detailed review panels were open by default.");
+    }
+  } catch (error) {
+    throw new Error(`${label} should keep detailed review panels collapsed by default.`, {
+      cause: error
+    });
+  }
+}
+
+async function openDetailedReviewPanels(page, label) {
+  const details = page.locator("details.du-room-detail-panels-drawer");
+
+  try {
+    await details.waitFor();
+
+    if (!(await details.evaluate((element) => element.open))) {
+      await details.getByText("Detailed review panels", { exact: true }).click();
+    }
+  } catch (error) {
+    throw new Error(`${label} could not open detailed review panels.`, {
       cause: error
     });
   }

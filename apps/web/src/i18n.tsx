@@ -1256,6 +1256,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "{total} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4e2d\u6709 {unresolved} \u4e2a\u9700\u8981\u9a8c\u8bc1",
   "{unresolved} of {total} evidence gaps need verification":
     "{total} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4e2d\u6709 {unresolved} \u4e2a\u9700\u8981\u9a8c\u8bc1",
+  "Detailed review panels": "\u8be6\u7ec6\u5ba1\u9605\u9762\u677f",
+  "Open detailed options, disagreements, requirements, and evidence only after reading the room conversation.":
+    "\u9605\u8bfb\u8ba8\u8bba\u5ba4\u5bf9\u8bdd\u540e\uff0c\u518d\u6253\u5f00\u8be6\u7ec6\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u3002",
   "Discussion detail panels": "\u8ba8\u8bba\u8be6\u60c5\u9762\u677f",
   "Strongest current options accepted into the discussion so far.":
     "\u76ee\u524d\u5df2\u7eb3\u5165\u8ba8\u8bba\u7684\u6700\u5f3a\u5f53\u524d\u9009\u9879\u3002",

@@ -1876,7 +1876,11 @@ export function RunDetailPage() {
               <StartRunForm runId={runId} sessionId={sessionId} run={run} />
             </div>
           ) : null}
-          {sessionId ? <RunProjectionPanels sessionId={sessionId} /> : null}
+          {sessionId ? (
+            <DiscussionDetailPanelsDrawer>
+              <RunProjectionPanels sessionId={sessionId} />
+            </DiscussionDetailPanelsDrawer>
+          ) : null}
           {sessionId ? (
             <DiscussionSetupDetails run={run} />
           ) : (
@@ -6563,6 +6567,27 @@ function describeEvidenceReviewDetail(
       unresolved: unresolvedCount,
       total: totalCount
     }
+  );
+}
+
+function DiscussionDetailPanelsDrawer({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
+
+  return (
+    <details
+      className="du-room-detail-panels-drawer"
+      aria-label={t("Detailed review panels")}
+    >
+      <summary>
+        <span>{t("Detailed review panels")}</span>
+        <small>
+          {t(
+            "Open detailed options, disagreements, requirements, and evidence only after reading the room conversation."
+          )}
+        </small>
+      </summary>
+      <div className="du-room-detail-panels-drawer-body">{children}</div>
+    </details>
   );
 }
 
