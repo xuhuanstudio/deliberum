@@ -3471,12 +3471,13 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Discussions")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.listRuns).toHaveBeenCalled());
-    expect(screen.getByText("How discussions work")).toBeTruthy();
+    expect(screen.getByText("Existing discussions")).toBeTruthy();
+    expect(screen.queryByText("How discussions work")).toBeNull();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "The topic, goals, constraints, participants, and output expectations before anyone contributes."
       )
-    ).toBeTruthy();
+    ).toBeNull();
     expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
     expect(screen.getByText("Option quality")).toBeTruthy();
     expect(screen.getByText("Requirements this answer must satisfy")).toBeTruthy();

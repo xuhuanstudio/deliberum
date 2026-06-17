@@ -286,7 +286,6 @@ export function RunsListPage() {
           </Link>
         }
       >
-        <RunConceptPanel />
         {runsQuery.isLoading ? (
           <StatusBanner title={t("Loading discussion data")} />
         ) : runsQuery.isError ? (
@@ -2221,44 +2220,6 @@ function RunNavigation({
         {t("Advanced")}
       </Link>
     </>
-  );
-}
-
-function RunConceptPanel() {
-  const { t } = useI18n();
-
-  return (
-    <DataPanel
-      title={t("How discussions work")}
-      description={t("The default mode explains the deliberation loop in user language.")}
-    >
-      <div className="du-explainer-grid">
-        <ExplainerItem
-          title={t("Discussion brief")}
-          detail={t(
-            "The topic, goals, constraints, participants, and output expectations before anyone contributes."
-          )}
-        />
-        <ExplainerItem
-          title={t("Independent first responses")}
-          detail={t(
-            "Early work is kept separate so one visible answer does not anchor the discussion."
-          )}
-        />
-        <ExplainerItem
-          title={t("Strongest current options")}
-          detail={t(
-            "Main perspectives stay visible as options, without a hidden authority choosing for the user."
-          )}
-        />
-        <ExplainerItem
-          title={t("Current conclusion")}
-          detail={t(
-            "A reviewable outcome with open disagreements, risks, missing evidence, and next steps."
-          )}
-        />
-      </div>
-    </DataPanel>
   );
 }
 
