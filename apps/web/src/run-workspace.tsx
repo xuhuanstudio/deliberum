@@ -5043,10 +5043,7 @@ function DiscussionRoomTimeline({
                   group.kind === "brief"
                     ? t("Room opening")
                     : t("Round {round}", { round: group.round });
-                const roundDetail =
-                  group.kind === "brief"
-                    ? t("The room starts by making the question, goals, and constraints visible.")
-                    : t("Participants answer first; review roles respond in the same room.");
+                const roundDetail = t(describeRoomRoundDetail(group));
                 const roundExchangeDetail = describeRoomRoundExchangeDetail(group);
                 const updatesLabel =
                   group.kind === "brief"
@@ -5112,6 +5109,14 @@ function DiscussionRoomTimeline({
                           index,
                           group.round
                         );
+                        const displayAction = describeRoomActivityDisplayAction(
+                          activity,
+                          group.round
+                        );
+                        const displayDetail = describeRoomActivityDisplayDetail(
+                          activity,
+                          group.round
+                        );
                         const roomSpeaker = isRoomSpeaker(activity.speaker);
                         const userSpeaker = isUserSpeaker(activity.speaker);
 
@@ -5130,22 +5135,22 @@ function DiscussionRoomTimeline({
                                 aria-label={t("Room update")}
                               >
                                 <strong>{t(activity.speaker)}</strong>
-                                <span>{t(activity.action)}</span>
-                                <p>{t(activity.detail, activity.detailValues)}</p>
+                                <span>{t(displayAction)}</span>
+                                <p>{t(displayDetail, activity.detailValues)}</p>
                               </div>
                             ) : userSpeaker ? (
                               <>
                                 <div
                                   className="du-room-activity-bubble"
                                   aria-label={`${t(activity.speaker)}: ${t(
-                                    activity.detail,
+                                    displayDetail,
                                     activity.detailValues
                                   )}`}
                                 >
                                   <div className="du-room-message-header">
                                     <strong>{t(activity.speaker)}</strong>
                                     <small className="du-room-message-context">
-                                      <span>{t(activity.action)}</span>
+                                      <span>{t(displayAction)}</span>
                                       <span aria-hidden="true">·</span>
                                       <span>{t(conversationCue)}</span>
                                     </small>
@@ -5167,7 +5172,7 @@ function DiscussionRoomTimeline({
                                     </p>
                                   ) : null}
                                   <p className="du-room-message-detail">
-                                    {t(activity.detail, activity.detailValues)}
+                                    {t(displayDetail, activity.detailValues)}
                                   </p>
                                 </div>
                                 <span className="du-room-activity-avatar" aria-hidden="true">
@@ -5182,14 +5187,14 @@ function DiscussionRoomTimeline({
                                 <div
                                   className="du-room-activity-bubble"
                                   aria-label={`${t(activity.speaker)}: ${t(
-                                    activity.detail,
+                                    displayDetail,
                                     activity.detailValues
                                   )}`}
                                 >
                                   <div className="du-room-message-header">
                                     <strong>{t(activity.speaker)}</strong>
                                     <small className="du-room-message-context">
-                                      <span>{t(activity.action)}</span>
+                                      <span>{t(displayAction)}</span>
                                       <span aria-hidden="true">·</span>
                                       <span>{t(conversationCue)}</span>
                                     </small>
@@ -5211,7 +5216,7 @@ function DiscussionRoomTimeline({
                                     </p>
                                   ) : null}
                                   <p className="du-room-message-detail">
-                                    {t(activity.detail, activity.detailValues)}
+                                    {t(displayDetail, activity.detailValues)}
                                   </p>
                                 </div>
                               </>
@@ -5659,33 +5664,53 @@ function ensureRoundHandoffActivities(activities: RoomActivityItem[]): RoomActiv
 
   const nextActivities: RoomActivityItem[] = [];
   let insertedForCurrentRound = false;
+  let roundCount = 0;
 
   for (const activity of activities) {
-    if (
-      activity.sourceType === "user_continuation_requested" ||
-      activity.sourceType === "sealed_batch_opened"
-    ) {
+    if (activity.sourceType === "sealed_batch_opened") {
+      roundCount += 1;
       insertedForCurrentRound = false;
+    }
+
+    if (activity.sourceType === "sealed_contribution_submitted" && roundCount === 0) {
+      roundCount = 1;
     }
 
     nextActivities.push(activity);
 
     if (activity.sourceType === "sealed_batch_revealed" && !insertedForCurrentRound) {
-      nextActivities.push({
-        speaker: "Discussion organizer",
-        title: "First responses connected",
-        action: "Connected the first responses",
-        detail:
-          "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps.",
-        tone: "neutral",
-        phase: "perspectives",
-        sourceType: "synthetic_round_handoff"
-      });
+      nextActivities.push(createRoundHandoffActivity(Math.max(1, roundCount)));
       insertedForCurrentRound = true;
     }
   }
 
   return nextActivities;
+}
+
+function createRoundHandoffActivity(round: number): RoomActivityItem {
+  if (round > 1) {
+    return {
+      speaker: "Discussion organizer",
+      title: "Follow-up replies connected",
+      action: "Connected the follow-up replies",
+      detail:
+        "The latest participant replies are visible. I'm connecting them to the prior room state before the room compares updated options, disagreements, and evidence gaps.",
+      tone: "neutral",
+      phase: "perspectives",
+      sourceType: "synthetic_round_handoff"
+    };
+  }
+
+  return {
+    speaker: "Discussion organizer",
+    title: "First responses connected",
+    action: "Connected the first responses",
+    detail:
+      "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps.",
+    tone: "neutral",
+    phase: "perspectives",
+    sourceType: "synthetic_round_handoff"
+  };
 }
 
 function ensureEvidenceGapReviewActivity(
@@ -5884,6 +5909,18 @@ function describeRoomRoundExchangeDetail(group: RoomActivityGroup): string {
   return "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies.";
 }
 
+function describeRoomRoundDetail(group: RoomActivityGroup): string {
+  if (group.kind === "brief") {
+    return "The room starts by making the question, goals, and constraints visible.";
+  }
+
+  if (group.round > 1) {
+    return "Participants respond to the previous round; review roles answer objections and evidence checks in the same room.";
+  }
+
+  return "Participants answer first; review roles respond in the same room.";
+}
+
 function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhaseView {
   if (phase === "brief") {
     return {
@@ -5935,7 +5972,7 @@ function describeRoomActivityConversationCue(activity: RoomActivityItem, round: 
   }
 
   if (activity.sourceType === "sealed_batch_opened") {
-    return "Inviting independent first responses";
+    return round > 1 ? "Inviting follow-up replies" : "Inviting independent first responses";
   }
 
   if (activity.sourceType === "sealed_contribution_submitted") {
@@ -5945,7 +5982,9 @@ function describeRoomActivityConversationCue(activity: RoomActivityItem, round: 
   }
 
   if (activity.sourceType === "sealed_batch_revealed") {
-    return "Bringing the first responses into the room";
+    return round > 1
+      ? "Bringing the follow-up replies into the room"
+      : "Bringing the first responses into the room";
   }
 
   if (activity.sourceType === "synthetic_round_handoff") {
@@ -5953,7 +5992,7 @@ function describeRoomActivityConversationCue(activity: RoomActivityItem, round: 
   }
 
   if (activity.sourceType === "extraction_proposed") {
-    return "Building on the first responses";
+    return round > 1 ? "Building on the follow-up replies" : "Building on the first responses";
   }
 
   if (activity.sourceType === "proposal_accepted") {
@@ -5983,6 +6022,65 @@ function describeRoomActivityConversationCue(activity: RoomActivityItem, round: 
   }
 
   return "Responding in the discussion room";
+}
+
+function describeRoomActivityDisplayAction(
+  activity: RoomActivityItem,
+  round: number
+): string {
+  if (activity.sourceType === "sealed_contribution_submitted" && round > 1) {
+    return "Shared a follow-up reply";
+  }
+
+  if (activity.sourceType === "sealed_batch_opened" && round > 1) {
+    return "Opened follow-up replies";
+  }
+
+  if (activity.sourceType === "sealed_batch_revealed" && round > 1) {
+    return "Made follow-up replies visible";
+  }
+
+  return activity.action;
+}
+
+function describeRoomActivityDisplayDetail(
+  activity: RoomActivityItem,
+  round: number
+): string {
+  if (round <= 1) {
+    return activity.detail;
+  }
+
+  if (activity.sourceType === "sealed_batch_opened") {
+    return "Participants can reply to the current room state before seeing one another's follow-up.";
+  }
+
+  if (activity.sourceType === "sealed_batch_revealed") {
+    return "The follow-up replies are now available for review.";
+  }
+
+  if (
+    activity.sourceType === "extraction_proposed" &&
+    isGenericFirstResponseOrganizerDetail(activity.detail)
+  ) {
+    return "The latest replies were organized into updated options, disagreements, requirements, and evidence needs.";
+  }
+
+  return activity.detail;
+}
+
+function isGenericFirstResponseOrganizerDetail(detail: string): boolean {
+  return (
+    detail ===
+      "The revealed responses were organized into options, disagreements, requirements, and evidence needs." ||
+    detail === "Organized revealed responses into reviewable perspectives." ||
+    detail ===
+      "Organize the first responses into reviewable options, disagreements, requirements, and evidence needs." ||
+    detail ===
+      "\u5c06\u521d\u59cb\u56de\u5e94\u6574\u7406\u4e3a\u53ef\u5ba1\u9605\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002" ||
+    detail === "Round one organized the first responses into reviewable options." ||
+    detail === "Round two organized the follow-up into updated options."
+  );
 }
 
 function describeRoomActivityAddressLine(
@@ -6031,7 +6129,7 @@ function describeRoomActivityAddressLine(
     activity.sourceType === "extraction_proposed"
   ) {
     return {
-      text: "To the participant first responses"
+      text: round > 1 ? "To the latest participant replies" : "To the participant first responses"
     };
   }
 
@@ -6116,12 +6214,26 @@ function describeRoomActivityReplyLine(
 
   if (activity.sourceType === "synthetic_round_handoff") {
     return {
-      text: "Responding after the first responses were revealed"
+      text:
+        round > 1
+          ? "Responding after the follow-up replies were revealed"
+          : "Responding after the first responses were revealed"
     };
   }
 
   if (activity.sourceType === "extraction_proposed") {
     const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    if (round > 1) {
+      return previousSpeaker
+        ? {
+            text: "Building on {speaker}'s follow-up reply",
+            values: { speaker: previousSpeaker }
+          }
+        : {
+            text: "Building on the latest participant replies"
+          };
+    }
 
     return previousSpeaker
       ? {

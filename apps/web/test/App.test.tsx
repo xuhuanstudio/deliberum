@@ -6487,6 +6487,11 @@ describe("@deliberum/web shell", () => {
         "This follow-up round continues from the previous room state so new participant, reviewer, and evidence messages stay together."
       )
     ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Participants respond to the previous round; review roles answer objections and evidence checks in the same room."
+      )
+    ).toBeTruthy();
     expect(roundOne.textContent ?? "").toContain(
       "Round one adds a separate concern about evidence quality."
     );
@@ -6503,17 +6508,31 @@ describe("@deliberum/web shell", () => {
     );
     expect(roundTwo.textContent ?? "").toContain("Asked the room to continue");
     expect(roundTwo.textContent ?? "").toContain("Starting another room round");
+    expect(roundTwo.textContent ?? "").toContain("Opened follow-up replies");
+    expect(roundTwo.textContent ?? "").toContain("Shared a follow-up reply");
+    expect(roundTwo.textContent ?? "").toContain("Made follow-up replies visible");
+    expect(roundTwo.textContent ?? "").toContain("Building on the follow-up replies");
     expect(roundTwo.textContent ?? "").toContain(
       "Replying in round 2 to the previous room state"
     );
     expect(roundTwo.textContent ?? "").toContain("Responding to the previous discussion round");
     expect(roundTwo.textContent ?? "").not.toContain("Responding to the discussion brief");
+    expect(roundTwo.textContent ?? "").not.toContain("Opened independent first responses");
+    expect(roundTwo.textContent ?? "").not.toContain("Shared a first response");
+    expect(roundTwo.textContent ?? "").not.toContain("Made first responses visible");
+    expect(roundTwo.textContent ?? "").not.toContain("Building on the first responses");
     expect(roundTwo.textContent ?? "").not.toContain(
       "Replying to the discussion brief before seeing other participants"
     );
-    expect(roundTwo.textContent ?? "").toContain("Connected the first responses");
-    expect(roundTwo.textContent ?? "").toContain("Building on the first responses");
-    expect(roundTwo.textContent ?? "").toContain("Building on Perspective B's first response");
+    expect(roundTwo.textContent ?? "").toContain("Connected the follow-up replies");
+    expect(roundTwo.textContent ?? "").toContain(
+      "Responding after the follow-up replies were revealed"
+    );
+    expect(roundTwo.textContent ?? "").toContain("To the latest participant replies");
+    expect(roundTwo.textContent ?? "").toContain(
+      "The latest replies were organized into updated options, disagreements, requirements, and evidence needs."
+    );
+    expect(roundTwo.textContent ?? "").toContain("Building on Perspective B's follow-up reply");
     expect((document.querySelector(".du-room-layout")?.textContent ?? "")).not.toContain(
       "round-two-opened"
     );

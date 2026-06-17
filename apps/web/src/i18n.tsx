@@ -1722,6 +1722,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion round {round} messages": "\u8ba8\u8bba\u7b2c {round} \u8f6e\u53d1\u8a00",
   "Participants answer first; review roles respond in the same room.":
     "\u53c2\u4e0e\u8005\u5148\u56de\u7b54\uff0c\u5ba1\u67e5\u89d2\u8272\u5728\u540c\u4e00\u8ba8\u8bba\u5ba4\u91cc\u63a5\u7740\u56de\u5e94\u3002",
+  "Participants respond to the previous round; review roles answer objections and evidence checks in the same room.":
+    "\u53c2\u4e0e\u8005\u56de\u5e94\u4e0a\u4e00\u8f6e\u8ba8\u8bba\uff1b\u5ba1\u67e5\u89d2\u8272\u5728\u540c\u4e00\u8ba8\u8bba\u5ba4\u91cc\u56de\u5e94\u53cd\u5bf9\u610f\u89c1\u548c\u8bc1\u636e\u6838\u67e5\u3002",
   "The brief is pinned first so every participant responds to the same question.":
     "\u5148\u56fa\u5b9a\u8ba8\u8bba\u7b80\u62a5\uff0c\u8ba9\u6bcf\u4e2a\u53c2\u4e0e\u8005\u56de\u5e94\u540c\u4e00\u4e2a\u95ee\u9898\u3002",
   "This follow-up round continues from the previous room state so new participant, reviewer, and evidence messages stay together.":
@@ -1731,11 +1733,15 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Starting another room round": "\u5f00\u59cb\u65b0\u4e00\u8f6e\u8ba8\u8bba",
   "Setting the shared brief": "\u8bbe\u5b9a\u5171\u540c\u7b80\u62a5",
   "Inviting independent first responses": "\u9080\u8bf7\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
+  "Inviting follow-up replies": "\u9080\u8bf7\u540e\u7eed\u56de\u590d",
   "Responding to the discussion brief": "\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5",
   "Bringing the first responses into the room":
     "\u5c06\u521d\u59cb\u56de\u5e94\u5e26\u5165\u8ba8\u8bba\u5ba4",
+  "Bringing the follow-up replies into the room":
+    "\u5c06\u540e\u7eed\u56de\u590d\u5e26\u5165\u8ba8\u8bba\u5ba4",
   "Connecting participant messages": "\u6b63\u5728\u8fde\u63a5\u53c2\u4e0e\u8005\u53d1\u8a00",
   "Building on the first responses": "\u57fa\u4e8e\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
+  "Building on the follow-up replies": "\u57fa\u4e8e\u540e\u7eed\u56de\u590d\u7ee7\u7eed",
   "Responding to the strongest current options":
     "\u56de\u5e94\u5f53\u524d\u6700\u5f3a\u9009\u9879",
   "Challenging the current direction": "\u6311\u6218\u5f53\u524d\u65b9\u5411",
@@ -1752,6 +1758,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Replying in round {round} to the previous room state":
     "\u5728\u7b2c {round} \u8f6e\u4e2d\u56de\u5e94\u4e0a\u4e00\u6b21\u8ba8\u8bba\u5ba4\u72b6\u6001",
   "To the participant first responses": "\u56de\u5e94\u53c2\u4e0e\u8005\u7684\u521d\u59cb\u56de\u5e94",
+  "To the latest participant replies": "\u56de\u5e94\u6700\u65b0\u7684\u53c2\u4e0e\u8005\u53d1\u8a00",
   "To the organized options": "\u56de\u5e94\u5df2\u6574\u7406\u7684\u9009\u9879",
   "To the strongest current option": "\u56de\u5e94\u5f53\u524d\u6700\u5f3a\u9009\u9879",
   "To the claim that still needs evidence": "\u56de\u5e94\u4ecd\u9700\u8bc1\u636e\u7684\u8bba\u65ad",
@@ -1767,8 +1774,14 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Responding to the previous discussion round": "\u56de\u5e94\u4e0a\u4e00\u8f6e\u8ba8\u8bba",
   "Responding after the first responses were revealed":
     "\u5728\u521d\u59cb\u56de\u5e94\u63ed\u793a\u540e\u63a5\u7740\u56de\u5e94",
+  "Responding after the follow-up replies were revealed":
+    "\u5728\u540e\u7eed\u56de\u590d\u63ed\u793a\u540e\u63a5\u7740\u56de\u5e94",
   "Building on {speaker}'s first response": "\u57fa\u4e8e {speaker} \u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
+  "Building on {speaker}'s follow-up reply":
+    "\u57fa\u4e8e {speaker} \u7684\u540e\u7eed\u56de\u590d\u7ee7\u7eed",
   "Building on the participant first responses": "\u57fa\u4e8e\u53c2\u4e0e\u8005\u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
+  "Building on the latest participant replies":
+    "\u57fa\u4e8e\u6700\u65b0\u7684\u53c2\u4e0e\u8005\u53d1\u8a00\u7ee7\u7eed",
   "Keeping the organized options in the room for review":
     "\u5c06\u5df2\u6574\u7406\u7684\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u4e2d\u4f9b\u5ba1\u9605",
   "Challenging the current strongest option": "\u6311\u6218\u5f53\u524d\u6700\u5f3a\u9009\u9879",
@@ -1781,8 +1794,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Room step {step}": "\u8ba8\u8bba\u5ba4\u6b65\u9aa4 {step}",
   "Discussion update": "\u8ba8\u8bba\u66f4\u65b0",
   "Connected the first responses": "\u8fde\u63a5\u4e86\u521d\u59cb\u56de\u5e94",
+  "Follow-up replies connected": "\u540e\u7eed\u56de\u590d\u5df2\u8fde\u63a5",
+  "Connected the follow-up replies": "\u8fde\u63a5\u4e86\u540e\u7eed\u56de\u590d",
   "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps.":
     "\u521d\u59cb\u56de\u5e94\u5df2\u53ef\u89c1\u3002\u6211\u4f1a\u5148\u628a\u8fd9\u4e9b\u56de\u5e94\u8fde\u8d77\u6765\uff0c\u7136\u540e\u8ba8\u8bba\u5ba4\u518d\u6bd4\u8f83\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002",
+  "The latest participant replies are visible. I'm connecting them to the prior room state before the room compares updated options, disagreements, and evidence gaps.":
+    "\u6700\u65b0\u7684\u53c2\u4e0e\u8005\u56de\u590d\u5df2\u53ef\u89c1\u3002\u6211\u4f1a\u5148\u628a\u5b83\u4eec\u63a5\u56de\u4e0a\u4e00\u8f6e\u8ba8\u8bba\u5ba4\u72b6\u6001\uff0c\u7136\u540e\u8ba8\u8bba\u5ba4\u518d\u6bd4\u8f83\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002",
   "Readable discussion flow": "\u53ef\u8bfb\u8ba8\u8bba\u6d41\u7a0b",
   "Discussion brief updates": "\u8ba8\u8bba\u7b80\u62a5\u66f4\u65b0",
   "The room starts by making the question, goals, and constraints visible.":
@@ -1855,19 +1872,28 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u8ba8\u8bba\u5ba4\u4e2d\u7684\u6240\u6709\u4eba\u90fd\u53ef\u4ee5\u67e5\u770b\u8ba8\u8bba\u7b80\u62a5\u3002",
   "Independent first responses opened": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u5df2\u5f00\u542f",
   "Opened independent first responses": "\u5f00\u542f\u4e86\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
+  "Opened follow-up replies": "\u5f00\u542f\u4e86\u540e\u7eed\u56de\u590d",
   "Participants can respond separately before seeing one another's answers.":
     "\u53c2\u4e0e\u8005\u53ef\u4ee5\u5148\u5206\u522b\u56de\u5e94\uff0c\u518d\u770b\u5230\u5f7c\u6b64\u7b54\u6848\u3002",
+  "Participants can reply to the current room state before seeing one another's follow-up.":
+    "\u53c2\u4e0e\u8005\u53ef\u4ee5\u5148\u56de\u5e94\u5f53\u524d\u8ba8\u8bba\u5ba4\u72b6\u6001\uff0c\u518d\u770b\u5230\u5f7c\u6b64\u7684\u540e\u7eed\u56de\u590d\u3002",
   "Independent response submitted": "\u72ec\u7acb\u56de\u5e94\u5df2\u63d0\u4ea4",
   "Submitted a sealed first response": "\u63d0\u4ea4\u4e86\u5c01\u5b58\u7684\u521d\u59cb\u56de\u5e94",
   "Shared a first response": "\u5206\u4eab\u4e86\u521d\u59cb\u56de\u5e94",
+  "Shared a follow-up reply": "\u5206\u4eab\u4e86\u540e\u7eed\u56de\u590d",
   "This response is sealed until the independent first responses are revealed.":
     "\u5728\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u63ed\u793a\u524d\uff0c\u6b64\u56de\u5e94\u4fdd\u6301\u5c01\u5b58\u3002",
   "Independent first responses revealed": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u5df2\u63ed\u793a",
   "Made first responses visible": "\u5c06\u521d\u59cb\u56de\u5e94\u8bbe\u4e3a\u53ef\u89c1",
+  "Made follow-up replies visible": "\u5c06\u540e\u7eed\u56de\u590d\u8bbe\u4e3a\u53ef\u89c1",
   "The independent responses are now available for review.":
     "\u72ec\u7acb\u56de\u5e94\u73b0\u5728\u53ef\u4f9b\u5ba1\u9605\u3002",
+  "The follow-up replies are now available for review.":
+    "\u540e\u7eed\u56de\u590d\u73b0\u5728\u53ef\u4f9b\u5ba1\u9605\u3002",
   "Main perspectives organized": "\u4e3b\u8981\u89c2\u70b9\u5df2\u6574\u7406",
   "Organized the strongest options": "\u6574\u7406\u4e86\u6700\u5f3a\u9009\u9879",
+  "The latest replies were organized into updated options, disagreements, requirements, and evidence needs.":
+    "\u6700\u65b0\u56de\u590d\u5df2\u6574\u7406\u4e3a\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002",
   "The revealed responses were organized into options, disagreements, requirements, and evidence needs.":
     "\u5df2\u63ed\u793a\u56de\u5e94\u88ab\u6574\u7406\u4e3a\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002",
   "Discussion material accepted for review": "\u8ba8\u8bba\u6750\u6599\u5df2\u63a5\u53d7\u5ba1\u9605",
