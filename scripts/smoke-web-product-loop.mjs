@@ -284,7 +284,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.locator(".du-room-system-message").first().waitFor();
   await page.getByText("Shared the discussion brief", { exact: true }).waitFor();
   await assertRoomComposerShellCompact(page, "discussion room before continuation");
-  await assertBriefDetailsCollapsed(page, "discussion room before continuation");
+  await assertRoomReportDetailsHidden(page, "discussion room before continuation");
   await page.getByRole("button", { name: "Continue discussion" }).waitFor();
   await assertDesktopRoomConversationFirstView(page, "discussion room before continuation");
   await assertComposerActionsCompact(page, "discussion room before continuation", {
@@ -307,13 +307,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   const updatedSteps = page.getByRole("region", { name: "Updated discussion steps" });
   await updatedSteps.waitFor();
   await updatedSteps.getByText("Needs attention", { exact: true }).waitFor();
-  await openRoomDetails(page, "discussion room after transient participant failure");
-  await page.getByText("Room progress and stages", { exact: true }).click();
-  await page
-    .getByRole("region", { name: "Room progress summary" })
-    .getByText("Discussion step needs attention", { exact: true })
-    .waitFor();
-  await page.getByText("Room progress and stages", { exact: true }).click();
+  await assertRoomReportDetailsHidden(page, "discussion room after transient participant failure");
   await assertDefaultViewSafety(page, "discussion room after transient participant failure", {
     providerBaseUrl
   });
@@ -362,13 +356,15 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page
     .getByText("Review queue: 1 open disagreements, 1 missing evidence, 1 requirements to satisfy.")
     .waitFor();
-  await openRoomDetails(page, "discussion room after continuation");
-  await page.getByText("Room progress and stages", { exact: true }).click();
-  await page.getByText("Participant first responses", { exact: true }).waitFor();
-  await page.getByText("This browser perspective supports the verified provider path.").first().waitFor();
+  await conversationTranscript
+    .getByText("This browser perspective supports the verified provider path.")
+    .first()
+    .waitFor();
   await assertDetailedReviewPanelsCollapsed(page, "discussion room after continuation");
   await openDetailedReviewPanels(page, "discussion room after continuation");
-  const detailedReviewPanels = page.locator("details.du-room-detail-panels-drawer");
+  const detailedReviewPanels = page.locator(
+    'details.du-advanced-panel[data-advanced-panel="Structured discussion details"]'
+  );
   await detailedReviewPanels
     .getByText("Use the verified provider path for reviewable browser discussions")
     .first()
@@ -398,23 +394,14 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .first()
     .waitFor();
   await page.getByText("Checking evidence behind Perspective B's claim").first().waitFor();
-  const roomOutputSummary = page.locator("details.du-room-outputs-section");
-  if (await roomOutputSummary.evaluate((element) => element.open)) {
-    throw new Error("Discussion room output summary should be collapsed by default.");
-  }
-  await openRoomDetails(page, "discussion room output summary");
-  await page.getByText("Room output summary", { exact: true }).click();
-  await page.getByText("What the room has produced").waitFor();
+  await assertRoomReportDetailsHidden(page, "discussion room output summary");
   await page.getByText("Current conclusion: Ready to review").waitFor();
-  await page.getByRole("heading", { name: "Next recommended actions", exact: true }).waitFor();
-  await roomOutputSummary.getByText("Missing evidence", { exact: true }).waitFor();
+  await page.locator(".du-room-focus").getByText("Missing evidence", { exact: true }).waitFor();
   await page.locator(".du-room-focus").getByText("Risks", { exact: true }).waitFor();
   const roomReviewConclusionLink = page
     .locator("#room-next-action")
     .getByRole("link", { name: "Review current conclusion", exact: true });
   await roomReviewConclusionLink.waitFor();
-  await page.getByRole("link", { name: "Review evidence", exact: true }).first().waitFor();
-  await page.getByRole("link", { name: "View disagreements", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Review disagreements", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Check evidence", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Update conclusion", exact: true }).first().waitFor();
@@ -540,50 +527,38 @@ async function openRoomUpdateDetails(page, label) {
   }
 }
 
-async function openRoomDetails(page, label) {
-  const details = page.locator("details.du-room-secondary-details");
-
-  try {
-    await details.waitFor({ state: "attached" });
-
-    if (!(await details.evaluate((element) => element.open))) {
-      await details.getByText("Room details", { exact: true }).click();
-    }
-  } catch (error) {
-    throw new Error(`${label} could not open room details.`, {
-      cause: error
-    });
-  }
-}
-
 async function assertDetailedReviewPanelsCollapsed(page, label) {
-  const details = page.locator("details.du-room-detail-panels-drawer");
+  const details = page.locator(
+    'details.du-advanced-panel[data-advanced-panel="Structured discussion details"]'
+  );
 
   try {
     await details.waitFor();
 
     const open = await details.evaluate((element) => element.open);
     if (open) {
-      throw new Error("Detailed review panels were open by default.");
+      throw new Error("Structured discussion details were open by default.");
     }
   } catch (error) {
-    throw new Error(`${label} should keep detailed review panels collapsed by default.`, {
+    throw new Error(`${label} should keep structured discussion details collapsed by default.`, {
       cause: error
     });
   }
 }
 
 async function openDetailedReviewPanels(page, label) {
-  const details = page.locator("details.du-room-detail-panels-drawer");
+  const details = page.locator(
+    'details.du-advanced-panel[data-advanced-panel="Structured discussion details"]'
+  );
 
   try {
     await details.waitFor();
 
     if (!(await details.evaluate((element) => element.open))) {
-      await details.getByText("Detailed review panels", { exact: true }).click();
+      await details.locator("> summary").click();
     }
   } catch (error) {
-    throw new Error(`${label} could not open detailed review panels.`, {
+    throw new Error(`${label} could not open structured discussion details.`, {
       cause: error
     });
   }
@@ -908,7 +883,6 @@ async function assertMobileDiscussionRoomShell(page, label) {
     !metrics.order.transcriptBeforeComposer ||
     !metrics.order.transcriptBeforeNextAction ||
     !metrics.order.nextActionBeforeComposer ||
-    !metrics.order.composerBeforeProgress ||
     metrics.documentWidth > metrics.viewportWidth + 1
   ) {
     throw new Error(`${label} should keep mobile room chrome compact, got ${JSON.stringify(metrics)}.`);
@@ -1078,23 +1052,29 @@ async function assertRoomHeaderStatus(page, { label, expectedStatus, expectedNex
   }
 }
 
-async function assertBriefDetailsCollapsed(page, label) {
-  const roomDetails = page.locator("details.du-room-secondary-details");
-  const briefDetails = page.locator(".du-room-brief");
+async function assertRoomReportDetailsHidden(page, label) {
+  const reportDetailsCount = await page.locator("details.du-room-secondary-details").count();
+  const briefDetailsCount = await page.locator(".du-room-brief").count();
+  const outputSummaryCount = await page.locator("details.du-room-outputs-section").count();
+  const roomDetailsTextCount = await page.getByText("Room details", { exact: true }).count();
+  const outputSummaryTextCount = await page.getByText("Room output summary", { exact: true }).count();
 
-  await roomDetails.getByText("Room details", { exact: true }).waitFor();
-  await briefDetails.waitFor({ state: "attached" });
-
-  const roomDetailsOpen = await roomDetails.evaluate((element) => element.open === true);
-
-  if (roomDetailsOpen) {
-    throw new Error(`${label} should keep room details collapsed by default.`);
-  }
-
-  const open = await briefDetails.evaluate((element) => element.open === true);
-
-  if (open) {
-    throw new Error(`${label} should keep discussion brief details collapsed by default.`);
+  if (
+    reportDetailsCount !== 0 ||
+    briefDetailsCount !== 0 ||
+    outputSummaryCount !== 0 ||
+    roomDetailsTextCount !== 0 ||
+    outputSummaryTextCount !== 0
+  ) {
+    throw new Error(
+      `${label} should not show report-style room details by default, got ${JSON.stringify({
+        reportDetailsCount,
+        briefDetailsCount,
+        outputSummaryCount,
+        roomDetailsTextCount,
+        outputSummaryTextCount
+      })}.`
+    );
   }
 }
 

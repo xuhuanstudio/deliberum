@@ -186,13 +186,7 @@ async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, run
   const updatedSteps = page.getByRole("region", { name: "Updated discussion steps" });
   await updatedSteps.waitFor();
   await updatedSteps.getByText("Needs attention", { exact: true }).waitFor();
-  await openRoomDetails(page, "paused continuation result");
-  await page.getByText("Room progress and stages", { exact: true }).click();
-  await page
-    .getByRole("region", { name: "Room progress summary" })
-    .getByText("Discussion step needs attention", { exact: true })
-    .waitFor();
-  await page.getByText("Room progress and stages", { exact: true }).click();
+  await assertRoomReportDetailsHidden(page, "paused continuation result");
   await assertNoHorizontalOverflow(page, "paused continuation result");
   await assertDefaultResilienceSafety(page, "paused continuation result", {
     providerBaseUrl,
@@ -419,19 +413,19 @@ async function openRoomUpdateDetails(page, label) {
   }
 }
 
-async function openRoomDetails(page, label) {
-  const details = page.locator("details.du-room-secondary-details");
+async function assertRoomReportDetailsHidden(page, label) {
+  const reportDetailsCount = await page.locator("details.du-room-secondary-details").count();
+  const briefDetailsCount = await page.locator(".du-room-brief").count();
+  const outputSummaryCount = await page.locator("details.du-room-outputs-section").count();
 
-  try {
-    await details.waitFor({ state: "attached" });
-
-    if (!(await details.evaluate((element) => element.open))) {
-      await details.getByText("Room details", { exact: true }).click();
-    }
-  } catch (error) {
-    throw new Error(`${label} could not open room details.`, {
-      cause: error
-    });
+  if (reportDetailsCount !== 0 || briefDetailsCount !== 0 || outputSummaryCount !== 0) {
+    throw new Error(
+      `${label} should not show report-style room details by default, got ${JSON.stringify({
+        reportDetailsCount,
+        briefDetailsCount,
+        outputSummaryCount
+      })}.`
+    );
   }
 }
 

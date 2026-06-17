@@ -429,16 +429,18 @@ async function assertHiddenFromDefault(page, snippet, label) {
 }
 
 async function openDetailedReviewPanels(page, label) {
-  const details = page.locator("details.du-room-detail-panels-drawer");
+  const details = page.locator(
+    'details.du-advanced-panel[data-advanced-panel="Structured discussion details"]'
+  );
 
   try {
     await details.waitFor();
 
     if (!(await details.evaluate((element) => element.open))) {
-      await details.getByText("Detailed review panels", { exact: true }).click();
+      await details.locator("> summary").click();
     }
   } catch (error) {
-    throw new Error(`${label} could not open detailed review panels.`, {
+    throw new Error(`${label} could not open structured discussion details.`, {
       cause: error
     });
   }

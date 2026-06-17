@@ -1128,6 +1128,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5b8c\u6210\u540e\uff0c\u8bf7\u6bd4\u8f83\u5237\u65b0\u540e\u7684\u6700\u5f3a\u9009\u9879\u3002",
   "Jump only; this does not change the discussion.":
     "\u4ec5\u8df3\u8f6c\u67e5\u770b\uff1b\u4e0d\u4f1a\u6539\u53d8\u8ba8\u8bba\u3002",
+  "Open the current conclusion without changing the discussion.":
+    "\u6253\u5f00\u5f53\u524d\u7ed3\u8bba\uff0c\u4e0d\u6539\u53d8\u8ba8\u8bba\u3002",
   "Continue guided discussion": "\u7ee7\u7eed\u5f15\u5bfc\u5f0f\u8ba8\u8bba",
   "A reviewable conclusion is available with risks, evidence gaps, and next actions.":
     "\u5df2\u6709\u53ef\u5ba1\u9605\u7ed3\u8bba\uff0c\u5e76\u5305\u542b\u98ce\u9669\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u3002",
