@@ -978,6 +978,63 @@ function getAdvancedModeSummaryByPanelText(text: string) {
   return summary as HTMLElement;
 }
 
+function queryAdvancedModeSummaryByPanelText(text: string) {
+  const details = Array.from(document.querySelectorAll("details.du-advanced-panel")).find(
+    (element) =>
+      element.getAttribute("data-advanced-panel") === text ||
+      element.textContent?.includes(text)
+  );
+
+  return (details?.querySelector("summary") as HTMLElement | null) ?? null;
+}
+
+async function openStructuredDiscussionDetails() {
+  const summary = await findAdvancedModeSummaryByPanelText("Structured discussion details");
+  const details = summary.closest("details") as HTMLDetailsElement | null;
+
+  if (details && !details.open) {
+    fireEvent.click(summary);
+  }
+
+  await waitFor(() => expect(details?.open).toBe(true));
+}
+
+async function openAdvancedStartRequestDetails() {
+  if (!queryAdvancedModeSummaryByPanelText("Advanced start request")) {
+    await openStructuredDiscussionDetails();
+  }
+
+  const summary = await findAdvancedModeSummaryByPanelText("Advanced start request");
+  const details = summary.closest("details") as HTMLDetailsElement | null;
+
+  if (details && !details.open) {
+    fireEvent.click(summary);
+  }
+
+  await waitFor(() => expect(details?.open).toBe(true));
+}
+
+async function openContinuationDetails() {
+  let details: HTMLDetailsElement | null = null;
+
+  await waitFor(() => {
+    details = document.querySelector(
+      "details.du-continuation-details"
+    ) as HTMLDetailsElement | null;
+    expect(details).toBeTruthy();
+  });
+
+  const summary = details?.querySelector("summary") as HTMLElement | null;
+
+  expect(summary).toBeTruthy();
+
+  if (details && summary && !details.open) {
+    fireEvent.click(summary);
+  }
+
+  await waitFor(() => expect(details?.open).toBe(true));
+}
+
 function getUserDetailsSummaryByText(text: string) {
   const details = Array.from(document.querySelectorAll("details.du-user-details")).find(
     (element) => element.textContent?.includes(text)
@@ -2213,10 +2270,12 @@ describe("@deliberum/web shell", () => {
 
     await waitFor(() => expect(client.createRun).toHaveBeenCalled());
     expect((await screen.findAllByText("Discussion room")).length).toBeGreaterThan(0);
-    expect(await screen.findByText("Model-backed discussion")).toBeTruthy();
+    expect(screen.queryByText("Model-backed discussion")).toBeNull();
     expect(screen.queryByText("Discussion brief details")).toBeNull();
     expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
     expect(screen.queryByText("Use the verified provider for reviewable discussions")).toBeNull();
+    await openStructuredDiscussionDetails();
+    expect(await screen.findByText("Model-backed discussion")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
 
@@ -4672,13 +4731,9 @@ describe("@deliberum/web shell", () => {
         "\u5feb\u901f\u8df3\u8f6c\u5230\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u548c\u7ed3\u8bba"
       )
     ).toBeNull();
-    const localizedActionPath = screen.getByRole("region", {
+    expect(screen.queryByRole("region", {
       name: "\u63a8\u8350\u64cd\u4f5c\u8def\u5f84"
-    });
-    expect(localizedActionPath).toBeTruthy();
-    expect(localizedActionPath.textContent ?? "").toContain("\u63a8\u8350\u8def\u5f84");
-    expect(localizedActionPath.textContent ?? "").toContain("\u4ece\u8fd9\u91cc\u5f00\u59cb");
-    expect(localizedActionPath.textContent ?? "").toContain("\u9009\u62e9\u8ddf\u8fdb\u52a8\u4f5c");
+    })).toBeNull();
     const localizedDiscussionActionsText =
       document.querySelector(".du-discussion-actions")?.textContent ?? "";
     expect(screen.queryByRole("navigation", { name: "\u8ba8\u8bba\u52a8\u4f5c" })).toBeNull();
@@ -4726,6 +4781,14 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByText("\u8be6\u7ec6\u5ba1\u9605\u9762\u677f")).toBeNull();
     fireEvent.click(await findAdvancedModeSummaryByPanelText("Structured discussion details"));
     expect(localizedDetailPanelsDrawer?.open).toBe(true);
+    await openContinuationDetails();
+    const localizedActionPath = await screen.findByRole("region", {
+      name: "\u63a8\u8350\u64cd\u4f5c\u8def\u5f84"
+    });
+    expect(localizedActionPath).toBeTruthy();
+    expect(localizedActionPath.textContent ?? "").toContain("\u63a8\u8350\u8def\u5f84");
+    expect(localizedActionPath.textContent ?? "").toContain("\u4ece\u8fd9\u91cc\u5f00\u59cb");
+    expect(localizedActionPath.textContent ?? "").toContain("\u9009\u62e9\u8ddf\u8fdb\u52a8\u4f5c");
     expect(await screen.findByText("\u98ce\u9669\u4e0e\u7f3a\u5931\u8bc1\u636e")).toBeTruthy();
     expect(
       await screen.findByText(
@@ -5509,10 +5572,7 @@ describe("@deliberum/web shell", () => {
     expect(document.querySelector(".du-room-composer")?.getAttribute("data-placement")).toBe(
       "room-action-dock"
     );
-    expect(
-      (document.querySelector(".du-room-composer .du-continuation-details") as HTMLDetailsElement)
-        ?.open
-    ).toBe(false);
+    expect(document.querySelector(".du-room-composer .du-continuation-details")).toBeNull();
     expect(screen.queryByText("What should happen next?")).toBeNull();
     expect(
       screen.getByText("Choose a quick reply to review or move the discussion forward.")
@@ -5545,15 +5605,9 @@ describe("@deliberum/web shell", () => {
     expect(discussionActionsText).not.toContain(
       "Jump only; this does not change the discussion."
     );
-    const recommendedActionPath = screen.getByRole("region", {
+    expect(screen.queryByRole("region", {
       name: "Recommended action path"
-    });
-    expect(recommendedActionPath).toBeTruthy();
-    expect(recommendedActionPath.textContent ?? "").toContain("Recommended path");
-    expect(recommendedActionPath.textContent ?? "").toContain("Start here");
-    expect(recommendedActionPath.textContent ?? "").toContain("Review current conclusion");
-    expect(recommendedActionPath.textContent ?? "").toContain("Choose a follow-up action");
-    expect(recommendedActionPath.textContent ?? "").toContain("Recheck the room outputs");
+    })).toBeNull();
     expect(discussionActionsText).not.toContain("Recommended");
     expect(document.body.textContent ?? "").not.toContain("7 recorded lifecycle events");
     expect(screen.getAllByText("Discussion room").length).toBeGreaterThan(0);
@@ -5857,6 +5911,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByText("Discussion progress")).toBeNull();
     fireEvent.click(await findAdvancedModeSummaryByPanelText("Structured discussion details"));
     expect(detailPanelsDrawer?.open).toBe(true);
+    await openContinuationDetails();
+    const recommendedActionPath = await screen.findByRole("region", {
+      name: "Recommended action path"
+    });
+    expect(recommendedActionPath).toBeTruthy();
+    expect(recommendedActionPath.textContent ?? "").toContain("Recommended path");
+    expect(recommendedActionPath.textContent ?? "").toContain("Start here");
+    expect(recommendedActionPath.textContent ?? "").toContain("Review current conclusion");
+    expect(recommendedActionPath.textContent ?? "").toContain("Choose a follow-up action");
+    expect(recommendedActionPath.textContent ?? "").toContain("Recheck the room outputs");
     const openedDetailPanels = await screen.findByRole("region", {
       name: "Discussion detail panels"
     });
@@ -7203,6 +7267,11 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.queryByText("For now, continue the discussion to create those materials.")
     ).toBeNull();
+    expect(screen.queryByRole("region", {
+      name: "Recommended action path"
+    })).toBeNull();
+    await openStructuredDiscussionDetails();
+    await openContinuationDetails();
     const pendingActionPath = screen.getByRole("region", {
       name: "Recommended action path"
     });
@@ -7400,6 +7469,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
+    expect(screen.queryByText("Model-backed review path ready")).toBeNull();
+    await openStructuredDiscussionDetails();
     expect(await screen.findByText("Model-backed review path ready")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
 
@@ -7952,10 +8023,7 @@ describe("@deliberum/web shell", () => {
     expect(document.querySelector(".du-room-composer")).toBeTruthy();
     expect(document.querySelector(".du-room-composer-copy")).toBeTruthy();
     expect(document.querySelector(".du-room-composer-avatar")).toBeTruthy();
-    expect(
-      (document.querySelector(".du-room-composer .du-continuation-details") as HTMLDetailsElement)
-        ?.open
-    ).toBe(false);
+    expect(document.querySelector(".du-room-composer .du-continuation-details")).toBeNull();
     expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Confirm answer requirements" })).toBeNull();
@@ -7967,6 +8035,9 @@ describe("@deliberum/web shell", () => {
         "After the room has perspectives, disagreements, evidence gaps, risks, and a draft conclusion, review actions will appear here."
       )
     ).toBeNull();
+    expect(screen.queryByText("Participant source")).toBeNull();
+    expect(screen.queryByText("Demo participant discussion")).toBeNull();
+    await openStructuredDiscussionDetails();
     expect(screen.getByText("Participant source")).toBeTruthy();
     expect(screen.getByText("Demo participant discussion")).toBeTruthy();
     expect(
@@ -7984,7 +8055,7 @@ describe("@deliberum/web shell", () => {
     expect(pendingDiscussionActionsText).not.toContain(
       "Jump only; this does not change the discussion."
     );
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
+    await openAdvancedStartRequestDetails();
     const advancedStartRequestInput = (await screen.findByLabelText(
       "Advanced start request JSON"
     )) as HTMLTextAreaElement;
@@ -8028,6 +8099,9 @@ describe("@deliberum/web shell", () => {
       })
     );
 
+    expect(screen.queryByText("Model-backed discussion")).toBeNull();
+    expect(screen.queryByText("Model first responses ready")).toBeNull();
+    await openStructuredDiscussionDetails();
     expect(await screen.findByText("Model-backed discussion")).toBeTruthy();
     expect(await screen.findByText("Model first responses ready")).toBeTruthy();
     expect(
@@ -8145,6 +8219,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
+    expect(screen.queryByText("Model-backed review path ready")).toBeNull();
+    await openStructuredDiscussionDetails();
     expect(await screen.findByText("Model-backed review path ready")).toBeTruthy();
     expect(
       screen.getByText(
@@ -8262,6 +8338,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
+    expect(screen.queryByText("Model first responses ready")).toBeNull();
+    await openStructuredDiscussionDetails();
     expect(await screen.findByText("Model first responses ready")).toBeTruthy();
     expect(
       screen.getByText(
@@ -8273,7 +8351,7 @@ describe("@deliberum/web shell", () => {
         "Collect independent first responses only; finish review role setup before generating strongest options or a conclusion."
       )
     ).toBeTruthy();
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
+    await openAdvancedStartRequestDetails();
     fireEvent.click(
       await screen.findByRole("button", { name: "Fill first responses request" })
     );
@@ -8309,6 +8387,8 @@ describe("@deliberum/web shell", () => {
       }
     );
 
+    expect(screen.queryByText("\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeNull();
+    await openStructuredDiscussionDetails();
     expect(await screen.findByText("\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u6765\u6e90")).toBeTruthy();
     expect(
@@ -8345,7 +8425,7 @@ describe("@deliberum/web shell", () => {
     );
 
     expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced start request"));
+    await openAdvancedStartRequestDetails();
     const startRequestInput = await screen.findByLabelText("Advanced start request JSON");
     fireEvent.change(startRequestInput, {
       target: {

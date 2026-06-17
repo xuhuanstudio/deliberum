@@ -1886,11 +1886,22 @@ export function RunDetailPage() {
           ) : null}
           {!sessionId ? (
             <div id="continue-discussion" className="du-workbench-anchor">
-              <StartRunForm runId={runId} sessionId={sessionId} run={run} />
+              <StartRunForm
+                runId={runId}
+                sessionId={sessionId}
+                run={run}
+                variant="advanced-start-request"
+              />
             </div>
           ) : null}
           {sessionId ? (
             <DiscussionDetailPanelsDrawer>
+              <StartRunForm
+                runId={runId}
+                sessionId={sessionId}
+                run={run}
+                variant="advanced-start-request"
+              />
               <RunProjectionPanels sessionId={sessionId} />
               <DiscussionSetupDetails run={run} />
               <RunProgressDetails run={run} />
@@ -2948,7 +2959,7 @@ function StartRunForm({
   runId: string;
   sessionId?: string;
   run: unknown;
-  variant?: "panel" | "room-composer";
+  variant?: "panel" | "room-composer" | "advanced-start-request";
 }) {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
@@ -3062,6 +3073,9 @@ function StartRunForm({
   const primaryResultDetail =
     continuationSetup.primaryResultDetail ?? continuationView.primaryResultDetail;
   const isRoomComposer = variant === "room-composer";
+  const isAdvancedStartRequest = variant === "advanced-start-request";
+  const usesRoomUpdatePresentation =
+    isRoomComposer || (isAdvancedStartRequest && Boolean(sessionId));
   const roomComposerTitle = "Reply to the room";
   const roomComposerDetail = continuationView.reviewReady
     ? "Choose a quick reply to review or move the discussion forward."
@@ -3082,12 +3096,12 @@ function StartRunForm({
     <section
       id="latest-discussion-update"
       className={`du-latest-discussion-update${
-        variant === "room-composer" ? " du-room-update-message" : ""
+        usesRoomUpdatePresentation ? " du-room-update-message" : ""
       }`}
       aria-label={t("Latest discussion update")}
       ref={latestUpdateRef}
     >
-      {variant === "room-composer" ? (
+      {usesRoomUpdatePresentation ? (
         <span className="du-room-update-avatar" aria-hidden="true">
           DR
         </span>
@@ -3095,10 +3109,10 @@ function StartRunForm({
       <div className="du-room-update-body">
         <div className="du-section-label">
           <p className="du-kicker">
-            {t(variant === "room-composer" ? "Room update" : "Latest discussion update")}
+            {t(usesRoomUpdatePresentation ? "Room update" : "Latest discussion update")}
           </p>
-          <h4>{t(variant === "room-composer" ? "The room just updated" : "What just changed")}</h4>
-          {variant === "room-composer" ? null : (
+          <h4>{t(usesRoomUpdatePresentation ? "The room just updated" : "What just changed")}</h4>
+          {usesRoomUpdatePresentation ? null : (
             <p>
               {t(
                 "Review this result first, then return to the timeline, outputs, or next recommended action."
@@ -3111,11 +3125,84 @@ function StartRunForm({
           runId={runId}
           feedback={startFeedback}
           reviewReadyBeforeUpdate={continuationView.reviewReady}
-          presentation={variant === "room-composer" ? "room-message" : "panel"}
+          presentation={usesRoomUpdatePresentation ? "room-message" : "panel"}
         />
       </div>
     </section>
   ) : null;
+  const advancedStartRequestDetails = (
+    <AdvancedDetails
+      summary="Advanced / Developer Mode"
+      panelLabel="Advanced start request"
+      description="Submit a raw start request when testing low-level runtime behavior."
+      lazy
+    >
+      <JsonInputForm
+        id="start-request-json"
+        label="Advanced start request JSON"
+        value={startRequestText}
+        onChange={setStartRequestText}
+        onSubmit={submitStartRequest}
+        submitLabel={startMutation.isPending ? "Starting" : "Start run"}
+        disabled={startMutation.isPending}
+        actions={
+          <>
+            <button
+              type="button"
+              className="du-secondary-button"
+              onClick={fillRecommendedStartRequest}
+              disabled={startMutation.isPending}
+            >
+              {t(continuationSetup.fillLabel)}
+            </button>
+          </>
+        }
+      />
+    </AdvancedDetails>
+  );
+  const continuationDetails = (
+    <details className="du-default-secondary-details du-continuation-details">
+      <summary>{t("How this discussion will continue")}</summary>
+      <div className="du-default-secondary-details-body">
+        <div className="du-readable-list">
+          <ExplainerItem
+            title={t(continuationView.explainerTitle)}
+            detail={t(continuationView.explainerDetail)}
+          />
+        </div>
+        <DiscussionParticipantSourceSummary run={run} />
+        <DiscussionContinuationSetupSummary view={continuationSetup} />
+        <GuidedDiscussionActionPath reviewReady={continuationView.reviewReady} />
+      </div>
+    </details>
+  );
+  const startFeedbackMessages = (
+    <>
+      {inputError ? <StatusBanner tone="error" title={inputError} /> : null}
+      {startMutation.isError ? (
+        <>
+          <StatusBanner
+            tone="error"
+            title={t("Discussion could not continue")}
+            detail={t(formatRunStartErrorMessage(startMutation.error))}
+          />
+          <RunStartRecoveryActions error={startMutation.error} />
+        </>
+      ) : null}
+    </>
+  );
+
+  if (isAdvancedStartRequest) {
+    return (
+      <>
+        {continuationDetails}
+        {advancedStartRequestDetails}
+        {startFeedbackMessages}
+        {latestDiscussionUpdate}
+      </>
+    );
+  }
+
   const formContent = (
     <>
       <div
@@ -3322,20 +3409,7 @@ function StartRunForm({
           )}
         </div>
       </div>
-      <details className="du-default-secondary-details du-continuation-details">
-        <summary>{t("How this discussion will continue")}</summary>
-        <div className="du-default-secondary-details-body">
-          <div className="du-readable-list">
-            <ExplainerItem
-              title={t(continuationView.explainerTitle)}
-              detail={t(continuationView.explainerDetail)}
-            />
-          </div>
-          <DiscussionParticipantSourceSummary run={run} />
-          <DiscussionContinuationSetupSummary view={continuationSetup} />
-          <GuidedDiscussionActionPath reviewReady={continuationView.reviewReady} />
-        </div>
-      </details>
+      {!isRoomComposer ? continuationDetails : null}
       {continuationView.reviewReady && !isRoomComposer ? (
         <div className="du-action-row">
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
@@ -3343,45 +3417,8 @@ function StartRunForm({
           </Link>
         </div>
       ) : null}
-      <AdvancedDetails
-        summary="Advanced / Developer Mode"
-        panelLabel="Advanced start request"
-        description="Submit a raw start request when testing low-level runtime behavior."
-        lazy
-      >
-        <JsonInputForm
-          id="start-request-json"
-          label="Advanced start request JSON"
-          value={startRequestText}
-          onChange={setStartRequestText}
-          onSubmit={submitStartRequest}
-          submitLabel={startMutation.isPending ? "Starting" : "Start run"}
-          disabled={startMutation.isPending}
-          actions={
-            <>
-              <button
-                type="button"
-                className="du-secondary-button"
-                onClick={fillRecommendedStartRequest}
-                disabled={startMutation.isPending}
-              >
-                {t(continuationSetup.fillLabel)}
-              </button>
-            </>
-          }
-        />
-      </AdvancedDetails>
-      {inputError ? <StatusBanner tone="error" title={inputError} /> : null}
-      {startMutation.isError ? (
-        <>
-          <StatusBanner
-            tone="error"
-            title={t("Discussion could not continue")}
-            detail={t(formatRunStartErrorMessage(startMutation.error))}
-          />
-          <RunStartRecoveryActions error={startMutation.error} />
-        </>
-      ) : null}
+      {!isRoomComposer ? advancedStartRequestDetails : null}
+      {startFeedbackMessages}
     </>
   );
 

@@ -218,6 +218,7 @@ async function verifyRunWorkspaceAdvancedBoundary(page, { webBaseUrl, runId, ses
   await assertHiddenFromDefault(page, "Process governance ledger", "discussion room default");
   await assertHiddenFromDefault(page, "Main perspectives metadata", "discussion room default");
 
+  await openDetailedReviewPanels(page, "discussion room Advanced start request");
   await page.locator('details[data-advanced-panel="Advanced start request"] > summary').click();
   await page.getByText("Advanced start request JSON").waitFor();
 
