@@ -9386,6 +9386,63 @@ describe("daemon API", () => {
     expectSafeRunApiPayload(publicPayload);
   });
 
+  it("uses follow-up local preset participant messages after the first room round", async () => {
+    const daemonApp = createDaemonApp({
+      idGenerator: createIds(),
+      clock,
+      enableLocalPreset: true
+    });
+    const created = await createRun(daemonApp, localPresetRunPlan());
+    const firstResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      localPresetStartRequest()
+    );
+    const followUpRequest = localPresetStartRequest();
+
+    followUpRequest.sealedDivergence = {
+      ...followUpRequest.sealedDivergence,
+      roundId: "follow-up-first-responses"
+    };
+    followUpRequest.extraction = {
+      ...followUpRequest.extraction,
+      roundId: "follow-up-options",
+      sealedDivergenceRoundId: "follow-up-first-responses"
+    };
+    followUpRequest.review = {
+      ...followUpRequest.review,
+      roundId: "follow-up-review",
+      extractionRoundId: "follow-up-options"
+    };
+    followUpRequest.finalization = {
+      ...followUpRequest.finalization,
+      roundId: "follow-up-conclusion",
+      proposalReviewRoundId: "follow-up-review"
+    };
+    const followUpResponse = await postJson(
+      daemonApp.app,
+      `/runs/${created.run.runId}/start`,
+      followUpRequest
+    );
+    const eventsBody = await (
+      await daemonApp.app.request(`/runs/${created.run.runId}/events`)
+    ).json();
+    const publicPayload = JSON.stringify(eventsBody);
+
+    expect(firstResponse.status).toBe(200);
+    expect(followUpResponse.status).toBe(200);
+    expect(publicPayload).toContain(
+      "Review the rollout in stages before relying on the recommendation."
+    );
+    expect(publicPayload).toContain(
+      "I would keep the staged review, but add rollback gates before any wider rollout."
+    );
+    expect(publicPayload).toContain(
+      "Before widening the rollout, answer the evidence gap and define what would stop the release."
+    );
+    expectSafeRunApiPayload(publicPayload);
+  });
+
   it("keeps the OpenAI-compatible provider profile disabled by default", async () => {
     const daemonApp = createDaemonApp({ idGenerator: createIds(), clock });
     const created = await createRun(daemonApp, openAICompatibleRunPlan());

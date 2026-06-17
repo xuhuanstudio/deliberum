@@ -5718,7 +5718,7 @@ function describeRoomRoundExchangeDetail(group: RoomActivityGroup): string {
   }
 
   if (group.round > 1) {
-    return "This follow-up round continues from the previous room state so new participant, reviewer, and evidence messages stay together.";
+    return "This follow-up round lets participants answer earlier replies while reviewer and evidence messages stay in the same thread.";
   }
 
   return "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies.";
@@ -5929,7 +5929,7 @@ function describeRoomActivityAddressLine(
     if (round > 1) {
       return previousSpeaker
         ? {
-            text: "Replying in round {round} after {speaker}",
+            text: "Replying in round {round} to {speaker}'s latest reply",
             values: { round, speaker: previousSpeaker }
           }
         : {
@@ -6033,7 +6033,7 @@ function describeRoomActivityReplyLine(
       return {
         text:
           round > 1
-            ? "Adding a follow-up perspective alongside {speaker}"
+            ? "Responding to {speaker}'s latest reply in the follow-up round"
             : "Adding a separate first response alongside {speaker}",
         values: { speaker: previousSpeaker }
       };

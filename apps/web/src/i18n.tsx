@@ -1728,8 +1728,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u53c2\u4e0e\u8005\u56de\u5e94\u4e0a\u4e00\u8f6e\u8ba8\u8bba\uff1b\u5ba1\u67e5\u89d2\u8272\u5728\u540c\u4e00\u8ba8\u8bba\u5ba4\u91cc\u56de\u5e94\u53cd\u5bf9\u610f\u89c1\u548c\u8bc1\u636e\u6838\u67e5\u3002",
   "The brief is pinned first so every participant responds to the same question.":
     "\u5148\u56fa\u5b9a\u8ba8\u8bba\u7b80\u62a5\uff0c\u8ba9\u6bcf\u4e2a\u53c2\u4e0e\u8005\u56de\u5e94\u540c\u4e00\u4e2a\u95ee\u9898\u3002",
-  "This follow-up round continues from the previous room state so new participant, reviewer, and evidence messages stay together.":
-    "\u8fd9\u4e2a\u540e\u7eed\u56de\u5408\u4f1a\u4ece\u4e0a\u4e00\u6b21\u8ba8\u8bba\u5ba4\u72b6\u6001\u7ee7\u7eed\uff0c\u8ba9\u65b0\u7684\u53c2\u4e0e\u8005\u3001\u5ba1\u67e5\u8005\u548c\u8bc1\u636e\u53d1\u8a00\u4fdd\u6301\u5728\u540c\u4e00\u8f6e\u4e2d\u3002",
+  "This follow-up round lets participants answer earlier replies while reviewer and evidence messages stay in the same thread.":
+    "\u8fd9\u4e2a\u540e\u7eed\u56de\u5408\u8ba9\u53c2\u4e0e\u8005\u56de\u5e94\u5148\u524d\u7684\u53d1\u8a00\uff0c\u540c\u65f6\u8ba9\u5ba1\u67e5\u548c\u8bc1\u636e\u6d88\u606f\u4fdd\u6301\u5728\u540c\u4e00\u6761\u5bf9\u8bdd\u7ebf\u4e2d\u3002",
   "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies.":
     "\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5\uff1b\u7136\u540e\u7ec4\u7ec7\u8005\u3001\u5ba1\u67e5\u8005\u548c\u8bc1\u636e\u68c0\u67e5\u8005\u4ee5\u804a\u5929\u5f0f\u56de\u590d\u52a0\u5165\u3002",
   "Starting another room round": "\u5f00\u59cb\u65b0\u4e00\u8f6e\u8ba8\u8bba",
@@ -1755,8 +1755,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "To the discussion brief": "\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5",
   "Independent reply now compared with {speaker}":
     "\u72ec\u7acb\u56de\u5e94\uff0c\u73b0\u5728\u4e0e {speaker} \u4e00\u8d77\u6bd4\u8f83",
-  "Replying in round {round} after {speaker}":
-    "\u5728\u7b2c {round} \u8f6e\u4e2d\u63a5\u7740 {speaker} \u56de\u5e94",
+  "Replying in round {round} to {speaker}'s latest reply":
+    "\u5728\u7b2c {round} \u8f6e\u4e2d\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u53d1\u8a00",
   "Replying in round {round} to the previous room state":
     "\u5728\u7b2c {round} \u8f6e\u4e2d\u56de\u5e94\u4e0a\u4e00\u6b21\u8ba8\u8bba\u5ba4\u72b6\u6001",
   "Replying to {speaker}'s latest point": "\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u89c2\u70b9",
@@ -1772,8 +1772,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "To the previous message": "\u56de\u5e94\u4e0a\u4e00\u6761\u53d1\u8a00",
   "Replying to the discussion brief before seeing other participants":
     "\u5728\u770b\u5230\u5176\u4ed6\u53c2\u4e0e\u8005\u4e4b\u524d\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5",
-  "Adding a follow-up perspective alongside {speaker}":
-    "\u5728 {speaker} \u65c1\u8fb9\u8865\u5145\u4e00\u4e2a\u540e\u7eed\u89c6\u89d2",
+  "Responding to {speaker}'s latest reply in the follow-up round":
+    "\u5728\u540e\u7eed\u56de\u5408\u4e2d\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u53d1\u8a00",
   "Adding a separate first response alongside {speaker}":
     "\u5728 {speaker} \u65c1\u8fb9\u8865\u5145\u4e00\u4e2a\u72ec\u7acb\u521d\u59cb\u56de\u5e94",
   "Responding to the previous discussion round": "\u56de\u5e94\u4e0a\u4e00\u8f6e\u8ba8\u8bba",

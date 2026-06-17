@@ -45,10 +45,15 @@ type LocalPresetParticipantPayload = {
   reason: string;
 };
 
+type LocalPresetParticipantScript = {
+  first: LocalPresetParticipantPayload;
+  followUp: LocalPresetParticipantPayload;
+};
+
 type LocalPresetText = {
   participants: {
-    alpha: LocalPresetParticipantPayload;
-    beta: LocalPresetParticipantPayload;
+    alpha: LocalPresetParticipantScript;
+    beta: LocalPresetParticipantScript;
   };
   sampleContributionLabel: string;
   sampleContextNote: string;
@@ -101,14 +106,30 @@ const LOCAL_PRESET_TEXT: Record<LocalPresetLanguage, LocalPresetText> = {
   en: {
     participants: {
       alpha: {
-        position: "Review the rollout in stages before relying on the recommendation.",
-        reason:
-          "The team should compare options, disagreements, risks, and missing evidence before acting."
+        first: {
+          position: "Review the rollout in stages before relying on the recommendation.",
+          reason:
+            "The team should compare options, disagreements, risks, and missing evidence before acting."
+        },
+        followUp: {
+          position:
+            "I would keep the staged review, but add rollback gates before any wider rollout.",
+          reason:
+            "That responds to the evidence concern by making each stage reversible until missing data is checked."
+        }
       },
       beta: {
-        position: "Keep the conclusion provisional until unresolved issues are checked.",
-        reason:
-          "A readable discussion should make remaining disagreements and next actions easy to inspect."
+        first: {
+          position: "Keep the conclusion provisional until unresolved issues are checked.",
+          reason:
+            "A readable discussion should make remaining disagreements and next actions easy to inspect."
+        },
+        followUp: {
+          position:
+            "Before widening the rollout, answer the evidence gap and define what would stop the release.",
+          reason:
+            "This pushes back on a staged rollout that lacks verification or rollback criteria."
+        }
       }
     },
     sampleContributionLabel: "built-in sample contribution",
@@ -192,12 +213,28 @@ const LOCAL_PRESET_TEXT: Record<LocalPresetLanguage, LocalPresetText> = {
   "zh-CN": {
     participants: {
       alpha: {
-        position: "\u5728\u4f9d\u8d56\u5efa\u8bae\u524d\uff0c\u5206\u9636\u6bb5\u5ba1\u67e5\u8fd9\u6b21\u53d1\u5e03\u3002",
-        reason: "\u56e2\u961f\u5e94\u5148\u6bd4\u8f83\u9009\u9879\u3001\u5206\u6b67\u3001\u98ce\u9669\u548c\u7f3a\u5931\u8bc1\u636e\uff0c\u518d\u51b3\u5b9a\u662f\u5426\u884c\u52a8\u3002"
+        first: {
+          position: "\u5728\u4f9d\u8d56\u5efa\u8bae\u524d\uff0c\u5206\u9636\u6bb5\u5ba1\u67e5\u8fd9\u6b21\u53d1\u5e03\u3002",
+          reason: "\u56e2\u961f\u5e94\u5148\u6bd4\u8f83\u9009\u9879\u3001\u5206\u6b67\u3001\u98ce\u9669\u548c\u7f3a\u5931\u8bc1\u636e\uff0c\u518d\u51b3\u5b9a\u662f\u5426\u884c\u52a8\u3002"
+        },
+        followUp: {
+          position:
+            "\u6211\u4f1a\u4fdd\u7559\u5206\u9636\u6bb5\u5ba1\u67e5\uff0c\u4f46\u5728\u6269\u5927\u53d1\u5e03\u524d\u52a0\u5165\u56de\u6eda\u95e8\u69db\u3002",
+          reason:
+            "\u8fd9\u662f\u5bf9\u8bc1\u636e\u62c5\u5fe7\u7684\u56de\u5e94\uff1a\u5728\u7f3a\u5931\u6570\u636e\u5b8c\u6210\u6838\u67e5\u524d\uff0c\u6bcf\u4e2a\u9636\u6bb5\u90fd\u5e94\u8be5\u53ef\u9006\u3002"
+        }
       },
       beta: {
-        position: "\u5728\u672a\u89e3\u51b3\u95ee\u9898\u5b8c\u6210\u68c0\u67e5\u524d\uff0c\u4fdd\u6301\u7ed3\u8bba\u4e3a\u4e34\u65f6\u7ed3\u8bba\u3002",
-        reason: "\u53ef\u8bfb\u7684\u8ba8\u8bba\u5e94\u8be5\u8ba9\u5269\u4f59\u5206\u6b67\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u5bb9\u6613\u68c0\u67e5\u3002"
+        first: {
+          position: "\u5728\u672a\u89e3\u51b3\u95ee\u9898\u5b8c\u6210\u68c0\u67e5\u524d\uff0c\u4fdd\u6301\u7ed3\u8bba\u4e3a\u4e34\u65f6\u7ed3\u8bba\u3002",
+          reason: "\u53ef\u8bfb\u7684\u8ba8\u8bba\u5e94\u8be5\u8ba9\u5269\u4f59\u5206\u6b67\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u5bb9\u6613\u68c0\u67e5\u3002"
+        },
+        followUp: {
+          position:
+            "\u5728\u6269\u5927\u53d1\u5e03\u524d\uff0c\u5148\u56de\u7b54\u8bc1\u636e\u7f3a\u53e3\uff0c\u5e76\u5b9a\u4e49\u4ec0\u4e48\u60c5\u51b5\u4f1a\u6682\u505c\u53d1\u5e03\u3002",
+          reason:
+            "\u8fd9\u662f\u5bf9\u7f3a\u5c11\u9a8c\u8bc1\u6216\u56de\u6eda\u6807\u51c6\u7684\u5206\u9636\u6bb5\u53d1\u5e03\u65b9\u6848\u7684\u8ffd\u95ee\u3002"
+        }
       }
     },
     sampleContributionLabel: "\u5185\u7f6e\u793a\u4f8b\u8d21\u732e",
@@ -399,8 +436,8 @@ export function localPresetStartRequest(topic?: string): DaemonRunStartRequest {
 
 function createLocalPresetParticipantAdapter(
   adapterId: string,
-  enPayload: LocalPresetParticipantPayload,
-  zhCnPayload: LocalPresetParticipantPayload
+  enPayload: LocalPresetParticipantScript,
+  zhCnPayload: LocalPresetParticipantScript
 ): RegisteredParticipantAdapter {
   const capabilities = {
     input: {
@@ -429,7 +466,8 @@ function createLocalPresetParticipantAdapter(
     async prepareContribution(input, context) {
       const language = detectLocalPresetLanguageFromValue(input.payload);
       const text = getLocalPresetText(language);
-      const payload = language === "zh-CN" ? zhCnPayload : enPayload;
+      const script = language === "zh-CN" ? zhCnPayload : enPayload;
+      const payload = hasPriorReadableRoomState(input.payload) ? script.followUp : script.first;
 
       return {
         payload: {
@@ -694,4 +732,33 @@ function detectLocalPresetLanguageFromValue(value: unknown): LocalPresetLanguage
   }
 
   return "en";
+}
+
+function hasPriorReadableRoomState(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const events = (value as { events?: unknown }).events;
+
+  if (!Array.isArray(events)) {
+    return false;
+  }
+
+  return events.some((event) => {
+    if (!event || typeof event !== "object" || Array.isArray(event)) {
+      return false;
+    }
+
+    const type = (event as { type?: unknown }).type;
+
+    return (
+      type === "sealed_batch_revealed" ||
+      type === "extraction_proposed" ||
+      type === "proposal_challenged" ||
+      type === "evidence_result_recorded" ||
+      type === "final_candidate_proposed" ||
+      type === "final_audit_recorded"
+    );
+  });
 }

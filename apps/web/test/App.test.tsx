@@ -6303,12 +6303,25 @@ describe("@deliberum/web shell", () => {
               trace: {}
             },
             {
-              id: "round-two-response",
+              id: "round-two-response-a",
               type: "sealed_contribution_submitted",
               sequence: 7,
               visibility: "public",
-              authorId: "local-preset-beta",
+              authorId: "local-preset-alpha",
               createdAt: "2026-06-10T00:00:07.000Z",
+              payload: {
+                position: "Round two adds rollback gates before any wider rollout."
+              },
+              basedOnEventIds: ["round-two-opened"],
+              trace: {}
+            },
+            {
+              id: "round-two-response-b",
+              type: "sealed_contribution_submitted",
+              sequence: 8,
+              visibility: "public",
+              authorId: "local-preset-beta",
+              createdAt: "2026-06-10T00:00:08.000Z",
               payload: {
                 position: "Round two responds that evidence should be checked before launch."
               },
@@ -6318,21 +6331,21 @@ describe("@deliberum/web shell", () => {
             {
               id: "round-two-revealed",
               type: "sealed_batch_revealed",
-              sequence: 8,
+              sequence: 9,
               visibility: "public",
               authorId: "system",
-              createdAt: "2026-06-10T00:00:08.000Z",
+              createdAt: "2026-06-10T00:00:09.000Z",
               payload: {},
-              basedOnEventIds: ["round-two-response"],
+              basedOnEventIds: ["round-two-response-a", "round-two-response-b"],
               trace: {}
             },
             {
               id: "round-two-extraction",
               type: "extraction_proposed",
-              sequence: 9,
+              sequence: 10,
               visibility: "public",
               authorId: "local-preset-extractor",
-              createdAt: "2026-06-10T00:00:09.000Z",
+              createdAt: "2026-06-10T00:00:10.000Z",
               payload: {
                 rationale: "Round two organized the follow-up into updated options."
               },
@@ -6351,7 +6364,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("The room continued again from the current conclusion and open questions.")).toBeTruthy();
     expect(
       screen.getByText(
-        "This follow-up round continues from the previous room state so new participant, reviewer, and evidence messages stay together."
+        "This follow-up round lets participants answer earlier replies while reviewer and evidence messages stay in the same thread."
       )
     ).toBeTruthy();
     expect(
@@ -6370,6 +6383,9 @@ describe("@deliberum/web shell", () => {
     );
     expect(roundOne.textContent ?? "").toContain("Connected the first responses");
     const roundTwo = screen.getByRole("list", { name: "Discussion round 2 messages" });
+    expect(roundTwo.textContent ?? "").toContain(
+      "Round two adds rollback gates before any wider rollout."
+    );
     expect(roundTwo.textContent ?? "").toContain(
       "Round two responds that evidence should be checked before launch."
     );
@@ -6400,6 +6416,12 @@ describe("@deliberum/web shell", () => {
       "The latest replies were organized into updated options, disagreements, requirements, and evidence needs."
     );
     expect(roundTwo.textContent ?? "").toContain("Building on Perspective B's follow-up reply");
+    expect(roundTwo.textContent ?? "").toContain(
+      "Replying in round 2 to Perspective A's latest reply"
+    );
+    expect(roundTwo.textContent ?? "").toContain(
+      "Responding to Perspective A's latest reply in the follow-up round"
+    );
     expect(roundTwo.textContent ?? "").toContain("Replying to Perspective B's latest point");
     expect(roundTwo.textContent ?? "").toContain(
       "Replying to Perspective B's option with an open disagreement"
