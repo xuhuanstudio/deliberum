@@ -6568,6 +6568,19 @@ describe("@deliberum/web shell", () => {
               payload: {},
               basedOnEventIds: ["round-two-response-a", "round-two-response-b"],
               trace: {}
+            },
+            {
+              id: "round-two-extraction",
+              type: "extraction_proposed",
+              sequence: 9,
+              visibility: "public",
+              authorId: "local-preset-extractor",
+              createdAt: "2026-06-10T00:00:09.000Z",
+              payload: {
+                rationale: "Round two organized the follow-up into updated options."
+              },
+              basedOnEventIds: ["round-two-revealed"],
+              trace: {}
             }
           ]
         }))
@@ -6582,7 +6595,35 @@ describe("@deliberum/web shell", () => {
     expect(roundTwoText).toContain(
       "\u6211\u540c\u610f\u8981\u56de\u6eda\u95e8\u69db\uff0c\u4f46\u8fd8\u8981\u5148\u8865\u9f50\u7528\u6237\u5f71\u54cd\u8bc1\u636e\u3002"
     );
+    expect(roundTwoText).toContain(
+      "\u623f\u95f4\u4ece\u5f53\u524d\u7ed3\u8bba\u548c\u5f00\u653e\u95ee\u9898\u7ee7\u7eed\u4e0b\u4e00\u8f6e\u3002"
+    );
+    expect(roundTwoText).toContain(
+      "\u6700\u65b0\u53c2\u4e0e\u8005\u56de\u5e94\u5df2\u7ecf\u53ef\u89c1\u3002\u6211\u4f1a\u5148\u628a\u5b83\u4eec\u8fde\u63a5\u5230\u4e4b\u524d\u7684\u8ba8\u8bba\u72b6\u6001\uff0c\u518d\u8ba9\u623f\u95f4\u6bd4\u8f83\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
+    );
+    expect(roundTwoText).toContain(
+      "\u6700\u65b0\u56de\u5e94\u5df2\u6574\u7406\u4e3a\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
+    );
+    expect(roundTwoText).toContain(
+      "1 \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u4ecd\u9700\u5904\u7406\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7ed3\u8bba\u3002"
+    );
+    expect(roundTwoText).toContain(
+      "1 \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7ed3\u8bba\u3002"
+    );
     expect(roundTwoText).not.toContain("I'm responding to Perspective A");
+    expect(roundTwoText).not.toContain(
+      "The room continued again from the current conclusion and open questions."
+    );
+    expect(roundTwoText).not.toContain("The latest participant replies are visible.");
+    expect(roundTwoText).not.toContain(
+      "The latest replies were organized into updated options, disagreements, requirements, and evidence needs."
+    );
+    expect(roundTwoText).not.toContain(
+      "1 open disagreement still needs resolution before relying on the conclusion."
+    );
+    expect(roundTwoText).not.toContain(
+      "1 evidence gap still needs checking before relying on the conclusion."
+    );
   });
 
   it("shows organizer fallback guidance in the discussion room", async () => {

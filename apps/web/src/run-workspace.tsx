@@ -4470,7 +4470,7 @@ function RunQualityOverview({
   const unresolvedEvidenceNeeds = evidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
   const unresolvedObjections = countRecordsWithoutStatus(objections, "resolved");
   const conversationalRoomActivities = ensureParticipantReplyBridgeActivities(
-    ensureRoundHandoffActivities(roomActivities),
+    ensureRoundHandoffActivities(roomActivities, run),
     run
   );
   const visibleRoomActivities = ensureOpenDisagreementActivity(
@@ -4519,6 +4519,7 @@ function RunQualityOverview({
               runId={runId}
               reviewReady={continuationView.reviewReady}
               activities={visibleRoomActivities}
+              topicLanguage={getRoomTopicLanguage(run)}
               activityQuery={{
                 isLoading: eventsQuery.isLoading,
                 isError: eventsQuery.isError,
@@ -4775,6 +4776,7 @@ function DiscussionRoomTimeline({
   runId,
   reviewReady,
   activities,
+  topicLanguage,
   activityQuery,
   openDisagreementCount,
   unresolvedEvidenceCount,
@@ -4784,6 +4786,7 @@ function DiscussionRoomTimeline({
   runId: string;
   reviewReady: boolean;
   activities: RoomActivityItem[];
+  topicLanguage: RoomTopicLanguage;
   activityQuery: {
     isLoading: boolean;
     isError: boolean;
@@ -4796,7 +4799,10 @@ function DiscussionRoomTimeline({
 }) {
   const { t } = useI18n();
   const roomActivities = activities;
-  const conversationActivities = addUserContinuationTurnActivity(roomActivities);
+  const conversationActivities = addUserContinuationTurnActivity(
+    roomActivities,
+    topicLanguage
+  );
   const activityGroups = groupRoomActivitiesByRound(conversationActivities);
 
   return (
@@ -4936,7 +4942,8 @@ function DiscussionRoomTimeline({
                         );
                         const displayDetail = describeRoomActivityDisplayDetail(
                           activity,
-                          group.round
+                          group.round,
+                          topicLanguage
                         );
                         const roomSpeaker = isRoomSpeaker(activity.speaker);
                         const userSpeaker = isUserSpeaker(activity.speaker);
@@ -5095,7 +5102,7 @@ function DiscussionRoomProgressDetails({
     getDiscussionStageStatus(run, "latestFinalizationStatus", "finalization")
   );
   const participantResponses = getParticipantFirstResponses(
-    addUserContinuationTurnActivity(activities)
+    addUserContinuationTurnActivity(activities, getRoomTopicLanguage(run))
   );
 
   return (
@@ -5433,7 +5440,10 @@ function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityI
     .filter((activity): activity is RoomActivityItem => Boolean(activity));
 }
 
-function addUserContinuationTurnActivity(activities: RoomActivityItem[]): RoomActivityItem[] {
+function addUserContinuationTurnActivity(
+  activities: RoomActivityItem[],
+  topicLanguage: RoomTopicLanguage
+): RoomActivityItem[] {
   if (
     !activities.some(
       (activity) =>
@@ -5468,8 +5478,16 @@ function addUserContinuationTurnActivity(activities: RoomActivityItem[]): RoomAc
         action: "Asked the room to continue",
         detail:
           userTurnCount === 1
-            ? "The room continued from your brief before participants responded."
-            : "The room continued again from the current conclusion and open questions.",
+            ? localizeTopicLanguageDetail(
+                topicLanguage,
+                "The room continued from your brief before participants responded.",
+                "\u623f\u95f4\u4ece\u4f60\u7684\u8ba8\u8bba\u7b80\u62a5\u7ee7\u7eed\uff0c\u5728\u53c2\u4e0e\u8005\u56de\u5e94\u524d\u5f00\u542f\u672c\u8f6e\u3002"
+              )
+            : localizeTopicLanguageDetail(
+                topicLanguage,
+                "The room continued again from the current conclusion and open questions.",
+                "\u623f\u95f4\u4ece\u5f53\u524d\u7ed3\u8bba\u548c\u5f00\u653e\u95ee\u9898\u7ee7\u7eed\u4e0b\u4e00\u8f6e\u3002"
+              ),
         tone: "neutral",
         phase: "first-responses",
         sourceType: "user_continuation_requested"
@@ -5482,12 +5500,16 @@ function addUserContinuationTurnActivity(activities: RoomActivityItem[]): RoomAc
   return nextActivities;
 }
 
-function ensureRoundHandoffActivities(activities: RoomActivityItem[]): RoomActivityItem[] {
+function ensureRoundHandoffActivities(
+  activities: RoomActivityItem[],
+  run: unknown
+): RoomActivityItem[] {
   if (!activities.some((activity) => activity.sourceType === "sealed_batch_revealed")) {
     return activities;
   }
 
   const nextActivities: RoomActivityItem[] = [];
+  const topicLanguage = getRoomTopicLanguage(run);
   let insertedForCurrentRound = false;
   let roundCount = 0;
 
@@ -5504,7 +5526,9 @@ function ensureRoundHandoffActivities(activities: RoomActivityItem[]): RoomActiv
     nextActivities.push(activity);
 
     if (activity.sourceType === "sealed_batch_revealed" && !insertedForCurrentRound) {
-      nextActivities.push(createRoundHandoffActivity(Math.max(1, roundCount)));
+      nextActivities.push(
+        createRoundHandoffActivity(Math.max(1, roundCount), topicLanguage)
+      );
       insertedForCurrentRound = true;
     }
   }
@@ -5512,14 +5536,20 @@ function ensureRoundHandoffActivities(activities: RoomActivityItem[]): RoomActiv
   return nextActivities;
 }
 
-function createRoundHandoffActivity(round: number): RoomActivityItem {
+function createRoundHandoffActivity(
+  round: number,
+  topicLanguage: RoomTopicLanguage
+): RoomActivityItem {
   if (round > 1) {
     return {
       speaker: "Discussion organizer",
       title: "Follow-up replies connected",
       action: "Connected the follow-up replies",
-      detail:
+      detail: localizeTopicLanguageDetail(
+        topicLanguage,
         "The latest participant replies are visible. I'm connecting them to the prior room state before the room compares updated options, disagreements, and evidence gaps.",
+        "\u6700\u65b0\u53c2\u4e0e\u8005\u56de\u5e94\u5df2\u7ecf\u53ef\u89c1\u3002\u6211\u4f1a\u5148\u628a\u5b83\u4eec\u8fde\u63a5\u5230\u4e4b\u524d\u7684\u8ba8\u8bba\u72b6\u6001\uff0c\u518d\u8ba9\u623f\u95f4\u6bd4\u8f83\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
+      ),
       tone: "neutral",
       phase: "perspectives",
       sourceType: "synthetic_round_handoff"
@@ -5530,8 +5560,11 @@ function createRoundHandoffActivity(round: number): RoomActivityItem {
     speaker: "Discussion organizer",
     title: "First responses connected",
     action: "Connected the first responses",
-    detail:
+    detail: localizeTopicLanguageDetail(
+      topicLanguage,
       "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps.",
+      "\u521d\u59cb\u56de\u5e94\u5df2\u7ecf\u53ef\u89c1\u3002\u6211\u4f1a\u5148\u628a\u5b83\u4eec\u8fde\u63a5\u8d77\u6765\uff0c\u518d\u8ba9\u623f\u95f4\u6bd4\u8f83\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
+    ),
     tone: "neutral",
     phase: "perspectives",
     sourceType: "synthetic_round_handoff"
@@ -5554,7 +5587,7 @@ function ensureParticipantReplyBridgeActivities(
   }
 
   const nextActivities: RoomActivityItem[] = [];
-  const topicLanguage = isSimplifiedChineseText(getRunTopic(run)) ? "zh-CN" : "en";
+  const topicLanguage = getRoomTopicLanguage(run);
   let round = 0;
   let roundContributions: RoomActivityItem[] = [];
   let insertedForRound = false;
@@ -5662,12 +5695,10 @@ function ensureEvidenceGapReviewActivity(
     speaker: "Evidence checker",
     title: "Evidence gaps reviewed",
     action: "Reviewed evidence gaps",
-    detail:
-      unresolvedEvidenceCount === 0
-        ? "No evidence gaps are visible in the current room summary."
-        : unresolvedEvidenceCount === 1
-          ? "{count} evidence gap still needs checking before relying on the conclusion."
-          : "{count} evidence gaps still need checking before relying on the conclusion.",
+    detail: describeEvidenceGapReviewActivityDetail(
+      unresolvedEvidenceCount,
+      getRoomTopicLanguage(run)
+    ),
     detailValues: { count: unresolvedEvidenceCount },
     tone: unresolvedEvidenceCount > 0 ? "warning" : "ok",
     phase: "evidence",
@@ -5702,11 +5733,36 @@ function ensureOpenDisagreementActivity(
     speaker: "Reviewer",
     title: "Open disagreement surfaced",
     action: "Raised an open disagreement",
-    ...describeOpenDisagreementActivityDetail(objections, openDisagreementCount),
+    ...describeOpenDisagreementActivityDetail(
+      objections,
+      openDisagreementCount,
+      getRoomTopicLanguage(run)
+    ),
     tone: "warning",
     phase: "perspectives",
     sourceType: "synthetic_open_disagreement"
   });
+}
+
+function describeEvidenceGapReviewActivityDetail(
+  unresolvedEvidenceCount: number,
+  topicLanguage: RoomTopicLanguage
+): string {
+  if (unresolvedEvidenceCount === 0) {
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "No evidence gaps are visible in the current room summary.",
+      "\u5f53\u524d\u623f\u95f4\u6458\u8981\u4e2d\u6ca1\u6709\u53ef\u89c1\u7684\u8bc1\u636e\u7f3a\u53e3\u3002"
+    );
+  }
+
+  if (topicLanguage === "zh-CN") {
+    return "{count} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7ed3\u8bba\u3002";
+  }
+
+  return unresolvedEvidenceCount === 1
+    ? "{count} evidence gap still needs checking before relying on the conclusion."
+    : "{count} evidence gaps still need checking before relying on the conclusion.";
 }
 
 function insertRoomReviewActivity(
@@ -5729,7 +5785,8 @@ function insertRoomReviewActivity(
 
 function describeOpenDisagreementActivityDetail(
   objections: unknown[],
-  openDisagreementCount: number
+  openDisagreementCount: number,
+  topicLanguage: RoomTopicLanguage
 ): Pick<RoomActivityItem, "detail" | "detailValues"> {
   const firstOpenObjection = objections
     .map((objection) => getRecordValue(objection, "object") ?? objection)
@@ -5749,6 +5806,14 @@ function describeOpenDisagreementActivityDetail(
 
   if (detail) {
     return { detail };
+  }
+
+  if (topicLanguage === "zh-CN") {
+    return {
+      detail:
+        "{count} \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u4ecd\u9700\u5904\u7406\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7ed3\u8bba\u3002",
+      detailValues: { count: openDisagreementCount }
+    };
   }
 
   return {
@@ -5975,25 +6040,38 @@ function describeRoomActivityDisplayAction(
 
 function describeRoomActivityDisplayDetail(
   activity: RoomActivityItem,
-  round: number
+  round: number,
+  topicLanguage: RoomTopicLanguage
 ): string {
   if (round <= 1) {
     return activity.detail;
   }
 
   if (activity.sourceType === "sealed_batch_opened") {
-    return "Participants can reply to the current room state before seeing one another's follow-up.";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Participants can reply to the current room state before seeing one another's follow-up.",
+      "\u53c2\u4e0e\u8005\u53ef\u4ee5\u5728\u770b\u5230\u5f7c\u6b64\u8ffd\u52a0\u56de\u5e94\u4e4b\u524d\uff0c\u5148\u5bf9\u5f53\u524d\u623f\u95f4\u72b6\u6001\u56de\u590d\u3002"
+    );
   }
 
   if (activity.sourceType === "sealed_batch_revealed") {
-    return "The follow-up replies are now available for review.";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "The follow-up replies are now available for review.",
+      "\u8ffd\u52a0\u56de\u5e94\u73b0\u5728\u53ef\u4ee5\u5ba1\u9605\u3002"
+    );
   }
 
   if (
     activity.sourceType === "extraction_proposed" &&
     isGenericFirstResponseOrganizerDetail(activity.detail)
   ) {
-    return "The latest replies were organized into updated options, disagreements, requirements, and evidence needs.";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "The latest replies were organized into updated options, disagreements, requirements, and evidence needs.",
+      "\u6700\u65b0\u56de\u5e94\u5df2\u6574\u7406\u4e3a\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
+    );
   }
 
   return activity.detail;
@@ -6020,6 +6098,20 @@ function shouldUseTranscriptContextForRoomReply(activity: RoomActivityItem): boo
     activity.sourceType === "evidence_result_recorded" ||
     activity.sourceType === "synthetic_evidence_gap_review"
   );
+}
+
+type RoomTopicLanguage = "en" | "zh-CN";
+
+function getRoomTopicLanguage(run: unknown): RoomTopicLanguage {
+  return isSimplifiedChineseText(getRunTopic(run)) ? "zh-CN" : "en";
+}
+
+function localizeTopicLanguageDetail(
+  topicLanguage: RoomTopicLanguage,
+  english: string,
+  zhCn: string
+): string {
+  return topicLanguage === "zh-CN" ? zhCn : english;
 }
 
 function describeRoomActivityAddressLine(
