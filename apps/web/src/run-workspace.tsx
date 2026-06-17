@@ -2397,7 +2397,7 @@ function ExplainerItem({ title, detail }: { title: string; detail: string }) {
 }
 
 export function formatRunDisplayTitle(run: unknown, index?: number): string {
-  const topic = getStringRecordValue(run, "topic");
+  const topic = getRunTopic(run);
   const title = getStringRecordValue(run, "title");
 
   if (topic) {
@@ -2411,8 +2411,15 @@ export function formatRunDisplayTitle(run: unknown, index?: number): string {
   return typeof index === "number" ? `Discussion ${index + 1}` : "Discussion";
 }
 
+function getRunTopic(run: unknown): string | undefined {
+  return (
+    getStringRecordValue(run, "topic") ??
+    getStringRecordValue(getRecordValue(run, "plan"), "topic")
+  );
+}
+
 export function formatRunDisplaySummary(run: unknown): string {
-  const topic = getStringRecordValue(run, "topic");
+  const topic = getRunTopic(run);
   const title = getStringRecordValue(run, "title");
 
   if (
@@ -4462,7 +4469,10 @@ function RunQualityOverview({
   const roomActivities = createRoomActivityItems(asArray(eventsQuery.data?.events), run);
   const unresolvedEvidenceNeeds = evidenceNeeds.filter(isUnresolvedEvidenceNeed).length;
   const unresolvedObjections = countRecordsWithoutStatus(objections, "resolved");
-  const conversationalRoomActivities = ensureRoundHandoffActivities(roomActivities);
+  const conversationalRoomActivities = ensureParticipantReplyBridgeActivities(
+    ensureRoundHandoffActivities(roomActivities),
+    run
+  );
   const visibleRoomActivities = ensureOpenDisagreementActivity(
     ensureEvidenceGapReviewActivity(conversationalRoomActivities, {
       run,
@@ -5528,6 +5538,107 @@ function createRoundHandoffActivity(round: number): RoomActivityItem {
   };
 }
 
+function ensureParticipantReplyBridgeActivities(
+  activities: RoomActivityItem[],
+  run: unknown
+): RoomActivityItem[] {
+  if (
+    !activities.some((activity) => activity.sourceType === "sealed_batch_revealed") ||
+    !activities.some(
+      (activity) =>
+        activity.sourceType === "sealed_contribution_submitted" &&
+        !isRedactedContributionActivity(activity)
+    )
+  ) {
+    return activities;
+  }
+
+  const nextActivities: RoomActivityItem[] = [];
+  const topicLanguage = isSimplifiedChineseText(getRunTopic(run)) ? "zh-CN" : "en";
+  let round = 0;
+  let roundContributions: RoomActivityItem[] = [];
+  let insertedForRound = false;
+
+  for (const activity of activities) {
+    if (activity.sourceType === "sealed_batch_opened") {
+      round += 1;
+      roundContributions = [];
+      insertedForRound = false;
+    }
+
+    if (
+      activity.sourceType === "sealed_contribution_submitted" &&
+      !isRedactedContributionActivity(activity)
+    ) {
+      if (round === 0) {
+        round = 1;
+      }
+
+      roundContributions.push(activity);
+    }
+
+    nextActivities.push(activity);
+
+    if (
+      activity.sourceType === "sealed_batch_revealed" &&
+      round > 1 &&
+      roundContributions.length > 1 &&
+      !insertedForRound
+    ) {
+      nextActivities.push(
+        ...createParticipantReplyBridgeActivities(roundContributions, topicLanguage)
+      );
+      insertedForRound = true;
+    }
+  }
+
+  return nextActivities;
+}
+
+function createParticipantReplyBridgeActivities(
+  contributions: RoomActivityItem[],
+  topicLanguage: "en" | "zh-CN"
+): RoomActivityItem[] {
+  return contributions.slice(1).map((activity, index) => {
+    const previousContribution = contributions[index]!;
+    const message = summarizeRoomReplyMessage(activity.detail);
+
+    return {
+      speaker: activity.speaker,
+      title: "Participant replied to another participant",
+      action: "Answered another participant",
+      detail:
+        topicLanguage === "zh-CN"
+          ? "\u6211\u5728\u56de\u5e94 {speaker}\uff1a{message}"
+          : "I'm responding to {speaker}: {message}",
+      detailValues: {
+        speaker: previousContribution.speaker,
+        message
+      },
+      tone: activity.tone,
+      phase: "first-responses",
+      sourceType: "synthetic_participant_reply_bridge"
+    };
+  });
+}
+
+function summarizeRoomReplyMessage(detail: string): string {
+  const normalized = detail.replace(/\s+/g, " ").trim();
+
+  if (normalized.length <= 180) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, 177).trim()}...`;
+}
+
+function isRedactedContributionActivity(activity: RoomActivityItem): boolean {
+  return (
+    activity.detail ===
+    "This response is sealed until the independent first responses are revealed."
+  );
+}
+
 function ensureEvidenceGapReviewActivity(
   activities: RoomActivityItem[],
   {
@@ -5806,6 +5917,10 @@ function describeRoomActivityConversationCue(activity: RoomActivityItem, round: 
     return "Connecting participant messages";
   }
 
+  if (activity.sourceType === "synthetic_participant_reply_bridge") {
+    return "Responding to another participant";
+  }
+
   if (activity.sourceType === "extraction_proposed") {
     return round > 1 ? "Building on the follow-up replies" : "Building on the first responses";
   }
@@ -5957,6 +6072,12 @@ function describeRoomActivityAddressLine(
     };
   }
 
+  if (activity.sourceType === "synthetic_participant_reply_bridge") {
+    return {
+      text: "To another participant's latest reply"
+    };
+  }
+
   if (activity.sourceType === "proposal_accepted") {
     return {
       text: "To the organized options"
@@ -6056,6 +6177,12 @@ function describeRoomActivityReplyLine(
         round > 1
           ? "Responding after the follow-up replies were revealed"
           : "Responding after the first responses were revealed"
+    };
+  }
+
+  if (activity.sourceType === "synthetic_participant_reply_bridge") {
+    return {
+      text: "Continuing the round as a direct reply"
     };
   }
 

@@ -1742,6 +1742,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Bringing the follow-up replies into the room":
     "\u5c06\u540e\u7eed\u56de\u590d\u5e26\u5165\u8ba8\u8bba\u5ba4",
   "Connecting participant messages": "\u6b63\u5728\u8fde\u63a5\u53c2\u4e0e\u8005\u53d1\u8a00",
+  "Responding to another participant": "\u56de\u5e94\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005",
   "Building on the first responses": "\u57fa\u4e8e\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
   "Building on the follow-up replies": "\u57fa\u4e8e\u540e\u7eed\u56de\u590d\u7ee7\u7eed",
   "Responding to the strongest current options":
@@ -1762,6 +1763,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Replying to {speaker}'s latest point": "\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u89c2\u70b9",
   "To the participant first responses": "\u56de\u5e94\u53c2\u4e0e\u8005\u7684\u521d\u59cb\u56de\u5e94",
   "To the latest participant replies": "\u56de\u5e94\u6700\u65b0\u7684\u53c2\u4e0e\u8005\u53d1\u8a00",
+  "To another participant's latest reply": "\u56de\u5e94\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005\u7684\u6700\u65b0\u53d1\u8a00",
   "To the organized options": "\u56de\u5e94\u5df2\u6574\u7406\u7684\u9009\u9879",
   "To the strongest current option": "\u56de\u5e94\u5f53\u524d\u6700\u5f3a\u9009\u9879",
   "To the claim that still needs evidence": "\u56de\u5e94\u4ecd\u9700\u8bc1\u636e\u7684\u8bba\u65ad",
@@ -1781,6 +1783,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5728\u521d\u59cb\u56de\u5e94\u63ed\u793a\u540e\u63a5\u7740\u56de\u5e94",
   "Responding after the follow-up replies were revealed":
     "\u5728\u540e\u7eed\u56de\u590d\u63ed\u793a\u540e\u63a5\u7740\u56de\u5e94",
+  "Continuing the round as a direct reply": "\u4ee5\u76f4\u63a5\u56de\u590d\u7684\u65b9\u5f0f\u7ee7\u7eed\u672c\u8f6e",
   "Building on {speaker}'s first response": "\u57fa\u4e8e {speaker} \u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
   "Building on {speaker}'s follow-up reply":
     "\u57fa\u4e8e {speaker} \u7684\u540e\u7eed\u56de\u590d\u7ee7\u7eed",
@@ -1885,9 +1888,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Participants can reply to the current room state before seeing one another's follow-up.":
     "\u53c2\u4e0e\u8005\u53ef\u4ee5\u5148\u56de\u5e94\u5f53\u524d\u8ba8\u8bba\u5ba4\u72b6\u6001\uff0c\u518d\u770b\u5230\u5f7c\u6b64\u7684\u540e\u7eed\u56de\u590d\u3002",
   "Independent response submitted": "\u72ec\u7acb\u56de\u5e94\u5df2\u63d0\u4ea4",
+  "Participant replied to another participant":
+    "\u53c2\u4e0e\u8005\u56de\u5e94\u4e86\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005",
   "Submitted a sealed first response": "\u63d0\u4ea4\u4e86\u5c01\u5b58\u7684\u521d\u59cb\u56de\u5e94",
   "Shared a first response": "\u5206\u4eab\u4e86\u521d\u59cb\u56de\u5e94",
   "Shared a follow-up reply": "\u5206\u4eab\u4e86\u540e\u7eed\u56de\u590d",
+  "Answered another participant": "\u56de\u5e94\u4e86\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005",
   "This response is sealed until the independent first responses are revealed.":
     "\u5728\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u63ed\u793a\u524d\uff0c\u6b64\u56de\u5e94\u4fdd\u6301\u5c01\u5b58\u3002",
   "Independent first responses revealed": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u5df2\u63ed\u793a",

@@ -6382,6 +6382,8 @@ describe("@deliberum/web shell", () => {
       "Independent reply now compared with Perspective A"
     );
     expect(roundOne.textContent ?? "").toContain("Connected the first responses");
+    expect(roundOne.textContent ?? "").not.toContain("Answered another participant");
+    expect(roundOne.textContent ?? "").not.toContain("I'm responding to Perspective A");
     const roundTwo = screen.getByRole("list", { name: "Discussion round 2 messages" });
     expect(roundTwo.textContent ?? "").toContain(
       "Round two adds rollback gates before any wider rollout."
@@ -6394,6 +6396,13 @@ describe("@deliberum/web shell", () => {
     expect(roundTwo.textContent ?? "").toContain("Opened follow-up replies");
     expect(roundTwo.textContent ?? "").toContain("Shared a follow-up reply");
     expect(roundTwo.textContent ?? "").toContain("Made follow-up replies visible");
+    expect(roundTwo.textContent ?? "").toContain("Answered another participant");
+    expect(roundTwo.textContent ?? "").toContain("Responding to another participant");
+    expect(roundTwo.textContent ?? "").toContain("To another participant's latest reply");
+    expect(roundTwo.textContent ?? "").toContain("Continuing the round as a direct reply");
+    expect(roundTwo.textContent ?? "").toContain(
+      "I'm responding to Perspective A: Round two responds that evidence should be checked before launch."
+    );
     expect(roundTwo.textContent ?? "").toContain("Building on the follow-up replies");
     expect(roundTwo.textContent ?? "").toContain(
       "Replying in round 2 to the previous room state"
@@ -6430,6 +6439,150 @@ describe("@deliberum/web shell", () => {
     expect((document.querySelector(".du-room-layout")?.textContent ?? "")).not.toContain(
       "round-two-opened"
     );
+  });
+
+  it("keeps follow-up reply bridges aligned with a Chinese topic", async () => {
+    const chineseRunDetail = {
+      ...runDetail,
+      topic: "\u662f\u5426\u5e94\u8be5\u6269\u5927\u8bd5\u70b9\uff1f",
+      plan: {
+        ...runDetail.plan,
+        topic: "\u662f\u5426\u5e94\u8be5\u6269\u5927\u8bd5\u70b9\uff1f"
+      }
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: chineseRunDetail
+        })),
+        getRunEvents: vi.fn(async () => ({
+          runId: runDetail.runId,
+          sessionId: runDetail.sessionId,
+          events: [
+            {
+              id: "topic-event",
+              type: "topic_contract_published",
+              sequence: 0,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:00.000Z",
+              payload: {
+                topic: "\u662f\u5426\u5e94\u8be5\u6269\u5927\u8bd5\u70b9\uff1f"
+              },
+              basedOnEventIds: [],
+              trace: {}
+            },
+            {
+              id: "round-one-opened",
+              type: "sealed_batch_opened",
+              sequence: 1,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:01.000Z",
+              payload: {},
+              basedOnEventIds: ["topic-event"],
+              trace: {}
+            },
+            {
+              id: "round-one-response-a",
+              type: "sealed_contribution_submitted",
+              sequence: 2,
+              visibility: "public",
+              authorId: "local-preset-alpha",
+              createdAt: "2026-06-10T00:00:02.000Z",
+              payload: {
+                position: "\u5148\u4fdd\u6301\u8bd5\u70b9\uff0c\u4e0d\u8981\u7acb\u5373\u6269\u5927\u3002"
+              },
+              basedOnEventIds: ["round-one-opened"],
+              trace: {}
+            },
+            {
+              id: "round-one-response-b",
+              type: "sealed_contribution_submitted",
+              sequence: 3,
+              visibility: "public",
+              authorId: "local-preset-beta",
+              createdAt: "2026-06-10T00:00:03.000Z",
+              payload: {
+                position: "\u5148\u68c0\u67e5\u8bc1\u636e\u7f3a\u53e3\uff0c\u518d\u51b3\u5b9a\u662f\u5426\u6269\u5927\u3002"
+              },
+              basedOnEventIds: ["round-one-opened"],
+              trace: {}
+            },
+            {
+              id: "round-one-revealed",
+              type: "sealed_batch_revealed",
+              sequence: 4,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:04.000Z",
+              payload: {},
+              basedOnEventIds: ["round-one-response-a", "round-one-response-b"],
+              trace: {}
+            },
+            {
+              id: "round-two-opened",
+              type: "sealed_batch_opened",
+              sequence: 5,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:05.000Z",
+              payload: {},
+              basedOnEventIds: ["round-one-revealed"],
+              trace: {}
+            },
+            {
+              id: "round-two-response-a",
+              type: "sealed_contribution_submitted",
+              sequence: 6,
+              visibility: "public",
+              authorId: "local-preset-alpha",
+              createdAt: "2026-06-10T00:00:06.000Z",
+              payload: {
+                position: "\u53ef\u4ee5\u6269\u5927\uff0c\u4f46\u5fc5\u987b\u5148\u8bbe\u7f6e\u56de\u6eda\u95e8\u69db\u3002"
+              },
+              basedOnEventIds: ["round-two-opened"],
+              trace: {}
+            },
+            {
+              id: "round-two-response-b",
+              type: "sealed_contribution_submitted",
+              sequence: 7,
+              visibility: "public",
+              authorId: "local-preset-beta",
+              createdAt: "2026-06-10T00:00:07.000Z",
+              payload: {
+                position: "\u6211\u540c\u610f\u8981\u56de\u6eda\u95e8\u69db\uff0c\u4f46\u8fd8\u8981\u5148\u8865\u9f50\u7528\u6237\u5f71\u54cd\u8bc1\u636e\u3002"
+              },
+              basedOnEventIds: ["round-two-opened"],
+              trace: {}
+            },
+            {
+              id: "round-two-revealed",
+              type: "sealed_batch_revealed",
+              sequence: 8,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:08.000Z",
+              payload: {},
+              basedOnEventIds: ["round-two-response-a", "round-two-response-b"],
+              trace: {}
+            }
+          ]
+        }))
+      })
+    );
+
+    await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
+    const roundTwo = await screen.findByRole("list", { name: "Discussion round 2 messages" });
+    const roundTwoText = roundTwo.textContent ?? "";
+
+    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 Perspective A");
+    expect(roundTwoText).toContain(
+      "\u6211\u540c\u610f\u8981\u56de\u6eda\u95e8\u69db\uff0c\u4f46\u8fd8\u8981\u5148\u8865\u9f50\u7528\u6237\u5f71\u54cd\u8bc1\u636e\u3002"
+    );
+    expect(roundTwoText).not.toContain("I'm responding to Perspective A");
   });
 
   it("shows organizer fallback guidance in the discussion room", async () => {
