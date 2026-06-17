@@ -1172,14 +1172,16 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByRole("link", { name: "Start demo discussion" }).length).toBeGreaterThan(0);
     expect(screen.getByText("What you can do")).toBeTruthy();
     expect(screen.getByText("What the discussion keeps visible")).toBeTruthy();
-    expect(screen.getAllByText("Advanced / Developer Mode").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByRole("link", { name: "Advanced" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Advanced" }).getAttribute("href")).toBe("/advanced");
     expect(document.body.textContent ?? "").not.toContain("Topic Contract");
     expect(document.body.textContent ?? "").not.toContain("concept mapping");
     expect(document.body.textContent ?? "").not.toContain("Runtime, daemon, resource");
     expect(document.body.textContent ?? "").not.toContain("raw session ids");
-    fireEvent.click(getAdvancedModeSummary());
-    expect(await screen.findByText("Core concept mapping")).toBeTruthy();
-    expect(screen.getByText("Topic Contract")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toContain("Open by session id");
+    expect(document.body.textContent ?? "").not.toContain("Underlying session catalog");
+    expect(document.body.textContent ?? "").not.toContain("Runtime profiles");
+    expect(document.body.textContent ?? "").not.toContain("Operation audit");
     expect(screen.getAllByText("1. Start a discussion").length).toBeGreaterThan(0);
     expect(
       screen.getByText(
@@ -1195,7 +1197,17 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByLabelText(/chat/i)).toBeNull();
     expect(screen.queryByPlaceholderText(/message/i)).toBeNull();
 
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
+    cleanup();
+
+    renderApp("/advanced", client);
+    expect(
+      await screen.findByRole("heading", {
+        name: "Advanced / Developer Mode"
+      })
+    ).toBeTruthy();
+    expect(await screen.findByText("Core concept mapping")).toBeTruthy();
+    expect(screen.getByText("Topic Contract")).toBeTruthy();
+    expect(await screen.findByText("Open by session id")).toBeTruthy();
     await waitFor(() => expect(client.listSessions).toHaveBeenCalled());
     fireEvent.change(await screen.findByLabelText("Session id"), {
       target: {
@@ -1245,10 +1257,12 @@ describe("@deliberum/web shell", () => {
 
     cleanup();
 
-    const advancedClient = renderApp("/");
-    expect((await screen.findAllByText("Continue existing discussions")).length).toBeGreaterThan(0);
-    expect(advancedClient.listSessions).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
+    const advancedClient = renderApp("/advanced");
+    expect(
+      await screen.findByRole("heading", {
+        name: "Advanced / Developer Mode"
+      })
+    ).toBeTruthy();
     expect(await screen.findByText("Underlying session catalog")).toBeTruthy();
     await waitFor(() => expect(advancedClient.listSessions).toHaveBeenCalled());
     expect(screen.getAllByText("Session id").length).toBeGreaterThan(1);
@@ -1304,9 +1318,11 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_BASE_URL");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_MCP_TOOL_URL");
 
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
+    cleanup();
+
+    renderApp("/advanced", client);
     expect(await screen.findByText("Runtime profiles")).toBeTruthy();
-    expect(screen.getByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
+    expect(await screen.findByText("DELIBERUM_OPENAI_API_KEY")).toBeTruthy();
   });
 
   it("localizes landing setup readiness in Simplified Chinese", async () => {
@@ -3082,11 +3098,8 @@ describe("@deliberum/web shell", () => {
   });
 
   it("renders daemon runtime profile status without environment values", async () => {
-    const client = renderApp("/");
+    const client = renderApp("/advanced");
 
-    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
-    await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Runtime profiles")).toBeTruthy();
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
     expect(screen.getAllByText("Local preset").length).toBeGreaterThan(0);
@@ -3109,11 +3122,8 @@ describe("@deliberum/web shell", () => {
   });
 
   it("renders safe daemon deployment posture without configured URLs or tokens", async () => {
-    const client = renderApp("/");
+    const client = renderApp("/advanced");
 
-    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
-    expect(client.getDeploymentPosture).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Deployment posture")).toBeTruthy();
     await waitFor(() => expect(client.getDeploymentPosture).toHaveBeenCalled());
     expect(screen.getByText("Bind exposure")).toBeTruthy();
@@ -3139,11 +3149,8 @@ describe("@deliberum/web shell", () => {
   });
 
   it("renders safe daemon resource access posture without access material", async () => {
-    const client = renderApp("/");
+    const client = renderApp("/advanced");
 
-    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
-    expect(client.getResourceAccessPosture).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Resource access posture")).toBeTruthy();
     await waitFor(() => expect(client.getResourceAccessPosture).toHaveBeenCalled());
     expect(screen.getByText("Base URL posture")).toBeTruthy();
@@ -3179,11 +3186,8 @@ describe("@deliberum/web shell", () => {
   });
 
   it("renders safe daemon operation audit metadata without request material", async () => {
-    const client = renderApp("/");
+    const client = renderApp("/advanced");
 
-    expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
-    expect(client.getOperationAudit).not.toHaveBeenCalled();
-    fireEvent.click(getAdvancedModeSummaryByPanelText("Advanced operator details"));
     expect(await screen.findByText("Operation audit")).toBeTruthy();
     await waitFor(() =>
       expect(client.getOperationAudit).toHaveBeenCalledWith({ limit: 10 })

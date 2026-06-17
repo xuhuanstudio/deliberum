@@ -2212,9 +2212,14 @@ function RunNavigation({
           {t("Current conclusion")}
         </Link>
       ) : null}
-      <a className={linkClass} href="/#advanced-developer-mode">
+      <Link
+        to="/advanced"
+        activeOptions={{ exact: true }}
+        activeProps={{ className: `${linkClass} is-active` }}
+        inactiveProps={{ className: linkClass }}
+      >
         {t("Advanced")}
-      </a>
+      </Link>
     </>
   );
 }

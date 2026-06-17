@@ -2431,7 +2431,7 @@ function isWebShellRoute(path: string): boolean {
     return true;
   }
 
-  if (path === "/runs" || path === "/runs/new") {
+  if (path === "/runs" || path === "/runs/new" || path === "/advanced") {
     return true;
   }
 

@@ -2069,6 +2069,11 @@ describe("daemon API", () => {
           Accept: "text/html,application/xhtml+xml"
         }
       });
+      const advancedRouteResponse = await daemonApp.app.request("/advanced", {
+        headers: {
+          Accept: "text/html,application/xhtml+xml"
+        }
+      });
       const postureResponse = await daemonApp.app.request("/runtime/deployment-posture");
       const apiResponse = await daemonApp.app.request("/runs");
       const assetResponse = await daemonApp.app.request("/assets/app.js");
@@ -2097,6 +2102,10 @@ describe("daemon API", () => {
       expect(setupRouteResponse.status).toBe(200);
       expect(setupRouteResponse.headers.get("content-type")).toContain("text/html");
       await expect(setupRouteResponse.text()).resolves.toContain("Deliberum Web Shell");
+
+      expect(advancedRouteResponse.status).toBe(200);
+      expect(advancedRouteResponse.headers.get("content-type")).toContain("text/html");
+      await expect(advancedRouteResponse.text()).resolves.toContain("Deliberum Web Shell");
 
       expect(postureResponse.status).toBe(200);
       expect(posture.webAssets).toEqual({

@@ -149,7 +149,9 @@ async function verifyLandingAdvancedBoundary(page, { webBaseUrl, runId, sessionI
   await assertHiddenFromDefault(page, "Runtime profiles", "landing boundary default");
   await assertHiddenFromDefault(page, "Operation audit", "landing boundary default");
 
-  await page.locator('details[data-advanced-panel="Advanced operator details"] > summary').click();
+  await page.getByRole("link", { name: "Advanced", exact: true }).click();
+  await page.waitForURL(`${webBaseUrl}/advanced`);
+  await page.getByRole("heading", { name: "Advanced / Developer Mode", exact: true }).waitFor();
   await page.getByText("Open by session id").waitFor();
   await page.getByLabel("Session id").waitFor();
   await page.getByText("Underlying session catalog").waitFor();

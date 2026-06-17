@@ -1381,6 +1381,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "This discussion has not surfaced missing evidence items yet.":
     "\u672c\u6b21\u8ba8\u8bba\u5c1a\u672a\u5448\u73b0\u7f3a\u5931\u8bc1\u636e\u9879\u3002",
   "Advanced / Developer Mode": "\u9ad8\u7ea7 / \u5f00\u53d1\u8005\u6a21\u5f0f",
+  "Inspect runtime, daemon, session, resource, audit, deployment, and raw diagnostic details without putting them in the default user path.":
+    "\u67e5\u770b\u8fd0\u884c\u65f6\u3001\u672c\u5730\u670d\u52a1\u3001\u4f1a\u8bdd\u3001\u8d44\u6e90\u3001\u5ba1\u8ba1\u3001\u90e8\u7f72\u548c\u539f\u59cb\u8bca\u65ad\u8be6\u60c5\uff0c\u800c\u4e0d\u628a\u5b83\u4eec\u653e\u8fdb\u9ed8\u8ba4\u7528\u6237\u8def\u5f84\u3002",
   "Checking daemon": "\u6b63\u5728\u68c0\u67e5\u5b88\u62a4\u8fdb\u7a0b",
   "Daemon unavailable": "\u5b88\u62a4\u8fdb\u7a0b\u4e0d\u53ef\u7528",
   "Views will retry when routes request data.": "\u9875\u9762\u8bf7\u6c42\u6570\u636e\u65f6\u4f1a\u91cd\u8bd5\u3002",
