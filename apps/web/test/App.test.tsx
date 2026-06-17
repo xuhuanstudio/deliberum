@@ -7331,7 +7331,10 @@ describe("@deliberum/web shell", () => {
     );
     expect(screen.getByText("Current conclusion: Not ready yet")).toBeTruthy();
     expect(screen.queryByRole("link", { name: "View current conclusion" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Current conclusion" })).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Current conclusion" }).getAttribute("href")
+    ).toBe("/runs/run-1/outcome");
     expect(screen.queryByRole("link", { name: "Open conclusion" })).toBeNull();
     fireEvent.click(await findAdvancedModeSummaryByPanelText("Structured discussion details"));
     await screen.findByText("Discussion setup");

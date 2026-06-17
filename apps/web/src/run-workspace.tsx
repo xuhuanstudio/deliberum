@@ -1838,7 +1838,7 @@ export function RunDetailPage() {
   const reviewReady = isDiscussionReviewReady(run);
 
   return (
-    <RunWorkspaceShell runId={runId} showConclusionNav={reviewReady}>
+    <RunWorkspaceShell runId={runId}>
       <ViewFrame
         className="du-run-detail-view"
         eyebrow={t("User Mode")}
@@ -2139,11 +2139,9 @@ function AdvancedOutcomeUnavailableDetails({
 
 function RunWorkspaceShell({
   runId,
-  showConclusionNav = true,
   children
 }: {
   runId?: string;
-  showConclusionNav?: boolean;
   children: ReactNode;
 }) {
   const { t } = useI18n();
@@ -2152,7 +2150,7 @@ function RunWorkspaceShell({
     <WorkspaceShell
       productName="Deliberum"
       workspaceLabel={t("User Mode")}
-      navigation={<RunNavigation runId={runId} showConclusionNav={showConclusionNav} />}
+      navigation={<RunNavigation runId={runId} />}
       status={<LanguageSwitcher />}
     >
       {children}
@@ -2161,11 +2159,9 @@ function RunWorkspaceShell({
 }
 
 function RunNavigation({
-  runId,
-  showConclusionNav = true
+  runId
 }: {
   runId?: string;
-  showConclusionNav?: boolean;
 }) {
   const { t } = useI18n();
   const linkClass = "du-nav-link";
@@ -2207,7 +2203,7 @@ function RunNavigation({
           {t("Discussion Room")}
         </Link>
       ) : null}
-      {runId && showConclusionNav ? (
+      {runId ? (
         <Link
           to="/runs/$runId/outcome"
           params={{ runId }}
