@@ -2971,7 +2971,6 @@ function StartRunForm({
   const latestUpdateRef = useRef<HTMLElement | null>(null);
   const [startRequestText, setStartRequestText] = useState(recommendedStartRequestText);
   const [startFeedback, setStartFeedback] = useState<DiscussionStartFeedback | null>(null);
-  const [showAdvancedStartResult, setShowAdvancedStartResult] = useState(false);
   const [inputError, setInputError] = useState<string | null>(null);
   const startMutation = useMutation({
     mutationFn: (startRequest: Record<string, unknown>) => client.startRun(runId, startRequest),
@@ -3027,7 +3026,6 @@ function StartRunForm({
     }
 
     setStartFeedback(null);
-    setShowAdvancedStartResult(true);
     setInputError(null);
     startMutation.mutate(parsed.value);
   }
@@ -3043,7 +3041,6 @@ function StartRunForm({
 
   function startRecommendedPipeline(feedback: DiscussionStartFeedback) {
     setStartFeedback(feedback);
-    setShowAdvancedStartResult(false);
     setInputError(null);
     const startRequest = prepareUserFacingContinuationStartRequest(
       continuationSetup.startRequest,
@@ -3080,10 +3077,45 @@ function StartRunForm({
       ? "Start another readable round from the current room state."
       : "Continue the room from here.";
   const shouldShowLatestDiscussionUpdate =
-    Boolean(startMutation.data) &&
-    (!isRoomComposer ||
-      getRecordValue(startMutation.data, "stopped") === true ||
-      showAdvancedStartResult);
+    Boolean(startMutation.data) && (!isRoomComposer || !startMutation.isPending);
+  const latestDiscussionUpdate = shouldShowLatestDiscussionUpdate ? (
+    <section
+      id="latest-discussion-update"
+      className={`du-latest-discussion-update${
+        variant === "room-composer" ? " du-room-update-message" : ""
+      }`}
+      aria-label={t("Latest discussion update")}
+      ref={latestUpdateRef}
+    >
+      {variant === "room-composer" ? (
+        <span className="du-room-update-avatar" aria-hidden="true">
+          DR
+        </span>
+      ) : null}
+      <div className="du-room-update-body">
+        <div className="du-section-label">
+          <p className="du-kicker">
+            {t(variant === "room-composer" ? "Room update" : "Latest discussion update")}
+          </p>
+          <h4>{t(variant === "room-composer" ? "The room just updated" : "What just changed")}</h4>
+          {variant === "room-composer" ? null : (
+            <p>
+              {t(
+                "Review this result first, then return to the timeline, outputs, or next recommended action."
+              )}
+            </p>
+          )}
+        </div>
+        <StartResult
+          result={startMutation.data}
+          runId={runId}
+          feedback={startFeedback}
+          reviewReadyBeforeUpdate={continuationView.reviewReady}
+          presentation={variant === "room-composer" ? "room-message" : "panel"}
+        />
+      </div>
+    </section>
+  ) : null;
   const formContent = (
     <>
       <div
@@ -3350,57 +3382,22 @@ function StartRunForm({
           <RunStartRecoveryActions error={startMutation.error} />
         </>
       ) : null}
-      {shouldShowLatestDiscussionUpdate ? (
-        <section
-          id="latest-discussion-update"
-          className={`du-latest-discussion-update${
-            variant === "room-composer" ? " du-room-update-message" : ""
-          }`}
-          aria-label={t("Latest discussion update")}
-          ref={latestUpdateRef}
-        >
-          {variant === "room-composer" ? (
-            <span className="du-room-update-avatar" aria-hidden="true">
-              DR
-            </span>
-          ) : null}
-          <div className="du-room-update-body">
-            <div className="du-section-label">
-              <p className="du-kicker">
-                {t(variant === "room-composer" ? "Room update" : "Latest discussion update")}
-              </p>
-              <h4>{t(variant === "room-composer" ? "The room just updated" : "What just changed")}</h4>
-              {variant === "room-composer" ? null : (
-                <p>
-                  {t(
-                    "Review this result first, then return to the timeline, outputs, or next recommended action."
-                  )}
-                </p>
-              )}
-            </div>
-            <StartResult
-              result={startMutation.data}
-              runId={runId}
-              feedback={startFeedback}
-              reviewReadyBeforeUpdate={continuationView.reviewReady}
-              presentation={variant === "room-composer" ? "room-message" : "panel"}
-            />
-          </div>
-        </section>
-      ) : null}
     </>
   );
 
   if (variant === "room-composer") {
     return (
-      <section
-        id="continue-discussion"
-        className="du-room-composer"
-        data-placement="room-action-dock"
-        aria-label={t("Room quick replies")}
-      >
-        {formContent}
-      </section>
+      <>
+        <section
+          id="continue-discussion"
+          className="du-room-composer"
+          data-placement="room-action-dock"
+          aria-label={t("Room quick replies")}
+        >
+          {formContent}
+        </section>
+        {latestDiscussionUpdate}
+      </>
     );
   }
 
@@ -3410,6 +3407,7 @@ function StartRunForm({
       description={t(continuationView.description)}
     >
       {formContent}
+      {latestDiscussionUpdate}
     </DataPanel>
   );
 }
@@ -3906,10 +3904,7 @@ function StartResult({
               ? "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
               : "The guided discussion update was recorded. Review the visible steps and continue the discussion before relying on a conclusion.")
         );
-  const roomStatusDetail =
-    stopped === true || resultTitleKey === "First responses collected" || !conclusionReviewReady
-      ? resultDetail
-      : undefined;
+  const roomStatusDetail = resultDetail;
 
   if (roomMessage) {
     return (
@@ -3931,16 +3926,21 @@ function StartResult({
           runId={runId}
           conclusionReviewReady={conclusionReviewReady}
         />
+        {stopped === true ? null : (
+          <ReadableStageResultList stages={readableStages} roomMessage />
+        )}
         <details className="du-room-update-details">
           <summary>{t("Review detailed update")}</summary>
-          <p>{t("Open the detailed step summary if you want the full action result.")}</p>
+          <p>{t("Open raw step metadata only when you need developer details.")}</p>
           <div className="du-room-update-details-body">
+            {stopped === true ? (
+              <ReadableStageResultList stages={readableStages} roomMessage />
+            ) : null}
             <DiscussionResultHandoff
               runId={runId}
               conclusionReviewReady={conclusionReviewReady}
               roomMessage
             />
-            <ReadableStageResultList stages={readableStages} roomMessage />
             <AdvancedDetails
               summary="Advanced / Developer Mode"
               panelLabel="Raw stage metadata"
@@ -4917,6 +4917,11 @@ function DiscussionRoomTimeline({
                         );
                         const roomSpeaker = isRoomSpeaker(activity.speaker);
                         const userSpeaker = isUserSpeaker(activity.speaker);
+                        const speakerLabel = formatRoomSpeakerLabel(
+                          t,
+                          topicLanguage,
+                          activity.speaker
+                        );
 
                         return (
                           <li
@@ -4932,7 +4937,7 @@ function DiscussionRoomTimeline({
                                 className="du-room-system-message"
                                 aria-label={t("Room update")}
                               >
-                                <strong>{t(activity.speaker)}</strong>
+                                <strong>{speakerLabel}</strong>
                                 <span>
                                   {formatRoomContributionText(
                                     t,
@@ -4953,7 +4958,7 @@ function DiscussionRoomTimeline({
                               <>
                                 <div
                                   className="du-room-activity-bubble"
-                                  aria-label={`${t(activity.speaker)}: ${formatRoomContributionText(
+                                  aria-label={`${speakerLabel}: ${formatRoomContributionText(
                                     t,
                                     topicLanguage,
                                     displayDetail,
@@ -4961,7 +4966,7 @@ function DiscussionRoomTimeline({
                                   )}`}
                                 >
                                   <div className="du-room-message-header">
-                                    <strong>{t(activity.speaker)}</strong>
+                                    <strong>{speakerLabel}</strong>
                                     <small className="du-room-message-context">
                                       <span>
                                         {formatRoomContributionText(
@@ -5010,17 +5015,17 @@ function DiscussionRoomTimeline({
                                   </p>
                                 </div>
                                 <span className="du-room-activity-avatar" aria-hidden="true">
-                                  {formatSpeakerInitials(t(activity.speaker))}
+                                  {formatSpeakerInitials(speakerLabel)}
                                 </span>
                               </>
                             ) : (
                               <>
                                 <span className="du-room-activity-avatar" aria-hidden="true">
-                                  {formatSpeakerInitials(t(activity.speaker))}
+                                  {formatSpeakerInitials(speakerLabel)}
                                 </span>
                                 <div
                                   className="du-room-activity-bubble"
-                                  aria-label={`${t(activity.speaker)}: ${formatRoomContributionText(
+                                  aria-label={`${speakerLabel}: ${formatRoomContributionText(
                                     t,
                                     topicLanguage,
                                     displayDetail,
@@ -5028,7 +5033,7 @@ function DiscussionRoomTimeline({
                                   )}`}
                                 >
                                   <div className="du-room-message-header">
-                                    <strong>{t(activity.speaker)}</strong>
+                                    <strong>{speakerLabel}</strong>
                                     <small className="du-room-message-context">
                                       <span>
                                         {formatRoomContributionText(
@@ -5661,8 +5666,9 @@ function createParticipantReplyBridgeActivities(
   round: number,
   topicLanguage: "en" | "zh-CN"
 ): RoomActivityItem[] {
-  return contributions.slice(1).map((activity, index) => {
-    const previousContribution = contributions[index]!;
+  return contributions.map((activity, index) => {
+    const targetContribution =
+      contributions[index === 0 ? contributions.length - 1 : index - 1]!;
     const message = summarizeRoomReplyMessage(activity.detail);
 
     return {
@@ -5672,13 +5678,13 @@ function createParticipantReplyBridgeActivities(
       detail:
         topicLanguage === "zh-CN"
           ? round > 1
-            ? "\u6211\u5728\u56de\u5e94 {speaker}\uff1a{message}"
-            : "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 {speaker}\uff1a{message}"
+            ? "\u6211\u5728\u56de\u5e94 {speaker}\uff0c\u5e76\u628a\u6211\u7684\u6700\u65b0\u7acb\u573a\u653e\u56de\u8ba8\u8bba\uff1a{message}"
+            : "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 {speaker}\uff0c\u5e76\u628a\u6211\u7684\u7acb\u573a\u653e\u56de\u8ba8\u8bba\uff1a{message}"
           : round > 1
-            ? "I'm responding to {speaker}: {message}"
-            : "Now that the first responses are visible, I'm responding to {speaker}: {message}",
+            ? "I'm responding to {speaker} while keeping my latest position in the room: {message}"
+            : "Now that the first responses are visible, I'm responding to {speaker} while keeping my position in the room: {message}",
       detailValues: {
-        speaker: previousContribution.speaker,
+        speaker: targetContribution.speaker,
         message
       },
       tone: activity.tone,
@@ -6284,6 +6290,14 @@ function localizeTopicLanguageDetail(
   return topicLanguage === "zh-CN" ? zhCn : english;
 }
 
+function formatRoomSpeakerLabel(
+  t: TranslateFunction,
+  topicLanguage: RoomTopicLanguage,
+  speaker: string
+): string {
+  return topicLanguage === "zh-CN" ? localizeActorLabelForTopicLanguage(speaker) : t(speaker);
+}
+
 function formatRoomContributionText(
   t: TranslateFunction,
   topicLanguage: RoomTopicLanguage,
@@ -6291,10 +6305,60 @@ function formatRoomContributionText(
   values?: Record<string, string | number>
 ): string {
   if (topicLanguage === "zh-CN") {
-    return interpolateRoomContributionText(message, values);
+    return interpolateRoomContributionText(
+      message,
+      localizeRoomContributionValuesForTopicLanguage(topicLanguage, values)
+    );
   }
 
   return t(message, values);
+}
+
+function localizeRoomContributionValuesForTopicLanguage(
+  topicLanguage: RoomTopicLanguage,
+  values: Record<string, string | number> | undefined
+): Record<string, string | number> | undefined {
+  if (!values || topicLanguage !== "zh-CN") {
+    return values;
+  }
+
+  return Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [
+      key,
+      typeof value === "string" ? localizeActorLabelForTopicLanguage(value) : value
+    ])
+  );
+}
+
+function localizeActorLabelForTopicLanguage(value: string): string {
+  switch (normalizeActorLabel(value)) {
+    case "perspective-a":
+      return "\u89c6\u89d2 A";
+    case "perspective-b":
+      return "\u89c6\u89d2 B";
+    case "perspective-c":
+      return "\u89c6\u89d2 C";
+    case "reviewer":
+      return "\u5ba1\u67e5\u8005";
+    case "review-coordinator":
+      return "\u5ba1\u67e5\u534f\u8c03\u8005";
+    case "option-reviewer":
+      return "\u9009\u9879\u5ba1\u67e5\u8005";
+    case "evidence-checker":
+      return "\u8bc1\u636e\u6838\u67e5\u8005";
+    case "risk-reviewer":
+      return "\u98ce\u9669\u5ba1\u67e5\u8005";
+    case "conclusion-writer":
+      return "\u7ed3\u8bba\u8d77\u8349\u8005";
+    case "discussion-organizer":
+      return "\u8ba8\u8bba\u7ec4\u7ec7\u8005";
+    case "discussion-room":
+      return "\u8ba8\u8bba\u5ba4";
+    case "you":
+      return "\u4f60";
+    default:
+      return value;
+  }
 }
 
 function interpolateRoomContributionText(

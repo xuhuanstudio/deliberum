@@ -315,7 +315,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Continue discussion" }).click();
   await page.getByRole("link", { name: "Review current conclusion" }).first().waitFor();
   await assertRoomConversationShellAfterMessages(page, "discussion room after continuation");
-  await assertNoSuccessfulRoomUpdateReceipt(page, "discussion room after continuation");
+  await assertSuccessfulRoomUpdateReceipt(page, "discussion room after continuation");
   await assertConversationTranscriptReturnedToViewport(page, "discussion room after continuation");
   await page
     .locator(".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble")
@@ -486,11 +486,21 @@ async function assertRoomUpdateMessage(page, label) {
   }
 }
 
-async function assertNoSuccessfulRoomUpdateReceipt(page, label) {
-  const roomUpdateCount = await page.locator("#latest-discussion-update.du-room-update-message").count();
+async function assertSuccessfulRoomUpdateReceipt(page, label) {
+  const roomUpdate = page.locator("#latest-discussion-update.du-room-update-message");
 
-  if (roomUpdateCount !== 0) {
-    throw new Error(`${label} should return to the room thread without a duplicate success receipt.`);
+  try {
+    await roomUpdate.waitFor();
+    await roomUpdate.getByText("Room update", { exact: true }).waitFor();
+    await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
+    await roomUpdate.getByRole("region", { name: "Updated discussion steps" }).waitFor();
+    await roomUpdate.getByText("Room progress", { exact: true }).waitFor();
+    await roomUpdate.getByText("What the room did", { exact: true }).waitFor();
+    await roomUpdate.getByText("Independent first responses", { exact: true }).waitFor();
+  } catch (error) {
+    throw new Error(`${label} did not show the successful continuation as a readable room update.`, {
+      cause: error
+    });
   }
 }
 

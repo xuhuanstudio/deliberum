@@ -2246,9 +2246,9 @@ describe("@deliberum/web shell", () => {
         })
       )
     );
-    expect(screen.queryByText("Model-backed discussion continued")).toBeNull();
-    expect(screen.queryByRole("region", { name: "Latest discussion update" })).toBeNull();
-    expect(document.body.textContent ?? "").not.toContain(
+    expect(screen.getByText("Model-backed discussion continued")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Latest discussion update" })).toBeTruthy();
+    expect(document.body.textContent ?? "").toContain(
       "Model participants and review roles updated the readable timeline and conclusion materials."
     );
     expect(
@@ -4744,7 +4744,7 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("Run Alpha");
   });
 
-  it("keeps successful post-action updates out of the default Simplified Chinese room path", async () => {
+  it("shows successful post-action updates in the default Simplified Chinese room path", async () => {
     const client = renderApp("/runs/run-1", createClient(), {
       initialLanguage: "zh-CN"
     });
@@ -4752,17 +4752,17 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "\u7ee7\u7eed\u8ba8\u8bba" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
-    expect(screen.queryByRole("region", { name: "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0" })).toBeNull();
+    expect(screen.getByRole("region", { name: "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0" })).toBeTruthy();
     expect(
-      screen.queryByRole("navigation", {
+      screen.getByRole("navigation", {
         name: "\u8ba8\u8bba\u5ba4\u66f4\u65b0\u5feb\u6377\u5165\u53e3"
       })
-    ).toBeNull();
+    ).toBeTruthy();
     expect(
-      screen.queryByRole("region", {
-        name: "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84"
+      screen.getByRole("region", {
+        name: "\u5df2\u66f4\u65b0\u7684\u8ba8\u8bba\u6b65\u9aa4"
       })
-    ).toBeNull();
+    ).toBeTruthy();
   });
 
   it("localizes paused room updates in Simplified Chinese", async () => {
@@ -4830,7 +4830,7 @@ describe("@deliberum/web shell", () => {
     ).toBe(true);
     expect(latestUpdate.textContent ?? "").toContain("\u67e5\u770b\u8be6\u7ec6\u66f4\u65b0");
     expect(latestUpdate.textContent ?? "").toContain(
-      "\u5982\u679c\u9700\u8981\u5b8c\u6574\u52a8\u4f5c\u7ed3\u679c\uff0c\u53ef\u6253\u5f00\u8be6\u7ec6\u6b65\u9aa4\u6458\u8981\u3002"
+      "\u4ec5\u5728\u9700\u8981\u5f00\u53d1\u8005\u8be6\u60c5\u65f6\u6253\u5f00\u539f\u59cb\u6b65\u9aa4\u5143\u6570\u636e\u3002"
     );
     fireEvent.click(screen.getByText("\u67e5\u770b\u8be6\u7ec6\u66f4\u65b0"));
     expect(updateDetails?.open).toBe(true);
@@ -4896,11 +4896,11 @@ describe("@deliberum/web shell", () => {
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     expect(
-      screen.queryByRole("region", {
+      screen.getByRole("region", {
         name: "\u66f4\u65b0\u540e\u5ba1\u9605\u8def\u5f84"
       })
-    ).toBeNull();
-    expect(screen.queryByRole("region", { name: "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0" })).toBeNull();
+    ).toBeTruthy();
+    expect(screen.getByRole("region", { name: "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0" })).toBeTruthy();
   });
 
   it("localizes known sample discussion brief content in Simplified Chinese", async () => {
@@ -5950,16 +5950,17 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(scrollTargets).toContain("room-conversation-transcript"));
     expect(scrollTargets).not.toContain("room-next-action");
     expect(scrollTargets).not.toContain("latest-discussion-update");
-    expect(screen.queryByRole("region", { name: "Latest discussion update" })).toBeNull();
-    expect(screen.queryByText("Discussion update completed")).toBeNull();
+    expect(screen.getByRole("region", { name: "Latest discussion update" })).toBeTruthy();
+    expect(screen.getByText("Discussion update completed")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Updated discussion steps" })).toBeTruthy();
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Missing evidence").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Ask for stronger options" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(2));
-    expect(screen.queryByText("Stronger options requested")).toBeNull();
-    expect(document.body.textContent ?? "").not.toContain(
+    expect(screen.getByText("Stronger options requested")).toBeTruthy();
+    expect(document.body.textContent ?? "").toContain(
       "The guided update ran so the strongest current options can be compared again before relying on the conclusion."
     );
     expect(document.body.textContent ?? "").not.toContain("event-2");
@@ -6390,7 +6391,10 @@ describe("@deliberum/web shell", () => {
     expect(roundOne.textContent ?? "").toContain("Answered another participant");
     expect(roundOne.textContent ?? "").toContain("Responding to another participant");
     expect(roundOne.textContent ?? "").toContain(
-      "Now that the first responses are visible, I'm responding to Perspective A: Round one adds a separate concern about evidence quality."
+      "Now that the first responses are visible, I'm responding to Perspective B while keeping my position in the room: Round one says the rollout should remain reversible."
+    );
+    expect(roundOne.textContent ?? "").toContain(
+      "Now that the first responses are visible, I'm responding to Perspective A while keeping my position in the room: Round one adds a separate concern about evidence quality."
     );
     const roundTwo = screen.getByRole("list", { name: "Discussion round 2 messages" });
     expect(roundTwo.textContent ?? "").toContain(
@@ -6409,7 +6413,10 @@ describe("@deliberum/web shell", () => {
     expect(roundTwo.textContent ?? "").toContain("To another participant's latest reply");
     expect(roundTwo.textContent ?? "").toContain("Continuing the round as a direct reply");
     expect(roundTwo.textContent ?? "").toContain(
-      "I'm responding to Perspective A: Round two responds that evidence should be checked before launch."
+      "I'm responding to Perspective B while keeping my latest position in the room: Round two adds rollback gates before any wider rollout."
+    );
+    expect(roundTwo.textContent ?? "").toContain(
+      "I'm responding to Perspective A while keeping my latest position in the room: Round two responds that evidence should be checked before launch."
     );
     expect(roundTwo.textContent ?? "").toContain("Building on the follow-up replies");
     expect(roundTwo.textContent ?? "").toContain(
@@ -6602,7 +6609,10 @@ describe("@deliberum/web shell", () => {
     const roundTwoText = roundTwo.textContent ?? "";
 
     expect(roundOneText).toContain(
-      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 Perspective A"
+      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 \u89c6\u89d2 A"
+    );
+    expect(roundOneText).toContain(
+      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 \u89c6\u89d2 B"
     );
     expect(roundOneText).toContain("\u56de\u5e94\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005");
     expect(roundOneText).toContain(
@@ -6610,7 +6620,8 @@ describe("@deliberum/web shell", () => {
     );
     expect(roundOneText).not.toContain("Now that the first responses are visible");
     expect(roundOneText).not.toContain("Responding to another participant");
-    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 Perspective A");
+    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 \u89c6\u89d2 A");
+    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 \u89c6\u89d2 B");
     expect(roundTwoText).toContain(
       "\u6211\u540c\u610f\u8981\u56de\u6eda\u95e8\u69db\uff0c\u4f46\u8fd8\u8981\u5148\u8865\u9f50\u7528\u6237\u5f71\u54cd\u8bc1\u636e\u3002"
     );
@@ -6630,6 +6641,10 @@ describe("@deliberum/web shell", () => {
       "1 \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7ed3\u8bba\u3002"
     );
     expect(roundTwoText).not.toContain("I'm responding to Perspective A");
+    expect(roundOneText).not.toContain("Perspective A");
+    expect(roundOneText).not.toContain("Perspective B");
+    expect(roundTwoText).not.toContain("Perspective A");
+    expect(roundTwoText).not.toContain("Perspective B");
     expect(roundTwoText).not.toContain(
       "The room continued again from the current conclusion and open questions."
     );
@@ -8046,12 +8061,12 @@ describe("@deliberum/web shell", () => {
         }
       })
     );
-    expect(screen.queryByText("First responses collected")).toBeNull();
+    expect(screen.getByText("First responses collected")).toBeTruthy();
     expect(
-      screen.queryByText(
+      screen.getByText(
         "The discussion collected independent first responses. Finish review role setup before organizing options or drafting a conclusion."
       )
-    ).toBeNull();
+    ).toBeTruthy();
   });
 
   it("uses model review roles for provider-backed continuation when the local service reports them ready", async () => {
@@ -8167,9 +8182,9 @@ describe("@deliberum/web shell", () => {
         })
       )
     );
-    expect(screen.queryByText("Model-backed discussion continued")).toBeNull();
-    expect(screen.queryByRole("region", { name: "Latest discussion update" })).toBeNull();
-    expect(document.body.textContent ?? "").not.toContain(
+    expect(screen.getByText("Model-backed discussion continued")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Latest discussion update" })).toBeTruthy();
+    expect(document.body.textContent ?? "").toContain(
       "Model participants and review roles updated the readable timeline and conclusion materials."
     );
   });
@@ -8277,8 +8292,8 @@ describe("@deliberum/web shell", () => {
         }
       })
     );
-    expect(screen.queryByText("First responses collected")).toBeNull();
-    expect(screen.queryByRole("region", { name: "Post-update review path" })).toBeNull();
+    expect(screen.getByText("First responses collected")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Post-update review path" })).toBeTruthy();
   });
 
   it("renders the discussion source summary in Simplified Chinese", async () => {
@@ -8359,8 +8374,8 @@ describe("@deliberum/web shell", () => {
         })
       )
     );
-    expect(screen.queryByText("Discussion steps completed")).toBeNull();
-    expect(screen.queryByRole("region", { name: "Updated discussion steps" })).toBeNull();
+    expect(screen.getByText("Discussion steps completed")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Updated discussion steps" })).toBeTruthy();
     expect(screen.getAllByText("Discussion room").length).toBeGreaterThan(0);
   });
 
@@ -8473,7 +8488,7 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalled());
-    expect(screen.queryByText("Discussion steps completed")).toBeNull();
+    expect(screen.getByText("Discussion steps completed")).toBeTruthy();
     expect((await screen.findAllByText("Projection refreshed after start")).length).toBeGreaterThan(
       0
     );
