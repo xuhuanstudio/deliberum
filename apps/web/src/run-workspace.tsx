@@ -4090,7 +4090,9 @@ function createStartResultConversationRoundActivities(
   const run = getRecordValue(result, "run");
   const topicLanguage = getRoomTopicLanguage(run);
   const perspectiveSpeakers = getStartResultPerspectiveSpeakers(run);
-  const activities: RoomActivityItem[] = [];
+  const activities: RoomActivityItem[] = [
+    createUserContinuationTurnActivity(topicLanguage, Math.max(1, round))
+  ];
 
   for (const stage of stages) {
     activities.push(
@@ -4105,6 +4107,32 @@ function createStartResultConversationRoundActivities(
   }
 
   return addPendingReviewRoundActivities(activities, topicLanguage);
+}
+
+function createUserContinuationTurnActivity(
+  topicLanguage: RoomTopicLanguage,
+  round: number
+): RoomActivityItem {
+  return {
+    speaker: "You",
+    title: "Continue discussion requested",
+    action: "Asked the room to continue",
+    detail:
+      round === 1
+        ? localizeTopicLanguageDetail(
+            topicLanguage,
+            "The room continued from your brief before participants responded.",
+            "\u623f\u95f4\u4ece\u4f60\u7684\u8ba8\u8bba\u7b80\u62a5\u7ee7\u7eed\uff0c\u5728\u53c2\u4e0e\u8005\u56de\u5e94\u524d\u5f00\u542f\u672c\u8f6e\u3002"
+          )
+        : localizeTopicLanguageDetail(
+            topicLanguage,
+            "The room continued again from the current conclusion and open questions.",
+            "\u623f\u95f4\u4ece\u5f53\u524d\u7ed3\u8bba\u548c\u5f00\u653e\u95ee\u9898\u7ee7\u7eed\u4e0b\u4e00\u8f6e\u3002"
+          ),
+    tone: "neutral",
+    phase: "first-responses",
+    sourceType: "user_continuation_requested"
+  };
 }
 
 function createStartResultStageConversationActivities(
@@ -5684,26 +5712,7 @@ function addUserContinuationTurnActivity(
     if (shouldInsertBeforeOpenedRound || shouldInsertBeforeFirstResponse) {
       userTurnCount += 1;
       insertedBeforeFirstResponseWithoutOpen = true;
-      nextActivities.push({
-        speaker: "You",
-        title: "Continue discussion requested",
-        action: "Asked the room to continue",
-        detail:
-          userTurnCount === 1
-            ? localizeTopicLanguageDetail(
-                topicLanguage,
-                "The room continued from your brief before participants responded.",
-                "\u623f\u95f4\u4ece\u4f60\u7684\u8ba8\u8bba\u7b80\u62a5\u7ee7\u7eed\uff0c\u5728\u53c2\u4e0e\u8005\u56de\u5e94\u524d\u5f00\u542f\u672c\u8f6e\u3002"
-              )
-            : localizeTopicLanguageDetail(
-                topicLanguage,
-                "The room continued again from the current conclusion and open questions.",
-                "\u623f\u95f4\u4ece\u5f53\u524d\u7ed3\u8bba\u548c\u5f00\u653e\u95ee\u9898\u7ee7\u7eed\u4e0b\u4e00\u8f6e\u3002"
-              ),
-        tone: "neutral",
-        phase: "first-responses",
-        sourceType: "user_continuation_requested"
-      });
+      nextActivities.push(createUserContinuationTurnActivity(topicLanguage, userTurnCount));
     }
 
     nextActivities.push(activity);
@@ -6437,7 +6446,7 @@ function localizeRoomActivityAction(
   }
 
   const actionTranslations: Record<string, string> = {
-    "Asked the room to continue": "\u8bf7\u6c42\u623f\u95f4\u7ee7\u7eed",
+    "Asked the room to continue": "\u8981\u6c42\u8ba8\u8bba\u5ba4\u7ee7\u7eed",
     "Shared the discussion brief": "\u5206\u4eab\u4e86\u8ba8\u8bba\u7b80\u62a5",
     "Opened independent first responses": "\u5f00\u542f\u4e86\u72ec\u7acb\u9996\u6b21\u56de\u5e94",
     "Submitted a sealed first response": "\u63d0\u4ea4\u4e86\u5bc6\u5c01\u9996\u6b21\u56de\u5e94",
@@ -7115,6 +7124,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
   const type = getStringRecordValue(event, "type");
   const payload = getRecordValue(event, "payload");
   const speaker = getRoomEventSpeaker(event, run);
+  const topicLanguage = getRoomTopicLanguage(run);
 
   if (type === "topic_contract_published") {
     return {
@@ -7218,9 +7228,7 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
       speaker,
       title: "Evidence check recorded",
       action: "Checked evidence",
-      detail:
-        getFirstStringRecordValue(payload, ["summary", "result", "status"]) ??
-        "An evidence check result was added to the discussion.",
+      detail: describeEvidenceRoomDetail(payload, topicLanguage),
       tone: "ok",
       phase: "evidence",
       sourceType: type
@@ -7254,6 +7262,51 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
   }
 
   return null;
+}
+
+function describeEvidenceRoomDetail(
+  payload: unknown,
+  topicLanguage: RoomTopicLanguage
+): string {
+  const detail = getFirstStringRecordValue(payload, ["summary", "result", "status"]);
+
+  if (!detail) {
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "An evidence check result was added to the discussion.",
+      "\u8bc1\u636e\u6838\u67e5\u7ed3\u679c\u5df2\u52a0\u5165\u672c\u6b21\u8ba8\u8bba\u3002"
+    );
+  }
+
+  return sanitizeEvidenceRoomDetail(detail, topicLanguage);
+}
+
+function sanitizeEvidenceRoomDetail(
+  detail: string,
+  topicLanguage: RoomTopicLanguage
+): string {
+  const trimmed = detail.trim();
+
+  if (
+    /^Reported sample evidence result for local-preset-evidence-[a-z0-9-]+; this is not independent verification\.$/i.test(
+      trimmed
+    )
+  ) {
+    return "A sample evidence check was recorded; it is not independent verification.";
+  }
+
+  if (
+    /^\u5df2\u8bb0\u5f55\u793a\u4f8b\u8bc1\u636e\u7ed3\u679c local-preset-evidence-[a-z0-9-]+; \u8fd9\u4e0d\u662f\u72ec\u7acb\u9a8c\u8bc1\u3002$/u.test(
+      trimmed
+    )
+  ) {
+    return "\u5df2\u8bb0\u5f55\u793a\u4f8b\u8bc1\u636e\u6838\u67e5\u7ed3\u679c\uff1b\u8fd9\u4e0d\u662f\u72ec\u7acb\u9a8c\u8bc1\u3002";
+  }
+
+  return trimmed.replace(
+    /\blocal-preset-evidence-[a-z0-9-]+\b/gi,
+    topicLanguage === "zh-CN" ? "\u793a\u4f8b\u8bc1\u636e\u9879" : "a sample evidence item"
+  );
 }
 
 function describeFinalAuditPayload(payload: unknown): string {

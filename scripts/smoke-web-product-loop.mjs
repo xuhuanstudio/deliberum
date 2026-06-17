@@ -549,7 +549,9 @@ async function assertSuccessfulRoomUpdateReceipt(page, label) {
 }
 
 async function assertUserContinuationTurn(page, label) {
-  const userTurn = page.locator(".du-room-activity-item[data-speaker='user'] .du-room-activity-bubble");
+  const userTurn = page
+    .getByRole("region", { name: "Conversation transcript" })
+    .locator(".du-room-activity-item[data-speaker='user'] .du-room-activity-bubble");
 
   try {
     await userTurn.waitFor();

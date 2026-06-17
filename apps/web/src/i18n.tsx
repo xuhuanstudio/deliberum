@@ -1928,6 +1928,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Checked evidence": "\u6838\u67e5\u4e86\u8bc1\u636e",
   "An evidence check result was added to the discussion.":
     "\u4e00\u6761\u8bc1\u636e\u6838\u67e5\u7ed3\u679c\u5df2\u52a0\u5165\u8ba8\u8bba\u3002",
+  "A sample evidence check was recorded; it is not independent verification.":
+    "\u5df2\u8bb0\u5f55\u4e00\u6761\u793a\u4f8b\u8bc1\u636e\u6838\u67e5\uff1b\u8fd9\u4e0d\u662f\u72ec\u7acb\u9a8c\u8bc1\u3002",
   "Current conclusion drafted": "\u5f53\u524d\u7ed3\u8bba\u5df2\u8d77\u8349",
   "Drafted the current conclusion": "\u8d77\u8349\u4e86\u5f53\u524d\u7ed3\u8bba",
   "A reviewable conclusion draft was prepared from the current discussion material.":

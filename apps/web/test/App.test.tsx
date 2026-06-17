@@ -6043,28 +6043,34 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("region", { name: "Latest discussion update" })).toBeTruthy();
     expect(screen.getByText("Discussion update completed")).toBeTruthy();
     const updateRound = screen.getByRole("list", { name: "Discussion update messages" });
+    const updateRoundText = updateRound.textContent ?? "";
     expect(screen.getByRole("region", { name: "New discussion round" })).toBeTruthy();
     expect(screen.getAllByText("Discussion round 2").length).toBeGreaterThan(0);
-    expect(updateRound.textContent ?? "").toContain("Perspective A");
-    expect(updateRound.textContent ?? "").toContain("Perspective B");
-    expect(updateRound.textContent ?? "").toContain("Shared a follow-up reply");
-    expect(updateRound.textContent ?? "").toContain("Answered another participant");
-    expect(updateRound.textContent ?? "").toContain("Reviewer");
-    expect(updateRound.textContent ?? "").toContain("Waiting to review disagreements");
-    expect(updateRound.textContent ?? "").toContain("Preparing to reply with objections");
-    expect(updateRound.textContent ?? "").toContain("Evidence checker");
-    expect(updateRound.textContent ?? "").toContain("Waiting to check evidence");
-    expect(updateRound.textContent ?? "").toContain(
+    expect(updateRoundText).toContain("You");
+    expect(updateRoundText).toContain("Asked the room to continue");
+    expect(updateRoundText).toContain(
+      "The room continued again from the current conclusion and open questions."
+    );
+    expect(updateRoundText).toContain("Perspective A");
+    expect(updateRoundText).toContain("Perspective B");
+    expect(updateRoundText).toContain("Shared a follow-up reply");
+    expect(updateRoundText).toContain("Answered another participant");
+    expect(updateRoundText).toContain("Reviewer");
+    expect(updateRoundText).toContain("Waiting to review disagreements");
+    expect(updateRoundText).toContain("Preparing to reply with objections");
+    expect(updateRoundText).toContain("Evidence checker");
+    expect(updateRoundText).toContain("Waiting to check evidence");
+    expect(updateRoundText).toContain(
       "Preparing to reply with evidence checks"
     );
-    expect(updateRound.textContent ?? "").toContain(
+    expect(updateRoundText).toContain(
       "I'm responding to the latest room state"
     );
-    expect(updateRound.textContent ?? "").toContain(
+    expect(updateRoundText).toContain(
       "I'm responding to Perspective A's latest point"
     );
-    expect(updateRound.textContent ?? "").toContain("To another participant's latest reply");
-    expect(updateRound.textContent ?? "").not.toContain(
+    expect(updateRoundText).toContain("To another participant's latest reply");
+    expect(updateRoundText).not.toContain(
       "Now that Perspective A's answer is visible"
     );
     expect(screen.queryByRole("region", { name: "Updated discussion steps" })).toBeNull();
@@ -6208,25 +6214,39 @@ describe("@deliberum/web shell", () => {
               trace: {}
             },
             {
-              id: "provider-final-candidate-event",
-              type: "final_candidate_proposed",
+              id: "evidence-event",
+              type: "evidence_result_recorded",
               sequence: 7,
               visibility: "public",
-              authorId: "openai-compatible-final-candidate",
+              authorId: "local-preset-evidence-checker",
               createdAt: "2026-06-10T00:00:07.000Z",
               payload: {
-                recommendation: "Keep the provider-backed product loop reviewable."
+                summary:
+                  "Reported sample evidence result for local-preset-evidence-rollout-readiness; this is not independent verification."
               },
               basedOnEventIds: ["provider-review-event"],
               trace: {}
             },
             {
-              id: "provider-final-audit-event",
-              type: "final_audit_recorded",
+              id: "provider-final-candidate-event",
+              type: "final_candidate_proposed",
               sequence: 8,
               visibility: "public",
-              authorId: "openai-compatible-final-auditor",
+              authorId: "openai-compatible-final-candidate",
               createdAt: "2026-06-10T00:00:08.000Z",
+              payload: {
+                recommendation: "Keep the provider-backed product loop reviewable."
+              },
+              basedOnEventIds: ["evidence-event"],
+              trace: {}
+            },
+            {
+              id: "provider-final-audit-event",
+              type: "final_audit_recorded",
+              sequence: 9,
+              visibility: "public",
+              authorId: "openai-compatible-final-auditor",
+              createdAt: "2026-06-10T00:00:09.000Z",
               payload: {
                 summary: "Provider-backed conclusions remain provisional until reviewed.",
                 risks: [
@@ -6285,11 +6305,12 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Conclusion writer").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Risk reviewer").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Reviewed evidence gaps").length).toBeGreaterThan(0);
     expect(
-      screen.getAllByText("1 evidence gap still needs checking before relying on the conclusion.")
-        .length
+      screen.getAllByText(
+        "A sample evidence check was recorded; it is not independent verification."
+      ).length
     ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Checked evidence").length).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: "Conversation transcript" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "Discussion round 1 messages" })).toBeTruthy();
     expect(screen.getByText("Discussion round 1")).toBeTruthy();
@@ -6327,6 +6348,7 @@ describe("@deliberum/web shell", () => {
     expect(roomText).not.toContain("extraction_proposed");
     expect(roomText).not.toContain("Local Preset Extractor");
     expect(roomText).not.toContain("local-preset-extractor");
+    expect(roomText).not.toContain("local-preset-evidence-rollout-readiness");
     expect(roomText).not.toContain("Openai Compatible");
     expect(roomText).not.toContain("openai-compatible");
     expect(roomText).not.toContain("Provider Review Coordinator");
@@ -7422,6 +7444,11 @@ describe("@deliberum/web shell", () => {
     );
     const updateRoundText =
       screen.getByRole("list", { name: "Discussion update messages" }).textContent ?? "";
+    expect(updateRoundText).toContain("\u4f60");
+    expect(updateRoundText).toContain("\u8981\u6c42\u8ba8\u8bba\u5ba4\u7ee7\u7eed");
+    expect(updateRoundText).toContain(
+      "\u623f\u95f4\u4ece\u4f60\u7684\u8ba8\u8bba\u7b80\u62a5\u7ee7\u7eed"
+    );
     expect(updateRoundText).toContain("\u89c6\u89d2 A");
     expect(updateRoundText).toContain(
       "\u6211\u628a\u4e00\u4efd\u72ec\u7acb\u7b54\u6848\u653e\u5165\u8ba8\u8bba\u5ba4"
