@@ -580,6 +580,9 @@ describe("buildParticipantDispatchInput", () => {
     expect(envelope.adapterInput.instructions).toContain(
       "When prior participant, reviewer, or evidence-checker messages are visible, respond to the current room state instead of starting a disconnected answer."
     );
+    expect(envelope.adapterInput.instructions).toContain(
+      "Write as a room contribution, not a standalone report; directly answer or refine at least one visible point when prior room messages exist."
+    );
     expect(adapterInputText).toContain(chineseQuestion);
     expect(adapterInputText).toContain("Response language contract");
     expect(adapterInputText).toContain(
@@ -612,6 +615,12 @@ describe("buildParticipantDispatchInput", () => {
     );
     expect(adapterInputText).toContain(
       "Keep the response independent, but make it read like a contribution in an ongoing multi-participant room."
+    );
+    expect(adapterInputText).toContain(
+      "When prior room messages exist, explicitly respond to one participant, reviewer, or evidence-checker point before adding a new point."
+    );
+    expect(adapterInputText).toContain(
+      "Do not format the contribution as a final answer or report; keep it readable as the next chat-like room message."
     );
     expect(adapterInputText).toContain("Simplified Chinese");
     expect(adapterInputText).not.toContain("run-1");

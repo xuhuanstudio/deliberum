@@ -28,7 +28,8 @@ const PARTICIPANT_PROMPT_USER_INSTRUCTIONS = [
   "Prepare an independent participant contribution from the provided plain-language Deliberum discussion context.",
   "Answer in the same language as the discussion question.",
   "Use the discussion brief and visible room updates, but do not repeat implementation details or machine references.",
-  "When prior participant, reviewer, or evidence-checker messages are visible, respond to the current room state instead of starting a disconnected answer."
+  "When prior participant, reviewer, or evidence-checker messages are visible, respond to the current room state instead of starting a disconnected answer.",
+  "Write as a room contribution, not a standalone report; directly answer or refine at least one visible point when prior room messages exist."
 ].join(" ");
 const DEFAULT_PARTICIPANT_SYSTEM_INSTRUCTIONS =
   "Prepare contribution material only. Do not decide truth or select a single answer.";
@@ -165,6 +166,8 @@ function createParticipantPromptPayload(context: ParticipantDeliberationContext)
         ? "Continue the discussion by responding to the visible room updates, including participant messages, reviewer objections, and evidence checks when present."
         : "Start from the discussion brief because no participant messages are visible yet.",
       "Keep the response independent, but make it read like a contribution in an ongoing multi-participant room.",
+      "When prior room messages exist, explicitly respond to one participant, reviewer, or evidence-checker point before adding a new point.",
+      "Do not format the contribution as a final answer or report; keep it readable as the next chat-like room message.",
       "",
       "Resources",
       resourceSummary

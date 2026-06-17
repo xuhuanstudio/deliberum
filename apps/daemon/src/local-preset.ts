@@ -67,6 +67,7 @@ type LocalPresetText = {
     claimContent: string;
     objectionFailureMode: string;
     objectionConsequence: string;
+    evidenceNeedReason: string;
     qualityRequirement: string;
     rationale: string;
   };
@@ -149,6 +150,8 @@ const LOCAL_PRESET_TEXT: Record<LocalPresetLanguage, LocalPresetText> = {
         "Users could rely on the sample conclusion without checking whether it matches their real rollout.",
       objectionConsequence:
         "The conclusion must keep limitations, disagreements, and next actions visible.",
+      evidenceNeedReason:
+        "The room needs confirmation that the rollout evidence is strong enough before a wider release.",
       qualityRequirement:
         "State that the conclusion is provisional and list what must be checked next.",
       rationale:
@@ -251,6 +254,8 @@ const LOCAL_PRESET_TEXT: Record<LocalPresetLanguage, LocalPresetText> = {
       objectionFailureMode:
         "\u7528\u6237\u53ef\u80fd\u5728\u672a\u68c0\u67e5\u5176\u662f\u5426\u5339\u914d\u771f\u5b9e\u53d1\u5e03\u7684\u60c5\u51b5\u4e0b\u4f9d\u8d56\u793a\u4f8b\u7ed3\u8bba\u3002",
       objectionConsequence: "\u7ed3\u8bba\u5fc5\u987b\u6301\u7eed\u5c55\u793a\u9650\u5236\u3001\u5206\u6b67\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002",
+      evidenceNeedReason:
+        "\u8ba8\u8bba\u5ba4\u9700\u8981\u786e\u8ba4\u8fd9\u6b21\u53d1\u5e03\u7684\u8bc1\u636e\u662f\u5426\u8db3\u591f\u652f\u6301\u66f4\u5927\u8303\u56f4\u63a8\u51fa\u3002",
       qualityRequirement: "\u8bf4\u660e\u7ed3\u8bba\u4ecd\u662f\u4e34\u65f6\u7ed3\u8bba\uff0c\u5e76\u5217\u51fa\u63a5\u4e0b\u6765\u5fc5\u987b\u68c0\u67e5\u7684\u5185\u5bb9\u3002",
       rationale: "\u5c06\u521d\u59cb\u56de\u5e94\u6574\u7406\u4e3a\u53ef\u5ba1\u9605\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
     },
@@ -538,6 +543,17 @@ function createLocalPresetExtractionResult(
         status: "open",
         sourceEventIds,
         responses: []
+      }
+    ],
+    evidenceNeeds: [
+      {
+        id: "local-preset-evidence-rollout-readiness",
+        targetClaimId: "local-preset-claim-control-surface",
+        requiredKind: "human_confirmation",
+        reason: text.extraction.evidenceNeedReason,
+        priority: "high",
+        status: "open",
+        sourceEventIds
       }
     ],
     qualityObligations: [

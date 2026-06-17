@@ -63,6 +63,9 @@ export const LOCAL_PRESET_START_REQUEST = {
         "Accept sample discussion material that has no open challenge in this walkthrough."
     }
   },
+  evidenceCheck: {
+    generatorIds: ["local-preset-evidence-checker"]
+  },
   finalization: {
     finalCandidateGeneratorId: "local-preset-final-candidate",
     auditGeneratorIds: ["local-preset-final-auditor"],

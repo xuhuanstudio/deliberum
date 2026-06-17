@@ -1,5 +1,6 @@
 import {
   projectAcceptedDeliberationObjects,
+  type DerivedClaim,
   type DerivedEvidenceNeed
 } from "@deliberum/core";
 import type { StoredEvent } from "@deliberum/storage";
@@ -42,8 +43,8 @@ export function buildEvidenceCheckContext(
   const targetClaimIds = new Set(
     targetEvidenceNeeds.map((evidenceNeed) => evidenceNeed.object.targetClaimId)
   );
-  const targetClaims = acceptedObjects.claims.filter((claim) =>
-    targetClaimIds.has(claim.object.id)
+  const targetClaims = uniqueDerivedClaimsById(
+    acceptedObjects.claims.filter((claim) => targetClaimIds.has(claim.object.id))
   );
 
   if (targetClaims.length !== targetClaimIds.size) {
@@ -86,9 +87,11 @@ function resolveTargetEvidenceNeedIds(
   );
   const targetEvidenceNeedIds = requestedTargetEvidenceNeedIds?.length
     ? unique(requestedTargetEvidenceNeedIds)
-    : evidenceNeeds
-        .filter((evidenceNeed) => OPEN_EVIDENCE_NEED_STATUSES.has(evidenceNeed.object.status))
-        .map((evidenceNeed) => evidenceNeed.object.id);
+    : unique(
+        evidenceNeeds
+          .filter((evidenceNeed) => OPEN_EVIDENCE_NEED_STATUSES.has(evidenceNeed.object.status))
+          .map((evidenceNeed) => evidenceNeed.object.id)
+      );
 
   if (targetEvidenceNeedIds.length === 0) {
     throw new EvidenceCheckContextError(
@@ -118,4 +121,16 @@ function createEventRange(events: readonly StoredEvent[]) {
 
 function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
+}
+
+function uniqueDerivedClaimsById(claims: readonly DerivedClaim[]): DerivedClaim[] {
+  const byId = new Map<string, DerivedClaim>();
+
+  for (const claim of claims) {
+    if (!byId.has(claim.object.id)) {
+      byId.set(claim.object.id, claim);
+    }
+  }
+
+  return [...byId.values()];
 }

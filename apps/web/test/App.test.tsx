@@ -7599,11 +7599,13 @@ describe("@deliberum/web shell", () => {
     const sealedDivergence = startRequest?.sealedDivergence;
     const extraction = startRequest?.extraction;
     const review = startRequest?.review;
+    const evidenceCheck = startRequest?.evidenceCheck;
     const finalization = startRequest?.finalization;
 
     expect(sealedDivergence?.roundId).toMatch(/^web-round-4-[a-z0-9]+-first-responses$/);
     expect(extraction?.roundId).toMatch(/^web-round-4-[a-z0-9]+-options$/);
     expect(review?.roundId).toMatch(/^web-round-4-[a-z0-9]+-review$/);
+    expect(evidenceCheck?.roundId).toMatch(/^web-round-4-[a-z0-9]+-evidence$/);
     expect(finalization?.roundId).toMatch(/^web-round-4-[a-z0-9]+-conclusion$/);
     expect(extraction?.sealedDivergenceRoundId).toBe(sealedDivergence?.roundId);
     expect(review?.extractionRoundId).toBe(extraction?.roundId);
@@ -8446,6 +8448,9 @@ describe("@deliberum/web shell", () => {
         expect.objectContaining({
           extraction: {
             generatorIds: ["local-preset-extractor"]
+          },
+          evidenceCheck: {
+            generatorIds: ["local-preset-evidence-checker"]
           },
           finalization: expect.objectContaining({
             finalCandidateGeneratorId: "local-preset-final-candidate",

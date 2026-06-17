@@ -9297,6 +9297,9 @@ describe("daemon API", () => {
     const objections = (await (
       await daemonApp.app.request(`/sessions/${created.run.sessionId}/objections`)
     ).json()) as { objections: Array<{ object: { id: string } }> };
+    const resources = (await (
+      await daemonApp.app.request(`/sessions/${created.run.sessionId}/resources`)
+    ).json()) as { evidenceNeeds: Array<{ object: { id: string; reason: string } }> };
     const outcomeResponse = await daemonApp.app.request(`/runs/${created.run.runId}/outcome`);
     const outcomeBody = (await outcomeResponse.json()) as { status: string; draftStatus?: string };
 
@@ -9330,6 +9333,15 @@ describe("daemon API", () => {
         })
       })
     ]);
+    expect(resources.evidenceNeeds).toEqual([
+      expect.objectContaining({
+        object: expect.objectContaining({
+          id: "local-preset-evidence-rollout-readiness",
+          reason:
+            "The room needs confirmation that the rollout evidence is strong enough before a wider release."
+        })
+      })
+    ]);
     expect(outcomeResponse.status).toBe(200);
     expect(outcomeBody).toMatchObject({
       status: "compiled",
@@ -9339,6 +9351,7 @@ describe("daemon API", () => {
     expectSafeRunApiPayload(frontier);
     expectSafeRunApiPayload(obligations);
     expectSafeRunApiPayload(objections);
+    expectSafeRunApiPayload(resources);
     expectSafeRunApiPayload(outcomeBody);
   });
 
@@ -9386,6 +9399,9 @@ describe("daemon API", () => {
     expect(publicPayload).toContain("\u5728\u4f9d\u8d56\u5efa\u8bae\u524d\uff0c\u5206\u9636\u6bb5\u5ba1\u67e5\u8fd9\u6b21\u53d1\u5e03\u3002");
     expect(publicPayload).toContain("\u63a5\u53d7\u672c\u6b21\u6f14\u793a\u4e2d\u6ca1\u6709\u516c\u5f00\u6311\u6218\u7684\u793a\u4f8b\u8ba8\u8bba\u6750\u6599\u3002");
     expect(publicPayload).toContain("\u5206\u9636\u6bb5\u53d1\u5e03\u5ba1\u67e5");
+    expect(publicPayload).toContain(
+      "\u8ba8\u8bba\u5ba4\u9700\u8981\u786e\u8ba4\u8fd9\u6b21\u53d1\u5e03\u7684\u8bc1\u636e\u662f\u5426\u8db3\u591f\u652f\u6301\u66f4\u5927\u8303\u56f4\u63a8\u51fa\u3002"
+    );
     expect(publicPayload).toContain("\u5728\u4f9d\u8d56\u8fd9\u6b21\u53d1\u5e03\u524d\uff0c\u91c7\u7528\u5206\u9636\u6bb5\u5ba1\u67e5\u8def\u5f84\u3002");
     expect(publicPayload).toContain("\u56e2\u961f\u53ef\u80fd\u4f1a\u628a\u793a\u4f8b\u6f14\u793a\u8bef\u8ba4\u4e3a\u5173\u4e8e\u771f\u5b9e\u53d1\u5e03\u7684\u51b3\u7b56\u3002");
     expect(publicPayload).not.toContain("Review the rollout in stages before relying on the recommendation.");
@@ -9423,6 +9439,10 @@ describe("daemon API", () => {
       roundId: "follow-up-review",
       extractionRoundId: "follow-up-options"
     };
+    followUpRequest.evidenceCheck = {
+      generatorIds: ["local-preset-evidence-checker"],
+      roundId: "follow-up-evidence"
+    };
     followUpRequest.finalization = {
       ...followUpRequest.finalization,
       roundId: "follow-up-conclusion",
@@ -9448,6 +9468,9 @@ describe("daemon API", () => {
     );
     expect(publicPayload).toContain(
       "Before widening the rollout, answer the evidence gap and define what would stop the release."
+    );
+    expect(publicPayload).toContain(
+      "Reported sample evidence result for local-preset-evidence-rollout-readiness; this is not independent verification."
     );
     expectSafeRunApiPayload(publicPayload);
   });
