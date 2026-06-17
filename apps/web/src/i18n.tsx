@@ -1659,6 +1659,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u9009\u62e9\u4e00\u4e2a\u5feb\u6377\u56de\u590d\u6765\u5ba1\u9605\u6216\u63a8\u8fdb\u8ba8\u8bba\u3002",
   "Choose Continue discussion to let participants respond.":
     "\u9009\u62e9\u7ee7\u7eed\u8ba8\u8bba\uff0c\u8ba9\u53c2\u4e0e\u8005\u56de\u5e94\u3002",
+  "Choose Continue discussion to let participants respond to the latest room state.":
+    "\u9009\u62e9\u7ee7\u7eed\u8ba8\u8bba\uff0c\u8ba9\u53c2\u4e0e\u8005\u56de\u5e94\u6700\u65b0\u7684\u8ba8\u8bba\u5ba4\u72b6\u6001\u3002",
   "What should happen next?": "\u63a5\u4e0b\u6765\u8981\u505a\u4ec0\u4e48\uff1f",
   "Choose a short room action after reading the latest messages.":
     "\u8bfb\u5b8c\u6700\u65b0\u6d88\u606f\u540e\uff0c\u9009\u62e9\u4e00\u4e2a\u7b80\u77ed\u7684\u8ba8\u8bba\u5ba4\u52a8\u4f5c\u3002",

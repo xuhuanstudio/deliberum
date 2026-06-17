@@ -3089,13 +3089,15 @@ function StartRunForm({
   const roomComposerTitle = "Reply to the room";
   const roomComposerDetail = continuationView.reviewReady
     ? "Choose a quick reply to review or move the discussion forward."
-    : "Choose Continue discussion to let participants respond.";
+    : hasCompletedDiscussionRoundMaterial(run)
+      ? "Choose Continue discussion to let participants respond to the latest room state."
+      : "Choose Continue discussion to let participants respond.";
   const primaryActionLabel = isRoomComposer ? "Continue discussion" : continuationView.primaryLabel;
   const roomPrimaryActionDetail = continuationSetup.primaryActionDetail?.includes(
     "first responses only"
   )
     ? continuationSetup.primaryActionDetail
-    : continuationView.reviewReady
+    : continuationView.reviewReady || hasCompletedDiscussionRoundMaterial(run)
       ? "Start another readable round from the current room state."
       : "Continue the room from here.";
   const shouldShowLatestDiscussionUpdate =
@@ -3543,7 +3545,7 @@ function prepareUserFacingContinuationStartRequest(
 ): Record<string, unknown> {
   const nextStartRequest = cloneJsonObject(startRequest);
 
-  if (!isDiscussionReviewReady(run)) {
+  if (!hasCompletedDiscussionRoundMaterial(run)) {
     return nextStartRequest;
   }
 
@@ -3583,6 +3585,10 @@ function prepareUserFacingContinuationStartRequest(
   }
 
   return nextStartRequest;
+}
+
+function hasCompletedDiscussionRoundMaterial(run: unknown): boolean {
+  return countCompletedDiscussionStages(run) > 0 || isDiscussionReviewReady(run);
 }
 
 function setStartRequestRoundId(

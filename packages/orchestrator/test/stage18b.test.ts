@@ -577,6 +577,9 @@ describe("buildParticipantDispatchInput", () => {
     expect(envelope.adapterInput.instructions).toContain(
       "Answer in the same language as the discussion question."
     );
+    expect(envelope.adapterInput.instructions).toContain(
+      "When prior participant, reviewer, or evidence-checker messages are visible, respond to the current room state instead of starting a disconnected answer."
+    );
     expect(adapterInputText).toContain(chineseQuestion);
     expect(adapterInputText).toContain("Response language contract");
     expect(adapterInputText).toContain(
@@ -602,6 +605,13 @@ describe("buildParticipantDispatchInput", () => {
     );
     expect(adapterInputText).toContain(
       "Treat the target response language as stronger than English section headings in this prompt."
+    );
+    expect(adapterInputText).toContain("Conversation behavior");
+    expect(adapterInputText).toContain(
+      "Continue the discussion by responding to the visible room updates, including participant messages, reviewer objections, and evidence checks when present."
+    );
+    expect(adapterInputText).toContain(
+      "Keep the response independent, but make it read like a contribution in an ongoing multi-participant room."
     );
     expect(adapterInputText).toContain("Simplified Chinese");
     expect(adapterInputText).not.toContain("run-1");

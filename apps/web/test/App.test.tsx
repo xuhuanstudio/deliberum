@@ -7127,6 +7127,121 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("providerConfigId");
   });
 
+  it("starts another readable room round after prior discussion material exists", async () => {
+    const partiallyDiscussedRun = {
+      ...localPresetNotStartedRunDetail,
+      status: "revealed",
+      sealedDivergenceStatus: "revealed",
+      latestExtractionStatus: undefined,
+      latestProposalReviewStatus: undefined,
+      latestFinalizationStatus: undefined,
+      ledger: {
+        eventCount: 4
+      },
+      rounds: {
+        sealedDivergence: {
+          status: "revealed"
+        },
+        extraction: [],
+        candidateRepair: [],
+        evidenceCheck: [],
+        proposalReview: [],
+        finalization: []
+      }
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: partiallyDiscussedRun
+        })),
+        getRunEvents: vi.fn(async () => ({
+          runId: partiallyDiscussedRun.runId,
+          sessionId: partiallyDiscussedRun.sessionId,
+          events: [
+            {
+              id: "topic-event",
+              type: "topic_contract_published",
+              sequence: 0,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:00.000Z",
+              payload: {
+                topic: partiallyDiscussedRun.topic
+              },
+              basedOnEventIds: [],
+              trace: {}
+            },
+            {
+              id: "round-one-opened",
+              type: "sealed_batch_opened",
+              sequence: 1,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:01.000Z",
+              payload: {},
+              basedOnEventIds: ["topic-event"],
+              trace: {}
+            },
+            {
+              id: "round-one-response",
+              type: "sealed_contribution_submitted",
+              sequence: 2,
+              visibility: "public",
+              authorId: "local-preset-alpha",
+              createdAt: "2026-06-10T00:00:02.000Z",
+              payload: {
+                position: "Round one asks for a reversible rollout."
+              },
+              basedOnEventIds: ["round-one-opened"],
+              trace: {}
+            },
+            {
+              id: "round-one-revealed",
+              type: "sealed_batch_revealed",
+              sequence: 3,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:03.000Z",
+              payload: {},
+              basedOnEventIds: ["round-one-response"],
+              trace: {}
+            }
+          ]
+        }))
+      })
+    );
+
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Choose Continue discussion to let participants respond to the latest room state."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Start another readable round from the current room state.")
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    const startRequest = vi.mocked(client.startRun).mock.calls[0]?.[1] as
+      | Record<string, Record<string, unknown>>
+      | undefined;
+    const sealedDivergence = startRequest?.sealedDivergence;
+    const extraction = startRequest?.extraction;
+    const review = startRequest?.review;
+    const finalization = startRequest?.finalization;
+
+    expect(sealedDivergence?.roundId).toMatch(/^web-round-4-[a-z0-9]+-first-responses$/);
+    expect(extraction?.roundId).toMatch(/^web-round-4-[a-z0-9]+-options$/);
+    expect(review?.roundId).toMatch(/^web-round-4-[a-z0-9]+-review$/);
+    expect(finalization?.roundId).toMatch(/^web-round-4-[a-z0-9]+-conclusion$/);
+    expect(extraction?.sealedDivergenceRoundId).toBe(sealedDivergence?.roundId);
+    expect(review?.extractionRoundId).toBe(extraction?.roundId);
+    expect(finalization?.proposalReviewRoundId).toBe(review?.roundId);
+    expect(document.body.textContent ?? "").not.toContain("web-round-4");
+  });
+
   it("maps processing stage statuses to user-facing language before conclusion review", async () => {
     const processingRun = {
       ...runDetail,
