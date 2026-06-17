@@ -6382,8 +6382,11 @@ describe("@deliberum/web shell", () => {
       "Independent reply now compared with Perspective A"
     );
     expect(roundOne.textContent ?? "").toContain("Connected the first responses");
-    expect(roundOne.textContent ?? "").not.toContain("Answered another participant");
-    expect(roundOne.textContent ?? "").not.toContain("I'm responding to Perspective A");
+    expect(roundOne.textContent ?? "").toContain("Answered another participant");
+    expect(roundOne.textContent ?? "").toContain("Responding to another participant");
+    expect(roundOne.textContent ?? "").toContain(
+      "Now that the first responses are visible, I'm responding to Perspective A: Round one adds a separate concern about evidence quality."
+    );
     const roundTwo = screen.getByRole("list", { name: "Discussion round 2 messages" });
     expect(roundTwo.textContent ?? "").toContain(
       "Round two adds rollback gates before any wider rollout."
@@ -6588,9 +6591,20 @@ describe("@deliberum/web shell", () => {
     );
 
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
+    const roundOne = await screen.findByRole("list", { name: "Discussion round 1 messages" });
+    const roundOneText = roundOne.textContent ?? "";
     const roundTwo = await screen.findByRole("list", { name: "Discussion round 2 messages" });
     const roundTwoText = roundTwo.textContent ?? "";
 
+    expect(roundOneText).toContain(
+      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 Perspective A"
+    );
+    expect(roundOneText).toContain("\u56de\u5e94\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005");
+    expect(roundOneText).toContain(
+      "\u5bf9\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005\u7684\u6700\u65b0\u53d1\u8a00"
+    );
+    expect(roundOneText).not.toContain("Now that the first responses are visible");
+    expect(roundOneText).not.toContain("Responding to another participant");
     expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 Perspective A");
     expect(roundTwoText).toContain(
       "\u6211\u540c\u610f\u8981\u56de\u6eda\u95e8\u69db\uff0c\u4f46\u8fd8\u8981\u5148\u8865\u9f50\u7528\u6237\u5f71\u54cd\u8bc1\u636e\u3002"

@@ -4913,7 +4913,8 @@ function DiscussionRoomTimeline({
                       {group.activities.map((activity, index) => {
                         const conversationCue = describeRoomActivityConversationCue(
                           activity,
-                          group.round
+                          group.round,
+                          topicLanguage
                         );
                         const useTranscriptContext = shouldUseTranscriptContextForRoomReply(
                           activity
@@ -4928,17 +4929,20 @@ function DiscussionRoomTimeline({
                           activity,
                           activityContext,
                           activityContextIndex,
-                          group.round
+                          group.round,
+                          topicLanguage
                         );
                         const addressLine = describeRoomActivityAddressLine(
                           activity,
                           activityContext,
                           activityContextIndex,
-                          group.round
+                          group.round,
+                          topicLanguage
                         );
                         const displayAction = describeRoomActivityDisplayAction(
                           activity,
-                          group.round
+                          group.round,
+                          topicLanguage
                         );
                         const displayDetail = describeRoomActivityDisplayDetail(
                           activity,
@@ -4963,14 +4967,29 @@ function DiscussionRoomTimeline({
                                 aria-label={t("Room update")}
                               >
                                 <strong>{t(activity.speaker)}</strong>
-                                <span>{t(displayAction)}</span>
-                                <p>{t(displayDetail, activity.detailValues)}</p>
+                                <span>
+                                  {formatRoomContributionText(
+                                    t,
+                                    topicLanguage,
+                                    displayAction
+                                  )}
+                                </span>
+                                <p>
+                                  {formatRoomContributionText(
+                                    t,
+                                    topicLanguage,
+                                    displayDetail,
+                                    activity.detailValues
+                                  )}
+                                </p>
                               </div>
                             ) : userSpeaker ? (
                               <>
                                 <div
                                   className="du-room-activity-bubble"
-                                  aria-label={`${t(activity.speaker)}: ${t(
+                                  aria-label={`${t(activity.speaker)}: ${formatRoomContributionText(
+                                    t,
+                                    topicLanguage,
                                     displayDetail,
                                     activity.detailValues
                                   )}`}
@@ -4978,14 +4997,28 @@ function DiscussionRoomTimeline({
                                   <div className="du-room-message-header">
                                     <strong>{t(activity.speaker)}</strong>
                                     <small className="du-room-message-context">
-                                      <span>{t(displayAction)}</span>
+                                      <span>
+                                        {formatRoomContributionText(
+                                          t,
+                                          topicLanguage,
+                                          displayAction
+                                        )}
+                                      </span>
                                       <span aria-hidden="true">·</span>
-                                      <span>{t(conversationCue)}</span>
+                                      <span>
+                                        {formatRoomContributionText(
+                                          t,
+                                          topicLanguage,
+                                          conversationCue
+                                        )}
+                                      </span>
                                     </small>
                                   </div>
                                   {addressLine ? (
                                     <p className="du-room-message-address">
-                                      {t(
+                                      {formatRoomContributionText(
+                                        t,
+                                        topicLanguage,
                                         addressLine.text,
                                         translateRoomActivityValues(t, addressLine.values)
                                       )}
@@ -4993,14 +5026,21 @@ function DiscussionRoomTimeline({
                                   ) : null}
                                   {replyLine ? (
                                     <p className="du-room-message-reply">
-                                      {t(
+                                      {formatRoomContributionText(
+                                        t,
+                                        topicLanguage,
                                         replyLine.text,
                                         translateRoomActivityValues(t, replyLine.values)
                                       )}
                                     </p>
                                   ) : null}
                                   <p className="du-room-message-detail">
-                                    {t(displayDetail, activity.detailValues)}
+                                    {formatRoomContributionText(
+                                      t,
+                                      topicLanguage,
+                                      displayDetail,
+                                      activity.detailValues
+                                    )}
                                   </p>
                                 </div>
                                 <span className="du-room-activity-avatar" aria-hidden="true">
@@ -5014,7 +5054,9 @@ function DiscussionRoomTimeline({
                                 </span>
                                 <div
                                   className="du-room-activity-bubble"
-                                  aria-label={`${t(activity.speaker)}: ${t(
+                                  aria-label={`${t(activity.speaker)}: ${formatRoomContributionText(
+                                    t,
+                                    topicLanguage,
                                     displayDetail,
                                     activity.detailValues
                                   )}`}
@@ -5022,14 +5064,28 @@ function DiscussionRoomTimeline({
                                   <div className="du-room-message-header">
                                     <strong>{t(activity.speaker)}</strong>
                                     <small className="du-room-message-context">
-                                      <span>{t(displayAction)}</span>
+                                      <span>
+                                        {formatRoomContributionText(
+                                          t,
+                                          topicLanguage,
+                                          displayAction
+                                        )}
+                                      </span>
                                       <span aria-hidden="true">·</span>
-                                      <span>{t(conversationCue)}</span>
+                                      <span>
+                                        {formatRoomContributionText(
+                                          t,
+                                          topicLanguage,
+                                          conversationCue
+                                        )}
+                                      </span>
                                     </small>
                                   </div>
                                   {addressLine ? (
                                     <p className="du-room-message-address">
-                                      {t(
+                                      {formatRoomContributionText(
+                                        t,
+                                        topicLanguage,
                                         addressLine.text,
                                         translateRoomActivityValues(t, addressLine.values)
                                       )}
@@ -5037,14 +5093,21 @@ function DiscussionRoomTimeline({
                                   ) : null}
                                   {replyLine ? (
                                     <p className="du-room-message-reply">
-                                      {t(
+                                      {formatRoomContributionText(
+                                        t,
+                                        topicLanguage,
                                         replyLine.text,
                                         translateRoomActivityValues(t, replyLine.values)
                                       )}
                                     </p>
                                   ) : null}
                                   <p className="du-room-message-detail">
-                                    {t(displayDetail, activity.detailValues)}
+                                    {formatRoomContributionText(
+                                      t,
+                                      topicLanguage,
+                                      displayDetail,
+                                      activity.detailValues
+                                    )}
                                   </p>
                                 </div>
                               </>
@@ -5614,12 +5677,11 @@ function ensureParticipantReplyBridgeActivities(
 
     if (
       activity.sourceType === "sealed_batch_revealed" &&
-      round > 1 &&
       roundContributions.length > 1 &&
       !insertedForRound
     ) {
       nextActivities.push(
-        ...createParticipantReplyBridgeActivities(roundContributions, topicLanguage)
+        ...createParticipantReplyBridgeActivities(roundContributions, round, topicLanguage)
       );
       insertedForRound = true;
     }
@@ -5630,6 +5692,7 @@ function ensureParticipantReplyBridgeActivities(
 
 function createParticipantReplyBridgeActivities(
   contributions: RoomActivityItem[],
+  round: number,
   topicLanguage: "en" | "zh-CN"
 ): RoomActivityItem[] {
   return contributions.slice(1).map((activity, index) => {
@@ -5642,8 +5705,12 @@ function createParticipantReplyBridgeActivities(
       action: "Answered another participant",
       detail:
         topicLanguage === "zh-CN"
-          ? "\u6211\u5728\u56de\u5e94 {speaker}\uff1a{message}"
-          : "I'm responding to {speaker}: {message}",
+          ? round > 1
+            ? "\u6211\u5728\u56de\u5e94 {speaker}\uff1a{message}"
+            : "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 {speaker}\uff1a{message}"
+          : round > 1
+            ? "I'm responding to {speaker}: {message}"
+            : "Now that the first responses are visible, I'm responding to {speaker}: {message}",
       detailValues: {
         speaker: previousContribution.speaker,
         message
@@ -5953,89 +6020,212 @@ function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhas
   };
 }
 
-function describeRoomActivityConversationCue(activity: RoomActivityItem, round: number): string {
+function describeRoomActivityConversationCue(
+  activity: RoomActivityItem,
+  round: number,
+  topicLanguage: RoomTopicLanguage
+): string {
   if (isUserSpeaker(activity.speaker)) {
-    return "Starting another room round";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Starting another room round",
+      "\u5f00\u59cb\u65b0\u4e00\u8f6e\u623f\u95f4\u8ba8\u8bba"
+    );
   }
 
   if (activity.sourceType === "topic_contract_published") {
-    return "Setting the shared brief";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Setting the shared brief",
+      "\u8bbe\u7f6e\u5171\u540c\u8ba8\u8bba\u7b80\u62a5"
+    );
   }
 
   if (activity.sourceType === "sealed_batch_opened") {
-    return round > 1 ? "Inviting follow-up replies" : "Inviting independent first responses";
+    return round > 1
+      ? localizeTopicLanguageDetail(
+          topicLanguage,
+          "Inviting follow-up replies",
+          "\u9080\u8bf7\u8ffd\u52a0\u56de\u5e94"
+        )
+      : localizeTopicLanguageDetail(
+          topicLanguage,
+          "Inviting independent first responses",
+          "\u9080\u8bf7\u72ec\u7acb\u9996\u6b21\u56de\u5e94"
+        );
   }
 
   if (activity.sourceType === "sealed_contribution_submitted") {
     return round > 1
-      ? "Responding to the previous discussion round"
-      : "Responding to the discussion brief";
+      ? localizeTopicLanguageDetail(
+          topicLanguage,
+          "Responding to the previous discussion round",
+          "\u56de\u5e94\u4e0a\u4e00\u8f6e\u8ba8\u8bba"
+        )
+      : localizeTopicLanguageDetail(
+          topicLanguage,
+          "Responding to the discussion brief",
+          "\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5"
+        );
   }
 
   if (activity.sourceType === "sealed_batch_revealed") {
     return round > 1
-      ? "Bringing the follow-up replies into the room"
-      : "Bringing the first responses into the room";
+      ? localizeTopicLanguageDetail(
+          topicLanguage,
+          "Bringing the follow-up replies into the room",
+          "\u628a\u8ffd\u52a0\u56de\u5e94\u5e26\u5165\u623f\u95f4"
+        )
+      : localizeTopicLanguageDetail(
+          topicLanguage,
+          "Bringing the first responses into the room",
+          "\u628a\u9996\u6b21\u56de\u5e94\u5e26\u5165\u623f\u95f4"
+        );
   }
 
   if (activity.sourceType === "synthetic_round_handoff") {
-    return "Connecting participant messages";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Connecting participant messages",
+      "\u8fde\u63a5\u53c2\u4e0e\u8005\u53d1\u8a00"
+    );
   }
 
   if (activity.sourceType === "synthetic_participant_reply_bridge") {
-    return "Responding to another participant";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Responding to another participant",
+      "\u56de\u5e94\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005"
+    );
   }
 
   if (activity.sourceType === "extraction_proposed") {
-    return round > 1 ? "Building on the follow-up replies" : "Building on the first responses";
+    return round > 1
+      ? localizeTopicLanguageDetail(
+          topicLanguage,
+          "Building on the follow-up replies",
+          "\u57fa\u4e8e\u8ffd\u52a0\u56de\u5e94\u7ee7\u7eed"
+        )
+      : localizeTopicLanguageDetail(
+          topicLanguage,
+          "Building on the first responses",
+          "\u57fa\u4e8e\u9996\u6b21\u56de\u5e94\u7ee7\u7eed"
+        );
   }
 
   if (activity.sourceType === "proposal_accepted") {
-    return "Responding to the strongest current options";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Responding to the strongest current options",
+      "\u56de\u5e94\u5f53\u524d\u6700\u5f3a\u9009\u9879"
+    );
   }
 
   if (
     activity.sourceType === "proposal_challenged" ||
     activity.sourceType === "synthetic_open_disagreement"
   ) {
-    return "Challenging the current direction";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Challenging the current direction",
+      "\u8d28\u7591\u5f53\u524d\u65b9\u5411"
+    );
   }
 
   if (
     activity.sourceType === "evidence_result_recorded" ||
     activity.sourceType === "synthetic_evidence_gap_review"
   ) {
-    return "Checking evidence before the conclusion";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Checking evidence before the conclusion",
+      "\u5728\u5f62\u6210\u7ed3\u8bba\u524d\u6838\u67e5\u8bc1\u636e"
+    );
   }
 
   if (activity.sourceType === "final_candidate_proposed") {
-    return "Synthesizing the current room";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Synthesizing the current room",
+      "\u7efc\u5408\u5f53\u524d\u623f\u95f4\u5185\u5bb9"
+    );
   }
 
   if (activity.sourceType === "final_audit_recorded") {
-    return "Reviewing risks before relying on it";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Reviewing risks before relying on it",
+      "\u5728\u4f9d\u8d56\u524d\u5ba1\u67e5\u98ce\u9669"
+    );
   }
 
-  return "Responding in the discussion room";
+  return localizeTopicLanguageDetail(
+    topicLanguage,
+    "Responding in the discussion room",
+    "\u5728\u8ba8\u8bba\u5ba4\u4e2d\u56de\u5e94"
+  );
 }
 
 function describeRoomActivityDisplayAction(
   activity: RoomActivityItem,
-  round: number
+  round: number,
+  topicLanguage: RoomTopicLanguage
 ): string {
   if (activity.sourceType === "sealed_contribution_submitted" && round > 1) {
-    return "Shared a follow-up reply";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Shared a follow-up reply",
+      "\u5206\u4eab\u4e86\u8ffd\u52a0\u56de\u5e94"
+    );
   }
 
   if (activity.sourceType === "sealed_batch_opened" && round > 1) {
-    return "Opened follow-up replies";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Opened follow-up replies",
+      "\u5f00\u542f\u4e86\u8ffd\u52a0\u56de\u5e94"
+    );
   }
 
   if (activity.sourceType === "sealed_batch_revealed" && round > 1) {
-    return "Made follow-up replies visible";
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Made follow-up replies visible",
+      "\u516c\u5f00\u4e86\u8ffd\u52a0\u56de\u5e94"
+    );
   }
 
-  return activity.action;
+  return localizeRoomActivityAction(activity.action, topicLanguage);
+}
+
+function localizeRoomActivityAction(
+  action: string,
+  topicLanguage: RoomTopicLanguage
+): string {
+  if (topicLanguage !== "zh-CN") {
+    return action;
+  }
+
+  const actionTranslations: Record<string, string> = {
+    "Asked the room to continue": "\u8bf7\u6c42\u623f\u95f4\u7ee7\u7eed",
+    "Shared the discussion brief": "\u5206\u4eab\u4e86\u8ba8\u8bba\u7b80\u62a5",
+    "Opened independent first responses": "\u5f00\u542f\u4e86\u72ec\u7acb\u9996\u6b21\u56de\u5e94",
+    "Submitted a sealed first response": "\u63d0\u4ea4\u4e86\u5bc6\u5c01\u9996\u6b21\u56de\u5e94",
+    "Shared a first response": "\u5206\u4eab\u4e86\u9996\u6b21\u56de\u5e94",
+    "Made first responses visible": "\u516c\u5f00\u4e86\u9996\u6b21\u56de\u5e94",
+    "Organized the strongest options": "\u6574\u7406\u4e86\u5f53\u524d\u6700\u5f3a\u9009\u9879",
+    "Kept this material in the room": "\u5c06\u8fd9\u4efd\u6750\u6599\u4fdd\u7559\u5728\u623f\u95f4\u4e2d",
+    "Raised an open disagreement": "\u63d0\u51fa\u4e86\u672a\u89e3\u51b3\u5206\u6b67",
+    "Reviewed evidence gaps": "\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3",
+    "Checked evidence": "\u6838\u67e5\u4e86\u8bc1\u636e",
+    "Drafted the current conclusion": "\u8d77\u8349\u4e86\u5f53\u524d\u7ed3\u8bba",
+    "Reviewed risks": "\u5ba1\u67e5\u4e86\u98ce\u9669",
+    "Connected the first responses": "\u8fde\u63a5\u4e86\u9996\u6b21\u56de\u5e94",
+    "Connected the follow-up replies": "\u8fde\u63a5\u4e86\u8ffd\u52a0\u56de\u5e94",
+    "Answered another participant": "\u56de\u5e94\u4e86\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005"
+  };
+
+  return actionTranslations[action] ?? action;
 }
 
 function describeRoomActivityDisplayDetail(
@@ -6043,35 +6233,49 @@ function describeRoomActivityDisplayDetail(
   round: number,
   topicLanguage: RoomTopicLanguage
 ): string {
-  if (round <= 1) {
-    return activity.detail;
-  }
-
   if (activity.sourceType === "sealed_batch_opened") {
-    return localizeTopicLanguageDetail(
-      topicLanguage,
-      "Participants can reply to the current room state before seeing one another's follow-up.",
-      "\u53c2\u4e0e\u8005\u53ef\u4ee5\u5728\u770b\u5230\u5f7c\u6b64\u8ffd\u52a0\u56de\u5e94\u4e4b\u524d\uff0c\u5148\u5bf9\u5f53\u524d\u623f\u95f4\u72b6\u6001\u56de\u590d\u3002"
-    );
+    return round > 1
+      ? localizeTopicLanguageDetail(
+          topicLanguage,
+          "Participants can reply to the current room state before seeing one another's follow-up.",
+          "\u53c2\u4e0e\u8005\u53ef\u4ee5\u5728\u770b\u5230\u5f7c\u6b64\u8ffd\u52a0\u56de\u5e94\u4e4b\u524d\uff0c\u5148\u5bf9\u5f53\u524d\u623f\u95f4\u72b6\u6001\u56de\u590d\u3002"
+        )
+      : localizeTopicLanguageDetail(
+          topicLanguage,
+          "Participants can respond separately before seeing one another's answers.",
+          "\u53c2\u4e0e\u8005\u53ef\u4ee5\u5728\u770b\u5230\u5f7c\u6b64\u7b54\u6848\u524d\u5148\u5206\u522b\u56de\u5e94\u3002"
+        );
   }
 
   if (activity.sourceType === "sealed_batch_revealed") {
-    return localizeTopicLanguageDetail(
-      topicLanguage,
-      "The follow-up replies are now available for review.",
-      "\u8ffd\u52a0\u56de\u5e94\u73b0\u5728\u53ef\u4ee5\u5ba1\u9605\u3002"
-    );
+    return round > 1
+      ? localizeTopicLanguageDetail(
+          topicLanguage,
+          "The follow-up replies are now available for review.",
+          "\u8ffd\u52a0\u56de\u5e94\u73b0\u5728\u53ef\u4ee5\u5ba1\u9605\u3002"
+        )
+      : localizeTopicLanguageDetail(
+          topicLanguage,
+          "The independent responses are now available for review.",
+          "\u72ec\u7acb\u56de\u5e94\u73b0\u5728\u53ef\u4ee5\u5ba1\u9605\u3002"
+        );
   }
 
   if (
     activity.sourceType === "extraction_proposed" &&
     isGenericFirstResponseOrganizerDetail(activity.detail)
   ) {
-    return localizeTopicLanguageDetail(
-      topicLanguage,
-      "The latest replies were organized into updated options, disagreements, requirements, and evidence needs.",
-      "\u6700\u65b0\u56de\u5e94\u5df2\u6574\u7406\u4e3a\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
-    );
+    return round > 1
+      ? localizeTopicLanguageDetail(
+          topicLanguage,
+          "The latest replies were organized into updated options, disagreements, requirements, and evidence needs.",
+          "\u6700\u65b0\u56de\u5e94\u5df2\u6574\u7406\u4e3a\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
+        )
+      : localizeTopicLanguageDetail(
+          topicLanguage,
+          "The first responses were organized into reviewable options, disagreements, requirements, and evidence needs.",
+          "\u9996\u6b21\u56de\u5e94\u5df2\u6574\u7406\u4e3a\u53ef\u5ba1\u9605\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
+        );
   }
 
   return activity.detail;
@@ -6114,11 +6318,40 @@ function localizeTopicLanguageDetail(
   return topicLanguage === "zh-CN" ? zhCn : english;
 }
 
+function formatRoomContributionText(
+  t: TranslateFunction,
+  topicLanguage: RoomTopicLanguage,
+  message: string,
+  values?: Record<string, string | number>
+): string {
+  if (topicLanguage === "zh-CN") {
+    return interpolateRoomContributionText(message, values);
+  }
+
+  return t(message, values);
+}
+
+function interpolateRoomContributionText(
+  message: string,
+  values?: Record<string, string | number>
+): string {
+  if (!values) {
+    return message;
+  }
+
+  return Object.entries(values).reduce(
+    (nextMessage, [key, value]) =>
+      nextMessage.replaceAll(`{${key}}`, String(value)),
+    message
+  );
+}
+
 function describeRoomActivityAddressLine(
   activity: RoomActivityItem,
   roundActivities: RoomActivityItem[],
   index: number,
-  round: number
+  round: number,
+  topicLanguage: RoomTopicLanguage
 ): { text: string; values?: Record<string, string | number> } | null {
   if (isRoomSpeaker(activity.speaker)) {
     return null;
@@ -6126,7 +6359,11 @@ function describeRoomActivityAddressLine(
 
   if (isUserSpeaker(activity.speaker)) {
     return {
-      text: "To the room"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "To the room",
+        "\u5bf9\u623f\u95f4"
+      )
     };
   }
 
@@ -6136,22 +6373,38 @@ function describeRoomActivityAddressLine(
     if (round > 1) {
       return previousSpeaker
         ? {
-            text: "Replying in round {round} to {speaker}'s latest reply",
+            text: localizeTopicLanguageDetail(
+              topicLanguage,
+              "Replying in round {round} to {speaker}'s latest reply",
+              "\u7b2c {round} \u8f6e\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u53d1\u8a00"
+            ),
             values: { round, speaker: previousSpeaker }
           }
         : {
-            text: "Replying in round {round} to the previous room state",
+            text: localizeTopicLanguageDetail(
+              topicLanguage,
+              "Replying in round {round} to the previous room state",
+              "\u7b2c {round} \u8f6e\u56de\u5e94\u4e4b\u524d\u7684\u623f\u95f4\u72b6\u6001"
+            ),
             values: { round }
           };
     }
 
     return previousSpeaker
       ? {
-          text: "Independent reply now compared with {speaker}",
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Independent reply now compared with {speaker}",
+            "\u73b0\u5728\u5c06\u72ec\u7acb\u56de\u5e94\u4e0e {speaker} \u5bf9\u7167"
+          ),
           values: { speaker: previousSpeaker }
         }
       : {
-          text: "To the discussion brief"
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "To the discussion brief",
+            "\u5bf9\u8ba8\u8bba\u7b80\u62a5"
+          )
         };
   }
 
@@ -6160,19 +6413,38 @@ function describeRoomActivityAddressLine(
     activity.sourceType === "extraction_proposed"
   ) {
     return {
-      text: round > 1 ? "To the latest participant replies" : "To the participant first responses"
+      text:
+        round > 1
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "To the latest participant replies",
+              "\u5bf9\u6700\u65b0\u53c2\u4e0e\u8005\u56de\u5e94"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "To the participant first responses",
+              "\u5bf9\u53c2\u4e0e\u8005\u9996\u6b21\u56de\u5e94"
+            )
     };
   }
 
   if (activity.sourceType === "synthetic_participant_reply_bridge") {
     return {
-      text: "To another participant's latest reply"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "To another participant's latest reply",
+        "\u5bf9\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005\u7684\u6700\u65b0\u53d1\u8a00"
+      )
     };
   }
 
   if (activity.sourceType === "proposal_accepted") {
     return {
-      text: "To the organized options"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "To the organized options",
+        "\u5bf9\u5df2\u6574\u7406\u7684\u9009\u9879"
+      )
     };
   }
 
@@ -6184,11 +6456,19 @@ function describeRoomActivityAddressLine(
 
     return previousSpeaker
       ? {
-          text: "Replying to {speaker}'s latest point",
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Replying to {speaker}'s latest point",
+            "\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u89c2\u70b9"
+          ),
           values: { speaker: previousSpeaker }
         }
       : {
-          text: "To the strongest current option"
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "To the strongest current option",
+            "\u5bf9\u5f53\u524d\u6700\u5f3a\u9009\u9879"
+          )
         };
   }
 
@@ -6200,28 +6480,48 @@ function describeRoomActivityAddressLine(
 
     return previousSpeaker
       ? {
-          text: "Checking evidence behind {speaker}'s claim",
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Checking evidence behind {speaker}'s claim",
+            "\u6838\u67e5 {speaker} \u4e3b\u5f20\u80cc\u540e\u7684\u8bc1\u636e"
+          ),
           values: { speaker: previousSpeaker }
         }
       : {
-          text: "To the claim that still needs evidence"
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "To the claim that still needs evidence",
+            "\u5bf9\u4ecd\u9700\u8bc1\u636e\u7684\u4e3b\u5f20"
+          )
         };
   }
 
   if (activity.sourceType === "final_candidate_proposed") {
     return {
-      text: "To the whole room"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "To the whole room",
+        "\u5bf9\u6574\u4e2a\u623f\u95f4"
+      )
     };
   }
 
   if (activity.sourceType === "final_audit_recorded") {
     return {
-      text: "To the draft conclusion"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "To the draft conclusion",
+        "\u5bf9\u8349\u62df\u7ed3\u8bba"
+      )
     };
   }
 
   return {
-    text: "To the previous message"
+    text: localizeTopicLanguageDetail(
+      topicLanguage,
+      "To the previous message",
+      "\u5bf9\u4e0a\u4e00\u6761\u6d88\u606f"
+    )
   };
 }
 
@@ -6229,7 +6529,8 @@ function describeRoomActivityReplyLine(
   activity: RoomActivityItem,
   roundActivities: RoomActivityItem[],
   index: number,
-  round: number
+  round: number,
+  topicLanguage: RoomTopicLanguage
 ): { text: string; values?: Record<string, string | number> } | null {
   if (isRoomSpeaker(activity.speaker)) {
     return null;
@@ -6246,20 +6547,36 @@ function describeRoomActivityReplyLine(
       return {
         text:
           round > 1
-            ? "Responding to {speaker}'s latest reply in the follow-up round"
-            : "Adding a separate first response alongside {speaker}",
+            ? localizeTopicLanguageDetail(
+                topicLanguage,
+                "Responding to {speaker}'s latest reply in the follow-up round",
+                "\u5728\u8ffd\u52a0\u56de\u5e94\u8f6e\u4e2d\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u53d1\u8a00"
+              )
+            : localizeTopicLanguageDetail(
+                topicLanguage,
+                "Adding a separate first response alongside {speaker}",
+                "\u5728 {speaker} \u65c1\u8fb9\u52a0\u5165\u4e00\u6761\u72ec\u7acb\u9996\u6b21\u56de\u5e94"
+              ),
         values: { speaker: previousSpeaker }
       };
     }
 
     if (round > 1) {
       return {
-        text: "Responding to the previous discussion round"
+        text: localizeTopicLanguageDetail(
+          topicLanguage,
+          "Responding to the previous discussion round",
+          "\u56de\u5e94\u4e0a\u4e00\u8f6e\u8ba8\u8bba"
+        )
       };
     }
 
     return {
-      text: "Replying to the discussion brief before seeing other participants"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "Replying to the discussion brief before seeing other participants",
+        "\u5728\u770b\u5230\u5176\u4ed6\u53c2\u4e0e\u8005\u524d\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5"
+      )
     };
   }
 
@@ -6267,14 +6584,26 @@ function describeRoomActivityReplyLine(
     return {
       text:
         round > 1
-          ? "Responding after the follow-up replies were revealed"
-          : "Responding after the first responses were revealed"
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "Responding after the follow-up replies were revealed",
+              "\u5728\u8ffd\u52a0\u56de\u5e94\u516c\u5f00\u540e\u7ee7\u7eed\u56de\u5e94"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "Responding after the first responses were revealed",
+              "\u5728\u9996\u6b21\u56de\u5e94\u516c\u5f00\u540e\u7ee7\u7eed\u56de\u5e94"
+            )
     };
   }
 
   if (activity.sourceType === "synthetic_participant_reply_bridge") {
     return {
-      text: "Continuing the round as a direct reply"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "Continuing the round as a direct reply",
+        "\u4ee5\u76f4\u63a5\u56de\u590d\u7684\u65b9\u5f0f\u7ee7\u7eed\u672c\u8f6e"
+      )
     };
   }
 
@@ -6284,27 +6613,47 @@ function describeRoomActivityReplyLine(
     if (round > 1) {
       return previousSpeaker
         ? {
-            text: "Building on {speaker}'s follow-up reply",
+            text: localizeTopicLanguageDetail(
+              topicLanguage,
+              "Building on {speaker}'s follow-up reply",
+              "\u57fa\u4e8e {speaker} \u7684\u8ffd\u52a0\u56de\u5e94\u7ee7\u7eed"
+            ),
             values: { speaker: previousSpeaker }
           }
         : {
-            text: "Building on the latest participant replies"
+            text: localizeTopicLanguageDetail(
+              topicLanguage,
+              "Building on the latest participant replies",
+              "\u57fa\u4e8e\u6700\u65b0\u53c2\u4e0e\u8005\u56de\u5e94\u7ee7\u7eed"
+            )
           };
     }
 
     return previousSpeaker
       ? {
-          text: "Building on {speaker}'s first response",
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Building on {speaker}'s first response",
+            "\u57fa\u4e8e {speaker} \u7684\u9996\u6b21\u56de\u5e94\u7ee7\u7eed"
+          ),
           values: { speaker: previousSpeaker }
         }
       : {
-          text: "Building on the participant first responses"
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Building on the participant first responses",
+            "\u57fa\u4e8e\u53c2\u4e0e\u8005\u9996\u6b21\u56de\u5e94\u7ee7\u7eed"
+          )
         };
   }
 
   if (activity.sourceType === "proposal_accepted") {
     return {
-      text: "Keeping the organized options in the room for review"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "Keeping the organized options in the room for review",
+        "\u5c06\u5df2\u6574\u7406\u7684\u9009\u9879\u7559\u5728\u623f\u95f4\u4e2d\u4f9b\u5ba1\u9605"
+      )
     };
   }
 
@@ -6316,11 +6665,19 @@ function describeRoomActivityReplyLine(
 
     return previousSpeaker
       ? {
-          text: "Replying to {speaker}'s option with an open disagreement",
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Replying to {speaker}'s option with an open disagreement",
+            "\u7528\u4e00\u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u56de\u5e94 {speaker} \u7684\u9009\u9879"
+          ),
           values: { speaker: previousSpeaker }
         }
       : {
-          text: "Challenging the current strongest option"
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Challenging the current strongest option",
+            "\u8d28\u7591\u5f53\u524d\u6700\u5f3a\u9009\u9879"
+          )
         };
   }
 
@@ -6332,28 +6689,48 @@ function describeRoomActivityReplyLine(
 
     return previousSpeaker
       ? {
-          text: "Checking evidence behind {speaker}'s claim",
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Checking evidence behind {speaker}'s claim",
+            "\u6838\u67e5 {speaker} \u4e3b\u5f20\u80cc\u540e\u7684\u8bc1\u636e"
+          ),
           values: { speaker: previousSpeaker }
         }
       : {
-          text: "Checking the evidence behind the current claim"
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Checking the evidence behind the current claim",
+            "\u6838\u67e5\u5f53\u524d\u4e3b\u5f20\u80cc\u540e\u7684\u8bc1\u636e"
+          )
         };
   }
 
   if (activity.sourceType === "final_candidate_proposed") {
     return {
-      text: "Synthesizing perspectives, disagreements, and evidence checks"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "Synthesizing perspectives, disagreements, and evidence checks",
+        "\u7efc\u5408\u89c6\u89d2\u3001\u5206\u6b67\u548c\u8bc1\u636e\u6838\u67e5"
+      )
     };
   }
 
   if (activity.sourceType === "final_audit_recorded") {
     return {
-      text: "Reviewing risks in the draft conclusion"
+      text: localizeTopicLanguageDetail(
+        topicLanguage,
+        "Reviewing risks in the draft conclusion",
+        "\u5ba1\u67e5\u8349\u62df\u7ed3\u8bba\u4e2d\u7684\u98ce\u9669"
+      )
     };
   }
 
   return {
-    text: "Responding to the previous room message"
+    text: localizeTopicLanguageDetail(
+      topicLanguage,
+      "Responding to the previous room message",
+      "\u56de\u5e94\u4e0a\u4e00\u6761\u623f\u95f4\u6d88\u606f"
+    )
   };
 }
 
