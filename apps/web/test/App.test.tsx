@@ -4839,11 +4839,22 @@ describe("@deliberum/web shell", () => {
   });
 
   it("localizes paused room updates in Simplified Chinese", async () => {
+    const chineseRunDetail = {
+      ...runDetail,
+      topic: "\u6211\u4eec\u5e94\u8be5\u7ee7\u7eed\u6269\u5927\u8bd5\u70b9\u5417\uff1f",
+      plan: {
+        ...runDetail.plan,
+        topic: "\u6211\u4eec\u5e94\u8be5\u7ee7\u7eed\u6269\u5927\u8bd5\u70b9\u5417\uff1f"
+      }
+    };
     const client = renderApp(
       "/runs/run-1",
       createClient({
+        getRun: vi.fn(async () => ({
+          run: chineseRunDetail
+        })),
         startRun: vi.fn(async () => ({
-          run: runDetail,
+          run: chineseRunDetail,
           stages: [
             {
               stage: "sealed_divergence",
@@ -4888,7 +4899,14 @@ describe("@deliberum/web shell", () => {
       screen.getByRole("list", {
         name: "\u8ba8\u8bba\u66f4\u65b0\u6d88\u606f"
       }).textContent ?? ""
-    ).toContain("I'm the reply the room is still waiting for");
+    ).toContain(
+      "\u6211\u662f\u8ba8\u8bba\u5ba4\u4ecd\u5728\u7b49\u5f85\u7684\u8ffd\u52a0\u56de\u5e94"
+    );
+    expect(
+      screen.getByRole("list", {
+        name: "\u8ba8\u8bba\u66f4\u65b0\u6d88\u606f"
+      }).textContent ?? ""
+    ).not.toContain("I'm the follow-up reply the room is still waiting for");
     expect(
       screen.queryByRole("region", {
         name: "\u5df2\u66f4\u65b0\u7684\u8ba8\u8bba\u6b65\u9aa4"
@@ -6026,11 +6044,19 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Discussion update completed")).toBeTruthy();
     const updateRound = screen.getByRole("list", { name: "Discussion update messages" });
     expect(screen.getByRole("region", { name: "New discussion round" })).toBeTruthy();
-    expect(screen.getByText("What participants just said")).toBeTruthy();
+    expect(screen.getAllByText("Discussion round 2").length).toBeGreaterThan(0);
     expect(updateRound.textContent ?? "").toContain("Perspective A");
     expect(updateRound.textContent ?? "").toContain("Perspective B");
+    expect(updateRound.textContent ?? "").toContain("Shared a follow-up reply");
     expect(updateRound.textContent ?? "").toContain("Answered another participant");
     expect(updateRound.textContent ?? "").toContain(
+      "I'm responding to the latest room state"
+    );
+    expect(updateRound.textContent ?? "").toContain(
+      "I'm responding to Perspective A's latest point"
+    );
+    expect(updateRound.textContent ?? "").toContain("To another participant's latest reply");
+    expect(updateRound.textContent ?? "").not.toContain(
       "Now that Perspective A's answer is visible"
     );
     expect(screen.queryByRole("region", { name: "Updated discussion steps" })).toBeNull();
@@ -7608,6 +7634,36 @@ describe("@deliberum/web shell", () => {
               trace: {}
             }
           ]
+        })),
+        startRun: vi.fn(async () => ({
+          run: {
+            ...partiallyDiscussedRun,
+            status: "running",
+            latestProposalReviewStatus: "completed"
+          },
+          stages: [
+            {
+              stage: "sealed_divergence",
+              executionStatus: "executed",
+              status: "completed"
+            },
+            {
+              stage: "extraction",
+              executionStatus: "executed",
+              status: "completed"
+            },
+            {
+              stage: "proposal_review",
+              executionStatus: "executed",
+              status: "completed"
+            },
+            {
+              stage: "evidence_check",
+              executionStatus: "executed",
+              status: "completed"
+            }
+          ],
+          stopped: false
         }))
       })
     );
@@ -7642,6 +7698,28 @@ describe("@deliberum/web shell", () => {
     expect(review?.extractionRoundId).toBe(extraction?.roundId);
     expect(finalization?.proposalReviewRoundId).toBe(review?.roundId);
     expect(document.body.textContent ?? "").not.toContain("web-round-4");
+    const updateMessages = screen.getByRole("list", { name: "Discussion update messages" });
+    const updateText = updateMessages.textContent ?? "";
+
+    expect(screen.getAllByText("Discussion round 2").length).toBeGreaterThan(0);
+    expect(updateText).toContain("Shared a follow-up reply");
+    expect(updateText).toContain("Answered another participant");
+    expect(updateText).toContain(
+      "I'm responding to Perspective A's latest point"
+    );
+    expect(updateText).toContain("Discussion organizer");
+    expect(updateText).toContain("I connected the follow-up replies into updated options");
+    expect(updateText).toContain("Reviewer");
+    expect(updateText).toContain("Raised an open disagreement");
+    expect(updateText).toContain(
+      "I am replying to the updated options with the disagreement that still needs resolution."
+    );
+    expect(updateText).toContain("Evidence checker");
+    expect(updateText).toContain("Reviewed evidence gaps");
+    expect(updateText).toContain(
+      "I am checking the evidence behind this follow-up round before the room updates the conclusion."
+    );
+    expect(updateText).not.toContain("Now that Perspective A's answer is visible");
   });
 
   it("maps processing stage statuses to user-facing language before conclusion review", async () => {
