@@ -253,12 +253,12 @@ function UserModeNavigation() {
   return (
     <>
       <Link
-        to="/runs/new"
+        to="/"
         activeOptions={{ exact: true }}
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Start discussion")}
+        {t("Home / Today")}
       </Link>
       <Link
         to="/setup/models"
@@ -276,6 +276,9 @@ function UserModeNavigation() {
       >
         {t("Discussions")}
       </Link>
+      <a className={linkClass} href="/#advanced-developer-mode">
+        {t("Advanced")}
+      </a>
     </>
   );
 }
@@ -495,27 +498,29 @@ function LandingPage() {
             </Link>
           </div>
         </DataPanel>
-        <AdvancedDetails
-          summary="Advanced / Developer Mode"
-          description="Core Deliberum concept names are preserved here for implementers and documentation readers."
-          lazy
-        >
-          <DataPanel title="Core concept mapping">
-            <div className="du-quality-map">
-              <QualityMapItem label="Topic Contract" value="Discussion brief" />
-              <QualityMapItem label="Sealed Divergence" value="Independent first responses" />
-              <QualityMapItem label="Candidate Frontier" value="Strongest current options" />
-              <QualityMapItem label="Objections" value="Open disagreements" />
-              <QualityMapItem
-                label="Quality Obligations"
-                value="Requirements this answer must satisfy"
-              />
-              <QualityMapItem label="Evidence Checks" value="Evidence and verification" />
-              <QualityMapItem label="Final Audit" value="Risk review" />
-              <QualityMapItem label="Outcome Compilation" value="Current conclusion" />
-            </div>
-          </DataPanel>
-        </AdvancedDetails>
+        <section id="advanced-developer-mode" aria-label={t("Advanced / Developer Mode")}>
+          <AdvancedDetails
+            summary="Advanced / Developer Mode"
+            description="Core Deliberum concept names are preserved here for implementers and documentation readers."
+            lazy
+          >
+            <DataPanel title="Core concept mapping">
+              <div className="du-quality-map">
+                <QualityMapItem label="Topic Contract" value="Discussion brief" />
+                <QualityMapItem label="Sealed Divergence" value="Independent first responses" />
+                <QualityMapItem label="Candidate Frontier" value="Strongest current options" />
+                <QualityMapItem label="Objections" value="Open disagreements" />
+                <QualityMapItem
+                  label="Quality Obligations"
+                  value="Requirements this answer must satisfy"
+                />
+                <QualityMapItem label="Evidence Checks" value="Evidence and verification" />
+                <QualityMapItem label="Final Audit" value="Risk review" />
+                <QualityMapItem label="Outcome Compilation" value="Current conclusion" />
+              </div>
+            </DataPanel>
+          </AdvancedDetails>
+        </section>
         <DataPanel
           title={t("Continue existing discussions")}
           description={t(

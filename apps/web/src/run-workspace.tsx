@@ -2164,12 +2164,12 @@ function RunNavigation({
   return (
     <>
       <Link
-        to="/runs/new"
+        to="/"
         activeOptions={{ exact: true }}
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Start discussion")}
+        {t("Home / Today")}
       </Link>
       <Link
         to="/setup/models"
@@ -2195,7 +2195,7 @@ function RunNavigation({
           activeProps={{ className: `${linkClass} is-active` }}
           inactiveProps={{ className: linkClass }}
         >
-          {t("Discussion")}
+          {t("Discussion Room")}
         </Link>
       ) : null}
       {runId && showConclusionNav ? (
@@ -2209,6 +2209,9 @@ function RunNavigation({
           {t("Current conclusion")}
         </Link>
       ) : null}
+      <a className={linkClass} href="/#advanced-developer-mode">
+        {t("Advanced")}
+      </a>
     </>
   );
 }

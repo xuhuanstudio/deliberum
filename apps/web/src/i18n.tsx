@@ -32,9 +32,12 @@ const LANGUAGE_OPTIONS: readonly {
 const ZH_CN_TRANSLATIONS: TranslationMap = {
   "User Mode": "\u7528\u6237\u6a21\u5f0f",
   Language: "\u8bed\u8a00",
+  "Home / Today": "\u9996\u9875 / \u4eca\u65e5",
+  Advanced: "\u9ad8\u7ea7",
   Discussions: "\u8ba8\u8bba",
   "Start discussion": "\u5f00\u59cb\u8ba8\u8bba",
   Discussion: "\u8ba8\u8bba",
+  "Discussion Room": "\u8ba8\u8bba\u5ba4",
   "Current conclusion": "\u5f53\u524d\u7ed3\u8bba",
   "Current conclusion not ready": "\u5f53\u524d\u7ed3\u8bba\u5c1a\u672a\u5c31\u7eea",
   "Organizer recovery notice": "\u7ec4\u7ec7\u5668\u6062\u590d\u63d0\u793a",

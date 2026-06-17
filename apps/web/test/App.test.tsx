@@ -1015,6 +1015,13 @@ function openAllClosedAdvancedModeDetails() {
   }
 }
 
+function getWorkspaceNavigationText() {
+  const navigation = document.querySelector(".du-sidebar .du-nav");
+  expect(navigation).toBeTruthy();
+
+  return navigation?.textContent ?? "";
+}
+
 function openBriefOptions() {
   const summary = screen.getByText("Add goals, constraints, and expected result");
   const details = summary.closest("details") as HTMLDetailsElement | null;
@@ -1150,6 +1157,12 @@ describe("@deliberum/web shell", () => {
         name: "Multi-perspective deliberation for better decisions"
       })
     ).toBeTruthy();
+    const homeNavigation = getWorkspaceNavigationText();
+    expect(homeNavigation).toContain("Home / Today");
+    expect(homeNavigation).toContain("Setup / Models");
+    expect(homeNavigation).toContain("Discussions");
+    expect(homeNavigation).toContain("Advanced");
+    expect(homeNavigation).not.toContain("Start discussion");
     expect((await screen.findAllByText("Start a discussion")).length).toBeGreaterThan(0);
     expect(screen.getByText("Ready to use Deliberum")).toBeTruthy();
     expect((await screen.findAllByText("Local service connected")).length).toBeGreaterThan(0);
@@ -1221,6 +1234,14 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Discussion brief")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
+    const runNavigation = getWorkspaceNavigationText();
+    expect(runNavigation).toContain("Home / Today");
+    expect(runNavigation).toContain("Setup / Models");
+    expect(runNavigation).toContain("Discussions");
+    expect(runNavigation).toContain("Discussion Room");
+    expect(runNavigation).toContain("Current conclusion");
+    expect(runNavigation).toContain("Advanced");
+    expect(runNavigation).not.toContain("Start discussion");
 
     cleanup();
 
@@ -1298,6 +1319,13 @@ describe("@deliberum/web shell", () => {
         name: "\u7528\u591a\u89c6\u89d2\u5ba1\u8bae\u505a\u51fa\u66f4\u597d\u51b3\u7b56"
       })
     ).toBeTruthy();
+    const navigation = getWorkspaceNavigationText();
+    expect(navigation).toContain("\u9996\u9875 / \u4eca\u65e5");
+    expect(navigation).toContain("\u8bbe\u7f6e / \u6a21\u578b");
+    expect(navigation).toContain("\u8ba8\u8bba");
+    expect(navigation).toContain("\u9ad8\u7ea7");
+    expect(navigation).not.toContain("Home / Today");
+    expect(navigation).not.toContain("Advanced");
     expect((await screen.findAllByText("\u6a21\u578b\u8bbe\u7f6e")).length).toBeGreaterThan(0);
     expect(
       (await screen.findAllByText("\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba")).length
