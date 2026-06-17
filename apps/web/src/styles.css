@@ -1897,8 +1897,7 @@ textarea:focus-visible {
 .du-room-header-main h4,
 .du-room-header-main p,
 .du-room-header-next span,
-.du-room-header-next strong,
-.du-room-header-status-grid p {
+.du-room-header-next strong {
   margin: 0;
 }
 
@@ -1912,9 +1911,7 @@ textarea:focus-visible {
   display: none;
 }
 
-.du-room-header-main p:not(.du-kicker),
-.du-room-header-status-grid p,
-.du-room-member-strip p {
+.du-room-header-main p:not(.du-kicker) {
   color: var(--du-muted);
   font-size: 0.88rem;
   line-height: 1.45;
@@ -1927,9 +1924,7 @@ textarea:focus-visible {
   min-width: 0;
 }
 
-.du-room-header-next span,
-.du-room-header-status-grid span,
-.du-room-member-strip-heading span {
+.du-room-header-next span {
   color: var(--du-muted);
   font-size: 0.74rem;
   font-weight: 800;
@@ -1961,234 +1956,6 @@ textarea:focus-visible {
 
 .du-room-header-action:hover {
   background: var(--du-accent-strong);
-}
-
-.du-room-header-status-grid {
-  display: none;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--du-line);
-  border-radius: 8px;
-  background: var(--du-line);
-}
-
-.du-room-header-status-grid article {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-  background: var(--du-surface);
-  padding: 8px 10px;
-}
-
-.du-room-header-status-grid strong {
-  overflow-wrap: anywhere;
-  color: var(--du-ink);
-  font-size: 0.9rem;
-  line-height: 1.28;
-}
-
-.du-room-header-status-grid p {
-  display: none;
-}
-
-.du-room-member-strip {
-  display: none;
-  flex-wrap: nowrap;
-  gap: 8px;
-  align-items: center;
-  min-width: 0;
-}
-
-.du-room-member-strip-heading {
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  gap: 5px;
-  align-items: baseline;
-  min-width: 0;
-}
-
-.du-room-member-strip-heading strong {
-  color: var(--du-ink);
-  font-size: 0.9rem;
-  line-height: 1.3;
-}
-
-.du-room-member-list {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 8px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
-.du-room-member-chip {
-  display: inline-grid;
-  flex: 0 0 auto;
-  grid-template-columns: 24px minmax(0, auto);
-  grid-template-rows: auto auto;
-  gap: 1px 8px;
-  align-items: center;
-  max-width: 180px;
-  min-width: 0;
-  border: 1px solid var(--du-line);
-  border-radius: 999px;
-  background: #ffffff;
-  padding: 4px 9px 4px 4px;
-}
-
-.du-room-member-chip > span {
-  display: grid;
-  grid-row: 1 / span 2;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border: 1px solid #d7e9df;
-  border-radius: 50%;
-  background: #e5f4ee;
-  color: var(--du-accent-strong);
-  font-size: 0.58rem;
-  font-weight: 900;
-}
-
-.du-room-member-chip strong,
-.du-room-member-chip small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.du-room-member-chip strong {
-  color: var(--du-ink);
-  font-size: 0.82rem;
-  line-height: 1.18;
-}
-
-.du-room-member-chip small {
-  color: var(--du-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1.15;
-}
-
-.du-room-member-chip-more {
-  grid-template-columns: minmax(0, auto);
-  padding: 8px 12px;
-}
-
-.du-room-member-strip[data-mode="messages"] {
-  display: grid;
-  align-items: stretch;
-  gap: 8px;
-}
-
-.du-room-message-preview-list {
-  display: grid;
-  flex: 1 1 auto;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.du-room-message-preview {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  gap: 7px;
-  min-width: 0;
-  border: 1px solid var(--du-line);
-  border-radius: 8px;
-  background: #ffffff;
-  padding: 8px 10px;
-}
-
-.du-room-message-preview-avatar {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border: 1px solid #d7e9df;
-  border-radius: 50%;
-  background: #e5f4ee;
-  color: var(--du-accent-strong);
-  font-size: 0.58rem;
-  font-weight: 900;
-}
-
-.du-room-message-preview > div {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-
-.du-room-message-preview-header {
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-  min-width: 0;
-}
-
-.du-room-message-preview-header strong,
-.du-room-message-preview-header small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.du-room-message-preview-header strong {
-  color: var(--du-ink);
-  font-size: 0.82rem;
-  line-height: 1.2;
-}
-
-.du-room-message-preview-header small {
-  color: var(--du-muted);
-  font-size: 0.7rem;
-  font-weight: 800;
-  line-height: 1.15;
-}
-
-.du-room-message-preview p {
-  max-height: 2.6em;
-  overflow: hidden;
-  margin: 0;
-  color: var(--du-text);
-  font-size: 0.82rem;
-  line-height: 1.3;
-}
-
-@media (min-width: 960px) {
-  .du-room-member-strip[data-mode="messages"] .du-room-member-strip-heading {
-    gap: 4px 6px;
-  }
-
-  .du-room-member-strip[data-mode="messages"] .du-room-member-strip-heading strong {
-    font-size: 0.84rem;
-  }
-
-  .du-room-member-strip[data-mode="messages"] .du-room-message-preview-list {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .du-room-member-strip[data-mode="messages"] .du-room-message-preview {
-    max-height: 64px;
-    overflow: hidden;
-    padding: 7px 9px;
-  }
-
-  .du-room-member-strip[data-mode="messages"] .du-room-message-preview p {
-    display: -webkit-box;
-    max-height: 1.3em;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-  }
 }
 
 .du-room-composer[data-placement="room-action-dock"] {
@@ -5128,7 +4895,6 @@ textarea:focus-visible {
   .du-discussion-dashboard-grid,
   .du-room-layout,
   .du-room-header-main,
-  .du-room-header-status-grid,
   .du-room-brief-body,
   .du-room-progress-summary,
   .du-room-output-grid,
@@ -5153,27 +4919,6 @@ textarea:focus-visible {
   .du-room-header-main p:not(.du-kicker) {
     font-size: 0.82rem;
     line-height: 1.35;
-  }
-
-  .du-room-header-status-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .du-room-header-status-grid p {
-    display: none;
-  }
-
-  .du-room-header-status-grid strong {
-    font-size: 0.86rem;
-    line-height: 1.2;
-  }
-
-  .du-room-message-preview-list {
-    grid-template-columns: 1fr;
-  }
-
-  .du-room-member-chip {
-    max-width: 180px;
   }
 
   .du-room-header {

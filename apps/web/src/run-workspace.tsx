@@ -254,10 +254,6 @@ type DiscussionRoomProgressView = {
   nextTitle: string;
   nextDetail: string;
 };
-type DiscussionRoomMember = {
-  name: string;
-  detail: string;
-};
 
 export function RunsListPage() {
   const { t } = useI18n();
@@ -4769,11 +4765,7 @@ function RunQualityOverview({
               runId={runId}
               run={run}
               reviewReady={continuationView.reviewReady}
-              progressView={progressView}
-              activities={visibleRoomActivities}
-              openDisagreementCount={unresolvedObjections}
-              unresolvedEvidenceCount={unresolvedEvidenceNeeds}
-              openRequirementCount={openObligations}
+              hasConversationMessages={hasVisibleRoomConversation(visibleRoomActivities)}
             />
             <DiscussionRoomTimeline
               runId={runId}
@@ -4808,39 +4800,25 @@ function DiscussionRoomHeader({
   runId,
   run,
   reviewReady,
-  progressView,
-  activities,
-  openDisagreementCount,
-  unresolvedEvidenceCount,
-  openRequirementCount
+  hasConversationMessages
 }: {
   runId: string;
   run: unknown;
   reviewReady: boolean;
-  progressView: DiscussionRoomProgressView;
-  activities: RoomActivityItem[];
-  openDisagreementCount: number;
-  unresolvedEvidenceCount: number;
-  openRequirementCount: number;
+  hasConversationMessages: boolean;
 }) {
   const { t } = useI18n();
   const question =
     getStringRecordValue(run, "topic") ??
     getStringRecordValue(getRecordValue(run, "plan"), "topic") ??
     "Discussion brief";
-  const allMembers = getDiscussionRoomMembers(run, activities);
-  const members = allMembers.slice(0, 6);
-  const hiddenMemberCount = Math.max(0, allMembers.length - members.length);
-  const latestMessages = getLatestRoomMessagePreviews(activities, 2);
-  const hasLatestMessages = latestMessages.length > 0;
   const nextActionLabel = reviewReady ? "Review current conclusion" : "Continue discussion";
   const statusLabel = reviewReady ? "Conclusion ready" : "Next step";
-  const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
 
   return (
     <section
       className="du-room-header"
-      data-mode={hasLatestMessages ? "messages" : "members"}
+      data-mode={hasConversationMessages ? "messages" : "brief"}
       aria-label={t("Discussion room overview")}
     >
       <div className="du-room-header-main">
@@ -4874,89 +4852,6 @@ function DiscussionRoomHeader({
             </a>
           )}
         </div>
-      </div>
-      <div className="du-room-header-status-grid">
-        <article>
-          <span>{t("Current phase")}</span>
-          <strong>{t(progressView.phaseTitle)}</strong>
-          <p>{t(progressView.nextDetail)}</p>
-        </article>
-        <article>
-          <span>{t("Review queue")}</span>
-          <strong>
-            {openItemCount === 0
-              ? t("No open blockers visible")
-              : t(
-                  openItemCount === 1
-                    ? "{count} open item to review"
-                    : "{count} open items to review",
-                  { count: openItemCount }
-                )}
-          </strong>
-          <p>
-            {t(
-              "Disagreements, missing evidence, requirements, and risks stay visible while the room continues."
-            )}
-          </p>
-        </article>
-      </div>
-      <div
-        className="du-room-member-strip"
-        data-mode={hasLatestMessages ? "messages" : "members"}
-        aria-label={t("Room participants")}
-      >
-        <div className="du-room-member-strip-heading">
-          <span>{t(hasLatestMessages ? "Latest messages" : "In the room")}</span>
-          <strong>
-            {t(
-              hasLatestMessages
-                ? "Who spoke most recently"
-                : "Participant messages are the main thread"
-            )}
-          </strong>
-        </div>
-        {hasLatestMessages ? (
-          <ol className="du-room-message-preview-list" aria-label={t("Latest participant messages")}>
-            {latestMessages.map((message) => {
-              const phaseView = describeRoomActivityPhase(message.phase);
-
-              return (
-                <li
-                  className="du-room-message-preview"
-                  key={`${message.speaker}:${message.phase}:${message.detail}`}
-                >
-                  <span className="du-room-message-preview-avatar" aria-hidden="true">
-                    {formatSpeakerInitials(t(message.speaker))}
-                  </span>
-                  <div>
-                    <div className="du-room-message-preview-header">
-                      <strong>{t(message.speaker)}</strong>
-                      <small>{t(phaseView.label)}</small>
-                    </div>
-                    <p>{t(message.detail, message.detailValues)}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        ) : members.length > 0 ? (
-          <div className="du-room-member-list">
-            {members.map((member) => (
-              <span className="du-room-member-chip" key={`${member.name}:${member.detail}`}>
-                <span aria-hidden="true">{formatSpeakerInitials(t(member.name))}</span>
-                <strong>{t(member.name)}</strong>
-                <small>{t(member.detail)}</small>
-              </span>
-            ))}
-            {hiddenMemberCount > 0 ? (
-              <span className="du-room-member-chip du-room-member-chip-more">
-                <strong>{t("+{count} more", { count: hiddenMemberCount })}</strong>
-              </span>
-            ) : null}
-          </div>
-        ) : (
-          <p>{t("Participants appear here after setup or first room activity.")}</p>
-        )}
       </div>
     </section>
   );
@@ -5694,19 +5589,13 @@ function getParticipantFirstResponses(activities: RoomActivityItem[]): RoomActiv
   );
 }
 
-function getLatestRoomMessagePreviews(
-  activities: RoomActivityItem[],
-  maxMessages: number
-): RoomActivityItem[] {
-  return activities
-    .filter(
-      (activity) =>
-        !isRoomSpeaker(activity.speaker) &&
-        !isUserSpeaker(activity.speaker) &&
-        activity.detail !==
-          "This response is sealed until the independent first responses are revealed."
-    )
-    .slice(-maxMessages);
+function hasVisibleRoomConversation(activities: RoomActivityItem[]): boolean {
+  return activities.some(
+    (activity) =>
+      !isRoomSpeaker(activity.speaker) &&
+      !isUserSpeaker(activity.speaker) &&
+      !isRedactedContributionActivity(activity)
+  );
 }
 
 function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityItem[] {
@@ -7226,120 +7115,6 @@ function describeFinalAuditPayload(payload: unknown): string {
     getFirstStringRecordValue(payload, ["summary", "rationale"]) ??
     "A risk review was recorded for the current conclusion."
   );
-}
-
-function getDiscussionRoomMembers(run: unknown, activities: RoomActivityItem[]): DiscussionRoomMember[] {
-  const members: DiscussionRoomMember[] = [];
-  const seen = new Set<string>();
-  const participants = asArray(getRecordValue(getRecordValue(run, "plan"), "participants"));
-
-  function addMember(label: string | undefined, detail?: string) {
-    const safeLabel = getSafeRoomMemberLabel(label);
-
-    if (!safeLabel || isRoomSpeaker(safeLabel) || isUserSpeaker(safeLabel)) {
-      return;
-    }
-
-    const key = normalizeActorLabel(safeLabel);
-
-    if (seen.has(key)) {
-      return;
-    }
-
-    seen.add(key);
-    members.push({
-      name: safeLabel,
-      detail: detail ?? describeRoomMemberRole(safeLabel)
-    });
-  }
-
-  for (const participant of participants) {
-    const id = getStringRecordValue(participant, "id");
-    const displayName = getFirstStringRecordValue(participant, ["displayName", "name", "label"]);
-
-    addMember(
-      getUserFacingActorLabel(id) ??
-        getUserFacingActorLabel(displayName) ??
-        displayName ??
-        getUserFacingActorLabel(getStringRecordValue(participant, "adapterId"))
-    );
-  }
-
-  for (const activity of activities) {
-    addMember(activity.speaker, describeRoomMemberRole(activity.speaker, activity.phase));
-  }
-
-  return members;
-}
-
-function getSafeRoomMemberLabel(label: string | undefined): string | undefined {
-  const userFacingLabel = getUserFacingActorLabel(label);
-
-  if (userFacingLabel) {
-    return userFacingLabel;
-  }
-
-  const trimmed = label?.trim();
-
-  if (!trimmed || isInternalRoomMemberLabel(trimmed)) {
-    return undefined;
-  }
-
-  return trimmed;
-}
-
-function isInternalRoomMemberLabel(label: string): boolean {
-  const normalized = normalizeActorLabel(label);
-
-  return (
-    normalized === "openai-compatible" ||
-    normalized.includes("provider-config") ||
-    normalized.includes("providerconfig") ||
-    normalized.includes("openai-main") ||
-    normalized.includes("adapter") ||
-    normalized.includes("runtime") ||
-    normalized.includes("ledger") ||
-    normalized.includes("event-id") ||
-    normalized.includes("session-id") ||
-    normalized.includes("run-id")
-  );
-}
-
-function describeRoomMemberRole(
-  label: string,
-  phase?: RoomActivityPhaseId
-): string {
-  const normalized = normalizeActorLabel(label);
-
-  if (normalized.startsWith("perspective-") || normalized.startsWith("participant-")) {
-    return "Independent perspective";
-  }
-
-  if (normalized === "discussion-organizer") {
-    return "Organizes strongest options";
-  }
-
-  if (
-    normalized === "reviewer" ||
-    normalized === "review-coordinator" ||
-    normalized === "option-reviewer"
-  ) {
-    return "Reviews disagreements";
-  }
-
-  if (normalized === "evidence-checker" || phase === "evidence") {
-    return "Checks evidence";
-  }
-
-  if (normalized === "risk-reviewer") {
-    return "Reviews risks";
-  }
-
-  if (normalized === "conclusion-writer" || phase === "conclusion") {
-    return "Drafts conclusion";
-  }
-
-  return "Participant";
 }
 
 function getRoomEventSpeaker(event: unknown, run: unknown): string {
