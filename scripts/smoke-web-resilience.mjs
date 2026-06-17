@@ -182,10 +182,6 @@ async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, run
       "A guided step is still waiting on model work. Review visible progress or try again after checking setup."
     )
     .waitFor();
-  await openRoomUpdateDetails(page, "paused continuation result");
-  const updatedSteps = page.getByRole("region", { name: "Updated discussion steps" });
-  await updatedSteps.waitFor();
-  await updatedSteps.getByText("Needs attention", { exact: true }).waitFor();
   await assertRoomReportDetailsHidden(page, "paused continuation result");
   await assertNoHorizontalOverflow(page, "paused continuation result");
   await assertDefaultResilienceSafety(page, "paused continuation result", {
@@ -193,10 +189,13 @@ async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, run
     runId,
     sessionId
   });
-
   await assertHiddenFromDefault(page, "Raw stage metadata", "paused continuation result");
-  await page.locator('details[data-advanced-panel="Raw stage metadata"] > summary').click();
-  await page.getByText("Raw stage metadata").waitFor();
+
+  await openRoomUpdateDetails(page, "paused continuation result");
+  const updatedSteps = page.getByRole("region", { name: "Updated discussion steps" });
+  await updatedSteps.waitFor();
+  await updatedSteps.getByText("Needs attention", { exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Raw stage metadata" }).waitFor();
   await page.getByText("waiting_for_generators").first().waitFor();
 }
 
@@ -378,17 +377,36 @@ async function assertRoomUpdateMessage(page, label) {
     await roomUpdate.locator(".du-room-update-avatar").waitFor();
     await roomUpdate.getByText("Room update", { exact: true }).waitFor();
     await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
-    const shortcuts = roomUpdate.getByRole("navigation", { name: "Room update shortcuts" });
-    await shortcuts.waitFor();
-    await shortcuts.getByRole("link", { name: "Review updated timeline" }).waitFor();
-    await shortcuts.getByRole("link", { name: "Review discussion outputs" }).waitFor();
-    await roomUpdate.getByText("Review detailed update", { exact: true }).waitFor();
+    await roomUpdate.getByRole("region", { name: "New discussion round" }).waitFor();
+    const updateMessages = roomUpdate.getByRole("list", { name: "Discussion update messages" });
+    await updateMessages.waitFor();
+    await updateMessages.getByText("Perspective A", { exact: true }).first().waitFor();
+    await updateMessages.getByText("Perspective B", { exact: true }).first().waitFor();
+    await updateMessages
+      .getByText("Answered another participant", { exact: true })
+      .first()
+      .waitFor();
+    const oldShortcutCount = await roomUpdate
+      .getByRole("navigation", { name: "Room update shortcuts" })
+      .count();
+    const defaultStepCount = await roomUpdate
+      .getByRole("region", { name: "Updated discussion steps" })
+      .count();
     const hasOldRoomReviewCopy = await roomUpdate.evaluate(
-      (element) => element.textContent?.includes("Review this room update") ?? false
+      (element) =>
+        (element.textContent?.includes("Review this room update") ?? false) ||
+        (element.textContent?.includes("Review detailed update") ?? false) ||
+        Boolean(element.querySelector('details[data-advanced-panel="Post-update discussion details"]')?.open)
     );
 
-    if (hasOldRoomReviewCopy) {
-      throw new Error(`${label} should not show the old room update explainer by default.`);
+    if (oldShortcutCount !== 0 || defaultStepCount !== 0 || hasOldRoomReviewCopy) {
+      throw new Error(
+        `${label} should show the continuation as room messages first, got ${JSON.stringify({
+          oldShortcutCount,
+          defaultStepCount,
+          hasOldRoomReviewCopy
+        })}.`
+      );
     }
   } catch (error) {
     throw new Error(`${label} did not render the latest update as a room message.`, {
@@ -398,13 +416,15 @@ async function assertRoomUpdateMessage(page, label) {
 }
 
 async function openRoomUpdateDetails(page, label) {
-  const details = page.locator("#latest-discussion-update.du-room-update-message .du-room-update-details");
+  const details = page.locator(
+    '#latest-discussion-update.du-room-update-message details[data-advanced-panel="Post-update discussion details"]'
+  );
 
   try {
     await details.waitFor();
 
     if (!(await details.evaluate((element) => element.open))) {
-      await details.getByText("Review detailed update", { exact: true }).click();
+      await details.locator("summary").click();
     }
   } catch (error) {
     throw new Error(`${label} could not open detailed room update.`, {

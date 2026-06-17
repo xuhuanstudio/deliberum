@@ -1515,12 +1515,15 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Latest discussion update": "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0",
   "Room update": "\u8ba8\u8bba\u5ba4\u66f4\u65b0",
   "The room just updated": "\u8ba8\u8bba\u5ba4\u521a\u521a\u66f4\u65b0",
-  "Room update shortcuts": "\u8ba8\u8bba\u5ba4\u66f4\u65b0\u5feb\u6377\u5165\u53e3",
-  "Review detailed update": "\u67e5\u770b\u8be6\u7ec6\u66f4\u65b0",
-  "Open the detailed step summary if you want the full action result.":
-    "\u5982\u679c\u9700\u8981\u5b8c\u6574\u52a8\u4f5c\u7ed3\u679c\uff0c\u53ef\u6253\u5f00\u8be6\u7ec6\u6b65\u9aa4\u6458\u8981\u3002",
-  "Open raw step metadata only when you need developer details.":
-    "\u4ec5\u5728\u9700\u8981\u5f00\u53d1\u8005\u8be6\u60c5\u65f6\u6253\u5f00\u539f\u59cb\u6b65\u9aa4\u5143\u6570\u636e\u3002",
+  "New discussion round": "\u65b0\u8ba8\u8bba\u8f6e\u6b21",
+  "Continuation round": "\u7ee7\u7eed\u8ba8\u8bba\u8f6e\u6b21",
+  "What participants just said": "\u53c2\u4e0e\u8005\u521a\u521a\u8bf4\u4e86\u4ec0\u4e48",
+  "This update is shown as room messages first. Detailed step metadata stays in Advanced.":
+    "\u6b64\u66f4\u65b0\u4f18\u5148\u4ee5\u8ba8\u8bba\u5ba4\u6d88\u606f\u5448\u73b0\u3002\u8be6\u7ec6\u6b65\u9aa4\u5143\u6570\u636e\u4fdd\u7559\u5728\u9ad8\u7ea7\u6a21\u5f0f\u4e2d\u3002",
+  "Discussion update messages": "\u8ba8\u8bba\u66f4\u65b0\u6d88\u606f",
+  "Post-update discussion details": "\u66f4\u65b0\u540e\u8ba8\u8bba\u8be6\u60c5",
+  "Readable step summary, post-update links, and raw stage metadata for developer inspection.":
+    "\u53ef\u8bfb\u6b65\u9aa4\u6458\u8981\u3001\u66f4\u65b0\u540e\u94fe\u63a5\u548c\u539f\u59cb\u9636\u6bb5\u5143\u6570\u636e\uff0c\u4f9b\u5f00\u53d1\u8005\u68c0\u67e5\u3002",
   "Review this result first, then return to the timeline, outputs, or current conclusion.":
     "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u5f53\u524d\u7ed3\u8bba\u3002",
   "Review this result first, then return to the timeline, outputs, or next recommended action.":
@@ -1528,6 +1531,10 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review this room update, then return to the timeline, outputs, or next recommended action.":
     "\u8bf7\u5148\u5ba1\u9605\u6b64\u8ba8\u8bba\u5ba4\u66f4\u65b0\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
   "Updated discussion steps": "\u5df2\u66f4\u65b0\u7684\u8ba8\u8bba\u6b65\u9aa4",
+  "Raw stage metadata": "\u539f\u59cb\u9636\u6bb5\u5143\u6570\u636e",
+  "No stages returned": "\u6ca1\u6709\u8fd4\u56de\u9636\u6bb5",
+  "No stage metadata was returned for this request.":
+    "\u672c\u6b21\u8bf7\u6c42\u6ca1\u6709\u8fd4\u56de\u9636\u6bb5\u5143\u6570\u636e\u3002",
   "Room progress": "\u8ba8\u8bba\u5ba4\u8fdb\u5c55",
   "What the room did": "\u8ba8\u8bba\u5ba4\u521a\u521a\u505a\u4e86\u4ec0\u4e48",
   "What changed": "\u53d1\u751f\u4e86\u4ec0\u4e48\u53d8\u5316",
@@ -1830,6 +1837,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\uff0c\u8bc1\u636e\u6838\u67e5\u548c\u7f3a\u5931\u4fe1\u606f\u4f1a\u4fdd\u6301\u53ef\u89c1\u3002",
   "Evidence gaps reviewed": "\u8bc1\u636e\u7f3a\u53e3\u5df2\u5ba1\u9605",
   "Reviewed evidence gaps": "\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3",
+  "Reviewed option quality": "\u5ba1\u9605\u4e86\u9009\u9879\u8d28\u91cf",
   "No evidence gaps are visible in the current room summary.":
     "\u5f53\u524d\u8ba8\u8bba\u5ba4\u6458\u8981\u4e2d\u6ca1\u6709\u53ef\u89c1\u7684\u8bc1\u636e\u7f3a\u53e3\u3002",
   "{count} evidence gap still needs checking before relying on the conclusion.":

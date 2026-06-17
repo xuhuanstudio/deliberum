@@ -3927,6 +3927,10 @@ function StartResult({
   const conclusionReviewReady =
     reviewReadyBeforeUpdate || isStartResultConclusionReviewReady(result, stages);
   const roomMessage = presentation === "room-message";
+  const topicLanguage = getRoomTopicLanguage(getRecordValue(result, "run"));
+  const updateRoundActivities = roomMessage
+    ? createStartResultConversationRoundActivities(result, stages, stopped === true)
+    : [];
   const resultTitleKey =
     stopped === true ? "Discussion paused" : feedback?.title ?? "Discussion steps completed";
   const resultTitle = t(resultTitleKey);
@@ -3959,40 +3963,31 @@ function StartResult({
           />
         ) : null}
         <RunStartRecoveryActions show={isRecoverableStoppedStartResult(result)} />
-        <RoomUpdateShortcuts
-          runId={runId}
-          conclusionReviewReady={conclusionReviewReady}
+        <StartResultConversationRound
+          activities={updateRoundActivities}
+          topicLanguage={topicLanguage}
         />
-        {stopped === true ? null : (
-          <ReadableStageResultList stages={readableStages} roomMessage />
-        )}
-        <details className="du-room-update-details">
-          <summary>{t("Review detailed update")}</summary>
-          <p>{t("Open raw step metadata only when you need developer details.")}</p>
+        <AdvancedDetails
+          summary="Advanced / Developer Mode"
+          panelLabel="Post-update discussion details"
+          description="Readable step summary, post-update links, and raw stage metadata for developer inspection."
+          lazy
+        >
           <div className="du-room-update-details-body">
-            {stopped === true ? (
-              <ReadableStageResultList stages={readableStages} roomMessage />
-            ) : null}
+            <ReadableStageResultList stages={readableStages} roomMessage />
             <DiscussionResultHandoff
               runId={runId}
               conclusionReviewReady={conclusionReviewReady}
               roomMessage
             />
-            <AdvancedDetails
-              summary="Advanced / Developer Mode"
-              panelLabel="Raw stage metadata"
-              description="Raw execution stages, round ids, and event ids returned by the local runtime."
-              lazy
-            >
-              <RecordCollection
-                title="Raw stage metadata"
-                records={stages}
-                emptyTitle="No stages returned"
-                emptyDescription="No stage metadata was returned for this request."
-              />
-            </AdvancedDetails>
+            <RecordCollection
+              title="Raw stage metadata"
+              records={stages}
+              emptyTitle="No stages returned"
+              emptyDescription="No stage metadata was returned for this request."
+            />
           </div>
-        </details>
+        </AdvancedDetails>
       </div>
     );
   }
@@ -4035,37 +4030,299 @@ function StartResult({
   );
 }
 
-function RoomUpdateShortcuts({
-  runId,
-  conclusionReviewReady
+function StartResultConversationRound({
+  activities,
+  topicLanguage
 }: {
-  runId: string;
-  conclusionReviewReady: boolean;
+  activities: RoomActivityItem[];
+  topicLanguage: RoomTopicLanguage;
 }) {
   const { t } = useI18n();
 
+  if (activities.length === 0) {
+    return null;
+  }
+
   return (
-    <nav className="du-room-update-shortcuts" aria-label={t("Room update shortcuts")}>
-      <a href="#room-conversation-transcript" aria-label={t("Review updated timeline")}>
-        {t("Review updated timeline")}
-      </a>
-      <a href="#discussion-outputs" aria-label={t("Review discussion outputs")}>
-        {t("Review discussion outputs")}
-      </a>
-      {conclusionReviewReady ? (
-        <Link
-          to="/runs/$runId/outcome"
-          params={{ runId }}
-          aria-label={t("View current conclusion")}
-        >
-          {t("View current conclusion")}
-        </Link>
-      ) : (
-        <a href="#continue-discussion" aria-label={t("Continue discussion")}>
-          {t("Continue discussion")}
-        </a>
-      )}
-    </nav>
+    <section className="du-room-update-conversation" aria-label={t("New discussion round")}>
+      <div className="du-section-label">
+        <p className="du-kicker">{t("Continuation round")}</p>
+        <h4>{t("What participants just said")}</h4>
+        <p>
+          {t(
+            "This update is shown as room messages first. Detailed step metadata stays in Advanced."
+          )}
+        </p>
+      </div>
+      <ol className="du-room-activity" aria-label={t("Discussion update messages")}>
+        {activities.map((activity, index) => (
+          <RoomActivityMessage
+            activity={activity}
+            activityContext={activities}
+            activityContextIndex={index}
+            round={1}
+            topicLanguage={topicLanguage}
+            key={`${activity.sourceType}:${activity.speaker}:${index}`}
+          />
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function createStartResultConversationRoundActivities(
+  result: unknown,
+  stages: Array<Record<string, unknown>>,
+  stopped: boolean
+): RoomActivityItem[] {
+  const run = getRecordValue(result, "run");
+  const topicLanguage = getRoomTopicLanguage(run);
+  const perspectiveSpeakers = getStartResultPerspectiveSpeakers(run);
+  const activities: RoomActivityItem[] = [];
+
+  for (const stage of stages) {
+    activities.push(
+      ...createStartResultStageConversationActivities(
+        stage,
+        perspectiveSpeakers,
+        topicLanguage,
+        stopped
+      )
+    );
+  }
+
+  return activities;
+}
+
+function createStartResultStageConversationActivities(
+  stage: Record<string, unknown>,
+  perspectiveSpeakers: string[],
+  topicLanguage: RoomTopicLanguage,
+  stopped: boolean
+): RoomActivityItem[] {
+  const stageName = getRecordValue(stage, "stage");
+  const stageStatus = getRecordValue(stage, "status");
+  const attentionNeeded =
+    isReadableStageAttentionStatus(stageStatus) ||
+    (stopped && stageStatus !== "completed" && stageStatus !== "revealed");
+  const tone: RoomActivityItem["tone"] = attentionNeeded ? "warning" : "ok";
+
+  if (stageName === "sealed_divergence") {
+    const firstSpeaker = perspectiveSpeakers[0] ?? "Perspective A";
+    const secondSpeaker = perspectiveSpeakers[1] ?? "Perspective B";
+
+    return [
+      {
+        speaker: firstSpeaker,
+        title: "Participant reply added",
+        action: "Shared a first response",
+        detail: attentionNeeded
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "I started the independent reply, but this round still needs another participant before the room can compare answers.",
+              "\u6211\u5df2\u5f00\u59cb\u72ec\u7acb\u56de\u5e94\uff0c\u4f46\u672c\u8f6e\u4ecd\u9700\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005\u5b8c\u6210\uff0c\u8ba8\u8bba\u5ba4\u624d\u80fd\u5bf9\u7167\u7b54\u6848\u3002"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "I put an independent answer into the room so it can be compared before anyone converges too early.",
+              "\u6211\u628a\u4e00\u4efd\u72ec\u7acb\u7b54\u6848\u653e\u5165\u8ba8\u8bba\u5ba4\uff0c\u8fd9\u6837\u5927\u5bb6\u5728\u8fc7\u65e9\u6536\u655b\u524d\u53ef\u4ee5\u5148\u5bf9\u7167\u6bd4\u8f83\u3002"
+            ),
+        tone,
+        phase: "first-responses",
+        sourceType: "sealed_contribution_submitted"
+      },
+      {
+        speaker: secondSpeaker,
+        title: "Participant replied to another participant",
+        action: "Answered another participant",
+        detail: attentionNeeded
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "I'm the reply the room is still waiting for; once I finish, the room can compare the perspectives.",
+              "\u6211\u662f\u8ba8\u8bba\u5ba4\u4ecd\u5728\u7b49\u5f85\u7684\u56de\u5e94\uff1b\u5b8c\u6210\u540e\uff0c\u623f\u95f4\u5c31\u80fd\u5bf9\u7167\u5404\u4e2a\u89c6\u89d2\u3002"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "Now that {speaker}'s answer is visible, I'm keeping a separate view in the room for comparison.",
+              "\u73b0\u5728 {speaker} \u7684\u7b54\u6848\u5df2\u53ef\u89c1\uff0c\u6211\u4f1a\u628a\u53e6\u4e00\u4e2a\u89c6\u89d2\u4fdd\u7559\u5728\u623f\u95f4\u4e2d\u4f9b\u5bf9\u7167\u3002"
+            ),
+        detailValues: attentionNeeded ? undefined : { speaker: firstSpeaker },
+        tone,
+        phase: "first-responses",
+        sourceType: "synthetic_participant_reply_bridge"
+      }
+    ];
+  }
+
+  if (stageName === "extraction") {
+    return [
+      {
+        speaker: "Discussion organizer",
+        title: "Main perspectives organized",
+        action: "Organized the strongest options",
+        detail: attentionNeeded
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "I tried to organize the participant replies, but this step needs attention before options and disagreements are reliable.",
+              "\u6211\u5c1d\u8bd5\u6574\u7406\u53c2\u4e0e\u8005\u56de\u5e94\uff0c\u4f46\u8fd9\u4e00\u6b65\u9700\u8981\u5904\u7406\u540e\uff0c\u9009\u9879\u548c\u5206\u6b67\u624d\u53ef\u9760\u3002"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "I connected the participant replies into strongest current options, open disagreements, requirements, and evidence gaps.",
+              "\u6211\u628a\u53c2\u4e0e\u8005\u56de\u5e94\u8fde\u63a5\u6210\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
+            ),
+        tone,
+        phase: "perspectives",
+        sourceType: "extraction_proposed"
+      }
+    ];
+  }
+
+  if (stageName === "proposal_review") {
+    return [
+      {
+        speaker: "Reviewer",
+        title: "Open disagreement reviewed",
+        action: "Raised an open disagreement",
+        detail: attentionNeeded
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "I could not finish reviewing the strongest option against open disagreements, so the room should not rely on the conclusion yet.",
+              "\u6211\u672a\u80fd\u5b8c\u6210\u5bf9\u6700\u5f3a\u9009\u9879\u4e0e\u672a\u89e3\u51b3\u5206\u6b67\u7684\u5ba1\u67e5\uff0c\u56e0\u6b64\u8ba8\u8bba\u5ba4\u8fd8\u4e0d\u5e94\u4f9d\u8d56\u7ed3\u8bba\u3002"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "I checked the strongest current option against the disagreements and answer requirements that still matter.",
+              "\u6211\u5df2\u6839\u636e\u4ecd\u7136\u91cd\u8981\u7684\u5206\u6b67\u548c\u7b54\u6848\u8981\u6c42\u68c0\u67e5\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002"
+            ),
+        tone,
+        phase: "perspectives",
+        sourceType: "proposal_challenged"
+      }
+    ];
+  }
+
+  if (stageName === "evidence_check") {
+    return [
+      {
+        speaker: "Evidence checker",
+        title: "Evidence gaps reviewed",
+        action: "Reviewed evidence gaps",
+        detail: attentionNeeded
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "I could not finish checking the evidence gaps, so missing evidence still needs review before the conclusion is trusted.",
+              "\u6211\u672a\u80fd\u5b8c\u6210\u8bc1\u636e\u7f3a\u53e3\u6838\u67e5\uff0c\u56e0\u6b64\u5728\u4fe1\u4efb\u7ed3\u8bba\u524d\u4ecd\u9700\u5ba1\u9605\u7f3a\u5931\u8bc1\u636e\u3002"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "I checked the evidence gaps the room surfaced and kept unresolved verification work visible.",
+              "\u6211\u6838\u67e5\u4e86\u8ba8\u8bba\u5ba4\u63d0\u51fa\u7684\u8bc1\u636e\u7f3a\u53e3\uff0c\u5e76\u4fdd\u7559\u4e86\u5c1a\u672a\u89e3\u51b3\u7684\u6838\u9a8c\u5de5\u4f5c\u3002"
+            ),
+        tone,
+        phase: "evidence",
+        sourceType: "synthetic_evidence_gap_review"
+      }
+    ];
+  }
+
+  if (stageName === "candidate_repair") {
+    return [
+      {
+        speaker: "Option reviewer",
+        title: "Option quality reviewed",
+        action: "Reviewed option quality",
+        detail: attentionNeeded
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "I could not finish strengthening the option, so the room should revisit it before drafting a conclusion.",
+              "\u6211\u672a\u80fd\u5b8c\u6210\u5f3a\u5316\u9009\u9879\uff0c\u56e0\u6b64\u8ba8\u8bba\u5ba4\u5e94\u5728\u8d77\u8349\u7ed3\u8bba\u524d\u91cd\u65b0\u68c0\u67e5\u5b83\u3002"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "I used the visible weaknesses to strengthen the current option before conclusion work.",
+              "\u6211\u7528\u53ef\u89c1\u5f31\u70b9\u5f3a\u5316\u4e86\u5f53\u524d\u9009\u9879\uff0c\u7136\u540e\u518d\u8fdb\u5165\u7ed3\u8bba\u5de5\u4f5c\u3002"
+            ),
+        tone,
+        phase: "perspectives",
+        sourceType: "proposal_accepted"
+      }
+    ];
+  }
+
+  if (stageName === "finalization") {
+    return [
+      {
+        speaker: "Conclusion writer",
+        title: "Current conclusion drafted",
+        action: "Drafted the current conclusion",
+        detail: attentionNeeded
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "I could not finish drafting a conclusion, so the room should continue before treating the answer as ready.",
+              "\u6211\u672a\u80fd\u5b8c\u6210\u7ed3\u8bba\u8d77\u8349\uff0c\u56e0\u6b64\u8ba8\u8bba\u5ba4\u5e94\u7ee7\u7eed\u63a8\u8fdb\uff0c\u4e0d\u5e94\u628a\u7b54\u6848\u89c6\u4e3a\u5df2\u5c31\u7eea\u3002"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "I drafted a current conclusion from the room's strongest options, disagreements, evidence gaps, and requirements.",
+              "\u6211\u57fa\u4e8e\u8ba8\u8bba\u5ba4\u7684\u6700\u5f3a\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u8981\u6c42\u8d77\u8349\u4e86\u5f53\u524d\u7ed3\u8bba\u3002"
+            ),
+        tone,
+        phase: "conclusion",
+        sourceType: "final_candidate_proposed"
+      },
+      {
+        speaker: "Risk reviewer",
+        title: "Risk review recorded",
+        action: "Reviewed risks",
+        detail: attentionNeeded
+          ? localizeTopicLanguageDetail(
+              topicLanguage,
+              "I could not complete the risk review, so risks and boundaries still need attention.",
+              "\u6211\u672a\u80fd\u5b8c\u6210\u98ce\u9669\u5ba1\u67e5\uff0c\u56e0\u6b64\u98ce\u9669\u548c\u8fb9\u754c\u4ecd\u9700\u5173\u6ce8\u3002"
+            )
+          : localizeTopicLanguageDetail(
+              topicLanguage,
+              "I kept the risks and boundaries visible so the conclusion is reviewable rather than treated as unquestioned final truth.",
+              "\u6211\u4fdd\u6301\u98ce\u9669\u548c\u8fb9\u754c\u53ef\u89c1\uff0c\u8ba9\u7ed3\u8bba\u6210\u4e3a\u53ef\u5ba1\u9605\u6750\u6599\uff0c\u800c\u4e0d\u662f\u4e0d\u53ef\u8d28\u7591\u7684\u6700\u7ec8\u771f\u7406\u3002"
+            ),
+        tone: attentionNeeded ? "warning" : "ok",
+        phase: "conclusion",
+        sourceType: "final_audit_recorded"
+      }
+    ];
+  }
+
+  return [];
+}
+
+function getStartResultPerspectiveSpeakers(run: unknown): string[] {
+  const participants = asArray(getRecordValue(getRecordValue(run, "plan"), "participants"));
+  const perspectiveSpeakers = participants
+    .map((participant) => {
+      const id = getStringRecordValue(participant, "id");
+      const displayName = getFirstStringRecordValue(participant, [
+        "displayName",
+        "name",
+        "label"
+      ]);
+
+      return (
+        getUserFacingActorLabel(id) ??
+        getUserFacingActorLabel(displayName) ??
+        displayName ??
+        getUserFacingActorLabel(getStringRecordValue(participant, "adapterId"))
+      );
+    })
+    .filter((label): label is string => Boolean(label))
+    .filter((label) => {
+      const normalized = normalizeActorLabel(label);
+
+      return normalized.startsWith("perspective-") || normalized.startsWith("participant-");
+    });
+
+  return uniqueReadableStrings(
+    perspectiveSpeakers.length > 0 ? perspectiveSpeakers : ["Perspective A", "Perspective B"]
   );
 }
 
@@ -4914,11 +5171,6 @@ function DiscussionRoomTimeline({
                     </div>
                     <ol className="du-room-activity" aria-label={updatesLabel}>
                       {group.activities.map((activity, index) => {
-                        const conversationCue = describeRoomActivityConversationCue(
-                          activity,
-                          group.round,
-                          topicLanguage
-                        );
                         const useTranscriptContext = shouldUseTranscriptContextForRoomReply(
                           activity
                         );
@@ -4928,199 +5180,16 @@ function DiscussionRoomTimeline({
                         const activityContextIndex = useTranscriptContext
                           ? previousActivities.length + index
                           : index;
-                        const replyLine = describeRoomActivityReplyLine(
-                          activity,
-                          activityContext,
-                          activityContextIndex,
-                          group.round,
-                          topicLanguage
-                        );
-                        const addressLine = describeRoomActivityAddressLine(
-                          activity,
-                          activityContext,
-                          activityContextIndex,
-                          group.round,
-                          topicLanguage
-                        );
-                        const displayAction = describeRoomActivityDisplayAction(
-                          activity,
-                          group.round,
-                          topicLanguage
-                        );
-                        const displayDetail = describeRoomActivityDisplayDetail(
-                          activity,
-                          group.round,
-                          topicLanguage
-                        );
-                        const roomSpeaker = isRoomSpeaker(activity.speaker);
-                        const userSpeaker = isUserSpeaker(activity.speaker);
-                        const speakerLabel = formatRoomSpeakerLabel(
-                          t,
-                          topicLanguage,
-                          activity.speaker
-                        );
 
                         return (
-                          <li
-                            className="du-room-activity-item"
-                            data-speaker={
-                              roomSpeaker ? "room" : userSpeaker ? "user" : "participant"
-                            }
-                            data-tone={activity.tone}
+                          <RoomActivityMessage
+                            activity={activity}
+                            activityContext={activityContext}
+                            activityContextIndex={activityContextIndex}
+                            round={group.round}
+                            topicLanguage={topicLanguage}
                             key={`${activity.title}:${index}`}
-                          >
-                            {roomSpeaker ? (
-                              <div
-                                className="du-room-system-message"
-                                aria-label={t("Room update")}
-                              >
-                                <strong>{speakerLabel}</strong>
-                                <span>
-                                  {formatRoomContributionText(
-                                    t,
-                                    topicLanguage,
-                                    displayAction
-                                  )}
-                                </span>
-                                <p>
-                                  {formatRoomContributionText(
-                                    t,
-                                    topicLanguage,
-                                    displayDetail,
-                                    activity.detailValues
-                                  )}
-                                </p>
-                              </div>
-                            ) : userSpeaker ? (
-                              <>
-                                <div
-                                  className="du-room-activity-bubble"
-                                  aria-label={`${speakerLabel}: ${formatRoomContributionText(
-                                    t,
-                                    topicLanguage,
-                                    displayDetail,
-                                    activity.detailValues
-                                  )}`}
-                                >
-                                  <div className="du-room-message-header">
-                                    <strong>{speakerLabel}</strong>
-                                    <small className="du-room-message-context">
-                                      <span>
-                                        {formatRoomContributionText(
-                                          t,
-                                          topicLanguage,
-                                          displayAction
-                                        )}
-                                      </span>
-                                      <span aria-hidden="true">·</span>
-                                      <span>
-                                        {formatRoomContributionText(
-                                          t,
-                                          topicLanguage,
-                                          conversationCue
-                                        )}
-                                      </span>
-                                    </small>
-                                  </div>
-                                  {addressLine ? (
-                                    <p className="du-room-message-address">
-                                      {formatRoomContributionText(
-                                        t,
-                                        topicLanguage,
-                                        addressLine.text,
-                                        translateRoomActivityValues(t, addressLine.values)
-                                      )}
-                                    </p>
-                                  ) : null}
-                                  {replyLine ? (
-                                    <p className="du-room-message-reply">
-                                      {formatRoomContributionText(
-                                        t,
-                                        topicLanguage,
-                                        replyLine.text,
-                                        translateRoomActivityValues(t, replyLine.values)
-                                      )}
-                                    </p>
-                                  ) : null}
-                                  <p className="du-room-message-detail">
-                                    {formatRoomContributionText(
-                                      t,
-                                      topicLanguage,
-                                      displayDetail,
-                                      activity.detailValues
-                                    )}
-                                  </p>
-                                </div>
-                                <span className="du-room-activity-avatar" aria-hidden="true">
-                                  {formatSpeakerInitials(speakerLabel)}
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="du-room-activity-avatar" aria-hidden="true">
-                                  {formatSpeakerInitials(speakerLabel)}
-                                </span>
-                                <div
-                                  className="du-room-activity-bubble"
-                                  aria-label={`${speakerLabel}: ${formatRoomContributionText(
-                                    t,
-                                    topicLanguage,
-                                    displayDetail,
-                                    activity.detailValues
-                                  )}`}
-                                >
-                                  <div className="du-room-message-header">
-                                    <strong>{speakerLabel}</strong>
-                                    <small className="du-room-message-context">
-                                      <span>
-                                        {formatRoomContributionText(
-                                          t,
-                                          topicLanguage,
-                                          displayAction
-                                        )}
-                                      </span>
-                                      <span aria-hidden="true">·</span>
-                                      <span>
-                                        {formatRoomContributionText(
-                                          t,
-                                          topicLanguage,
-                                          conversationCue
-                                        )}
-                                      </span>
-                                    </small>
-                                  </div>
-                                  {addressLine ? (
-                                    <p className="du-room-message-address">
-                                      {formatRoomContributionText(
-                                        t,
-                                        topicLanguage,
-                                        addressLine.text,
-                                        translateRoomActivityValues(t, addressLine.values)
-                                      )}
-                                    </p>
-                                  ) : null}
-                                  {replyLine ? (
-                                    <p className="du-room-message-reply">
-                                      {formatRoomContributionText(
-                                        t,
-                                        topicLanguage,
-                                        replyLine.text,
-                                        translateRoomActivityValues(t, replyLine.values)
-                                      )}
-                                    </p>
-                                  ) : null}
-                                  <p className="du-room-message-detail">
-                                    {formatRoomContributionText(
-                                      t,
-                                      topicLanguage,
-                                      displayDetail,
-                                      activity.detailValues
-                                    )}
-                                  </p>
-                                </div>
-                              </>
-                            )}
-                          </li>
+                          />
                         );
                       })}
                     </ol>
@@ -5142,6 +5211,142 @@ function DiscussionRoomTimeline({
         </div>
       </div>
     </section>
+  );
+}
+
+function RoomActivityMessage({
+  activity,
+  activityContext,
+  activityContextIndex,
+  round,
+  topicLanguage
+}: {
+  activity: RoomActivityItem;
+  activityContext: RoomActivityItem[];
+  activityContextIndex: number;
+  round: number;
+  topicLanguage: RoomTopicLanguage;
+}) {
+  const { t } = useI18n();
+  const conversationCue = describeRoomActivityConversationCue(
+    activity,
+    round,
+    topicLanguage
+  );
+  const replyLine = describeRoomActivityReplyLine(
+    activity,
+    activityContext,
+    activityContextIndex,
+    round,
+    topicLanguage
+  );
+  const addressLine = describeRoomActivityAddressLine(
+    activity,
+    activityContext,
+    activityContextIndex,
+    round,
+    topicLanguage
+  );
+  const displayAction = describeRoomActivityDisplayAction(activity, round, topicLanguage);
+  const displayDetail = describeRoomActivityDisplayDetail(activity, round, topicLanguage);
+  const roomSpeaker = isRoomSpeaker(activity.speaker);
+  const userSpeaker = isUserSpeaker(activity.speaker);
+  const speakerLabel = formatRoomSpeakerLabel(t, topicLanguage, activity.speaker);
+  const detailText = formatRoomContributionText(
+    t,
+    topicLanguage,
+    displayDetail,
+    activity.detailValues
+  );
+
+  return (
+    <li
+      className="du-room-activity-item"
+      data-speaker={roomSpeaker ? "room" : userSpeaker ? "user" : "participant"}
+      data-tone={activity.tone}
+    >
+      {roomSpeaker ? (
+        <div className="du-room-system-message" aria-label={t("Room update")}>
+          <strong>{speakerLabel}</strong>
+          <span>{formatRoomContributionText(t, topicLanguage, displayAction)}</span>
+          <p>{detailText}</p>
+        </div>
+      ) : userSpeaker ? (
+        <>
+          <div className="du-room-activity-bubble" aria-label={`${speakerLabel}: ${detailText}`}>
+            <div className="du-room-message-header">
+              <strong>{speakerLabel}</strong>
+              <small className="du-room-message-context">
+                <span>{formatRoomContributionText(t, topicLanguage, displayAction)}</span>
+                <span aria-hidden="true">·</span>
+                <span>{formatRoomContributionText(t, topicLanguage, conversationCue)}</span>
+              </small>
+            </div>
+            {addressLine ? (
+              <p className="du-room-message-address">
+                {formatRoomContributionText(
+                  t,
+                  topicLanguage,
+                  addressLine.text,
+                  translateRoomActivityValues(t, addressLine.values)
+                )}
+              </p>
+            ) : null}
+            {replyLine ? (
+              <p className="du-room-message-reply">
+                {formatRoomContributionText(
+                  t,
+                  topicLanguage,
+                  replyLine.text,
+                  translateRoomActivityValues(t, replyLine.values)
+                )}
+              </p>
+            ) : null}
+            <p className="du-room-message-detail">{detailText}</p>
+          </div>
+          <span className="du-room-activity-avatar" aria-hidden="true">
+            {formatSpeakerInitials(speakerLabel)}
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="du-room-activity-avatar" aria-hidden="true">
+            {formatSpeakerInitials(speakerLabel)}
+          </span>
+          <div className="du-room-activity-bubble" aria-label={`${speakerLabel}: ${detailText}`}>
+            <div className="du-room-message-header">
+              <strong>{speakerLabel}</strong>
+              <small className="du-room-message-context">
+                <span>{formatRoomContributionText(t, topicLanguage, displayAction)}</span>
+                <span aria-hidden="true">·</span>
+                <span>{formatRoomContributionText(t, topicLanguage, conversationCue)}</span>
+              </small>
+            </div>
+            {addressLine ? (
+              <p className="du-room-message-address">
+                {formatRoomContributionText(
+                  t,
+                  topicLanguage,
+                  addressLine.text,
+                  translateRoomActivityValues(t, addressLine.values)
+                )}
+              </p>
+            ) : null}
+            {replyLine ? (
+              <p className="du-room-message-reply">
+                {formatRoomContributionText(
+                  t,
+                  topicLanguage,
+                  replyLine.text,
+                  translateRoomActivityValues(t, replyLine.values)
+                )}
+              </p>
+            ) : null}
+            <p className="du-room-message-detail">{detailText}</p>
+          </div>
+        </>
+      )}
+    </li>
   );
 }
 
@@ -6226,6 +6431,7 @@ function localizeRoomActivityAction(
     "Kept this material in the room": "\u5c06\u8fd9\u4efd\u6750\u6599\u4fdd\u7559\u5728\u623f\u95f4\u4e2d",
     "Raised an open disagreement": "\u63d0\u51fa\u4e86\u672a\u89e3\u51b3\u5206\u6b67",
     "Reviewed evidence gaps": "\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3",
+    "Reviewed option quality": "\u5ba1\u9605\u4e86\u9009\u9879\u8d28\u91cf",
     "Checked evidence": "\u6838\u67e5\u4e86\u8bc1\u636e",
     "Drafted the current conclusion": "\u8d77\u8349\u4e86\u5f53\u524d\u7ed3\u8bba",
     "Reviewed risks": "\u5ba1\u67e5\u4e86\u98ce\u9669",

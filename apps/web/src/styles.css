@@ -4647,6 +4647,16 @@ textarea:focus-visible {
   padding: 0;
 }
 
+.du-room-update-conversation {
+  display: grid;
+  gap: 10px;
+}
+
+.du-room-update-conversation .du-section-label {
+  border-top-color: transparent;
+  padding-top: 0;
+}
+
 .du-room-update-shortcuts {
   display: flex;
   flex-wrap: wrap;
