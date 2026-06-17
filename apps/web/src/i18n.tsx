@@ -1757,11 +1757,14 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5728\u7b2c {round} \u8f6e\u4e2d\u63a5\u7740 {speaker} \u56de\u5e94",
   "Replying in round {round} to the previous room state":
     "\u5728\u7b2c {round} \u8f6e\u4e2d\u56de\u5e94\u4e0a\u4e00\u6b21\u8ba8\u8bba\u5ba4\u72b6\u6001",
+  "Replying to {speaker}'s latest point": "\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u89c2\u70b9",
   "To the participant first responses": "\u56de\u5e94\u53c2\u4e0e\u8005\u7684\u521d\u59cb\u56de\u5e94",
   "To the latest participant replies": "\u56de\u5e94\u6700\u65b0\u7684\u53c2\u4e0e\u8005\u53d1\u8a00",
   "To the organized options": "\u56de\u5e94\u5df2\u6574\u7406\u7684\u9009\u9879",
   "To the strongest current option": "\u56de\u5e94\u5f53\u524d\u6700\u5f3a\u9009\u9879",
   "To the claim that still needs evidence": "\u56de\u5e94\u4ecd\u9700\u8bc1\u636e\u7684\u8bba\u65ad",
+  "Checking evidence behind {speaker}'s claim":
+    "\u68c0\u67e5 {speaker} \u7684\u8bba\u65ad\u80cc\u540e\u7684\u8bc1\u636e",
   "To the whole room": "\u56de\u5e94\u6574\u4e2a\u8ba8\u8bba\u5ba4",
   "To the draft conclusion": "\u56de\u5e94\u7ed3\u8bba\u8349\u7a3f",
   "To the previous message": "\u56de\u5e94\u4e0a\u4e00\u6761\u53d1\u8a00",
@@ -1784,6 +1787,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u57fa\u4e8e\u6700\u65b0\u7684\u53c2\u4e0e\u8005\u53d1\u8a00\u7ee7\u7eed",
   "Keeping the organized options in the room for review":
     "\u5c06\u5df2\u6574\u7406\u7684\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u4e2d\u4f9b\u5ba1\u9605",
+  "Replying to {speaker}'s option with an open disagreement":
+    "\u7528\u4e00\u4e2a\u672a\u89e3\u5206\u6b67\u56de\u5e94 {speaker} \u7684\u9009\u9879",
   "Challenging the current strongest option": "\u6311\u6218\u5f53\u524d\u6700\u5f3a\u9009\u9879",
   "Checking the evidence behind the current claim": "\u68c0\u67e5\u5f53\u524d\u8bba\u65ad\u80cc\u540e\u7684\u8bc1\u636e",
   "Synthesizing perspectives, disagreements, and evidence checks":

@@ -392,7 +392,12 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     )
     .waitFor();
   await page.getByText("To the strongest current option").first().waitFor();
-  await page.getByText("To the claim that still needs evidence").first().waitFor();
+  await page.getByText("Replying to Perspective B's latest point").first().waitFor();
+  await page
+    .getByText("Replying to Perspective B's option with an open disagreement")
+    .first()
+    .waitFor();
+  await page.getByText("Checking evidence behind Perspective B's claim").first().waitFor();
   const roomOutputSummary = page.locator("details.du-room-outputs-section");
   if (await roomOutputSummary.evaluate((element) => element.open)) {
     throw new Error("Discussion room output summary should be collapsed by default.");

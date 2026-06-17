@@ -5875,10 +5875,6 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText("Replying to the discussion brief before seeing other participants")
     ).toBeTruthy();
-    expect(screen.getByText("To the strongest current option")).toBeTruthy();
-    expect(screen.getByText("To the claim that still needs evidence")).toBeTruthy();
-    expect(screen.getByText("Challenging the current strongest option")).toBeTruthy();
-    expect(screen.getByText("Checking the evidence behind the current claim")).toBeTruthy();
     const stageSummaries = Array.from(
       document.querySelectorAll('[aria-label="Stage activity summary"]')
     ).map((summary) => summary.textContent ?? "");
@@ -6533,6 +6529,11 @@ describe("@deliberum/web shell", () => {
       "The latest replies were organized into updated options, disagreements, requirements, and evidence needs."
     );
     expect(roundTwo.textContent ?? "").toContain("Building on Perspective B's follow-up reply");
+    expect(roundTwo.textContent ?? "").toContain("Replying to Perspective B's latest point");
+    expect(roundTwo.textContent ?? "").toContain(
+      "Replying to Perspective B's option with an open disagreement"
+    );
+    expect(roundTwo.textContent ?? "").toContain("Checking evidence behind Perspective B's claim");
     expect((document.querySelector(".du-room-layout")?.textContent ?? "")).not.toContain(
       "round-two-opened"
     );
@@ -6658,7 +6659,9 @@ describe("@deliberum/web shell", () => {
       screen.getByText("\u57fa\u4e8e \u89c6\u89d2 A \u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed")
     ).toBeTruthy();
     expect(
-      screen.getByText("\u68c0\u67e5\u5f53\u524d\u8bba\u65ad\u80cc\u540e\u7684\u8bc1\u636e")
+      screen.getAllByText(
+        /\u68c0\u67e5 \u89c6\u89d2 [AB] \u7684\u8bba\u65ad\u80cc\u540e\u7684\u8bc1\u636e/
+      ).length
     ).toBeTruthy();
     expect(
       screen.getAllByText(
@@ -7170,6 +7173,135 @@ describe("@deliberum/web shell", () => {
     );
     expect(startRequestText).not.toContain(
       "Accept sample discussion material that has no open challenge in this walkthrough."
+    );
+    expect(document.body.textContent ?? "").not.toContain("providerConfigId");
+  });
+
+  it("uses the discussion question language for provider-backed continuation requests", async () => {
+    const topic = "\u6211\u4eec\u5e94\u8be5\u5982\u4f55\u8bc4\u4f30\u771f\u5b9e\u6a21\u578b\u5ba1\u67e5\uff1f";
+    const chineseProviderBackedRun = {
+      ...providerBackedRunDetail,
+      title: `Discussion: ${topic}`,
+      topic,
+      plan: {
+        ...providerBackedRunDetail.plan,
+        topic,
+        output: {
+          language: "Simplified Chinese",
+          expectations: ["\u7528\u4e2d\u6587\u5c55\u793a\u5f53\u524d\u7ed3\u8bba\u3002"]
+        }
+      }
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: chineseProviderBackedRun
+        })),
+        getRuntimeProfiles: vi.fn(async () => ({
+          profiles: [
+            {
+              id: "local-preset",
+              name: "Local preset",
+              enabled: true,
+              status: "ready",
+              components: [],
+              setup: {
+                enableEnvVar: "DELIBERUM_ENABLE_LOCAL_PRESET",
+                envVars: [],
+                missingRecommendedEnvVars: [],
+                notes: []
+              },
+              boundaries: []
+            },
+            {
+              id: "openai-compatible",
+              name: "OpenAI-compatible",
+              enabled: true,
+              status: "ready",
+              components: [
+                {
+                  id: "openai-compatible",
+                  kind: "participant_adapter",
+                  enabled: true
+                },
+                {
+                  id: "openai-compatible-extractor",
+                  kind: "extraction_generator",
+                  enabled: true
+                },
+                {
+                  id: "openai-compatible-reviewer",
+                  kind: "proposal_reviewer",
+                  enabled: true
+                },
+                {
+                  id: "openai-compatible-final-candidate",
+                  kind: "final_candidate_generator",
+                  enabled: true
+                },
+                {
+                  id: "openai-compatible-final-auditor",
+                  kind: "final_auditor",
+                  enabled: true
+                }
+              ],
+              setup: {
+                enableEnvVar: "DELIBERUM_ENABLE_OPENAI_COMPATIBLE_PROFILE",
+                envVars: [
+                  {
+                    name: "DELIBERUM_OPENAI_API_KEY",
+                    configured: true,
+                    secret: true,
+                    required: false,
+                    purpose: "Default provider secret."
+                  }
+                ],
+                missingRecommendedEnvVars: [],
+                notes: []
+              },
+              boundaries: []
+            }
+          ]
+        })),
+        startRun: vi.fn(async () => ({
+          run: {
+            ...chineseProviderBackedRun,
+            status: "running"
+          },
+          stages: [
+            {
+              stage: "sealed_divergence",
+              executionStatus: "executed",
+              status: "completed"
+            }
+          ],
+          stopped: false
+        }))
+      })
+    );
+
+    expect(await screen.findByText("Model-backed review path ready")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    const startRequest = vi.mocked(client.startRun).mock.calls[0]?.[1];
+    const startRequestText = JSON.stringify(startRequest);
+
+    expect(startRequestText).toContain(
+      "\u63a5\u53d7\u6a21\u578b\u6574\u7406\u7684\u8ba8\u8bba\u6750\u6599"
+    );
+    expect(startRequestText).not.toContain("Accept provider-organized proposals");
+    expect(startRequest).toEqual(
+      expect.objectContaining({
+        review: expect.objectContaining({
+          acceptancePolicy: expect.objectContaining({
+            rationale: expect.stringContaining(
+              "\u63a5\u53d7\u6a21\u578b\u6574\u7406\u7684\u8ba8\u8bba\u6750\u6599"
+            )
+          })
+        })
+      })
     );
     expect(document.body.textContent ?? "").not.toContain("providerConfigId");
   });

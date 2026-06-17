@@ -66,6 +66,10 @@ const FIRST_RESPONSES_ONLY_START_REQUEST = {
   }
 };
 const OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID = "openai-main";
+const OPENAI_COMPATIBLE_ACCEPTANCE_RATIONALE_EN =
+  "Accept provider-organized proposals so the room can compile a provisional current conclusion while keeping review challenges visible.";
+const OPENAI_COMPATIBLE_ACCEPTANCE_RATIONALE_ZH_CN =
+  "\u63a5\u53d7\u6a21\u578b\u6574\u7406\u7684\u8ba8\u8bba\u6750\u6599\uff0c\u8ba9\u8ba8\u8bba\u5ba4\u80fd\u7f16\u5236\u4e34\u65f6\u5f53\u524d\u7ed3\u8bba\uff0c\u540c\u65f6\u4fdd\u6301\u5ba1\u67e5\u6311\u6218\u53ef\u89c1\u3002";
 const OPENAI_COMPATIBLE_FULL_START_REQUEST = {
   sealedDivergence: {
     autoCloseManual: true,
@@ -81,8 +85,7 @@ const OPENAI_COMPATIBLE_FULL_START_REQUEST = {
     acceptancePolicy: {
       mode: "all_generated",
       authorId: "provider-review-coordinator",
-      rationale:
-        "Accept provider-organized proposals so the room can compile a provisional current conclusion while keeping review challenges visible."
+      rationale: OPENAI_COMPATIBLE_ACCEPTANCE_RATIONALE_EN
     }
   },
   finalization: {
@@ -3484,7 +3487,7 @@ function describeDiscussionContinuationSetup(
       note:
         "Provider credentials stay on this machine; Web does not show saved API keys.",
       tone: "ok",
-      startRequest: OPENAI_COMPATIBLE_FULL_START_REQUEST,
+      startRequest: buildOpenAICompatibleStartRequest(topic),
       fillLabel: "Fill recommended continuation request",
       primaryActionDetail:
         "Collect model first responses, then use review roles for options, disagreements, risks, and the draft conclusion.",
@@ -3540,6 +3543,24 @@ function describeDiscussionContinuationSetup(
     primaryResultDetail:
       "The discussion collected independent first responses. Complete setup before organizing options or drafting a conclusion."
   };
+}
+
+function buildOpenAICompatibleStartRequest(topic: string | undefined): Record<string, unknown> {
+  const startRequest = cloneJsonObject(OPENAI_COMPATIBLE_FULL_START_REQUEST);
+  const review = getMutableStartRequestStage(startRequest, "review");
+  const acceptancePolicy = getRecordValue(review, "acceptancePolicy");
+
+  if (
+    acceptancePolicy &&
+    typeof acceptancePolicy === "object" &&
+    !Array.isArray(acceptancePolicy)
+  ) {
+    (acceptancePolicy as Record<string, unknown>).rationale = isSimplifiedChineseText(topic)
+      ? OPENAI_COMPATIBLE_ACCEPTANCE_RATIONALE_ZH_CN
+      : OPENAI_COMPATIBLE_ACCEPTANCE_RATIONALE_EN;
+  }
+
+  return startRequest;
 }
 
 function prepareUserFacingContinuationStartRequest(
@@ -3615,6 +3636,10 @@ function createUserContinuationRoundToken(run: unknown): string {
   const eventSuffix = typeof eventCount === "number" ? eventCount : "next";
 
   return `web-round-${eventSuffix}-${Date.now().toString(36)}`;
+}
+
+function isSimplifiedChineseText(value: string | undefined): boolean {
+  return Boolean(value && /[\u3400-\u9fff\uf900-\ufaff]/u.test(value));
 }
 
 function getMutableStartRequestStage(
@@ -5034,7 +5059,11 @@ function DiscussionRoomTimeline({
               role="region"
               aria-label={t("Conversation transcript")}
             >
-              {activityGroups.map((group) => {
+              {activityGroups.map((group, groupIndex) => {
+                const previousActivities = activityGroups
+                  .slice(0, groupIndex)
+                  .flatMap((previousGroup) => previousGroup.activities);
+                const contextualActivities = [...previousActivities, ...group.activities];
                 const roundLabel =
                   group.kind === "brief"
                     ? t("Discussion brief")
@@ -5097,16 +5126,25 @@ function DiscussionRoomTimeline({
                           activity,
                           group.round
                         );
+                        const useTranscriptContext = shouldUseTranscriptContextForRoomReply(
+                          activity
+                        );
+                        const activityContext = useTranscriptContext
+                          ? contextualActivities
+                          : group.activities;
+                        const activityContextIndex = useTranscriptContext
+                          ? previousActivities.length + index
+                          : index;
                         const replyLine = describeRoomActivityReplyLine(
                           activity,
-                          group.activities,
-                          index,
+                          activityContext,
+                          activityContextIndex,
                           group.round
                         );
                         const addressLine = describeRoomActivityAddressLine(
                           activity,
-                          group.activities,
-                          index,
+                          activityContext,
+                          activityContextIndex,
                           group.round
                         );
                         const displayAction = describeRoomActivityDisplayAction(
@@ -6083,6 +6121,15 @@ function isGenericFirstResponseOrganizerDetail(detail: string): boolean {
   );
 }
 
+function shouldUseTranscriptContextForRoomReply(activity: RoomActivityItem): boolean {
+  return (
+    activity.sourceType === "proposal_challenged" ||
+    activity.sourceType === "synthetic_open_disagreement" ||
+    activity.sourceType === "evidence_result_recorded" ||
+    activity.sourceType === "synthetic_evidence_gap_review"
+  );
+}
+
 function describeRoomActivityAddressLine(
   activity: RoomActivityItem,
   roundActivities: RoomActivityItem[],
@@ -6143,18 +6190,32 @@ function describeRoomActivityAddressLine(
     activity.sourceType === "proposal_challenged" ||
     activity.sourceType === "synthetic_open_disagreement"
   ) {
-    return {
-      text: "To the strongest current option"
-    };
+    const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    return previousSpeaker
+      ? {
+          text: "Replying to {speaker}'s latest point",
+          values: { speaker: previousSpeaker }
+        }
+      : {
+          text: "To the strongest current option"
+        };
   }
 
   if (
     activity.sourceType === "evidence_result_recorded" ||
     activity.sourceType === "synthetic_evidence_gap_review"
   ) {
-    return {
-      text: "To the claim that still needs evidence"
-    };
+    const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    return previousSpeaker
+      ? {
+          text: "Checking evidence behind {speaker}'s claim",
+          values: { speaker: previousSpeaker }
+        }
+      : {
+          text: "To the claim that still needs evidence"
+        };
   }
 
   if (activity.sourceType === "final_candidate_proposed") {
@@ -6255,18 +6316,32 @@ function describeRoomActivityReplyLine(
     activity.sourceType === "proposal_challenged" ||
     activity.sourceType === "synthetic_open_disagreement"
   ) {
-    return {
-      text: "Challenging the current strongest option"
-    };
+    const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    return previousSpeaker
+      ? {
+          text: "Replying to {speaker}'s option with an open disagreement",
+          values: { speaker: previousSpeaker }
+        }
+      : {
+          text: "Challenging the current strongest option"
+        };
   }
 
   if (
     activity.sourceType === "evidence_result_recorded" ||
     activity.sourceType === "synthetic_evidence_gap_review"
   ) {
-    return {
-      text: "Checking the evidence behind the current claim"
-    };
+    const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    return previousSpeaker
+      ? {
+          text: "Checking evidence behind {speaker}'s claim",
+          values: { speaker: previousSpeaker }
+        }
+      : {
+          text: "Checking the evidence behind the current claim"
+        };
   }
 
   if (activity.sourceType === "final_candidate_proposed") {
