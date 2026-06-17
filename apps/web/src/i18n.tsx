@@ -1785,7 +1785,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5c06\u5df2\u6574\u7406\u7684\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u4e2d\u4f9b\u5ba1\u9605",
   "Replying to {speaker}'s option with an open disagreement":
     "\u7528\u4e00\u4e2a\u672a\u89e3\u5206\u6b67\u56de\u5e94 {speaker} \u7684\u9009\u9879",
+  "Preparing to reply with objections": "\u51c6\u5907\u7528\u5206\u6b67\u56de\u5e94",
   "Challenging the current strongest option": "\u6311\u6218\u5f53\u524d\u6700\u5f3a\u9009\u9879",
+  "Preparing to reply with evidence checks": "\u51c6\u5907\u7528\u8bc1\u636e\u6838\u67e5\u56de\u5e94",
   "Checking the evidence behind the current claim": "\u68c0\u67e5\u5f53\u524d\u8bba\u65ad\u80cc\u540e\u7684\u8bc1\u636e",
   "Synthesizing perspectives, disagreements, and evidence checks":
     "\u7efc\u5408\u89c2\u70b9\u3001\u5206\u6b67\u548c\u8bc1\u636e\u68c0\u67e5",
@@ -1886,6 +1888,14 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Shared a first response": "\u5206\u4eab\u4e86\u521d\u59cb\u56de\u5e94",
   "Shared a follow-up reply": "\u5206\u4eab\u4e86\u540e\u7eed\u56de\u590d",
   "Answered another participant": "\u56de\u5e94\u4e86\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005",
+  "Open disagreement review waiting": "\u5206\u6b67\u5ba1\u67e5\u6b63\u5728\u7b49\u5f85",
+  "Waiting to review disagreements": "\u7b49\u5f85\u5ba1\u67e5\u5206\u6b67",
+  "When this round is organized, I will reply with any open disagreement instead of leaving it hidden in a report.":
+    "\u5f53\u672c\u8f6e\u5185\u5bb9\u6574\u7406\u5b8c\u6210\u540e\uff0c\u6211\u4f1a\u628a\u4ecd\u9700\u5904\u7406\u7684\u5206\u6b67\u4f5c\u4e3a\u56de\u590d\u7559\u5728\u8ba8\u8bba\u91cc\uff0c\u800c\u4e0d\u662f\u85cf\u5728\u62a5\u544a\u4e2d\u3002",
+  "Evidence check waiting": "\u8bc1\u636e\u6838\u67e5\u6b63\u5728\u7b49\u5f85",
+  "Waiting to check evidence": "\u7b49\u5f85\u6838\u67e5\u8bc1\u636e",
+  "When claims are organized, I will reply with evidence gaps or checks before the conclusion changes.":
+    "\u5f53\u4e3b\u5f20\u88ab\u6574\u7406\u51fa\u6765\u540e\uff0c\u6211\u4f1a\u628a\u8bc1\u636e\u7f3a\u53e3\u6216\u6838\u67e5\u7ed3\u679c\u4f5c\u4e3a\u56de\u590d\u7559\u5728\u8ba8\u8bba\u91cc\uff0c\u7136\u540e\u518d\u66f4\u65b0\u7ed3\u8bba\u3002",
   "This response is sealed until the independent first responses are revealed.":
     "\u5728\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u63ed\u793a\u524d\uff0c\u6b64\u56de\u5e94\u4fdd\u6301\u5c01\u5b58\u3002",
   "Independent first responses revealed": "\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u5df2\u63ed\u793a",

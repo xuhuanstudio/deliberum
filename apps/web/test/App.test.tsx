@@ -6049,6 +6049,14 @@ describe("@deliberum/web shell", () => {
     expect(updateRound.textContent ?? "").toContain("Perspective B");
     expect(updateRound.textContent ?? "").toContain("Shared a follow-up reply");
     expect(updateRound.textContent ?? "").toContain("Answered another participant");
+    expect(updateRound.textContent ?? "").toContain("Reviewer");
+    expect(updateRound.textContent ?? "").toContain("Waiting to review disagreements");
+    expect(updateRound.textContent ?? "").toContain("Preparing to reply with objections");
+    expect(updateRound.textContent ?? "").toContain("Evidence checker");
+    expect(updateRound.textContent ?? "").toContain("Waiting to check evidence");
+    expect(updateRound.textContent ?? "").toContain(
+      "Preparing to reply with evidence checks"
+    );
     expect(updateRound.textContent ?? "").toContain(
       "I'm responding to the latest room state"
     );
@@ -7421,7 +7429,15 @@ describe("@deliberum/web shell", () => {
     expect(updateRoundText).toContain(
       "\u73b0\u5728 \u89c6\u89d2 A \u7684\u7b54\u6848\u5df2\u53ef\u89c1"
     );
+    expect(updateRoundText).toContain("\u5ba1\u67e5\u8005");
+    expect(updateRoundText).toContain("\u7b49\u5f85\u5ba1\u67e5\u5206\u6b67");
+    expect(updateRoundText).toContain("\u51c6\u5907\u7528\u5206\u6b67\u56de\u5e94");
+    expect(updateRoundText).toContain("\u8bc1\u636e\u6838\u67e5\u8005");
+    expect(updateRoundText).toContain("\u7b49\u5f85\u6838\u67e5\u8bc1\u636e");
+    expect(updateRoundText).toContain("\u51c6\u5907\u7528\u8bc1\u636e\u6838\u67e5\u56de\u5e94");
     expect(updateRoundText).not.toContain("I put an independent answer into the room");
+    expect(updateRoundText).not.toContain("Waiting to review disagreements");
+    expect(updateRoundText).not.toContain("Waiting to check evidence");
     expect(document.body.textContent ?? "").not.toContain("providerConfigId");
   });
 

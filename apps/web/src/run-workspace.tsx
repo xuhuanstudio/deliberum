@@ -4104,7 +4104,7 @@ function createStartResultConversationRoundActivities(
     );
   }
 
-  return activities;
+  return addPendingReviewRoundActivities(activities, topicLanguage);
 }
 
 function createStartResultStageConversationActivities(
@@ -4788,6 +4788,7 @@ function RunQualityOverview({
       objections
     }
   );
+  const readableRoomActivities = ensurePendingReviewRoundActivities(visibleRoomActivities, run);
   const openObligations = countRecordsWithoutStatus(obligations, "satisfied");
   const continuationView = describeDiscussionContinuation(run);
   const progressView = describeDiscussionRoomProgress({
@@ -4811,12 +4812,12 @@ function RunQualityOverview({
               runId={runId}
               run={run}
               reviewReady={continuationView.reviewReady}
-              hasConversationMessages={hasVisibleRoomConversation(visibleRoomActivities)}
+              hasConversationMessages={hasVisibleRoomConversation(readableRoomActivities)}
             />
             <DiscussionRoomTimeline
               runId={runId}
               reviewReady={continuationView.reviewReady}
-              activities={visibleRoomActivities}
+              activities={readableRoomActivities}
               topicLanguage={getRoomTopicLanguage(run)}
               activityQuery={{
                 isLoading: eventsQuery.isLoading,
@@ -5960,6 +5961,84 @@ function ensureOpenDisagreementActivity(
   });
 }
 
+function ensurePendingReviewRoundActivities(
+  activities: RoomActivityItem[],
+  run: unknown
+): RoomActivityItem[] {
+  return addPendingReviewRoundActivities(activities, getRoomTopicLanguage(run));
+}
+
+function addPendingReviewRoundActivities(
+  activities: RoomActivityItem[],
+  topicLanguage: RoomTopicLanguage
+): RoomActivityItem[] {
+  const hasParticipantRound = activities.some(
+    (activity) =>
+      !isRoomSpeaker(activity.speaker) &&
+      !isUserSpeaker(activity.speaker) &&
+      (activity.sourceType === "sealed_contribution_submitted" ||
+        activity.sourceType === "synthetic_participant_reply_bridge")
+  );
+  const hasReviewOrConclusionActivity = activities.some((activity) =>
+    isReviewOrConclusionRoomActivity(activity)
+  );
+  const hasPendingReviewActivity = activities.some(
+    (activity) =>
+      activity.sourceType === "synthetic_pending_objection_review" ||
+      activity.sourceType === "synthetic_pending_evidence_review"
+  );
+
+  if (!hasParticipantRound || hasReviewOrConclusionActivity || hasPendingReviewActivity) {
+    return activities;
+  }
+
+  return [...activities, ...createPendingReviewRoundActivities(topicLanguage)];
+}
+
+function isReviewOrConclusionRoomActivity(activity: RoomActivityItem): boolean {
+  return (
+    activity.sourceType === "proposal_challenged" ||
+    activity.sourceType === "synthetic_open_disagreement" ||
+    activity.sourceType === "evidence_result_recorded" ||
+    activity.sourceType === "synthetic_evidence_gap_review" ||
+    activity.sourceType === "final_candidate_proposed" ||
+    activity.sourceType === "final_audit_recorded"
+  );
+}
+
+function createPendingReviewRoundActivities(
+  topicLanguage: RoomTopicLanguage
+): RoomActivityItem[] {
+  return [
+    {
+      speaker: "Reviewer",
+      title: "Open disagreement review waiting",
+      action: "Waiting to review disagreements",
+      detail: localizeTopicLanguageDetail(
+        topicLanguage,
+        "When this round is organized, I will reply with any open disagreement instead of leaving it hidden in a report.",
+        "\u5f53\u672c\u8f6e\u5185\u5bb9\u6574\u7406\u5b8c\u6210\u540e\uff0c\u6211\u4f1a\u628a\u4ecd\u9700\u5904\u7406\u7684\u5206\u6b67\u4f5c\u4e3a\u56de\u590d\u7559\u5728\u8ba8\u8bba\u91cc\uff0c\u800c\u4e0d\u662f\u85cf\u5728\u62a5\u544a\u4e2d\u3002"
+      ),
+      tone: "warning",
+      phase: "perspectives",
+      sourceType: "synthetic_pending_objection_review"
+    },
+    {
+      speaker: "Evidence checker",
+      title: "Evidence check waiting",
+      action: "Waiting to check evidence",
+      detail: localizeTopicLanguageDetail(
+        topicLanguage,
+        "When claims are organized, I will reply with evidence gaps or checks before the conclusion changes.",
+        "\u5f53\u4e3b\u5f20\u88ab\u6574\u7406\u51fa\u6765\u540e\uff0c\u6211\u4f1a\u628a\u8bc1\u636e\u7f3a\u53e3\u6216\u6838\u67e5\u7ed3\u679c\u4f5c\u4e3a\u56de\u590d\u7559\u5728\u8ba8\u8bba\u91cc\uff0c\u7136\u540e\u518d\u66f4\u65b0\u7ed3\u8bba\u3002"
+      ),
+      tone: "warning",
+      phase: "evidence",
+      sourceType: "synthetic_pending_evidence_review"
+    }
+  ];
+}
+
 function describeEvidenceGapReviewActivityDetail(
   unresolvedEvidenceCount: number,
   topicLanguage: RoomTopicLanguage
@@ -6272,7 +6351,8 @@ function describeRoomActivityConversationCue(
 
   if (
     activity.sourceType === "proposal_challenged" ||
-    activity.sourceType === "synthetic_open_disagreement"
+    activity.sourceType === "synthetic_open_disagreement" ||
+    activity.sourceType === "synthetic_pending_objection_review"
   ) {
     return localizeTopicLanguageDetail(
       topicLanguage,
@@ -6283,7 +6363,8 @@ function describeRoomActivityConversationCue(
 
   if (
     activity.sourceType === "evidence_result_recorded" ||
-    activity.sourceType === "synthetic_evidence_gap_review"
+    activity.sourceType === "synthetic_evidence_gap_review" ||
+    activity.sourceType === "synthetic_pending_evidence_review"
   ) {
     return localizeTopicLanguageDetail(
       topicLanguage,
@@ -6372,7 +6453,9 @@ function localizeRoomActivityAction(
     "Reviewed risks": "\u5ba1\u67e5\u4e86\u98ce\u9669",
     "Connected the first responses": "\u8fde\u63a5\u4e86\u9996\u6b21\u56de\u5e94",
     "Connected the follow-up replies": "\u8fde\u63a5\u4e86\u8ffd\u52a0\u56de\u5e94",
-    "Answered another participant": "\u56de\u5e94\u4e86\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005"
+    "Answered another participant": "\u56de\u5e94\u4e86\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005",
+    "Waiting to review disagreements": "\u7b49\u5f85\u5ba1\u67e5\u5206\u6b67",
+    "Waiting to check evidence": "\u7b49\u5f85\u6838\u67e5\u8bc1\u636e"
   };
 
   return actionTranslations[action] ?? action;
@@ -6658,7 +6741,8 @@ function describeRoomActivityAddressLine(
 
   if (
     activity.sourceType === "proposal_challenged" ||
-    activity.sourceType === "synthetic_open_disagreement"
+    activity.sourceType === "synthetic_open_disagreement" ||
+    activity.sourceType === "synthetic_pending_objection_review"
   ) {
     const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
 
@@ -6682,7 +6766,8 @@ function describeRoomActivityAddressLine(
 
   if (
     activity.sourceType === "evidence_result_recorded" ||
-    activity.sourceType === "synthetic_evidence_gap_review"
+    activity.sourceType === "synthetic_evidence_gap_review" ||
+    activity.sourceType === "synthetic_pending_evidence_review"
   ) {
     const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
 
@@ -6867,8 +6952,19 @@ function describeRoomActivityReplyLine(
 
   if (
     activity.sourceType === "proposal_challenged" ||
-    activity.sourceType === "synthetic_open_disagreement"
+    activity.sourceType === "synthetic_open_disagreement" ||
+    activity.sourceType === "synthetic_pending_objection_review"
   ) {
+    if (activity.sourceType === "synthetic_pending_objection_review") {
+      return {
+        text: localizeTopicLanguageDetail(
+          topicLanguage,
+          "Preparing to reply with objections",
+          "\u51c6\u5907\u7528\u5206\u6b67\u56de\u5e94"
+        )
+      };
+    }
+
     const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
 
     return previousSpeaker
@@ -6891,8 +6987,19 @@ function describeRoomActivityReplyLine(
 
   if (
     activity.sourceType === "evidence_result_recorded" ||
-    activity.sourceType === "synthetic_evidence_gap_review"
+    activity.sourceType === "synthetic_evidence_gap_review" ||
+    activity.sourceType === "synthetic_pending_evidence_review"
   ) {
+    if (activity.sourceType === "synthetic_pending_evidence_review") {
+      return {
+        text: localizeTopicLanguageDetail(
+          topicLanguage,
+          "Preparing to reply with evidence checks",
+          "\u51c6\u5907\u7528\u8bc1\u636e\u6838\u67e5\u56de\u5e94"
+        )
+      };
+    }
+
     const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
 
     return previousSpeaker
