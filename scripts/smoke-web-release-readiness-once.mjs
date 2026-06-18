@@ -647,14 +647,63 @@ async function formatPageDebug(page) {
   }
 
   try {
-    const text = await page.locator("body").innerText({ timeout: 1000 });
+    const body = page.locator("body");
+    await body.waitFor({ timeout: 1000 });
+    const bodyTextLength = await body.evaluate((element) => element.innerText.length);
+    const markers = await collectSafePageMarkers(page);
     return [
       `page url: ${page.url()}`,
-      `page text:\n${redactSensitive(text).slice(0, 4000)}`
+      `page diagnostics:\n${JSON.stringify(
+        {
+          bodyTextLength,
+          visibleMarkers: markers
+        },
+        null,
+        2
+      )}`
     ].join("\n");
   } catch (error) {
     return `page output unavailable: ${error.message}`;
   }
+}
+
+async function collectSafePageMarkers(page) {
+  const markers = [
+    "Connect AI",
+    "Local service connected",
+    "Needs test",
+    "Provider connection verified",
+    "Provider connection could not be verified",
+    "AI participants ready",
+    "New Discussion",
+    "Discussion with AI selected",
+    "Discussion Room",
+    "Discussion timeline",
+    "Conversation transcript",
+    "Discussion paused",
+    "Discussion could not continue",
+    "Discussion with AI continued",
+    "Decision workspace",
+    "Current answer: Ready to review",
+    "Review current answer",
+    "Current Answer",
+    "Still unresolved",
+    "Needs checking",
+    "Risks",
+    "Next steps"
+  ];
+
+  const visible = {};
+
+  for (const marker of markers) {
+    visible[marker] = await page
+      .getByText(marker, { exact: true })
+      .first()
+      .isVisible({ timeout: 100 })
+      .catch(() => false);
+  }
+
+  return visible;
 }
 
 async function formatRunDebug(page) {

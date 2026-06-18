@@ -363,6 +363,54 @@ Limit:
   provider setup. It is not broad provider compatibility, quota resilience, or
   a packaged installer.
 
+### 2026-06-19 Safe Real-Provider Smoke Diagnostics
+
+Scope: rows 5 through 16 on the opt-in real-provider release-readiness path,
+with focused evidence for failure-log safety and repeated real-provider
+stability.
+
+Commands:
+
+- `node --check scripts/smoke-web-release-readiness-once.mjs`
+- `corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Updated the release-readiness smoke failure diagnostics so a browser failure
+   reports the page URL, body text length, and fixed safe UI markers instead of
+   dumping the page body text.
+2. Preserved the existing safe run-state summary for stage status, attempts,
+   and safe error categories.
+3. Re-ran the current repository-local provider setup through the focused
+   two-perspective release-readiness path.
+4. Re-ran the Broader review three-perspective release-readiness path.
+5. Re-ran the focused path three consecutive times in fresh isolated local
+   services.
+
+Result:
+
+- Passed. The focused/default path passed once, the Broader review path passed
+  once, and the focused/default path then passed three consecutive runs.
+- Failure diagnostics no longer intentionally print raw page body text, which
+  could include model-generated participant or answer material during a real
+  provider failure.
+
+Safety:
+
+- Provider API key, base URL, model value, raw provider response, and raw model
+  output were not written into this document.
+- The release-readiness smoke still records enough non-secret status to locate
+  the failed page and deliberation stage when a real-provider walkthrough fails.
+
+Limit:
+
+- This strengthens repeatability and log-safety evidence for one
+  repository-local provider setup. It is not broad provider compatibility,
+  rate-limit resilience, slow-provider resilience, Windows/WSL2 support, or a
+  packaged installer.
+
 ### 2026-06-19 v1.1 Fresh Clone Local Product Smoke
 
 Scope: rows 1 through 4 on the source-checkout startup path, with supporting

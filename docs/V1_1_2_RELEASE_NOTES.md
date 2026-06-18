@@ -85,6 +85,10 @@ Post-release hardening on `main` also re-aligned the opt-in real-provider
 release-readiness smoke with the current Connect AI, New Discussion, and
 chat-style Discussion Room labels. The focused/default path and Broader review
 path then passed without writing provider values or raw model output to docs.
+The same smoke later stopped dumping page body text on failure, so real-provider
+failures can report safe page markers and run-stage summaries without logging
+model-generated discussion content. After that change, the focused/default path
+passed three consecutive runs.
 
 ## Upgrade Notes
 
