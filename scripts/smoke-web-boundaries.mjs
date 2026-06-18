@@ -11,7 +11,7 @@ import { chromium } from "@playwright/test";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const clientEntry = join(repoRoot, "packages", "client", "dist", "index.js");
 const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
-const landingTitle = "Multi-perspective deliberation for better decisions";
+const landingTitle = "Local human + AI deliberation room";
 
 assertFile(clientEntry);
 assertFile(daemonEntry);
@@ -150,7 +150,7 @@ async function verifyLandingAdvancedBoundary(page, { webBaseUrl, runId, sessionI
   await assertHiddenFromDefault(page, "Runtime profiles", "landing boundary default");
   await assertHiddenFromDefault(page, "Operation audit", "landing boundary default");
 
-  await page.getByRole("link", { name: "Advanced", exact: true }).click();
+  await page.getByRole("link", { name: "Developer Tools", exact: true }).click();
   await page.waitForURL(`${webBaseUrl}/advanced`);
   await page.getByRole("heading", { name: "Advanced / Developer Mode", exact: true }).waitFor();
   await page.getByText("Open by session id").waitFor();
@@ -165,7 +165,7 @@ async function verifyLandingAdvancedBoundary(page, { webBaseUrl, runId, sessionI
 
 async function verifyRunsListBoundary(page, { webBaseUrl, runId, sessionId }) {
   await page.goto(`${webBaseUrl}/runs`, { waitUntil: "networkidle" });
-  await page.getByRole("heading", { name: "Discussions", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "My Discussions", exact: true }).waitFor();
   await page.getByText("Existing discussions").waitFor();
   await page.getByText("Resume latest discussion").waitFor();
   await page.getByRole("navigation", { name: "Discussion paths" }).first().waitFor();
@@ -182,8 +182,8 @@ async function verifyRunsListBoundary(page, { webBaseUrl, runId, sessionId }) {
 
 async function verifySetupAdvancedBoundary(page, { webBaseUrl, runId, sessionId }) {
   await page.goto(`${webBaseUrl}/setup/models`, { waitUntil: "networkidle" });
-  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
-  await page.getByText("Model setup status").waitFor();
+  await page.getByRole("heading", { name: "Connect AI" }).waitFor();
+  await page.getByText("AI connection status").waitFor();
   await assertNoHorizontalOverflow(page, "setup models default");
   await assertDefaultBoundarySafety(page, "setup models default", {
     runId,
@@ -207,7 +207,7 @@ async function verifyRunWorkspaceAdvancedBoundary(page, { webBaseUrl, runId, ses
   await page.locator(".du-room-chat-shell").waitFor();
   await page
     .locator("#room-next-action")
-    .getByRole("link", { name: "Review current conclusion", exact: true })
+    .getByRole("link", { name: "Review current answer", exact: true })
     .waitFor();
   await assertNoHorizontalOverflow(page, "discussion room default");
   await assertDefaultBoundarySafety(page, "discussion room default", {
@@ -233,7 +233,7 @@ async function verifyRunWorkspaceAdvancedBoundary(page, { webBaseUrl, runId, ses
   await page.getByText("Process governance ledger").waitFor();
   await page.getByText(sessionId).first().waitFor();
 
-  await openDetailedReviewPanels(page, "discussion room Advanced detail panels");
+  await openDetailedReviewPanels(page, "discussion room Developer Tools detail panels");
   await page.locator('details[data-advanced-panel="Discussion detail metadata"] > summary').click();
   await page.getByText("Main perspectives metadata").waitFor();
   await page.getByText("Projection events").first().waitFor();
@@ -243,15 +243,15 @@ async function verifyOutcomeAdvancedBoundary(page, { webBaseUrl, runId, sessionI
   await page.goto(`${webBaseUrl}/runs/${encodeURIComponent(runId)}/outcome`, {
     waitUntil: "networkidle"
   });
-  await page.getByRole("heading", { name: "Current conclusion" }).first().waitFor();
-  await page.getByText("Open disagreements").first().waitFor();
-  await assertNoHorizontalOverflow(page, "current conclusion default");
-  await assertDefaultBoundarySafety(page, "current conclusion default", {
+  await page.getByRole("heading", { name: "Current Answer" }).first().waitFor();
+  await page.getByText("Still unresolved").first().waitFor();
+  await assertNoHorizontalOverflow(page, "current answer default");
+  await assertDefaultBoundarySafety(page, "current answer default", {
     runId,
     sessionId
   });
-  await assertHiddenFromDefault(page, "Candidate proposal event override", "current conclusion default");
-  await assertHiddenFromDefault(page, "Raw outcome material", "current conclusion default");
+  await assertHiddenFromDefault(page, "Candidate proposal event override", "current answer default");
+  await assertHiddenFromDefault(page, "Raw outcome material", "current answer default");
 
   await page.locator("details.du-advanced-panel > summary").first().click();
   await page.getByText("Candidate proposal event override").waitFor();
@@ -278,9 +278,9 @@ async function verifyLegacySessionSubviewBoundaries(page, { webBaseUrl, runId, s
     runId,
     sessionId,
     path: "objections",
-    heading: "Open disagreements",
+    heading: "Still unresolved",
     defaultText: "challenges, failure modes, or unresolved concerns",
-    defaultLabel: "legacy open disagreements default",
+    defaultLabel: "legacy unresolved default",
     hiddenSnippets: ["Objection projection records", "Object id", "Proposal event"],
     advancedHeading: "Objection projection records"
   });
@@ -290,7 +290,7 @@ async function verifyLegacySessionSubviewBoundaries(page, { webBaseUrl, runId, s
     runId,
     sessionId,
     path: "obligations",
-    heading: "Requirements this answer must satisfy",
+    heading: "Must cover",
     defaultText: "Unanswered requirements should be resolved",
     defaultLabel: "legacy requirements default",
     hiddenSnippets: ["Quality obligation projection records", "Object id", "Proposal event"],
@@ -347,20 +347,20 @@ async function verifyLegacySessionFinalBoundary(page, { webBaseUrl, runId, sessi
   await page.goto(`${webBaseUrl}/sessions/${encodeURIComponent(sessionId)}/final`, {
     waitUntil: "networkidle"
   });
-  await page.getByRole("heading", { name: "Current conclusion" }).first().waitFor();
-  await page.getByText("Review the current conclusion together").waitFor();
-  await assertNoHorizontalOverflow(page, "legacy current conclusion default");
-  await assertDefaultBoundarySafety(page, "legacy current conclusion default", {
+  await page.getByRole("heading", { name: "Current Answer" }).first().waitFor();
+  await page.getByText("Review the current answer together").waitFor();
+  await assertNoHorizontalOverflow(page, "legacy current answer default");
+  await assertDefaultBoundarySafety(page, "legacy current answer default", {
     runId,
     sessionId
   });
   await assertHiddenFromDefault(
     page,
     "Candidate proposal event override",
-    "legacy current conclusion default"
+    "legacy current answer default"
   );
-  await assertHiddenFromDefault(page, "Compiled outcome JSON", "legacy current conclusion default");
-  await assertHiddenFromDefault(page, "Final lifecycle controls", "legacy current conclusion default");
+  await assertHiddenFromDefault(page, "Compiled outcome JSON", "legacy current answer default");
+  await assertHiddenFromDefault(page, "Final lifecycle controls", "legacy current answer default");
 
   await page.locator("details.du-advanced-panel > summary").first().click();
   await page.getByText("Candidate proposal event override").waitFor();
@@ -373,7 +373,7 @@ async function verifyLegacySessionResourcesBoundary(page, { webBaseUrl, runId, s
     waitUntil: "networkidle"
   });
   await page.getByRole("heading", { name: "Evidence and verification" }).waitFor();
-  await page.getByText("Risks and missing evidence").waitFor();
+  await page.getByText("Risks and needs checking").waitFor();
   await assertNoHorizontalOverflow(page, "legacy risks and evidence default");
   await assertDefaultBoundarySafety(page, "legacy risks and evidence default", {
     runId,
@@ -395,7 +395,7 @@ async function verifyLegacySessionBoundary(page, { webBaseUrl, runId, sessionId 
   await page.getByRole("heading", { name: "Discussion brief" }).first().waitFor();
   await page.getByText("Review a proposed rollout before relying on it.").waitFor();
   await page.getByText("Review this discussion").waitFor();
-  await page.getByText("Next recommended actions").waitFor();
+  await page.getByRole("heading", { name: "Next steps", exact: true }).waitFor();
   await assertNoHorizontalOverflow(page, "legacy session user mode");
   await assertDefaultBoundarySafety(page, "legacy session user mode", {
     runId,

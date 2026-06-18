@@ -60,7 +60,7 @@ try {
 
   if (provider.requestCount < 6) {
     throw new Error(
-      `Browser product loop provider saw ${provider.requestCount} request(s); expected setup verification plus model-backed discussion requests.`
+      `Browser product loop provider saw ${provider.requestCount} request(s); expected setup verification plus discussion with AI requests.`
     );
   }
   if (provider.transientParticipantFailureCount !== 1) {
@@ -80,7 +80,7 @@ try {
   }
   if (provider.reviewModelRequestCount < 4) {
     throw new Error(
-      `Browser product loop provider saw ${provider.reviewModelRequestCount} request(s) for the review role model; expected organizer, review, risk, and conclusion roles to use it.`
+      `Browser product loop provider saw ${provider.reviewModelRequestCount} request(s) for the review role model; expected organizer, review, risk, and answer roles to use it.`
     );
   }
 } catch (error) {
@@ -137,7 +137,7 @@ console.log("Browser product loop smoke checks passed.");
 
 async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.goto(`${webBaseUrl}/setup/models`, { waitUntil: "networkidle" });
-  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
+  await page.getByRole("heading", { name: "Connect AI" }).waitFor();
   await page.getByText("Local service connected").waitFor();
   await page.getByText("Configure OpenAI-compatible provider").waitFor();
   await assertDefaultViewSafety(page, "setup start", { providerBaseUrl });
@@ -145,13 +145,16 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByLabel("Provider API key").fill(dummyApiKey);
   await page.getByLabel("Base URL").fill(providerBaseUrl);
   await page.getByRole("textbox", { name: "Model" }).fill(modelName);
-  await page.getByRole("button", { name: "Save model setup" }).click();
-  await page.getByText("Model setup saved locally").waitFor();
+  await page.getByRole("button", { name: "Save AI setup" }).click();
+  await page.getByText("AI setup saved locally").waitFor();
   await page.getByRole("button", { name: "Check readiness" }).click();
-  await page.getByText("Ready to verify").first().waitFor();
+  await page.getByText("Test provider connection").first().waitFor();
   await assertDefaultViewSafety(page, "after saving setup", { providerBaseUrl });
 
-  await page.getByRole("button", { name: "Verify connection" }).click();
+  await page
+    .getByLabel("Configure OpenAI-compatible")
+    .getByRole("button", { name: "Test connection" })
+    .click();
   await page.getByText("Provider connection verified").waitFor();
   await page.getByText("Ready for discussions").first().waitFor();
   const focusedStartLink = page.getByRole("link", { name: "Start focused discussion" }).first();
@@ -170,11 +173,11 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
 
   await broaderStartLink.click();
   await page.waitForURL(/\/runs\/new\?participants=model-backed&perspectives=3$/);
-  await page.getByRole("heading", { name: "Start a discussion" }).waitFor();
-  await page.getByText("Model-backed discussion selected").waitFor();
+  await page.getByRole("heading", { name: "New Discussion" }).waitFor();
+  await page.getByText("Discussion with AI selected").waitFor();
   await page.getByText("Perspective C", { exact: true }).waitFor();
   await page.getByText("Preview participants and review path").click();
-  await page.getByText("3 model perspectives").waitFor();
+  await page.getByText("3 AI perspectives").waitFor();
   await page
     .locator('label[for="discussion-model-override"]')
     .getByText("First-response model", { exact: true })
@@ -183,7 +186,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .locator('label[for="discussion-review-model-override"]')
     .getByText("Review role model", { exact: true })
     .waitFor();
-  await page.getByText("Saved model setup").first().waitFor();
+  await page.getByText("Saved AI setup").first().waitFor();
   if (!(await page.getByRole("radio", { name: /Broader review/i }).isChecked())) {
     throw new Error("Broader setup start link did not preselect Broader review.");
   }
@@ -193,7 +196,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   if (!(await page.getByRole("radio", { name: /Focused review/i }).isChecked())) {
     throw new Error("Focused review could not be selected after checking the broader setup start link.");
   }
-  await page.getByText("Ready to create a model-backed discussion").waitFor();
+  await page.getByText("Ready to create a deliberation room").waitFor();
   await page.locator("#discussion-model-override").fill(discussionModelName);
   await page.getByText(discussionModelName).first().waitFor();
   await page
@@ -214,56 +217,56 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
       "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set."
     )
     .waitFor();
-  await page.getByText("Role model defaults").waitFor();
-  await page.getByRole("button", { name: "Save as default role setup" }).click();
+  await page.getByText("Participant model choices", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "Save participant choices" }).click();
   await page
     .getByText(
-      "Saved role defaults to the local service. API keys and base URLs are not stored here."
+      "Saved participant choices to the local service. API keys and base URLs are not stored here."
     )
     .waitFor();
-  await page.getByRole("link", { name: "Open Setup / Models" }).click();
-  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
-  await page.getByText("Saved role defaults", { exact: true }).waitFor();
+  await page.getByRole("link", { name: "Open Connect AI" }).click();
+  await page.getByRole("heading", { name: "Connect AI" }).waitFor();
+  await page.getByText("Saved participant choices", { exact: true }).waitFor();
   await page
     .getByText(
-      "Setup / Models shows the saved participant model choices before you start. API keys, base URLs, and provider configuration ids are not returned here."
+      "Connect AI shows the saved participant choices before you start. API keys, base URLs, and internal provider details are not shown here."
     )
     .waitFor();
   await page.getByText(discussionModelName).waitFor();
   await page.getByText(reviewModelName).waitFor();
   await page.getByText("1 custom perspective model").waitFor();
   if ((await page.locator("#setup-role-first-response-model").inputValue()) !== discussionModelName) {
-    throw new Error("Setup / Models did not show the saved first-response role model.");
+    throw new Error("Connect AI did not show the saved first-response role model.");
   }
   if ((await page.locator("#setup-role-review-model").inputValue()) !== reviewModelName) {
-    throw new Error("Setup / Models did not show the saved review role model.");
+    throw new Error("Connect AI did not show the saved review role model.");
   }
   if ((await page.getByLabel("Perspective A model").inputValue()) !== perspectiveModelName) {
-    throw new Error("Setup / Models did not show the saved Perspective A model.");
+    throw new Error("Connect AI did not show the saved Perspective A model.");
   }
-  await page.getByRole("button", { name: "Save as default role setup" }).click();
+  await page.getByRole("button", { name: "Save participant choices" }).click();
   await page
     .getByText(
-      "Saved role defaults to the local service. API keys and base URLs are not stored here."
+      "Saved participant choices to the local service. API keys and base URLs are not stored here."
     )
     .waitFor();
   await page.getByRole("link", { name: "Start broader discussion" }).first().click();
   await page.waitForURL(/\/runs\/new\?participants=model-backed&perspectives=3$/);
-  await page.getByRole("heading", { name: "Start a discussion" }).waitFor();
-  await page.getByText("Saved role defaults are available from the local service.").waitFor();
+  await page.getByRole("heading", { name: "New Discussion" }).waitFor();
+  await page.getByText("Saved participant choices are available from the local service.").waitFor();
   if ((await page.locator("#discussion-model-override").inputValue()) !== discussionModelName) {
-    throw new Error("Saved role defaults did not restore the first-response model.");
+    throw new Error("Saved participant choices did not restore the first-response model.");
   }
   if ((await page.locator("#discussion-review-model-override").inputValue()) !== reviewModelName) {
-    throw new Error("Saved role defaults did not restore the review role model.");
+    throw new Error("Saved participant choices did not restore the review role model.");
   }
   if ((await page.getByLabel("Perspective A model").inputValue()) !== perspectiveModelName) {
-    throw new Error("Saved role defaults did not restore the Perspective A model.");
+    throw new Error("Saved participant choices did not restore the Perspective A model.");
   }
-  await page.getByRole("button", { name: "Clear saved role setup" }).click();
+  await page.getByRole("button", { name: "Clear saved participant choices" }).click();
   await page
     .getByText(
-      "Cleared saved role defaults from the local service. Current discussion fields are unchanged."
+      "Cleared saved participant choices from the local service. Current discussion fields are unchanged."
     )
     .waitFor();
   await assertDefaultViewSafety(page, "start discussion", { providerBaseUrl });
@@ -314,7 +317,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await updatedSteps.getByText("Needs attention", { exact: true }).waitFor();
 
   await page.getByRole("button", { name: "Send message and continue" }).click();
-  await page.getByRole("link", { name: "Review current conclusion" }).first().waitFor();
+  await page.getByRole("link", { name: "Review current answer" }).first().waitFor();
   await assertRoomConversationShellAfterMessages(page, "discussion room after continuation");
   await assertSuccessfulRoomUpdateReceipt(page, "discussion room after continuation");
   await assertConversationTranscriptReturnedToViewport(page, "discussion room after continuation");
@@ -333,10 +336,8 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page
     .locator("#room-conversation-transcript")
-    .getByText(
-      "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps.",
-      { exact: true }
-    )
+    .getByText(/Now that the first responses are visible, I'm responding to Perspective/)
+    .first()
     .waitFor();
   await page.locator("#room-conversation-transcript").waitFor();
   await page.getByText("Discussion round 1", { exact: true }).waitFor();
@@ -352,10 +353,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page
     .locator("#room-conversation-transcript")
-    .getByText("1 evidence gap still needs checking before relying on the conclusion.")
+    .getByText("1 evidence gap still needs checking before relying on the answer.")
     .waitFor();
   await page
-    .getByText("Review queue: 1 open disagreements, 1 missing evidence, 1 requirements to satisfy.")
+    .getByText("Review queue: 1 still unresolved, 1 needs checking, 1 must cover.")
     .waitFor();
   await conversationTranscript
     .getByText("This browser perspective supports the verified provider path.")
@@ -371,16 +372,16 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .first()
     .waitFor();
   await detailedReviewPanels
-    .getByText("The browser walkthrough still needs to prove evidence gaps stay visible.")
+    .getByText(/browser walkthrough.*what needs checking.*visible/i)
     .first()
     .waitFor();
   await detailedReviewPanels
-    .getByText("Confirm browser evidence before treating the conclusion as stable.")
+    .getByText("Confirm browser evidence before treating the answer as stable.")
     .first()
     .waitFor();
   await page
     .locator("#room-conversation-transcript")
-    .getByText("Browser-backed conclusions remain provisional until risks are reviewed.")
+    .getByText("Browser-backed answers remain provisional until risks are reviewed.")
     .first()
     .waitFor();
   await page
@@ -398,16 +399,16 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page.getByText("Checking evidence behind Perspective A's claim").first().waitFor();
   await assertRoomReportDetailsHidden(page, "discussion room output summary");
-  await page.getByText("Current conclusion: Ready to review").waitFor();
-  await page.locator(".du-room-focus").getByText("Missing evidence", { exact: true }).waitFor();
+  await page.getByText("Current answer: Ready to review").waitFor();
+  await page.locator(".du-room-focus").getByText("Needs checking", { exact: true }).waitFor();
   await page.locator(".du-room-focus").getByText("Risks", { exact: true }).waitFor();
   const roomReviewConclusionLink = page
     .locator("#room-next-action")
-    .getByRole("link", { name: "Review current conclusion", exact: true });
+    .getByRole("link", { name: "Review current answer", exact: true });
   await roomReviewConclusionLink.waitFor();
-  await page.getByRole("link", { name: "Review disagreements", exact: true }).first().waitFor();
+  await page.getByRole("link", { name: "Review unresolved points", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Check evidence", exact: true }).first().waitFor();
-  await page.getByRole("link", { name: "Update conclusion", exact: true }).first().waitFor();
+  await page.getByRole("link", { name: "Update answer", exact: true }).first().waitFor();
   await assertComposerActionsCompact(page, "discussion room after continuation", {
     maxActionListHeight: 240,
     maxButtonHeight: 64
@@ -420,12 +421,12 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
 
   await roomReviewConclusionLink.click();
   await page.waitForURL(/\/outcome$/);
-  await page.getByRole("heading", { name: "Current conclusion" }).first().waitFor();
-  await page.getByText("Use the verified provider path after reviewing browser-visible disagreements.").waitFor();
-  await page.getByText("Browser-backed conclusions remain provisional until risks are reviewed.").waitFor();
-  await page.getByText("The browser walkthrough still needs to prove evidence gaps stay visible.").waitFor();
+  await page.getByRole("heading", { name: "Current Answer" }).first().waitFor();
+  await page.getByText("Use the verified provider path after reviewing browser-visible unresolved points.").waitFor();
+  await page.getByText("Browser-backed answers remain provisional until risks are reviewed.").waitFor();
+  await page.getByText("The browser walkthrough still needs to prove checks stay visible.").waitFor();
   await page.getByText("Run another browser walkthrough after UI changes.").waitFor();
-  await assertDefaultViewSafety(page, "current conclusion", { providerBaseUrl });
+  await assertDefaultViewSafety(page, "current answer", { providerBaseUrl });
 }
 
 async function assertDiscussionRoomOverview(page, { label, expectedNextAction }) {
@@ -1146,7 +1147,7 @@ async function assertStartLink(locator, { label, perspectiveCount }) {
   const href = await locator.getAttribute("href");
 
   if (!href?.includes("participants=model-backed")) {
-    throw new Error(`${label} did not request model-backed participants.`);
+    throw new Error(`${label} did not request AI participants.`);
   }
 
   if (!href.includes(`perspectives=${perspectiveCount}`)) {
@@ -1314,14 +1315,14 @@ function createMockProviderContent(body, state) {
           id: "smoke-browser-candidate",
           title: "Use the verified provider path for reviewable browser discussions",
           description:
-            "The verified provider path can produce a reviewable browser conclusion when disagreements, evidence gaps, risks, and next actions stay visible.",
+            "The verified provider path can produce a reviewable browser answer when unresolved points, what needs checking, risks, and next steps stay visible.",
           sourceEventIds,
           status: "active",
           supportedBy: ["smoke-browser-claim"],
           attackedBy: ["smoke-browser-objection"],
           qualityObligationIds: ["smoke-browser-quality"],
           assumptions: ["The browser walkthrough verified provider setup first."],
-          tradeoffs: ["The path must keep evidence gaps visible in the room."],
+          tradeoffs: ["The path must keep what needs checking visible in the room."],
           applicableWhen: ["The local service and provider setup are both ready."]
         }
       ],
@@ -1329,7 +1330,7 @@ function createMockProviderContent(body, state) {
         {
           id: "smoke-browser-claim",
           content:
-            "The browser product loop can move from provider setup to a reviewable conclusion.",
+            "The browser product loop can move from provider setup to a reviewable answer.",
           scope: "process",
           sourceEventIds,
           supports: ["smoke-browser-candidate"],
@@ -1342,9 +1343,9 @@ function createMockProviderContent(body, state) {
           id: "smoke-browser-objection",
           targetId: "smoke-browser-candidate",
           failureMode:
-            "The browser walkthrough still needs to prove evidence gaps stay visible.",
+            "The browser walkthrough still needs to prove checks stay visible.",
           consequence:
-            "A model-backed UI pass could hide missing evidence before users review the conclusion.",
+            "An AI UI pass could hide what needs checking before users review the answer.",
           severityClaim: "major",
           status: "open",
           sourceEventIds,
@@ -1357,7 +1358,7 @@ function createMockProviderContent(body, state) {
           targetClaimId: "smoke-browser-claim",
           requiredKind: "tool",
           reason:
-            "Confirm browser evidence before treating the conclusion as stable.",
+            "Confirm browser evidence before treating the answer as stable.",
           priority: "high",
           status: "open",
           sourceEventIds
@@ -1369,7 +1370,7 @@ function createMockProviderContent(body, state) {
           scope: "final_output",
           targetCandidateId: "smoke-browser-candidate",
           requirement:
-            "The conclusion must keep browser-visible options, disagreements, evidence gaps, risks, and next recommended actions visible.",
+            "The answer must keep browser-visible options, unresolved points, what needs checking, risks, and next steps visible.",
           status: "unanswered",
           sourceEventIds,
           supportingRefIds: ["smoke-browser-claim"],
@@ -1387,10 +1388,10 @@ function createMockProviderContent(body, state) {
       challenges: allowedProposalEventIds.slice(0, 1).map((proposalEventId) => ({
         targetProposalEventId: proposalEventId,
         reason:
-          "Keep this generated proposal provisional until browser-visible evidence gaps are reviewed."
+          "Keep this generated proposal provisional until browser-visible checks are reviewed."
       })),
       notes: [
-        "The browser smoke challenges the generated proposal to verify the default Web flow still reaches a provisional conclusion with disagreements visible."
+        "The browser smoke challenges the generated proposal to verify the default Web flow still reaches a provisional answer with unresolved points visible."
       ]
     });
   }
@@ -1400,7 +1401,7 @@ function createMockProviderContent(body, state) {
     return JSON.stringify({
       candidateIds: allowedCandidateIds.slice(0, 1),
       recommendation:
-        "Use the verified provider path after reviewing browser-visible disagreements.",
+        "Use the verified provider path after reviewing browser-visible unresolved points.",
       applicabilityConditions: [
         "The local service is connected.",
         "The OpenAI-compatible provider has been saved and verified from Web."
@@ -1408,7 +1409,7 @@ function createMockProviderContent(body, state) {
       rationale:
         "The browser walkthrough reached reviewable discussion material from normal user actions.",
       limitations: [
-        "The conclusion remains provisional until evidence gaps and risks are reviewed."
+        "The answer remains provisional until checks and risks are reviewed."
       ]
     });
   }
@@ -1416,10 +1417,10 @@ function createMockProviderContent(body, state) {
   if (system.includes("Prepare Deliberum final audit material only.")) {
     return JSON.stringify({
       findings: [
-        "The provider-backed browser product loop produced a reviewable conclusion."
+        "The provider-backed browser product loop produced a reviewable answer."
       ],
       risks: [
-        "Browser-backed conclusions remain provisional until risks are reviewed."
+        "Browser-backed answers remain provisional until risks are reviewed."
       ],
       unresolvedObjectionIds: readStringArray(userPayload?.allowedUnresolvedObjectionIds),
       qualityObligationIds: readStringArray(userPayload?.allowedQualityObligationIds),
@@ -1439,7 +1440,7 @@ function createMockProviderContent(body, state) {
 
   return [
     "This browser perspective supports the verified provider path.",
-    "Keep disagreements, evidence gaps, risk review, current conclusion, and next recommended actions visible."
+    "Keep unresolved points, what needs checking, risk review, current answer, and next steps visible."
   ].join(" ");
 }
 

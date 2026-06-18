@@ -30,7 +30,340 @@ const LANGUAGE_OPTIONS: readonly {
 ];
 
 const ZH_CN_TRANSLATIONS: TranslationMap = {
+  "Connect AI first": "\u5148\u8fde\u63a5 AI",
+  "Connect AI needed": "\u9700\u8981\u8fde\u63a5 AI",
+  "AI provider ready": "AI \u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea",
+  "AI setup unavailable": "AI \u8bbe\u7f6e\u4e0d\u53ef\u7528",
+  "AI setup saved locally": "AI \u8bbe\u7f6e\u5df2\u4fdd\u5b58\u5230\u672c\u5730",
+  "AI setup could not be saved": "AI \u8bbe\u7f6e\u65e0\u6cd5\u4fdd\u5b58",
+  "Checking AI setup": "\u6b63\u5728\u68c0\u67e5 AI \u8bbe\u7f6e",
+  "No AI setup returned": "\u672a\u8fd4\u56de AI \u8bbe\u7f6e",
+  "The local service did not return safe AI setup status.": "\u672c\u5730\u670d\u52a1\u672a\u8fd4\u56de\u5b89\u5168\u7684 AI \u8bbe\u7f6e\u72b6\u6001\u3002",
+  "Test AI provider": "\u6d4b\u8bd5 AI \u63d0\u4f9b\u65b9",
+  "Add AI provider": "\u6dfb\u52a0 AI \u63d0\u4f9b\u65b9",
+  "Save AI setup": "\u4fdd\u5b58 AI \u8bbe\u7f6e",
+  "Saved AI setup": "\u5df2\u4fdd\u5b58\u7684 AI \u8bbe\u7f6e",
+  "Needs AI setup": "\u9700\u8981 AI \u8bbe\u7f6e",
+  "Check AI setup": "\u68c0\u67e5 AI \u8bbe\u7f6e",
+  "Review unresolved points": "\u5ba1\u9605\u672a\u89e3\u51b3\u95ee\u9898",
+  "Check what needs checking": "\u68c0\u67e5\u9700\u8981\u6838\u67e5\u7684\u5185\u5bb9",
+  "next step": "\u4e0b\u4e00\u6b65",
+  "next steps": "\u4e0b\u4e00\u6b65",
+  "unresolved point": "\u672a\u89e3\u51b3\u95ee\u9898",
+  "unresolved points": "\u672a\u89e3\u51b3\u95ee\u9898",
+  "unresolved point needs review": "\u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u9700\u8981\u5ba1\u9605",
+  "unresolved points need review": "\u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u9700\u8981\u5ba1\u9605",
+  "item needing checking": "\u4e2a\u9700\u8981\u6838\u67e5\u7684\u9879\u76ee",
+  "items needing checking": "\u4e2a\u9700\u8981\u6838\u67e5\u7684\u9879\u76ee",
+  "Answer review path": "\u7b54\u6848\u5ba1\u9605\u8def\u5f84",
+  "Before relying on this answer": "\u5728\u4f9d\u8d56\u8fd9\u4e2a\u7b54\u6848\u524d",
+  "Start with the recommendation, then check unresolved points, evidence gaps, risks, must-cover items, and next steps.": "\u5148\u770b\u5efa\u8bae\uff0c\u518d\u68c0\u67e5\u672a\u89e3\u51b3\u95ee\u9898\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u3001\u5fc5\u987b\u8986\u76d6\u9879\u548c\u4e0b\u4e00\u6b65\u3002",
+  "No current answer is available yet.": "\u5f53\u524d\u8fd8\u6ca1\u6709\u53ef\u7528\u7b54\u6848\u3002",
+  "No next steps are listed yet.": "\u5c1a\u672a\u5217\u51fa\u4e0b\u4e00\u6b65\u3002",
+  "Local human + AI deliberation room": "\u672c\u5730\u4eba\u7c7b + AI \u5ba1\u8bae\u5ba4",
+  "A local human + AI deliberation room for comparing perspectives, keeping unresolved points visible, and reaching reviewable answers with next steps.":
+    "\u4e00\u4e2a\u672c\u5730\u4eba\u7c7b + AI \u5ba1\u8bae\u5ba4\uff0c\u7528\u4e8e\u6bd4\u8f83\u591a\u65b9\u89c6\u89d2\u3001\u4fdd\u6301\u672a\u89e3\u51b3\u95ee\u9898\u53ef\u89c1\uff0c\u5e76\u5f62\u6210\u5e26\u4e0b\u4e00\u6b65\u7684\u53ef\u5ba1\u9605\u7b54\u6848\u3002",
+  "Use Deliberum to frame a hard question, collect independent perspectives, compare the strongest options, keep unresolved points visible, and turn the current state into a reviewable answer with next steps.": "\u7528 Deliberum \u754c\u5b9a\u590d\u6742\u95ee\u9898\u3001\u6536\u96c6\u72ec\u7acb\u89c6\u89d2\u3001\u6bd4\u8f83\u6700\u5f3a\u9009\u9879\u3001\u4fdd\u6301\u672a\u89e3\u51b3\u95ee\u9898\u53ef\u89c1\uff0c\u5e76\u628a\u5f53\u524d\u72b6\u6001\u8f6c\u6210\u5e26\u4e0b\u4e00\u6b65\u7684\u53ef\u5ba1\u9605\u7b54\u6848\u3002",
+  "One place to see whether the local service, AI setup, and discussion history are ready.": "\u5728\u4e00\u4e2a\u5730\u65b9\u67e5\u770b\u672c\u5730\u670d\u52a1\u3001AI \u8bbe\u7f6e\u548c\u8ba8\u8bba\u5386\u53f2\u662f\u5426\u5df2\u5c31\u7eea\u3002",
+  "Demo participants can start now; finish provider setup before relying on AI perspectives.": "\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u5f00\u59cb\uff1b\u5728\u4f9d\u8d56 AI \u89c6\u89d2\u524d\uff0c\u8bf7\u5b8c\u6210\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
+  "A provider can answer with configured AI participants.": "\u63d0\u4f9b\u65b9\u53ef\u4ee5\u4f7f\u7528\u5df2\u914d\u7f6e\u7684 AI \u53c2\u4e0e\u8005\u56de\u7b54\u3002",
+  "Demo ready, Connect AI still needed": "\u6f14\u793a\u5df2\u5c31\u7eea\uff0c\u4ecd\u9700\u8fde\u63a5 AI",
+  "Participant readiness appears after AI setup loads.": "AI \u8bbe\u7f6e\u52a0\u8f7d\u540e\u4f1a\u663e\u793a\u53c2\u4e0e\u8005\u5c31\u7eea\u72b6\u6001\u3002",
+  "You can try the room now, then add a provider for AI responses.": "\u4f60\u53ef\u4ee5\u5148\u8bd5\u7528\u8ba8\u8bba\u5ba4\uff0c\u7136\u540e\u6dfb\u52a0\u63d0\u4f9b\u65b9\u4ee5\u83b7\u5f97 AI \u56de\u5e94\u3002",
+  "Save an API key, base URL, and model before relying on AI perspectives.": "\u5728\u4f9d\u8d56 AI \u89c6\u89d2\u524d\uff0c\u8bf7\u5148\u4fdd\u5b58 API key\u3001base URL \u548c\u6a21\u578b\u3002",
+  "Open the discussion room with configured AI participants selected.": "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u5e76\u9009\u7528\u5df2\u914d\u7f6e\u7684 AI \u53c2\u4e0e\u8005\u3002",
+  "Try the full discussion path with built-in participants while you connect AI.": "\u8fde\u63a5 AI \u671f\u95f4\uff0c\u53ef\u4ee5\u5148\u4f7f\u7528\u5185\u7f6e\u53c2\u4e0e\u8005\u8bd5\u7528\u5b8c\u6574\u8ba8\u8bba\u8def\u5f84\u3002",
+  "Checking whether the local service has saved participant choices.": "\u6b63\u5728\u68c0\u67e5\u672c\u5730\u670d\u52a1\u662f\u5426\u6709\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u3002",
+  "Add a demo preset or an AI provider before starting a useful discussion.": "\u5f00\u59cb\u6709\u7528\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u6f14\u793a\u9884\u8bbe\u6216 AI \u63d0\u4f9b\u65b9\u3002",
+  "Add a demo preset or AI provider before creating useful material.": "\u521b\u5efa\u6709\u7528\u6750\u6599\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u6f14\u793a\u9884\u8bbe\u6216 AI \u63d0\u4f9b\u65b9\u3002",
+  "Built-in demo participants let first-time users try the full room flow before connecting AI.": "\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005\u8ba9\u9996\u6b21\u7528\u6237\u5728\u8fde\u63a5 AI \u524d\u5148\u8bd5\u7528\u5b8c\u6574\u8ba8\u8bba\u5ba4\u6d41\u7a0b\u3002",
+  "Test the AI setup, then continue the discussion so options, evidence, risks, and the answer can be rebuilt.": "\u5148\u6d4b\u8bd5 AI \u8bbe\u7f6e\uff0c\u518d\u7ee7\u7eed\u8ba8\u8bba\uff0c\u4ee5\u4fbf\u91cd\u5efa\u9009\u9879\u3001\u8bc1\u636e\u3001\u98ce\u9669\u548c\u7b54\u6848\u3002",
+  "An AI or review step could not finish safely. Check AI setup, then try Continue discussion again. If the same discussion keeps failing after partial responses, start a new discussion with AI.":
+    "AI \u6216\u5ba1\u9605\u6b65\u9aa4\u672a\u80fd\u5b89\u5168\u5b8c\u6210\u3002\u8bf7\u68c0\u67e5 AI \u8bbe\u7f6e\uff0c\u7136\u540e\u518d\u5c1d\u8bd5\u7ee7\u7eed\u8ba8\u8bba\u3002\u5982\u679c\u540c\u4e00\u8ba8\u8bba\u5728\u90e8\u5206\u56de\u5e94\u540e\u6301\u7eed\u5931\u8d25\uff0c\u8bf7\u5f00\u59cb\u65b0\u7684 AI \u53c2\u4e0e\u8ba8\u8bba\u3002",
+  "The model returned organizer output Deliberum could not use directly, so this view was rebuilt from the independent first responses. Treat the answer as provisional and check unresolved points, evidence gaps, and risks before relying on it.": "\u6a21\u578b\u8fd4\u56de\u7684\u7ec4\u7ec7\u8f93\u51fa\u65e0\u6cd5\u88ab Deliberum \u76f4\u63a5\u4f7f\u7528\uff0c\u56e0\u6b64\u6b64\u89c6\u56fe\u6839\u636e\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u91cd\u5efa\u3002\u8bf7\u5c06\u7b54\u6848\u89c6\u4e3a\u4e34\u65f6\uff0c\u5e76\u5728\u4f9d\u8d56\u524d\u68c0\u67e5\u672a\u89e3\u51b3\u95ee\u9898\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u98ce\u9669\u3002",
+  "Review queue: {disagreements} still unresolved, {evidence} needs checking, {requirements} must cover.": "\u5ba1\u9605\u961f\u5217\uff1a{disagreements} \u4e2a\u4ecd\u672a\u89e3\u51b3\uff0c{evidence} \u4e2a\u9700\u8981\u6838\u67e5\uff0c{requirements} \u4e2a\u5fc5\u987b\u8986\u76d6\u3002",
+  "The room has enough material for review. Start with the answer, then choose whether to inspect unresolved points, check evidence, or update the discussion.":
+    "\u8ba8\u8bba\u5ba4\u5df2\u6709\u8db3\u591f\u6750\u6599\u53ef\u4f9b\u5ba1\u9605\u3002\u8bf7\u5148\u4ece\u7b54\u6848\u5f00\u59cb\uff0c\u7136\u540e\u9009\u62e9\u662f\u5426\u68c0\u67e5\u672a\u89e3\u51b3\u95ee\u9898\u3001\u6838\u67e5\u8bc1\u636e\u6216\u66f4\u65b0\u8ba8\u8bba\u3002",
+  "{count} evidence gap still needs checking before relying on the answer.":
+    "{count} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002",
+  "{count} evidence gaps still need checking before relying on the answer.":
+    "{count} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002",
+  "{count} unresolved point still needs resolution before relying on the answer.":
+    "{count} \u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u4ecd\u9700\u5904\u7406\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002",
+  "{count} unresolved points still need resolution before relying on the answer.":
+    "{count} \u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u4ecd\u9700\u5904\u7406\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002",
+  "{disagreements} unresolved point and {evidence} item needing checking are visible.": "\u53ef\u89c1 {disagreements} \u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u548c {evidence} \u4e2a\u5f85\u6838\u67e5\u9879\u3002",
+  "{disagreements} unresolved point and {evidence} items needing checking are visible.": "\u53ef\u89c1 {disagreements} \u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u548c {evidence} \u4e2a\u5f85\u6838\u67e5\u9879\u3002",
+  "{disagreements} unresolved points and {evidence} item needing checking are visible.": "\u53ef\u89c1 {disagreements} \u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u548c {evidence} \u4e2a\u5f85\u6838\u67e5\u9879\u3002",
+  "{disagreements} unresolved points and {evidence} items needing checking are visible.": "\u53ef\u89c1 {disagreements} \u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u548c {evidence} \u4e2a\u5f85\u6838\u67e5\u9879\u3002",
+  "Review the current answer": "\u5ba1\u9605\u5f53\u524d\u7b54\u6848",
+  "Update answer": "\u66f4\u65b0\u7b54\u6848",
+  "Answer and next steps": "\u7b54\u6848\u548c\u4e0b\u4e00\u6b65",
+  "Use next steps": "\u4f7f\u7528\u4e0b\u4e00\u6b65",
   "User Mode": "\u7528\u6237\u6a21\u5f0f",
+  "Connect AI": "\u8fde\u63a5 AI",
+  "Open Connect AI": "\u6253\u5f00\u8fde\u63a5 AI",
+  "My Discussions": "\u6211\u7684\u8ba8\u8bba",
+  "New Discussion": "\u65b0\u5efa\u8ba8\u8bba",
+  "Developer Tools": "\u5f00\u53d1\u8005\u5de5\u5177",
+  "Current Answer": "\u5f53\u524d\u7b54\u6848",
+  "Current answer": "\u5f53\u524d\u7b54\u6848",
+  "Current answer: {status}": "\u5f53\u524d\u7b54\u6848\uff1a{status}",
+  "Current answer snapshot": "\u5f53\u524d\u7b54\u6848\u6458\u8981",
+  "Current answer compiled": "\u5f53\u524d\u7b54\u6848\u5df2\u751f\u6210",
+  "Current answer remains provisional": "\u5f53\u524d\u7b54\u6848\u4ecd\u4e3a\u4e34\u65f6\u7248",
+  "Current answer ready": "\u5f53\u524d\u7b54\u6848\u5df2\u5c31\u7eea",
+  "Current answer ready to review": "\u5f53\u524d\u7b54\u6848\u53ef\u4f9b\u5ba1\u9605",
+  "Current answer status unknown": "\u5f53\u524d\u7b54\u6848\u72b6\u6001\u672a\u77e5",
+  "Current answer not available": "\u5f53\u524d\u7b54\u6848\u4e0d\u53ef\u7528",
+  "Current answer appears after the room produces answer material.":
+    "\u8ba8\u8bba\u5ba4\u4ea7\u751f\u7b54\u6848\u6750\u6599\u540e\uff0c\u4f1a\u663e\u793a\u5f53\u524d\u7b54\u6848\u3002",
+  "Use the current answer as reviewable material.":
+    "\u5c06\u5f53\u524d\u7b54\u6848\u4f5c\u4e3a\u53ef\u5ba1\u9605\u6750\u6599\u3002",
+  "After the room has perspectives, unresolved points, evidence gaps, risks, and a draft answer, review actions will appear here.":
+    "\u8ba8\u8bba\u5ba4\u5f62\u6210\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u548c\u8349\u7a3f\u7b54\u6848\u540e\uff0c\u8fd9\u91cc\u4f1a\u663e\u793a\u5ba1\u9605\u64cd\u4f5c\u3002",
+  "AI and participant setup": "AI \u548c\u53c2\u4e0e\u8005\u8bbe\u7f6e",
+  "Compare strongest options, unresolved points, must-cover items, and what needs checking.":
+    "\u6bd4\u8f83\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u5fc5\u987b\u8986\u76d6\u9879\u548c\u9700\u8981\u6838\u67e5\u7684\u5185\u5bb9\u3002",
+  "Concerns that still need resolution.": "\u4ecd\u9700\u8981\u5904\u7406\u7684\u62c5\u5fe7\u3002",
+  "Current activity": "\u5f53\u524d\u6d3b\u52a8",
+  "It creates a discussion brief, independent first responses, strongest options, unresolved points, must-cover requirements, evidence checks, risk review, and a current answer.":
+    "\u5b83\u4f1a\u521b\u5efa\u8ba8\u8bba\u7b80\u62a5\u3001\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u3001\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u5fc5\u987b\u8986\u76d6\u7684\u8981\u6c42\u3001\u8bc1\u636e\u6838\u67e5\u3001\u98ce\u9669\u5ba1\u9605\u548c\u5f53\u524d\u7b54\u6848\u3002",
+  "Jump to unresolved points that still constrain the answer.":
+    "\u8df3\u8f6c\u5230\u4ecd\u4f1a\u7ea6\u675f\u7b54\u6848\u7684\u672a\u89e3\u51b3\u95ee\u9898\u3002",
+  "Model name": "\u6a21\u578b\u540d\u79f0",
+  "No unresolved points have been accepted into this discussion yet.":
+    "\u672c\u6b21\u8ba8\u8bba\u5c1a\u672a\u63a5\u7eb3\u672a\u89e3\u51b3\u95ee\u9898\u3002",
+  "Nothing needs checking yet": "\u76ee\u524d\u6ca1\u6709\u9700\u8981\u6838\u67e5\u7684\u5185\u5bb9",
+  "Nothing unresolved yet": "\u76ee\u524d\u6ca1\u6709\u672a\u89e3\u51b3\u95ee\u9898",
+  "Open the current answer to see the result, caveats, and next steps together.":
+    "\u6253\u5f00\u5f53\u524d\u7b54\u6848\uff0c\u540c\u65f6\u67e5\u770b\u7ed3\u679c\u3001\u6ce8\u610f\u4e8b\u9879\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Open the current answer without changing the discussion.":
+    "\u6253\u5f00\u5f53\u524d\u7b54\u6848\uff0c\u4e0d\u6539\u53d8\u8ba8\u8bba\u5185\u5bb9\u3002",
+  "Ready to discuss": "\u53ef\u4ee5\u5f00\u59cb\u8ba8\u8bba",
+  "Review requirements that must be satisfied or acknowledged before relying on the answer.":
+    "\u5ba1\u9605\u5728\u4f9d\u8d56\u7b54\u6848\u524d\u5fc5\u987b\u6ee1\u8db3\u6216\u8bf4\u660e\u7684\u8981\u6c42\u3002",
+  "Start or continue a discussion, then review the current answer, main perspectives, unresolved points, risks, what needs checking, and next steps.":
+    "\u5f00\u59cb\u6216\u7ee7\u7eed\u8ba8\u8bba\uff0c\u7136\u540e\u5ba1\u9605\u5f53\u524d\u7b54\u6848\u3001\u4e3b\u8981\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u98ce\u9669\u3001\u9700\u8981\u6838\u67e5\u7684\u5185\u5bb9\u548c\u4e0b\u4e00\u6b65\u3002",
+  "The room keeps the brief, participant perspectives, unresolved points, needs checking, risks, the current answer, and next steps visible together.":
+    "\u8ba8\u8bba\u5ba4\u4f1a\u628a\u7b80\u62a5\u3001\u53c2\u4e0e\u8005\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u9700\u8981\u6838\u67e5\u7684\u5185\u5bb9\u3001\u98ce\u9669\u3001\u5f53\u524d\u7b54\u6848\u548c\u4e0b\u4e00\u6b65\u653e\u5728\u4e00\u8d77\u663e\u793a\u3002",
+  "These are the requirements the answer must satisfy to be useful.":
+    "\u8fd9\u4e9b\u662f\u7b54\u6848\u8981\u6709\u7528\u5c31\u5fc5\u987b\u6ee1\u8db3\u7684\u8981\u6c42\u3002",
+  "This discussion has not surfaced evidence items that need checking yet.":
+    "\u672c\u6b21\u8ba8\u8bba\u5c1a\u672a\u63d0\u51fa\u9700\u8981\u6838\u67e5\u7684\u8bc1\u636e\u9879\u3002",
+  "Unanswered requirements should be resolved before relying on the answer.":
+    "\u5728\u4f9d\u8d56\u7b54\u6848\u524d\uff0c\u5e94\u5148\u5904\u7406\u5c1a\u672a\u56de\u7b54\u7684\u8981\u6c42\u3002",
+  "Unresolved points stay visible because they can still constrain the answer.":
+    "\u672a\u89e3\u51b3\u95ee\u9898\u4f1a\u4fdd\u6301\u53ef\u89c1\uff0c\u56e0\u4e3a\u5b83\u4eec\u4ecd\u53ef\u80fd\u7ea6\u675f\u7b54\u6848\u3002",
+  "What should the current answer include?": "\u5f53\u524d\u7b54\u6848\u5e94\u5305\u542b\u4ec0\u4e48\uff1f",
+  "Open current answer": "\u6253\u5f00\u5f53\u524d\u7b54\u6848",
+  "Review current answer": "\u5ba1\u9605\u5f53\u524d\u7b54\u6848",
+  "View current answer": "\u67e5\u770b\u5f53\u524d\u7b54\u6848",
+  "View Current Answer": "\u67e5\u770b\u5f53\u524d\u7b54\u6848",
+  "Answer not ready yet": "\u7b54\u6848\u5c1a\u672a\u5c31\u7eea",
+  "Still unresolved": "\u4ecd\u672a\u89e3\u51b3",
+  "Needs checking": "\u9700\u8981\u6838\u67e5",
+  "Needs checking {number}": "\u9700\u8981\u6838\u67e5 {number}",
+  "Must cover": "\u5fc5\u987b\u8986\u76d6",
+  "Next steps": "\u4e0b\u4e00\u6b65",
+  "Risks and needs checking": "\u98ce\u9669\u4e0e\u5f85\u6838\u67e5\u9879",
+  "This message guides the next round.":
+    "\u8fd9\u6761\u6d88\u606f\u4f1a\u5f15\u5bfc\u4e0b\u4e00\u8f6e\u8ba8\u8bba\u3002",
+  "Start discussion with AI": "\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba",
+  "Start a new discussion with AI": "\u5f00\u59cb\u65b0\u7684 AI \u53c2\u4e0e\u8ba8\u8bba",
+  "AI participants": "AI \u53c2\u4e0e\u8005",
+  "AI participants ready": "AI \u53c2\u4e0e\u8005\u5df2\u5c31\u7eea",
+  "Discussion with AI": "AI \u53c2\u4e0e\u8ba8\u8bba",
+  "Discussion with AI selected": "\u5df2\u9009\u62e9 AI \u53c2\u4e0e\u8ba8\u8bba",
+  "Discussion with AI continued": "AI \u53c2\u4e0e\u8ba8\u8bba\u5df2\u7ee7\u7eed",
+  "AI review path ready": "AI \u5ba1\u67e5\u8def\u5f84\u5df2\u5c31\u7eea",
+  "AI first responses ready": "AI \u9996\u6b21\u56de\u5e94\u5df2\u5c31\u7eea",
+  "Ready to create a deliberation room": "\u53ef\u4ee5\u521b\u5efa\u5ba1\u8bae\u5ba4",
+  "Ready for discussions with AI": "\u53ef\u7528\u4e8e AI \u53c2\u4e0e\u8ba8\u8bba",
+  "Test provider connection": "\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u8fde\u63a5",
+  "Test provider first": "\u5148\u6d4b\u8bd5\u63d0\u4f9b\u65b9",
+  "Saved participant choices": "\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9",
+  "No saved participant choices": "\u5c1a\u672a\u4fdd\u5b58\u53c2\u4e0e\u8005\u9009\u62e9",
+  "No unresolved points listed": "\u5c1a\u672a\u5217\u51fa\u672a\u89e3\u51b3\u95ee\u9898",
+  "Nothing needs checking": "\u65e0\u9700\u6838\u67e5",
+  "No next steps listed": "\u5c1a\u672a\u5217\u51fa\u4e0b\u4e00\u6b65",
+  "Participant model choices": "\u53c2\u4e0e\u8005\u6a21\u578b\u9009\u62e9",
+  "Checking saved participant choices":
+    "\u6b63\u5728\u68c0\u67e5\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9",
+  "Saved participant choices unavailable":
+    "\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u4e0d\u53ef\u7528",
+  "Save participant choices": "\u4fdd\u5b58\u53c2\u4e0e\u8005\u9009\u62e9",
+  "Apply saved participant choices": "\u5e94\u7528\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9",
+  "Clear saved participant choices": "\u6e05\u9664\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9",
+  "Start with saved participant choices":
+    "\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u5f00\u59cb",
+  "Edit participant choices": "\u7f16\u8f91\u53c2\u4e0e\u8005\u9009\u62e9",
+  "Create participant choices": "\u521b\u5efa\u53c2\u4e0e\u8005\u9009\u62e9",
+  "Saved participant choices to the local service. API keys and base URLs are not stored here.":
+    "\u5df2\u5c06\u53c2\u4e0e\u8005\u9009\u62e9\u4fdd\u5b58\u5230\u672c\u5730\u670d\u52a1\u3002\u8fd9\u91cc\u4e0d\u4fdd\u5b58 API key \u548c base URL\u3002",
+  "Applied the saved participant choices to this discussion.":
+    "\u5df2\u5c06\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u5e94\u7528\u5230\u672c\u6b21\u8ba8\u8bba\u3002",
+  "Cleared saved participant choices from the local service.":
+    "\u5df2\u4ece\u672c\u5730\u670d\u52a1\u6e05\u9664\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u3002",
+  "Cleared saved participant choices from the local service. Current discussion fields are unchanged.":
+    "\u5df2\u4ece\u672c\u5730\u670d\u52a1\u6e05\u9664\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u3002\u5f53\u524d\u8ba8\u8bba\u5b57\u6bb5\u4e0d\u53d8\u3002",
+  "Participant choices could not be changed in the local service. You can still review setup and start a discussion.":
+    "\u65e0\u6cd5\u5728\u672c\u5730\u670d\u52a1\u4e2d\u66f4\u6539\u53c2\u4e0e\u8005\u9009\u62e9\u3002\u4f60\u4ecd\u7136\u53ef\u4ee5\u67e5\u770b\u8bbe\u7f6e\u5e76\u5f00\u59cb\u8ba8\u8bba\u3002",
+  "Participant choices could not be changed in the local service. You can still create this discussion.":
+    "\u65e0\u6cd5\u5728\u672c\u5730\u670d\u52a1\u4e2d\u66f4\u6539\u53c2\u4e0e\u8005\u9009\u62e9\u3002\u4f60\u4ecd\u7136\u53ef\u4ee5\u521b\u5efa\u672c\u6b21\u8ba8\u8bba\u3002",
+  "Saved participant choices are available from the local service.":
+    "\u672c\u5730\u670d\u52a1\u4e2d\u5df2\u6709\u53ef\u7528\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u3002",
+  "No saved participant choices yet. API keys and base URLs are never saved here.":
+    "\u5c1a\u672a\u4fdd\u5b58\u53c2\u4e0e\u8005\u9009\u62e9\u3002\u8fd9\u91cc\u6c38\u4e0d\u4fdd\u5b58 API key \u548c base URL\u3002",
+  "The local service did not return saved participant choices. You can still start or configure a discussion.":
+    "\u672c\u5730\u670d\u52a1\u672a\u8fd4\u56de\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u3002\u4f60\u4ecd\u7136\u53ef\u4ee5\u5f00\u59cb\u6216\u914d\u7f6e\u8ba8\u8bba\u3002",
+  "Choose whether this discussion uses demo participants or connected AI participants before you create the room.":
+    "\u521b\u5efa\u8ba8\u8bba\u5ba4\u524d\uff0c\u9009\u62e9\u672c\u6b21\u8ba8\u8bba\u4f7f\u7528\u6f14\u793a\u53c2\u4e0e\u8005\u8fd8\u662f\u5df2\u8fde\u63a5\u7684 AI \u53c2\u4e0e\u8005\u3002",
+  "Check what needs evidence": "\u68c0\u67e5\u9700\u8981\u8bc1\u636e\u7684\u5185\u5bb9",
+  "Review what is still unresolved": "\u5ba1\u9605\u4ecd\u672a\u89e3\u51b3\u7684\u5185\u5bb9",
+  "Unresolved points or unfinished answer requirements still need work.":
+    "\u672a\u89e3\u51b3\u7684\u95ee\u9898\u6216\u672a\u5b8c\u6210\u7684\u7b54\u6848\u8981\u6c42\u4ecd\u9700\u8981\u5904\u7406\u3002",
+  "3. Connect AI in Web": "3. \u5728 Web \u4e2d\u8fde\u63a5 AI",
+  "AI connection status": "AI \u8fde\u63a5\u72b6\u6001",
+  "Discussion with AI start options": "AI \u53c2\u4e0e\u8ba8\u8bba\u5f00\u59cb\u9009\u9879",
+  "AI setup": "AI \u8bbe\u7f6e",
+  "After the service responds, open Connect AI to add the provider API key, base URL, and model name.":
+    "\u670d\u52a1\u54cd\u5e94\u540e\uff0c\u6253\u5f00\u201c\u8fde\u63a5 AI\u201d\u4ee5\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\u540d\u79f0\u3002",
+  "Choose a provider, enter an API key, test the connection, and see whether AI participants are ready.":
+    "\u9009\u62e9\u63d0\u4f9b\u65b9\u3001\u8f93\u5165 API key\u3001\u6d4b\u8bd5\u8fde\u63a5\uff0c\u5e76\u67e5\u770b AI \u53c2\u4e0e\u8005\u662f\u5426\u5df2\u5c31\u7eea\u3002",
+  "Configure a ready AI provider locally before selecting AI participants.":
+    "\u9009\u62e9 AI \u53c2\u4e0e\u8005\u524d\uff0c\u8bf7\u5148\u5728\u672c\u5730\u914d\u7f6e\u53ef\u7528\u7684 AI \u63d0\u4f9b\u65b9\u3002",
+  "Connect AI shows the saved participant choices before you start. API keys, base URLs, and internal provider details are not shown here.":
+    "\u8fde\u63a5 AI \u4f1a\u5728\u5f00\u59cb\u524d\u663e\u793a\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u3002\u8fd9\u91cc\u4e0d\u4f1a\u663e\u793a API key\u3001base URL \u6216\u5185\u90e8\u63d0\u4f9b\u65b9\u8be6\u60c5\u3002",
+  "Connected AI providers": "\u5df2\u8fde\u63a5\u7684 AI \u63d0\u4f9b\u65b9",
+  "Create a New Discussion with configured AI participants when needed.":
+    "\u9700\u8981\u65f6\u7528\u5df2\u914d\u7f6e\u7684 AI \u53c2\u4e0e\u8005\u521b\u5efa\u65b0\u8ba8\u8bba\u3002",
+  "Current AI connection": "\u5f53\u524d AI \u8fde\u63a5",
+  "Demo walkthroughs use two built-in sample perspectives. Choose AI participants to use a broader independent review.":
+    "\u6f14\u793a\u6d41\u7a0b\u4f7f\u7528\u4e24\u4e2a\u5185\u7f6e\u793a\u4f8b\u89c6\u89d2\u3002\u9009\u62e9 AI \u53c2\u4e0e\u8005\u53ef\u4f7f\u7528\u66f4\u5e7f\u7684\u72ec\u7acb\u5ba1\u9605\u3002",
+  "Describe what you need to decide or clarify. Deliberum keeps the answer, unresolved points, risks, checks, and next steps visible.":
+    "\u63cf\u8ff0\u4f60\u9700\u8981\u51b3\u5b9a\u6216\u6f84\u6e05\u7684\u95ee\u9898\u3002Deliberum \u4f1a\u8ba9\u7b54\u6848\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u98ce\u9669\u3001\u6838\u67e5\u9879\u548c\u4e0b\u4e00\u6b65\u4fdd\u6301\u53ef\u89c1\u3002",
+  "Evidence gaps and verification needs that should be checked before relying on the answer.":
+    "\u5728\u4f9d\u8d56\u7b54\u6848\u524d\u5e94\u6838\u67e5\u7684\u8bc1\u636e\u7f3a\u53e3\u548c\u9a8c\u8bc1\u9700\u6c42\u3002",
+  "Evidence needs, verification work, and risks are shown together so they can be resolved before relying on the answer.":
+    "\u8bc1\u636e\u9700\u6c42\u3001\u9a8c\u8bc1\u5de5\u4f5c\u548c\u98ce\u9669\u4f1a\u653e\u5728\u4e00\u8d77\u663e\u793a\uff0c\u4ee5\u4fbf\u5728\u4f9d\u8d56\u7b54\u6848\u524d\u5904\u7406\u3002",
+  "Explicit requirements for the current answer.":
+    "\u5f53\u524d\u7b54\u6848\u9700\u8981\u6ee1\u8db3\u7684\u660e\u786e\u8981\u6c42\u3002",
+  "Leave blank to use the model saved in Connect AI. Perspectives without their own model use this value for first responses.":
+    "\u7559\u7a7a\u5219\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f1a\u4f7f\u7528\u6b64\u503c\u4f5c\u4e3a\u9996\u6b21\u56de\u5e94\u6a21\u578b\u3002",
+  "Manage the AI provider Web can safely see. API keys stay hidden, and saved base URL or model values are not shown in the default view.":
+    "\u7ba1\u7406 Web \u53ef\u5b89\u5168\u67e5\u770b\u7684 AI \u63d0\u4f9b\u65b9\u3002API key \u4f1a\u4fdd\u6301\u9690\u85cf\uff0c\u5df2\u4fdd\u5b58\u7684 base URL \u6216\u6a21\u578b\u503c\u4e0d\u4f1a\u663e\u793a\u5728\u9ed8\u8ba4\u89c6\u56fe\u4e2d\u3002",
+  "Needs checking items are user-facing verification work, not low-level access state.":
+    "\u9700\u8981\u6838\u67e5\u7684\u9879\u76ee\u662f\u9762\u5411\u7528\u6237\u7684\u9a8c\u8bc1\u5de5\u4f5c\uff0c\u4e0d\u662f\u5e95\u5c42\u8bbf\u95ee\u72b6\u6001\u3002",
+  "Open Connect AI for the local start command and AI setup steps.":
+    "\u6253\u5f00\u201c\u8fde\u63a5 AI\u201d\u67e5\u770b\u672c\u5730\u542f\u52a8\u547d\u4ee4\u548c AI \u8bbe\u7f6e\u6b65\u9aa4\u3002",
+  "Open a discussion room and review its brief, perspectives, unresolved points, checks, answer, and next steps.":
+    "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u67e5\u770b\u8ba8\u8bba\u7b80\u8ff0\u3001\u5404\u65b9\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u6838\u67e5\u9879\u3001\u7b54\u6848\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Provider setup is saved. Use Test connection here or in Connect AI before selecting AI participants.":
+    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u3002\u9009\u62e9 AI \u53c2\u4e0e\u8005\u524d\uff0c\u8bf7\u5728\u6b64\u5904\u6216\u201c\u8fde\u63a5 AI\u201d\u4e2d\u4f7f\u7528\u201c\u6d4b\u8bd5\u8fde\u63a5\u201d\u3002",
+  "Review the answer with risks and next steps.":
+    "\u7ed3\u5408\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u5ba1\u9605\u7b54\u6848\u3002",
+  "Review the answer, unresolved points, evidence needs, risks, and next steps.":
+    "\u5ba1\u9605\u7b54\u6848\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u8bc1\u636e\u9700\u6c42\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Review the current answer together with main perspectives, unresolved points, evidence needs, risks, and next steps.":
+    "\u7ed3\u5408\u4e3b\u8981\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u8bc1\u636e\u9700\u6c42\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u5ba1\u9605\u5f53\u524d\u7b54\u6848\u3002",
+  "Save non-secret participant model choices to the local service so future discussions with AI start with the same setup.":
+    "\u5c06\u975e\u5bc6\u94a5\u7684\u53c2\u4e0e\u8005\u6a21\u578b\u9009\u62e9\u4fdd\u5b58\u5230\u672c\u5730\u670d\u52a1\uff0c\u8ba9\u4ee5\u540e\u7684 AI \u53c2\u4e0e\u8ba8\u8bba\u4f7f\u7528\u76f8\u540c\u8bbe\u7f6e\u5f00\u59cb\u3002",
+  "Save participant choices from New Discussion, then Connect AI will show which discussion depth and models are ready for future discussions.":
+    "\u4ece\u201c\u65b0\u5efa\u8ba8\u8bba\u201d\u4fdd\u5b58\u53c2\u4e0e\u8005\u9009\u62e9\u540e\uff0c\u201c\u8fde\u63a5 AI\u201d\u4f1a\u663e\u793a\u672a\u6765\u8ba8\u8bba\u53ef\u7528\u7684\u8ba8\u8bba\u6df1\u5ea6\u548c\u6a21\u578b\u3002",
+  "Save the provider API key, base URL, and model name to this machine so future discussions can use AI participants.":
+    "\u5c06\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\u540d\u79f0\u4fdd\u5b58\u5230\u8fd9\u53f0\u673a\u5668\uff0c\u4ee5\u4fbf\u540e\u7eed\u8ba8\u8bba\u4f7f\u7528 AI \u53c2\u4e0e\u8005\u3002",
+  "See whether the local app is connected, a provider is ready, and discussions can use AI participants.":
+    "\u67e5\u770b\u672c\u5730\u5e94\u7528\u662f\u5426\u5df2\u8fde\u63a5\u3001\u63d0\u4f9b\u65b9\u662f\u5426\u5df2\u5c31\u7eea\uff0c\u4ee5\u53ca\u8ba8\u8bba\u662f\u5426\u53ef\u4f7f\u7528 AI \u53c2\u4e0e\u8005\u3002",
+  "Start or continue a discussion in plain language, then inspect the current answer, perspectives, unresolved points, evidence needs, and next steps.":
+    "\u7528\u65e5\u5e38\u8bed\u8a00\u5f00\u59cb\u6216\u7ee7\u7eed\u8ba8\u8bba\uff0c\u7136\u540e\u67e5\u770b\u5f53\u524d\u7b54\u6848\u3001\u5404\u65b9\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u8bc1\u636e\u9700\u6c42\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Start with a question, then let the room gather perspectives, unresolved points, checks, risks, a current answer, and next steps.":
+    "\u5148\u63d0\u51fa\u95ee\u9898\uff0c\u7136\u540e\u8ba9\u8ba8\u8bba\u5ba4\u6536\u96c6\u89c2\u70b9\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u6838\u67e5\u9879\u3001\u98ce\u9669\u3001\u5f53\u524d\u7b54\u6848\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Still unresolved items show where the answer is still constrained.":
+    "\u4ecd\u672a\u89e3\u51b3\u7684\u9879\u76ee\u663e\u793a\u7b54\u6848\u4ecd\u53d7\u54ea\u4e9b\u95ee\u9898\u9650\u5236\u3002",
+  "Test the provider connection and structured review compatibility.":
+    "\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u8fde\u63a5\u548c\u7ed3\u6784\u5316\u5ba1\u9605\u517c\u5bb9\u6027\u3002",
+  "Test the saved provider connection here to continue with AI participants without returning to Connect AI.":
+    "\u5728\u8fd9\u91cc\u6d4b\u8bd5\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fde\u63a5\uff0c\u5373\u53ef\u7ee7\u7eed\u4f7f\u7528 AI \u53c2\u4e0e\u8005\uff0c\u65e0\u9700\u8fd4\u56de\u201c\u8fde\u63a5 AI\u201d\u3002",
+  "The configured provider accepted a safe test request. You can start a discussion with AI.":
+    "\u5df2\u914d\u7f6e\u7684\u63d0\u4f9b\u65b9\u63a5\u53d7\u4e86\u5b89\u5168\u6d4b\u8bd5\u8bf7\u6c42\u3002\u4f60\u53ef\u4ee5\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u3002",
+  "The current local service can use this setup now. Check readiness, test the connection, then start a discussion with AI.":
+    "\u5f53\u524d\u672c\u5730\u670d\u52a1\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u6b64\u8bbe\u7f6e\u3002\u8bf7\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u3001\u6d4b\u8bd5\u8fde\u63a5\uff0c\u7136\u540e\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u3002",
+  "Restart the local service, then return here and check readiness before starting a discussion with AI.":
+    "\u8bf7\u91cd\u542f\u672c\u5730\u670d\u52a1\uff0c\u7136\u540e\u56de\u5230\u8fd9\u91cc\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\uff0c\u518d\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u3002",
+  "The latest Web connection test succeeded. This provider is ready for discussions with AI.":
+    "\u6700\u8fd1\u4e00\u6b21 Web \u8fde\u63a5\u6d4b\u8bd5\u5df2\u6210\u529f\u3002\u6b64\u63d0\u4f9b\u65b9\u53ef\u7528\u4e8e AI \u53c2\u4e0e\u8ba8\u8bba\u3002",
+  "New Discussion can use AI participants.":
+    "\u65b0\u5efa\u8ba8\u8bba\u53ef\u4ee5\u4f7f\u7528 AI \u53c2\u4e0e\u8005\u3002",
+  "The provider setup is saved locally. Test the connection before starting discussions with AI.":
+    "\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u5230\u672c\u5730\u3002\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "An AI provider is saved locally. Test the connection before relying on discussions with AI.":
+    "AI \u63d0\u4f9b\u65b9\u5df2\u4fdd\u5b58\u5230\u672c\u5730\u3002\u4f9d\u8d56 AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "An AI provider is saved locally; test the connection before starting discussions with AI.":
+    "AI \u63d0\u4f9b\u65b9\u5df2\u4fdd\u5b58\u5230\u672c\u5730\uff1b\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "This provider is saved locally. Use Test connection before starting discussions with AI.":
+    "\u6b64\u63d0\u4f9b\u65b9\u5df2\u4fdd\u5b58\u5230\u672c\u5730\u3002\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u4f7f\u7528\u201c\u6d4b\u8bd5\u8fde\u63a5\u201d\u3002",
+  "A real AI provider is ready for discussions.":
+    "\u771f\u5b9e AI \u63d0\u4f9b\u65b9\u5df2\u53ef\u7528\u4e8e\u8ba8\u8bba\u3002",
+  "The demo is ready; connect a provider for discussions with AI.":
+    "\u6f14\u793a\u5df2\u5c31\u7eea\uff1b\u8fde\u63a5\u63d0\u4f9b\u65b9\u5373\u53ef\u8fdb\u884c AI \u53c2\u4e0e\u8ba8\u8bba\u3002",
+  "No real AI provider is ready yet. Configure one locally before relying on discussions with AI.":
+    "\u8fd8\u6ca1\u6709\u771f\u5b9e AI \u63d0\u4f9b\u65b9\u5c31\u7eea\u3002\u4f9d\u8d56 AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u5728\u672c\u5730\u914d\u7f6e\u4e00\u4e2a\u63d0\u4f9b\u65b9\u3002",
+  "Save and test a provider before starting discussions with AI.":
+    "\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u4fdd\u5b58\u5e76\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002",
+  "Use Test connection before starting a discussion with AI.":
+    "\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u4f7f\u7528\u201c\u6d4b\u8bd5\u8fde\u63a5\u201d\u3002",
+  "Test connection is available now because the saved setup is active in this local service.":
+    "\u5df2\u4fdd\u5b58\u7684\u8bbe\u7f6e\u5df2\u5728\u6b64\u672c\u5730\u670d\u52a1\u4e2d\u751f\u6548\uff0c\u73b0\u5728\u53ef\u4ee5\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "Test connection becomes available after Web confirms this provider is ready.":
+    "Web \u786e\u8ba4\u6b64\u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea\u540e\uff0c\u624d\u53ef\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "Use Test connection to send one minimal provider request before starting a discussion with AI.":
+    "\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u4f7f\u7528\u201c\u6d4b\u8bd5\u8fde\u63a5\u201d\u53d1\u9001\u4e00\u6b21\u6700\u5c0f\u63d0\u4f9b\u65b9\u8bf7\u6c42\u3002",
+  "The saved setup is active in the current local service. Test the connection before starting a real discussion.":
+    "\u5df2\u4fdd\u5b58\u7684\u8bbe\u7f6e\u5df2\u5728\u5f53\u524d\u672c\u5730\u670d\u52a1\u4e2d\u751f\u6548\u3002\u5f00\u59cb\u771f\u5b9e\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "Test the saved provider connection before using real AI perspectives.":
+    "\u4f7f\u7528\u771f\u5b9e AI \u89c6\u89d2\u524d\uff0c\u8bf7\u5148\u6d4b\u8bd5\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fde\u63a5\u3002",
+  "Test the connection before starting with AI participants.":
+    "\u4f7f\u7528 AI \u53c2\u4e0e\u8005\u5f00\u59cb\u524d\uff0c\u8bf7\u5148\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "Ready to start with AI participants":
+    "\u5df2\u53ef\u4f7f\u7528 AI \u53c2\u4e0e\u8005\u5f00\u59cb",
+  "The provider setup is available for new discussions. New Discussion will select AI participants by default while keeping demo participants available.":
+    "\u6b64\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u53ef\u7528\u4e8e\u65b0\u8ba8\u8bba\u3002\u65b0\u5efa\u8ba8\u8bba\u4f1a\u9ed8\u8ba4\u9009\u62e9 AI \u53c2\u4e0e\u8005\uff0c\u540c\u65f6\u4fdd\u7559\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u7528\u3002",
+  "New Discussion will use AI participants by default.":
+    "\u65b0\u5efa\u8ba8\u8bba\u4f1a\u9ed8\u8ba4\u4f7f\u7528 AI \u53c2\u4e0e\u8005\u3002",
+  "New discussions can use this provider for independent first responses.":
+    "\u65b0\u8ba8\u8bba\u53ef\u4ee5\u4f7f\u7528\u6b64\u63d0\u4f9b\u65b9\u751f\u6210\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u3002",
+  "One Web-managed provider can be used for AI participants.":
+    "\u4e00\u4e2a\u7531 Web \u7ba1\u7406\u7684\u63d0\u4f9b\u65b9\u53ef\u7528\u4e8e AI \u53c2\u4e0e\u8005\u3002",
+  "Configure at least one participant source before starting a discussion.":
+    "\u5f00\u59cb\u8ba8\u8bba\u524d\uff0c\u8bf7\u81f3\u5c11\u914d\u7f6e\u4e00\u4e2a\u53c2\u4e0e\u8005\u6765\u6e90\u3002",
+  "The current answer keeps unresolved points, risks, checks, and next steps together.":
+    "\u5f53\u524d\u7b54\u6848\u4f1a\u628a\u672a\u89e3\u51b3\u95ee\u9898\u3001\u98ce\u9669\u3001\u6838\u67e5\u9879\u548c\u4e0b\u4e00\u6b65\u653e\u5728\u4e00\u8d77\u3002",
+  "The selected depth controls how many independent AI participants answer before Deliberum compares options.":
+    "\u6240\u9009\u6df1\u5ea6\u51b3\u5b9a Deliberum \u6bd4\u8f83\u9009\u9879\u524d\u7531\u591a\u5c11\u4e2a\u72ec\u7acb AI \u53c2\u4e0e\u8005\u5148\u56de\u7b54\u3002",
+  "This discussion will use configured AI participants from your local setup.":
+    "\u672c\u6b21\u8ba8\u8bba\u5c06\u4f7f\u7528\u672c\u5730\u8bbe\u7f6e\u4e2d\u5df2\u914d\u7f6e\u7684 AI \u53c2\u4e0e\u8005\u3002",
+  "This is reviewable discussion material. It should keep unresolved points, risks, evidence gaps, and next steps visible.":
+    "\u8fd9\u662f\u53ef\u5ba1\u9605\u7684\u8ba8\u8bba\u6750\u6599\u3002\u5b83\u5e94\u4fdd\u6301\u672a\u89e3\u51b3\u95ee\u9898\u3001\u98ce\u9669\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u53ef\u89c1\u3002",
+  "This lineup is fixed for the current discussion. Use Connect AI before starting a new discussion to change model assignments.":
+    "\u5f53\u524d\u8ba8\u8bba\u7684\u53c2\u4e0e\u8005\u9635\u5bb9\u5df2\u7ecf\u56fa\u5b9a\u3002\u82e5\u8981\u66f4\u6539\u6a21\u578b\u5206\u914d\uff0c\u8bf7\u5728\u5f00\u59cb\u65b0\u8ba8\u8bba\u524d\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u3002",
+  "This local room currently includes you and configured AI/model roles. Use Connect AI before starting a new discussion to change model assignments.":
+    "\u8fd9\u4e2a\u672c\u5730\u8ba8\u8bba\u5ba4\u5f53\u524d\u5305\u542b\u4f60\u548c\u5df2\u914d\u7f6e\u7684 AI/\u6a21\u578b\u89d2\u8272\u3002\u82e5\u8981\u66f4\u6539\u6a21\u578b\u5206\u914d\uff0c\u8bf7\u5728\u5f00\u59cb\u65b0\u8ba8\u8bba\u524d\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u3002",
+  "This page does not show API keys. Use Connect AI to save provider setup before starting discussions with AI.":
+    "\u6b64\u9875\u9762\u4e0d\u663e\u793a API key\u3002\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u8bf7\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u4fdd\u5b58\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
+  "This shows what you can do now: try the demo, use AI participants, review the answer, and choose the next step.":
+    "\u8fd9\u91cc\u663e\u793a\u4f60\u73b0\u5728\u53ef\u4ee5\u505a\u4ec0\u4e48\uff1a\u8bd5\u7528\u6f14\u793a\u3001\u4f7f\u7528 AI \u53c2\u4e0e\u8005\u3001\u5ba1\u9605\u7b54\u6848\u5e76\u9009\u62e9\u4e0b\u4e00\u6b65\u3002",
+  "This shows which people and AI roles are ready before you start: perspectives, reviewers, checks, and answer writing.":
+    "\u8fd9\u91cc\u663e\u793a\u5f00\u59cb\u524d\u54ea\u4e9b\u4eba\u5458\u548c AI \u89d2\u8272\u5df2\u5c31\u7eea\uff1a\u89c6\u89d2\u3001\u5ba1\u9605\u8005\u3001\u6838\u67e5\u548c\u7b54\u6848\u64b0\u5199\u3002",
+  "Try Test connection again": "\u518d\u6b21\u5c1d\u8bd5\u6d4b\u8bd5\u8fde\u63a5",
+  "Use Check readiness and Test connection to confirm discussions with AI are ready.":
+    "\u4f7f\u7528\u201c\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u201d\u548c\u201c\u6d4b\u8bd5\u8fde\u63a5\u201d\u786e\u8ba4 AI \u53c2\u4e0e\u8ba8\u8bba\u5df2\u5c31\u7eea\u3002",
+  "Use these steps when a provider returns only part of the discussion or a review step fails before Deliberum can rebuild the answer.":
+    "\u5f53\u63d0\u4f9b\u65b9\u53ea\u8fd4\u56de\u90e8\u5206\u8ba8\u8bba\u5185\u5bb9\uff0c\u6216\u5ba1\u9605\u6b65\u9aa4\u5728 Deliberum \u91cd\u5efa\u7b54\u6848\u524d\u5931\u8d25\u65f6\uff0c\u8bf7\u4f7f\u7528\u8fd9\u4e9b\u6b65\u9aa4\u3002",
+  "When an AI provider is ready, start a discussion and use configured participants.":
+    "AI \u63d0\u4f9b\u65b9\u5c31\u7eea\u540e\uff0c\u5f00\u59cb\u8ba8\u8bba\u5e76\u4f7f\u7528\u5df2\u914d\u7f6e\u7684\u53c2\u4e0e\u8005\u3002",
+  "{provider} is ready. This discussion will use configured AI participants from the local service.":
+    "{provider} \u5df2\u5c31\u7eea\u3002\u672c\u6b21\u8ba8\u8bba\u5c06\u4f7f\u7528\u672c\u5730\u670d\u52a1\u4e2d\u5df2\u914d\u7f6e\u7684 AI \u53c2\u4e0e\u8005\u3002",
   Language: "\u8bed\u8a00",
   "Home / Today": "\u9996\u9875 / \u4eca\u65e5",
   Advanced: "\u9ad8\u7ea7",
@@ -155,8 +488,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "{count} existing discussions": "{count} \u4e2a\u5df2\u6709\u8ba8\u8bba",
   "You can continue a previous discussion room.":
     "\u4f60\u53ef\u4ee5\u7ee7\u7eed\u4e4b\u524d\u7684\u8ba8\u8bba\u5ba4\u3002",
-  "Start a discussion to create the first room.":
-    "\u5f00\u59cb\u4e00\u4e2a\u8ba8\u8bba\u4ee5\u521b\u5efa\u7b2c\u4e00\u4e2a\u8ba8\u8bba\u5ba4\u3002",
+  "Create a New Discussion to open the first room.":
+    "\u521b\u5efa\u65b0\u8ba8\u8bba\u4ee5\u6253\u5f00\u7b2c\u4e00\u4e2a\u8ba8\u8bba\u5ba4\u3002",
   "Recommended next step": "\u5efa\u8bae\u7684\u4e0b\u4e00\u6b65",
   "Use configured model participants for the next discussion.":
     "\u4e0b\u4e00\u6b21\u8ba8\u8bba\u5c06\u4f7f\u7528\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
@@ -215,8 +548,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Save the provider API key, base URL, and model to this machine so future discussions can use real model participants.":
     "\u5c06\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c model \u4fdd\u5b58\u5230\u8fd9\u53f0\u673a\u5668\uff0c\u8ba9\u540e\u7eed\u8ba8\u8bba\u53ef\u4ee5\u4f7f\u7528\u771f\u5b9e\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Structured review compatibility": "\u7ed3\u6784\u5316\u5ba1\u8bae\u517c\u5bb9\u6027",
-  "Recommended for real providers so Deliberum can organize options, disagreements, evidence gaps, risks, conclusions, and next actions more reliably.":
-    "\u5efa\u8bae\u771f\u5b9e\u63d0\u4f9b\u65b9\u542f\u7528\uff0c\u8ba9 Deliberum \u66f4\u7a33\u5b9a\u5730\u6574\u7406\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u3001\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Recommended for real AI providers so Deliberum can organize options, unresolved points, evidence gaps, risks, the current answer, and next steps more reliably.":
+    "\u5efa\u8bae\u771f\u5b9e AI \u63d0\u4f9b\u65b9\u542f\u7528\uff0c\u8ba9 Deliberum \u66f4\u7a33\u5b9a\u5730\u6574\u7406\u9009\u9879\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u3001\u5f53\u524d\u7b54\u6848\u548c\u4e0b\u4e00\u6b65\u3002",
   "Model management": "\u6a21\u578b\u7ba1\u7406",
   "Current model setup": "\u5f53\u524d\u6a21\u578b\u8bbe\u7f6e",
   "Ready and verified": "\u5df2\u5c31\u7eea\u4e14\u5df2\u9a8c\u8bc1",
@@ -234,8 +567,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Finish setup in Web": "\u5728 Web \u4e2d\u5b8c\u6210\u8bbe\u7f6e",
   "Add or replace the API key, base URL, and model below. Saved secrets stay on this machine and are not displayed again.":
     "\u5728\u4e0b\u65b9\u6dfb\u52a0\u6216\u66ff\u6362 API key\u3001Base URL \u548c\u6a21\u578b\u3002\u5df2\u4fdd\u5b58\u7684\u5bc6\u94a5\u4f1a\u4fdd\u7559\u5728\u672c\u673a\uff0c\u5e76\u4e14\u4e0d\u4f1a\u518d\u6b21\u663e\u793a\u3002",
-  "Web shows only readiness here. It never displays saved API keys, base URLs, or exact model values in the default view.":
-    "\u8fd9\u91cc\u4ec5\u663e\u793a\u5c31\u7eea\u72b6\u6001\u3002\u9ed8\u8ba4\u89c6\u56fe\u4e0d\u4f1a\u663e\u793a\u5df2\u4fdd\u5b58\u7684 API key\u3001Base URL \u6216\u5177\u4f53\u6a21\u578b\u503c\u3002",
+  "Web shows only readiness here. It never displays saved API keys, base URLs, or exact model names in the default view.":
+    "\u8fd9\u91cc\u4ec5\u663e\u793a\u5c31\u7eea\u72b6\u6001\u3002\u9ed8\u8ba4\u89c6\u56fe\u4e0d\u4f1a\u663e\u793a\u5df2\u4fdd\u5b58\u7684 API key\u3001Base URL \u6216\u5177\u4f53\u6a21\u578b\u540d\u79f0\u3002",
   "The provider Web can configure for this local system.":
     "Web \u53ef\u4ee5\u4e3a\u6b64\u672c\u5730\u7cfb\u7edf\u914d\u7f6e\u7684\u63d0\u4f9b\u65b9\u3002",
   "Saved locally": "\u672c\u5730\u5df2\u4fdd\u5b58",
@@ -245,7 +578,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   Verified: "\u5df2\u9a8c\u8bc1",
   "The latest safe provider test succeeded.":
     "\u6700\u8fd1\u4e00\u6b21\u5b89\u5168\u63d0\u4f9b\u65b9\u6d4b\u8bd5\u5df2\u6210\u529f\u3002",
-  "Ready to verify": "\u53ef\u4ee5\u9a8c\u8bc1",
+  "Ready to test": "\u53ef\u4ee5\u6d4b\u8bd5",
   "Use Verify connection before starting a real discussion.":
     "\u5f00\u59cb\u771f\u5b9e\u8ba8\u8bba\u524d\uff0c\u8bf7\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u3002",
   "Needs saved setup": "\u9700\u8981\u5148\u4fdd\u5b58\u8bbe\u7f6e",
@@ -407,12 +740,16 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5728\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u6210\u529f\u4e4b\u524d\uff0c\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fd8\u4e0d\u80fd\u9a71\u52a8\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Demo discussions use built-in material. Add and verify a provider before model-backed roles are available.":
     "\u6f14\u793a\u8ba8\u8bba\u4f7f\u7528\u5185\u7f6e\u6750\u6599\u3002\u6a21\u578b\u652f\u6301\u7684\u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u3002",
+  "Demo discussions use built-in material. Add and test a provider before AI roles are available.":
+    "\u6f14\u793a\u8ba8\u8bba\u4f7f\u7528\u5185\u7f6e\u6750\u6599\u3002AI \u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002",
   "Choose Focused review or Broader review on the start page before creating the discussion.":
     "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u8bf7\u5728\u5f00\u59cb\u9875\u9009\u62e9\u201c\u805a\u7126\u5ba1\u67e5\u201d\u6216\u201c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u201d\u3002",
   "After verification, open the start page to choose Focused review or Broader review.":
     "\u9a8c\u8bc1\u540e\uff0c\u6253\u5f00\u5f00\u59cb\u9875\u9009\u62e9\u201c\u805a\u7126\u5ba1\u67e5\u201d\u6216\u201c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u201d\u3002",
   "Start a demo discussion now, or finish model setup to choose focused or broader model-backed review.":
     "\u73b0\u5728\u53ef\u4ee5\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba\uff0c\u6216\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u540e\u9009\u62e9\u805a\u7126\u6216\u66f4\u5e7f\u7684\u6a21\u578b\u652f\u6301\u5ba1\u67e5\u3002",
+  "Start a demo discussion now, or finish AI setup to choose focused or broader review.":
+    "\u73b0\u5728\u53ef\u4ee5\u5f00\u59cb\u6f14\u793a\u8ba8\u8bba\uff0c\u6216\u5b8c\u6210 AI \u8bbe\u7f6e\u540e\u9009\u62e9\u805a\u7126\u6216\u66f4\u5e7f\u7684 AI \u5ba1\u67e5\u3002",
   "Current limit": "\u5f53\u524d\u9650\u5236",
   "Exact saved provider values stay hidden on this page. Role-specific model assignment is not available in the default Web path yet.":
     "\u7cbe\u786e\u7684\u5df2\u4fdd\u5b58\u63d0\u4f9b\u65b9\u503c\u4f1a\u5728\u6b64\u9875\u9762\u4fdd\u6301\u9690\u85cf\u3002\u9ed8\u8ba4 Web \u8def\u5f84\u5c1a\u4e0d\u652f\u6301\u6309\u89d2\u8272\u5206\u914d\u6a21\u578b\u3002",
@@ -440,6 +777,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u4f7f\u7528\u6a21\u578b\u53c2\u4e0e\u8005\u5f00\u59cb\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u8fde\u63a5\u3002",
   "Use the demo now or add a provider for real model responses.":
     "\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u6f14\u793a\uff0c\u6216\u6dfb\u52a0\u63d0\u4f9b\u65b9\u4ee5\u83b7\u5f97\u771f\u5b9e\u6a21\u578b\u56de\u5e94\u3002",
+  "Use the demo now or add a provider for AI responses.":
+    "\u73b0\u5728\u53ef\u4ee5\u4f7f\u7528\u6f14\u793a\uff0c\u6216\u6dfb\u52a0\u63d0\u4f9b\u65b9\u4ee5\u83b7\u5f97 AI \u56de\u5e94\u3002",
   "Add a model provider before starting.":
     "\u5f00\u59cb\u524d\u8bf7\u5148\u6dfb\u52a0\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
   "Third perspective available": "\u7b2c\u4e09\u4e2a\u89c6\u89d2\u53ef\u7528",
@@ -494,6 +833,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Built-in demo participant": "\u5185\u7f6e\u6f14\u793a\u53c2\u4e0e\u8005",
   "No participant source ready": "\u5c1a\u65e0\u5c31\u7eea\u7684\u53c2\u4e0e\u8005\u6765\u6e90",
   "Broader review after model setup": "\u5b8c\u6210\u6a21\u578b\u8bbe\u7f6e\u540e\u53ef\u7528\u4e8e\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5",
+  "Broader review after AI setup": "\u5b8c\u6210 AI \u8bbe\u7f6e\u540e\u53ef\u7528\u4e8e\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5",
   "Review roles ready": "\u5ba1\u67e5\u89d2\u8272\u5df2\u5c31\u7eea",
   "Review roles setup needed": "\u9700\u8981\u8bbe\u7f6e\u5ba1\u67e5\u89d2\u8272",
   "Model review roles": "\u6a21\u578b\u5ba1\u67e5\u89d2\u8272",
@@ -505,6 +845,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u4f7f\u7528\u771f\u5b9e\u6a21\u578b\u89c6\u89d2\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fde\u63a5\u3002",
   "Demo discussions can show the role, but real model perspectives still need provider setup.":
     "\u6f14\u793a\u8ba8\u8bba\u53ef\u4ee5\u5c55\u793a\u8be5\u89d2\u8272\uff0c\u4f46\u771f\u5b9e\u6a21\u578b\u89c6\u89d2\u4ecd\u9700\u8981\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
+  "Demo discussions can show the role, but real AI perspectives still need provider setup.":
+    "\u6f14\u793a\u8ba8\u8bba\u53ef\u4ee5\u5c55\u793a\u8be5\u89d2\u8272\uff0c\u4f46\u771f\u5b9e AI \u89c6\u89d2\u4ecd\u9700\u8981\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
   "Add a model provider or local preset before starting a useful discussion.":
     "\u5f00\u59cb\u6709\u7528\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u6a21\u578b\u63d0\u4f9b\u65b9\u6216\u672c\u5730\u9884\u8bbe\u3002",
   "Choose Broader review on the start page to add a third independent model perspective.":
@@ -628,7 +970,6 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5b88\u62a4\u8fdb\u7a0b\u62a5\u544a\u6b64\u63d0\u4f9b\u65b9\u5df2\u6709\u53ef\u7528\u7684\u6a21\u578b\u9009\u62e9\u3002",
   "The local service reports that a model choice is available for this provider.":
     "\u672c\u5730\u670d\u52a1\u62a5\u544a\u6b64\u63d0\u4f9b\u65b9\u5df2\u6709\u53ef\u7528\u7684\u6a21\u578b\u9009\u62e9\u3002",
-  "Ready to test": "\u53ef\u4ee5\u6d4b\u8bd5",
   "Use Verify connection to confirm the provider accepts a minimal request.":
     "\u4f7f\u7528\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u786e\u8ba4\u63d0\u4f9b\u65b9\u53ef\u4ee5\u63a5\u53d7\u6700\u5c0f\u8bf7\u6c42\u3002",
   "Verify after setup": "\u8bbe\u7f6e\u540e\u9a8c\u8bc1",
@@ -692,7 +1033,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "What you can do": "\u4f60\u53ef\u4ee5\u505a\u4ec0\u4e48",
   "The default path is for people who need a clear decision surface, not system records.":
     "\u9ed8\u8ba4\u8def\u5f84\u9762\u5411\u9700\u8981\u6e05\u6670\u51b3\u7b56\u754c\u9762\u7684\u4eba\uff0c\u800c\u4e0d\u662f\u7cfb\u7edf\u8bb0\u5f55\u67e5\u770b\u8005\u3002",
-  "1. Start a discussion": "1. \u5f00\u59cb\u8ba8\u8bba",
+  "1. New Discussion": "1. \u65b0\u5efa\u8ba8\u8bba",
   "Write the question, goals, constraints, and expected output as a discussion brief.":
     "\u628a\u95ee\u9898\u3001\u76ee\u6807\u3001\u7ea6\u675f\u548c\u671f\u671b\u8f93\u51fa\u5199\u6210\u8ba8\u8bba\u7b80\u62a5\u3002",
   "2. Review the strongest current options": "2. \u67e5\u770b\u5f53\u524d\u6700\u5f3a\u9009\u9879",
@@ -928,6 +1269,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u53ef\u4ee5\u5148\u56de\u5e94\uff0c\u4f46\u5f53\u524d\u8bbe\u7f6e\u4e2d\u5b8c\u6574\u5ba1\u67e5\u8def\u5f84\u5c1a\u672a\u5c31\u7eea\u3002",
   "Continue discussion will collect independent first responses only until the local service reports a complete model review path.":
     "\u5728\u672c\u5730\u670d\u52a1\u62a5\u544a\u5b8c\u6574\u6a21\u578b\u5ba1\u67e5\u8def\u5f84\u524d\uff0c\u7ee7\u7eed\u8ba8\u8bba\u53ea\u4f1a\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002",
+  "Continue discussion will collect independent first responses only until the local service reports a complete AI review path.":
+    "\u5728\u672c\u5730\u670d\u52a1\u62a5\u544a\u5b8c\u6574 AI \u5ba1\u67e5\u8def\u5f84\u524d\uff0c\u7ee7\u7eed\u8ba8\u8bba\u53ea\u4f1a\u6536\u96c6\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u3002",
   "Fill first responses request": "\u586b\u5145\u521d\u59cb\u56de\u5e94\u8bf7\u6c42",
   "Collect independent first responses only; finish review role setup before generating strongest options or a conclusion.":
     "\u4ec5\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff1b\u751f\u6210\u6700\u5f3a\u9009\u9879\u6216\u7ed3\u8bba\u524d\uff0c\u8bf7\u5148\u5b8c\u6210\u5ba1\u67e5\u89d2\u8272\u8bbe\u7f6e\u3002",
@@ -994,6 +1337,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\u53ef\u4ee5\u5148\u56de\u5e94\uff0c\u4f46\u5ba1\u67e5\u548c\u7ed3\u8bba\u89d2\u8272\u5c1a\u672a\u5c31\u7eea\u3002",
   "3 model perspectives": "3 \u4e2a\u6a21\u578b\u89c6\u89d2",
   "2 model perspectives": "2 \u4e2a\u6a21\u578b\u89c6\u89d2",
+  "3 AI perspectives": "3 \u4e2a AI \u89c6\u89d2",
+  "2 AI perspectives": "2 \u4e2a AI \u89c6\u89d2",
   "Perspective A, Perspective B, and Perspective C will answer independently.":
     "\u89c6\u89d2 A\u3001\u89c6\u89d2 B \u548c\u89c6\u89d2 C \u4f1a\u72ec\u7acb\u56de\u5e94\u3002",
   "Perspective A and Perspective B will answer independently.":
@@ -1056,8 +1401,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "{count} earlier discussions remain available.":
     "\u8fd8\u6709 {count} \u4e2a\u8f83\u65e9\u8ba8\u8bba\u53ef\u7528\u3002",
   "No discussions yet": "\u8fd8\u6ca1\u6709\u8ba8\u8bba",
-  "Start with a question. Deliberum will create a discussion brief, collect independent first responses, and keep the conclusion, disagreements, risks, and next steps visible.":
-    "\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb\u3002Deliberum \u4f1a\u521b\u5efa\u8ba8\u8bba\u7b80\u62a5\uff0c\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff0c\u5e76\u6301\u7eed\u5c55\u793a\u7ed3\u8bba\u3001\u5206\u6b67\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u3002",
+  "Start with a question. Deliberum will create a discussion brief, collect independent first responses, and keep the current answer, unresolved points, risks, and next steps visible.":
+    "\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb\u3002Deliberum \u4f1a\u521b\u5efa\u8ba8\u8bba\u7b80\u62a5\uff0c\u6536\u96c6\u72ec\u7acb\u521d\u59cb\u56de\u5e94\uff0c\u5e76\u6301\u7eed\u5c55\u793a\u5f53\u524d\u7b54\u6848\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u3002",
   "How discussions work": "\u8ba8\u8bba\u5982\u4f55\u8fd0\u4f5c",
   "The default mode explains the deliberation loop in user language.":
     "\u9ed8\u8ba4\u6a21\u5f0f\u4f1a\u7528\u7528\u6237\u8bed\u8a00\u89e3\u91ca\u5ba1\u8bae\u5faa\u73af\u3002",
@@ -1174,6 +1519,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5b8c\u6210\u540e\uff0c\u8bf7\u67e5\u770b\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
   "After it finishes, review the updated timeline and next recommended action.":
     "\u5b8c\u6210\u540e\uff0c\u8bf7\u67e5\u770b\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf\u548c\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
+  "After it finishes, review the updated timeline and next step.":
+    "\u5b8c\u6210\u540e\uff0c\u8bf7\u5ba1\u9605\u66f4\u65b0\u540e\u7684\u65f6\u95f4\u7ebf\u548c\u4e0b\u4e00\u6b65\u3002",
   "After it finishes, compare the refreshed strongest options.":
     "\u5b8c\u6210\u540e\uff0c\u8bf7\u6bd4\u8f83\u5237\u65b0\u540e\u7684\u6700\u5f3a\u9009\u9879\u3002",
   "Jump only; this does not change the discussion.":
@@ -1371,8 +1718,12 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u4ecd\u7136\u7ea6\u675f\u5f53\u524d\u7ed3\u8bba\u3002",
   "Needs an answer before relying on the conclusion.":
     "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u4ecd\u9700\u56de\u7b54\u3002",
+  "Needs an answer before relying on the current answer.":
+    "\u5728\u4f9d\u8d56\u5f53\u524d\u7b54\u6848\u524d\u4ecd\u9700\u56de\u7b54\u3002",
   "Needs verification before relying on the conclusion.":
     "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u4ecd\u9700\u6838\u67e5\u3002",
+  "Needs checking before relying on the current answer.":
+    "\u5728\u4f9d\u8d56\u5f53\u524d\u7b54\u6848\u524d\u4ecd\u9700\u6838\u67e5\u3002",
   "Resolved for now.": "\u5f53\u524d\u5df2\u89e3\u51b3\u3002",
   "Review this item before relying on the conclusion.":
     "\u5728\u4f9d\u8d56\u7ed3\u8bba\u524d\u8bf7\u5148\u5ba1\u9605\u6b64\u9879\u3002",
@@ -1447,9 +1798,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u7ee7\u7eed\u5bf9\u8bdd\uff0c\u5e76\u6309\u987a\u5e8f\u9605\u8bfb\u53c2\u4e0e\u8005\u53d1\u8a00\u3002",
   "Review the conclusion, open disagreements, missing evidence, risks, and next actions.":
     "\u5ba1\u9605\u7ed3\u8bba\u3001\u672a\u89e3\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002",
-  "Conclusion not ready yet": "\u7ed3\u8bba\u5c1a\u672a\u5c31\u7eea",
-  "Continue the discussion first; this page appears after conclusion material exists.":
-    "\u8bf7\u5148\u7ee7\u7eed\u8ba8\u8bba\uff1b\u6709\u7ed3\u8bba\u6750\u6599\u540e\uff0c\u6b64\u9875\u624d\u4f1a\u663e\u793a\u3002",
+  "Continue the discussion first; this page appears after answer material exists.":
+    "\u8bf7\u5148\u7ee7\u7eed\u8ba8\u8bba\uff1b\u6709\u7b54\u6848\u6750\u6599\u540e\uff0c\u6b64\u9875\u624d\u4f1a\u663e\u793a\u3002",
   "Question": "\u95ee\u9898",
   "No discussion question is available yet.": "\u5c1a\u65e0\u53ef\u7528\u8ba8\u8bba\u95ee\u9898\u3002",
   "Last updated": "\u6700\u540e\u66f4\u65b0",
@@ -1505,7 +1855,6 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u67e5\u770b\u72b6\u6001\u3001\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8bc1\u636e\u3001\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u3002",
   "Open a discussion room and review its brief, perspectives, disagreements, requirements, evidence, conclusion, and next actions.":
     "\u6253\u5f00\u8ba8\u8bba\u5ba4\uff0c\u67e5\u770b\u7b80\u62a5\u3001\u89c2\u70b9\u3001\u5206\u6b67\u3001\u8981\u6c42\u3001\u8bc1\u636e\u3001\u7ed3\u8bba\u548c\u4e0b\u4e00\u6b65\u3002",
-  "Start a discussion to create the first deliberation.": "\u5f00\u59cb\u4e00\u4e2a\u8ba8\u8bba\u4ee5\u521b\u5efa\u9996\u6b21\u5ba1\u8bae\u3002",
   "Next step": "\u4e0b\u4e00\u6b65",
   "Start with the current conclusion, then check the visible disagreements, requirements, and evidence gaps before relying on it.":
     "\u5148\u67e5\u770b\u5f53\u524d\u7ed3\u8bba\uff0c\u518d\u68c0\u67e5\u53ef\u89c1\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u7f3a\u53e3\uff0c\u7136\u540e\u518d\u51b3\u5b9a\u662f\u5426\u4f9d\u8d56\u5b83\u3002",
@@ -1586,6 +1935,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u5f53\u524d\u7ed3\u8bba\u3002",
   "Review this result first, then return to the timeline, outputs, or next recommended action.":
     "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
+  "Review this result first, then return to the timeline, outputs, or next step.":
+    "\u8bf7\u5148\u5ba1\u9605\u6b64\u7ed3\u679c\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u3002",
   "Review this room update, then return to the timeline, outputs, or next recommended action.":
     "\u8bf7\u5148\u5ba1\u9605\u6b64\u8ba8\u8bba\u5ba4\u66f4\u65b0\uff0c\u7136\u540e\u56de\u5230\u65f6\u95f4\u7ebf\u3001\u8ba8\u8bba\u4ea7\u51fa\u6216\u4e0b\u4e00\u6b65\u5efa\u8bae\u3002",
   "Updated discussion steps": "\u5df2\u66f4\u65b0\u7684\u8ba8\u8bba\u6b65\u9aa4",
@@ -1647,8 +1998,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   Failed: "\u5931\u8d25",
   "This discussion step could not be processed safely.": "\u6b64\u8ba8\u8bba\u6b65\u9aa4\u65e0\u6cd5\u88ab\u5b89\u5168\u5904\u7406\u3002",
   "Needs attention": "\u9700\u8981\u5173\u6ce8",
-  "This discussion step needs attention before the conclusion can be trusted.":
-    "\u5728\u7ed3\u8bba\u53ef\u4fe1\u4e4b\u524d\uff0c\u6b64\u8ba8\u8bba\u6b65\u9aa4\u9700\u8981\u5148\u88ab\u5904\u7406\u3002",
+  "This discussion step needs attention before the answer can be trusted.":
+    "\u5728\u7b54\u6848\u53ef\u4fe1\u4e4b\u524d\uff0c\u6b64\u8ba8\u8bba\u6b65\u9aa4\u9700\u8981\u5148\u88ab\u5904\u7406\u3002",
   "This discussion step returned a status that needs developer review.":
     "\u6b64\u8ba8\u8bba\u6b65\u9aa4\u8fd4\u56de\u4e86\u9700\u8981\u5f00\u53d1\u8005\u68c0\u67e5\u7684\u72b6\u6001\u3002",
   Unavailable: "\u4e0d\u53ef\u7528",
@@ -1724,7 +2075,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Built-in demo review role": "\u5185\u7f6e\u6f14\u793a\u5ba1\u67e5\u89d2\u8272",
   "Needs model setup": "\u9700\u8981\u6a21\u578b\u8bbe\u7f6e",
   "Configured AI participant": "\u5df2\u914d\u7f6e\u7684 AI \u53c2\u4e0e\u8005",
-  "{provider} · {model}": "{provider} · {model}",
+  "{provider} \u00b7 {model}": "{provider} \u00b7 {model}",
   "{provider} default model": "{provider} \u9ed8\u8ba4\u6a21\u578b",
   "Configured provider": "\u5df2\u914d\u7f6e\u63d0\u4f9b\u65b9",
   "This role joins after first responses to keep the discussion reviewable.":

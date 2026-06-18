@@ -10,9 +10,9 @@ import { chromium } from "@playwright/test";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
-const landingTitle = "Multi-perspective deliberation for better decisions";
+const landingTitle = "Local human + AI deliberation room";
 const landingDescription =
-  "Use Deliberum to frame a hard question, collect independent perspectives, compare the strongest options, keep disagreements visible, and turn the current state into a reviewable conclusion with next steps.";
+  "A local human + AI deliberation room for comparing perspectives, keeping unresolved points visible, and reaching reviewable answers with next steps.";
 const localServiceCommand = "corepack pnpm build && corepack pnpm start:local";
 
 assertFile(daemonEntry);
@@ -118,15 +118,15 @@ async function verifyUnavailableEntry(browserInstance) {
   await page.goto(`http://127.0.0.1:${webPort}/`, { waitUntil: "networkidle" });
   await page.getByRole("heading", { name: landingTitle }).waitFor();
   await page.getByText("Start the local service").first().waitFor();
-  await page.getByText("Open Setup / Models for the local start command and model setup steps.").waitFor();
-  await page.getByRole("link", { name: "Open Setup / Models", exact: true }).first().click();
+  await page.getByText("Open Connect AI for the local start command and AI setup steps.").waitFor();
+  await page.getByRole("link", { name: "Open Connect AI", exact: true }).first().click();
   await page.waitForURL(/\/setup\/models$/);
-  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
+  await page.getByRole("heading", { name: "Connect AI", exact: true }).waitFor();
   await page.getByText("Start the local service").first().waitFor();
   await page.getByText("Local service command").waitFor();
   await page.getByText(localServiceCommand).waitFor();
   await page.getByText("This starts the local Web and service; model API keys are added from Web after it connects.").waitFor();
-  await page.getByText("3. Configure models in Web").waitFor();
+  await page.getByText("3. Connect AI in Web").waitFor();
   await page.getByRole("button", { name: "Check again" }).waitFor();
   await assertNoHorizontalOverflow(page, "unavailable setup");
   await assertDefaultEntrySafety(page, "unavailable setup");
@@ -135,8 +135,8 @@ async function verifyUnavailableEntry(browserInstance) {
 async function assertConnectedLanding(page, label) {
   await page.getByRole("heading", { name: landingTitle }).waitFor();
   await page.getByText(landingDescription).waitFor();
-  await page.getByRole("link", { name: "Start a discussion", exact: true }).first().waitFor();
-  await page.getByRole("link", { name: "Continue discussions", exact: true }).first().waitFor();
+  await page.getByRole("link", { name: "New Discussion", exact: true }).first().waitFor();
+  await page.getByRole("link", { name: "My Discussions", exact: true }).first().waitFor();
   await page.getByText("Ready to use Deliberum").waitFor();
   await page.getByText("Local service connected").first().waitFor();
   await page.getByText("Demo discussion ready").waitFor();
@@ -144,12 +144,12 @@ async function assertConnectedLanding(page, label) {
 
   const bodyText = await page.locator("body").innerText();
   for (const expected of [
-    "independent perspectives",
-    "strongest options",
-    "reviewable conclusion",
-    "open disagreements",
-    "missing evidence",
-    "recommended next actions"
+    "Independent first responses",
+    "Strongest current options",
+    "reviewable answer",
+    "unresolved points",
+    "need checking",
+    "next steps"
   ]) {
     if (!bodyText.includes(expected)) {
       throw new Error(`${label} landing did not explain ${expected}.`);
@@ -183,9 +183,9 @@ async function assertFirstViewportProductClarity(page, label) {
   for (const expected of [
     "Deliberum",
     landingTitle,
-    "independent perspectives",
-    "strongest options",
-    "reviewable conclusion"
+    "human + AI",
+    "reviewable answers",
+    "New Discussion"
   ]) {
     if (!viewportText.includes(expected)) {
       throw new Error(`${label} first viewport did not include: ${expected}`);

@@ -273,7 +273,7 @@ function UserModeNavigation() {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Setup / Models")}
+        {t("Connect AI")}
       </Link>
       <Link
         to="/runs"
@@ -281,7 +281,7 @@ function UserModeNavigation() {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Discussions")}
+        {t("My Discussions")}
       </Link>
       <Link
         to="/advanced"
@@ -289,7 +289,7 @@ function UserModeNavigation() {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Advanced")}
+        {t("Developer Tools")}
       </Link>
     </>
   );
@@ -322,17 +322,17 @@ function LandingPage() {
       <section className="du-landing">
         <PageHeader
           eyebrow={t("User Mode")}
-          title={t("Multi-perspective deliberation for better decisions")}
+          title={t("Local human + AI deliberation room")}
           description={t(
-            "Use Deliberum to frame a hard question, collect independent perspectives, compare the strongest options, keep disagreements visible, and turn the current state into a reviewable conclusion with next steps."
+            "A local human + AI deliberation room for comparing perspectives, keeping unresolved points visible, and reaching reviewable answers with next steps."
           )}
           actions={
             <>
               <Link className="du-action-link" to="/runs/new">
-                {t("Start a discussion")}
+                {t("New Discussion")}
               </Link>
               <Link className="du-action-link du-secondary-link" to="/runs">
-                {t("Continue discussions")}
+                {t("My Discussions")}
               </Link>
             </>
           }
@@ -354,7 +354,7 @@ function LandingPage() {
           >
             <div className="du-readable-list">
               <QualityPathItem
-                title={t("1. Start a discussion")}
+                title={t("1. New Discussion")}
                 detail={t(
                   "Write the question, goals, constraints, and expected output as a discussion brief."
                 )}
@@ -368,16 +368,16 @@ function LandingPage() {
               <QualityPathItem
                 title={t("3. Decide what to do next")}
                 detail={t(
-                  "The current conclusion keeps open disagreements, risks, missing evidence, and recommended next actions together."
+                  "The current answer keeps unresolved points, risks, checks, and next steps together."
                 )}
               />
             </div>
             <div className="du-action-row">
               <Link className="du-action-link" to="/runs/new">
-                {t("Start a discussion")}
+                {t("New Discussion")}
               </Link>
               <Link className="du-action-link du-secondary-link" to="/runs">
-                {t("Continue existing discussions")}
+                {t("My Discussions")}
               </Link>
             </div>
           </DataPanel>
@@ -401,11 +401,11 @@ function LandingPage() {
                 value={t("The best visible choices without selecting one option invisibly.")}
               />
               <QualityMapItem
-                label={t("Open disagreements")}
-                value={t("Concerns that still constrain the conclusion.")}
+                label={t("Still unresolved")}
+                value={t("Concerns that still need resolution.")}
               />
               <QualityMapItem
-                label={t("Requirements this answer must satisfy")}
+                label={t("Must cover")}
                 value={t("Conditions the final answer must meet.")}
               />
               <QualityMapItem
@@ -417,20 +417,20 @@ function LandingPage() {
                 value={t("Limits, assumptions, and failure cases to keep visible.")}
               />
               <QualityMapItem
-                label={t("Current conclusion")}
+                label={t("Current Answer")}
                 value={t("The reviewable result with next steps.")}
               />
             </div>
           </DataPanel>
         </div>
         <DataPanel
-          title={t("Setup / Models")}
+          title={t("Connect AI")}
           description={t(
-            "Check whether the local system can run model-backed discussions, and see the safest next setup action without exposing secrets."
+            "Choose a provider, enter an API key, test the connection, and see whether AI participants are ready."
           )}
         >
           {runtimeProfilesQuery.isLoading ? (
-            <StatusBanner title={t("Checking model setup")} />
+            <StatusBanner title={t("Checking AI setup")} />
           ) : runtimeProfilesQuery.isError ? (
             <LocalServiceSetupGuide
               compact
@@ -443,27 +443,27 @@ function LandingPage() {
             <SetupModelsPanel setupPlan={runtimeSetupPlan} />
           ) : (
             <EmptyState
-              title={t("No model setup returned")}
-              description={t("The local service did not return safe model setup status.")}
+              title={t("No AI setup returned")}
+              description={t("The local service did not return safe AI setup status.")}
             />
           )}
           <div className="du-action-row">
             <Link className="du-action-link du-secondary-link" to="/setup/models">
-              {t("Open Setup / Models")}
+              {t("Open Connect AI")}
             </Link>
           </div>
         </DataPanel>
         <DataPanel
-          title={t("Continue existing discussions")}
+          title={t("My Discussions")}
           description={t(
-            "Open a discussion room and review its brief, perspectives, disagreements, requirements, evidence, conclusion, and next actions."
+            "Open a discussion room and review its brief, perspectives, unresolved points, checks, answer, and next steps."
           )}
         >
           <QueryState query={runsQuery}>
             {runs.length === 0 ? (
               <EmptyState
                 title={t("No discussions yet")}
-                description={t("Start a discussion to create the first deliberation.")}
+                description={t("Create a New Discussion to open the first room.")}
               />
             ) : (
               <RunCatalogList runs={runs} />
@@ -1009,7 +1009,7 @@ function StartDiscussionActionLink({
 
 function StartModelBackedDiscussionLink({
   className = "du-action-link",
-  label = "Start model-backed discussion",
+  label = "Start discussion with AI",
   perspectiveCount
 }: {
   className?: string;
@@ -1063,7 +1063,7 @@ function LandingReadinessOverview({
     <DataPanel
       title={t("Ready to use Deliberum")}
       description={t(
-        "One place to see whether the local service, model setup, and discussion history are ready."
+        "One place to see whether the local service, AI setup, and discussion history are ready."
       )}
     >
       <div className="du-setup-model-grid" aria-label={t("Product readiness")}>
@@ -1090,12 +1090,12 @@ function LandingReadinessOverview({
           <StartDiscussionActionLink action={readiness.action} />
           {readiness.action.to !== "/setup/models" ? (
             <Link className="du-action-link du-secondary-link" to="/setup/models">
-              {t("Open Setup / Models")}
+              {t("Open Connect AI")}
             </Link>
           ) : null}
           {runs.length > 0 && readiness.action.to !== "/runs" ? (
             <Link className="du-action-link du-secondary-link" to="/runs">
-              {t("Continue discussions")}
+              {t("My Discussions")}
             </Link>
           ) : null}
         </div>
@@ -1192,7 +1192,7 @@ function buildLandingFirstUseSteps(input: {
 }): LandingFirstUseStep[] {
   const localServiceLoading = input.localService.title === "Checking local service";
   const localServiceReady = input.localService.tone === "ok";
-  const modelSetupLoading = input.modelSetup.item.title === "Checking model setup";
+  const modelSetupLoading = input.modelSetup.item.title === "Checking AI setup";
   const localPreset = input.setupPlan?.profiles.find((profile) => profile.id === "local-preset");
   const modelOrganizerReady = input.setupPlan
     ? hasReadyModelOrganizerProfile(input.setupPlan.profiles, input.providerConnectionVerified)
@@ -1206,7 +1206,7 @@ function buildLandingFirstUseSteps(input: {
     ? {
         label: "Step 3",
         title: "Checking participant readiness",
-        detail: "Participant readiness appears after model setup loads.",
+        detail: "Participant readiness appears after AI setup loads.",
         tone: "neutral" as const
       }
     : describeLandingParticipantStep({
@@ -1227,12 +1227,12 @@ function buildLandingFirstUseSteps(input: {
         ? "Web is checking whether the local system is reachable."
         : localServiceReady
           ? "Web can read setup, discussions, and model readiness from this machine."
-          : "Open Setup / Models for the local start command, then return here.",
+          : "Open Connect AI for the local start command, then return here.",
       tone: localServiceLoading ? "neutral" : localServiceReady ? "ok" : "warning",
       action: localServiceReady || localServiceLoading
         ? undefined
         : {
-            label: "Open Setup / Models",
+            label: "Open Connect AI",
             detail: "Start the local service before configuring models.",
             to: "/setup/models",
             tone: "warning"
@@ -1241,19 +1241,19 @@ function buildLandingFirstUseSteps(input: {
     {
       label: "Step 2",
       title: modelSetupLoading
-        ? "Checking model setup"
+        ? "Checking AI setup"
         : input.modelSetup.canStartModelBacked
-        ? "Model provider ready"
+        ? "AI provider ready"
         : input.modelSetup.canStartDemo
-          ? "Demo ready, model setup still needed"
-          : "Add model setup",
+          ? "Demo ready, Connect AI still needed"
+          : "Connect AI first",
       detail: modelSetupLoading
-        ? "Web is checking whether demo or model-backed participants are ready."
+        ? "Web is checking whether demo or AI participants are ready."
         : input.modelSetup.canStartModelBacked
-        ? "A real provider can answer with configured model participants."
+        ? "A provider can answer with configured AI participants."
         : input.modelSetup.canStartDemo
-          ? "You can try the room now, then add a provider for real model responses."
-          : "Save an API key, base URL, and model before relying on real model perspectives.",
+          ? "You can try the room now, then add a provider for AI responses."
+          : "Save an API key, base URL, and model before relying on AI perspectives.",
       tone: modelSetupLoading
         ? "neutral"
         : input.modelSetup.canStartModelBacked
@@ -1264,8 +1264,8 @@ function buildLandingFirstUseSteps(input: {
       action: modelSetupLoading || input.modelSetup.canStartModelBacked
         ? undefined
         : {
-            label: "Open Setup / Models",
-            detail: "Configure the model provider in Web.",
+            label: "Open Connect AI",
+            detail: "Configure the AI provider in Web.",
             to: "/setup/models",
             tone: "warning"
           }
@@ -1279,7 +1279,7 @@ function buildLandingFirstUseSteps(input: {
           ? "Start a demo discussion"
           : "Finish setup first",
       detail: input.modelSetup.canStartModelBacked
-        ? "Open the discussion room with configured model participants selected."
+        ? "Open the discussion room with configured AI participants selected."
         : input.modelSetup.canStartDemo
           ? "Open the discussion room with built-in demo participants."
           : "Complete setup before creating useful discussion material.",
@@ -1351,7 +1351,7 @@ function describeLandingLocalService(input: {
     return {
       label: "Local service",
       title: "Local service unavailable",
-      detail: "Open Setup / Models to check the local service and model configuration.",
+      detail: "Open Connect AI to check the local service and AI setup.",
       tone: "warning"
     };
   }
@@ -1378,9 +1378,9 @@ function describeLandingModelSetup(
   if (setupLoading) {
     return {
       item: {
-        label: "Model setup",
-        title: "Checking model setup",
-        detail: "Web is checking whether demo or model-backed participants are ready.",
+        label: "AI setup",
+        title: "Checking AI setup",
+        detail: "Web is checking whether demo or AI participants are ready.",
         tone: "neutral"
       },
       canStartModelBacked: false,
@@ -1392,9 +1392,9 @@ function describeLandingModelSetup(
   if (setupError || !setupPlan) {
     return {
       item: {
-        label: "Model setup",
-        title: "Model setup unavailable",
-        detail: "Open Setup / Models to check the local model configuration.",
+        label: "AI setup",
+        title: "AI setup unavailable",
+        detail: "Open Connect AI to check the local AI setup.",
         tone: "warning"
       },
       canStartModelBacked: false,
@@ -1417,9 +1417,9 @@ function describeLandingModelSetup(
   if (modelProviderReady) {
     return {
       item: {
-        label: "Model setup",
-        title: "Real model provider ready",
-        detail: "Configured model participants can answer new discussions.",
+        label: "AI setup",
+        title: "AI provider ready",
+        detail: "Configured AI participants can answer new discussions.",
         tone: "ok"
       },
       canStartModelBacked: true,
@@ -1431,9 +1431,9 @@ function describeLandingModelSetup(
   if (modelProviderConfigured) {
     return {
       item: {
-        label: "Model setup",
-        title: "Verify model provider",
-        detail: "A model provider is saved locally; verify the connection before starting real model-backed discussions.",
+        label: "AI setup",
+        title: "Test AI provider",
+        detail: "An AI provider is saved locally; test the connection before starting discussions with AI.",
         tone: "warning"
       },
       canStartModelBacked: false,
@@ -1445,10 +1445,10 @@ function describeLandingModelSetup(
   if (localPresetReady) {
     return {
       item: {
-        label: "Model setup",
+        label: "AI setup",
         title: needsSetup ? "Demo discussion ready" : "Ready for demo discussions",
         detail: needsSetup
-          ? "Demo participants can start now; finish provider setup before relying on real model perspectives."
+          ? "Demo participants can start now; finish provider setup before relying on AI perspectives."
           : "Built-in demo participants can start a walkthrough immediately.",
         tone: needsSetup ? "warning" : "ok"
       },
@@ -1460,11 +1460,11 @@ function describeLandingModelSetup(
 
   return {
     item: {
-      label: "Model setup",
+      label: "AI setup",
       title: needsSetup ? "Provider setup needed" : "Discussion source unavailable",
       detail: needsSetup
-        ? "Save API key, base URL, and model before relying on real model participants."
-        : "Complete model setup before starting useful discussions.",
+        ? "Save API key, base URL, and model before relying on AI participants."
+        : "Complete AI setup before starting useful discussions.",
       tone: needsSetup ? "warning" : "neutral"
     },
     canStartModelBacked: false,
@@ -1511,7 +1511,7 @@ function describeLandingDiscussionHistory(
   return {
     label: "Discussion history",
     title: "No discussions yet",
-    detail: "Start a discussion to create the first room.",
+    detail: "Create a New Discussion to open the first room.",
     tone: "neutral"
   };
 }
@@ -1526,8 +1526,8 @@ function describeLandingNextAction(input: {
 }): LandingReadinessAction {
   if (input.modelSetup.canStartModelBacked) {
     return {
-      label: "Start model-backed discussion",
-      detail: "Use configured model participants for the next discussion.",
+      label: "Start discussion with AI",
+      detail: "Use configured AI participants for the next discussion.",
       to: "/runs/new",
       tone: "ok",
       participantSource: "model-backed"
@@ -1538,7 +1538,7 @@ function describeLandingNextAction(input: {
     return {
       label: "Start demo discussion",
       detail:
-        "Try the full discussion path with built-in participants while you finish model setup.",
+        "Try the full discussion path with built-in participants while you connect AI.",
       to: "/runs/new",
       tone: input.modelSetup.needsSetup ? "warning" : "ok"
     };
@@ -1546,7 +1546,7 @@ function describeLandingNextAction(input: {
 
   if (input.runs.length > 0) {
     return {
-      label: "Continue discussions",
+      label: "My Discussions",
       detail: "Review a discussion that already exists while setup is being checked.",
       to: "/runs",
       tone: "warning"
@@ -1554,8 +1554,8 @@ function describeLandingNextAction(input: {
   }
 
   return {
-    label: "Finish model setup",
-    detail: "Add model provider details before relying on real model-backed discussions.",
+    label: "Connect AI first",
+      detail: "Add provider details before relying on AI participants.",
     to: "/setup/models",
     tone: "warning"
   };
@@ -1592,29 +1592,29 @@ function SetupModelsPage() {
       <section className="du-landing">
         <PageHeader
           eyebrow={t("User Mode")}
-          title={t("Setup / Models")}
+          title={t("Connect AI")}
           description={t(
-            "Check whether the local system can run model-backed discussions, and see the safest next setup action without exposing secrets."
+            "Choose a provider, enter an API key, test the connection, and see whether AI participants are ready."
           )}
           actions={
             <>
               <Link className="du-action-link" to="/runs/new">
-                {t("Start a discussion")}
+                {t("New Discussion")}
               </Link>
               <Link className="du-action-link du-secondary-link" to="/runs">
-                {t("Continue discussions")}
+                {t("My Discussions")}
               </Link>
             </>
           }
         />
         <DataPanel
-          title={t("Model setup status")}
+          title={t("AI connection status")}
           description={t(
-            "See local service connection, local demo readiness, provider readiness, and the safest next setup action in user language."
+            "See whether the local app is connected, a provider is ready, and discussions can use AI participants."
           )}
         >
           {runtimeProfilesQuery.isLoading ? (
-            <StatusBanner title={t("Checking model setup")} />
+            <StatusBanner title={t("Checking AI setup")} />
           ) : runtimeProfilesQuery.isError ? (
             <LocalServiceSetupGuide
               onRetry={() => {
@@ -1626,8 +1626,8 @@ function SetupModelsPage() {
             <SetupModelsPanel setupPlan={runtimeSetupPlan} full />
           ) : (
             <EmptyState
-              title={t("No model setup returned")}
-              description={t("The local service did not return safe model setup status.")}
+              title={t("No AI setup returned")}
+              description={t("The local service did not return safe AI setup status.")}
             />
           )}
         </DataPanel>
@@ -1824,7 +1824,7 @@ function SetupModelsPanel({
             <StartModelBackedDiscussionLink />
           ) : canStartDiscussion ? (
             <Link className="du-action-link" to="/runs/new">
-              {t("Start a discussion")}
+              {t("New Discussion")}
             </Link>
           ) : null}
         </div>
@@ -1855,13 +1855,13 @@ function SetupModelsPanel({
             <SetupInstructionStep
               title={t("Test connection")}
               detail={t(
-                "Use Check readiness and Verify connection to confirm model-backed discussions are ready."
+                "Use Check readiness and Test connection to confirm discussions with AI are ready."
               )}
             />
             <SetupInstructionStep
               title={t("Ready for discussions")}
               detail={t(
-                "When a model provider is ready, start a discussion and use configured participants or model-backed discussion plans."
+                "When an AI provider is ready, start a discussion and use configured participants."
               )}
             />
           </div>
@@ -2021,32 +2021,32 @@ function SetupRoleDefaultsSummary({
   return (
     <section
       className={`du-role-defaults-panel du-status-${tone}`}
-      aria-label={t("Saved role defaults")}
+      aria-label={t("Saved participant choices")}
     >
       <div>
-        <p className="du-kicker">{t("Role model defaults")}</p>
+        <p className="du-kicker">{t("Participant model choices")}</p>
         <strong>
           {loading
-            ? t("Checking saved role defaults")
+            ? t("Checking saved participant choices")
             : error
-              ? t("Saved role defaults unavailable")
+              ? t("Saved participant choices unavailable")
               : saved
-                ? t("Saved role defaults")
-                : t("No saved role defaults")}
+                ? t("Saved participant choices")
+                : t("No saved participant choices")}
         </strong>
         <p>
           {loading
-            ? t("Checking whether the local service has a saved participant model setup.")
+            ? t("Checking whether the local service has saved participant choices.")
             : error
               ? t(
-                  "The local service did not return saved role defaults. You can still start or configure a discussion."
+                  "The local service did not return saved participant choices. You can still start or configure a discussion."
                 )
               : saved
                 ? t(
-                    "Setup / Models shows the saved participant model choices before you start. API keys, base URLs, and provider configuration ids are not returned here."
+                    "Connect AI shows the saved participant choices before you start. API keys, base URLs, and internal provider details are not shown here."
                   )
                 : t(
-                    "Save a default role setup from the start page, then Setup / Models will show which discussion depth and role models are ready for future discussions."
+                    "Save participant choices from New Discussion, then Connect AI will show which discussion depth and models are ready for future discussions."
                   )}
         </p>
       </div>
@@ -2090,7 +2090,7 @@ function SetupRoleDefaultsSummary({
       {modelBackedAvailable ? (
         <div
           className="du-discussion-model-assignment"
-          aria-label={t("Edit default role setup")}
+          aria-label={t("Edit participant choices")}
         >
           <fieldset className="du-participant-source-picker du-participant-depth-picker">
             <legend>{t("Choose default discussion depth")}</legend>
@@ -2251,7 +2251,7 @@ function SetupRoleDefaultsSummary({
               disabled={pending}
               onClick={onSave}
             >
-              {t(pending ? "Saving role defaults" : "Save as default role setup")}
+              {t(pending ? "Saving participant choices" : "Save participant choices")}
             </button>
             <button
               type="button"
@@ -2259,7 +2259,7 @@ function SetupRoleDefaultsSummary({
               disabled={!saved || pending}
               onClick={onClear}
             >
-              {t("Clear saved role setup")}
+              {t("Clear saved participant choices")}
             </button>
           </div>
           <p className="du-role-defaults-note">
@@ -2274,16 +2274,16 @@ function SetupRoleDefaultsSummary({
           <>
             {saved ? (
               <Link className="du-action-link" to={startPath}>
-                {t("Start with saved role setup")}
+                {t("Start with saved participant choices")}
               </Link>
             ) : null}
             <Link className="du-action-link du-secondary-link" to={startPath}>
-              {t(saved ? "Edit role defaults" : "Create role defaults")}
+              {t(saved ? "Edit participant choices" : "Create participant choices")}
             </Link>
           </>
         ) : (
           <a className="du-action-link du-secondary-link" href="#setup-provider-form">
-            {t("Verify provider first")}
+            {t("Test provider first")}
           </a>
         )}
       </div>
@@ -2338,16 +2338,16 @@ function getSetupRoleDefaultsStatusMessage(
 ): string {
   switch (status) {
     case "saved":
-      return "Saved role defaults to the local service. API keys and base URLs are not stored here.";
+      return "Saved participant choices to the local service. API keys and base URLs are not stored here.";
     case "cleared":
-      return "Cleared saved role defaults from the local service.";
+      return "Cleared saved participant choices from the local service.";
     case "unavailable":
-      return "Role defaults could not be changed in the local service. You can still review setup and start a discussion.";
+      return "Participant choices could not be changed in the local service. You can still review setup and start a discussion.";
     case "idle":
     default:
       return saved
-        ? "Saved role defaults are available from the local service."
-        : "No saved role defaults yet. API keys and base URLs are never saved here.";
+        ? "Saved participant choices are available from the local service."
+        : "No saved participant choices yet. API keys and base URLs are never saved here.";
   }
 }
 
@@ -2388,12 +2388,12 @@ function ProviderSetupChecklist({
     <section className="du-provider-management" aria-labelledby="model-provider-management">
       <div className="du-provider-management-heading">
         <p className="du-kicker">{t("Model provider management")}</p>
-        <h4 id="model-provider-management">{t("Saved model providers")}</h4>
-        <p>
-          {t(
-            "Manage the model provider Web can safely see. API keys stay hidden, and exact saved base URL or model values are not returned to the default view."
-          )}
-        </p>
+              <h4 id="model-provider-management">{t("Connected AI providers")}</h4>
+              <p>
+                {t(
+                  "Manage the AI provider Web can safely see. API keys stay hidden, and saved base URL or model values are not shown in the default view."
+                )}
+              </p>
       </div>
       <div className="du-provider-management-grid">
         {profiles.map((profile) => (
@@ -2506,7 +2506,7 @@ function SetupParticipantReadiness({
         <h4 id="setup-participant-readiness">{t("Discussion participants")}</h4>
         <p>
           {t(
-            "This shows which readable roles are ready before you start: first perspectives, reviewers, evidence checks, and conclusion writing."
+            "This shows which people and AI roles are ready before you start: perspectives, reviewers, checks, and answer writing."
           )}
         </p>
       </div>
@@ -2546,7 +2546,7 @@ function SetupParticipantReadiness({
         {readiness.canStartModelBackedDiscussion ? (
           <div
             className="du-setup-participant-depth-actions"
-            aria-label={t("Model-backed start options")}
+            aria-label={t("Discussion with AI start options")}
           >
             <StartModelBackedDiscussionLink
               className="du-action-link"
@@ -2626,7 +2626,7 @@ function SetupParticipantReadiness({
         ) : null}
         {readiness.needsModelSetup ? (
           <a className="du-action-link du-secondary-link" href="#setup-provider-form">
-            {t("Add model setup")}
+            {t("Add AI provider")}
           </a>
         ) : null}
       </div>
@@ -2647,13 +2647,13 @@ function SetupDiscussionReadiness({
   return (
     <section className="du-setup-discussion-readiness" aria-labelledby="setup-discussion-readiness">
       <div className="du-setup-readiness-heading">
-        <p className="du-kicker">{t("Discussion readiness")}</p>
-        <h4 id="setup-discussion-readiness">{t("What can run now")}</h4>
-        <p>
-          {t(
-            "This turns setup status into the discussion path: demo participants, real model participants, review roles, conclusion writing, and the next step."
-          )}
-        </p>
+            <p className="du-kicker">{t("Ready to discuss")}</p>
+            <h4 id="setup-discussion-readiness">{t("What can run now")}</h4>
+            <p>
+              {t(
+                "This shows what you can do now: try the demo, use AI participants, review the answer, and choose the next step."
+              )}
+            </p>
       </div>
       <div className="du-setup-readiness-grid">
         {readiness.items.map((item) => (
@@ -2672,12 +2672,12 @@ function SetupDiscussionReadiness({
           <StartModelBackedDiscussionLink />
         ) : readiness.canStartDiscussion ? (
           <Link className="du-action-link" to="/runs/new">
-            {t("Start a discussion")}
+            {t("New Discussion")}
           </Link>
         ) : null}
         {readiness.needsModelSetup ? (
           <a className="du-action-link du-secondary-link" href="#setup-provider-form">
-            {t("Add model setup")}
+            {t("Add AI provider")}
           </a>
         ) : null}
       </div>
@@ -2803,44 +2803,44 @@ function buildSetupDiscussionReadiness(
       : undefined;
   const canStartDiscussion = localPresetReady || modelProviderReady;
   const modelDetail = modelProviderReady
-    ? "Configured model participants can answer as independent perspectives."
+    ? "AI participants can answer as independent perspectives."
     : modelProviderNeedsVerification
-      ? "A model provider is saved locally. Verify the connection before relying on real model participants."
+      ? "An AI provider is saved locally. Test the connection before relying on AI participants."
       : modelProviderProfiles.length > 0
-      ? "Save the provider API key, base URL, and model in Web setup, check readiness, then verify the connection."
-      : "The local service did not report a Web-configurable model provider.";
+      ? "Enter the provider API key, base URL, and model name, then test the connection."
+      : "No AI provider is available to connect from Web.";
   const modelStatus = modelProviderReady
     ? "Ready"
     : modelProviderNeedsVerification
-      ? "Verify connection"
+      ? "Test connection"
       : modelProviderProfiles.length > 0
       ? "Setup needed"
       : "No provider reported";
   const nextStep = modelProviderReady
     ? {
-        status: "Start model-backed discussion",
+        status: "Start with AI participants",
         detail:
-          "Start discussion will select configured model participants by default while keeping demo participants available.",
+          "New Discussion will select configured AI participants by default while keeping demo participants available.",
         tone: "ok" as const
       }
     : modelProviderNeedsVerification
       ? {
-          status: "Verify provider connection",
+          status: "Test provider connection",
           detail:
-            "Use Verify connection in Setup / Models before starting a real model-backed discussion.",
+            "Use Test connection in Connect AI before starting a discussion with AI.",
           tone: "warning" as const
         }
     : localPresetReady
       ? {
           status: "Try a demo discussion",
           detail:
-            "Use the sample flow now, then finish provider setup before relying on real model-backed perspectives.",
+            "Use the sample flow now, then finish provider setup before relying on real AI perspectives.",
           tone: "warning" as const
         }
       : {
           status: "Finish setup first",
           detail:
-            "Add a demo preset or a real model provider before starting a useful discussion.",
+            "Add a demo preset or an AI provider before starting a useful discussion.",
           tone: "neutral" as const
         };
 
@@ -2858,7 +2858,7 @@ function buildSetupDiscussionReadiness(
         tone: localPresetReady ? "ok" : "neutral"
       },
       {
-        title: "Model participants",
+        title: "AI participants",
         status: modelStatus,
         detail: modelDetail,
         tone:
@@ -2876,7 +2876,7 @@ function buildSetupDiscussionReadiness(
         detail: organizerMode === "model"
           ? "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the discussion after first responses."
           : organizerMode === "local"
-            ? "Local review roles can compare options, review disagreements, evidence, and risks, then draft the current conclusion."
+            ? "Local review roles can compare options, review unresolved points, evidence, and risks, then draft the current answer."
             : "Discussions may collect first responses only until review roles are ready.",
         tone: organizerMode ? "ok" : "warning"
       },
@@ -2919,7 +2919,7 @@ function buildSetupParticipantReadiness(
   const perspectiveStatus = modelReady
     ? "Model ready"
     : modelNeedsVerification
-      ? "Verify connection"
+      ? "Test connection"
     : localPresetReady
       ? "Demo ready"
       : "Setup needed";
@@ -2931,11 +2931,11 @@ function buildSetupParticipantReadiness(
       ? "Built-in demo participant"
       : "No participant source ready";
   const perspectiveDetail = modelReady
-    ? "New model-backed discussions can use this provider for independent first responses."
+    ? "New discussions can use this provider for independent first responses."
     : modelNeedsVerification
-      ? "Verify the saved provider connection before using real model perspectives."
+      ? "Test the saved provider connection before using real AI perspectives."
     : localPresetReady
-      ? "Demo discussions can show the role, but real model perspectives still need provider setup."
+      ? "Demo discussions can show the role, but real AI perspectives still need provider setup."
       : "Add a model provider or local preset before starting a useful discussion.";
   const perspectiveTone: SetupParticipantReadinessItem["tone"] = modelReady
     ? "ok"
@@ -2953,7 +2953,7 @@ function buildSetupParticipantReadiness(
   const organizerDetail = organizerMode === "model"
     ? "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the discussion after first responses."
     : organizerMode === "local"
-      ? "Local review roles can compare options, review evidence and risks, and draft the current conclusion."
+      ? "Local review roles can compare options, review evidence and risks, and draft the current answer."
       : "Discussions may collect first responses only until review roles are ready.";
   const organizerTone: SetupParticipantReadinessItem["tone"] = organizerMode
     ? "ok"
@@ -2977,15 +2977,15 @@ function buildSetupParticipantReadiness(
     : modelNeedsVerification
       ? {
           title: "Model assignment",
-          status: "Verify provider first",
+          status: "Test provider first",
           detail:
-            "The saved provider cannot power model participants until Verify connection succeeds.",
+            "The saved provider cannot power AI participants until Test connection succeeds.",
           depthAction:
             "After verification, open the start page to choose Focused review or Broader review.",
           modelPolicy:
-            "Verify the provider before assigning first-response and review role models on the start page.",
+            "Test the provider before assigning first-response and review role models on the start page.",
           editDetail:
-            "Review the saved provider fields, then verify connection to unlock model participants.",
+            "Review the saved provider fields, then test the connection to unlock AI participants.",
           editAction: "Review provider setup",
           tone: "warning"
         }
@@ -2993,23 +2993,23 @@ function buildSetupParticipantReadiness(
           title: "Model assignment",
           status: localPresetReady ? "Demo roles only" : "No model roles ready",
           detail:
-            "Demo discussions use built-in material. Add and verify a provider before model-backed roles are available.",
+            "Demo discussions use built-in material. Add and test a provider before AI roles are available.",
           depthAction:
-            "Start a demo discussion now, or finish model setup to choose focused or broader model-backed review.",
+            "Start a demo discussion now, or finish AI setup to choose focused or broader review.",
           modelPolicy:
             "Add and verify a provider before assigning first-response and review role models on the start page.",
           editDetail:
-            "Add the provider API key, base URL, and model before model-backed roles are available.",
-          editAction: "Add model setup",
+            "Add the provider API key, base URL, and model name before AI roles are available.",
+          editAction: "Add AI provider",
           tone: localPresetReady ? "warning" : "neutral"
         };
   const planItems: SetupParticipantPlanItem[] = [
     {
       title: "First responses",
       status: modelReady
-        ? "Model-backed"
+        ? "AI ready"
         : modelNeedsVerification
-          ? "Verify provider"
+          ? "Test provider"
         : localPresetReady
           ? "Demo walkthrough"
           : "Needs setup",
@@ -3024,11 +3024,11 @@ function buildSetupParticipantReadiness(
       detail:
         "These independent first responses become the main perspectives users compare in the room.",
       action: modelReady
-        ? "Start discussion will use model participants by default."
+        ? "New Discussion will use AI participants by default."
         : modelNeedsVerification
-          ? "Verify connection before starting with model participants."
+          ? "Test the connection before starting with AI participants."
         : localPresetReady
-          ? "Use the demo now or add a provider for real model responses."
+          ? "Use the demo now or add a provider for AI responses."
           : "Add a model provider before starting.",
       tone: modelReady ? "ok" : localPresetReady ? "warning" : "neutral"
     },
@@ -3037,7 +3037,7 @@ function buildSetupParticipantReadiness(
       status: modelReady
         ? "Third perspective available"
         : modelNeedsVerification
-          ? "Verify provider"
+          ? "Test provider"
           : "Provider required",
       uses: modelReady
         ? "Perspective C can use {provider}."
@@ -3046,12 +3046,12 @@ function buildSetupParticipantReadiness(
         : "Perspective C is not available until a model provider is ready.",
       usesValues: modelReady ? { provider: providerName } : undefined,
       detail:
-        "Broader review adds one more independent model response when the question needs more comparison material.",
+        "Broader review adds one more independent AI response when the question needs more comparison material.",
       action: modelReady
         ? "Choose Broader review on the start page to include Perspective C."
         : modelNeedsVerification
-          ? "Verify connection to unlock Perspective C and real model-backed broader review."
-        : "Add a provider to unlock Perspective C and real model-backed broader review.",
+          ? "Test the connection to unlock Perspective C and broader AI review."
+          : "Add a provider to unlock Perspective C and broader AI review.",
       tone: modelReady ? "ok" : "neutral"
     },
     {
@@ -3063,14 +3063,14 @@ function buildSetupParticipantReadiness(
           ? "Reviewer, Evidence checker, and Risk reviewer use the local review flow."
           : "Reviewer, Evidence checker, and Risk reviewer are not ready yet.",
       detail:
-        "These roles keep open disagreements, missing evidence, and risks visible before the conclusion is trusted.",
+        "These roles keep unresolved points, checks, and risks visible before the answer is trusted.",
       action: organizerMode
         ? "Start the room and continue review when the first responses are ready."
         : "Finish review role setup before relying on review steps.",
       tone: organizerTone
     },
     {
-      title: "Conclusion and next actions",
+      title: "Answer and next steps",
       status: organizerMode ? "Conclusion writer ready" : "Conclusion writer setup needed",
       uses: organizerMode === "model"
         ? "Conclusion writer uses the configured model provider."
@@ -3078,7 +3078,7 @@ function buildSetupParticipantReadiness(
           ? "Conclusion writer uses the local review flow."
           : "Conclusion writer is not ready yet.",
       detail:
-        "This role turns the current discussion state into a reviewable conclusion with recommended next actions.",
+        "This role turns the current discussion state into a reviewable answer with next steps.",
       action: organizerMode
         ? "Review the conclusion panel after the room has enough discussion material."
         : "Finish review role setup before relying on generated conclusions.",
@@ -3104,12 +3104,12 @@ function buildSetupParticipantReadiness(
     },
     {
       role: "Perspective C",
-      source: modelReady ? "{provider} model" : "Broader review after model setup",
+      source: modelReady ? "{provider} model" : "Broader review after AI setup",
       sourceValues: modelReady ? { provider: providerName } : undefined,
       status: modelReady ? "Available in broader review" : "Setup needed",
       detail: modelReady
-        ? "Choose Broader review on the start page to add a third independent model perspective."
-        : "Perspective C is only available for model-backed broader review.",
+        ? "Choose Broader review on New Discussion to add a third independent AI perspective."
+        : "Perspective C is only available after AI setup for broader review.",
       tone: modelReady ? "ok" : "neutral"
     }
   ];
@@ -3191,14 +3191,14 @@ function OpenAICompatibleSetupForm({
   const setupStatus = ready
     ? {
         title: "Ready for discussions",
-        detail: "This provider is ready for model-backed discussions.",
+        detail: "This provider is ready for AI-assisted discussions.",
         tone: "ok" as const
       }
     : configured || activeInCurrentDaemon
       ? {
-          title: "Ready to verify",
+          title: "Ready to test",
           detail:
-            "The saved setup is active in the current local service. Verify connection before starting a real discussion.",
+            "The saved setup is active in the current local service. Test the connection before starting a real discussion.",
           tone: "warning" as const
         }
       : {
@@ -3215,11 +3215,11 @@ function OpenAICompatibleSetupForm({
       aria-labelledby="openai-setup-form"
     >
       <div className="du-provider-setup-form-heading">
-        <p className="du-kicker">{t("Add model")}</p>
+        <p className="du-kicker">{t("Connect AI")}</p>
         <h4 id="openai-setup-form">{t("Configure OpenAI-compatible provider")}</h4>
         <p>
           {t(
-            "Save the provider API key, base URL, and model to this machine so future discussions can use real model participants."
+            "Save the provider API key, base URL, and model name to this machine so future discussions can use AI participants."
           )}
         </p>
       </div>
@@ -3258,7 +3258,7 @@ function OpenAICompatibleSetupForm({
             }}
             placeholder="https://api.openai.com"
           />
-          <label htmlFor="openai-compatible-model">{t("Model")}</label>
+          <label htmlFor="openai-compatible-model">{t("Model name")}</label>
           <input
             id="openai-compatible-model"
             value={input.model}
@@ -3288,14 +3288,14 @@ function OpenAICompatibleSetupForm({
               <strong>{t("Structured review compatibility")}</strong>
               <small>
                 {t(
-                  "Recommended for real providers so Deliberum can organize options, disagreements, evidence gaps, risks, conclusions, and next actions more reliably."
+                  "Recommended for real AI providers so Deliberum can organize options, unresolved points, evidence gaps, risks, the current answer, and next steps more reliably."
                 )}
               </small>
             </span>
           </label>
           <div className="du-action-row">
             <button type="submit" disabled={!canSubmit}>
-              {pending ? t("Saving setup") : t("Save model setup")}
+              {pending ? t("Saving setup") : t("Save AI setup")}
             </button>
             <button type="button" className="du-secondary-button" onClick={onCheckReadiness}>
               {t("Check readiness")}
@@ -3306,7 +3306,7 @@ function OpenAICompatibleSetupForm({
               disabled={!canVerify || verificationPending}
               onClick={onVerifyConnection}
             >
-              {verificationPending ? t("Verifying connection") : t("Verify connection")}
+              {verificationPending ? t("Testing connection") : t("Test connection")}
             </button>
           </div>
         </form>
@@ -3323,10 +3323,10 @@ function OpenAICompatibleSetupForm({
           <p className="du-readable-meta">
             {t(
               verified
-                ? "Use Verify connection to send one minimal provider request before starting a model-backed discussion."
+                ? "Use Test connection to send one minimal provider request before starting a discussion with AI."
                 : activeInCurrentDaemon
-                  ? "Verify connection is available now because the saved setup is active in this local service."
-                  : "Verify connection becomes available after Web confirms this provider is ready."
+                  ? "Test connection is available now because the saved setup is active in this local service."
+                  : "Test connection becomes available after Web confirms this provider is ready."
             )}
           </p>
         </aside>
@@ -3340,11 +3340,11 @@ function OpenAICompatibleSetupForm({
       {saved ? (
         <StatusBanner
           tone="ok"
-          title={t("Model setup saved locally")}
+          title={t("AI setup saved locally")}
           detail={t(
             activeInCurrentDaemon
-              ? "The current local service can use this setup now. Check readiness, verify connection, then start a real model-backed discussion."
-              : "Restart the local service, then return here and check readiness before starting a real model-backed discussion."
+              ? "The current local service can use this setup now. Check readiness, test the connection, then start a discussion with AI."
+              : "Restart the local service, then return here and check readiness before starting a discussion with AI."
           )}
         />
       ) : null}
@@ -3353,7 +3353,7 @@ function OpenAICompatibleSetupForm({
           tone="ok"
           title={t("Provider connection verified")}
           detail={t(
-            "The configured provider accepted a safe test request. You can start a real model-backed discussion."
+            "The configured provider accepted a safe test request. You can start a discussion with AI."
           )}
         />
       ) : null}
@@ -3373,7 +3373,7 @@ function OpenAICompatibleSetupForm({
       {error ? (
         <StatusBanner
           tone="error"
-          title={t("Model setup could not be saved")}
+          title={t("AI setup could not be saved")}
           detail={formatSafeErrorMessage(error)}
         />
       ) : null}
@@ -3423,7 +3423,7 @@ function ProviderVerificationRecoveryActions({
         >
           <span>{t("Then")}</span>
           <strong>
-            {verificationPending ? t("Verifying connection") : t("Try Verify connection again")}
+            {verificationPending ? t("Testing connection") : t("Try Test connection again")}
           </strong>
           <p>{t("Send another minimal test request after setup is corrected.")}</p>
         </button>
@@ -3464,8 +3464,8 @@ function CurrentModelSetupSummary({
     >
       <div className="du-current-model-setup-header">
         <div>
-          <p className="du-kicker">{t("Model management")}</p>
-          <h5 id="current-model-setup">{t("Current model setup")}</h5>
+          <p className="du-kicker">{t("AI setup")}</p>
+          <h5 id="current-model-setup">{t("Current AI connection")}</h5>
           <p>{t(status.detail)}</p>
         </div>
         <strong>{t(status.title)}</strong>
@@ -3484,13 +3484,13 @@ function CurrentModelSetupSummary({
       </div>
       <p className="du-readable-meta">
         {t(
-          "Web shows only readiness here. It never displays saved API keys, base URLs, or exact model values in the default view."
+          "Web shows only readiness here. It never displays saved API keys, base URLs, or exact model names in the default view."
         )}
       </p>
       <div className="du-action-row">
         {startReady ? <StartModelBackedDiscussionLink /> : null}
         <a className="du-action-link du-secondary-link" href="#openai-compatible-api-key">
-          {t(startReady ? "Edit model setup" : "Finish setup in Web")}
+          {t(startReady ? "Edit AI setup" : "Finish setup in Web")}
         </a>
       </div>
     </section>
@@ -3512,9 +3512,9 @@ function describeCurrentModelSetupStatus(
 
   if (profile.status === "ready") {
     return {
-      title: "Verify before real discussions",
+      title: "Test before real discussions",
       detail:
-        "The provider setup is saved locally. Verify the connection before starting model-backed discussions.",
+        "The provider setup is saved locally. Test the connection before starting discussions with AI.",
       tone: "warning"
     };
   }
@@ -3523,7 +3523,7 @@ function describeCurrentModelSetupStatus(
     return {
       title: "Saved in this session",
       detail:
-        "The local service accepted this setup. Verify the connection before relying on it for a discussion.",
+        "The local service accepted this setup. Test the connection before relying on it for a discussion.",
       tone: "warning"
     };
   }
@@ -3581,11 +3581,11 @@ function createCurrentModelSetupItems(
     },
     {
       label: "Connection",
-      value: verified ? "Verified" : canVerify ? "Ready to verify" : "Needs saved setup",
+      value: verified ? "Verified" : canVerify ? "Ready to test" : "Needs saved setup",
       detail: verified
         ? "The latest safe provider test succeeded."
         : canVerify
-          ? "Use Verify connection before starting a real discussion."
+          ? "Use Test connection before starting a real discussion."
           : "Save the required setup before testing the provider.",
       tone: verified ? "ok" : canVerify || profile.enabled ? "warning" : "neutral"
     }
@@ -3612,11 +3612,11 @@ function ProviderSetupCompletion({
 
   const startReady = ready || verified;
   const title = startReady
-    ? "Ready to start with real model participants"
-    : "Verify the provider before starting";
+    ? "Ready to start with AI participants"
+    : "Test the provider before starting";
   const detail = startReady
-    ? "The provider setup is available for new discussions. The start page will select model-backed participants by default while keeping demo participants available."
-    : "The saved setup is active in this local service. Verification sends one minimal request so you can catch key, base URL, or model problems before the discussion.";
+    ? "The provider setup is available for new discussions. New Discussion will select AI participants by default while keeping demo participants available."
+    : "The saved setup is active in this local service. Testing sends one minimal request so you can catch key, base URL, or model problems before the discussion.";
 
   return (
     <section
@@ -3649,7 +3649,7 @@ function describeProviderManagementStatus(
     return {
       title: "Verified",
       detail:
-        "The latest Web connection test succeeded. This provider is ready for model-backed discussions.",
+        "The latest Web connection test succeeded. This provider is ready for discussions with AI.",
       tone: "ok"
     };
   }
@@ -3667,7 +3667,7 @@ function describeProviderManagementStatus(
     return {
       title: "Needs test",
       detail:
-        "A model provider is saved locally. Test the connection before relying on model-backed discussions.",
+        "An AI provider is saved locally. Test the connection before relying on discussions with AI.",
       tone: "warning"
     };
   }
@@ -3703,7 +3703,7 @@ function createProviderManagementItems(
     {
       label: "Provider type",
       value: "OpenAI-compatible",
-      detail: "One Web-managed provider can be used for model-backed participants.",
+      detail: "One Web-managed provider can be used for AI participants.",
       tone: "ok"
     },
     {
@@ -3745,10 +3745,10 @@ function createProviderManagementItems(
       label: "Ready for discussions",
       value: ready ? "Ready" : configured ? "Needs test" : "Setup needed",
       detail: ready
-        ? "Start discussion can use model-backed participants."
+        ? "New Discussion can use AI participants."
         : configured
           ? "Test connection before using this provider for discussions."
-          : "Save and test a provider before starting real model-backed discussions.",
+          : "Save and test a provider before starting discussions with AI.",
       tone: ready ? "ok" : configured || profile.enabled ? "warning" : "neutral"
     }
   ];
@@ -3972,11 +3972,11 @@ function describeModelProviderSummary(
   const readyProviders = providerProfiles.filter((profile) => profile.status === "ready");
 
   if (readyProviders.length > 0 && providerConnectionVerified) {
-    return "A real model provider is ready for model-backed discussions.";
+    return "A real AI provider is ready for discussions.";
   }
 
   if (readyProviders.length > 0) {
-    return "A model provider is saved locally; verify the connection before starting model-backed discussions.";
+    return "An AI provider is saved locally; test the connection before starting discussions with AI.";
   }
 
   if (providerProfiles.some((profile) => profile.status === "ready_with_run_config")) {
@@ -3984,7 +3984,7 @@ function describeModelProviderSummary(
   }
 
   if (localPreset?.status === "ready") {
-    return "The local preset is ready for demos; configure a provider for real model-backed discussions.";
+    return "The demo is ready; connect a provider for discussions with AI.";
   }
 
   return "No model provider is ready yet.";
@@ -4005,17 +4005,17 @@ function describeSetupProfileStatus(
 
   if (profile.status === "ready" && providerConnectionVerified) {
     return {
-      title: "Ready for model-backed discussions",
-      detail: "This provider can support configured model-backed participants from the local service.",
+      title: "Ready for discussions with AI",
+      detail: "This provider can support configured AI participants from the local service.",
       tone: "ok"
     };
   }
 
   if (profile.status === "ready") {
     return {
-      title: "Verify provider connection",
+      title: "Test provider connection",
       detail:
-        "This provider is saved locally. Use Verify connection before starting model-backed discussions.",
+        "This provider is saved locally. Use Test connection before starting discussions with AI.",
       tone: "warning"
     };
   }
@@ -4023,7 +4023,7 @@ function describeSetupProfileStatus(
   if (profile.status === "ready_with_run_config") {
     return {
       title: "Provider enabled; add model details",
-      detail: "Add a base URL and model in Web setup when supported, or provide equivalent per-discussion model settings.",
+      detail: "Add a base URL and model name in Web setup when supported, or choose a model on New Discussion.",
       tone: "warning"
     };
   }
@@ -4037,8 +4037,8 @@ function describeSetupProfileStatus(
   }
 
   return {
-    title: "Not enabled",
-    detail: "Enable this provider locally before it can appear in discussions.",
+      title: "Not enabled",
+      detail: "Connect this provider before it can appear in discussions.",
     tone: "neutral"
   };
 }
@@ -4057,16 +4057,16 @@ function describeSetupNextAction({
   if (readyProviderCount > 0) {
     return {
       title: "Ready for discussions",
-      detail: "Start a discussion and choose configured participants or model-backed discussion plans when needed.",
+      detail: "Create a New Discussion with configured AI participants when needed.",
       tone: "ok"
     };
   }
 
   if (providerNeedsVerification) {
     return {
-      title: "Verify provider connection",
+      title: "Test provider connection",
       detail:
-        "Use Verify connection before starting a real model-backed discussion.",
+        "Use Test connection before starting a discussion with AI.",
       tone: "warning"
     };
   }
@@ -4082,14 +4082,14 @@ function describeSetupNextAction({
   if (canStartDiscussion) {
     return {
       title: "Ready for demo discussions",
-      detail: "Start with the local preset now, then add a real provider before relying on model-backed results.",
+      detail: "Start with the demo now, then add a real provider before relying on AI results.",
       tone: "ok"
     };
   }
 
   return {
-    title: "Add model setup first",
-    detail: "Configure at least one local participant source before starting a model-backed discussion.",
+    title: "Connect AI first",
+    detail: "Configure at least one participant source before starting a discussion.",
     tone: "neutral"
   };
 }
@@ -4274,14 +4274,14 @@ function formatReadableKind(kind: SessionReadableKind): string {
   }
 
   if (kind === "disagreement") {
-    return "Open disagreement";
+    return "Still unresolved";
   }
 
   if (kind === "requirement") {
-    return "Requirement";
+    return "Must cover";
   }
 
-  return "Missing evidence";
+  return "Needs checking";
 }
 
 function getReadableFallbackDetail(kind: SessionReadableKind): string {
@@ -4341,18 +4341,18 @@ function formatSessionRecordReviewCue(
   }
 
   if (kind === "disagreement" && status === "open") {
-    return "Still constrains the current conclusion.";
+    return "Still constrains the current answer.";
   }
 
   if (kind === "requirement" && status === "unanswered") {
-    return "Needs an answer before relying on the conclusion.";
+    return "Needs an answer before relying on the current answer.";
   }
 
   if (kind === "evidence") {
-    return "Needs verification before relying on the conclusion.";
+    return "Needs checking before relying on the current answer.";
   }
 
-  return "Review this item before relying on the conclusion.";
+  return "Review this item before relying on the current answer.";
 }
 
 function formatRecordIdList(values: unknown[]): string {
@@ -4633,7 +4633,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Open disagreements")}
+        {t("Still unresolved")}
       </Link>
       <Link
         to="/sessions/$sessionId/obligations"
@@ -4649,7 +4649,7 @@ function SessionNavigation({ sessionId }: { sessionId: string }) {
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Current conclusion")}
+        {t("Current Answer")}
       </Link>
       <Link
         to="/sessions/$sessionId/resources"
@@ -4784,13 +4784,13 @@ function SessionOverviewPage() {
               )}
             />
             <QualityMapItem
-              label={t("Open disagreements")}
+              label={t("Still unresolved")}
               value={formatOverviewCount(
                 t,
                 objectionsQuery,
                 openDisagreements,
-                "open disagreement",
-                "open disagreements"
+                "unresolved point",
+                "unresolved points"
               )}
             />
             <QualityMapItem
@@ -4804,13 +4804,13 @@ function SessionOverviewPage() {
               )}
             />
             <QualityMapItem
-              label={t("Risks and missing evidence")}
+              label={t("Risks and needs checking")}
               value={formatOverviewCount(
                 t,
                 resourcesQuery,
                 missingEvidence,
-                "missing evidence item",
-                "missing evidence items"
+                "item needing checking",
+                "items needing checking"
               )}
             />
           </div>
@@ -4820,7 +4820,7 @@ function SessionOverviewPage() {
               to="/sessions/$sessionId/final"
               params={{ sessionId }}
             >
-              {t("View current conclusion")}
+              {t("View Current Answer")}
             </Link>
             <Link
               className="du-action-link du-secondary-link"
@@ -4839,7 +4839,7 @@ function SessionOverviewPage() {
           </div>
         </DataPanel>
         <DataPanel
-          title={t("Next recommended actions")}
+          title={t("Next steps")}
           description={t(
             "Start with the conclusion, then inspect the material that could change it."
           )}
@@ -4847,15 +4847,15 @@ function SessionOverviewPage() {
           <div className="du-readable-list">
             {missingEvidence.length > 0 ? (
               <QualityPathItem
-                title={t("Check missing evidence")}
+                title={t("Check what needs evidence")}
                 detail={t("Resolve evidence gaps before treating the conclusion as reliable.")}
               />
             ) : null}
             {openDisagreements.length > 0 ? (
               <QualityPathItem
-                title={t("Review open disagreements")}
+                title={t("Review what is still unresolved")}
                 detail={t(
-                  "Open disagreements show where the conclusion is still constrained."
+                  "Still unresolved items show where the answer is still constrained."
                 )}
               />
             ) : null}
@@ -4876,9 +4876,9 @@ function SessionOverviewPage() {
               />
             ) : null}
             <QualityPathItem
-              title={t("Review current conclusion")}
+              title={t("Review current answer")}
               detail={t(
-                "Open the current conclusion to see the result, caveats, and next steps together."
+                "Open the current answer to see the result, caveats, and next steps together."
               )}
             />
           </div>
@@ -4985,25 +4985,25 @@ function ObjectionsPage() {
   });
 
   return (
-    <ViewFrame
-      eyebrow={t("User Mode")}
-      title={t("Open disagreements")}
-      description={t(
-        "Objections stay visible as unresolved disagreements that can still constrain the conclusion."
-      )}
+      <ViewFrame
+        eyebrow={t("User Mode")}
+        title={t("Still unresolved")}
+        description={t(
+        "Unresolved points stay visible because they can still constrain the answer."
+        )}
     >
       <QueryState query={objectionsQuery}>
         <DataPanel
-          title={t("Open disagreements")}
+          title={t("Still unresolved")}
           description={t(
             "These are challenges, failure modes, or unresolved concerns raised against the current options."
           )}
         >
           <ReadableSessionRecordList
             records={asArray(objectionsQuery.data?.objections)}
-            emptyTitle={t("No open disagreements")}
+            emptyTitle={t("Nothing unresolved yet")}
             emptyDescription={t(
-              "No open disagreements have been accepted into this discussion yet."
+              "No unresolved points have been accepted into this discussion yet."
             )}
             kind="disagreement"
           />
@@ -5034,18 +5034,18 @@ function ObligationsPage() {
   });
 
   return (
-    <ViewFrame
-      eyebrow={t("User Mode")}
-      title={t("Requirements this answer must satisfy")}
+      <ViewFrame
+        eyebrow={t("User Mode")}
+      title={t("Must cover")}
       description={t(
-        "Explicit requirements keep the conclusion correct, bounded, and complete."
+        "These are the requirements the answer must satisfy to be useful."
       )}
     >
       <QueryState query={obligationsQuery}>
         <DataPanel
-          title={t("Requirements this answer must satisfy")}
+          title={t("Must cover")}
           description={t(
-            "Unanswered requirements should be resolved before relying on the conclusion."
+            "Unanswered requirements should be resolved before relying on the answer."
           )}
         >
           <ReadableSessionRecordList
@@ -5282,9 +5282,9 @@ function FinalPage() {
   return (
     <ViewFrame
       eyebrow={t("User Mode")}
-      title={t("Current conclusion")}
+      title={t("Current Answer")}
       description={t(
-        "Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions."
+        "Review the current answer together with main perspectives, unresolved points, evidence needs, risks, and next steps."
       )}
     >
       <QueryState query={finalQuery}>
@@ -5292,15 +5292,15 @@ function FinalPage() {
           tone={finalQuery.data?.draftStatus === "draft" ? "ok" : "warning"}
           title={
             finalQuery.data?.draftStatus === "draft"
-              ? t("Current conclusion compiled")
-              : t("Current conclusion remains provisional")
+              ? t("Current answer compiled")
+              : t("Current answer remains provisional")
           }
           detail={t(
-            "This is reviewable deliberation material. It should keep open disagreements, risks, evidence gaps, and next actions visible."
+            "This is reviewable discussion material. It should keep unresolved points, risks, evidence gaps, and next steps visible."
           )}
         />
         <DataPanel
-          title={t("Current conclusion")}
+          title={t("Current Answer")}
           description={t(
             "A readable summary of the current result. Advanced details keep source details and developer diagnostics out of the default view."
           )}
@@ -5474,7 +5474,7 @@ function ResourcesPage() {
       eyebrow={t("User Mode")}
       title={t("Evidence and verification")}
       description={t(
-        "Missing evidence, verification needs, and risks are shown together so they can be resolved before relying on the conclusion."
+        "Evidence needs, verification work, and risks are shown together so they can be resolved before relying on the answer."
       )}
     >
       <QueryState query={resourcesQuery}>
@@ -5490,16 +5490,16 @@ function ResourcesPage() {
           )}
         />
         <DataPanel
-          title={t("Risks and missing evidence")}
+          title={t("Risks and needs checking")}
           description={t(
-            "Missing evidence items are user-facing verification work, not low-level access state."
+            "Needs checking items are user-facing verification work, not low-level access state."
           )}
         >
           <ReadableSessionRecordList
             records={evidenceNeeds}
-            emptyTitle={t("No missing evidence yet")}
+            emptyTitle={t("Nothing needs checking yet")}
             emptyDescription={t(
-              "This discussion has not surfaced missing evidence items yet."
+              "This discussion has not surfaced evidence items that need checking yet."
             )}
             kind="evidence"
           />

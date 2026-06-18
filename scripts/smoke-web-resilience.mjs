@@ -260,19 +260,19 @@ async function verifyStageFailureRecovery(page, { webBaseUrl, providerBaseUrl, r
   await page.getByText("Discussion could not continue").waitFor();
   await page
     .getByText(
-      "A model or review step could not finish safely. Check model setup, then try Continue discussion again. If the same discussion keeps failing after partial responses, start a new model-backed discussion."
+      "An AI or review step could not finish safely. Check AI setup, then try Continue discussion again. If the same discussion keeps failing after partial responses, start a new discussion with AI."
     )
     .waitFor();
   const recoveryRegion = page.getByRole("region", { name: "Discussion recovery options" });
   await recoveryRegion.waitFor();
-  await recoveryRegion.getByText("Check model setup", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Check AI setup", { exact: true }).waitFor();
   await recoveryRegion.getByText("Try Continue discussion again", { exact: true }).waitFor();
-  await recoveryRegion.getByText("Start a new model-backed discussion", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Start a new discussion with AI", { exact: true }).waitFor();
 
-  await assertLinkHref(page, "Check model setup", "/setup/models", "stage failure recovery");
+  await assertLinkHref(page, "Check AI setup", "/setup/models", "stage failure recovery");
   await assertLinkHrefIncludes(
     page,
-    "Start a new model-backed discussion",
+    "Start a new discussion with AI",
     "participants=model-backed",
     "stage failure recovery"
   );
@@ -288,8 +288,8 @@ async function verifyProviderRateLimitRecovery(page, { webBaseUrl, providerBaseU
   await page.goto(`${webBaseUrl}/setup/models`, {
     waitUntil: "networkidle"
   });
-  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
-  await page.getByRole("button", { name: "Verify connection" }).click();
+  await page.getByRole("heading", { name: "Connect AI" }).waitFor();
+  await page.locator("#setup-provider-form").getByRole("button", { name: "Test connection" }).click();
   await page.getByText("Provider connection could not be verified").waitFor();
   await page
     .getByText("Provider rate limited the verification request. Try again later.")
@@ -300,7 +300,7 @@ async function verifyProviderRateLimitRecovery(page, { webBaseUrl, providerBaseU
   });
   await recoveryRegion.waitFor();
   await recoveryRegion.getByText("Review setup fields", { exact: true }).waitFor();
-  await recoveryRegion.getByText("Try Verify connection again", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Try Test connection again", { exact: true }).waitFor();
   await recoveryRegion.getByText("Start demo discussion", { exact: true }).waitFor();
 
   await assertLinkHref(page, "Review setup fields", "#setup-provider-form", "rate limit recovery");
@@ -322,8 +322,8 @@ async function verifyProviderTimeoutRecovery(page, { webBaseUrl, providerBaseUrl
   await page.goto(`${webBaseUrl}/setup/models`, {
     waitUntil: "networkidle"
   });
-  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
-  await page.getByRole("button", { name: "Verify connection" }).click();
+  await page.getByRole("heading", { name: "Connect AI" }).waitFor();
+  await page.locator("#setup-provider-form").getByRole("button", { name: "Test connection" }).click();
   await page.getByText("Provider connection could not be verified").waitFor();
   await page
     .getByText("Provider verification timed out. Check the base URL and provider availability.")
@@ -334,7 +334,7 @@ async function verifyProviderTimeoutRecovery(page, { webBaseUrl, providerBaseUrl
   });
   await recoveryRegion.waitFor();
   await recoveryRegion.getByText("Review setup fields", { exact: true }).waitFor();
-  await recoveryRegion.getByText("Try Verify connection again", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Try Test connection again", { exact: true }).waitFor();
   await recoveryRegion.getByText("Start demo discussion", { exact: true }).waitFor();
 
   await assertLinkHref(page, "Review setup fields", "#setup-provider-form", "timeout recovery");
@@ -536,7 +536,7 @@ function buildProviderBackedRunPlan(question) {
       "Keep technical status details out of the default Web view."
     ],
     constraints: [
-      "Use configured model-backed participants from the local service.",
+      "Use configured AI participants from the local service.",
       "Keep provider credentials saved locally and out of the discussion."
     ],
     participants: [

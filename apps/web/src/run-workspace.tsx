@@ -67,9 +67,9 @@ const FIRST_RESPONSES_ONLY_START_REQUEST = {
 };
 const OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID = "openai-main";
 const OPENAI_COMPATIBLE_ACCEPTANCE_RATIONALE_EN =
-  "Accept provider-organized proposals so the room can compile a provisional current conclusion while keeping review challenges visible.";
+  "Accept provider-organized discussion material so the room can draft a provisional current answer while keeping review challenges visible.";
 const OPENAI_COMPATIBLE_ACCEPTANCE_RATIONALE_ZH_CN =
-  "\u63a5\u53d7\u6a21\u578b\u6574\u7406\u7684\u8ba8\u8bba\u6750\u6599\uff0c\u8ba9\u8ba8\u8bba\u5ba4\u80fd\u7f16\u5236\u4e34\u65f6\u5f53\u524d\u7ed3\u8bba\uff0c\u540c\u65f6\u4fdd\u6301\u5ba1\u67e5\u6311\u6218\u53ef\u89c1\u3002";
+  "\u63a5\u53d7\u6a21\u578b\u6574\u7406\u7684\u8ba8\u8bba\u6750\u6599\uff0c\u8ba9\u8ba8\u8bba\u5ba4\u80fd\u8d77\u8349\u4e34\u65f6\u5f53\u524d\u7b54\u6848\uff0c\u540c\u65f6\u4fdd\u6301\u5ba1\u67e5\u6311\u6218\u53ef\u89c1\u3002";
 const OPENAI_COMPATIBLE_FULL_START_REQUEST = {
   sealedDivergence: {
     autoCloseManual: true,
@@ -283,20 +283,20 @@ export function RunsListPage() {
     <RunWorkspaceShell>
       <ViewFrame
         eyebrow={t("User Mode")}
-        title={t("Discussions")}
+        title={t("My Discussions")}
         description={t(
-          "Start or continue a deliberation in plain language, then inspect the current conclusion, perspectives, disagreements, evidence gaps, and next actions."
+          "Start or continue a discussion in plain language, then inspect the current answer, perspectives, unresolved points, evidence needs, and next steps."
         )}
         actions={
           <Link className="du-action-link" to="/runs/new">
-            {t("Start a discussion")}
+            {t("New Discussion")}
           </Link>
         }
       >
         {runsQuery.isLoading ? (
           <StatusBanner title={t("Loading discussion data")} />
         ) : runsQuery.isError ? (
-          <DataPanel title={t("Existing discussions")}>
+          <DataPanel title={t("My Discussions")}>
             <LocalServiceSetupGuide onRetry={retryDiscussions} />
           </DataPanel>
         ) : (
@@ -305,7 +305,7 @@ export function RunsListPage() {
               <EmptyState
                 title={t("No discussions yet")}
                 description={t(
-                  "Start with a question. Deliberum will create a discussion brief, collect independent first responses, and keep the conclusion, disagreements, risks, and next steps visible."
+                  "Start with a question. Deliberum will create a discussion brief, collect independent first responses, and keep the current answer, unresolved points, risks, and next steps visible."
                 )}
               />
             ) : (
@@ -670,9 +670,9 @@ export function RunNewPage() {
     <RunWorkspaceShell>
       <ViewFrame
         eyebrow={t("User Mode")}
-        title={t("Start a discussion")}
+        title={t("New Discussion")}
         description={t(
-          "Create a discussion that keeps the brief, independent first responses, strongest options, disagreements, requirements, evidence and verification, risk review, and current conclusion visible."
+          "Start with a question, then let the room gather perspectives, unresolved points, checks, risks, a current answer, and next steps."
         )}
       >
         <StatusBanner
@@ -684,7 +684,7 @@ export function RunNewPage() {
         <DataPanel
           title={t("Discussion brief")}
           description={t(
-            "Describe what you need to decide or clarify. Deliberum will structure the discussion so the conclusion, disagreements, risks, evidence gaps, and next actions stay visible."
+            "Describe what you need to decide or clarify. Deliberum keeps the answer, unresolved points, risks, checks, and next steps visible."
           )}
         >
           <form className="du-discussion-form" onSubmit={submitGuidedDiscussion}>
@@ -752,7 +752,7 @@ export function RunNewPage() {
                   id="discussion-expected-outcome"
                   value={discussionExpectedOutcome}
                   onChange={(event) => setDiscussionExpectedOutcome(event.currentTarget.value)}
-                  placeholder={t("What should the current conclusion include?")}
+                  placeholder={t("What should the current answer include?")}
                 />
               </div>
             </details>
@@ -766,7 +766,7 @@ export function RunNewPage() {
               <ExplainerItem
                 title={t("Complete discussion loop")}
                 detail={t(
-                  "It creates a discussion brief, independent first responses, strongest options, disagreements, requirements, evidence needs, risk review, and current conclusion."
+                  "It creates a discussion brief, independent first responses, strongest options, unresolved points, must-cover requirements, evidence checks, risk review, and a current answer."
                 )}
               />
             </div>
@@ -776,10 +776,10 @@ export function RunNewPage() {
           className="du-default-secondary-details"
           open={runtimeProfilesQuery.isError || requestedParticipantSource === "model-backed"}
         >
-          <summary>{t("Model and participant setup")}</summary>
+          <summary>{t("AI and participant setup")}</summary>
           <div className="du-default-secondary-details-body">
             {runtimeProfilesQuery.isLoading ? (
-              <StatusBanner title={t("Checking model setup")} />
+              <StatusBanner title={t("Checking AI setup")} />
             ) : runtimeProfilesQuery.isError ? (
               <LocalServiceSetupGuide onRetry={retryModelSetup} />
             ) : runtimeSetupPlan ? (
@@ -816,8 +816,8 @@ export function RunNewPage() {
             ) : (
               <StatusBanner
                 tone="warning"
-                title={t("No model setup returned")}
-                detail={t("The daemon did not return safe model setup status.")}
+                title={t("No AI setup returned")}
+                detail={t("The local service did not return safe AI setup status.")}
               />
             )}
           </div>
@@ -1000,9 +1000,9 @@ function DiscussionModelSetupPanel({
 
   return (
     <DataPanel
-      title={t("Model setup for this discussion")}
+      title={t("Participants for this discussion")}
       description={t(
-        "Know whether this start path will use demo participants or configured model providers before you create the discussion."
+        "Choose whether this discussion uses demo participants or connected AI participants before you create the room."
       )}
     >
       <div className="du-discussion-setup-grid">
@@ -1015,16 +1015,16 @@ function DiscussionModelSetupPanel({
           <span>{t(view.quickStartDetail)}</span>
         </article>
         <article className={`du-status du-status-${view.providerTone}`}>
-          <strong>{t("Model-backed participants")}</strong>
+          <strong>{t("AI participants")}</strong>
           <span>{t(view.providerDetail)}</span>
         </article>
       </div>
       {selectedSource === "model-backed" && modelBackedAvailable ? (
         <StatusBanner
           tone="ok"
-          title={t("Model-backed discussion selected")}
+          title={t("Discussion with AI selected")}
           detail={t(
-            "This discussion will use configured model participants from your local setup."
+            "This discussion will use configured AI participants from your local setup."
           )}
         />
       ) : null}
@@ -1034,13 +1034,13 @@ function DiscussionModelSetupPanel({
           title={t(
             verificationError
               ? "Provider connection could not be verified"
-              : "Verify provider connection"
+              : "Test provider connection"
           )}
           detail={
             verificationError
               ? formatSafeErrorMessage(verificationError)
               : t(
-                  "Verify the saved provider connection here to continue with model-backed participants without returning to Setup / Models."
+                  "Test the saved provider connection here to continue with AI participants without returning to Connect AI."
                 )
           }
         />
@@ -1079,19 +1079,19 @@ function DiscussionModelSetupPanel({
             onChange={() => onSelectedSourceChange("model-backed")}
           />
           <span>
-            <strong>{t("Model-backed participants")}</strong>
+            <strong>{t("AI participants")}</strong>
             <small>
               {providerSource
                 ? t(
-                    "{provider} is ready. This discussion will use configured model participants from the local service.",
+                    "{provider} is ready. This discussion will use configured AI participants from the local service.",
                     { provider: t(providerSource.name) }
                   )
                 : providerSetupSaved
                   ? t(
-                      "Provider setup is saved. Use Verify connection here or in Setup / Models before selecting model-backed participants."
+                      "Provider setup is saved. Use Test connection here or in Connect AI before selecting AI participants."
                     )
                 : t(
-                    "Configure a ready model provider locally before selecting model-backed participants."
+                    "Configure a ready AI provider locally before selecting AI participants."
                   )}
             </small>
           </span>
@@ -1138,12 +1138,12 @@ function DiscussionModelSetupPanel({
       </fieldset>
       {modelBackedAvailable ? (
         <div className="du-discussion-model-assignment">
-          <section className="du-role-defaults-panel" aria-label={t("Role model defaults")}>
+          <section className="du-role-defaults-panel" aria-label={t("Participant model choices")}>
             <div>
-              <strong>{t("Role model defaults")}</strong>
+              <strong>{t("Participant model choices")}</strong>
               <p>
                 {t(
-                  "Save non-secret role model choices to the local service so future model-backed discussions start with the same setup."
+                  "Save non-secret participant model choices to the local service so future discussions with AI start with the same setup."
                 )}
               </p>
             </div>
@@ -1154,7 +1154,7 @@ function DiscussionModelSetupPanel({
                 disabled={selectedSource !== "model-backed" || roleDefaultsPending}
                 onClick={onSaveRoleDefaults}
               >
-                {t("Save as default role setup")}
+                {t("Save participant choices")}
               </button>
               <button
                 type="button"
@@ -1166,7 +1166,7 @@ function DiscussionModelSetupPanel({
                 }
                 onClick={onApplyRoleDefaults}
               >
-                {t("Apply saved role setup")}
+                {t("Apply saved participant choices")}
               </button>
               <button
                 type="button"
@@ -1174,7 +1174,7 @@ function DiscussionModelSetupPanel({
                 disabled={!roleDefaultsSaved || roleDefaultsPending}
                 onClick={onClearRoleDefaults}
               >
-                {t("Clear saved role setup")}
+                {t("Clear saved participant choices")}
               </button>
             </div>
             <p className="du-role-defaults-note">
@@ -1191,7 +1191,7 @@ function DiscussionModelSetupPanel({
               <strong>{t("First-response model")}</strong>
               <small>
                 {t(
-                  "Leave blank to use the model saved in Setup / Models. Perspectives without their own model use this value for first responses."
+                  "Leave blank to use the model saved in Connect AI. Perspectives without their own model use this value for first responses."
                 )}
               </small>
             </span>
@@ -1287,10 +1287,10 @@ function DiscussionModelSetupPanel({
       <p className="du-discussion-setup-note">
         {selectedSource === "model-backed" && modelBackedAvailable
           ? t(
-              "The selected depth controls how many independent model participants answer before Deliberum compares options."
+              "The selected depth controls how many independent AI participants answer before Deliberum compares options."
             )
           : t(
-              "Demo walkthroughs use two built-in sample perspectives. Choose model-backed participants to use a broader independent review."
+              "Demo walkthroughs use two built-in sample perspectives. Choose AI participants to use a broader independent review."
             )}
       </p>
       <DiscussionParticipantLineup
@@ -1302,7 +1302,7 @@ function DiscussionModelSetupPanel({
       />
       <p className="du-discussion-setup-note">
         {t(
-          "This page does not show API keys. Use Setup / Models to save provider setup before starting real model-backed discussions."
+          "This page does not show API keys. Use Connect AI to save provider setup before starting discussions with AI."
         )}
       </p>
       <div className="du-action-row">
@@ -1313,11 +1313,11 @@ function DiscussionModelSetupPanel({
             onClick={onVerifyProviderConnection}
             disabled={verificationPending}
           >
-            {t(verificationPending ? "Verifying connection" : "Verify connection")}
+            {t(verificationPending ? "Testing connection" : "Test connection")}
           </button>
         ) : null}
         <Link className="du-action-link du-secondary-link" to="/setup/models">
-          {t("Open Setup / Models")}
+          {t("Open Connect AI")}
         </Link>
       </div>
     </DataPanel>
@@ -1436,18 +1436,18 @@ function buildDiscussionCreationPreview(input: {
       : 0;
 
     return {
-      title: "Ready to create a model-backed discussion",
+      title: "Ready to create a deliberation room",
       detail: input.organizerReady
-        ? "Configured model participants will answer first; review and conclusion roles can then structure options, disagreements, evidence gaps, risks, and a current conclusion."
-        : "Configured model participants can answer first, but review and conclusion roles are not ready yet.",
+        ? "Configured AI participants will answer first; review and answer roles can then structure options, unresolved points, evidence gaps, risks, and a current answer."
+        : "Configured AI participants can answer first, but review and answer roles are not ready yet.",
       tone: input.organizerReady ? "ok" : "warning",
       steps: [
         {
           label: "Who answers first",
           value:
             input.perspectiveCount === 3
-              ? "3 model perspectives"
-              : "2 model perspectives",
+              ? "3 AI perspectives"
+              : "2 AI perspectives",
           detail:
             input.perspectiveCount === 3
               ? "Perspective A, Perspective B, and Perspective C will answer independently."
@@ -1465,15 +1465,15 @@ function buildDiscussionCreationPreview(input: {
         },
         {
           label: "First-response model",
-          value: firstResponseModel || "Saved model setup",
+          value: firstResponseModel || "Saved AI setup",
           detail: firstResponseModel
             ? "Perspectives without their own model use this first-response model."
-            : "Perspectives without their own model use the model saved in Setup / Models.",
+            : "Perspectives without their own model use the model saved in Connect AI.",
           tone: "ok"
         },
         {
           label: "Review role model",
-          value: reviewRoleModel || firstResponseModel || "Saved model setup",
+          value: reviewRoleModel || firstResponseModel || "Saved AI setup",
           detail: reviewRoleModel
             ? "Review roles use this model while first-response perspectives keep their assigned models."
             : "Review roles use the same model as first-response perspectives.",
@@ -1494,8 +1494,8 @@ function buildDiscussionCreationPreview(input: {
           label: "After create",
           value: "Discussion room",
           detail: input.organizerReady
-            ? "Open the room, then continue the guided discussion to organize first responses into a reviewable conclusion."
-            : "Open the room, then finish review role setup before expecting strongest options or a conclusion.",
+            ? "Open the room, then continue the guided discussion to organize first responses into a reviewable answer."
+            : "Open the room, then finish review role setup before expecting strongest options or an answer.",
           tone: input.organizerReady ? "ok" : "warning"
         }
       ]
@@ -1506,7 +1506,7 @@ function buildDiscussionCreationPreview(input: {
     return {
       title: "Ready to create a demo discussion",
       detail:
-        "Built-in demo participants let first-time users try the full room flow before model setup.",
+        "Built-in demo participants let first-time users try the full room flow before connecting AI.",
       tone: input.organizerReady ? "ok" : "warning",
       steps: [
         {
@@ -1519,7 +1519,7 @@ function buildDiscussionCreationPreview(input: {
           label: "Who reviews the result",
           value: input.organizerReady ? "Full discussion loop" : "Review roles setup needed",
           detail: input.organizerReady
-            ? "Local review roles can compare options, review risks, and draft the current conclusion."
+            ? "Local review roles can compare options, review risks, and draft the current answer."
             : "The discussion may collect first responses only until review roles are ready.",
           tone: input.organizerReady ? "ok" : "warning"
         },
@@ -1536,24 +1536,24 @@ function buildDiscussionCreationPreview(input: {
 
   return {
     title: "Finish setup before creating",
-    detail: "Choose an available participant source in Setup / Models, then return here.",
+    detail: "Choose an available participant source in Connect AI, then return here.",
     tone: "warning",
     steps: [
       {
         label: "Who answers first",
         value: "No participant source ready",
-        detail: "Add a demo preset or real model provider before creating useful material.",
+        detail: "Add a demo preset or AI provider before creating useful material.",
         tone: "warning"
       },
       {
         label: "Who reviews the result",
         value: "Review roles setup needed",
-        detail: "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer must be ready before Deliberum can prepare the conclusion.",
+        detail: "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer must be ready before Deliberum can prepare the answer.",
         tone: "warning"
       },
       {
         label: "After create",
-        value: "Setup / Models",
+        value: "Connect AI",
         detail: "Complete setup first, then start the discussion again.",
         tone: "neutral"
       }
@@ -1589,7 +1589,7 @@ function buildDiscussionParticipantLineup(input: {
   const organizerDetail = input.organizerReady
     ? input.selectedSource === "model-backed" && input.providerSource
       ? "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the discussion after first responses."
-      : "Local review roles can compare options, review evidence and risks, and draft the current conclusion after first responses."
+      : "Local review roles can compare options, review evidence and risks, and draft the current answer after first responses."
     : "Review roles are not ready yet; continuing the discussion may collect first responses only.";
   const organizerTone: DiscussionParticipantLineupItem["tone"] = input.organizerReady
     ? "ok"
@@ -1628,7 +1628,7 @@ function buildDiscussionParticipantLineup(input: {
     },
     {
       role: "Conclusion writer",
-      contribution: "Current conclusion draft",
+      contribution: "Current answer draft",
       source: organizerSource,
       detail: organizerDetail,
       tone: organizerTone
@@ -1683,18 +1683,18 @@ function getRoleModelDefaultsStatusMessage(
 ): string {
   switch (status) {
     case "saved":
-      return "Saved role defaults to the local service. API keys and base URLs are not stored here.";
+      return "Saved participant choices to the local service. API keys and base URLs are not stored here.";
     case "loaded":
-      return "Applied the saved role setup to this discussion.";
+      return "Applied the saved participant choices to this discussion.";
     case "cleared":
-      return "Cleared saved role defaults from the local service. Current discussion fields are unchanged.";
+      return "Cleared saved participant choices from the local service. Current discussion fields are unchanged.";
     case "unavailable":
-      return "Role defaults could not be changed in the local service. You can still create this discussion.";
+      return "Participant choices could not be changed in the local service. You can still create this discussion.";
     case "idle":
     default:
       return saved
-        ? "Saved role defaults are available from the local service."
-        : "No saved role defaults yet. API keys and base URLs are never saved here.";
+        ? "Saved participant choices are available from the local service."
+        : "No saved participant choices yet. API keys and base URLs are never saved here.";
   }
 }
 
@@ -1720,12 +1720,12 @@ function describeDiscussionModelSetup(
 
   if (modelBackedSource) {
     return {
-      title: "Model-backed start available",
+      title: "AI participants ready",
       detail:
-        "A ready model provider is available. Web selects model-backed participants by default; use demo participants only for walkthroughs.",
+        "A ready AI provider is available. Web selects AI participants by default; use demo participants only for walkthroughs.",
       quickStartDetail:
         "Demo participants remain available when you want a deterministic walkthrough without provider calls.",
-      providerDetail: "A configured model provider is selected for this discussion by default.",
+      providerDetail: "A configured AI provider is selected for this discussion by default.",
       providerTone: "ok",
       tone: "ok"
     };
@@ -1737,14 +1737,14 @@ function describeDiscussionModelSetup(
         ? "Demo start, provider verification needed"
         : "Provider verification needed",
       detail: localPresetReady
-        ? "The quick-start form can start now with demo participants. Use Verify connection on this page to unlock model-backed participants."
-        : "Use Verify connection on this page to unlock model-backed participants for this discussion.",
+        ? "The quick-start form can start now with demo participants. Use Test connection on this page to unlock AI participants."
+        : "Use Test connection on this page to unlock AI participants for this discussion.",
       quickStartDetail:
         localPresetReady
           ? "The plain-language form starts with built-in demo participants so the first discussion works immediately."
           : "Demo participants are not enabled in this local service.",
       providerDetail:
-        "Provider setup is saved; use Verify connection here or in Setup / Models before relying on model-backed results.",
+        "Provider setup is saved; use Test connection here or in Connect AI before relying on AI results.",
       providerTone: "warning",
       tone: "warning"
     };
@@ -1758,7 +1758,7 @@ function describeDiscussionModelSetup(
       quickStartDetail:
         "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
       providerDetail:
-        "Provider enabled; add base URL and model locally before relying on model-backed results.",
+        "Provider enabled; add base URL and model locally before relying on AI results.",
       providerTone: "warning",
       tone: "warning"
     };
@@ -1768,24 +1768,24 @@ function describeDiscussionModelSetup(
     return {
       title: "Demo start ready",
       detail:
-        "You can start with built-in demo participants now. Configure a real provider before relying on model-backed results.",
+        "You can start with built-in demo participants now. Configure a real provider before relying on AI results.",
       quickStartDetail:
         "The plain-language form starts with built-in demo participants so the first discussion works immediately.",
       providerDetail:
-        "No real model provider is ready yet. Configure one locally before relying on model-backed discussions.",
+        "No real AI provider is ready yet. Configure one locally before relying on discussions with AI.",
       providerTone: "warning",
       tone: providerNeedsSetup ? "warning" : "ok"
     };
   }
 
   return {
-    title: "Model setup needed",
+    title: "Connect AI needed",
     detail:
-      "No demo participant or real provider is ready. Configure at least one participant source locally before starting a useful discussion.",
+      "No demo participant or AI provider is ready. Configure at least one participant source locally before starting a useful discussion.",
     quickStartDetail:
       "The quick-start form needs at least one local participant source before it can create useful discussion material.",
     providerDetail:
-      "No real model provider is ready yet. Configure one locally before relying on model-backed discussions.",
+      "No real AI provider is ready yet. Configure one locally before relying on discussions with AI.",
     providerTone: "neutral",
     tone: "warning"
   };
@@ -1855,17 +1855,17 @@ export function RunDetailPage() {
         eyebrow={t("User Mode")}
         title={t(formatRunDisplayTitle(run))}
         description={t(
-          "Start or continue a discussion, then review the current conclusion, main perspectives, open disagreements, risks, missing evidence, and next recommended actions."
+          "Start or continue a discussion, then review the current answer, main perspectives, unresolved points, risks, what needs checking, and next steps."
         )}
         hideHeader={Boolean(sessionId)}
         actions={
           reviewReady ? (
             <>
               <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-                {t("View current conclusion")}
+                {t("View current answer")}
               </Link>
               <a className="du-action-link du-secondary-link" href="#continue-discussion">
-                {t("Update conclusion")}
+                {t("Update answer")}
               </a>
             </>
           ) : (
@@ -2005,9 +2005,9 @@ export function RunOutcomePage() {
     <RunWorkspaceShell runId={runId}>
       <ViewFrame
         eyebrow={t("User Mode")}
-        title={t("Current conclusion")}
+        title={t("Current Answer")}
         description={t(
-          "Review the current conclusion together with main perspectives, open disagreements, missing evidence, risks, and next actions."
+          "Review the current answer together with main perspectives, unresolved points, evidence needs, risks, and next steps."
         )}
         actions={
           <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
@@ -2024,7 +2024,7 @@ export function RunOutcomePage() {
                 detail={t(conclusionStatus.detail)}
               />
               <DataPanel
-                title={t("Current conclusion")}
+                title={t("Current Answer")}
                 description={t(
                   "A readable summary of the current result. Advanced details keep source details and developer diagnostics out of the default view."
                 )}
@@ -2093,7 +2093,7 @@ export function RunOutcomePage() {
             <>
               <StatusBanner
                 tone="warning"
-                title={t("Current conclusion not available")}
+                title={t("Current answer not available")}
                 detail={t(describeOutcomeUnavailableReason(getRecordValue(outcome, "reason")))}
               />
               <AdvancedOutcomeUnavailableDetails
@@ -2193,7 +2193,7 @@ function RunNavigation({
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Setup / Models")}
+        {t("Connect AI")}
       </Link>
       <Link
         to="/runs"
@@ -2201,7 +2201,7 @@ function RunNavigation({
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Discussions")}
+        {t("My Discussions")}
       </Link>
       {runId ? (
         <Link
@@ -2222,7 +2222,7 @@ function RunNavigation({
           activeProps={{ className: `${linkClass} is-active` }}
           inactiveProps={{ className: linkClass }}
         >
-          {t("Current conclusion")}
+          {t("Current Answer")}
         </Link>
       ) : null}
       <Link
@@ -2231,7 +2231,7 @@ function RunNavigation({
         activeProps={{ className: `${linkClass} is-active` }}
         inactiveProps={{ className: linkClass }}
       >
-        {t("Advanced")}
+        {t("Developer Tools")}
       </Link>
     </>
   );
@@ -2614,23 +2614,23 @@ function RunListTaskRoutes({
           className="du-run-task-route"
           to="/runs/$runId/outcome"
           params={{ runId }}
-          aria-label={t("Open current conclusion")}
+          aria-label={t("Open current answer")}
         >
-          <span>{t("Current conclusion")}</span>
-          <strong>{t("Open current conclusion")}</strong>
+          <span>{t("Current Answer")}</span>
+          <strong>{t("Open current answer")}</strong>
           <small>
             {t(
-              "Review the conclusion, open disagreements, missing evidence, risks, and next actions."
+              "Review the answer, unresolved points, evidence needs, risks, and next steps."
             )}
           </small>
         </Link>
       ) : (
         <article className="du-run-task-route du-run-task-route-disabled" aria-disabled="true">
-          <span>{t("Current conclusion")}</span>
-          <strong>{t("Conclusion not ready yet")}</strong>
+          <span>{t("Current Answer")}</span>
+          <strong>{t("Answer not ready yet")}</strong>
           <small>
             {t(
-              "Continue the discussion first; this page appears after conclusion material exists."
+              "Continue the discussion first; this page appears after answer material exists."
             )}
           </small>
         </article>
@@ -2710,11 +2710,11 @@ export function getDiscussionStageStatuses(run: unknown): DiscussionStageStatus[
       getDiscussionStageStatus(run, "latestEvidenceCheckStatus", "evidenceCheck")
     ],
     [
-      "Requirements this answer must satisfy",
+      "Must cover",
       getDiscussionStageStatus(run, "latestProposalReviewStatus", "proposalReview")
     ],
     [
-      "Current conclusion",
+      "Current Answer",
       getDiscussionStageStatus(run, "latestFinalizationStatus", "finalization")
     ]
   ];
@@ -3184,7 +3184,7 @@ function StartRunForm({
           {usesRoomUpdatePresentation ? null : (
             <p>
               {t(
-                "Review this result first, then return to the timeline, outputs, or next recommended action."
+                "Review this result first, then return to the timeline, outputs, or next step."
               )}
             </p>
           )}
@@ -3312,7 +3312,7 @@ function StartRunForm({
             />
             <p>
               {t(
-                "Your message appears as your next visible turn for this update. Standalone human-message history is not stored yet."
+                "This message guides the next round."
               )}
             </p>
           </div>
@@ -3343,8 +3343,8 @@ function StartRunForm({
                 <span className="du-discussion-action-result">
                   {t(
                     continuationView.reviewReady
-                      ? "After it finishes, review the updated timeline and current conclusion."
-                      : "After it finishes, review the updated timeline and next recommended action."
+                      ? "After it finishes, review the updated timeline and current answer."
+                      : "After it finishes, review the updated timeline and next step."
                   )}
                 </span>
               </>
@@ -3366,9 +3366,9 @@ function StartRunForm({
                   className="du-discussion-action-button du-discussion-action-secondary"
                   to="/runs/$runId/outcome"
                   params={{ runId }}
-                  aria-label={t("Review disagreements")}
+                  aria-label={t("Review unresolved points")}
                 >
-                  <strong>{t("Review disagreements")}</strong>
+                  <strong>{t("Review unresolved points")}</strong>
                 </Link>
                 <Link
                   className="du-discussion-action-button du-discussion-action-secondary"
@@ -3413,19 +3413,19 @@ function StartRunForm({
                   className="du-discussion-action-button du-discussion-action-secondary"
                   to="/runs/$runId/outcome"
                   params={{ runId }}
-                  aria-label={t("Review disagreements")}
+                  aria-label={t("Review unresolved points")}
                 >
                   <span className="du-discussion-action-badge-row">
                     <span className="du-discussion-action-badge du-discussion-action-badge-muted">
                       {t("Review only")}
                     </span>
                   </span>
-                  <strong>{t("Review disagreements")}</strong>
+                  <strong>{t("Review unresolved points")}</strong>
                   <span>
-                    {t("Jump to unresolved objections that still constrain the conclusion.")}
+                    {t("Jump to unresolved points that still constrain the answer.")}
                   </span>
                   <span className="du-discussion-action-result">
-                    {t("Open the current conclusion without changing the discussion.")}
+                    {t("Open the current answer without changing the discussion.")}
                   </span>
                 </Link>
                 <Link
@@ -3442,11 +3442,11 @@ function StartRunForm({
                   <strong>{t("Confirm answer requirements")}</strong>
                   <span>
                     {t(
-                      "Review requirements that must be satisfied or acknowledged before relying on the conclusion."
+                      "Review requirements that must be satisfied or acknowledged before relying on the answer."
                     )}
                   </span>
                   <span className="du-discussion-action-result">
-                    {t("Open the current conclusion without changing the discussion.")}
+                    {t("Open the current answer without changing the discussion.")}
                   </span>
                 </Link>
                 <Link
@@ -3463,7 +3463,7 @@ function StartRunForm({
                   <strong>{t("Check evidence")}</strong>
                   <span>{t("Review missing or unchecked evidence before relying on the answer.")}</span>
                   <span className="du-discussion-action-result">
-                    {t("Open the current conclusion without changing the discussion.")}
+                    {t("Open the current answer without changing the discussion.")}
                   </span>
                 </Link>
               </>
@@ -3486,7 +3486,7 @@ function StartRunForm({
                 <strong>{t("Review actions unlock later")}</strong>
                 <span>
                   {t(
-                    "After the room has perspectives, disagreements, evidence gaps, risks, and a draft conclusion, review actions will appear here."
+                    "After the room has perspectives, unresolved points, evidence gaps, risks, and a draft answer, review actions will appear here."
                   )}
                 </span>
                 <span className="du-discussion-action-result">
@@ -3501,7 +3501,7 @@ function StartRunForm({
       {continuationView.reviewReady && !isRoomComposer ? (
         <div className="du-action-row">
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-            {t("View current conclusion")}
+            {t("View current answer")}
           </Link>
         </div>
       ) : null}
@@ -3554,7 +3554,7 @@ function describeDiscussionContinuationSetup(
       detail:
         "Web is checking which local participant and review path is currently ready.",
       note:
-        "The recommended request updates after the daemon returns safe setup status.",
+        "The recommended request updates after the local service returns safe setup status.",
       tone: "neutral",
       startRequest: topicAwareLocalPresetStartRequest,
       fillLabel: "Fill recommended continuation request"
@@ -3565,9 +3565,9 @@ function describeDiscussionContinuationSetup(
     return {
       title: "Setup readiness unavailable",
       detail:
-        "Web could not confirm model setup, so the recommended request stays on the built-in guided path.",
+        "Web could not confirm AI setup, so the recommended request stays on the built-in guided path.",
       note:
-        "Open Setup / Models after the daemon is reachable to verify real provider readiness.",
+        "Open Connect AI after the local service is reachable to test real provider readiness.",
       tone: "warning",
       startRequest: topicAwareLocalPresetStartRequest,
       fillLabel: "Fill recommended continuation request"
@@ -3583,37 +3583,37 @@ function describeDiscussionContinuationSetup(
 
   if (providerBacked && providerOrganizerReady) {
     return {
-      title: "Model-backed review path ready",
+      title: "AI review path ready",
       detail:
-        "Continue discussion will ask configured model participants for independent first responses, then use Reviewer, Evidence checker, Risk reviewer, and Conclusion writer to review the result.",
+        "Continue discussion will ask configured AI participants for independent first responses, then use Reviewer, Evidence checker, Risk reviewer, and Conclusion writer to review the result.",
       note:
         "Provider credentials stay on this machine; Web does not show saved API keys.",
       tone: "ok",
       startRequest: buildOpenAICompatibleStartRequest(topic),
       fillLabel: "Fill recommended continuation request",
       primaryActionDetail:
-        "Collect model first responses, then use review roles for options, disagreements, risks, and the draft conclusion.",
-      primaryResultTitle: "Model-backed discussion continued",
+        "Collect AI first responses, then use review roles for options, unresolved points, risks, and the draft answer.",
+      primaryResultTitle: "Discussion with AI continued",
       primaryResultDetail:
-        "Model participants and review roles updated the readable timeline and conclusion materials."
+        "AI participants and review roles updated the readable timeline and answer materials."
     };
   }
 
   if (providerBacked) {
     return {
-      title: "Model first responses ready",
+      title: "AI first responses ready",
       detail:
-        "Configured model participants can answer first, but the full review path is not ready in the current setup.",
+        "Configured AI participants can answer first, but the full review path is not ready in the current setup.",
       note:
-        "Continue discussion will collect independent first responses only until the local service reports a complete model review path.",
+        "Continue discussion will collect independent first responses only until the local service reports a complete AI review path.",
       tone: "warning",
       startRequest: FIRST_RESPONSES_ONLY_START_REQUEST,
       fillLabel: "Fill first responses request",
       primaryActionDetail:
-        "Collect independent first responses only; finish review role setup before generating strongest options or a conclusion.",
+        "Collect independent first responses only; finish review setup before generating strongest options or an answer.",
       primaryResultTitle: "First responses collected",
       primaryResultDetail:
-        "The discussion collected independent first responses. Finish review role setup before organizing options or drafting a conclusion."
+        "The discussion collected independent first responses. Finish review setup before organizing options or drafting an answer."
     };
   }
 
@@ -3623,7 +3623,7 @@ function describeDiscussionContinuationSetup(
       detail:
         "Continue discussion can use built-in demo participants and local review roles for the full room flow without provider setup.",
       note:
-        "Configure a model provider in Setup / Models before relying on real model-backed results.",
+        "Configure an AI provider in Connect AI before relying on real AI results.",
       tone: "warning",
       startRequest: topicAwareLocalPresetStartRequest,
       fillLabel: "Fill recommended continuation request"
@@ -3635,12 +3635,12 @@ function describeDiscussionContinuationSetup(
     detail:
       "This discussion can only collect independent first responses until a local participant or provider review path is ready.",
     note:
-      "Open Setup / Models to configure a demo preset or real model provider before relying on the discussion.",
+      "Open Connect AI to configure a demo preset or real AI provider before relying on the discussion.",
     tone: "warning",
     startRequest: FIRST_RESPONSES_ONLY_START_REQUEST,
     fillLabel: "Fill first responses request",
     primaryActionDetail:
-      "Collect independent first responses only; complete Setup / Models before generating strongest options or a conclusion.",
+      "Collect independent first responses only; complete Connect AI before generating strongest options or an answer.",
     primaryResultTitle: "First responses collected",
     primaryResultDetail:
       "The discussion collected independent first responses. Complete setup before organizing options or drafting a conclusion."
@@ -3825,9 +3825,9 @@ function describeDiscussionParticipantSource(run: unknown): DiscussionParticipan
 
   if (hasProviderBackedParticipant || hasProviderConfig) {
     return {
-      title: "Model-backed discussion",
+      title: "Discussion with AI",
       detail:
-        "Continue discussion will ask configured model participants for the independent first responses.",
+        "Continue discussion will ask configured AI participants for the independent first responses.",
       note:
         "Provider credentials stay on this machine; Web does not show saved API keys.",
       tone: "ok"
@@ -3839,7 +3839,7 @@ function describeDiscussionParticipantSource(run: unknown): DiscussionParticipan
       title: "Demo participant discussion",
       detail:
         "Continue discussion uses built-in demo participants so the full flow works without provider setup.",
-      note: "Use Setup / Models when you want real provider-backed model participants.",
+      note: "Use Connect AI when you want real AI participants.",
       tone: "warning"
     };
   }
@@ -3858,7 +3858,7 @@ function describeDiscussionParticipantSource(run: unknown): DiscussionParticipan
   return {
     title: "Participant source unavailable",
     detail: "This discussion does not show a usable participant source yet.",
-    note: "Open Setup / Models before relying on this discussion.",
+    note: "Open Connect AI before relying on this discussion.",
     tone: "warning"
   };
 }
@@ -3965,20 +3965,20 @@ function GuidedDiscussionActionPath({ reviewReady }: { reviewReady: boolean }) {
     ? [
         {
           label: "Start here",
-          title: "Review current conclusion",
-          detail: "Start with the conclusion before changing the room."
+          title: "Review current answer",
+          detail: "Start with the current answer before changing the room."
         },
         {
           label: "Then",
           title: "Choose a follow-up action",
           detail:
-            "Update the conclusion or ask for stronger options after checking disagreements, requirements, and evidence."
+            "Update the answer or ask for stronger options after checking unresolved points, must-cover items, and evidence."
         },
         {
           label: "After that",
           title: "Recheck the room outputs",
           detail:
-            "Return to strongest options, open disagreements, missing evidence, risks, and next actions."
+            "Return to strongest options, still unresolved points, needs checking, risks, and next steps."
         }
       ]
     : [
@@ -3986,7 +3986,7 @@ function GuidedDiscussionActionPath({ reviewReady }: { reviewReady: boolean }) {
           label: "Start here",
           title: "Continue discussion",
           detail:
-            "Collect independent perspectives, strongest options, disagreements, evidence checks, risks, and a draft conclusion."
+            "Collect independent perspectives, strongest options, unresolved points, evidence checks, risks, and a draft answer."
         },
         {
           label: "Then",
@@ -3996,9 +3996,9 @@ function GuidedDiscussionActionPath({ reviewReady }: { reviewReady: boolean }) {
         },
         {
           label: "After that",
-          title: "Open current conclusion",
+          title: "Open current answer",
           detail:
-            "When ready, review the conclusion together with risks, missing evidence, and next actions."
+            "When ready, review the answer together with risks, needs checking, and next steps."
         }
       ];
 
@@ -4100,8 +4100,8 @@ function StartResult({
       : t(
           feedback?.detail ??
             (conclusionReviewReady
-              ? "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion."
-              : "The guided discussion update was recorded. Review the visible steps and continue the discussion before relying on a conclusion.")
+              ? "The guided discussion steps were recorded. Review the updated perspectives, unresolved points, must-cover items, and current answer."
+              : "The guided discussion update was recorded. Review the visible steps and continue the discussion before relying on an answer.")
         );
   const roomStatusDetail = resultDetail;
 
@@ -4283,8 +4283,8 @@ function createUserContinuationTurnActivity(
           )
         : localizeTopicLanguageDetail(
             topicLanguage,
-            "The room continued again from the current conclusion and open questions.",
-            "\u623f\u95f4\u4ece\u5f53\u524d\u7ed3\u8bba\u548c\u5f00\u653e\u95ee\u9898\u7ee7\u7eed\u4e0b\u4e00\u8f6e\u3002"
+            "The room continued again from the current answer and open questions.",
+            "\u623f\u95f4\u4ece\u5f53\u524d\u7b54\u6848\u548c\u5f00\u653e\u95ee\u9898\u7ee7\u7eed\u4e0b\u4e00\u8f6e\u3002"
           ),
     tone: "neutral",
     phase: "first-responses",
@@ -4390,8 +4390,8 @@ function createStartResultStageConversationActivities(
           : localizeTopicLanguageDetail(
               topicLanguage,
               round > 1
-                ? "I connected the follow-up replies into updated options, open disagreements, requirements, and evidence gaps."
-                : "I connected the participant replies into strongest current options, open disagreements, requirements, and evidence gaps.",
+                ? "I connected the follow-up replies into updated options, unresolved points, must-cover items, and evidence gaps."
+                : "I connected the participant replies into strongest current options, unresolved points, must-cover items, and evidence gaps.",
               round > 1
                 ? "\u6211\u628a\u8ffd\u52a0\u56de\u5e94\u8fde\u63a5\u6210\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
                 : "\u6211\u628a\u53c2\u4e0e\u8005\u56de\u5e94\u8fde\u63a5\u6210\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
@@ -4412,8 +4412,8 @@ function createStartResultStageConversationActivities(
         detail: attentionNeeded
           ? localizeTopicLanguageDetail(
               topicLanguage,
-              "I could not finish reviewing the strongest option against open disagreements, so the room should not rely on the conclusion yet.",
-              "\u6211\u672a\u80fd\u5b8c\u6210\u5bf9\u6700\u5f3a\u9009\u9879\u4e0e\u672a\u89e3\u51b3\u5206\u6b67\u7684\u5ba1\u67e5\uff0c\u56e0\u6b64\u8ba8\u8bba\u5ba4\u8fd8\u4e0d\u5e94\u4f9d\u8d56\u7ed3\u8bba\u3002"
+              "I could not finish reviewing the strongest option against unresolved points, so the room should not rely on the answer yet.",
+              "\u6211\u672a\u80fd\u5b8c\u6210\u5bf9\u6700\u5f3a\u9009\u9879\u4e0e\u672a\u89e3\u51b3\u95ee\u9898\u7684\u5ba1\u67e5\uff0c\u56e0\u6b64\u8ba8\u8bba\u5ba4\u8fd8\u4e0d\u5e94\u4f9d\u8d56\u7b54\u6848\u3002"
             )
           : localizeTopicLanguageDetail(
               topicLanguage,
@@ -4440,8 +4440,8 @@ function createStartResultStageConversationActivities(
         detail: attentionNeeded
           ? localizeTopicLanguageDetail(
               topicLanguage,
-              "I could not finish checking the evidence gaps, so missing evidence still needs review before the conclusion is trusted.",
-              "\u6211\u672a\u80fd\u5b8c\u6210\u8bc1\u636e\u7f3a\u53e3\u6838\u67e5\uff0c\u56e0\u6b64\u5728\u4fe1\u4efb\u7ed3\u8bba\u524d\u4ecd\u9700\u5ba1\u9605\u7f3a\u5931\u8bc1\u636e\u3002"
+              "I could not finish checking the evidence gaps, so the evidence still needs review before the answer is trusted.",
+              "\u6211\u672a\u80fd\u5b8c\u6210\u8bc1\u636e\u7f3a\u53e3\u6838\u67e5\uff0c\u56e0\u6b64\u5728\u4fe1\u4efb\u7b54\u6848\u524d\u4ecd\u9700\u5ba1\u9605\u8bc1\u636e\u3002"
             )
           : localizeTopicLanguageDetail(
               topicLanguage,
@@ -4468,13 +4468,13 @@ function createStartResultStageConversationActivities(
         detail: attentionNeeded
           ? localizeTopicLanguageDetail(
               topicLanguage,
-              "I could not finish strengthening the option, so the room should revisit it before drafting a conclusion.",
-              "\u6211\u672a\u80fd\u5b8c\u6210\u5f3a\u5316\u9009\u9879\uff0c\u56e0\u6b64\u8ba8\u8bba\u5ba4\u5e94\u5728\u8d77\u8349\u7ed3\u8bba\u524d\u91cd\u65b0\u68c0\u67e5\u5b83\u3002"
+              "I could not finish strengthening the option, so the room should revisit it before drafting an answer.",
+              "\u6211\u672a\u80fd\u5b8c\u6210\u5f3a\u5316\u9009\u9879\uff0c\u56e0\u6b64\u8ba8\u8bba\u5ba4\u5e94\u5728\u8d77\u8349\u7b54\u6848\u524d\u91cd\u65b0\u68c0\u67e5\u5b83\u3002"
             )
           : localizeTopicLanguageDetail(
               topicLanguage,
-              "I used the visible weaknesses to strengthen the current option before conclusion work.",
-              "\u6211\u7528\u53ef\u89c1\u5f31\u70b9\u5f3a\u5316\u4e86\u5f53\u524d\u9009\u9879\uff0c\u7136\u540e\u518d\u8fdb\u5165\u7ed3\u8bba\u5de5\u4f5c\u3002"
+              "I used the visible weaknesses to strengthen the current option before answer work.",
+              "\u6211\u7528\u53ef\u89c1\u5f31\u70b9\u5f3a\u5316\u4e86\u5f53\u524d\u9009\u9879\uff0c\u7136\u540e\u518d\u8fdb\u5165\u7b54\u6848\u5de5\u4f5c\u3002"
             ),
         tone,
         phase: "perspectives",
@@ -4487,18 +4487,18 @@ function createStartResultStageConversationActivities(
     return [
       {
         speaker: "Conclusion writer",
-        title: "Current conclusion drafted",
-        action: "Drafted the current conclusion",
+        title: "Current answer drafted",
+        action: "Drafted the current answer",
         detail: attentionNeeded
           ? localizeTopicLanguageDetail(
               topicLanguage,
-              "I could not finish drafting a conclusion, so the room should continue before treating the answer as ready.",
-              "\u6211\u672a\u80fd\u5b8c\u6210\u7ed3\u8bba\u8d77\u8349\uff0c\u56e0\u6b64\u8ba8\u8bba\u5ba4\u5e94\u7ee7\u7eed\u63a8\u8fdb\uff0c\u4e0d\u5e94\u628a\u7b54\u6848\u89c6\u4e3a\u5df2\u5c31\u7eea\u3002"
+              "I could not finish drafting an answer, so the room should continue before treating the answer as ready.",
+              "\u6211\u672a\u80fd\u5b8c\u6210\u7b54\u6848\u8d77\u8349\uff0c\u56e0\u6b64\u8ba8\u8bba\u5ba4\u5e94\u7ee7\u7eed\u63a8\u8fdb\uff0c\u4e0d\u5e94\u628a\u7b54\u6848\u89c6\u4e3a\u5df2\u5c31\u7eea\u3002"
             )
           : localizeTopicLanguageDetail(
               topicLanguage,
-              "I drafted a current conclusion from the room's strongest options, disagreements, evidence gaps, and requirements.",
-              "\u6211\u57fa\u4e8e\u8ba8\u8bba\u5ba4\u7684\u6700\u5f3a\u9009\u9879\u3001\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u8981\u6c42\u8d77\u8349\u4e86\u5f53\u524d\u7ed3\u8bba\u3002"
+              "I drafted a current answer from the room's strongest options, unresolved points, evidence gaps, and must-cover items.",
+              "\u6211\u57fa\u4e8e\u8ba8\u8bba\u5ba4\u7684\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u95ee\u9898\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u5fc5\u987b\u8986\u76d6\u9879\u8d77\u8349\u4e86\u5f53\u524d\u7b54\u6848\u3002"
             ),
         tone,
         phase: "conclusion",
@@ -4637,7 +4637,7 @@ function DiscussionResultHandoff({
           <strong>{t("Review discussion outputs")}</strong>
           <p>
             {t(
-              "Compare strongest options, open disagreements, requirements, and missing evidence."
+              "Compare strongest options, unresolved points, must-cover items, and what needs checking."
             )}
           </p>
         </a>
@@ -4646,11 +4646,11 @@ function DiscussionResultHandoff({
             className="du-result-handoff-card du-result-handoff-primary"
             to="/runs/$runId/outcome"
             params={{ runId }}
-            aria-label={t("View current conclusion")}
+            aria-label={t("View current answer")}
           >
             <span>{t("Finally")}</span>
-            <strong>{t("View current conclusion")}</strong>
-            <p>{t("Review the conclusion with risks and next actions.")}</p>
+            <strong>{t("View current answer")}</strong>
+            <p>{t("Review the answer with risks and next steps.")}</p>
           </Link>
         ) : (
           <a
@@ -4660,7 +4660,7 @@ function DiscussionResultHandoff({
           >
             <span>{t("Next")}</span>
             <strong>{t("Continue discussion")}</strong>
-            <p>{t("Current conclusion appears after the room produces conclusion material.")}</p>
+            <p>{t("Current answer appears after the room produces answer material.")}</p>
           </a>
         )}
       </div>
@@ -4775,8 +4775,8 @@ function describeReadableStage(stageName: unknown): Pick<ReadableStageResult, "l
 
   if (stageName === "proposal_review") {
     return {
-      label: "Requirements this answer must satisfy",
-      detail: "Candidate material was checked against open disagreements and answer requirements."
+      label: "Must cover",
+      detail: "Candidate material was checked against unresolved points and answer requirements."
     };
   }
 
@@ -4796,8 +4796,8 @@ function describeReadableStage(stageName: unknown): Pick<ReadableStageResult, "l
 
   if (stageName === "finalization") {
     return {
-      label: "Current conclusion",
-      detail: "A provisional conclusion and risk review were compiled for review."
+      label: "Current Answer",
+      detail: "A provisional answer and risk review were compiled for review."
     };
   }
 
@@ -5058,7 +5058,7 @@ function DiscussionRoomHeader({
     getStringRecordValue(run, "topic") ??
     getStringRecordValue(getRecordValue(run, "plan"), "topic") ??
     "Discussion brief";
-  const nextActionLabel = reviewReady ? "Review current conclusion" : "Continue discussion";
+  const nextActionLabel = reviewReady ? "Review current answer" : "Continue discussion";
   const statusLabel = reviewReady ? "Conclusion ready" : "Next step";
 
   return (
@@ -5116,7 +5116,7 @@ function DiscussionRoomParticipantRoster({ run }: { run: unknown }) {
         </div>
         <p>
           {t(
-            "This lineup is fixed for the current discussion. Use Setup / Models before starting a new discussion to change model assignments."
+            "This local room currently includes you and configured AI/model roles. Use Connect AI before starting a new discussion to change model assignments."
           )}
         </p>
       </div>
@@ -5182,7 +5182,7 @@ function DiscussionRoomBrief({ run }: { run: unknown }) {
           <h4>{t(question)}</h4>
           <p>
             {t(
-              "The room keeps the brief, participant perspectives, disagreements, missing evidence, risks, current conclusion, and next actions visible together."
+              "The room keeps the brief, participant perspectives, unresolved points, needs checking, risks, the current answer, and next steps visible together."
             )}
           </p>
         </div>
@@ -5601,15 +5601,15 @@ function DiscussionRoomProgressDetails({
           <article className="du-room-progress-checks">
             <p className="du-kicker">{t("Review before relying")}</p>
             <div>
-              <span>{t("Open disagreements")}</span>
+              <span>{t("Still unresolved")}</span>
               <strong>{openDisagreementCount}</strong>
             </div>
             <div>
-              <span>{t("Missing evidence")}</span>
+              <span>{t("Needs checking")}</span>
               <strong>{unresolvedEvidenceCount}</strong>
             </div>
             <div>
-              <span>{t("Requirements to satisfy")}</span>
+              <span>{t("Must cover")}</span>
               <strong>{openRequirementCount}</strong>
             </div>
           </article>
@@ -5676,12 +5676,12 @@ function DiscussionRoomProgressDetails({
             }
             detail={t(
               openDisagreementCount === 1 && unresolvedEvidenceCount === 1
-                ? "{disagreements} open disagreement and {evidence} evidence gap are visible."
+                ? "{disagreements} unresolved point and {evidence} item needing checking are visible."
                 : openDisagreementCount === 1
-                  ? "{disagreements} open disagreement and {evidence} evidence gaps are visible."
+                  ? "{disagreements} unresolved point and {evidence} items needing checking are visible."
                   : unresolvedEvidenceCount === 1
-                    ? "{disagreements} open disagreements and {evidence} evidence gap are visible."
-                    : "{disagreements} open disagreements and {evidence} evidence gaps are visible.",
+                    ? "{disagreements} unresolved points and {evidence} item needing checking are visible."
+                    : "{disagreements} unresolved points and {evidence} items needing checking are visible.",
               {
                 disagreements: openDisagreementCount,
                 evidence: unresolvedEvidenceCount
@@ -5689,7 +5689,7 @@ function DiscussionRoomProgressDetails({
             )}
           />
           <DiscussionRoomFlowStep
-            label={t("Current conclusion")}
+            label={t("Current Answer")}
             status={t(conclusion.label)}
             detail={t(conclusion.detail)}
           />
@@ -5729,12 +5729,12 @@ function DiscussionRoomNextTurnPrompt({
           <span>{t("Next in the room")}</span>
         </div>
         <div className="du-room-next-turn-copy">
-          <h5>{t(reviewReady ? "Review the current conclusion" : "Continue discussion")}</h5>
+          <h5>{t(reviewReady ? "Review the current answer" : "Continue discussion")}</h5>
           <p>
             {t(
               reviewReady
-                ? "The room has enough material for review. Start with the conclusion, then choose whether to inspect disagreements, check evidence, or update the discussion."
-                : "The brief is in the room. Continue to collect participant perspectives, disagreements, evidence checks, risks, and a current conclusion."
+                ? "The room has enough material for review. Start with the answer, then choose whether to inspect unresolved points, check evidence, or update the discussion."
+                : "The brief is in the room. Continue to collect participant perspectives, unresolved points, evidence checks, risks, and a current answer."
             )}
           </p>
         </div>
@@ -5746,15 +5746,15 @@ function DiscussionRoomNextTurnPrompt({
                 to="/runs/$runId/outcome"
                 params={{ runId }}
               >
-                {t("Review current conclusion")}
+                {t("Review current answer")}
               </Link>
               <Link to="/runs/$runId/outcome" params={{ runId }}>
-                {t("Review disagreements")}
+                {t("Review unresolved points")}
               </Link>
               <Link to="/runs/$runId/outcome" params={{ runId }}>
                 {t("Check evidence")}
               </Link>
-              <a href="#continue-discussion">{t("Update conclusion")}</a>
+              <a href="#continue-discussion">{t("Update answer")}</a>
             </>
           ) : (
             <a className="du-room-next-turn-primary" href="#continue-discussion">
@@ -5765,7 +5765,7 @@ function DiscussionRoomNextTurnPrompt({
         {reviewReady ? (
           <p className="du-room-next-turn-meta">
             {t(
-              "Review queue: {disagreements} open disagreements, {evidence} missing evidence, {requirements} requirements to satisfy.",
+              "Review queue: {disagreements} still unresolved, {evidence} needs checking, {requirements} must cover.",
               {
                 disagreements: openDisagreementCount,
                 evidence: unresolvedEvidenceCount,
@@ -5808,14 +5808,14 @@ function describeDiscussionRoomProgress({
   if (isCompletedDiscussionStatus(finalizationStatus)) {
     return {
       tone: "ready",
-      phaseTitle: "Current conclusion ready",
+      phaseTitle: "Current answer ready",
       phaseDetail:
-        "The room has a reviewable conclusion. Check open disagreements, requirements, evidence gaps, and risks before relying on it.",
-      nextTitle: "Review current conclusion",
+        "The room has a reviewable answer. Check unresolved points, requirements, evidence gaps, and risks before relying on it.",
+      nextTitle: "Review current answer",
       nextDetail:
         openItemCount > 0
-          ? "Review current conclusion with open items visible."
-          : "Open the current conclusion and confirm it matches the discussion brief."
+          ? "Review the current answer with open items visible."
+          : "Open the current answer and confirm it matches the discussion brief."
     };
   }
 
@@ -5824,10 +5824,10 @@ function describeDiscussionRoomProgress({
       tone: "active",
       phaseTitle: "Discussion step needs attention",
       phaseDetail:
-        "One guided step could not finish cleanly. Review setup or retry the discussion before relying on a conclusion.",
-      nextTitle: "Check discussion setup",
+        "One guided step could not finish cleanly. Review setup or retry the discussion before relying on an answer.",
+      nextTitle: "Check AI setup",
       nextDetail:
-        "Verify the model setup, then continue the discussion so options, evidence, risks, and conclusion can be rebuilt."
+        "Test the AI setup, then continue the discussion so options, evidence, risks, and the answer can be rebuilt."
     };
   }
 
@@ -5839,12 +5839,12 @@ function describeDiscussionRoomProgress({
       tone: "active",
       phaseTitle: "Comparing strongest options",
       phaseDetail:
-        "Strongest options are visible. Review disagreements, requirements, and evidence gaps before updating the conclusion.",
-      nextTitle: "Update conclusion",
+        "Strongest options are visible. Review unresolved points, requirements, and evidence gaps before updating the answer.",
+      nextTitle: "Update answer",
       nextDetail:
         openItemCount > 0
-          ? "Update the conclusion after reviewing the visible open items."
-          : "Update the discussion so the room can draft a current conclusion."
+          ? "Update the answer after reviewing the visible open items."
+          : "Update the discussion so the room can draft a current answer."
     };
   }
 
@@ -5912,7 +5912,7 @@ function buildDiscussionRoomParticipantRoster(run: unknown): DiscussionRoomParti
       source: "Room composer",
       status: "In room",
       detail:
-        "Send a follow-up instruction from the composer. Standalone human-message history is not stored yet.",
+        "Send a message that guides the next round.",
       tone: "ok",
       kind: "human"
     }
@@ -5970,7 +5970,7 @@ function createReviewRoleRosterItems({
     ? describeProviderRosterSource(findReviewProviderConfig(providerConfigs))
     : hasLocalPresetSource
       ? { label: "Built-in demo review role" }
-      : { label: "Needs model setup" };
+      : { label: "Needs AI setup" };
   const ready = hasProviderBackedSource || hasLocalPresetSource;
   const status = ready ? "Ready" : "Needs setup";
   const detail = ready
@@ -5981,7 +5981,7 @@ function createReviewRoleRosterItems({
   return [
     {
       name: "Reviewer",
-      role: "Open disagreements",
+      role: "Still unresolved",
       source: reviewSource.label,
       sourceValues: reviewSource.values,
       status,
@@ -6011,7 +6011,7 @@ function createReviewRoleRosterItems({
     },
     {
       name: "Conclusion writer",
-      role: "Current conclusion",
+      role: "Current Answer",
       source: reviewSource.label,
       sourceValues: reviewSource.values,
       status,
@@ -6084,7 +6084,7 @@ function describeParticipantRosterSource(
   }
 
   if (getStringRecordValue(participant, "providerConfigId")) {
-    return { label: "Needs model setup" };
+    return { label: "Needs AI setup" };
   }
 
   return { label: "Configured AI participant" };
@@ -6624,12 +6624,12 @@ function describeEvidenceGapReviewActivityDetail(
   }
 
   if (topicLanguage === "zh-CN") {
-    return "{count} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7ed3\u8bba\u3002";
+    return "{count} \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002";
   }
 
   return unresolvedEvidenceCount === 1
-    ? "{count} evidence gap still needs checking before relying on the conclusion."
-    : "{count} evidence gaps still need checking before relying on the conclusion.";
+    ? "{count} evidence gap still needs checking before relying on the answer."
+    : "{count} evidence gaps still need checking before relying on the answer.";
 }
 
 function insertRoomReviewActivity(
@@ -6685,7 +6685,7 @@ function describeOpenDisagreementActivityDetail(
   if (topicLanguage === "zh-CN") {
     return {
       detail:
-        "{count} \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u4ecd\u9700\u5904\u7406\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7ed3\u8bba\u3002",
+        "{count} \u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u4ecd\u9700\u5904\u7406\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002",
       detailValues: { count: openDisagreementCount }
     };
   }
@@ -6693,8 +6693,8 @@ function describeOpenDisagreementActivityDetail(
   return {
     detail:
       openDisagreementCount === 1
-        ? "{count} open disagreement still needs resolution before relying on the conclusion."
-        : "{count} open disagreements still need resolution before relying on the conclusion.",
+        ? "{count} unresolved point still needs resolution before relying on the answer."
+        : "{count} unresolved points still need resolution before relying on the answer.",
     detailValues: { count: openDisagreementCount }
   };
 }
@@ -6821,9 +6821,9 @@ function describeRoomActivityPhase(phase: RoomActivityPhaseId): RoomActivityPhas
   }
 
   return {
-    label: "Current conclusion and risk review",
-    detail: "The room drafts a conclusion and records risks or boundaries for review.",
-    updatesLabel: "Current conclusion and risk review updates"
+    label: "Current answer and risk review",
+    detail: "The room drafts an answer and records risks or boundaries for review.",
+    updatesLabel: "Current answer and risk review updates"
   };
 }
 
@@ -7036,7 +7036,7 @@ function localizeRoomActivityAction(
     "Reviewed evidence gaps": "\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3",
     "Reviewed option quality": "\u5ba1\u9605\u4e86\u9009\u9879\u8d28\u91cf",
     "Checked evidence": "\u6838\u67e5\u4e86\u8bc1\u636e",
-    "Drafted the current conclusion": "\u8d77\u8349\u4e86\u5f53\u524d\u7ed3\u8bba",
+    "Drafted the current answer": "\u8d77\u8349\u4e86\u5f53\u524d\u7b54\u6848",
     "Reviewed risks": "\u5ba1\u67e5\u4e86\u98ce\u9669",
     "Connected the first responses": "\u8fde\u63a5\u4e86\u9996\u6b21\u56de\u5e94",
     "Connected the follow-up replies": "\u8fde\u63a5\u4e86\u8ffd\u52a0\u56de\u5e94",
@@ -7861,11 +7861,11 @@ function createRoomActivityItem(event: unknown, run: unknown): RoomActivityItem 
   if (type === "final_candidate_proposed") {
     return {
       speaker,
-      title: "Current conclusion drafted",
-      action: "Drafted the current conclusion",
+      title: "Current answer drafted",
+      action: "Drafted the current answer",
       detail:
         getStringRecordValue(payload, "recommendation") ??
-        "A reviewable conclusion draft was prepared from the current discussion material.",
+        "A reviewable answer draft was prepared from the current discussion material.",
       tone: "ok",
       phase: "conclusion",
       sourceType: type
@@ -7942,7 +7942,7 @@ function describeFinalAuditPayload(payload: unknown): string {
       "continuationSuggestions"
     ]) ??
     getFirstStringRecordValue(payload, ["summary", "rationale"]) ??
-    "A risk review was recorded for the current conclusion."
+    "A risk review was recorded for the current answer."
   );
 }
 
@@ -8093,7 +8093,7 @@ function DiscussionRoomFocusPanel({
 }) {
   const { t } = useI18n();
   const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
-  const nextActionLabel = reviewReady ? "Review current conclusion" : "Continue discussion";
+  const nextActionLabel = reviewReady ? "Review current answer" : "Continue discussion";
 
   return (
     <aside
@@ -8103,7 +8103,7 @@ function DiscussionRoomFocusPanel({
     >
       <div className="du-room-focus-section">
         <p className="du-kicker">{t("Decision workspace")}</p>
-        <h4>{t("Current conclusion: {status}", {
+        <h4>{t("Current answer: {status}", {
           status: reviewReady ? t("Ready to review") : t("Not ready yet")
         })}</h4>
       </div>
@@ -8113,7 +8113,7 @@ function DiscussionRoomFocusPanel({
         <div className="du-action-row">
           {reviewReady ? (
             <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-              {t("Review current conclusion")}
+              {t("Review current answer")}
             </Link>
           ) : (
             <a className="du-action-link" href="#continue-discussion">
@@ -8130,7 +8130,7 @@ function DiscussionRoomFocusPanel({
             reviewReady={reviewReady}
             fallbackHref="#continue-discussion"
             state={openDisagreementCount > 0 ? "needs-review" : "clear"}
-            label="Open disagreements"
+            label="Still unresolved"
             value={String(openDisagreementCount)}
           />
           <RoomFocusReviewLink
@@ -8138,7 +8138,7 @@ function DiscussionRoomFocusPanel({
             reviewReady={reviewReady}
             fallbackHref="#continue-discussion"
             state={unresolvedEvidenceCount > 0 ? "needs-review" : "clear"}
-            label="Missing evidence"
+            label="Needs checking"
             value={String(unresolvedEvidenceCount)}
           />
           <RoomFocusReviewLink
@@ -8146,7 +8146,7 @@ function DiscussionRoomFocusPanel({
             reviewReady={reviewReady}
             fallbackHref="#continue-discussion"
             state={openRequirementCount > 0 ? "needs-review" : "clear"}
-            label="Requirements to satisfy"
+            label="Must cover"
             value={String(openRequirementCount)}
           />
           <div data-state={openItemCount > 0 ? "needs-review" : "clear"}>
@@ -8210,7 +8210,7 @@ export function OutcomeBrief({
   const recommendation = formatOutcomeTextForUser(
     getStringRecordValue(outcome, "recommendation") ??
     getStringRecordValue(outcome, "summary") ??
-    t("No current conclusion is available yet.")
+    t("No current answer is available yet.")
   );
   const unresolvedQuestions = getStringArray(
     getRecordValue(outcome, "unresolvedQuestions")
@@ -8276,12 +8276,12 @@ export function OutcomeBrief({
         );
   const nextActionDetail =
     continuationSuggestions.length === 0
-      ? t("No next recommended actions are listed yet.")
+      ? t("No next steps are listed yet.")
       : describeReviewItemCount(
           t,
           continuationSuggestions.length,
-          "recommended next action",
-          "recommended next actions"
+          "next step",
+          "next steps"
         );
 
   return (
@@ -8289,7 +8289,7 @@ export function OutcomeBrief({
       <section
         id="current-recommendation"
         className="du-outcome-hero"
-        aria-label={t("Current conclusion snapshot")}
+        aria-label={t("Current answer snapshot")}
       >
         <article className="du-outcome-recommendation">
           <p className="du-kicker">{t("Current recommendation")}</p>
@@ -8302,7 +8302,7 @@ export function OutcomeBrief({
             detail={mainPerspectiveDetail}
           />
           <OutcomeStatusItem
-            title={t("Open disagreements")}
+            title={t("Still unresolved")}
             value={String(openDisagreements.length)}
             detail={describeOutcomeStatusDetail(
               t,
@@ -8313,7 +8313,7 @@ export function OutcomeBrief({
             tone={openDisagreements.length > 0 ? "warning" : "ok"}
           />
           <OutcomeStatusItem
-            title={t("Missing evidence")}
+            title={t("Needs checking")}
             value={
               visibleEvidenceNeeds.length === 0
                 ? "0"
@@ -8336,13 +8336,13 @@ export function OutcomeBrief({
         </div>
       </section>
       {organizerFallbackVisible ? <OrganizerFallbackNotice /> : null}
-      <section className="du-outcome-review-path" aria-label={t("Conclusion review path")}>
+      <section className="du-outcome-review-path" aria-label={t("Answer review path")}>
         <div>
           <p className="du-kicker">{t("Review path")}</p>
-          <h4>{t("Before relying on this conclusion")}</h4>
+          <h4>{t("Before relying on this answer")}</h4>
           <p>
             {t(
-              "Start with the recommendation, then check disagreements, evidence gaps, risks, answer requirements, and next recommended actions."
+              "Start with the recommendation, then check unresolved points, evidence gaps, risks, must-cover items, and next steps."
             )}
           </p>
         </div>
@@ -8357,18 +8357,18 @@ export function OutcomeBrief({
           />
           <OutcomeReviewPathItem
             href="#open-disagreements"
-            title={t("Review open disagreements")}
+            title={t("Review unresolved points")}
             detail={describeReviewItemCount(
               t,
               openDisagreements.length,
-              "open disagreement needs review",
-              "open disagreements need review"
+              "unresolved point needs review",
+              "unresolved points need review"
             )}
             tone={openDisagreements.length > 0 ? "warning" : "ok"}
           />
           <OutcomeReviewPathItem
             href="#missing-evidence"
-            title={t("Check missing evidence")}
+            title={t("Check what needs checking")}
             detail={describeEvidenceReviewDetail(
               t,
               unresolvedEvidenceNeeds,
@@ -8400,7 +8400,7 @@ export function OutcomeBrief({
           />
           <OutcomeReviewPathItem
             href="#next-recommended-actions"
-            title={t("Use next recommended actions")}
+            title={t("Use next steps")}
             detail={nextActionDetail}
             tone={continuationSuggestions.length > 0 ? "ok" : "warning"}
           />
@@ -8428,30 +8428,30 @@ export function OutcomeBrief({
       />
       <ReadableRecordList
         id="open-disagreements"
-        title="Open disagreements"
+        title="Still unresolved"
         items={openDisagreements}
-        emptyTitle="No open disagreements listed"
+        emptyTitle="No unresolved points listed"
         summarizeItem={summarizeOpenObjection}
       />
       <ReadableRecordList
         id="missing-evidence"
-        title="Missing evidence"
+        title="Needs checking"
         items={visibleEvidenceNeeds}
-        emptyTitle="No missing evidence listed"
+        emptyTitle="Nothing needs checking"
         summarizeItem={summarizeEvidenceNeed}
       />
       <ReadableRecordList
         id="answer-requirements"
-        title="Requirements this answer must satisfy"
+        title="Must cover"
         items={visibleQualityObligations}
         emptyTitle="No answer requirements listed"
         summarizeItem={summarizeQualityObligation}
       />
       <ReadableStringList
         id="next-recommended-actions"
-        title="Next recommended actions"
+        title="Next steps"
         items={continuationSuggestions}
-        emptyTitle="No next recommended actions listed"
+        emptyTitle="No next steps listed"
       />
     </div>
   );
@@ -8466,7 +8466,7 @@ function OrganizerFallbackNotice() {
       <h4>{t("Discussion organizer used a safe fallback")}</h4>
       <p>
         {t(
-          "The model returned organizer output Deliberum could not use directly, so this view was rebuilt from the independent first responses. Treat the conclusion as provisional and check disagreements, missing evidence, and risks before relying on it."
+          "The model returned organizer output Deliberum could not use directly, so this view was rebuilt from the independent first responses. Treat the answer as provisional and check unresolved points, evidence gaps, and risks before relying on it."
         )}
       </p>
     </aside>
@@ -8559,11 +8559,11 @@ const OUTCOME_INTERNAL_PHRASE_REPLACEMENTS: readonly {
 }[] = [
   {
     pattern: /\bdaemon-backed final projection\b/gi,
-    replacement: "current conclusion"
+    replacement: "current answer"
   },
   {
     pattern: /\bfinal projection\b/gi,
-    replacement: "current conclusion"
+    replacement: "current answer"
   },
   {
     pattern: /\bevent_ledger_and_projections\b/gi,
@@ -8782,7 +8782,7 @@ function summarizeEvidenceNeed(
   t: TranslateFunction
 ): OutcomeRecordSummary {
   return summarizeOutcomeRecord(item, index, {
-    fallbackTitle: t("Missing evidence {number}", { number: index + 1 }),
+    fallbackTitle: t("Needs checking {number}", { number: index + 1 }),
     fallbackKicker: t("Evidence gap {number}", { number: index + 1 }),
     fallbackDetail: t("This evidence gap still needs verification."),
     titleKeys: ["question", "title", "summary", "reason"],
@@ -9057,7 +9057,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
       </div>
       <div id="open-disagreements" className="du-workbench-anchor">
         <DataPanel
-          title={t("Open disagreements")}
+          title={t("Still unresolved")}
           description={t(
             "Unresolved objections and challenges that still constrain the discussion."
           )}
@@ -9065,9 +9065,9 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
           <QueryState query={objectionsQuery}>
             <ProjectionRecordList
               records={asArray(objectionsQuery.data?.objections)}
-              emptyTitle={t("No open disagreements")}
+              emptyTitle={t("Nothing unresolved yet")}
               emptyDescription={t(
-                "No open disagreements have been accepted into this discussion yet."
+                "No unresolved points have been accepted into this discussion yet."
               )}
               kind="objection"
             />
@@ -9076,8 +9076,8 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
       </div>
       <div id="answer-requirements" className="du-workbench-anchor">
         <DataPanel
-          title={t("Requirements this answer must satisfy")}
-          description={t("Explicit requirements for the current conclusion.")}
+          title={t("Must cover")}
+          description={t("Explicit requirements for the current answer.")}
         >
           <QueryState query={obligationsQuery}>
             <ProjectionRecordList
@@ -9093,15 +9093,15 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
       </div>
       <div id="evidence-gaps" className="du-workbench-anchor">
         <DataPanel
-          title={t("Risks and missing evidence")}
+          title={t("Risks and needs checking")}
           description={t(
-            "Evidence gaps and verification needs that should be checked before relying on the conclusion."
+            "Evidence gaps and verification needs that should be checked before relying on the answer."
           )}
         >
           <QueryState query={resourcesQuery}>
             <ProjectionRecordList
               records={asArray(resourcesQuery.data?.evidenceNeeds)}
-              emptyTitle={t("No missing evidence")}
+              emptyTitle={t("Nothing needs checking yet")}
               emptyDescription={t(
                 "No evidence gaps have been accepted into this discussion yet."
               )}
@@ -9136,7 +9136,7 @@ function RunProjectionPanels({ sessionId }: { sessionId: string }) {
             kind="quality obligation"
           />
           <ProjectionDeveloperDetails
-            title="Risks and missing evidence metadata"
+            title="Risks and needs checking metadata"
             projection={resourcesQuery.data?.projection}
             records={asArray(resourcesQuery.data?.evidenceNeeds)}
             kind="evidence"
@@ -9175,7 +9175,7 @@ function RunProcessProposals({ runId, sessionId }: { runId: string; sessionId?: 
 
   return (
     <DataPanel
-      title="Next recommended actions"
+      title="Next steps"
       description="Suggested next steps based on the current discussion state. Recording a suggestion keeps it reviewable and does not execute it automatically."
     >
       <QueryState query={processProposalQuery}>
@@ -9324,7 +9324,7 @@ const PROCESS_PRIMITIVE_USER_VIEWS: Record<string, ProcessPrimitiveUserView> = {
   relation_mapping: {
     title: "Organize the responses",
     detail:
-      "Turn revealed responses into main perspectives, supporting points, open disagreements, and answer requirements.",
+      "Turn revealed responses into main perspectives, supporting points, unresolved points, and must-cover items.",
     reason: "Makes the discussion material easier to review and challenge.",
     risk: "Important points may remain buried in raw responses."
   },
@@ -9336,36 +9336,36 @@ const PROCESS_PRIMITIVE_USER_VIEWS: Record<string, ProcessPrimitiveUserView> = {
     risk: "Problems may be accepted before they are visible."
   },
   evidence_check: {
-    title: "Check missing evidence",
-    detail: "Route unresolved evidence gaps through verification work before strengthening the conclusion.",
+    title: "Check what needs evidence",
+    detail: "Route unresolved evidence gaps through verification work before strengthening the answer.",
     reason: "Separates what is still unverified from what the discussion can rely on.",
-    risk: "The conclusion may rely on claims that are still unchecked."
+    risk: "The answer may rely on claims that are still unchecked."
   },
   candidate_repair: {
     title: "Improve current options",
     detail:
-      "Use open disagreements and unfinished requirements to strengthen the strongest current options.",
+      "Use unresolved points and unfinished must-cover items to strengthen the strongest current options.",
     reason: "Keeps known weaknesses from carrying forward unchanged.",
     risk: "Current options may stay weaker than the discussion already knows they are."
   },
   final_audit: {
-    title: "Review conclusion risks",
-    detail: "Check the proposed conclusion for unresolved risks, limits, and audit findings.",
-    reason: "Makes the conclusion safer to review before anyone relies on it.",
-    risk: "The conclusion may omit important risks or limits."
+    title: "Review answer risks",
+    detail: "Check the proposed answer for unresolved risks, limits, and review findings.",
+    reason: "Makes the answer safer to review before anyone relies on it.",
+    risk: "The answer may omit important risks or limits."
   },
   omission_audit: {
     title: "Check for missing coverage",
-    detail: "Look for important accepted material that the proposed conclusion may have left out.",
-    reason: "Reduces the chance that a neat conclusion hides relevant unresolved material.",
-    risk: "The conclusion may look coherent while omitting important context."
+    detail: "Look for important accepted material that the proposed answer may have left out.",
+    reason: "Reduces the chance that a neat answer hides relevant unresolved material.",
+    risk: "The answer may look coherent while omitting important context."
   },
   final_contest: {
-    title: "Prepare current conclusion",
-    detail: "Turn the strongest current options into reviewable conclusion material.",
+    title: "Prepare current answer",
+    detail: "Turn the strongest current options into reviewable answer material.",
     reason:
-      "Creates a current conclusion that users can inspect with disagreements and risks still visible.",
-    risk: "The discussion may stop before a reviewable conclusion exists."
+      "Creates a current answer that users can inspect with unresolved points and risks still visible.",
+    risk: "The discussion may stop before a reviewable answer exists."
   }
 };
 
@@ -9428,36 +9428,36 @@ function formatProcessObservationForUser(observation: string): string {
   }
 
   if (observation === "Extraction proposal material has not completed proposal review.") {
-    return "New discussion material still needs a review before it shapes the conclusion.";
+    return "New discussion material still needs a review before it shapes the answer.";
   }
 
   if (observation === "Accepted proposal material contains open evidence needs.") {
-    return "Some missing evidence still needs checking.";
+    return "Some evidence still needs checking.";
   }
 
   if (
     observation ===
     "Accepted proposal material contains unresolved objections or quality obligations."
   ) {
-    return "Open disagreements or unfinished answer requirements still need work.";
+    return "Unresolved points or unfinished answer requirements still need work.";
   }
 
   if (observation === "A final candidate proposal exists without recorded final audit events.") {
-    return "The proposed conclusion still needs a risk review.";
+    return "The proposed answer still needs a risk review.";
   }
 
   if (
     observation ===
     "Audited final candidate material is available without an active omission audit proposal."
   ) {
-    return "The risk-reviewed conclusion may still need a missing-coverage check.";
+    return "The risk-reviewed answer may still need a missing-coverage check.";
   }
 
   if (
     observation ===
     "Accepted active candidates are available without open evidence or repair targets."
   ) {
-    return "Strong current options are ready to become a reviewable current conclusion.";
+    return "Strong current options are ready to become a reviewable current answer.";
   }
 
   if (observation === "No explicit adaptive primitive gap was detected.") {
@@ -10105,18 +10105,18 @@ function formatProjectionRecordReviewCue(
   }
 
   if (kind === "objection" && status === "open") {
-    return "Still constrains the current conclusion.";
+    return "Still constrains the current answer.";
   }
 
   if (kind === "quality obligation" && status === "unanswered") {
-    return "Needs an answer before relying on the conclusion.";
+    return "Needs an answer before relying on the current answer.";
   }
 
   if (kind === "evidence") {
-    return "Needs verification before relying on the conclusion.";
+    return "Needs checking before relying on the current answer.";
   }
 
-  return "Review this item before relying on the conclusion.";
+  return "Review this item before relying on the current answer.";
 }
 
 function ProjectionMetadata({ projection }: { projection: unknown }) {
@@ -10354,7 +10354,7 @@ export function describeDiscussionStatus(run: unknown): string {
   const completedStageCount = countCompletedDiscussionStages(run);
 
   if (continuationView.reviewReady) {
-    return "Ready to review: current conclusion is available.";
+    return "Ready to review: current answer is available.";
   }
 
   if (hasDiscussionStageNeedingAttention(run)) {
@@ -10368,7 +10368,7 @@ export function describeDiscussionStatus(run: unknown): string {
   if (status === "running" || completedStageCount > 0) {
     return `${completedStageCount} discussion step${
       completedStageCount === 1 ? "" : "s"
-    } completed. Continue the discussion before relying on the conclusion.`;
+    } completed. Continue the discussion before relying on the answer.`;
   }
 
   if (status === "created") {
@@ -10411,16 +10411,16 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
     return {
       title: "Discussion is ready to review",
       description:
-        "The guided discussion has produced a current conclusion. Review it first; refresh the steps only when you want to update the discussion with the same brief.",
-      explainerTitle: "Review the current conclusion",
+        "The guided discussion has produced a current answer. Review it first; refresh the steps only when you want to update the discussion with the same brief.",
+      explainerTitle: "Review the current answer",
       explainerDetail:
-        "Main perspectives, open disagreements, requirements, evidence and verification, risk review, and next recommended actions are available below and on the conclusion page.",
-      primaryLabel: "Update conclusion",
+        "Main perspectives, unresolved points, must-cover items, evidence and verification, risk review, and next steps are available below and on the answer page.",
+      primaryLabel: "Update answer",
       primaryActionDetail:
-        "Run the guided update again after reviewing disagreements, evidence gaps, and requirements.",
+        "Run the guided update again after reviewing unresolved points, evidence gaps, and must-cover items.",
       primaryResultTitle: "Discussion update completed",
       primaryResultDetail:
-        "The guided update ran with the current brief. Review the updated conclusion, disagreements, requirements, and evidence before relying on it.",
+        "The guided update ran with the current brief. Review the updated answer, unresolved points, must-cover items, and evidence before relying on it.",
       reviewReady
     };
   }
@@ -10428,16 +10428,16 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
   return {
     title: "Continue discussion",
     description:
-      "Continue the guided discussion so perspectives, disagreements, requirements, evidence and verification, risk review, and conclusion can appear.",
+      "Continue the guided discussion so perspectives, unresolved points, must-cover items, evidence and verification, risk review, and an answer can appear.",
     explainerTitle: "Continue the full guided discussion",
     explainerDetail:
-      "Collects independent first responses, organizes main perspectives, reviews requirements, checks evidence needs, and compiles a provisional conclusion.",
+      "Collects independent first responses, organizes main perspectives, reviews must-cover items, checks evidence needs, and drafts a provisional answer.",
     primaryLabel: "Continue discussion",
     primaryActionDetail:
-      "Collect perspectives, organize strongest options, check evidence needs, and draft a conclusion.",
+      "Collect perspectives, organize strongest options, check evidence needs, and draft an answer.",
     primaryResultTitle: "Discussion steps completed",
     primaryResultDetail:
-      "The guided discussion steps were recorded. Review the updated perspectives, disagreements, requirements, and current conclusion.",
+      "The guided discussion steps were recorded. Review the updated perspectives, unresolved points, must-cover items, and current answer.",
     reviewReady
   };
 }
@@ -10445,9 +10445,9 @@ function describeDiscussionContinuation(run: unknown): DiscussionContinuationVie
 function describeDiscussionNextStep(run: unknown): DiscussionNextStepView {
   if (isDiscussionReviewReady(run)) {
     return {
-      title: "Review current conclusion",
+      title: "Review current answer",
       detail:
-        "Start with the current conclusion, then check visible disagreements, requirements, risks, and missing evidence before relying on it.",
+        "Start with the current answer, then check still unresolved points, must-cover items, risks, and what needs checking before relying on it.",
       tone: "ready"
     };
   }
@@ -10456,7 +10456,7 @@ function describeDiscussionNextStep(run: unknown): DiscussionNextStepView {
     return {
       title: "Check discussion setup",
       detail:
-        "A guided step needs attention. Verify the model setup, then continue the discussion before relying on a conclusion.",
+        "A guided step needs attention. Test the AI setup, then continue the discussion before relying on an answer.",
       tone: "active"
     };
   }
@@ -10465,7 +10465,7 @@ function describeDiscussionNextStep(run: unknown): DiscussionNextStepView {
     return {
       title: "Check discussion progress",
       detail:
-        "Discussion steps are running. Open the room to see which perspectives, disagreements, evidence checks, and conclusion work have changed.",
+        "Discussion steps are running. Open the room to see which perspectives, unresolved points, evidence checks, and answer work have changed.",
       tone: "active"
     };
   }
@@ -10474,7 +10474,7 @@ function describeDiscussionNextStep(run: unknown): DiscussionNextStepView {
     return {
       title: "Continue guided discussion",
       detail:
-        "Some discussion steps are complete. Continue the guided flow until the current conclusion, disagreements, evidence, risks, and next actions are ready.",
+        "Some discussion steps are complete. Continue the guided flow until the current answer, unresolved points, evidence, risks, and next steps are ready.",
       tone: "active"
     };
   }
@@ -10482,7 +10482,7 @@ function describeDiscussionNextStep(run: unknown): DiscussionNextStepView {
   return {
     title: "Continue guided discussion",
     detail:
-      "Continue the discussion so independent first responses, main perspectives, disagreements, requirements, evidence, and a current conclusion can be produced.",
+      "Continue the discussion so independent first responses, main perspectives, unresolved points, must-cover items, evidence, and a current answer can be produced.",
     tone: "pending"
   };
 }
@@ -10527,7 +10527,7 @@ function describeStageStatus(status: unknown): { label: string; detail: string }
   if (status === "needs_attention") {
     return {
       label: "Needs attention",
-      detail: "This discussion step needs attention before the conclusion can be trusted."
+      detail: "This discussion step needs attention before the answer can be trusted."
     };
   }
 
@@ -10553,18 +10553,18 @@ function describeStageStatus(status: unknown): { label: string; detail: string }
 
 function describeOutcomeUnavailableReason(reason: unknown): string {
   if (reason === "final_candidate_proposal_unavailable") {
-    return "The discussion has not produced conclusion-ready material yet. Continue the guided discussion before opening the current conclusion.";
+    return "The discussion has not produced answer-ready material yet. Continue the guided discussion before opening the current answer.";
   }
 
   if (reason === "final_candidate_proposal_ambiguous") {
-    return "More than one conclusion-ready draft is available, so Deliberum cannot choose one automatically.";
+    return "More than one answer-ready draft is available, so Deliberum cannot choose one automatically.";
   }
 
   if (reason === "outcome_compilation_unavailable") {
-    return "Deliberum could not safely prepare the current conclusion from the available discussion material.";
+    return "Deliberum could not safely prepare the current answer from the available discussion material.";
   }
 
-  return "Deliberum returned an unavailable conclusion state. Open Advanced details for the technical reason.";
+  return "Deliberum returned an unavailable answer state. Open Advanced details for the technical reason.";
 }
 
 function describeRunOutcomeReviewStatus(draftStatus: unknown): {
@@ -10575,26 +10575,26 @@ function describeRunOutcomeReviewStatus(draftStatus: unknown): {
   if (draftStatus === "draft") {
     return {
       tone: "ok",
-      title: "Current conclusion ready to review",
+      title: "Current answer ready to review",
       detail:
-        "This is reviewable discussion material. Check disagreements, risks, missing evidence, and next actions before relying on it."
+        "This is reviewable discussion material. Check unresolved points, risks, evidence needs, and next steps before relying on it."
     };
   }
 
   if (draftStatus === "provisional") {
     return {
       tone: "warning",
-      title: "Current conclusion remains provisional",
+      title: "Current answer remains provisional",
       detail:
-        "Treat this as a working conclusion until the visible disagreements, risks, and evidence gaps have been reviewed."
+        "Treat this as a working answer until the visible unresolved points, risks, and evidence gaps have been reviewed."
     };
   }
 
   return {
     tone: "neutral",
-    title: "Current conclusion status unknown",
+    title: "Current answer status unknown",
     detail:
-      "Review the conclusion together with its disagreements, risks, missing evidence, and next actions."
+      "Review the answer together with its unresolved points, risks, evidence needs, and next steps."
   };
 }
 
@@ -10604,7 +10604,7 @@ function formatRunStartErrorMessage(error: Error | null | undefined): string {
   }
 
   if (getErrorCode(error) === "run_stage_failed") {
-    return "A model or review step could not finish safely. Check model setup, then try Continue discussion again. If the same discussion keeps failing after partial responses, start a new model-backed discussion.";
+    return "An AI or review step could not finish safely. Check AI setup, then try Continue discussion again. If the same discussion keeps failing after partial responses, start a new discussion with AI.";
   }
 
   return formatSafeErrorMessage(error);
@@ -10630,15 +10630,15 @@ function RunStartRecoveryActions({
         <h4>{t("Keep the discussion recoverable")}</h4>
         <p>
           {t(
-            "Use these steps when a provider returns only part of the discussion or a review step fails before Deliberum can rebuild the conclusion."
+            "Use these steps when a provider returns only part of the discussion or a review step fails before Deliberum can rebuild the answer."
           )}
         </p>
       </div>
       <div className="du-run-recovery-grid">
         <Link className="du-run-recovery-card" to="/setup/models">
           <span>{t("First")}</span>
-          <strong>{t("Check model setup")}</strong>
-          <p>{t("Verify the provider connection and structured review compatibility.")}</p>
+          <strong>{t("Check AI setup")}</strong>
+          <p>{t("Test the provider connection and structured review compatibility.")}</p>
         </Link>
         <a className="du-run-recovery-card" href="#continue-discussion">
           <span>{t("Then")}</span>
@@ -10653,7 +10653,7 @@ function RunStartRecoveryActions({
           }}
         >
           <span>{t("If it repeats")}</span>
-          <strong>{t("Start a new model-backed discussion")}</strong>
+          <strong>{t("Start a new discussion with AI")}</strong>
           <p>{t("Use a fresh discussion when partial provider results keep blocking review.")}</p>
         </Link>
       </div>

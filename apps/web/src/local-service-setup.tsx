@@ -24,7 +24,7 @@ export function LocalServiceSetupGuide({
       />
       {compact ? (
         <p className="du-readable-meta">
-          {t("Open Setup / Models for the local start command and model setup steps.")}
+          {t("Open Connect AI for the local start command and AI setup steps.")}
         </p>
       ) : (
         <div className="du-setup-step-list">
@@ -48,9 +48,9 @@ export function LocalServiceSetupGuide({
             detail={t("Keep this page open, then use Check again after the service starts.")}
           />
           <LocalServiceInstructionStep
-            title={t("3. Configure models in Web")}
+            title={t("3. Connect AI in Web")}
             detail={t(
-              "After the service responds, open Setup / Models to add the provider API key, base URL, and model."
+              "After the service responds, open Connect AI to add the provider API key, base URL, and model name."
             )}
           />
         </div>

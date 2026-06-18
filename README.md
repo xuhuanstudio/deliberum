@@ -1,6 +1,6 @@
 # Deliberum
 
-**Deliberum** is a human-first, quality-centered peer deliberation product and runtime for humans, models, tools, and web-only participants.
+**Deliberum** is a local human + AI deliberation room and quality-centered runtime for humans, models, tools, and web-only participants.
 
 It is not a role-agent chat demo, not a voting system, not a central-Judge workflow, and not an MCP wrapper. Deliberum is designed to help multiple heterogeneous participants deliberate around a topic and produce a higher-quality outcome through structured divergence, objections, quality obligations, evidence checks, audits, and final compilation.
 
@@ -11,7 +11,7 @@ It is not a role-agent chat demo, not a voting system, not a central-Judge workf
 If you want to run Deliberum locally, start with
 [Getting Started](docs/GETTING_STARTED.md). It gives the shortest supported path
 from a source checkout to the local Web UI, provider setup, provider
-verification, and one model-backed discussion.
+verification, and one discussion with AI.
 
 For Simplified Chinese, see [README.zh-CN.md](README.zh-CN.md) and
 [Getting Started zh-CN](docs/zh-CN/GETTING_STARTED.md).
@@ -29,7 +29,7 @@ Most multi-agent systems rely on fixed roles, fixed order, supervisor routing, m
 
 Deliberum treats deliberation as a quality-centered process. It starts with a system-issued **Topic Contract**, runs **sealed divergence** to preserve independent perspectives, builds a **Candidate Frontier**, tracks **Objections**, enforces **Quality Obligations**, dynamically selects deliberation primitives, performs evidence checks where needed, and compiles an outcome with unresolved boundaries instead of pretending that every disagreement disappeared.
 
-The Web UI presents those concepts as a Discussion Room for normal users: a discussion brief, independent first responses, readable participant perspectives, strongest current options, open disagreements, evidence gaps, risks, current conclusion, and next recommended actions. Low-level daemon, ledger, runtime, resource, proposal, event, run, and session details remain available in Advanced / Developer Mode.
+The Web UI presents those concepts as a local deliberation room for normal users: a discussion brief, you as the current human participant, configured AI/model participants, readable participant perspectives, strongest current options, still-unresolved points, what needs checking, risks, the current answer, and next steps. It does not implement invite, share, or multi-human room joining yet. Low-level daemon, ledger, runtime, resource, proposal, event, run, and session details remain available in Advanced / Developer Mode.
 
 ## Core ideas
 
@@ -71,11 +71,11 @@ Outcome Compilation
 The default Web path is designed for a first-time user, not for a daemon operator.
 
 - Start a discussion from `/runs/new`.
-- Check daemon and model/provider readiness from `/setup/models`, including a plain-language provider setup checklist and a local OpenAI-compatible setup form that writes provider setup through the daemon without showing saved secrets or default-mode env var names.
+- Check local service and model/provider readiness from `/setup/models`, including a plain-language provider setup checklist and a local OpenAI-compatible setup form that writes provider setup through the local service without showing saved secrets or default-mode env var names.
 - Continue existing discussions from `/runs`.
 - Read participant/model perspectives as discussion contributions.
 - Follow the room timeline by deliberation stage.
-- Keep the current conclusion, open disagreements, missing evidence, risks, and next recommended actions visible.
+- Keep the current answer, still-unresolved points, what needs checking, risks, and next steps visible.
 - Use user-facing actions such as Continue discussion, Ask for stronger options, Review disagreements, Check evidence, and Update conclusion when ready.
 - Open Advanced / Developer Mode only when low-level runtime, ledger, raw JSON, resource, audit, or internal identifier details are needed.
 
@@ -130,19 +130,19 @@ node scripts/check-local-prerequisites.mjs
 
 3. Open the Web UI.
 
-   Open `http://127.0.0.1:3877/`. The home page should show whether the local service is connected and whether model-backed discussions are ready.
+   Open `http://127.0.0.1:3877/`. The home page should show that Deliberum is a local human + AI deliberation room, whether the local service is connected, and whether discussions with AI are ready.
 
 4. Configure a real model provider from Web.
 
-   Open `/setup/models`, then use **Configure OpenAI-compatible provider** to enter the provider API key, base URL, and model. Keep **Structured review compatibility** enabled for most real providers so Deliberum can organize options, disagreements, evidence gaps, risks, conclusions, and next actions reliably. Save the setup, check readiness, and use **Verify connection** before relying on a real model-backed discussion. The current Web path shows that one verified provider powers model-backed discussions; default role/model choices can be edited in Setup / Models, and one-off role/model assignment is still available on the start page.
+   Open `/setup/models`, then use **Configure OpenAI-compatible provider** to enter the provider API key, base URL, and model. Keep **Structured review compatibility** enabled for most real providers so Deliberum can organize options, unresolved points, what needs checking, risks, answers, and next steps reliably. Save the setup, check readiness, and use **Test connection** before relying on a discussion with AI. The current Web path shows that one verified provider powers configured AI/model participants; participant model choices can be edited in Connect AI, and one-off model assignment is still available on the New Discussion page.
 
    Saved API keys stay on this machine. The default Web UI does not show saved secrets, env var names, provider config ids, raw JSON, or runtime details; those remain behind Advanced / Developer Mode.
 
-5. Start and continue a model-backed discussion.
+5. Start and continue a discussion with AI.
 
-   When setup is ready, use **Start focused discussion** for two model perspectives or **Start broader discussion** for three model perspectives. You can also open `/runs/new?participants=model-backed`. Write the discussion question, optionally set **First-response model** for perspectives without their own model, set **Review role model** for Reviewer, Evidence checker, Risk reviewer, and Conclusion writer, and use **Customize perspective models** only when individual first-response perspectives should use different models. Use **Save as default role setup** to reuse these non-secret role model choices through the local service for future discussions; Setup / Models can also edit, save, clear, and summarize the saved discussion depth and role models without API keys, base URLs, or provider configuration ids. Create the discussion, open the room, then use **Continue discussion** to collect participant perspectives and review strongest options, open disagreements, evidence gaps, risks, the current conclusion, and next recommended actions.
+   When setup is ready, use **Start focused discussion** for two AI/model perspectives or **Start broader discussion** for three AI/model perspectives. You can also open `/runs/new?participants=model-backed`. Write the discussion question, optionally set **First-response model** for perspectives without their own model, set **Review role model** for Reviewer, Evidence checker, Risk reviewer, and Conclusion writer, and use **Customize perspective models** only when individual first-response perspectives should use different models. Use **Save participant choices** to reuse these non-secret model choices through the local service for future discussions; Connect AI can also edit, save, clear, and summarize the saved discussion depth and role models without API keys, base URLs, or internal provider details. Create the discussion, open the room, then use **Continue discussion** to collect participant perspectives and review strongest options, still-unresolved points, what needs checking, risks, the current answer, and next steps.
 
-If you do not have a provider ready yet, use the demo discussion path first. The demo is useful for learning the room flow, but real decisions should use configured model-backed participants and verified provider setup.
+If you do not have a provider ready yet, use the demo discussion path first. The demo is useful for learning the room flow, but real decisions should use configured AI/model participants and tested provider setup.
 
 For Web UI development, you can still run the daemon and Vite dev server as separate processes. The normal local product path above uses the built Web shell served by the local daemon.
 
@@ -154,9 +154,9 @@ Use these checks before changing runtime settings or filing an issue:
 - **Dependencies or build fail**: run `corepack pnpm install`, then `corepack pnpm doctor:local`, then `corepack pnpm build`. Do not skip the build step; `start:local` serves the built Web shell.
 - **`start:local` says the Web build is missing**: run `corepack pnpm build` again, then restart with `corepack pnpm start:local`.
 - **Port 3877 is already in use**: start on another local port, for example `DELIBERUM_PORT=3888 corepack pnpm start:local`, then open the URL printed by the command.
-- **The Web UI says the local service is unavailable**: keep the `start:local` terminal running, open the printed local URL, and use **Check again** in Setup / Models after the service responds.
-- **Provider verification fails**: review the API key, base URL, model, and Structured review compatibility setting in `/setup/models`, make sure the provider endpoint is reachable, then use **Verify connection** again. You can start a demo discussion while fixing provider setup.
-- **A real provider discussion pauses or fails**: use the default recovery actions such as **Check model setup**, **Try Continue discussion again**, or **Start a new model-backed discussion**. Do not paste API keys, full provider responses, or raw model output into issues or logs.
+- **The Web UI says the local service is unavailable**: keep the `start:local` terminal running, open the printed local URL, and use **Check again** in Connect AI after the service responds.
+- **Provider connection test fails**: review the API key, base URL, model, and Structured review compatibility setting in `/setup/models`, make sure the provider endpoint is reachable, then use **Test connection** again. You can start a demo discussion while fixing provider setup.
+- **A real provider discussion pauses or fails**: use the default recovery actions such as **Check AI setup**, **Try Continue discussion again**, or **Start a new discussion with AI**. Do not paste API keys, full provider responses, or raw model output into issues or logs.
 
 For a release-readiness browser walkthrough against a real OpenAI-compatible provider, run the opt-in smoke after `corepack pnpm build`:
 
@@ -171,7 +171,7 @@ If your local `.env` already contains `DELIBERUM_OPENAI_API_KEY`, `DELIBERUM_OPE
 
 For stability checks before a release, set `DELIBERUM_RELEASE_SMOKE_RUNS=3` or another positive integer to run the same browser walkthrough repeatedly in isolated local services. The command stops on the first failed run.
 
-This command starts an isolated local daemon and Web UI, configures the provider through Web with Structured review compatibility enabled by default, verifies the connection, starts and continues a model-backed discussion, opens the current conclusion, and scans the default UI for secrets and low-level ids. It is not part of default CI because it needs a real provider key and network access.
+This command starts an isolated local service and Web UI, configures the provider through Web with Structured review compatibility enabled by default, tests the connection, starts and continues a discussion with AI, opens the current answer, and scans the default UI for secrets and low-level ids. It is not part of default CI because it needs a real provider key and network access.
 
 ## Documentation
 
@@ -241,7 +241,7 @@ Implemented today:
 - baseline comparison report harness with coverage metadata, a Markdown report command, and a public sample fixture for externally supplied evaluation findings, without ordering systems or selecting an authoritative outcome;
 - local CLI commands for sessions, batches, contributions, extraction proposals, process proposal lifecycle, final candidate/audit/outcome projection, projections, events, local ledger integrity verification, daemon runtime profile status, env-template output, safe env block writing, local interactive setup wizard secret capture, profile-doctor diagnostics, safe daemon setup-plan output, scoped daemon auth entry generation, daemon deployment posture reads, daemon ledger integrity reads, daemon operation audit reads and JSONL export, optional daemon control-plane bearer auth with single-token and scoped-registry modes, daemon resource access posture reads and revocation, daemon run orchestration, daemon resources/evidence projection reads with safe delivery and access audit history, daemon-backed final lifecycle submissions, and explicit accepted process proposal execution;
 - local Hono daemon API with in-memory defaults, optional control-plane bearer auth with single-token and scoped-registry modes, optional SQLite event ledger, run metadata, resource broker, resource access grant, and operation audit log persistence with retention limits, optional JSON event ledger, run metadata, and operation audit log persistence with retention limits, optional built Web static asset serving for local/pre-production shells, local/pre-production container packaging, safe runtime profile, deployment posture, ledger integrity, and resource access posture status, safe operation audit metadata with non-secret principal metadata, projection endpoints, mutation endpoints, session final lifecycle and projection endpoints, session resources projection endpoint, session-scoped resource delivery planning endpoint with safe ledger audit events, revocable and optionally HMAC-signed daemon resource access grants for allowed URL and hosted in-memory content deliveries, session process proposal lifecycle endpoints, run orchestration endpoints, explicit accepted process proposal execution, SSE, and WebGET status/context/resource/submission endpoints;
-- React/Vite Web UI with a default Discussion Room path for starting and continuing discussions, reading participant contributions, reviewing the current conclusion, disagreements, missing evidence, risks, and next actions, plus Advanced / Developer Mode for safe daemon runtime profile status, setup-plan summaries, deployment and resource access posture summaries, safe operation audit metadata, daemon-backed session catalog, session projections, run process proposal lifecycle, execution readiness, accepted-proposal execution controls, raw outcome material, session final lifecycle/projection pages, and session resources/evidence projection pages;
+- React/Vite Web UI with a default local deliberation-room path for starting and continuing discussions, reading participant contributions from you and configured AI/model roles, reviewing the current answer, still-unresolved points, what needs checking, risks, and next steps, plus Advanced / Developer Mode for safe daemon runtime profile status, setup-plan summaries, deployment and resource access posture summaries, safe operation audit metadata, daemon-backed session catalog, session projections, run process proposal lifecycle, execution readiness, accepted-proposal execution controls, raw outcome material, session final lifecycle/projection pages, and session resources/evidence projection pages;
 - participant adapter interface, fake/manual adapters, OpenAI-compatible adapter/profile, HTTP-template participant adapter/profile for sealed participant execution, package-level MCP-compatible tool participant adapter plus opt-in daemon MCP tool participant profile with execution policy controls, OpenAI-compatible extraction/review/finalization components, and experimental WebGET adapter;
 - Resource Broker and Delivery Planner support package integrated with daemon-local resource delivery planning and short-lived access grants for URL and hosted in-memory content delivery;
 - read-only adaptive process proposal suggestions and execution readiness for daemon runs, explicit ledger-backed process proposal lifecycle events exposed as challengeable `ProcessProposal` material, and operator-triggered execution of accepted proposals for supported daemon stages, including candidate repair proposal execution, evidence check execution that records reported evidence results, and final/omission audit execution against existing final candidate proposal events;

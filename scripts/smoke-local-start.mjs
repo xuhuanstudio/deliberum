@@ -57,7 +57,7 @@ try {
   page.setDefaultTimeout(30_000);
 
   await page.goto(`http://127.0.0.1:${port}/setup/models`, { waitUntil: "networkidle" });
-  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
+  await page.getByRole("heading", { name: "Connect AI" }).waitFor();
   await page.getByText("Local service connected").first().waitFor();
   await page.getByText("Configure OpenAI-compatible provider").waitFor();
   await page.getByText("Ready for demo discussions").waitFor();

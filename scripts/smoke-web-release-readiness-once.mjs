@@ -15,8 +15,8 @@ const releaseConfig = readReleaseSmokeConfig(releaseSmokeEnv);
 const discussionQuestion = [
   "Run a Deliberum release-readiness check for a normal local user.",
   "Assess whether the product loop is ready to configure a real model provider,",
-  "start a model-backed discussion, review disagreements, inspect missing evidence,",
-  "understand risks, read the current conclusion, and choose next recommended actions."
+  "start a discussion with AI, review unresolved points, inspect what needs checking,",
+  "understand risks, read the current answer, and choose next steps."
 ].join(" ");
 
 assertFile(daemonEntry);
@@ -102,7 +102,7 @@ console.log("Release readiness browser smoke checks passed.");
 
 async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.goto(`${webBaseUrl}/setup/models`, { waitUntil: "networkidle" });
-  await page.getByRole("heading", { name: "Setup / Models" }).waitFor();
+  await page.getByRole("heading", { name: "Connect AI" }).waitFor();
   await page.getByText("Local service connected").waitFor();
   await page.getByText("Configure OpenAI-compatible provider").waitFor();
   await page.getByText("Structured review compatibility").waitFor();
@@ -117,8 +117,8 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   if (!(await structuredReview.isChecked())) {
     await structuredReview.check();
   }
-  await page.getByRole("button", { name: "Save model setup" }).click();
-  await page.getByText("Model setup saved locally").waitFor();
+  await page.getByRole("button", { name: "Save AI setup" }).click();
+  await page.getByText("AI setup saved locally").waitFor();
   await page.getByRole("button", { name: "Check readiness" }).click();
   await page.getByText("Ready to verify").first().waitFor();
   await assertDefaultViewSafety(page, "after saving setup");
@@ -130,7 +130,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
         new URL(response.url()).pathname === "/runtime/setup/openai-compatible/verify",
       { timeout: releaseConfig.providerTimeoutMs }
     ),
-    page.getByRole("button", { name: "Verify connection" }).click()
+    page.getByRole("button", { name: "Test connection" }).click()
   ]);
   latestProviderVerificationDebug =
     await summarizeProviderVerificationResponse(verificationResponse);
@@ -156,18 +156,18 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByText("Ready for discussions").first().waitFor();
   await assertDefaultViewSafety(page, "after verifying setup");
 
-  await page.getByRole("link", { name: "Start model-backed discussion" }).first().click();
+  await page.getByRole("link", { name: "Start discussion with AI" }).first().click();
   await page.waitForURL(/\/runs\/new\?participants=model-backed$/);
-  await page.getByRole("heading", { name: "Start a discussion" }).waitFor();
-  await page.getByText("Model-backed discussion selected").waitFor();
-  await page.getByText("Ready to create a model-backed discussion").waitFor();
+  await page.getByRole("heading", { name: "New Discussion" }).waitFor();
+  await page.getByText("Discussion with AI selected").waitFor();
+  await page.getByText("Ready to create a deliberation room").waitFor();
   await selectPerspectiveDepth(page);
   await assertDefaultViewSafety(page, "start discussion");
 
   await page.getByLabel("Discussion question").fill(discussionQuestion);
   await page.getByRole("button", { name: "Create discussion" }).click();
   await page.getByText("Discussion room").waitFor();
-  await page.getByText("Model-backed discussion").first().waitFor();
+  await page.getByText("Discussion with AI").first().waitFor();
   await assertBriefDetailsCollapsed(page, "discussion room before continuation");
   await page
     .getByText(
@@ -196,27 +196,27 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByText("Room output summary", { exact: true }).click();
   await page.getByText("What the room has produced").waitFor();
   await page.getByText("Strongest current options").first().waitFor();
-  await page.getByText("Open disagreements").first().waitFor();
-  await page.getByText("Missing evidence").first().waitFor();
+  await page.getByText("Still unresolved").first().waitFor();
+  await page.getByText("Needs checking").first().waitFor();
   await page.getByText("Risks").first().waitFor();
-  await page.getByText("Current conclusion: Ready to review").waitFor();
-  await page.getByRole("heading", { name: "Next recommended actions", exact: true }).waitFor();
-  await page.getByRole("link", { name: "View current conclusion", exact: true }).first().waitFor();
-  await page.getByRole("link", { name: "Review disagreements", exact: true }).first().waitFor();
+  await page.getByText("Current answer: Ready to review").waitFor();
+  await page.getByRole("heading", { name: "Next steps", exact: true }).waitFor();
+  await page.getByRole("link", { name: "View current answer", exact: true }).first().waitFor();
+  await page.getByRole("link", { name: "Review unresolved points", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Check evidence", exact: true }).first().waitFor();
-  await page.getByRole("link", { name: "Update conclusion", exact: true }).first().waitFor();
+  await page.getByRole("link", { name: "Update answer", exact: true }).first().waitFor();
   await assertDefaultViewSafety(page, "discussion room after continuation", {
     allowModelGeneratedLowLevelLanguage: true
   });
 
-  await page.getByRole("link", { name: "View current conclusion", exact: true }).first().click();
+  await page.getByRole("link", { name: "View current answer", exact: true }).first().click();
   await page.waitForURL(/\/outcome$/);
-  await page.getByRole("heading", { name: "Current conclusion" }).first().waitFor();
-  await page.getByText("Open disagreements").first().waitFor();
-  await page.getByText("Missing evidence").first().waitFor();
+  await page.getByRole("heading", { name: "Current Answer" }).first().waitFor();
+  await page.getByText("Still unresolved").first().waitFor();
+  await page.getByText("Needs checking").first().waitFor();
   await page.getByText("Risks").first().waitFor();
-  await page.getByRole("heading", { name: "Next recommended actions", exact: true }).waitFor();
-  await assertDefaultViewSafety(page, "current conclusion", {
+  await page.getByRole("heading", { name: "Next steps", exact: true }).waitFor();
+  await assertDefaultViewSafety(page, "current answer", {
     allowModelGeneratedLowLevelLanguage: true
   });
 }
@@ -298,7 +298,7 @@ async function continueDiscussionUntilCompleted(page) {
     finalState = await waitForFirstVisible(page, [
       {
         label: "continued",
-        locator: page.getByText("Model-backed discussion continued")
+        locator: page.getByText("Discussion with AI continued")
       },
       {
         label: "paused",
@@ -423,16 +423,16 @@ async function assertContinuationRecoveryActions(page, label) {
   const recoveryRegion = page.getByRole("region", { name: "Discussion recovery options" });
 
   await recoveryRegion.waitFor();
-  await recoveryRegion.getByText("Check model setup", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Check AI setup", { exact: true }).waitFor();
   await recoveryRegion.getByText("Try Continue discussion again", { exact: true }).waitFor();
   await recoveryRegion
-    .getByText("Start a new model-backed discussion", { exact: true })
+    .getByText("Start a new discussion with AI", { exact: true })
     .waitFor();
 
-  await assertLinkHref(page, "Check model setup", "/setup/models", label);
+  await assertLinkHref(page, "Check AI setup", "/setup/models", label);
   await assertLinkHrefIncludes(
     page,
-    "Start a new model-backed discussion",
+    "Start a new discussion with AI",
     "participants=model-backed",
     label
   );
@@ -451,7 +451,7 @@ async function assertProviderVerificationRecoveryActions(page, label) {
       { exact: true }
     )
     .waitFor();
-  await recoveryRegion.getByText("Try Verify connection again", { exact: true }).waitFor();
+  await recoveryRegion.getByText("Try Test connection again", { exact: true }).waitFor();
   await recoveryRegion.getByText("Start demo discussion", { exact: true }).waitFor();
 
   await assertLinkHref(page, "Review setup fields", "#setup-provider-form", label);
