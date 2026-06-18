@@ -1,8 +1,10 @@
 # Deliberum v1.1.2 Release Notes
 
-Status: release notes for the `v1.1.2` source-checkout local-first patch
-release. Create the annotated `v1.1.2` tag only after this release notes commit
-passes GitHub CI on `main`.
+Status: published source-checkout local-first patch release.
+
+The annotated `v1.1.2` tag points to
+`6f154521571397c1207e5ed3fb4df24c3490ad0d` and was created after GitHub CI
+passed on `main`.
 
 Keep the existing `v1.0.0`, `v1.1.0`, and `v1.1.1` tags unchanged.
 
@@ -72,9 +74,17 @@ Release evidence before this release-notes batch:
 - GitHub CI run `27789087414` passed on `c19e38a` with `Validate` and
   `Local start (macos-latest)`.
 - current batch local verification added `smoke:local-bootstrap` to default CI
-  and passed `corepack pnpm run ci`.
+  and passed `corepack pnpm run ci`;
+- GitHub CI run `27789711225` passed on
+  `6f154521571397c1207e5ed3fb4df24c3490ad0d`;
+- the pushed `v1.1.2` tag passed a fresh source-checkout smoke covering
+  `sh scripts/start-local-product.sh --dry-run`, install, doctor, build,
+  `smoke:local-bootstrap`, `smoke:local-start`, and `smoke:web-product-loop`.
 
-This release-notes commit must also pass GitHub CI before `v1.1.2` is tagged.
+Post-release hardening on `main` also re-aligned the opt-in real-provider
+release-readiness smoke with the current Connect AI, New Discussion, and
+chat-style Discussion Room labels. The focused/default path and Broader review
+path then passed without writing provider values or raw model output to docs.
 
 ## Upgrade Notes
 

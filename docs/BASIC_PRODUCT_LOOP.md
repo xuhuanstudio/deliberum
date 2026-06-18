@@ -308,6 +308,61 @@ Limit:
 - This helper does not install system tools, request administrator access, add
   Windows/WSL2 support, or provide a packaged installer.
 
+### 2026-06-19 Real-Provider Release Smoke Alignment
+
+Scope: rows 5 through 16 on the opt-in real-provider release-readiness path,
+with focused evidence for the current Connect AI, New Discussion, and
+chat-style Discussion Room UI.
+
+Commands:
+
+- `node --check scripts/smoke-web-release-readiness-once.mjs`
+- `corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Re-ran the Web-managed release-readiness walkthrough using the
+   repository-local provider setup.
+2. The provider verified successfully through Connect AI.
+3. Updated the smoke to follow the current normal-user labels:
+   `Needs test`, scoped `Test connection`, `AI participants ready`, the
+   visible discussion-depth copy, `Discussion timeline`, `Conversation
+   transcript`, `Decision workspace`, `Next action`, and `Review current
+   answer`.
+4. Removed stale release-smoke assumptions about the old report-style
+   Discussion Room details surfaces.
+5. Verified the focused/default two-perspective path reached readable
+   participant messages, strongest options, still-unresolved items, needs
+   checking, risks, the current answer, and next actions.
+6. Verified the Broader review three-perspective path reached the same
+   release-readiness completion criteria and included the additional viewpoint
+   in the readable transcript.
+
+Result:
+
+- Passed. The opt-in real-provider release-readiness smoke now matches the
+  current human-first Web product language and can verify both focused/default
+  and Broader review paths.
+- One focused run briefly reproduced a real-provider
+  `final_candidate_validation_failed` stop, then the normal retry path could be
+  exercised after the smoke's stale retry selector was fixed. Later focused and
+  Broader runs completed with finalization and outcome compilation.
+
+Safety:
+
+- Provider API key, base URL, model value, raw provider response, and raw model
+  output were not written into this document.
+- The smoke continued to scan default setup, start, room, retry, and outcome
+  views for secrets, provider config ids, env var names, raw JSON, and
+  low-level ids.
+
+Limit:
+
+- This strengthens release-readiness evidence for the current repository-local
+  provider setup. It is not broad provider compatibility, quota resilience, or
+  a packaged installer.
+
 ### 2026-06-19 v1.1 Fresh Clone Local Product Smoke
 
 Scope: rows 1 through 4 on the source-checkout startup path, with supporting

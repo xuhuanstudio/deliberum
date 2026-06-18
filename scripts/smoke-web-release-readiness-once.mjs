@@ -120,7 +120,9 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByRole("button", { name: "Save AI setup" }).click();
   await page.getByText("AI setup saved locally").waitFor();
   await page.getByRole("button", { name: "Check readiness" }).click();
-  await page.getByText("Ready to verify").first().waitFor();
+  await page.getByText("Needs test").first().waitFor();
+  const providerSetupForm = page.locator("#setup-provider-form");
+  await providerSetupForm.getByRole("button", { name: "Test connection" }).waitFor();
   await assertDefaultViewSafety(page, "after saving setup");
 
   const [verificationResponse] = await Promise.all([
@@ -130,7 +132,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
         new URL(response.url()).pathname === "/runtime/setup/openai-compatible/verify",
       { timeout: releaseConfig.providerTimeoutMs }
     ),
-    page.getByRole("button", { name: "Test connection" }).click()
+    providerSetupForm.getByRole("button", { name: "Test connection" }).click()
   ]);
   latestProviderVerificationDebug =
     await summarizeProviderVerificationResponse(verificationResponse);
@@ -159,8 +161,8 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByRole("link", { name: "Start discussion with AI" }).first().click();
   await page.waitForURL(/\/runs\/new\?participants=model-backed$/);
   await page.getByRole("heading", { name: "New Discussion" }).waitFor();
+  await page.getByText("AI participants ready").waitFor();
   await page.getByText("Discussion with AI selected").waitFor();
-  await page.getByText("Ready to create a deliberation room").waitFor();
   await selectPerspectiveDepth(page);
   await assertDefaultViewSafety(page, "start discussion");
 
@@ -168,40 +170,21 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByRole("button", { name: "Create discussion" }).click();
   await page.getByText("Discussion room").waitFor();
   await page.getByText("Discussion with AI").first().waitFor();
-  await assertBriefDetailsCollapsed(page, "discussion room before continuation");
-  await page
-    .getByText(
-      releaseConfig.perspectiveCount === 3
-        ? "Use three independent model-backed perspectives from the local service."
-        : "Use two independent model-backed perspectives from the local service."
-    )
-    .first()
-    .waitFor();
-  await page.getByRole("button", { name: "Send message and continue" }).waitFor();
+  await assertDiscussionRoomChatSurface(page, "discussion room before continuation");
   await assertDefaultViewSafety(page, "discussion room before continuation");
 
   await continueDiscussionUntilCompleted(page);
 
-  await openRoomDetails(page, "discussion room after continuation");
-  await page.getByText("Room progress and stages", { exact: true }).click();
-  await page.getByText("Participant first responses").waitFor();
-  if (releaseConfig.perspectiveCount === 3) {
-    await page.getByText("Additional viewpoint").first().waitFor();
-  }
-  const roomOutputSummary = page.locator("details.du-room-outputs-section");
-  if (await roomOutputSummary.evaluate((element) => element.open)) {
-    throw new Error("Discussion room output summary should be collapsed by default.");
-  }
-  await openRoomDetails(page, "discussion room output summary");
-  await page.getByText("Room output summary", { exact: true }).click();
-  await page.getByText("What the room has produced").waitFor();
+  await assertSuccessfulRoomUpdate(page, "discussion room after continuation");
+  const roomFocus = page.locator(".du-room-focus");
+  await roomFocus.getByText("Decision workspace", { exact: true }).waitFor();
   await page.getByText("Strongest current options").first().waitFor();
-  await page.getByText("Still unresolved").first().waitFor();
-  await page.getByText("Needs checking").first().waitFor();
-  await page.getByText("Risks").first().waitFor();
-  await page.getByText("Current answer: Ready to review").waitFor();
-  await page.getByRole("heading", { name: "Next steps", exact: true }).waitFor();
-  await page.getByRole("link", { name: "View current answer", exact: true }).first().waitFor();
+  await roomFocus.getByText("Still unresolved", { exact: true }).waitFor();
+  await roomFocus.getByText("Needs checking", { exact: true }).waitFor();
+  await roomFocus.getByText("Risks", { exact: true }).waitFor();
+  await roomFocus.getByText("Current answer: Ready to review").waitFor();
+  await roomFocus.getByText("Next action", { exact: true }).waitFor();
+  await page.getByRole("link", { name: "Review current answer", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Review unresolved points", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Check evidence", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Update answer", exact: true }).first().waitFor();
@@ -209,7 +192,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
     allowModelGeneratedLowLevelLanguage: true
   });
 
-  await page.getByRole("link", { name: "View current answer", exact: true }).first().click();
+  await page.getByRole("link", { name: "Review current answer", exact: true }).first().click();
   await page.waitForURL(/\/outcome$/);
   await page.getByRole("heading", { name: "Current Answer" }).first().waitFor();
   await page.getByText("Still unresolved").first().waitFor();
@@ -228,7 +211,9 @@ async function selectPerspectiveDepth(page) {
     if (!(await focusedReview.isChecked())) {
       await focusedReview.check();
     }
-    await page.getByText("2 model perspectives").waitFor();
+    await page
+      .getByText("Two independent model perspectives keep the discussion concise.")
+      .waitFor();
     return;
   }
 
@@ -237,46 +222,75 @@ async function selectPerspectiveDepth(page) {
   if (!(await broaderReview.isChecked())) {
     await broaderReview.check();
   }
-  await page.getByText("Additional viewpoint").first().waitFor();
-  await page.getByText("3 model perspectives").waitFor();
   await page
-    .getByText("First viewpoint, Alternative viewpoint, and Additional viewpoint will answer independently.")
+    .getByText("Three independent model perspectives give the room more comparison material.")
     .waitFor();
 }
 
-async function assertBriefDetailsCollapsed(page, label) {
-  const roomDetails = page.locator("details.du-room-secondary-details");
-  const briefDetails = page.locator(".du-room-brief");
-
-  await roomDetails.getByText("Room details", { exact: true }).waitFor();
-  await briefDetails.waitFor({ state: "attached" });
-
-  const roomDetailsOpen = await roomDetails.evaluate((element) => element.open === true);
-
-  if (roomDetailsOpen) {
-    throw new Error(`${label} should keep room details collapsed by default.`);
-  }
-
-  const open = await briefDetails.evaluate((element) => element.open === true);
-
-  if (open) {
-    throw new Error(`${label} should keep discussion brief details collapsed by default.`);
+async function assertDiscussionRoomChatSurface(page, label) {
+  try {
+    await page.getByRole("region", { name: "Discussion room overview" }).waitFor();
+    await page.locator("[aria-label='Discussion timeline']").waitFor();
+    await page.getByRole("region", { name: "Conversation transcript" }).waitFor();
+    await page.getByText("Who is in this discussion", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "Send message and continue" }).waitFor();
+    await assertRoomReportDetailsHidden(page, label);
+  } catch (error) {
+    throw new Error(`${label} did not render the discussion room as a readable chat surface.`, {
+      cause: error
+    });
   }
 }
 
-async function openRoomDetails(page, label) {
-  const details = page.locator("details.du-room-secondary-details");
+async function assertSuccessfulRoomUpdate(page, label) {
+  const roomUpdate = page.locator("#latest-discussion-update.du-room-update-message");
 
   try {
-    await details.waitFor({ state: "attached" });
-
-    if (!(await details.evaluate((element) => element.open))) {
-      await details.getByText("Room details", { exact: true }).click();
+    await roomUpdate.waitFor();
+    await roomUpdate.getByText("Room update", { exact: true }).waitFor();
+    await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
+    await roomUpdate.getByRole("region", { name: "New discussion round" }).waitFor();
+    await roomUpdate.getByText("First viewpoint", { exact: true }).first().waitFor();
+    await roomUpdate.getByText("Alternative viewpoint", { exact: true }).first().waitFor();
+    if (releaseConfig.perspectiveCount === 3) {
+      const transcriptText = await page
+        .getByRole("region", { name: "Conversation transcript" })
+        .innerText();
+      if (!transcriptText.includes("Additional viewpoint")) {
+        throw new Error("Broader review transcript did not include Additional viewpoint.");
+      }
     }
+    await assertRoomReportDetailsHidden(page, label);
   } catch (error) {
-    throw new Error(`${label} could not open room details.`, {
+    throw new Error(`${label} did not show the successful continuation as readable room messages.`, {
       cause: error
     });
+  }
+}
+
+async function assertRoomReportDetailsHidden(page, label) {
+  const reportDetailsCount = await page.locator("details.du-room-secondary-details").count();
+  const briefDetailsCount = await page.locator(".du-room-brief").count();
+  const outputSummaryCount = await page.locator("details.du-room-outputs-section").count();
+  const roomDetailsTextCount = await page.getByText("Room details", { exact: true }).count();
+  const outputSummaryTextCount = await page.getByText("Room output summary", { exact: true }).count();
+
+  if (
+    reportDetailsCount !== 0 ||
+    briefDetailsCount !== 0 ||
+    outputSummaryCount !== 0 ||
+    roomDetailsTextCount !== 0 ||
+    outputSummaryTextCount !== 0
+  ) {
+    throw new Error(
+      `${label} should not show report-style room details by default, got ${JSON.stringify({
+        reportDetailsCount,
+        briefDetailsCount,
+        outputSummaryCount,
+        roomDetailsTextCount,
+        outputSummaryTextCount
+      })}.`
+    );
   }
 }
 
@@ -323,8 +337,10 @@ async function continueDiscussionUntilCompleted(page) {
 
     if (attempt < releaseConfig.continueAttempts) {
       await page.reload({ waitUntil: "networkidle" });
-      await page.getByRole("heading", { name: "Discussion room" }).waitFor();
-      await page.getByRole("button", { name: "Send message and continue" }).waitFor();
+      await assertDiscussionRoomChatSurface(
+        page,
+        `discussion room before continuation retry ${attempt + 1}`
+      );
       await assertDefaultViewSafety(page, `discussion room before continuation retry ${attempt + 1}`, {
         allowModelGeneratedLowLevelLanguage: true
       });
