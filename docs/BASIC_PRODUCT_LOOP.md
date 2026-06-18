@@ -37,11 +37,11 @@ test passed.
 
 ## Current Matrix
 
-Updated: 2026-06-16.
+Updated: 2026-06-19.
 
 | # | Product loop step | Current status | Current evidence | Highest-priority gap |
 | --- | --- | --- | --- | --- |
-| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:3877/` through `corepack pnpm start:local`, includes a local prerequisite check for Node.js, Corepack, and pnpm before dependency installation, and now includes normal-user troubleshooting for prerequisite, install/build, missing built Web assets, busy local port, local-service-unavailable, provider verification, and paused real-provider discussion failures. Web tests cover the shell and landing readiness states. `smoke:local-start` verifies the single-process local start script serves the built Web shell from the daemon. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. | Keep covered; packaging and installer work can improve first-run convenience later. |
+| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:3877/` through `corepack pnpm start:local`, includes a local prerequisite check for Node.js, Corepack, and pnpm before dependency installation, and now includes normal-user troubleshooting for prerequisite, install/build, missing built Web assets, busy local port, local-service-unavailable, provider verification, and paused real-provider discussion failures. Web tests cover the shell and landing readiness states. `smoke:local-start` verifies the single-process local start script serves the built Web shell from the daemon. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. A 2026-06-19 fresh clone of the pushed `v1.1.0` tag passed the documented prerequisite, install, build, local-start, and browser product-loop smoke path. | Keep covered; packaging and installer work can improve first-run convenience later. |
 | 2 | Understand within 30 seconds that Deliberum is a multi-perspective deliberation product. | `verified` | README and default Web copy describe the human-first product. The landing page now leads with `Multi-perspective deliberation for better decisions`. `smoke:web-entry` verifies desktop and mobile first viewports include Deliberum, multi-perspective deliberation, independent perspectives, strongest options, and reviewable conclusion language. | Keep covered; future visual design work should preserve this first-viewport product signal. |
 | 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
 | 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show `corepack pnpm build && corepack pnpm start:local` as the local start path, and README troubleshooting explains keeping the `start:local` terminal running, opening the printed local URL, and using Check again in Setup / Models after the service responds. `smoke:local-start` verifies that script starts a daemon-served Web shell. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future installer work may simplify dependency installation, but the current local product start path is proven. |
@@ -104,14 +104,15 @@ Product Loop evidence for the current provider path, not as broad provider
 compatibility or production-grade release readiness.
 
 The current convergence target has moved from Basic Product Loop completion to
-the v1.0 Production Readiness Matrix. Provider stability and recovery gates are
-now closed for the current supported scope, model/participant management is
-closed for one Web-managed OpenAI-compatible provider, and storage recovery is
-covered by `smoke:storage-recovery` plus `docs/STORAGE_RECOVERY.md`.
+release-candidate hardening: source-checkout startup, external-user docs,
+provider stability, recovery paths, and packaging gaps. Provider stability and
+recovery gates are closed for the current supported scope, model/participant
+management is closed for one Web-managed OpenAI-compatible provider, and storage
+recovery is covered by `smoke:storage-recovery` plus `docs/STORAGE_RECOVERY.md`.
 
-Use [v1.0 Production Readiness Matrix](V1_0_PRODUCTION_READINESS_MATRIX.md) for
-the next incomplete production gate. Do not use this product-loop matrix to
-justify new runtime or Web polish after rows 1 through 16 are already verified.
+Use the release-readiness docs and v1 production-readiness history for the next
+incomplete release gate. Do not use this product-loop matrix to justify new
+runtime or Web polish after rows 1 through 16 are already verified.
 
 Release-readiness walkthrough requirements:
 
@@ -204,6 +205,50 @@ the release-readiness path aligned with what a normal local user can do in Web
 instead of requiring hidden environment variables.
 
 ## Recent Automated Evidence
+
+### 2026-06-19 v1.1 Fresh Clone Local Product Smoke
+
+Scope: rows 1 through 4 on the source-checkout startup path, with supporting
+evidence for rows 5 through 16 on the deterministic browser product loop.
+
+Commands:
+
+- `git clone --branch v1.1.0 --depth 1 https://github.com/xuhuanstudio/deliberum.git <temp-dir>/repo`
+- `node scripts/check-local-prerequisites.mjs`
+- `corepack pnpm install`
+- `corepack pnpm doctor:local`
+- `corepack pnpm build`
+- `DELIBERUM_PORT=3891 corepack pnpm start:local`
+- `corepack pnpm smoke:local-start`
+- `corepack pnpm smoke:web-product-loop`
+
+Path covered:
+
+1. Cloned the pushed `v1.1.0` tag into a new temporary directory instead of
+   reusing the developer working tree.
+2. Confirmed the prerequisite check reports Node.js, Corepack, and pnpm
+   readiness before dependency installation.
+3. Installed dependencies, ran the local doctor check, and built all packages
+   plus the Web shell from the fresh checkout.
+4. Started the single-process local Web service on a non-default local port and
+   confirmed `/health` returned the daemon health payload.
+5. Confirmed browser-style navigation to `/setup/models` returns the built Web
+   shell.
+6. Ran the local-start smoke and the browser product-loop smoke from the fresh
+   tag checkout.
+
+Result:
+
+- Passed. The `v1.1.0` source-checkout tag can be cloned, installed, built,
+  started, and browser-smoked through the documented local product path.
+- A plain `curl` request without a browser `Accept: text/html` header can return
+  an API-style 404 for client-side Web routes. Browser navigation remains the
+  supported Web path and returned the Web shell as expected.
+
+Limit:
+
+- This was a fresh source-checkout smoke on macOS, not a packaged installer,
+  Windows/WSL2 verification, or real external-provider release-readiness run.
 
 ### 2026-06-15 Local Product Start Smoke
 

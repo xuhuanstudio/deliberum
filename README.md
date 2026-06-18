@@ -96,14 +96,14 @@ Prerequisites:
 - Corepack;
 - pnpm 11 through Corepack.
 
-Supported v1.0 source-checkout platforms:
+Supported v1.1 source-checkout platforms:
 
 - macOS with Node.js 24 or newer and Corepack-managed pnpm 11;
 - Ubuntu Linux with Node.js 24 or newer and Corepack-managed pnpm 11.
 
 GitHub CI verifies the local install/build/start path on `macos-latest` and
 `ubuntu-latest`. Windows and WSL2 may work with the same Node.js and pnpm
-requirements, but they are not v1.0 supported platforms until the local-start
+requirements, but they are not v1.1 supported platforms until the local-start
 path is verified in CI.
 
 Check your local setup before installing dependencies:

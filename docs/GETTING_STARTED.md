@@ -27,7 +27,7 @@ Developer Mode.
 - An OpenAI-compatible provider API key, base URL, and model if you want a real
   discussion with AI participants.
 
-Windows and WSL2 may work, but they are not v1.0 supported platforms until the
+Windows and WSL2 may work, but they are not v1.1 supported platforms until the
 local-start path is verified in CI.
 
 ## 1. Check Local Tools
@@ -183,7 +183,7 @@ docker run --rm \
   deliberum:local
 ```
 
-Deliberum v1.0 is not a public hosted service and does not claim production
+Deliberum v1.1 is not a public hosted service and does not claim production
 multi-user authorization, production identity, or distributed production
 database support. For trusted-team or remote pre-production hardening, see
 [Deployment](DEPLOYMENT.md).

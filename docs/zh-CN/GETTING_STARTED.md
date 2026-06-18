@@ -18,7 +18,7 @@ Deliberum 是一个本地优先的多视角审议产品。你输入一个问题�
 - 通过 Corepack 使用 pnpm 11。
 - 如果要运行真实模型讨论，需要一个 OpenAI-compatible provider 的 API key、base URL 和 model。
 
-Windows 和 WSL2 可能可以运行，但在本地启动路径进入 CI 验证前，不属于 v1.0 支持平台。
+Windows 和 WSL2 可能可以运行，但在本地启动路径进入 CI 验证前，不属于 v1.1 支持平台。
 
 ## 1. 检查本地工具
 
@@ -158,7 +158,7 @@ docker run --rm \
   deliberum:local
 ```
 
-Deliberum v1.0 不是公共托管服务，也不声明已经具备生产级多人权限、生产身份系统或分布式生产数据库支持。可信团队或远程预生产部署请看英文 [Deployment](../DEPLOYMENT.md)。
+Deliberum v1.1 不是公共托管服务，也不声明已经具备生产级多人权限、生产身份系统或分布式生产数据库支持。可信团队或远程预生产部署请看英文 [Deployment](../DEPLOYMENT.md)。
 
 ## 常见问题
 

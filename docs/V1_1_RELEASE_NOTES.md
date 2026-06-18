@@ -1,11 +1,13 @@
 # Deliberum v1.1 Release Notes
 
 Status: release notes for the `v1.1.0` source-checkout local-first release.
+The annotated `v1.1.0` tag points to
+`e5aa73911a7529393ecedc7af2de711628f39488`.
 
 `v1.0.0` already exists on commit
 `6f7fdec11219a9f4772c50b8cc8a13949fe3346a`. Do not move or recreate that tag.
-The changes after `v1.0.0` include user-facing Web additions, so the next
-release from current `main` should be `v1.1.0`, not a patch-only tag.
+The changes after `v1.0.0` include user-facing Web additions, so this release is
+`v1.1.0`, not a patch-only tag.
 
 ## Release Focus
 
@@ -54,11 +56,16 @@ Supported source-checkout platforms remain:
 
 ## Release Evidence
 
-Pre-tag release evidence:
+Release evidence:
 
 - local `corepack pnpm run ci`: passed before these notes were prepared;
 - GitHub CI for commit `9220234b`: passed;
 - GitHub CI run: `27784256893`;
+- GitHub CI for the `v1.1.0` tag target commit `e5aa739`: passed;
+- GitHub CI run for the tag target: `27784918909`;
+- Post-tag fresh clone smoke of `v1.1.0`: prerequisite check, install,
+  doctor, build, local start, `smoke:local-start`, and
+  `smoke:web-product-loop` passed on macOS;
 - CI jobs: Validate, Local start on Ubuntu Linux, and Local start on macOS;
 - default Web smoke coverage includes entry, boundary, resilience, and product
   loop browser paths;
@@ -66,8 +73,8 @@ Pre-tag release evidence:
   path;
 - storage recovery smoke remains part of default CI.
 
-Before tagging `v1.1.0`, the commit that adds these release notes must also pass
-GitHub CI.
+The `v1.1.0` tag was created only after the release-notes commit passed GitHub
+CI on `main`.
 
 ## Upgrade Notes
 
@@ -99,7 +106,7 @@ v1.1 does not add:
 
 Those remain post-v1.1 work unless separately scoped and verified.
 
-## Tag Guidance
+## Tag Status
 
-Create `v1.1.0` only after the release-notes commit is pushed and GitHub CI is
-green. Keep `v1.0.0` unchanged.
+The `v1.1.0` tag has been created and pushed. Keep the existing `v1.0.0` tag
+unchanged.
