@@ -199,6 +199,17 @@ type DiscussionParticipantLineupItem = {
   detailValues?: Record<string, string>;
   tone: "ok" | "warning" | "neutral";
 };
+type DiscussionRoomParticipantRosterItem = {
+  name: string;
+  role: string;
+  source: string;
+  sourceValues?: Record<string, string>;
+  status: string;
+  detail: string;
+  detailValues?: Record<string, string>;
+  tone: "ok" | "warning" | "neutral";
+  kind: "human" | "ai";
+};
 type DiscussionNextStepView = {
   title: string;
   detail: string;
@@ -3026,6 +3037,8 @@ function StartRunForm({
   const [startRequestText, setStartRequestText] = useState(recommendedStartRequestText);
   const [startFeedback, setStartFeedback] = useState<DiscussionStartFeedback | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
+  const [roomMessageText, setRoomMessageText] = useState("");
+  const [latestRoomMessageText, setLatestRoomMessageText] = useState<string | undefined>();
   const [latestContinuationRound, setLatestContinuationRound] = useState(
     continuationRoundBeforeUpdate
   );
@@ -3036,6 +3049,9 @@ function StartRunForm({
         getStringRecordValue(getRecordValue(result, "run"), "sessionId") ?? sessionId;
 
       await invalidateRunWorkspaceQueries(queryClient, runId, resultSessionId);
+      if (variant === "room-composer") {
+        setRoomMessageText("");
+      }
     }
   });
 
@@ -3098,8 +3114,13 @@ function StartRunForm({
   }
 
   function startRecommendedPipeline(feedback: DiscussionStartFeedback) {
+    const visibleRoomMessage = isRoomComposer
+      ? normalizeRoomComposerMessage(roomMessageText)
+      : undefined;
+
     setStartFeedback(feedback);
     setInputError(null);
+    setLatestRoomMessageText(visibleRoomMessage);
     setLatestContinuationRound(continuationRoundBeforeUpdate);
     const startRequest = prepareUserFacingContinuationStartRequest(
       continuationSetup.startRequest,
@@ -3124,13 +3145,13 @@ function StartRunForm({
   const isAdvancedStartRequest = variant === "advanced-start-request";
   const usesRoomUpdatePresentation =
     isRoomComposer || (isAdvancedStartRequest && Boolean(sessionId));
-  const roomComposerTitle = "Reply to the room";
+  const roomComposerTitle = "Send message to the room";
   const roomComposerDetail = continuationView.reviewReady
     ? "Choose a quick reply to review or move the discussion forward."
     : hasCompletedDiscussionRoundMaterial(run)
       ? "Choose Continue discussion to let participants respond to the latest room state."
       : "Choose Continue discussion to let participants respond.";
-  const primaryActionLabel = isRoomComposer ? "Continue discussion" : continuationView.primaryLabel;
+  const primaryActionLabel = isRoomComposer ? "Send message and continue" : continuationView.primaryLabel;
   const roomPrimaryActionDetail = continuationSetup.primaryActionDetail?.includes(
     "first responses only"
   )
@@ -3174,6 +3195,7 @@ function StartRunForm({
           feedback={startFeedback}
           reviewReadyBeforeUpdate={continuationView.reviewReady}
           continuationRound={latestContinuationRound}
+          userInstruction={latestRoomMessageText}
           presentation={usesRoomUpdatePresentation ? "room-message" : "panel"}
         />
       </div>
@@ -3278,6 +3300,23 @@ function StartRunForm({
             </>
           )}
         </div>
+        {isRoomComposer ? (
+          <div className="du-room-message-input">
+            <label htmlFor="room-message-text">{t("Send message to the room")}</label>
+            <textarea
+              id="room-message-text"
+              value={roomMessageText}
+              onChange={(event) => setRoomMessageText(event.currentTarget.value)}
+              placeholder={t("Ask participants to respond to a concern, evidence gap, or next step.")}
+              rows={3}
+            />
+            <p>
+              {t(
+                "Your message appears as your next visible turn for this update. Standalone human-message history is not stored yet."
+              )}
+            </p>
+          </div>
+        ) : null}
         <div className="du-discussion-action-list">
           <button
             type="button"
@@ -4022,6 +4061,7 @@ function StartResult({
   feedback,
   reviewReadyBeforeUpdate,
   continuationRound = 1,
+  userInstruction,
   presentation = "panel"
 }: {
   result: unknown;
@@ -4029,6 +4069,7 @@ function StartResult({
   feedback?: DiscussionStartFeedback | null;
   reviewReadyBeforeUpdate: boolean;
   continuationRound?: number;
+  userInstruction?: string;
   presentation?: "panel" | "room-message";
 }) {
   const { t } = useI18n();
@@ -4044,7 +4085,8 @@ function StartResult({
         result,
         stages,
         stopped === true,
-        continuationRound
+        continuationRound,
+        userInstruction
       )
     : [];
   const resultTitleKey =
@@ -4195,13 +4237,14 @@ function createStartResultConversationRoundActivities(
   result: unknown,
   stages: Array<Record<string, unknown>>,
   stopped: boolean,
-  round: number
+  round: number,
+  userInstruction?: string
 ): RoomActivityItem[] {
   const run = getRecordValue(result, "run");
   const topicLanguage = getRoomTopicLanguage(run);
   const perspectiveSpeakers = getStartResultPerspectiveSpeakers(run);
   const activities: RoomActivityItem[] = [
-    createUserContinuationTurnActivity(topicLanguage, Math.max(1, round))
+    createUserContinuationTurnActivity(topicLanguage, Math.max(1, round), userInstruction)
   ];
 
   for (const stage of stages) {
@@ -4221,14 +4264,18 @@ function createStartResultConversationRoundActivities(
 
 function createUserContinuationTurnActivity(
   topicLanguage: RoomTopicLanguage,
-  round: number
+  round: number,
+  userInstruction?: string
 ): RoomActivityItem {
+  const normalizedInstruction = normalizeRoomComposerMessage(userInstruction);
+
   return {
     speaker: "You",
     title: "Continue discussion requested",
-    action: "Asked the room to continue",
-    detail:
-      round === 1
+    action: normalizedInstruction ? "Sent a message to the room" : "Asked the room to continue",
+    detail: normalizedInstruction
+      ? normalizedInstruction
+      : round === 1
         ? localizeTopicLanguageDetail(
             topicLanguage,
             "The room continued from your brief before participants responded.",
@@ -4243,6 +4290,12 @@ function createUserContinuationTurnActivity(
     phase: "first-responses",
     sourceType: "user_continuation_requested"
   };
+}
+
+function normalizeRoomComposerMessage(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
 }
 
 function createStartResultStageConversationActivities(
@@ -4959,6 +5012,7 @@ function RunQualityOverview({
               reviewReady={continuationView.reviewReady}
               hasConversationMessages={hasVisibleRoomConversation(readableRoomActivities)}
             />
+            <DiscussionRoomParticipantRoster run={run} />
             <DiscussionRoomTimeline
               runId={runId}
               reviewReady={continuationView.reviewReady}
@@ -5044,6 +5098,59 @@ function DiscussionRoomHeader({
             </a>
           )}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function DiscussionRoomParticipantRoster({ run }: { run: unknown }) {
+  const { t } = useI18n();
+  const roster = buildDiscussionRoomParticipantRoster(run);
+
+  return (
+    <section className="du-room-roster" aria-label={t("Room participants")}>
+      <div className="du-room-roster-heading">
+        <div>
+          <p className="du-kicker">{t("Participants")}</p>
+          <h5>{t("Who is in this discussion")}</h5>
+        </div>
+        <p>
+          {t(
+            "This lineup is fixed for the current discussion. Use Setup / Models before starting a new discussion to change model assignments."
+          )}
+        </p>
+      </div>
+      <div className="du-room-roster-grid">
+        {roster.map((item) => (
+          <article
+            className={`du-room-roster-card du-room-roster-${item.kind} du-room-roster-${item.tone}`}
+            key={`${item.kind}:${item.name}:${item.role}`}
+          >
+            <span className="du-room-roster-avatar" aria-hidden="true">
+              {formatSpeakerInitials(t(item.name))}
+            </span>
+            <div>
+              <div className="du-room-roster-card-header">
+                <strong>{t(item.name)}</strong>
+                <span>{t(item.status)}</span>
+              </div>
+              <p className="du-room-roster-role">{t(item.role)}</p>
+              <p className="du-room-roster-source">{t(item.source, item.sourceValues)}</p>
+              <small>{t(item.detail, item.detailValues)}</small>
+            </div>
+          </article>
+        ))}
+      </div>
+      <div className="du-room-roster-boundary">
+        <strong>{t("AI participant editing")}</strong>
+        <span>
+          {t(
+            "Adding or removing AI participants is not available inside an existing discussion yet."
+          )}
+        </span>
+        <Link className="du-secondary-link" to="/setup/models">
+          {t("Manage models")}
+        </Link>
       </div>
     </section>
   );
@@ -5788,6 +5895,249 @@ function hasVisibleRoomConversation(activities: RoomActivityItem[]): boolean {
       !isUserSpeaker(activity.speaker) &&
       !isRedactedContributionActivity(activity)
   );
+}
+
+function buildDiscussionRoomParticipantRoster(run: unknown): DiscussionRoomParticipantRosterItem[] {
+  const plan = getRecordValue(run, "plan");
+  const participants = asArray(getRecordValue(plan, "participants"));
+  const providerConfigs = asArray(getRecordValue(plan, "providerConfigs"));
+  const hasProviderBackedSource = hasProviderBackedDiscussionSource(run);
+  const hasLocalPresetSource = participants.some((participant) =>
+    isLocalPresetAdapterId(getStringRecordValue(participant, "adapterId"))
+  );
+  const roster: DiscussionRoomParticipantRosterItem[] = [
+    {
+      name: "You",
+      role: "Human participant",
+      source: "Room composer",
+      status: "In room",
+      detail:
+        "Send a follow-up instruction from the composer. Standalone human-message history is not stored yet.",
+      tone: "ok",
+      kind: "human"
+    }
+  ];
+
+  for (const participant of participants) {
+    roster.push(createParticipantRosterItem(participant, providerConfigs));
+  }
+
+  roster.push(
+    ...createReviewRoleRosterItems({
+      providerConfigs,
+      hasProviderBackedSource,
+      hasLocalPresetSource
+    })
+  );
+
+  return dedupeDiscussionRoomParticipantRoster(roster);
+}
+
+function createParticipantRosterItem(
+  participant: unknown,
+  providerConfigs: unknown[]
+): DiscussionRoomParticipantRosterItem {
+  const name = getReadableParticipantName(participant);
+  const providerConfig = findParticipantProviderConfig(participant, providerConfigs);
+  const source = describeParticipantRosterSource(participant, providerConfig);
+  const needsSetup =
+    Boolean(getStringRecordValue(participant, "providerConfigId")) && !providerConfig;
+
+  return {
+    name,
+    role: getParticipantRosterRole(name),
+    source: source.label,
+    sourceValues: source.values,
+    status: needsSetup ? "Needs setup" : "Ready",
+    detail: needsSetup
+      ? "This role references provider setup that Web cannot confirm for this discussion."
+      : "This AI participant can respond when the room continues.",
+    tone: needsSetup ? "warning" : "ok",
+    kind: "ai"
+  };
+}
+
+function createReviewRoleRosterItems({
+  providerConfigs,
+  hasProviderBackedSource,
+  hasLocalPresetSource
+}: {
+  providerConfigs: unknown[];
+  hasProviderBackedSource: boolean;
+  hasLocalPresetSource: boolean;
+}): DiscussionRoomParticipantRosterItem[] {
+  const reviewSource = hasProviderBackedSource
+    ? describeProviderRosterSource(findReviewProviderConfig(providerConfigs))
+    : hasLocalPresetSource
+      ? { label: "Built-in demo review role" }
+      : { label: "Needs model setup" };
+  const ready = hasProviderBackedSource || hasLocalPresetSource;
+  const status = ready ? "Ready" : "Needs setup";
+  const detail = ready
+    ? "This role joins after first responses to keep the discussion reviewable."
+    : "Configure a model provider before this role can review a real discussion.";
+  const tone = ready ? "ok" : "warning";
+
+  return [
+    {
+      name: "Reviewer",
+      role: "Open disagreements",
+      source: reviewSource.label,
+      sourceValues: reviewSource.values,
+      status,
+      detail,
+      tone,
+      kind: "ai"
+    },
+    {
+      name: "Evidence checker",
+      role: "Evidence and verification",
+      source: reviewSource.label,
+      sourceValues: reviewSource.values,
+      status,
+      detail,
+      tone,
+      kind: "ai"
+    },
+    {
+      name: "Risk reviewer",
+      role: "Risk review",
+      source: reviewSource.label,
+      sourceValues: reviewSource.values,
+      status,
+      detail,
+      tone,
+      kind: "ai"
+    },
+    {
+      name: "Conclusion writer",
+      role: "Current conclusion",
+      source: reviewSource.label,
+      sourceValues: reviewSource.values,
+      status,
+      detail,
+      tone,
+      kind: "ai"
+    }
+  ];
+}
+
+function getReadableParticipantName(participant: unknown): string {
+  const id = getStringRecordValue(participant, "id");
+  const displayName = getFirstStringRecordValue(participant, ["displayName", "name", "label"]);
+
+  return (
+    getUserFacingActorLabel(id) ??
+    getUserFacingActorLabel(displayName) ??
+    displayName ??
+    getUserFacingActorLabel(getStringRecordValue(participant, "adapterId")) ??
+    "AI participant"
+  );
+}
+
+function getParticipantRosterRole(name: string): string {
+  const normalized = normalizeActorLabel(name);
+
+  if (normalized.startsWith("perspective-")) {
+    return "Independent perspective";
+  }
+
+  return "AI participant";
+}
+
+function findParticipantProviderConfig(
+  participant: unknown,
+  providerConfigs: unknown[]
+): unknown | undefined {
+  const providerConfigId = getStringRecordValue(participant, "providerConfigId");
+
+  if (!providerConfigId) {
+    return undefined;
+  }
+
+  return providerConfigs.find(
+    (providerConfig) => getStringRecordValue(providerConfig, "id") === providerConfigId
+  );
+}
+
+function findReviewProviderConfig(providerConfigs: unknown[]): unknown | undefined {
+  return (
+    providerConfigs.find(
+      (providerConfig) =>
+        getStringRecordValue(providerConfig, "id") === OPENAI_COMPATIBLE_DEFAULT_PROVIDER_CONFIG_ID
+    ) ?? providerConfigs[0]
+  );
+}
+
+function describeParticipantRosterSource(
+  participant: unknown,
+  providerConfig: unknown | undefined
+): { label: string; values?: Record<string, string> } {
+  if (providerConfig) {
+    return describeProviderRosterSource(providerConfig);
+  }
+
+  const adapterId = getStringRecordValue(participant, "adapterId");
+
+  if (isLocalPresetAdapterId(adapterId)) {
+    return { label: "Built-in demo participant" };
+  }
+
+  if (getStringRecordValue(participant, "providerConfigId")) {
+    return { label: "Needs model setup" };
+  }
+
+  return { label: "Configured AI participant" };
+}
+
+function describeProviderRosterSource(
+  providerConfig: unknown | undefined
+): { label: string; values?: Record<string, string> } {
+  if (!providerConfig) {
+    return { label: "Configured model provider" };
+  }
+
+  const provider = getProviderRosterDisplayName(getStringRecordValue(providerConfig, "adapterId"));
+  const model = getStringRecordValue(providerConfig, "modelId");
+
+  return model
+    ? { label: "{provider} · {model}", values: { provider, model } }
+    : { label: "{provider} default model", values: { provider } };
+}
+
+function getProviderRosterDisplayName(adapterId: string | undefined): string {
+  const normalized = normalizeActorLabel(adapterId ?? "");
+
+  if (normalized.includes("openai-compatible")) {
+    return "OpenAI-compatible";
+  }
+
+  if (normalized.startsWith("local-preset")) {
+    return "Built-in demo";
+  }
+
+  return getUserFacingActorLabel(adapterId) ?? "Configured provider";
+}
+
+function isLocalPresetAdapterId(adapterId: string | undefined): boolean {
+  return normalizeActorLabel(adapterId ?? "").startsWith("local-preset");
+}
+
+function dedupeDiscussionRoomParticipantRoster(
+  roster: DiscussionRoomParticipantRosterItem[]
+): DiscussionRoomParticipantRosterItem[] {
+  const seen = new Set<string>();
+
+  return roster.filter((item) => {
+    const key = `${item.kind}:${normalizeActorLabel(item.name)}:${normalizeActorLabel(item.role)}`;
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
 }
 
 function createRoomActivityItems(events: unknown[], run: unknown): RoomActivityItem[] {

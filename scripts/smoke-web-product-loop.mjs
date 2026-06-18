@@ -285,7 +285,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Shared the discussion brief", { exact: true }).waitFor();
   await assertRoomComposerShellCompact(page, "discussion room before continuation");
   await assertRoomReportDetailsHidden(page, "discussion room before continuation");
-  await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await page.getByRole("button", { name: "Send message and continue" }).waitFor();
   await assertDesktopRoomConversationFirstView(page, "discussion room before continuation");
   await assertComposerActionsCompact(page, "discussion room before continuation", {
     maxActionListHeight: 120,
@@ -294,7 +294,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await assertDefaultViewSafety(page, "discussion room before continuation", { providerBaseUrl });
   await assertMobileDiscussionRoomShell(page, "discussion room mobile before continuation");
 
-  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByRole("button", { name: "Send message and continue" }).click();
   await page.getByText("Discussion paused", { exact: true }).waitFor();
   await assertRoomUpdateMessage(page, "discussion room after transient participant failure");
   await assertConversationTranscriptReturnedToViewport(page, "discussion room after transient participant failure");
@@ -313,7 +313,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await updatedSteps.waitFor();
   await updatedSteps.getByText("Needs attention", { exact: true }).waitFor();
 
-  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByRole("button", { name: "Send message and continue" }).click();
   await page.getByRole("link", { name: "Review current conclusion" }).first().waitFor();
   await assertRoomConversationShellAfterMessages(page, "discussion room after continuation");
   await assertSuccessfulRoomUpdateReceipt(page, "discussion room after continuation");
@@ -413,7 +413,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     maxButtonHeight: 64
   });
   await assertRoomComposerShellCompact(page, "discussion room after continuation", {
-    maxComposerHeight: 260,
+    maxComposerHeight: 560,
     maxActionListHeight: 150
   });
   await assertDefaultViewSafety(page, "discussion room after continuation", { providerBaseUrl });
@@ -439,7 +439,7 @@ async function assertDiscussionRoomOverview(page, { label, expectedNextAction })
     await chatShell.waitFor();
     await chatShell.getByRole("region", { name: "Conversation transcript" }).waitFor();
     await chatShell.locator(".du-room-action-rail").waitFor();
-    await chatShell.getByText("Reply to the room", { exact: true }).waitFor();
+    await chatShell.getByText("Send message to the room", { exact: true }).first().waitFor();
   } catch (error) {
     throw new Error(`${label} did not render a readable discussion room overview.`, {
       cause: error
@@ -772,14 +772,16 @@ async function assertComposerActionsCompact(
 async function assertRoomComposerShellCompact(
   page,
   label,
-  { maxComposerHeight = 230, maxCopyHeight = 88, maxActionListHeight = 96 } = {}
+  { maxComposerHeight = 540, maxCopyHeight = 88, maxActionListHeight = 96 } = {}
 ) {
   await page.locator(".du-room-composer").waitFor();
   await page.locator(".du-room-composer-copy").waitFor();
+  await page.locator(".du-room-message-input textarea").waitFor();
 
   const metrics = await page.locator(".du-room-composer").evaluate((element) => {
     const copy = element.querySelector(".du-room-composer-copy");
     const actionList = element.querySelector(".du-discussion-action-list");
+    const messageInput = element.querySelector(".du-room-message-input textarea");
     const details = element.querySelector(".du-continuation-details");
     const avatar = element.querySelector(".du-room-composer-avatar");
     const rect = element.getBoundingClientRect();
@@ -795,12 +797,13 @@ async function assertRoomComposerShellCompact(
       detailsOpen: Boolean(details?.open),
       continuationDetailsVisible,
       hasAvatar: Boolean(avatar),
+      hasMessageInput: Boolean(messageInput),
       actionCount: actionList?.querySelectorAll(".du-discussion-action-button").length ?? 0,
       composerLabel: element.getAttribute("aria-label"),
       actionLabel: element
         .querySelector(".du-discussion-actions-room")
         ?.getAttribute("aria-label"),
-      hasQuickReplies: text.includes("Quick replies") && text.includes("Reply to the room"),
+      hasQuickReplies: text.includes("Quick replies") && text.includes("Send message to the room"),
       hasOldActionPanelCopy:
         text.includes("Room actions") || text.includes("What should happen next?")
     };
@@ -813,6 +816,7 @@ async function assertRoomComposerShellCompact(
     metrics.detailsOpen ||
     metrics.continuationDetailsVisible ||
     !metrics.hasAvatar ||
+    !metrics.hasMessageInput ||
     metrics.actionCount === 0 ||
     metrics.composerLabel !== "Room quick replies" ||
     metrics.actionLabel !== "Room quick replies" ||
@@ -820,7 +824,7 @@ async function assertRoomComposerShellCompact(
     metrics.hasOldActionPanelCopy
   ) {
     throw new Error(
-      `${label} should keep room actions shaped like a compact chat composer, got ${JSON.stringify(
+      `${label} should keep room actions shaped like a chat composer with message input, got ${JSON.stringify(
         metrics
       )}.`
     );

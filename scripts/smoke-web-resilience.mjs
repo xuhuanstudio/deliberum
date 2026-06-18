@@ -165,7 +165,7 @@ async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, run
     waitUntil: "networkidle"
   });
   await page.getByRole("heading", { name: pausedQuestion }).first().waitFor();
-  await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await page.getByRole("button", { name: "Send message and continue" }).waitFor();
   await assertNoHorizontalOverflow(page, "paused run before update");
   await assertDefaultResilienceSafety(page, "paused run before update", {
     providerBaseUrl,
@@ -173,7 +173,7 @@ async function verifyPausedContinuation(page, { webBaseUrl, providerBaseUrl, run
     sessionId
   });
 
-  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByRole("button", { name: "Send message and continue" }).click();
   await page.getByText("Discussion paused").waitFor();
   await assertRoomUpdateMessage(page, "paused continuation result");
   await page.getByText("Stop reason", { exact: true }).waitFor();
@@ -207,7 +207,7 @@ async function verifyRetryableSetupError(page, { webBaseUrl, providerBaseUrl, ru
     .getByRole("heading", { name: "Review a proposed rollout before relying on it." })
     .first()
     .waitFor();
-  await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await page.getByRole("button", { name: "Send message and continue" }).waitFor();
   await assertNoHorizontalOverflow(page, "retryable setup error before update");
   await assertDefaultResilienceSafety(page, "retryable setup error before update", {
     providerBaseUrl,
@@ -215,7 +215,7 @@ async function verifyRetryableSetupError(page, { webBaseUrl, providerBaseUrl, ru
     sessionId
   });
 
-  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByRole("button", { name: "Send message and continue" }).click();
   await page.getByText("Discussion could not continue").waitFor();
   await page
     .getByText(
@@ -228,7 +228,7 @@ async function verifyRetryableSetupError(page, { webBaseUrl, providerBaseUrl, ru
     sessionId
   });
 
-  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByRole("button", { name: "Send message and continue" }).click();
   await page.getByText("Discussion could not continue").waitFor();
   await page
     .getByText(
@@ -248,7 +248,7 @@ async function verifyStageFailureRecovery(page, { webBaseUrl, providerBaseUrl, r
     waitUntil: "networkidle"
   });
   await page.getByRole("heading", { name: stageFailureQuestion }).first().waitFor();
-  await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await page.getByRole("button", { name: "Send message and continue" }).waitFor();
   await assertNoHorizontalOverflow(page, "stage failure before update");
   await assertDefaultResilienceSafety(page, "stage failure before update", {
     providerBaseUrl,
@@ -256,7 +256,7 @@ async function verifyStageFailureRecovery(page, { webBaseUrl, providerBaseUrl, r
     sessionId
   });
 
-  await page.getByRole("button", { name: "Continue discussion" }).click();
+  await page.getByRole("button", { name: "Send message and continue" }).click();
   await page.getByText("Discussion could not continue").waitFor();
   await page
     .getByText(

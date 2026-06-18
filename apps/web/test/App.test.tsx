@@ -43,6 +43,20 @@ const runDetail = {
     topic: "Evaluate the local daemon run workspace",
     goals: ["Inspect run state"],
     constraints: ["Keep outcomes provisional"],
+    participants: [
+      {
+        id: "local-preset-alpha",
+        kind: "model",
+        displayName: "Perspective A",
+        adapterId: "local-preset-alpha"
+      },
+      {
+        id: "local-preset-beta",
+        kind: "model",
+        displayName: "Perspective B",
+        adapterId: "local-preset-beta"
+      }
+    ],
     providerConfigs: []
   },
   rounds: {
@@ -2341,12 +2355,21 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Discussion room")).length).toBeGreaterThan(0);
     expect(screen.queryByText("Model-backed discussion")).toBeNull();
     expect(screen.queryByText("Discussion brief details")).toBeNull();
-    expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Send message and continue" })).toBeTruthy();
+    const modelBackedRoster = screen.getByRole("region", { name: "Room participants" });
+    expect(modelBackedRoster.textContent ?? "").toContain("Perspective A");
+    expect(modelBackedRoster.textContent ?? "").toContain("Perspective B");
+    expect(modelBackedRoster.textContent ?? "").toContain("OpenAI-compatible default model");
+    expect(modelBackedRoster.textContent ?? "").toContain("Reviewer");
+    expect(modelBackedRoster.textContent ?? "").toContain("Evidence checker");
+    expect(modelBackedRoster.textContent ?? "").toContain("Manage models");
+    expect(modelBackedRoster.textContent ?? "").not.toContain("providerConfigId");
+    expect(modelBackedRoster.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(screen.queryByText("Use the verified provider for reviewable discussions")).toBeNull();
     await openStructuredDiscussionDetails();
     expect(await screen.findByText("Model-backed discussion")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() =>
       expect(client.startRun).toHaveBeenCalledWith(
@@ -4765,9 +4788,21 @@ describe("@deliberum/web shell", () => {
     expect(localizedRoomOverview.textContent ?? "").not.toContain("\u6700\u8fd1\u8c01\u53d1\u4e86\u8a00");
     expect(localizedRoomOverview.textContent ?? "").not.toContain("\u5f53\u524d\u9636\u6bb5");
     expect(localizedRoomOverview.textContent ?? "").not.toContain("\u5ba1\u9605\u961f\u5217");
+    const localizedRoomParticipants = screen.getByRole("region", {
+      name: "\u8ba8\u8bba\u5ba4\u53c2\u4e0e\u8005"
+    });
+    expect(localizedRoomParticipants.textContent ?? "").toContain(
+      "\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u53c2\u4e0e\u8005"
+    );
+    expect(localizedRoomParticipants.textContent ?? "").toContain("\u4f60");
+    expect(localizedRoomParticipants.textContent ?? "").toContain("\u89c6\u89d2 A");
+    expect(localizedRoomParticipants.textContent ?? "").toContain("\u8bc1\u636e\u6838\u67e5\u8005");
+    expect(localizedRoomParticipants.textContent ?? "").toContain("AI \u53c2\u4e0e\u8005\u7f16\u8f91");
+    expect(localizedRoomParticipants.textContent ?? "").not.toContain("providerConfigId");
     expect(
-      document.querySelector('[aria-label="\u623f\u95f4\u53c2\u4e0e\u8005"]')
-    ).toBeNull();
+      screen.getAllByText("\u5411\u8ba8\u8bba\u5ba4\u53d1\u9001\u6d88\u606f").length
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("\u53d1\u9001\u6d88\u606f\u5e76\u7ee7\u7eed").length).toBeGreaterThan(0);
     expect(screen.queryByText("\u8ba8\u8bba\u7b80\u62a5\u8be6\u60c5")).toBeNull();
     expect(document.querySelector(".du-room-brief")).toBeNull();
     expect(screen.getByText("\u8ba8\u8bba\u65f6\u95f4\u7ebf")).toBeTruthy();
@@ -4831,7 +4866,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByRole("navigation", { name: "\u8ba8\u8bba\u52a8\u4f5c" })).toBeNull();
     expect(document.querySelector(".du-room-action-strip")).toBeNull();
     expect(localizedDiscussionActionsText).toContain("\u5feb\u6377\u56de\u590d");
-    expect(localizedDiscussionActionsText).toContain("\u56de\u590d\u8ba8\u8bba\u5ba4");
+    expect(localizedDiscussionActionsText).toContain("\u5411\u8ba8\u8bba\u5ba4\u53d1\u9001\u6d88\u606f");
     expect(localizedDiscussionActionsText).not.toContain("\u8ba8\u8bba\u5ba4\u52a8\u4f5c");
     expect(localizedDiscussionActionsText).not.toContain("\u63a5\u4e0b\u6765\u8981\u505a\u4ec0\u4e48\uff1f");
     expect(localizedDiscussionActionsText).not.toContain("\u66f4\u65b0\u8ba8\u8bba");
@@ -4904,7 +4939,7 @@ describe("@deliberum/web shell", () => {
       initialLanguage: "zh-CN"
     });
 
-    fireEvent.click(await screen.findByRole("button", { name: "\u7ee7\u7eed\u8ba8\u8bba" }));
+    fireEvent.click(await screen.findByRole("button", { name: "\u53d1\u9001\u6d88\u606f\u5e76\u7ee7\u7eed" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     expect(screen.getByRole("region", { name: "\u6700\u65b0\u8ba8\u8bba\u66f4\u65b0" })).toBeTruthy();
@@ -4970,7 +5005,7 @@ describe("@deliberum/web shell", () => {
       }
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: "\u7ee7\u7eed\u8ba8\u8bba" }));
+    fireEvent.click(await screen.findByRole("button", { name: "\u53d1\u9001\u6d88\u606f\u5e76\u7ee7\u7eed" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     const latestUpdate = await screen.findByRole("region", {
@@ -5065,7 +5100,7 @@ describe("@deliberum/web shell", () => {
       }
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: "\u7ee7\u7eed\u8ba8\u8bba" }));
+    fireEvent.click(await screen.findByRole("button", { name: "\u53d1\u9001\u6d88\u606f\u5e76\u7ee7\u7eed" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     expect(
@@ -5670,7 +5705,25 @@ describe("@deliberum/web shell", () => {
     expect(roomOverview.textContent ?? "").not.toContain("Who spoke most recently");
     expect(roomOverview.textContent ?? "").not.toContain("Current phase");
     expect(roomOverview.textContent ?? "").not.toContain("Review queue");
-    expect(document.querySelector('[aria-label="Room participants"]')).toBeNull();
+    const roomParticipants = screen.getByRole("region", { name: "Room participants" });
+    expect(roomParticipants).toBeTruthy();
+    expect(roomParticipants.textContent ?? "").toContain("Who is in this discussion");
+    expect(roomParticipants.textContent ?? "").toContain("You");
+    expect(roomParticipants.textContent ?? "").toContain("Human participant");
+    expect(roomParticipants.textContent ?? "").toContain("Perspective A");
+    expect(roomParticipants.textContent ?? "").toContain("Perspective B");
+    expect(roomParticipants.textContent ?? "").toContain("Reviewer");
+    expect(roomParticipants.textContent ?? "").toContain("Evidence checker");
+    expect(roomParticipants.textContent ?? "").toContain("Risk reviewer");
+    expect(roomParticipants.textContent ?? "").toContain("Conclusion writer");
+    expect(roomParticipants.textContent ?? "").toContain("Built-in demo participant");
+    expect(roomParticipants.textContent ?? "").toContain("Built-in demo review role");
+    expect(roomParticipants.textContent ?? "").toContain("AI participant editing");
+    expect(roomParticipants.textContent ?? "").toContain(
+      "Adding or removing AI participants is not available inside an existing discussion yet."
+    );
+    expect(roomParticipants.textContent ?? "").not.toContain("providerConfigId");
+    expect(roomParticipants.textContent ?? "").not.toContain("local-preset-alpha");
     expect(screen.queryByRole("list", { name: "Latest participant messages" })).toBeNull();
     expect(document.querySelector(".du-room-header-status-grid")).toBeNull();
     expect(document.querySelector(".du-room-member-strip")).toBeNull();
@@ -5685,7 +5738,14 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("region", { name: "Room quick replies" })).toBeTruthy();
     expect(screen.queryByText("Discussion action composer")).toBeNull();
     expect(screen.getByText("Quick replies")).toBeTruthy();
-    expect(screen.getByText("Reply to the room")).toBeTruthy();
+    expect(screen.getAllByText("Send message to the room").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Send message to the room")).toBeTruthy();
+    expect(screen.getAllByText("Send message and continue").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Your message appears as your next visible turn for this update. Standalone human-message history is not stored yet."
+      )
+    ).toBeTruthy();
     expect(screen.queryByText("Room actions")).toBeNull();
     expect(document.querySelector(".du-room-composer-copy")).toBeTruthy();
     expect(document.querySelector(".du-room-composer-avatar")).toBeTruthy();
@@ -5700,7 +5760,7 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText("Start another readable round from the current room state.")
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Send message and continue" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
     const discussionActions = document.querySelector(".du-discussion-actions") as HTMLElement;
     expect(
@@ -6138,10 +6198,18 @@ describe("@deliberum/web shell", () => {
     });
     const client = renderApp("/runs/run-1");
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Send message to the room"), {
+      target: {
+        value: "Please respond to the evidence gap before updating the conclusion."
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    expect(JSON.stringify(vi.mocked(client.startRun).mock.calls[0]?.[1])).not.toContain(
+      "Please respond to the evidence gap before updating the conclusion."
+    );
     await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledTimes(2));
     expect(document.querySelector("#room-conversation-transcript")).toBeTruthy();
     await waitFor(() => expect(scrollTargets).toContain("room-conversation-transcript"));
@@ -6154,10 +6222,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("region", { name: "New discussion round" })).toBeTruthy();
     expect(screen.getByText("What participants just said")).toBeTruthy();
     expect(updateRoundText).toContain("You");
-    expect(updateRoundText).toContain("Asked the room to continue");
     expect(updateRoundText).toContain(
-      "The room continued from your brief before participants responded."
+      "Sent a message to the room"
     );
+    expect(updateRoundText).toContain(
+      "Please respond to the evidence gap before updating the conclusion."
+    );
+    expect((screen.getByLabelText("Send message to the room") as HTMLTextAreaElement).value).toBe("");
     expect(updateRoundText).toContain("Perspective A");
     expect(updateRoundText).toContain("Perspective B");
     expect(updateRoundText).toContain("Shared a first response");
@@ -7464,7 +7535,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByRole("link", { name: "Review disagreements" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Confirm answer requirements" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Check evidence" })).toBeNull();
-    expect(screen.getByText("Reply to the room")).toBeTruthy();
+    expect(screen.getAllByText("Send message to the room").length).toBeGreaterThan(0);
     expect(screen.getByText("Choose Continue discussion to let participants respond.")).toBeTruthy();
     expect(screen.queryByText("Message the room")).toBeNull();
     expect(
@@ -7561,8 +7632,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     const startRequest = vi.mocked(client.startRun).mock.calls[0]?.[1];
@@ -7707,7 +7778,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByText("Model-backed review path ready")).toBeNull();
     await openStructuredDiscussionDetails();
     expect(await screen.findByText("Model-backed review path ready")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     const startRequest = vi.mocked(client.startRun).mock.calls[0]?.[1];
@@ -7846,7 +7917,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
     expect(
       screen.getByText(
         "Choose Continue discussion to let participants respond to the latest room state."
@@ -7855,7 +7926,7 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getByText("Start another readable round from the current room state.")
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     const startRequest = vi.mocked(client.startRun).mock.calls[0]?.[1] as
@@ -8065,8 +8136,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     const updateRound = await screen.findByRole("region", { name: "New discussion round" });
@@ -8223,8 +8294,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalled());
     expect(await screen.findByText("Discussion paused")).toBeTruthy();
@@ -8302,8 +8373,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalled());
     expect(await screen.findByText("Discussion paused")).toBeTruthy();
@@ -8377,8 +8448,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalled());
     expect(await screen.findByText("Discussion paused")).toBeTruthy();
@@ -8397,7 +8468,7 @@ describe("@deliberum/web shell", () => {
   });
 
   it("localizes stopped continuation recovery actions to Simplified Chinese", async () => {
-    const zhContinue = "\u7ee7\u7eed\u8ba8\u8bba";
+    const zhContinue = "\u53d1\u9001\u6d88\u606f\u5e76\u7ee7\u7eed";
     const zhPaused = "\u8ba8\u8bba\u5df2\u6682\u505c";
     const zhDetail =
       "\u6709\u4e00\u4e2a\u5f15\u5bfc\u6b65\u9aa4\u9700\u8981\u5904\u7406\uff0cDeliberum \u624d\u80fd\u7ee7\u7eed\u5b8c\u6574\u8ba8\u8bba\u3002";
@@ -8496,12 +8567,12 @@ describe("@deliberum/web shell", () => {
       }
     };
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Discussion action composer" })).toBeNull();
     expect(screen.getByRole("region", { name: "Room quick replies" })).toBeTruthy();
     expect(screen.queryByText("Discussion action composer")).toBeNull();
     expect(screen.getByText("Quick replies")).toBeTruthy();
-    expect(screen.getByText("Reply to the room")).toBeTruthy();
+    expect(screen.getAllByText("Send message to the room").length).toBeGreaterThan(0);
     expect(screen.queryByText("Room actions")).toBeNull();
     expect(screen.queryByText("Message the room")).toBeNull();
     expect(document.querySelector(".du-room-composer")).toBeTruthy();
@@ -8619,7 +8690,7 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("openai-main");
     expect(document.body.textContent ?? "").not.toContain("openai-compatible");
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() =>
       expect(client.startRun).toHaveBeenCalledWith("run-1", {
@@ -8724,7 +8795,7 @@ describe("@deliberum/web shell", () => {
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
     expect(document.body.textContent ?? "").not.toContain("openai-main");
     expect(document.body.textContent ?? "").not.toContain("openai-compatible");
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() =>
       expect(client.startRun).toHaveBeenCalledWith(
@@ -8854,7 +8925,7 @@ describe("@deliberum/web shell", () => {
     )) as HTMLTextAreaElement;
     expect(firstResponsesRequestInput.value).toContain("sealedDivergence");
     expect(firstResponsesRequestInput.value).not.toContain("local-preset-extractor");
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() =>
       expect(client.startRun).toHaveBeenCalledWith("run-1", {
@@ -8920,7 +8991,7 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
     await openAdvancedStartRequestDetails();
     const startRequestInput = await screen.findByLabelText("Advanced start request JSON");
     fireEvent.change(startRequestInput, {
@@ -8934,7 +9005,7 @@ describe("@deliberum/web shell", () => {
       (startRequestInput as HTMLTextAreaElement).value
     ).toContain("local-preset-extractor");
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() =>
       expect(client.startRun).toHaveBeenCalledWith(
@@ -9066,7 +9137,7 @@ describe("@deliberum/web shell", () => {
     await screen.findByText("No main perspectives");
     expect(screen.queryByText("Projection refreshed after start")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalled());
     expect(screen.getByText("Discussion steps completed")).toBeTruthy();
@@ -9107,8 +9178,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     expect(await screen.findByText("Discussion could not continue")).toBeTruthy();
     expect(
@@ -9138,8 +9209,8 @@ describe("@deliberum/web shell", () => {
       })
     );
 
-    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+    expect(await screen.findByRole("button", { name: "Send message and continue" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Send message and continue" }));
 
     expect(await screen.findByText("Discussion could not continue")).toBeTruthy();
     expect(
@@ -9170,7 +9241,7 @@ describe("@deliberum/web shell", () => {
   });
 
   it("localizes failed discussion stage recovery guidance to Simplified Chinese", async () => {
-    const zhContinue = "\u7ee7\u7eed\u8ba8\u8bba";
+    const zhContinue = "\u53d1\u9001\u6d88\u606f\u5e76\u7ee7\u7eed";
     const zhCouldNotContinue = "\u8ba8\u8bba\u65e0\u6cd5\u7ee7\u7eed";
     const zhDetail =
       "\u6709\u4e00\u4e2a\u6a21\u578b\u6216\u5ba1\u67e5\u6b65\u9aa4\u672a\u80fd\u5b89\u5168\u5b8c\u6210\u3002\u8bf7\u5148\u68c0\u67e5\u6a21\u578b\u8bbe\u7f6e\uff0c\u7136\u540e\u518d\u5c1d\u8bd5\u201c\u7ee7\u7eed\u8ba8\u8bba\u201d\u3002\u5982\u679c\u540c\u4e00\u8ba8\u8bba\u5728\u90e8\u5206\u56de\u5e94\u540e\u6301\u7eed\u5931\u8d25\uff0c\u8bf7\u5f00\u59cb\u4e00\u4e2a\u65b0\u7684\u6a21\u578b\u652f\u6301\u8ba8\u8bba\u3002";

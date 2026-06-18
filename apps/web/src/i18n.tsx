@@ -1702,12 +1702,48 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion room overview": "\u8ba8\u8bba\u5ba4\u6982\u89c8",
   "Participants discuss the brief in order while the room keeps conclusions, disagreements, evidence gaps, risks, and next actions visible.":
     "\u53c2\u4e0e\u8005\u4f1a\u6309\u987a\u5e8f\u56f4\u7ed5\u7b80\u62a5\u8ba8\u8bba\uff0c\u8ba8\u8bba\u5ba4\u4f1a\u540c\u65f6\u4fdd\u6301\u7ed3\u8bba\u3001\u5206\u6b67\u3001\u8bc1\u636e\u7f3a\u53e3\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u53ef\u89c1\u3002",
+  Participants: "\u53c2\u4e0e\u8005",
+  "Who is in this discussion": "\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u53c2\u4e0e\u8005",
+  "This lineup is fixed for the current discussion. Use Setup / Models before starting a new discussion to change model assignments.":
+    "\u5f53\u524d\u8ba8\u8bba\u7684\u9635\u5bb9\u662f\u56fa\u5b9a\u7684\u3002\u5982\u9700\u66f4\u6539\u6a21\u578b\u5206\u914d\uff0c\u8bf7\u5728\u5f00\u59cb\u65b0\u8ba8\u8bba\u524d\u4f7f\u7528 Setup / Models\u3002",
+  "AI participant editing": "AI \u53c2\u4e0e\u8005\u7f16\u8f91",
+  "Adding or removing AI participants is not available inside an existing discussion yet.":
+    "\u5c1a\u4e0d\u652f\u6301\u5728\u5df2\u6709\u8ba8\u8bba\u4e2d\u6dfb\u52a0\u6216\u79fb\u9664 AI \u53c2\u4e0e\u8005\u3002",
+  "Manage models": "\u7ba1\u7406\u6a21\u578b",
+  "Human participant": "\u4eba\u7c7b\u53c2\u4e0e\u8005",
+  "Room composer": "\u8ba8\u8bba\u5ba4\u8f93\u5165\u533a",
+  "In room": "\u5df2\u5728\u623f\u95f4\u4e2d",
+  "Send a follow-up instruction from the composer. Standalone human-message history is not stored yet.":
+    "\u4ece\u8f93\u5165\u533a\u53d1\u9001\u8ddf\u8fdb\u6307\u4ee4\u3002\u72ec\u7acb\u7684\u4eba\u7c7b\u6d88\u606f\u5386\u53f2\u5c1a\u672a\u4fdd\u5b58\u3002",
+  "Independent perspective": "\u72ec\u7acb\u89c6\u89d2",
+  "AI participant": "AI \u53c2\u4e0e\u8005",
+  "This AI participant can respond when the room continues.":
+    "\u8ba8\u8bba\u5ba4\u7ee7\u7eed\u65f6\uff0c\u8fd9\u4e2a AI \u53c2\u4e0e\u8005\u53ef\u4ee5\u56de\u5e94\u3002",
+  "This role references provider setup that Web cannot confirm for this discussion.":
+    "\u8fd9\u4e2a\u89d2\u8272\u5f15\u7528\u4e86 Web \u65e0\u6cd5\u5728\u672c\u6b21\u8ba8\u8bba\u4e2d\u786e\u8ba4\u7684\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
+  "Built-in demo review role": "\u5185\u7f6e\u6f14\u793a\u5ba1\u67e5\u89d2\u8272",
+  "Needs model setup": "\u9700\u8981\u6a21\u578b\u8bbe\u7f6e",
+  "Configured AI participant": "\u5df2\u914d\u7f6e\u7684 AI \u53c2\u4e0e\u8005",
+  "{provider} · {model}": "{provider} · {model}",
+  "{provider} default model": "{provider} \u9ed8\u8ba4\u6a21\u578b",
+  "Configured provider": "\u5df2\u914d\u7f6e\u63d0\u4f9b\u65b9",
+  "This role joins after first responses to keep the discussion reviewable.":
+    "\u8fd9\u4e2a\u89d2\u8272\u4f1a\u5728\u521d\u59cb\u56de\u5e94\u4e4b\u540e\u52a0\u5165\uff0c\u8ba9\u8ba8\u8bba\u4fdd\u6301\u53ef\u5ba1\u9605\u3002",
+  "Configure a model provider before this role can review a real discussion.":
+    "\u8bf7\u5148\u914d\u7f6e\u6a21\u578b\u63d0\u4f9b\u65b9\uff0c\u8fd9\u4e2a\u89d2\u8272\u624d\u80fd\u5ba1\u67e5\u771f\u5b9e\u8ba8\u8bba\u3002",
   Participant: "\u53c2\u4e0e\u8005",
   You: "\u4f60",
   "Room actions": "\u8ba8\u8bba\u5ba4\u52a8\u4f5c",
+  "Room participants": "\u8ba8\u8bba\u5ba4\u53c2\u4e0e\u8005",
   "Room quick replies": "\u8ba8\u8bba\u5ba4\u5feb\u6377\u56de\u590d",
   "Room conversation": "\u8ba8\u8bba\u5ba4\u5bf9\u8bdd",
   "Quick replies": "\u5feb\u6377\u56de\u590d",
+  "Send message to the room": "\u5411\u8ba8\u8bba\u5ba4\u53d1\u9001\u6d88\u606f",
+  "Send message and continue": "\u53d1\u9001\u6d88\u606f\u5e76\u7ee7\u7eed",
+  "Ask participants to respond to a concern, evidence gap, or next step.":
+    "\u8bf7\u53c2\u4e0e\u8005\u56de\u5e94\u67d0\u4e2a\u987e\u8651\u3001\u8bc1\u636e\u7f3a\u53e3\u6216\u4e0b\u4e00\u6b65\u3002",
+  "Your message appears as your next visible turn for this update. Standalone human-message history is not stored yet.":
+    "\u4f60\u7684\u6d88\u606f\u4f1a\u4f5c\u4e3a\u672c\u6b21\u66f4\u65b0\u4e2d\u53ef\u89c1\u7684\u4e0b\u4e00\u4e2a\u56de\u5408\u663e\u793a\u3002\u72ec\u7acb\u7684\u4eba\u7c7b\u6d88\u606f\u5386\u53f2\u5c1a\u672a\u4fdd\u5b58\u3002",
   "Reply to the room": "\u56de\u590d\u8ba8\u8bba\u5ba4",
   "Choose a quick reply to review or move the discussion forward.":
     "\u9009\u62e9\u4e00\u4e2a\u5feb\u6377\u56de\u590d\u6765\u5ba1\u9605\u6216\u63a8\u8fdb\u8ba8\u8bba\u3002",
@@ -1730,6 +1766,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Review actions appear after participants respond.":
     "\u53c2\u4e0e\u8005\u56de\u5e94\u540e\uff0c\u5ba1\u9605\u52a8\u4f5c\u4f1a\u51fa\u73b0\u3002",
   "Asked the room to continue": "\u8981\u6c42\u8ba8\u8bba\u5ba4\u7ee7\u7eed",
+  "Sent a message to the room": "\u5df2\u5411\u8ba8\u8bba\u5ba4\u53d1\u9001\u6d88\u606f",
   "The room continued from your brief before participants responded.":
     "\u53c2\u4e0e\u8005\u56de\u5e94\u524d\uff0c\u8ba8\u8bba\u5ba4\u5148\u4ece\u4f60\u7684\u7b80\u62a5\u7ee7\u7eed\u3002",
   "Next in the room": "\u8ba8\u8bba\u5ba4\u4e2d\u7684\u4e0b\u4e00\u6b65",

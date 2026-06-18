@@ -177,7 +177,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
     )
     .first()
     .waitFor();
-  await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+  await page.getByRole("button", { name: "Send message and continue" }).waitFor();
   await assertDefaultViewSafety(page, "discussion room before continuation");
 
   await continueDiscussionUntilCompleted(page);
@@ -291,7 +291,7 @@ async function continueDiscussionUntilCompleted(page) {
           /\/runs\/[^/]+\/start$/.test(new URL(response.url()).pathname),
         { timeout: releaseConfig.productLoopTimeoutMs }
       ),
-      page.getByRole("button", { name: "Continue discussion" }).click()
+      page.getByRole("button", { name: "Send message and continue" }).click()
     ]);
     const startSummary = await summarizeStartResponse(startResponse, attempt);
     latestContinuationDebug = startSummary.debug;
@@ -324,7 +324,7 @@ async function continueDiscussionUntilCompleted(page) {
     if (attempt < releaseConfig.continueAttempts) {
       await page.reload({ waitUntil: "networkidle" });
       await page.getByRole("heading", { name: "Discussion room" }).waitFor();
-      await page.getByRole("button", { name: "Continue discussion" }).waitFor();
+      await page.getByRole("button", { name: "Send message and continue" }).waitFor();
       await assertDefaultViewSafety(page, `discussion room before continuation retry ${attempt + 1}`, {
         allowModelGeneratedLowLevelLanguage: true
       });
