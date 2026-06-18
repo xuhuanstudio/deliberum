@@ -41,7 +41,7 @@ Updated: 2026-06-19.
 
 | # | Product loop step | Current status | Current evidence | Highest-priority gap |
 | --- | --- | --- | --- | --- |
-| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:3877/` through `corepack pnpm start:local`, includes a local prerequisite check for Node.js, Corepack, and pnpm before dependency installation, and now includes normal-user troubleshooting for prerequisite, install/build, missing built Web assets, busy local port, local-service-unavailable, provider verification, and paused real-provider discussion failures. Web tests cover the shell and landing readiness states. `smoke:local-start` verifies the single-process local start script serves the built Web shell from the daemon. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. A 2026-06-19 fresh clone of the pushed `v1.1.0` tag passed the documented prerequisite, install, build, local-start, and browser product-loop smoke path. | Keep covered; packaging and installer work can improve first-run convenience later. |
+| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:3877/` through `node scripts/start-local-product.mjs` for first run or `corepack pnpm start:local` after a manual build, includes a local prerequisite check for Node.js, Corepack, and pnpm before dependency installation, and now includes normal-user troubleshooting for prerequisite, install/build, missing built Web assets, busy local port, local-service-unavailable, provider verification, and paused real-provider discussion failures. Web tests cover the shell and landing readiness states. `smoke:local-start` verifies the single-process local start script serves the built Web shell from the daemon. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. A 2026-06-19 fresh clone of the pushed `v1.1.0` tag passed the documented prerequisite, install, build, local-start, and browser product-loop smoke path. A later 2026-06-19 first-run helper check verified `node scripts/start-local-product.mjs --dry-run`, the prerequisite output, and a real temporary-port start that returned daemon health and the built Connect AI Web shell. | Keep covered; packaging and installer work can improve first-run convenience later. |
 | 2 | Understand within 30 seconds that Deliberum is a multi-perspective deliberation product. | `verified` | README and default Web copy describe the human-first product. The landing page now leads with `Multi-perspective deliberation for better decisions`. `smoke:web-entry` verifies desktop and mobile first viewports include Deliberum, multi-perspective deliberation, independent perspectives, strongest options, and reviewable conclusion language. | Keep covered; future visual design work should preserve this first-viewport product signal. |
 | 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
 | 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show `corepack pnpm build && corepack pnpm start:local` as the local start path, and README troubleshooting explains keeping the `start:local` terminal running, opening the printed local URL, and using Check again in Setup / Models after the service responds. `smoke:local-start` verifies that script starts a daemon-served Web shell. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Setup / Models, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future installer work may simplify dependency installation, but the current local product start path is proven. |
@@ -205,6 +205,39 @@ the release-readiness path aligned with what a normal local user can do in Web
 instead of requiring hidden environment variables.
 
 ## Recent Automated Evidence
+
+### 2026-06-19 One-Command Local First-Run Helper
+
+Scope: row 1, with supporting evidence for the documented source-checkout
+startup path.
+
+Commands:
+
+- `node --check scripts/start-local-product.mjs`
+- `node scripts/start-local-product.mjs --dry-run`
+- `node scripts/check-local-prerequisites.mjs`
+- `DELIBERUM_PORT=3894 node scripts/start-local-product.mjs`
+- `curl http://127.0.0.1:3894/health`
+- `curl -H 'Accept: text/html' http://127.0.0.1:3894/setup/models`
+
+Path covered:
+
+1. Added a dependency-free first-run helper that checks local tools, installs
+   dependencies, builds Deliberum, and starts the local Web service.
+2. Kept the manual install/build/start commands documented as an alternative.
+3. Verified the helper with a dry run and with a real temporary-port local start.
+4. Confirmed the started service returned daemon health and served the built
+   Connect AI Web shell for browser-style navigation.
+
+Result:
+
+- Passed. A source-checkout user can now start the local Web product path with
+  one command after cloning the repository and installing Node.js/Corepack.
+
+Limit:
+
+- This is still a source-checkout helper, not a packaged installer, desktop app,
+  Windows/WSL2 support claim, or hosted service.
 
 ### 2026-06-19 v1.1 Fresh Clone Local Product Smoke
 

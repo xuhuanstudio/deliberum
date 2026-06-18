@@ -24,6 +24,7 @@
     "typecheck": "corepack pnpm build:packages && corepack pnpm typecheck:workspace",
     "typecheck:workspace": "corepack pnpm -r typecheck",
     "format": "corepack pnpm -r --if-present format",
+    "start:local:setup": "node scripts/start-local-product.mjs",
     "start:local": "node scripts/start-local-web.mjs",
     "smoke:built": "node scripts/smoke-built-runtime.mjs",
     "smoke:local-start": "node scripts/smoke-local-start.mjs",

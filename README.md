@@ -106,7 +106,18 @@ GitHub CI verifies the local install/build/start path on `macos-latest` and
 requirements, but they are not v1.1 supported platforms until the local-start
 path is verified in CI.
 
-Check your local setup before installing dependencies:
+Recommended first run from the repository root:
+
+```bash
+node scripts/start-local-product.mjs
+```
+
+This checks local tools, installs dependencies, builds Deliberum, and starts the
+local Web service. Keep that terminal running, then open the URL printed by the
+command.
+
+If you prefer to run each step manually, check your local setup before
+installing dependencies:
 
 ```bash
 node scripts/check-local-prerequisites.mjs

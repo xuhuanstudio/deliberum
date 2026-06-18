@@ -30,7 +30,21 @@ Developer Mode.
 Windows and WSL2 may work, but they are not v1.1 supported platforms until the
 local-start path is verified in CI.
 
-## 1. Check Local Tools
+## 1. Start the Local Product
+
+From the repository root, the recommended first-run command is:
+
+```bash
+node scripts/start-local-product.mjs
+```
+
+This command checks local tools, installs dependencies, builds Deliberum, and
+starts the local Web service. Keep that terminal running after the service
+starts.
+
+## 2. Manual Setup Alternative
+
+If you prefer to run each step manually, start by checking local tools.
 
 From the repository root:
 
@@ -40,7 +54,7 @@ node scripts/check-local-prerequisites.mjs
 
 Fix any reported Node.js, Corepack, or pnpm issue before continuing.
 
-## 2. Install and Build
+### Install and Build
 
 ```bash
 corepack pnpm install
@@ -50,7 +64,7 @@ corepack pnpm build
 
 Do not skip the build step. The local service serves the built Web UI.
 
-## 3. Start Deliberum Locally
+### Start Deliberum Locally
 
 ```bash
 corepack pnpm start:local
@@ -66,7 +80,7 @@ If port `3877` is busy, use another local port:
 DELIBERUM_PORT=3888 corepack pnpm start:local
 ```
 
-## 4. Open the Web UI
+## 3. Open the Web UI
 
 Open:
 
@@ -81,7 +95,7 @@ If the Web UI says the local service is unavailable, keep the `start:local`
 terminal running, open the URL printed by that command, then use Check again in
 Connect AI.
 
-## 5. Connect AI
+## 4. Connect AI
 
 Open:
 
@@ -102,7 +116,7 @@ Secrets stay on this machine. The default Web UI must not show saved API keys,
 provider config ids, env var names, raw provider responses, raw JSON, or
 internal runtime details.
 
-## 6. Choose Participants and Start a Discussion
+## 5. Choose Participants and Start a Discussion
 
 After the provider verifies, Connect AI shows whether discussions with AI
 participants are ready.
@@ -123,7 +137,7 @@ unless you have a reason to customize First viewpoint, Alternative viewpoint,
 Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, or Summary
 writer.
 
-## 7. Read the Discussion Room
+## 6. Read the Discussion Room
 
 After creating the discussion, open the room and use Continue discussion. The
 default view should show:
@@ -141,7 +155,7 @@ default view should show:
 You should not need to understand run ids, session ids, ledger events, runtime
 profiles, proposals, projections, or raw JSON to use the default path.
 
-## 8. Continue or Recover
+## 7. Continue or Recover
 
 Use user-facing actions in the room:
 

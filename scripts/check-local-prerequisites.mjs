@@ -29,7 +29,12 @@ if (failedChecks.length > 0) {
 }
 
 console.log("\nReady to install dependencies and start the local Web product loop.");
-console.log("Next: corepack pnpm install && corepack pnpm build && corepack pnpm start:local");
+if (process.env.DELIBERUM_LOCAL_FIRST_RUN === "true") {
+  console.log("Continuing with dependency installation, build, and local start.");
+} else {
+  console.log("Recommended first run: node scripts/start-local-product.mjs");
+  console.log("Manual path: corepack pnpm install && corepack pnpm build && corepack pnpm start:local");
+}
 
 function checkNodeVersion() {
   const currentMajor = Number(process.versions.node.split(".")[0]);

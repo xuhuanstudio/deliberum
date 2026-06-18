@@ -20,7 +20,19 @@ Deliberum 是一个本地优先的多视角审议产品。你输入一个问题�
 
 Windows 和 WSL2 可能可以运行，但在本地启动路径进入 CI 验证前，不属于 v1.1 支持平台。
 
-## 1. 检查本地工具
+## 1. 启动本地产品
+
+在仓库根目录，推荐第一次运行时直接执行：
+
+```bash
+node scripts/start-local-product.mjs
+```
+
+这个命令会检查本地工具、安装依赖、构建 Deliberum，并启动本地 Web 服务。服务启动后，请保持这个终端窗口运行。
+
+## 2. 手动设置替代路径
+
+如果你想手动逐步执行，先检查本地工具。
 
 在仓库根目录运行：
 
@@ -30,7 +42,7 @@ node scripts/check-local-prerequisites.mjs
 
 如果命令提示 Node.js、Corepack 或 pnpm 有问题，先按提示修复，再继续下一步。
 
-## 2. 安装依赖并构建
+### 安装依赖并构建
 
 ```bash
 corepack pnpm install
@@ -40,7 +52,7 @@ corepack pnpm build
 
 不要跳过 build。`start:local` 会直接提供构建后的 Web 界面。
 
-## 3. 启动本地 Deliberum
+### 启动本地 Deliberum
 
 ```bash
 corepack pnpm start:local
@@ -54,7 +66,7 @@ corepack pnpm start:local
 DELIBERUM_PORT=3888 corepack pnpm start:local
 ```
 
-## 4. 打开 Web 界面
+## 3. 打开 Web 界面
 
 打开：
 
@@ -66,7 +78,7 @@ http://127.0.0.1:3877/
 
 如果 Web 提示本地服务不可用，请确认 `start:local` 终端仍在运行，打开命令输出里的本地 URL，然后在 Connect AI 里点击 Check again。
 
-## 5. 连接 AI
+## 4. 连接 AI
 
 打开：
 
@@ -85,7 +97,7 @@ http://127.0.0.1:3877/setup/models
 
 API key 会留在本机。默认 Web 界面不应该显示已保存的 API key、provider config id、env var 名称、原始 provider 响应、原始 JSON 或内部 runtime 细节。
 
-## 6. 选择参与者并开始讨论
+## 5. 选择参与者并开始讨论
 
 provider 验证通过后，Connect AI 会显示 AI 参与者讨论是否已可用。
 
@@ -102,7 +114,7 @@ http://127.0.0.1:3877/runs/new?participants=model-backed
 
 填写讨论问题。第一次使用时建议先用默认参与者模型选择，不要急着自定义第一视角、替代视角、补充视角、质疑者、证据核查者、风险审查者或总结撰写者。
 
-## 7. 阅读 Discussion Room
+## 6. 阅读 Discussion Room
 
 创建讨论后进入房间，点击 Continue discussion。默认界面应该能看到：
 
@@ -118,7 +130,7 @@ http://127.0.0.1:3877/runs/new?participants=model-backed
 
 正常使用默认路径时，不应该要求你理解 run id、session id、ledger event、runtime profile、proposal、projection 或 raw JSON。
 
-## 8. 继续讨论或恢复失败
+## 7. 继续讨论或恢复失败
 
 在房间里使用面向用户的操作：
 

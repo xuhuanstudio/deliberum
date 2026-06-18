@@ -26,6 +26,18 @@ Deliberum 是一个本地优先的“你 + AI 参与者”多视角审议产品�
 在仓库根目录运行：
 
 ```bash
+node scripts/start-local-product.mjs
+```
+
+这个命令会检查本地工具、安装依赖、构建 Deliberum，并启动本地 Web 服务。保持这个终端运行，然后打开：
+
+```text
+http://127.0.0.1:3877/
+```
+
+如果你想手动逐步执行，也可以运行：
+
+```bash
 node scripts/check-local-prerequisites.mjs
 corepack pnpm install
 corepack pnpm doctor:local
@@ -33,11 +45,7 @@ corepack pnpm build
 corepack pnpm start:local
 ```
 
-保持 `start:local` 终端运行，然后打开：
-
-```text
-http://127.0.0.1:3877/
-```
+保持 `start:local` 终端运行，然后打开命令输出里的本地 URL。
 
 ## 在 Web 里配置模型
 
