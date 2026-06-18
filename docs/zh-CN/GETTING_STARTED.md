@@ -1,6 +1,6 @@
 # 快速开始
 
-这份文档说明如何从源码仓库启动 Deliberum，打开 Web 界面，配置模型服务商，并完成一次真实模型参与的讨论。
+这份文档说明如何从源码仓库启动 Deliberum，打开 Web 界面，配置模型服务商，并完成一次由 AI 参与者参与的讨论。
 
 英文版本见 [Getting Started](../GETTING_STARTED.md)。
 
@@ -64,9 +64,9 @@ http://127.0.0.1:3877/
 
 首页应该说明 Deliberum 是一个多视角审议产品，并显示本地服务是否已连接。
 
-如果 Web 提示本地服务不可用，请确认 `start:local` 终端仍在运行，打开命令输出里的本地 URL，然后在 Setup / Models 里点击 Check again。
+如果 Web 提示本地服务不可用，请确认 `start:local` 终端仍在运行，打开命令输出里的本地 URL，然后在 Connect AI 里点击 Check again。
 
-## 5. 配置模型服务商
+## 5. 连接 AI
 
 打开：
 
@@ -74,7 +74,7 @@ http://127.0.0.1:3877/
 http://127.0.0.1:3877/setup/models
 ```
 
-使用 Configure OpenAI-compatible provider，填写：
+这里会打开 **Connect AI**。使用 Configure OpenAI-compatible provider，填写：
 
 - API key；
 - base URL；
@@ -87,7 +87,7 @@ API key 会留在本机。默认 Web 界面不应该显示已保存的 API key�
 
 ## 6. 选择参与者并开始讨论
 
-provider 验证通过后，Setup / Models 会显示模型讨论是否已可用。
+provider 验证通过后，Connect AI 会显示 AI 参与者讨论是否已可用。
 
 可以选择：
 
@@ -134,7 +134,7 @@ http://127.0.0.1:3877/runs/new?participants=model-backed
 - Try Verify connection again；
 - Check model setup；
 - Try Continue discussion again；
-- Start a new model-backed discussion；
+- Start a new discussion with AI；
 - Start a demo discussion while fixing provider setup。
 
 不要把 API key、完整 provider 响应、原始模型输出或本地运行数据粘贴到公开 issue 或日志里。
@@ -168,7 +168,7 @@ Deliberum v1.0 不是公共托管服务，也不声明已经具备生产级多�
 | 安装或构建失败 | 依次运行 `corepack pnpm install`、`corepack pnpm doctor:local`、`corepack pnpm build`。 |
 | 提示 Web build 缺失 | 重新运行 `corepack pnpm build`，再运行 `corepack pnpm start:local`。 |
 | `3877` 端口被占用 | 使用 `DELIBERUM_PORT=3888 corepack pnpm start:local`，然后打开命令输出里的 URL。 |
-| 本地服务不可用 | 保持 `start:local` 运行，打开命令输出里的本地 URL，然后在 Setup / Models 点击 Check again。 |
+| 本地服务不可用 | 保持 `start:local` 运行，打开命令输出里的本地 URL，然后在 Connect AI 点击 Check again。 |
 | provider 验证失败 | 检查 API key、base URL、model 和 Structured review compatibility，然后再次点击 Verify connection。 |
 | 真实 provider 讨论暂停或失败 | 先使用 Check model setup 或 Try Continue discussion again，再考虑改低层设置。 |
 

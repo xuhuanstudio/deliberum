@@ -72,10 +72,10 @@ OpenAI-compatible API key, base URL, model, and structured review compatibility
 values to the local daemon so the daemon writes a marker-delimited local env
 block and applies the setup to the current daemon process when possible; saved
 secret values are not returned to Web.
-Setup / Models can also edit, save, clear, and summarize non-secret role model
-defaults for future model-backed discussions. Those defaults contain discussion
-depth and model names only; they do not store API keys, base URLs, or provider
-configuration ids.
+Connect AI can also edit, save, clear, and summarize non-secret participant
+model choices for future discussions with AI participants. Those choices contain
+discussion depth and model names only; they do not store API keys, base URLs, or
+provider configuration ids.
 
 ## Local/pre-production container
 

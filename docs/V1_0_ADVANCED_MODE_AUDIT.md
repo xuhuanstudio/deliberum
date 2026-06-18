@@ -18,7 +18,7 @@ Gate 6 covers the current Web surfaces that intentionally expose lower-level
 diagnostics after a user opens Advanced / Developer Mode:
 
 1. landing page operator details;
-2. Setup / Models setup diagnostics;
+2. Connect AI setup diagnostics;
 3. `/runs` discussion list default boundary;
 4. Discussion Room start request, ledger trace, process proposal, and projection
    metadata panels;
@@ -50,7 +50,7 @@ Coverage:
 - landing Advanced operator details still expose the session lookup, daemon
   base URL, runtime profile status, operation audit, and session link;
 - `/runs` discussion list hides run ids, session ids, and ledger events;
-- `/setup/models` hides runtime profile setup details, env var names, and
+- Connect AI (`/setup/models`) hides runtime profile setup details, env var names, and
   secret env names until `Setup diagnostics` is opened;
 - `/runs/:runId` hides Advanced start request JSON, run ledger timeline, run
   plan view, process-governance material, and projection metadata until their

@@ -134,7 +134,7 @@ node scripts/check-local-prerequisites.mjs
 
 4. Configure a real model provider from Web.
 
-   Open `/setup/models`, then use **Configure OpenAI-compatible provider** to enter the provider API key, base URL, and model. Keep **Structured review compatibility** enabled for most real providers so Deliberum can organize options, unresolved points, what needs checking, risks, answers, and next steps reliably. Save the setup, check readiness, and use **Test connection** before relying on a discussion with AI. The current Web path shows that one verified provider powers configured AI participants; participant model choices can be edited in Connect AI, and one-off model assignment is still available on the New Discussion page.
+   Open **Connect AI** (`/setup/models`), then use **Configure OpenAI-compatible provider** to enter the provider API key, base URL, and model. Keep **Structured review compatibility** enabled for most real providers so Deliberum can organize options, unresolved points, what needs checking, risks, answers, and next steps reliably. Save the setup, check readiness, and use **Test connection** before relying on a discussion with AI. The current Web path shows that one verified provider powers configured AI participants; participant model choices can be edited in Connect AI, and one-off model assignment is still available on the New Discussion page.
 
    Saved API keys stay on this machine. The default Web UI does not show saved secrets, env var names, provider config ids, raw JSON, or runtime details; those remain behind Advanced / Developer Mode.
 
@@ -155,7 +155,7 @@ Use these checks before changing runtime settings or filing an issue:
 - **`start:local` says the Web build is missing**: run `corepack pnpm build` again, then restart with `corepack pnpm start:local`.
 - **Port 3877 is already in use**: start on another local port, for example `DELIBERUM_PORT=3888 corepack pnpm start:local`, then open the URL printed by the command.
 - **The Web UI says the local service is unavailable**: keep the `start:local` terminal running, open the printed local URL, and use **Check again** in Connect AI after the service responds.
-- **Provider connection test fails**: review the API key, base URL, model, and Structured review compatibility setting in `/setup/models`, make sure the provider endpoint is reachable, then use **Test connection** again. You can start a demo discussion while fixing provider setup.
+- **Provider connection test fails**: review the API key, base URL, model, and Structured review compatibility setting in Connect AI (`/setup/models`), make sure the provider endpoint is reachable, then use **Test connection** again. You can start a demo discussion while fixing provider setup.
 - **A real provider discussion pauses or fails**: use the default recovery actions such as **Check AI setup**, **Try Continue discussion again**, or **Start a new discussion with AI**. Do not paste API keys, full provider responses, or raw model output into issues or logs.
 
 For a release-readiness browser walkthrough against a real OpenAI-compatible provider, run the opt-in smoke after `corepack pnpm build`:

@@ -4,14 +4,15 @@ Date: 2026-06-16
 
 ## Verdict
 
-Deliberum is ready for a v1.0 Production Stable source-checkout local-first
-release, subject to maintainer approval and tag creation.
+Deliberum reached the v1.0 Production Stable source-checkout local-first
+release scope, and `v1.0.0` has already been created on commit
+`6f7fdec11219a9f4772c50b8cc8a13949fe3346a`.
 
 This verdict covers the supported local Web product path: clone the repository,
 install with the documented toolchain on a supported platform, build, start the
 local product, configure one OpenAI-compatible provider setup from Web, verify
-the provider, manage participant and role model readiness, run focused or
-Broader model-backed deliberations, review perspectives, strongest options,
+the provider, manage AI participant model readiness, run focused or Broader
+discussions with AI participants, review perspectives, strongest options,
 open disagreements, evidence gaps, risks, current conclusion, and next actions,
 recover from common setup, provider, continuation, and storage failures, and
 keep normal default UI free of secrets, raw JSON, env details, provider config
@@ -37,8 +38,9 @@ The supported source-checkout product path is:
 8. configure API key, base URL, model, and Structured review compatibility from
    `/setup/models`;
 9. verify the provider connection from Web;
-10. set discussion depth and role model defaults in Setup / Models when needed;
-11. start a focused or Broader model-backed discussion;
+10. set discussion depth and participant model choices in Connect AI when
+    needed;
+11. start a focused or Broader discussion with AI participants;
 12. continue the discussion to readable perspectives, strongest options, open
     disagreements, evidence gaps, risks, current conclusion, and next actions;
 13. use normal-user recovery actions when provider setup, continuation, or
@@ -54,7 +56,7 @@ Supported source-checkout platforms:
 | Gate | Status | Evidence |
 | --- | --- | --- |
 | 1. Local install/start is reliable, documented, and repeatable across supported platforms. | Complete | README documents the source-checkout path and supported platforms. CI includes `doctor:local`, build, `smoke:local-start`, and macOS/Ubuntu local-start jobs. |
-| 2. Web first-use, Setup / Models, participant readiness, and Discussion Room form one coherent product experience. | Complete | `docs/V1_0_WEB_PRODUCT_COHERENCE_AUDIT.md`, `smoke:web-entry`, and `smoke:web-product-loop`. |
+| 2. Web first-use, Connect AI, participant readiness, and Discussion Room form one coherent product experience. | Complete | `docs/V1_0_WEB_PRODUCT_COHERENCE_AUDIT.md`, `smoke:web-entry`, and `smoke:web-product-loop`. |
 | 3. Real OpenAI-compatible provider workflows are stable across repeated focused and broader-review release smokes. | Complete | `docs/V1_0_REAL_PROVIDER_STABILITY_AUDIT.md` records repeated focused and Broader real-provider smokes and the fixed structured extraction blocker. |
 | 4. Provider setup, verification, failure recovery, rate limit, timeout, malformed output, and partial completion states are handled in normal-user language. | Complete | `smoke:web-resilience`, daemon/adapter provider error tests, and Gate 3 malformed structured output fallback evidence. |
 | 5. Default UI never exposes secrets, raw JSON, env details, run/session/ledger/runtime/proposal/event/internal ids, or provider config ids. | Complete | `docs/V1_0_DEFAULT_UI_SAFETY_AUDIT.md`, `smoke:web-entry`, `smoke:web-boundaries`, `smoke:web-product-loop`, `smoke:web-resilience`, and opt-in real-provider safety scans. |
@@ -134,7 +136,8 @@ These limits are accepted for v1.0 Production Stable:
 
 - Packaged installer or simpler local launcher.
 - Windows and WSL2 local-start support after CI coverage exists.
-- Multiple named provider accounts and role defaults bound to named providers.
+- Multiple named provider accounts and participant model choices bound to named
+  providers.
 - Secret storage and migration policy for named provider accounts.
 - Broader OpenAI-compatible provider release-smoke coverage.
 - Additional provider-type setup surfaces beyond the current
@@ -149,8 +152,9 @@ These limits are accepted for v1.0 Production Stable:
 
 ## Tag Readiness
 
-Recommended tag: `v1.0.0`.
+Released tag: `v1.0.0`.
 
-Do not create the tag until the completion-report commit is pushed and GitHub CI
-is green. After that check passes, feature work should stop for the v1.0 line
-unless a release-blocking regression is reproduced.
+Do not move or recreate the existing `v1.0.0` tag. Current `main` contains
+post-v1.0.0 fixes and documentation alignment. Any new release from current
+`main` should use a later patch tag after maintainer approval and green GitHub
+CI.

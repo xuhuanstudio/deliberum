@@ -20,8 +20,8 @@ Gate 10 covers the supported source-checkout product path:
 3. understand local service status;
 4. configure the supported OpenAI-compatible provider setup from Web;
 5. verify the provider connection;
-6. manage participant and role model readiness in normal-user language;
-7. start a model-backed discussion;
+6. manage participant model readiness in normal-user language;
+7. start a discussion with AI participants;
 8. continue the discussion to readable perspectives, strongest options, open
    disagreements, evidence gaps, risks, current conclusion, and next actions;
 9. recover from common provider, continuation, and storage failures;
@@ -38,11 +38,11 @@ provider accounts.
 | Product path area | Current evidence | Blocker result |
 | --- | --- | --- |
 | Install and local start | Gate 1 evidence covers README prerequisites, `doctor:local`, build, `start:local`, `smoke:local-start`, and GitHub CI local-start checks on macOS and Ubuntu Linux. | No known supported-platform install/start blocker remains. |
-| First-use Web entry | Gate 2 evidence covers the landing page, local service status, unavailable-service guidance, Setup / Models, Start Discussion, Discussion Room, and current conclusion as one coherent user path. | No known first-use product-coherence blocker remains. |
+| First-use Web entry | Gate 2 evidence covers the landing page, local service status, unavailable-service guidance, Connect AI, New Discussion, Discussion Room, and Current Answer as one coherent user path. | No known first-use product-coherence blocker remains. |
 | Provider setup and verification | Gates 3 and 4 cover Web-managed OpenAI-compatible provider setup, verification, real-provider focused and Broader review release smokes, and normal-user recovery for verification failures, rate limits, timeouts, malformed output, failed stages, and partial completion states. | No known Deliberum-side provider setup or verification blocker remains for the supported tested path. |
-| Participant and model readiness | Gate 7 covers one Web-managed OpenAI-compatible provider setup with readable role defaults, first-response model, review role model, optional Perspective A/B/C model choices, per-discussion overrides, save/apply/clear behavior, and default-view safety. | No known participant/model readiness blocker remains inside the v1.0 supported scope. |
-| Discussion start and continuation | Gates 2, 3, 4, 7, and 9 cover model-backed starts, focused and Broader paths, Continue discussion, readable participant contributions, strongest options, disagreements, evidence gaps, risks, current conclusion, and next actions. | No known discussion-start or continuation blocker remains for the supported path. |
-| Default UI safety | Gates 5 and 6 cover default Web safety and Advanced / Developer Mode boundaries across landing, Setup / Models, `/runs`, Discussion Room, current conclusion, recovery states, and legacy Advanced surfaces. | No known normal default-view exposure blocker remains. |
+| Participant and model readiness | Gate 7 covers one Web-managed OpenAI-compatible provider setup with readable participant choices, model for first replies, model for review and answer, optional Perspective A/B/C model choices, per-discussion overrides, save/apply/clear behavior, and default-view safety. | No known participant/model readiness blocker remains inside the v1.0 supported scope. |
+| Discussion start and continuation | Gates 2, 3, 4, 7, and 9 cover starts with AI participants, focused and Broader paths, Continue discussion, readable participant contributions, strongest options, disagreements, evidence gaps, risks, current conclusion, and next actions. | No known discussion-start or continuation blocker remains for the supported path. |
+| Default UI safety | Gates 5 and 6 cover default Web safety and Advanced / Developer Mode boundaries across landing, Connect AI, `/runs`, Discussion Room, Current Answer, recovery states, and legacy Advanced surfaces. | No known normal default-view exposure blocker remains. |
 | Storage recovery | Gate 11 covers SQLite backup, restore, process-lock shutdown, ledger-integrity checks, unsupported schema rejection, and invalid persisted data failure behavior. | The reproduced SQLite process-lock restore blocker was fixed; no known supported storage recovery blocker remains. |
 | Release validation | Gate 9 covers local full CI, docs lint, language lint, public-file lint, product-loop smoke, storage recovery smoke, Web entry/boundary/resilience/product-loop smokes, opt-in real-provider focused and Broader review smokes, and GitHub CI success for current HEAD. | No known release-validation blocker remains before the final v1.0 completion report. |
 

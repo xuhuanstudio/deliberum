@@ -1,7 +1,8 @@
 # Deliberum v1.0 Release Notes
 
 Status: final release notes for the v1.0 Production Stable source-checkout
-local-first release.
+local-first release. The `v1.0.0` tag already exists; do not move or recreate
+that tag.
 
 These notes describe the supported v1.0 local-first product path and current
 release evidence. The final completion report is
@@ -18,8 +19,8 @@ Deliberum v1.0 targets a source-checkout local-first release for outside users:
 5. open `http://127.0.0.1:3877/`;
 6. configure an OpenAI-compatible provider from Web;
 7. verify the provider connection;
-8. manage discussion depth and role model defaults in Setup / Models;
-9. start a model-backed discussion;
+8. manage discussion depth and participant model choices in Connect AI;
+9. start a discussion with AI participants;
 10. review readable perspectives, strongest options, open disagreements,
     evidence gaps, risks, current conclusion, and next recommended actions;
 11. recover from common setup, provider, continuation, and storage failures in
@@ -39,10 +40,10 @@ The default Web UI is the normal user path. It covers:
 
 - first-use product orientation;
 - local service status;
-- Setup / Models provider configuration;
+- Connect AI provider configuration;
 - provider verification;
-- participant and role model readiness;
-- focused and broader model-backed discussion starts;
+- participant model readiness;
+- focused and broader starts with AI participants;
 - a Discussion Room with readable participant contributions and timeline
   stages;
 - current conclusion, open disagreements, missing evidence, risks, and next
@@ -58,7 +59,7 @@ provider config ids, or internal run/session/ledger/runtime/proposal/event ids.
 Current v1.0 gate evidence includes:
 
 - supported-platform local install/start coverage on macOS and Ubuntu Linux;
-- Web product coherence evidence for first-use, Setup / Models, participant
+- Web product coherence evidence for first-use, Connect AI, participant
   readiness, Discussion Room, and current conclusion review;
 - repeated real OpenAI-compatible focused and Broader review release smokes for
   the tested provider path;
@@ -68,7 +69,7 @@ Current v1.0 gate evidence includes:
   legacy default surfaces;
 - Advanced / Developer Mode boundary evidence;
 - model and participant management evidence for one Web-managed
-  OpenAI-compatible provider with role model defaults;
+  OpenAI-compatible provider with participant model choices;
 - SQLite storage backup, restore, process-lock shutdown, and ledger-integrity
   recovery evidence;
 - current local CI, GitHub CI, Web smoke, storage recovery smoke, and opt-in
@@ -98,5 +99,6 @@ These are intentionally outside the v1.0 supported scope:
 All 12 v1.0 production gates are complete in the
 [v1.0 Production Readiness Matrix](V1_0_PRODUCTION_READINESS_MATRIX.md).
 
-Do not tag the final v1.0 Production Stable release until the
-completion-report commit is pushed and GitHub CI is green.
+`v1.0.0` has already been tagged. Current `main` contains post-v1.0.0 fixes and
+documentation alignment; any later release should use a new patch tag after
+maintainer approval and green GitHub CI.

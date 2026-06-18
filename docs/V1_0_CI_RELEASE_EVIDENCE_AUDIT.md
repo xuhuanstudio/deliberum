@@ -109,7 +109,7 @@ The smoke path covered:
 1. isolated local daemon and Web UI startup;
 2. Web-managed provider setup;
 3. provider verification;
-4. model-backed discussion start;
+4. discussion start with AI participants;
 5. discussion continuation;
 6. readable participant perspectives;
 7. strongest current options;

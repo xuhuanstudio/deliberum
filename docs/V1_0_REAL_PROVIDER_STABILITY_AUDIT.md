@@ -15,7 +15,7 @@ focused and Broader review release smokes:
 
 1. configure provider setup through Web;
 2. verify the provider connection;
-3. start a model-backed discussion;
+3. start a discussion with AI participants;
 4. continue the discussion through participant first responses, strongest
    options, open disagreements, missing evidence, risks, current conclusion,
    and next recommended actions;

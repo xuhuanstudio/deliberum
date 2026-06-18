@@ -77,8 +77,8 @@ Coverage:
   the `/runs` discussion list, legacy `/sessions/:sessionId` user overview, and
   verifies that raw session and ledger details appear only after Advanced or an
   explicit ledger-events route is opened.
-- `smoke:web-product-loop` covers Setup / Models provider setup, provider
-  verification, focused and broader model-backed start links, `/runs/new`,
+- `smoke:web-product-loop` covers Connect AI provider setup, provider
+  verification, focused and broader AI participant start links, `/runs/new`,
   Discussion Room before and after continuation, transient pause recovery, and
   `/runs/:runId/outcome`.
 - `smoke:web-resilience` covers paused continuation, retryable setup error,

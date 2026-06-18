@@ -16,9 +16,9 @@ Gate 2 requires these default Web surfaces to work together as one product path:
 
 1. first-use landing page;
 2. local service status and unavailable-service guidance;
-3. Setup / Models;
-4. participant readiness and role/model setup;
-5. Start Discussion;
+3. Connect AI;
+4. participant readiness and model choices;
+5. New Discussion;
 6. Discussion Room;
 7. Current conclusion.
 
@@ -36,12 +36,14 @@ The current Web flow is coherent for the v1.0 supported path:
 - `/` introduces Deliberum as a multi-perspective deliberation product and shows
   a first-use path from local service readiness to model setup and the
   Discussion Room.
-- `/setup/models` shows local service, demo readiness, provider readiness,
-  provider setup, provider verification, participant readiness, role defaults,
-  and focused or broader model-backed start actions in user language.
-- `/runs/new` keeps one-off discussion setup in product language, supports demo
-  and model-backed starts, applies saved role defaults, and lets users adjust
-  first-response, review role, and perspective models for that discussion.
+- `/setup/models` is labeled Connect AI and shows local service, demo
+  readiness, provider readiness, provider setup, provider verification,
+  participant readiness, participant model choices, and focused or broader
+  starts with AI participants in user language.
+- `/runs/new` is labeled New Discussion and keeps one-off discussion setup in
+  product language, supports demo and AI participant starts, applies saved
+  participant model choices, and lets users adjust first-reply, review and
+  answer, and viewpoint models for that discussion.
 - `/runs/:runId` presents the Discussion Room with the discussion brief,
   readable participant contributions, strongest options, open disagreements,
   missing evidence, risks, current conclusion status, and next recommended
@@ -67,15 +69,15 @@ Results:
 Coverage:
 
 - connected landing page on desktop and mobile;
-- unavailable local service entry path and Setup / Models recovery guidance;
+- unavailable local service entry path and Connect AI recovery guidance;
 - first viewport product clarity;
 - local service status;
 - provider setup form;
 - provider verification;
-- focused and broader model-backed start links;
-- Setup / Models role-default summary and direct role-default editor;
-- Start Discussion role/model defaults, overrides, and clear behavior;
-- model-backed discussion creation;
+- focused and broader AI participant start links;
+- Connect AI participant-choice summary and direct participant-choice editor;
+- New Discussion participant model choices, overrides, and clear behavior;
+- discussion creation with AI participants;
 - transient continuation pause recovery in normal-user language;
 - Discussion Room contributions and output sections;
 - current conclusion page;
@@ -86,9 +88,9 @@ Coverage:
 ## Supporting Evidence
 
 - `docs/V1_0_MODEL_PARTICIPANT_MANAGEMENT_AUDIT.md` closes the participant and
-  role/model management scope that Gate 2 depends on.
-- `apps/web/test/App.test.tsx` covers the default Web pages, Setup / Models,
-  participant readiness, role defaults, Discussion Room outputs, outcome
+  model-choice management scope that Gate 2 depends on.
+- `apps/web/test/App.test.tsx` covers the default Web pages, Connect AI,
+  participant readiness, participant choices, Discussion Room outputs, outcome
   sections, and Simplified Chinese strings for the new user-facing paths.
 - `docs/BASIC_PRODUCT_LOOP.md` records the verified 16-step Basic Product Loop
   for the current local Web path.

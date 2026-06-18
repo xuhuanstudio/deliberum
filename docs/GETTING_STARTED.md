@@ -2,7 +2,7 @@
 
 This guide is the shortest supported path for running Deliberum from a source
 checkout, opening the Web UI, configuring a model provider, and completing one
-model-backed discussion.
+discussion with AI participants.
 
 For Simplified Chinese, see [Getting Started zh-CN](zh-CN/GETTING_STARTED.md).
 
@@ -25,7 +25,7 @@ Developer Mode.
 - Corepack enabled.
 - pnpm 11 through Corepack.
 - An OpenAI-compatible provider API key, base URL, and model if you want a real
-  model-backed discussion.
+  discussion with AI participants.
 
 Windows and WSL2 may work, but they are not v1.0 supported platforms until the
 local-start path is verified in CI.
@@ -79,9 +79,9 @@ product and show whether the local service is connected.
 
 If the Web UI says the local service is unavailable, keep the `start:local`
 terminal running, open the URL printed by that command, then use Check again in
-Setup / Models.
+Connect AI.
 
-## 5. Configure a Model Provider
+## 5. Connect AI
 
 Open:
 
@@ -89,7 +89,7 @@ Open:
 http://127.0.0.1:3877/setup/models
 ```
 
-Use Configure OpenAI-compatible provider and enter:
+This opens **Connect AI**. Use Configure OpenAI-compatible provider and enter:
 
 - API key;
 - base URL;
@@ -104,8 +104,8 @@ internal runtime details.
 
 ## 6. Choose Participants and Start a Discussion
 
-After the provider verifies, Setup / Models shows whether model-backed
-discussions are ready.
+After the provider verifies, Connect AI shows whether discussions with AI
+participants are ready.
 
 Use:
 
@@ -118,9 +118,10 @@ You can also open:
 http://127.0.0.1:3877/runs/new?participants=model-backed
 ```
 
-Write the discussion question. Use the default participant model choices first unless you have
-a reason to customize First viewpoint, Alternative viewpoint, Additional
-viewpoint, Skeptic, Evidence checker, Risk reviewer, or Summary writer.
+Write the discussion question. Use the default participant model choices first
+unless you have a reason to customize First viewpoint, Alternative viewpoint,
+Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, or Summary
+writer.
 
 ## 7. Read the Discussion Room
 
@@ -157,7 +158,7 @@ first:
 - Try Verify connection again;
 - Check model setup;
 - Try Continue discussion again;
-- Start a new model-backed discussion;
+- Start a new discussion with AI;
 - Start a demo discussion while fixing provider setup.
 
 Do not paste API keys, full provider responses, raw model output, or local
@@ -195,7 +196,7 @@ database support. For trusted-team or remote pre-production hardening, see
 | Install or build fails | Run `corepack pnpm install`, then `corepack pnpm doctor:local`, then `corepack pnpm build`. |
 | Web build is missing | Run `corepack pnpm build`, then restart with `corepack pnpm start:local`. |
 | Port `3877` is busy | Start with `DELIBERUM_PORT=3888 corepack pnpm start:local` and open the printed URL. |
-| Local service is unavailable | Keep `start:local` running, open the printed local URL, then use Check again in Setup / Models. |
+| Local service is unavailable | Keep `start:local` running, open the printed local URL, then use Check again in Connect AI. |
 | Provider verification fails | Check the API key, base URL, model, and Structured review compatibility setting, then Verify connection again. |
 | Real provider discussion pauses or fails | Use Check model setup or Try Continue discussion again before changing low-level settings. |
 
