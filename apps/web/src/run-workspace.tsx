@@ -100,27 +100,30 @@ const DEFAULT_PROCESS_AUTHOR_ID = "system";
 const DEFAULT_PROCESS_REVIEWER_ID = "process-reviewer";
 const DEFAULT_PROCESS_COORDINATOR_ID = "process-coordinator";
 const USER_FACING_ACTOR_LABELS: Record<string, string> = {
-  "local-preset-alpha": "Perspective A",
-  "local-preset-beta": "Perspective B",
+  "local-preset-alpha": "First viewpoint",
+  "local-preset-beta": "Alternative viewpoint",
   "local-preset-candidate-repairer": "Option reviewer",
   "local-preset-evidence-checker": "Evidence checker",
   "local-preset-extractor": "Discussion organizer",
   "local-preset-final-auditor": "Risk reviewer",
-  "local-preset-final-candidate": "Conclusion writer",
+  "local-preset-final-candidate": "Summary writer",
   "local-preset-review-coordinator": "Review coordinator",
-  "local-preset-reviewer": "Reviewer",
+  "local-preset-reviewer": "Skeptic",
   "openai-compatible-extractor": "Discussion organizer",
   "openai-compatible-final-auditor": "Risk reviewer",
-  "openai-compatible-final-candidate": "Conclusion writer",
+  "openai-compatible-final-candidate": "Summary writer",
   "openai-compatible-reviewer": "Review coordinator",
   "provider-review-coordinator": "Review coordinator",
-  "provider-perspective-a": "Perspective A",
-  "provider-perspective-b": "Perspective B",
-  "provider-perspective-c": "Perspective C",
-  "perspective-a": "Perspective A",
-  "perspective-b": "Perspective B",
+  "provider-perspective-a": "First viewpoint",
+  "provider-perspective-b": "Alternative viewpoint",
+  "provider-perspective-c": "Additional viewpoint",
+  "perspective-a": "First viewpoint",
+  "perspective-b": "Alternative viewpoint",
   "process-coordinator": "Review coordinator",
-  "process-reviewer": "Reviewer"
+  "process-reviewer": "Skeptic",
+  "perspective-c": "Additional viewpoint",
+  reviewer: "Skeptic",
+  "conclusion-writer": "Summary writer"
 };
 type RunFollowStatus = "idle" | "connecting" | "connected" | "error" | "unsupported";
 type ProcessDecisionStatus = "accepted" | "deferred" | "rejected";
@@ -242,15 +245,15 @@ type RoomActivityPhaseView = {
 const DISCUSSION_PERSPECTIVE_MODEL_FIELDS: DiscussionPerspectiveModelField[] = [
   {
     participantId: "provider-perspective-a",
-    label: "Perspective A model"
+    label: "First viewpoint model"
   },
   {
     participantId: "provider-perspective-b",
-    label: "Perspective B model"
+    label: "Alternative viewpoint model"
   },
   {
     participantId: "provider-perspective-c",
-    label: "Perspective C model"
+    label: "Additional viewpoint model"
   }
 ];
 type RoomActivityGroup = {
@@ -1191,7 +1194,7 @@ function DiscussionModelSetupPanel({
               <strong>{t("First-response model")}</strong>
               <small>
                 {t(
-                  "Leave blank to use the model saved in Connect AI. Perspectives without their own model use this value for first responses."
+                  "Leave blank to use the model saved in Connect AI. Viewpoints without their own model use this value for first responses."
                 )}
               </small>
             </span>
@@ -1215,7 +1218,7 @@ function DiscussionModelSetupPanel({
               <strong>{t("Review role model")}</strong>
               <small>
                 {t(
-                  "Leave blank to use the first-response model. A value here applies to Reviewer, Evidence checker, Risk reviewer, and Conclusion writer only."
+                  "Leave blank to use the first-response model. A value here applies to Skeptic, Evidence checker, Risk reviewer, and Summary writer only."
                 )}
               </small>
             </span>
@@ -1243,10 +1246,10 @@ function DiscussionModelSetupPanel({
               }
             />
             <span>
-              <strong>{t("Customize perspective models")}</strong>
+              <strong>{t("Customize viewpoint models")}</strong>
               <small>
                 {t(
-                  "Give individual first-response perspectives their own model. Leave a field blank to use the first-response model."
+                  "Give individual first-response viewpoints their own model. Leave a field blank to use the first-response model."
                 )}
               </small>
             </span>
@@ -1254,7 +1257,7 @@ function DiscussionModelSetupPanel({
           {customPerspectiveModelsEnabled ? (
             <div
               className="du-perspective-model-grid"
-              aria-label={t("Perspective model assignment")}
+              aria-label={t("Viewpoint model assignment")}
             >
               {perspectiveModelFields.map((field) => (
                 <label key={field.participantId} htmlFor={`${field.participantId}-model`}>
@@ -1277,7 +1280,7 @@ function DiscussionModelSetupPanel({
               ))}
               <p>
                 {t(
-                  "Perspective model overrides affect independent first responses only. Review roles use the review role model when one is set."
+                  "Viewpoint model overrides affect independent first responses only. Review roles use the review role model when one is set."
                 )}
               </p>
             </div>
@@ -1450,8 +1453,8 @@ function buildDiscussionCreationPreview(input: {
               : "2 AI perspectives",
           detail:
             input.perspectiveCount === 3
-              ? "Perspective A, Perspective B, and Perspective C will answer independently."
-              : "Perspective A and Perspective B will answer independently.",
+              ? "First viewpoint, Alternative viewpoint, and Additional viewpoint will answer independently."
+              : "First viewpoint and Alternative viewpoint will answer independently.",
           tone: "ok"
         },
         {
@@ -1467,25 +1470,25 @@ function buildDiscussionCreationPreview(input: {
           label: "First-response model",
           value: firstResponseModel || "Saved AI setup",
           detail: firstResponseModel
-            ? "Perspectives without their own model use this first-response model."
-            : "Perspectives without their own model use the model saved in Connect AI.",
+            ? "Viewpoints without their own model use this first-response model."
+            : "Viewpoints without their own model use the model saved in Connect AI.",
           tone: "ok"
         },
         {
           label: "Review role model",
           value: reviewRoleModel || firstResponseModel || "Saved AI setup",
           detail: reviewRoleModel
-            ? "Review roles use this model while first-response perspectives keep their assigned models."
-            : "Review roles use the same model as first-response perspectives.",
+            ? "Review roles use this model while first-response viewpoints keep their assigned models."
+            : "Review roles use the same model as first-response viewpoints.",
           tone: "ok"
         },
         ...(customizedPerspectiveModelCount > 0
           ? [
               {
-                label: "Perspective model assignment",
-                value: "Perspective models customized",
+                label: "Viewpoint model assignment",
+                value: "Viewpoint models customized",
                 detail:
-                  "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set.",
+                  "Customized viewpoint models only affect independent first responses. Review roles use the review role model when one is set.",
                 tone: "ok" as const
               }
             ]
@@ -1512,7 +1515,7 @@ function buildDiscussionCreationPreview(input: {
         {
           label: "Who answers first",
           value: "2 demo perspectives",
-          detail: "Perspective A and Perspective B use deterministic sample material.",
+          detail: "First viewpoint and Alternative viewpoint use deterministic sample material.",
           tone: "warning"
         },
         {
@@ -1548,7 +1551,7 @@ function buildDiscussionCreationPreview(input: {
       {
         label: "Who reviews the result",
         value: "Review roles setup needed",
-        detail: "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer must be ready before Deliberum can prepare the answer.",
+        detail: "Skeptic, Evidence checker, Risk reviewer, and Summary writer must be ready before Deliberum can prepare the answer.",
         tone: "warning"
       },
       {
@@ -1588,7 +1591,7 @@ function buildDiscussionParticipantLineup(input: {
         : "neutral";
   const organizerDetail = input.organizerReady
     ? input.selectedSource === "model-backed" && input.providerSource
-      ? "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the discussion after first responses."
+      ? "Skeptic, Evidence checker, Risk reviewer, and Summary writer can review the discussion after first responses."
       : "Local review roles can compare options, review evidence and risks, and draft the current answer after first responses."
     : "Review roles are not ready yet; continuing the discussion may collect first responses only.";
   const organizerTone: DiscussionParticipantLineupItem["tone"] = input.organizerReady
@@ -1613,7 +1616,7 @@ function buildDiscussionParticipantLineup(input: {
       tone: perspectiveTone
     })),
     {
-      role: "Reviewer",
+      role: "Skeptic",
       contribution: "Requirements and disagreement review",
       source: organizerSource,
       detail: organizerDetail,
@@ -1627,7 +1630,7 @@ function buildDiscussionParticipantLineup(input: {
       tone: organizerTone
     },
     {
-      role: "Conclusion writer",
+      role: "Summary writer",
       contribution: "Current answer draft",
       source: organizerSource,
       detail: organizerDetail,
@@ -1644,16 +1647,16 @@ function getDiscussionPerspectiveRoles(input: {
 }): DiscussionPerspectiveRole[] {
   const perspectiveRoles: DiscussionPerspectiveRole[] = [
     {
-      role: "Perspective A"
+      role: "First viewpoint"
     },
     {
-      role: "Perspective B"
+      role: "Alternative viewpoint"
     }
   ];
 
   if (input.selectedSource === "model-backed" && input.providerSource && input.perspectiveCount === 3) {
     perspectiveRoles.push({
-      role: "Perspective C"
+      role: "Additional viewpoint"
     });
   }
 
@@ -3585,7 +3588,7 @@ function describeDiscussionContinuationSetup(
     return {
       title: "AI review path ready",
       detail:
-        "Continue discussion will ask configured AI participants for independent first responses, then use Reviewer, Evidence checker, Risk reviewer, and Conclusion writer to review the result.",
+        "Continue discussion will ask configured AI participants for independent first responses, then use Skeptic, Evidence checker, Risk reviewer, and Summary writer to review the result.",
       note:
         "Provider credentials stay on this machine; Web does not show saved API keys.",
       tone: "ok",
@@ -4313,8 +4316,8 @@ function createStartResultStageConversationActivities(
   const tone: RoomActivityItem["tone"] = attentionNeeded ? "warning" : "ok";
 
   if (stageName === "sealed_divergence") {
-    const firstSpeaker = perspectiveSpeakers[0] ?? "Perspective A";
-    const secondSpeaker = perspectiveSpeakers[1] ?? "Perspective B";
+    const firstSpeaker = perspectiveSpeakers[0] ?? "First viewpoint";
+    const secondSpeaker = perspectiveSpeakers[1] ?? "Alternative viewpoint";
 
     return [
       {
@@ -4555,7 +4558,7 @@ function getStartResultPerspectiveSpeakers(run: unknown): string[] {
     });
 
   return uniqueReadableStrings(
-    perspectiveSpeakers.length > 0 ? perspectiveSpeakers : ["Perspective A", "Perspective B"]
+    perspectiveSpeakers.length > 0 ? perspectiveSpeakers : ["First viewpoint", "Alternative viewpoint"]
   );
 }
 
@@ -5980,7 +5983,7 @@ function createReviewRoleRosterItems({
 
   return [
     {
-      name: "Reviewer",
+      name: "Skeptic",
       role: "Still unresolved",
       source: reviewSource.label,
       sourceValues: reviewSource.values,
@@ -6010,7 +6013,7 @@ function createReviewRoleRosterItems({
       kind: "ai"
     },
     {
-      name: "Conclusion writer",
+      name: "Summary writer",
       role: "Current Answer",
       source: reviewSource.label,
       sourceValues: reviewSource.values,
@@ -6038,7 +6041,12 @@ function getReadableParticipantName(participant: unknown): string {
 function getParticipantRosterRole(name: string): string {
   const normalized = normalizeActorLabel(name);
 
-  if (normalized.startsWith("perspective-")) {
+  if (
+    normalized.startsWith("perspective-") ||
+    normalized === "first-viewpoint" ||
+    normalized === "alternative-viewpoint" ||
+    normalized === "additional-viewpoint"
+  ) {
     return "Independent perspective";
   }
 
@@ -6548,7 +6556,7 @@ function ensureStrongOptionConversationActivities(
       }
 
       seenDetails.add(normalizedOption);
-      const speaker = perspectiveSpeakers[index % perspectiveSpeakers.length] ?? "Perspective A";
+      const speaker = perspectiveSpeakers[index % perspectiveSpeakers.length] ?? "First viewpoint";
 
       return [
         {
@@ -6771,7 +6779,7 @@ function describeRoomRoundExchangeDetail(group: RoomActivityGroup): string {
     return "This follow-up round lets participants answer earlier replies while reviewer and evidence messages stay in the same thread.";
   }
 
-  return "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies.";
+  return "Participants respond to the brief first; then the organizer, skeptic, and evidence checker join as chat-like replies.";
 }
 
 function describeRoomRoundDetail(group: RoomActivityGroup): string {
@@ -7144,7 +7152,10 @@ function formatRoomSpeakerLabel(
   topicLanguage: RoomTopicLanguage,
   speaker: string
 ): string {
-  return topicLanguage === "zh-CN" ? localizeActorLabelForTopicLanguage(speaker) : t(speaker);
+  const userFacingSpeaker = getUserFacingActorLabel(speaker) ?? speaker;
+  return topicLanguage === "zh-CN"
+    ? localizeActorLabelForTopicLanguage(userFacingSpeaker)
+    : t(userFacingSpeaker);
 }
 
 function formatRoomContributionText(
@@ -7174,21 +7185,27 @@ function localizeRoomContributionValuesForTopicLanguage(
   return Object.fromEntries(
     Object.entries(values).map(([key, value]) => [
       key,
-      typeof value === "string" ? localizeActorLabelForTopicLanguage(value) : value
+      typeof value === "string"
+        ? localizeActorLabelForTopicLanguage(getUserFacingActorLabel(value) ?? value)
+        : value
     ])
   );
 }
 
 function localizeActorLabelForTopicLanguage(value: string): string {
   switch (normalizeActorLabel(value)) {
+    case "first-viewpoint":
     case "perspective-a":
-      return "\u89c6\u89d2 A";
+      return "\u7b2c\u4e00\u89c6\u89d2";
+    case "alternative-viewpoint":
     case "perspective-b":
-      return "\u89c6\u89d2 B";
+      return "\u66ff\u4ee3\u89c6\u89d2";
+    case "additional-viewpoint":
     case "perspective-c":
-      return "\u89c6\u89d2 C";
+      return "\u8865\u5145\u89c6\u89d2";
+    case "skeptic":
     case "reviewer":
-      return "\u5ba1\u67e5\u8005";
+      return "\u8d28\u7591\u8005";
     case "review-coordinator":
       return "\u5ba1\u67e5\u534f\u8c03\u8005";
     case "option-reviewer":
@@ -7197,8 +7214,9 @@ function localizeActorLabelForTopicLanguage(value: string): string {
       return "\u8bc1\u636e\u6838\u67e5\u8005";
     case "risk-reviewer":
       return "\u98ce\u9669\u5ba1\u67e5\u8005";
+    case "summary-writer":
     case "conclusion-writer":
-      return "\u7ed3\u8bba\u8d77\u8349\u8005";
+      return "\u603b\u7ed3\u64b0\u5199\u8005";
     case "discussion-organizer":
       return "\u8ba8\u8bba\u7ec4\u7ec7\u8005";
     case "discussion-room":
@@ -7712,7 +7730,7 @@ function translateRoomActivityValues(
   return Object.fromEntries(
     Object.entries(values).map(([key, value]) => [
       key,
-      typeof value === "string" ? t(value) : value
+      typeof value === "string" ? t(getUserFacingActorLabel(value) ?? value) : value
     ])
   );
 }

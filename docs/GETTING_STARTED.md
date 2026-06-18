@@ -119,8 +119,8 @@ http://127.0.0.1:3877/runs/new?participants=model-backed
 ```
 
 Write the discussion question. Use the default role models first unless you have
-a reason to customize Perspective A, Perspective B, Perspective C, Reviewer,
-Evidence checker, Risk reviewer, or Conclusion writer.
+a reason to customize First viewpoint, Alternative viewpoint, Additional
+viewpoint, Skeptic, Evidence checker, Risk reviewer, or Summary writer.
 
 ## 7. Read the Discussion Room
 

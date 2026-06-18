@@ -100,7 +100,7 @@ provider 验证通过后，Setup / Models 会显示模型讨论是否已可用�
 http://127.0.0.1:3877/runs/new?participants=model-backed
 ```
 
-填写讨论问题。第一次使用时建议先用默认 role model，不要急着自定义 Perspective A、Perspective B、Perspective C、Reviewer、Evidence checker、Risk reviewer 或 Conclusion writer。
+填写讨论问题。第一次使用时建议先用默认 role model，不要急着自定义第一视角、替代视角、补充视角、质疑者、证据核查者、风险审查者或总结撰写者。
 
 ## 7. 阅读 Discussion Room
 

@@ -30,6 +30,93 @@ const LANGUAGE_OPTIONS: readonly {
 ];
 
 const ZH_CN_TRANSLATIONS: TranslationMap = {
+  "First viewpoint": "\u7b2c\u4e00\u89c6\u89d2",
+  "Alternative viewpoint": "\u66ff\u4ee3\u89c6\u89d2",
+  "Additional viewpoint": "\u8865\u5145\u89c6\u89d2",
+  Skeptic: "\u8d28\u7591\u8005",
+  "Summary writer": "\u603b\u7ed3\u64b0\u5199\u8005",
+  "First viewpoint model": "\u7b2c\u4e00\u89c6\u89d2\u6a21\u578b",
+  "Alternative viewpoint model": "\u66ff\u4ee3\u89c6\u89d2\u6a21\u578b",
+  "Additional viewpoint model": "\u8865\u5145\u89c6\u89d2\u6a21\u578b",
+  "First viewpoint, Alternative viewpoint, and Additional viewpoint will answer independently.":
+    "\u7b2c\u4e00\u89c6\u89d2\u3001\u66ff\u4ee3\u89c6\u89d2\u548c\u8865\u5145\u89c6\u89d2\u4f1a\u72ec\u7acb\u56de\u5e94\u3002",
+  "First viewpoint and Alternative viewpoint will answer independently.":
+    "\u7b2c\u4e00\u89c6\u89d2\u548c\u66ff\u4ee3\u89c6\u89d2\u4f1a\u72ec\u7acb\u56de\u5e94\u3002",
+  "First viewpoint and Alternative viewpoint use deterministic sample material.":
+    "\u7b2c\u4e00\u89c6\u89d2\u548c\u66ff\u4ee3\u89c6\u89d2\u4f7f\u7528\u786e\u5b9a\u6027\u793a\u4f8b\u6750\u6599\u3002",
+  "First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer use {provider} in the current Web path.":
+    "\u5728\u5f53\u524d Web \u8def\u5f84\u4e2d\uff0c\u7b2c\u4e00\u89c6\u89d2\u3001\u66ff\u4ee3\u89c6\u89d2\u3001\u53ef\u9009\u7684\u8865\u5145\u89c6\u89d2\u3001\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u603b\u7ed3\u64b0\u5199\u8005\u4f7f\u7528 {provider}\u3002",
+  "A change here applies to First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer.":
+    "\u6b64\u5904\u7684\u66f4\u6539\u4f1a\u5e94\u7528\u5230\u7b2c\u4e00\u89c6\u89d2\u3001\u66ff\u4ee3\u89c6\u89d2\u3001\u53ef\u9009\u7684\u8865\u5145\u89c6\u89d2\u3001\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u603b\u7ed3\u64b0\u5199\u8005\u3002",
+  "First viewpoint and Alternative viewpoint use {provider}.":
+    "\u7b2c\u4e00\u89c6\u89d2\u548c\u66ff\u4ee3\u89c6\u89d2\u4f7f\u7528 {provider}\u3002",
+  "First viewpoint and Alternative viewpoint can use the saved provider after verification.":
+    "\u9a8c\u8bc1\u540e\uff0c\u7b2c\u4e00\u89c6\u89d2\u548c\u66ff\u4ee3\u89c6\u89d2\u53ef\u4ee5\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u3002",
+  "First viewpoint and Alternative viewpoint use built-in demo material.":
+    "\u7b2c\u4e00\u89c6\u89d2\u548c\u66ff\u4ee3\u89c6\u89d2\u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u6750\u6599\u3002",
+  "Additional viewpoint can use {provider}.":
+    "\u8865\u5145\u89c6\u89d2\u53ef\u4ee5\u4f7f\u7528 {provider}\u3002",
+  "Additional viewpoint can use the saved provider after verification.":
+    "\u9a8c\u8bc1\u540e\uff0c\u8865\u5145\u89c6\u89d2\u53ef\u4ee5\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u3002",
+  "Additional viewpoint is not available until a model provider is ready.":
+    "\u5728\u6a21\u578b\u63d0\u4f9b\u65b9\u5c31\u7eea\u4e4b\u524d\uff0c\u8865\u5145\u89c6\u89d2\u4e0d\u53ef\u7528\u3002",
+  "Choose Broader review on the start page to include Additional viewpoint.":
+    "\u5728\u5f00\u59cb\u9875\u9009\u62e9\u201c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u201d\u4ee5\u5305\u542b\u8865\u5145\u89c6\u89d2\u3002",
+  "Test the connection to unlock Additional viewpoint and broader AI review.":
+    "\u6d4b\u8bd5\u8fde\u63a5\u540e\uff0c\u5373\u53ef\u89e3\u9501\u8865\u5145\u89c6\u89d2\u548c\u66f4\u5e7f AI \u5ba1\u67e5\u3002",
+  "Add a provider to unlock Additional viewpoint and broader AI review.":
+    "\u6dfb\u52a0\u63d0\u4f9b\u65b9\u5373\u53ef\u89e3\u9501\u8865\u5145\u89c6\u89d2\u548c\u66f4\u5e7f AI \u5ba1\u67e5\u3002",
+  "Additional viewpoint is only available after AI setup for broader review.":
+    "\u8865\u5145\u89c6\u89d2\u53ea\u6709\u5728 AI \u8bbe\u7f6e\u5b8c\u6210\u540e\u624d\u53ef\u7528\u4e8e\u66f4\u5e7f\u5ba1\u67e5\u3002",
+  "Skeptic, Evidence checker, and Risk reviewer use the configured model provider.":
+    "\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
+  "Skeptic, Evidence checker, and Risk reviewer use the local review flow.":
+    "\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u672c\u5730\u5ba1\u67e5\u6d41\u7a0b\u3002",
+  "Skeptic, Evidence checker, and Risk reviewer are not ready yet.":
+    "\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u5c1a\u672a\u5c31\u7eea\u3002",
+  "Skeptic, Evidence checker, Risk reviewer, and Summary writer can review the discussion after first responses.":
+    "\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u603b\u7ed3\u64b0\u5199\u8005\u53ef\u4ee5\u5728\u9996\u6b21\u56de\u5e94\u540e\u5ba1\u9605\u8ba8\u8bba\u3002",
+  "Skeptic, Evidence checker, Risk reviewer, and Summary writer must be ready before Deliberum can prepare the answer.":
+    "Deliberum \u9700\u8981\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u603b\u7ed3\u64b0\u5199\u8005\u5c31\u7eea\u540e\u624d\u80fd\u51c6\u5907\u7b54\u6848\u3002",
+  "Summary writer ready": "\u603b\u7ed3\u64b0\u5199\u8005\u5df2\u5c31\u7eea",
+  "Summary writer setup needed": "\u9700\u8981\u8bbe\u7f6e\u603b\u7ed3\u64b0\u5199\u8005",
+  "Summary writer uses the configured model provider.":
+    "\u603b\u7ed3\u64b0\u5199\u8005\u4f7f\u7528\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u3002",
+  "Summary writer uses the local review flow.":
+    "\u603b\u7ed3\u64b0\u5199\u8005\u4f7f\u7528\u672c\u5730\u5ba1\u67e5\u6d41\u7a0b\u3002",
+  "Summary writer is not ready yet.": "\u603b\u7ed3\u64b0\u5199\u8005\u5c1a\u672a\u5c31\u7eea\u3002",
+  "Leave blank to use the first-response model. A value here applies to Skeptic, Evidence checker, Risk reviewer, and Summary writer only.":
+    "\u7559\u7a7a\u5219\u4f7f\u7528\u9996\u6b21\u56de\u5e94\u6a21\u578b\u3002\u6b64\u5904\u586b\u5199\u7684\u503c\u4ec5\u5e94\u7528\u4e8e\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u603b\u7ed3\u64b0\u5199\u8005\u3002",
+  "Model viewpoints can answer first, then Skeptic, Evidence checker, Risk reviewer, and Summary writer can review the result.":
+    "\u6a21\u578b\u89c6\u89d2\u53ef\u4ee5\u5148\u56de\u5e94\uff0c\u7136\u540e\u7531\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u603b\u7ed3\u64b0\u5199\u8005\u5ba1\u9605\u7ed3\u679c\u3002",
+  "Continue discussion will ask configured AI participants for independent first responses, then use Skeptic, Evidence checker, Risk reviewer, and Summary writer to review the result.":
+    "\u7ee7\u7eed\u8ba8\u8bba\u4f1a\u8bf7\u5df2\u914d\u7f6e\u7684 AI \u53c2\u4e0e\u8005\u72ec\u7acb\u7ed9\u51fa\u9996\u6b21\u56de\u5e94\uff0c\u7136\u540e\u7531\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u603b\u7ed3\u64b0\u5199\u8005\u5ba1\u9605\u7ed3\u679c\u3002",
+  "Viewpoint models customized": "\u5df2\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
+  "1 custom viewpoint model": "1 \u4e2a\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
+  "{count} custom viewpoint models": "{count} \u4e2a\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
+  "Customize viewpoint models": "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
+  "Viewpoint model assignment": "\u89c6\u89d2\u6a21\u578b\u5206\u914d",
+  "Viewpoint models": "\u89c6\u89d2\u6a21\u578b",
+  "Give individual first-response viewpoints their own model. Leave a field blank to use the first-response model.":
+    "\u4e3a\u5355\u4e2a\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u6307\u5b9a\u81ea\u5df1\u7684\u6a21\u578b\u3002\u7559\u7a7a\u5219\u4f7f\u7528\u9996\u6b21\u56de\u5e94\u6a21\u578b\u3002",
+  "Viewpoint model overrides affect independent first responses only. Review roles use the review role model when one is set.":
+    "\u89c6\u89d2\u6a21\u578b\u8986\u76d6\u4ec5\u5f71\u54cd\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002",
+  "Viewpoints without their own model use this first-response model.":
+    "\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f7f\u7528\u8fd9\u4e2a\u9996\u6b21\u56de\u5e94\u6a21\u578b\u3002",
+  "Viewpoints without their own model use the model saved in Connect AI.":
+    "\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002",
+  "Review roles use this model while first-response viewpoints keep their assigned models.":
+    "\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\uff0c\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u4fdd\u6301\u5404\u81ea\u5206\u914d\u7684\u6a21\u578b\u3002",
+  "Review roles use the same model as first-response viewpoints.":
+    "\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u4e0e\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u76f8\u540c\u7684\u6a21\u578b\u3002",
+  "Customized viewpoint models only affect independent first responses. Review roles use the review role model when one is set.":
+    "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002",
+  "The start page can customize first-response viewpoint models and a separate review role model for one discussion.":
+    "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u5355\u72ec\u6307\u5b9a\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u3002",
+  "Leave blank to use the model saved in Connect AI. Viewpoints without their own model use this value for first responses.":
+    "\u7559\u7a7a\u5219\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f1a\u5c06\u6b64\u503c\u7528\u4f5c\u9996\u6b21\u56de\u5e94\u6a21\u578b\u3002",
+  "Leave blank to use the model saved in provider setup. Viewpoints without their own model use this value for first responses.":
+    "\u7559\u7a7a\u5219\u4f7f\u7528\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f1a\u5c06\u6b64\u503c\u7528\u4f5c\u9996\u6b21\u56de\u5e94\u6a21\u578b\u3002",
   "Connect AI first": "\u5148\u8fde\u63a5 AI",
   "Connect AI needed": "\u9700\u8981\u8fde\u63a5 AI",
   "AI provider ready": "AI \u63d0\u4f9b\u65b9\u5df2\u5c31\u7eea",
@@ -2169,6 +2256,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u8fd9\u4e2a\u540e\u7eed\u56de\u5408\u8ba9\u53c2\u4e0e\u8005\u56de\u5e94\u5148\u524d\u7684\u53d1\u8a00\uff0c\u540c\u65f6\u8ba9\u5ba1\u67e5\u548c\u8bc1\u636e\u6d88\u606f\u4fdd\u6301\u5728\u540c\u4e00\u6761\u5bf9\u8bdd\u7ebf\u4e2d\u3002",
   "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies.":
     "\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5\uff1b\u7136\u540e\u7ec4\u7ec7\u8005\u3001\u5ba1\u67e5\u8005\u548c\u8bc1\u636e\u68c0\u67e5\u8005\u4ee5\u804a\u5929\u5f0f\u56de\u590d\u52a0\u5165\u3002",
+  "Participants respond to the brief first; then the organizer, skeptic, and evidence checker join as chat-like replies.":
+    "\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5\uff1b\u7136\u540e\u7ec4\u7ec7\u8005\u3001\u8d28\u7591\u8005\u548c\u8bc1\u636e\u68c0\u67e5\u8005\u4ee5\u804a\u5929\u5f0f\u56de\u590d\u52a0\u5165\u3002",
   "Starting another room round": "\u5f00\u59cb\u65b0\u4e00\u8f6e\u8ba8\u8bba",
   "Setting the shared brief": "\u8bbe\u5b9a\u5171\u540c\u7b80\u62a5",
   "Inviting independent first responses": "\u9080\u8bf7\u72ec\u7acb\u521d\u59cb\u56de\u5e94",

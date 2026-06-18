@@ -380,8 +380,8 @@ async function assertRoomUpdateMessage(page, label) {
     await roomUpdate.getByRole("region", { name: "New discussion round" }).waitFor();
     const updateMessages = roomUpdate.getByRole("list", { name: "Discussion update messages" });
     await updateMessages.waitFor();
-    await updateMessages.getByText("Perspective A", { exact: true }).first().waitFor();
-    await updateMessages.getByText("Perspective B", { exact: true }).first().waitFor();
+    await updateMessages.getByText("First viewpoint", { exact: true }).first().waitFor();
+    await updateMessages.getByText("Alternative viewpoint", { exact: true }).first().waitFor();
     await updateMessages
       .getByText("Answered another participant", { exact: true })
       .first()

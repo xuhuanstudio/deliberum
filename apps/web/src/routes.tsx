@@ -1299,7 +1299,7 @@ function describeLandingParticipantStep(input: {
       label: "Step 3",
       title: "Participants and review roles ready",
       detail: input.organizerMode === "model"
-        ? "Model perspectives can answer first, then Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the result."
+        ? "Model viewpoints can answer first, then Skeptic, Evidence checker, Risk reviewer, and Summary writer can review the result."
         : "Model perspectives can answer first, then local review roles can review disagreements, evidence, risks, and the conclusion.",
       tone: "ok"
     };
@@ -1970,15 +1970,15 @@ const SETUP_ROLE_PERSPECTIVE_FIELDS: readonly {
 }[] = [
   {
     participantId: "provider-perspective-a",
-    label: "Perspective A model"
+    label: "First viewpoint model"
   },
   {
     participantId: "provider-perspective-b",
-    label: "Perspective B model"
+    label: "Alternative viewpoint model"
   },
   {
     participantId: "provider-perspective-c",
-    label: "Perspective C model"
+    label: "Additional viewpoint model"
   }
 ];
 
@@ -2073,14 +2073,14 @@ function SetupRoleDefaultsSummary({
                 : t("First-response model")
           },
           {
-            label: t("Perspective models"),
+            label: t("Viewpoint models"),
             value:
               saved &&
               displayedDefaults?.customPerspectiveModelsEnabled &&
               perspectiveOverrideCount > 0
                 ? perspectiveOverrideCount === 1
-                  ? t("1 custom perspective model")
-                  : t("{count} custom perspective models", {
+                  ? t("1 custom viewpoint model")
+                  : t("{count} custom viewpoint models", {
                       count: perspectiveOverrideCount
                     })
                 : t("Use first-response model")
@@ -2150,7 +2150,7 @@ function SetupRoleDefaultsSummary({
               <strong>{t("First-response model")}</strong>
               <small>
                 {t(
-                  "Leave blank to use the model saved in provider setup. Perspectives without their own model use this value for first responses."
+                  "Leave blank to use the model saved in provider setup. Viewpoints without their own model use this value for first responses."
                 )}
               </small>
             </span>
@@ -2173,7 +2173,7 @@ function SetupRoleDefaultsSummary({
               <strong>{t("Review role model")}</strong>
               <small>
                 {t(
-                  "Leave blank to use the first-response model. A value here applies to Reviewer, Evidence checker, Risk reviewer, and Conclusion writer only."
+                  "Leave blank to use the first-response model. A value here applies to Skeptic, Evidence checker, Risk reviewer, and Summary writer only."
                 )}
               </small>
             </span>
@@ -2203,10 +2203,10 @@ function SetupRoleDefaultsSummary({
               }
             />
             <span>
-              <strong>{t("Customize perspective models")}</strong>
+              <strong>{t("Customize viewpoint models")}</strong>
               <small>
                 {t(
-                  "Give individual first-response perspectives their own model. Leave a field blank to use the first-response model."
+                  "Give individual first-response viewpoints their own model. Leave a field blank to use the first-response model."
                 )}
               </small>
             </span>
@@ -2214,7 +2214,7 @@ function SetupRoleDefaultsSummary({
           {form.customPerspectiveModelsEnabled ? (
             <div
               className="du-perspective-model-grid"
-              aria-label={t("Perspective model assignment")}
+              aria-label={t("Viewpoint model assignment")}
             >
               {editablePerspectiveFields.map((field) => (
                 <label key={field.participantId} htmlFor={`setup-${field.participantId}-model`}>
@@ -2239,7 +2239,7 @@ function SetupRoleDefaultsSummary({
               ))}
               <p>
                 {t(
-                  "Perspective model overrides affect independent first responses only. Review roles use the review role model when one is set."
+                  "Viewpoint model overrides affect independent first responses only. Review roles use the review role model when one is set."
                 )}
               </p>
             </div>
@@ -2874,7 +2874,7 @@ function buildSetupDiscussionReadiness(
         title: "Review roles and conclusion",
         status: organizerMode ? "Ready" : "Review roles setup needed",
         detail: organizerMode === "model"
-          ? "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the discussion after first responses."
+          ? "Skeptic, Evidence checker, Risk reviewer, and Summary writer can review the discussion after first responses."
           : organizerMode === "local"
             ? "Local review roles can compare options, review unresolved points, evidence, and risks, then draft the current answer."
             : "Discussions may collect first responses only until review roles are ready.",
@@ -2951,7 +2951,7 @@ function buildSetupParticipantReadiness(
       ? "Local review roles"
       : "Review roles not ready";
   const organizerDetail = organizerMode === "model"
-    ? "Reviewer, Evidence checker, Risk reviewer, and Conclusion writer can review the discussion after first responses."
+    ? "Skeptic, Evidence checker, Risk reviewer, and Summary writer can review the discussion after first responses."
     : organizerMode === "local"
       ? "Local review roles can compare options, review evidence and risks, and draft the current answer."
       : "Discussions may collect first responses only until review roles are ready.";
@@ -2963,14 +2963,14 @@ function buildSetupParticipantReadiness(
         title: "Model assignment",
         status: "Single verified provider",
         detail:
-          "Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer use {provider} in the current Web path.",
+          "First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer use {provider} in the current Web path.",
         detailValues: { provider: providerName },
         depthAction:
           "Choose Focused review or Broader review on the start page before creating the discussion.",
         modelPolicy:
-          "The start page can customize first-response perspective models and a separate review role model for one discussion.",
+          "The start page can customize first-response viewpoint models and a separate review role model for one discussion.",
         editDetail:
-          "A change here applies to Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer.",
+          "A change here applies to First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer.",
         editAction: "Edit shared provider setup",
         tone: "ok"
       }
@@ -3014,11 +3014,11 @@ function buildSetupParticipantReadiness(
           ? "Demo walkthrough"
           : "Needs setup",
       uses: modelReady
-        ? "Perspective A and Perspective B use {provider}."
+        ? "First viewpoint and Alternative viewpoint use {provider}."
         : modelNeedsVerification
-          ? "Perspective A and Perspective B can use the saved provider after verification."
+          ? "First viewpoint and Alternative viewpoint can use the saved provider after verification."
         : localPresetReady
-          ? "Perspective A and Perspective B use built-in demo material."
+          ? "First viewpoint and Alternative viewpoint use built-in demo material."
           : "No first-response participants are ready yet.",
       usesValues: modelReady ? { provider: providerName } : undefined,
       detail:
@@ -3040,28 +3040,28 @@ function buildSetupParticipantReadiness(
           ? "Test provider"
           : "Provider required",
       uses: modelReady
-        ? "Perspective C can use {provider}."
+        ? "Additional viewpoint can use {provider}."
         : modelNeedsVerification
-          ? "Perspective C can use the saved provider after verification."
-        : "Perspective C is not available until a model provider is ready.",
+          ? "Additional viewpoint can use the saved provider after verification."
+        : "Additional viewpoint is not available until a model provider is ready.",
       usesValues: modelReady ? { provider: providerName } : undefined,
       detail:
         "Broader review adds one more independent AI response when the question needs more comparison material.",
       action: modelReady
-        ? "Choose Broader review on the start page to include Perspective C."
+        ? "Choose Broader review on the start page to include Additional viewpoint."
         : modelNeedsVerification
-          ? "Test the connection to unlock Perspective C and broader AI review."
-          : "Add a provider to unlock Perspective C and broader AI review.",
+          ? "Test the connection to unlock Additional viewpoint and broader AI review."
+          : "Add a provider to unlock Additional viewpoint and broader AI review.",
       tone: modelReady ? "ok" : "neutral"
     },
     {
       title: "Disagreement and evidence review",
       status: organizerMode ? "Review roles ready" : "Review roles setup needed",
       uses: organizerMode === "model"
-        ? "Reviewer, Evidence checker, and Risk reviewer use the configured model provider."
+        ? "Skeptic, Evidence checker, and Risk reviewer use the configured model provider."
         : organizerMode === "local"
-          ? "Reviewer, Evidence checker, and Risk reviewer use the local review flow."
-          : "Reviewer, Evidence checker, and Risk reviewer are not ready yet.",
+          ? "Skeptic, Evidence checker, and Risk reviewer use the local review flow."
+          : "Skeptic, Evidence checker, and Risk reviewer are not ready yet.",
       detail:
         "These roles keep unresolved points, checks, and risks visible before the answer is trusted.",
       action: organizerMode
@@ -3071,12 +3071,12 @@ function buildSetupParticipantReadiness(
     },
     {
       title: "Answer and next steps",
-      status: organizerMode ? "Conclusion writer ready" : "Conclusion writer setup needed",
+      status: organizerMode ? "Summary writer ready" : "Summary writer setup needed",
       uses: organizerMode === "model"
-        ? "Conclusion writer uses the configured model provider."
+        ? "Summary writer uses the configured model provider."
         : organizerMode === "local"
-          ? "Conclusion writer uses the local review flow."
-          : "Conclusion writer is not ready yet.",
+          ? "Summary writer uses the local review flow."
+          : "Summary writer is not ready yet.",
       detail:
         "This role turns the current discussion state into a reviewable answer with next steps.",
       action: organizerMode
@@ -3087,7 +3087,7 @@ function buildSetupParticipantReadiness(
   ];
   const perspectiveItems: SetupParticipantReadinessItem[] = [
     {
-      role: "Perspective A",
+      role: "First viewpoint",
       source: perspectiveSource,
       sourceValues: modelReady ? { provider: providerName } : undefined,
       status: perspectiveStatus,
@@ -3095,7 +3095,7 @@ function buildSetupParticipantReadiness(
       tone: perspectiveTone
     },
     {
-      role: "Perspective B",
+      role: "Alternative viewpoint",
       source: perspectiveSource,
       sourceValues: modelReady ? { provider: providerName } : undefined,
       status: perspectiveStatus,
@@ -3103,19 +3103,19 @@ function buildSetupParticipantReadiness(
       tone: perspectiveTone
     },
     {
-      role: "Perspective C",
+      role: "Additional viewpoint",
       source: modelReady ? "{provider} model" : "Broader review after AI setup",
       sourceValues: modelReady ? { provider: providerName } : undefined,
       status: modelReady ? "Available in broader review" : "Setup needed",
       detail: modelReady
         ? "Choose Broader review on New Discussion to add a third independent AI perspective."
-        : "Perspective C is only available after AI setup for broader review.",
+        : "Additional viewpoint is only available after AI setup for broader review.",
       tone: modelReady ? "ok" : "neutral"
     }
   ];
   const organizerItems: SetupParticipantReadinessItem[] = [
     {
-      role: "Reviewer",
+      role: "Skeptic",
       source: organizerSource,
       status: organizerStatus,
       detail: organizerDetail,
@@ -3136,7 +3136,7 @@ function buildSetupParticipantReadiness(
       tone: organizerTone
     },
     {
-      role: "Conclusion writer",
+      role: "Summary writer",
       source: organizerSource,
       status: organizerStatus,
       detail: organizerDetail,

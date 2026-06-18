@@ -186,7 +186,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByText("Room progress and stages", { exact: true }).click();
   await page.getByText("Participant first responses").waitFor();
   if (releaseConfig.perspectiveCount === 3) {
-    await page.getByText("Perspective C").first().waitFor();
+    await page.getByText("Additional viewpoint").first().waitFor();
   }
   const roomOutputSummary = page.locator("details.du-room-outputs-section");
   if (await roomOutputSummary.evaluate((element) => element.open)) {
@@ -237,10 +237,10 @@ async function selectPerspectiveDepth(page) {
   if (!(await broaderReview.isChecked())) {
     await broaderReview.check();
   }
-  await page.getByText("Perspective C").first().waitFor();
+  await page.getByText("Additional viewpoint").first().waitFor();
   await page.getByText("3 model perspectives").waitFor();
   await page
-    .getByText("Perspective A, Perspective B, and Perspective C will answer independently.")
+    .getByText("First viewpoint, Alternative viewpoint, and Additional viewpoint will answer independently.")
     .waitFor();
 }
 

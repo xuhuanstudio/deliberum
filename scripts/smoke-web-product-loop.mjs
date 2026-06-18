@@ -75,7 +75,7 @@ try {
   }
   if (provider.perspectiveModelRequestCount < 1) {
     throw new Error(
-      `Browser product loop provider saw ${provider.perspectiveModelRequestCount} request(s) for the perspective model; expected Perspective A to use its own model override.`
+      `Browser product loop provider saw ${provider.perspectiveModelRequestCount} request(s) for the viewpoint model; expected First viewpoint to use its own model override.`
     );
   }
   if (provider.reviewModelRequestCount < 4) {
@@ -175,7 +175,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.waitForURL(/\/runs\/new\?participants=model-backed&perspectives=3$/);
   await page.getByRole("heading", { name: "New Discussion" }).waitFor();
   await page.getByText("Discussion with AI selected").waitFor();
-  await page.getByText("Perspective C", { exact: true }).waitFor();
+  await page.getByText("Additional viewpoint", { exact: true }).waitFor();
   await page.getByText("Preview participants and review path").click();
   await page.getByText("3 AI perspectives").waitFor();
   await page
@@ -200,21 +200,21 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.locator("#discussion-model-override").fill(discussionModelName);
   await page.getByText(discussionModelName).first().waitFor();
   await page
-    .getByText("Perspectives without their own model use this first-response model.")
+    .getByText("Viewpoints without their own model use this first-response model.")
     .waitFor();
   await page.locator("#discussion-review-model-override").fill(reviewModelName);
   await page.getByText(reviewModelName).waitFor();
   await page
     .getByText(
-      "Review roles use this model while first-response perspectives keep their assigned models."
+      "Review roles use this model while first-response viewpoints keep their assigned models."
     )
     .waitFor();
-  await page.getByRole("checkbox", { name: /Customize perspective models/i }).click();
-  await page.getByLabel("Perspective A model").fill(perspectiveModelName);
-  await page.getByText("Perspective models customized").waitFor();
+  await page.getByRole("checkbox", { name: /Customize viewpoint models/i }).click();
+  await page.getByLabel("First viewpoint model").fill(perspectiveModelName);
+  await page.getByText("Viewpoint models customized").waitFor();
   await page
     .getByText(
-      "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set."
+      "Customized viewpoint models only affect independent first responses. Review roles use the review role model when one is set."
     )
     .waitFor();
   await page.getByText("Participant model choices", { exact: true }).waitFor();
@@ -234,15 +234,15 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page.getByText(discussionModelName).waitFor();
   await page.getByText(reviewModelName).waitFor();
-  await page.getByText("1 custom perspective model").waitFor();
+  await page.getByText("1 custom viewpoint model").waitFor();
   if ((await page.locator("#setup-role-first-response-model").inputValue()) !== discussionModelName) {
     throw new Error("Connect AI did not show the saved first-response role model.");
   }
   if ((await page.locator("#setup-role-review-model").inputValue()) !== reviewModelName) {
     throw new Error("Connect AI did not show the saved review role model.");
   }
-  if ((await page.getByLabel("Perspective A model").inputValue()) !== perspectiveModelName) {
-    throw new Error("Connect AI did not show the saved Perspective A model.");
+  if ((await page.getByLabel("First viewpoint model").inputValue()) !== perspectiveModelName) {
+    throw new Error("Connect AI did not show the saved First viewpoint model.");
   }
   await page.getByRole("button", { name: "Save participant choices" }).click();
   await page
@@ -260,8 +260,8 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   if ((await page.locator("#discussion-review-model-override").inputValue()) !== reviewModelName) {
     throw new Error("Saved participant choices did not restore the review role model.");
   }
-  if ((await page.getByLabel("Perspective A model").inputValue()) !== perspectiveModelName) {
-    throw new Error("Saved participant choices did not restore the Perspective A model.");
+  if ((await page.getByLabel("First viewpoint model").inputValue()) !== perspectiveModelName) {
+    throw new Error("Saved participant choices did not restore the First viewpoint model.");
   }
   await page.getByRole("button", { name: "Clear saved participant choices" }).click();
   await page
@@ -336,7 +336,9 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page
     .locator("#room-conversation-transcript")
-    .getByText(/Now that the first responses are visible, I'm responding to Perspective/)
+    .getByText(
+      /Now that the first responses are visible, I'm responding to (First viewpoint|Alternative viewpoint|Additional viewpoint)/
+    )
     .first()
     .waitFor();
   await page.locator("#room-conversation-transcript").waitFor();
@@ -386,18 +388,18 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page
     .getByText(
-      "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies."
+      "Participants respond to the brief first; then the organizer, skeptic, and evidence checker join as chat-like replies."
     )
     .waitFor();
   await page.getByText("To the strongest current option").first().waitFor();
   await page.getByText("Shared a strongest current option").first().waitFor();
   await page.getByText("Sharing a strongest current option").first().waitFor();
-  await page.getByText("Replying to Perspective A's latest point").first().waitFor();
+  await page.getByText("Replying to First viewpoint's latest point").first().waitFor();
   await page
-    .getByText("Replying to Perspective A's option with an open disagreement")
+    .getByText("Replying to First viewpoint's option with an open disagreement")
     .first()
     .waitFor();
-  await page.getByText("Checking evidence behind Perspective A's claim").first().waitFor();
+  await page.getByText("Checking evidence behind First viewpoint's claim").first().waitFor();
   await assertRoomReportDetailsHidden(page, "discussion room output summary");
   await page.getByText("Current answer: Ready to review").waitFor();
   await page.locator(".du-room-focus").getByText("Needs checking", { exact: true }).waitFor();
@@ -458,8 +460,8 @@ async function assertRoomUpdateMessage(page, label) {
     await roomUpdate.getByRole("region", { name: "New discussion round" }).waitFor();
     const updateMessages = roomUpdate.getByRole("list", { name: "Discussion update messages" });
     await updateMessages.waitFor();
-    await updateMessages.getByText("Perspective A", { exact: true }).first().waitFor();
-    await updateMessages.getByText("Perspective B", { exact: true }).first().waitFor();
+    await updateMessages.getByText("First viewpoint", { exact: true }).first().waitFor();
+    await updateMessages.getByText("Alternative viewpoint", { exact: true }).first().waitFor();
     await updateMessages
       .getByText("Answered another participant", { exact: true })
       .first()
@@ -528,9 +530,9 @@ async function assertSuccessfulRoomUpdateReceipt(page, label) {
     if (
       ![
         "Discussion organizer",
-        "Reviewer",
+        "Skeptic",
         "Evidence checker",
-        "Conclusion writer",
+        "Summary writer",
         "Risk reviewer"
       ].some((speaker) => updateText.includes(speaker))
     ) {

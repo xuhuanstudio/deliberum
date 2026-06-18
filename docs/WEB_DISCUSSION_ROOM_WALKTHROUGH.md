@@ -56,7 +56,7 @@ real provider credentials.
 
 3. Follow the discussion timeline.
 
-   Participant/model perspectives should appear as readable contributions with understandable speaker names such as Perspective A, Perspective B, Reviewer, or Evidence checker. Raw ledger events and internal ids belong in Advanced / Developer Mode.
+   Participant/model viewpoints should appear as readable contributions with understandable speaker names such as First viewpoint, Alternative viewpoint, Skeptic, or Evidence checker. Raw ledger events and internal ids belong in Advanced / Developer Mode.
 
 4. Review the decision workspace.
 

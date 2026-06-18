@@ -1695,18 +1695,18 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Who joins the discussion")).toBeTruthy();
     expect(screen.getByText("First responses")).toBeTruthy();
     expect(
-      screen.getByText("Perspective A and Perspective B use built-in demo material.")
+      screen.getByText("First viewpoint and Alternative viewpoint use built-in demo material.")
     ).toBeTruthy();
     expect(
       screen.getByText("Use the demo now or add a provider for AI responses.")
     ).toBeTruthy();
     expect(screen.getByText("Broader review")).toBeTruthy();
     expect(
-      screen.getByText("Add a provider to unlock Perspective C and broader AI review.")
+      screen.getByText("Add a provider to unlock Additional viewpoint and broader AI review.")
     ).toBeTruthy();
     expect(screen.getByText("Disagreement and evidence review")).toBeTruthy();
     expect(
-      screen.getByText("Reviewer, Evidence checker, and Risk reviewer use the local review flow.")
+      screen.getByText("Skeptic, Evidence checker, and Risk reviewer use the local review flow.")
     ).toBeTruthy();
     expect(screen.getByText("Answer and next steps")).toBeTruthy();
     expect(screen.getAllByText("Uses").length).toBeGreaterThan(0);
@@ -1716,10 +1716,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Broader review after AI setup")).toBeTruthy();
     expect(screen.getAllByText("Local review roles").length).toBeGreaterThan(1);
     expect(document.body.textContent ?? "").not.toContain("local organizer");
-    expect(screen.getByText("Perspective C")).toBeTruthy();
-    expect(screen.getByText("Reviewer")).toBeTruthy();
+    expect(screen.getByText("Additional viewpoint")).toBeTruthy();
+    expect(screen.getByText("Skeptic")).toBeTruthy();
     expect(screen.getByText("Evidence checker")).toBeTruthy();
-    expect(screen.getByText("Conclusion writer")).toBeTruthy();
+    expect(screen.getByText("Summary writer")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "Add AI provider" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Model provider management")).toBeTruthy();
     expect(screen.getByText("Connected AI providers")).toBeTruthy();
@@ -2393,10 +2393,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByText("Discussion brief details")).toBeNull();
     expect(screen.getByRole("button", { name: "Send message and continue" })).toBeTruthy();
     const modelBackedRoster = screen.getByRole("region", { name: "Room participants" });
-    expect(modelBackedRoster.textContent ?? "").toContain("Perspective A");
-    expect(modelBackedRoster.textContent ?? "").toContain("Perspective B");
+    expect(modelBackedRoster.textContent ?? "").toContain("First viewpoint");
+    expect(modelBackedRoster.textContent ?? "").toContain("Alternative viewpoint");
     expect(modelBackedRoster.textContent ?? "").toContain("OpenAI-compatible default model");
-    expect(modelBackedRoster.textContent ?? "").toContain("Reviewer");
+    expect(modelBackedRoster.textContent ?? "").toContain("Skeptic");
     expect(modelBackedRoster.textContent ?? "").toContain("Evidence checker");
     expect(modelBackedRoster.textContent ?? "").toContain("Manage models");
     expect(modelBackedRoster.textContent ?? "").not.toContain("providerConfigId");
@@ -2460,7 +2460,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByText("Room details")).toBeNull();
     expect(screen.queryByText("Room output summary")).toBeNull();
     expect(screen.queryByText("Review status summary")).toBeNull();
-    expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Skeptic").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Raised an open disagreement").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Reviewed evidence gaps").length).toBeGreaterThan(0);
@@ -2577,7 +2577,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u8c01\u4f1a\u52a0\u5165\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u521d\u59cb\u56de\u5e94")).toBeTruthy();
     expect(
-      screen.getByText("\u89c6\u89d2 A \u548c\u89c6\u89d2 B \u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u6750\u6599\u3002")
+      screen.getByText("\u7b2c\u4e00\u89c6\u89d2\u548c\u66ff\u4ee3\u89c6\u89d2\u4f7f\u7528\u5185\u7f6e\u6f14\u793a\u6750\u6599\u3002")
     ).toBeTruthy();
     expect(
       screen.getByText(
@@ -2587,7 +2587,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5206\u6b67\u4e0e\u8bc1\u636e\u5ba1\u67e5")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u672c\u5730\u5ba1\u67e5\u6d41\u7a0b\u3002"
+        "\u8d28\u7591\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u548c\u98ce\u9669\u5ba1\u67e5\u8005\u4f7f\u7528\u672c\u5730\u5ba1\u67e5\u6d41\u7a0b\u3002"
       )
     ).toBeTruthy();
     expect(screen.getByText("\u7b54\u6848\u548c\u4e0b\u4e00\u6b65")).toBeTruthy();
@@ -2789,11 +2789,11 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("Who joins the discussion")).toBeTruthy();
     expect(
-      screen.getByText("Perspective A and Perspective B can use the saved provider after verification.")
+      screen.getByText("First viewpoint and Alternative viewpoint can use the saved provider after verification.")
     ).toBeTruthy();
-    expect(screen.getByText("Perspective C can use the saved provider after verification.")).toBeTruthy();
+    expect(screen.getByText("Additional viewpoint can use the saved provider after verification.")).toBeTruthy();
     expect(
-      screen.getByText("Test the connection to unlock Perspective C and broader AI review.")
+      screen.getByText("Test the connection to unlock Additional viewpoint and broader AI review.")
     ).toBeTruthy();
     expect(screen.getAllByText("Test connection").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Saved model provider").length).toBeGreaterThan(1);
@@ -2825,7 +2825,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Single verified provider")).toBeTruthy();
     expect(
       screen.getByText(
-        "Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer use OpenAI-compatible in the current Web path."
+        "First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer use OpenAI-compatible in the current Web path."
       )
     ).toBeTruthy();
     expect(
@@ -2835,12 +2835,12 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "The start page can customize first-response perspective models and a separate review role model for one discussion."
+        "The start page can customize first-response viewpoint models and a separate review role model for one discussion."
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "A change here applies to Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer."
+        "A change here applies to First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer."
       )
     ).toBeTruthy();
     const editSharedProviderSetupLink = screen.getByRole("link", {
@@ -2884,7 +2884,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5355\u4e2a\u5df2\u9a8c\u8bc1\u63d0\u4f9b\u65b9")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u5355\u72ec\u6307\u5b9a\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u3002"
+        "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u5355\u72ec\u6307\u5b9a\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u3002"
       )
     ).toBeTruthy();
     expect(screen.getByRole("group", { name: "\u89d2\u8272\u5206\u914d\u63a7\u4ef6" })).toBeTruthy();
@@ -2947,7 +2947,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Broader review").length).toBeGreaterThan(0);
     expect(screen.getByText("service-first-response-model")).toBeTruthy();
     expect(screen.getByText("service-review-model")).toBeTruthy();
-    expect(screen.getByText("2 custom perspective models")).toBeTruthy();
+    expect(screen.getByText("2 custom viewpoint models")).toBeTruthy();
     const startWithSavedRoleSetupLink = screen.getByRole("link", {
       name: "Start with saved participant choices"
     }) as HTMLAnchorElement;
@@ -2985,13 +2985,13 @@ describe("@deliberum/web shell", () => {
         value: " setup-review-model "
       }
     });
-    fireEvent.click(screen.getByRole("checkbox", { name: /Customize perspective models/i }));
-    fireEvent.change(screen.getByLabelText("Perspective A model"), {
+    fireEvent.click(screen.getByRole("checkbox", { name: /Customize viewpoint models/i }));
+    fireEvent.change(screen.getByLabelText("First viewpoint model"), {
       target: {
         value: " setup-perspective-a-model "
       }
     });
-    fireEvent.change(screen.getByLabelText("Perspective C model"), {
+    fireEvent.change(screen.getByLabelText("Additional viewpoint model"), {
       target: {
         value: " setup-perspective-c-model "
       }
@@ -3802,7 +3802,7 @@ describe("@deliberum/web shell", () => {
         "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u5148\u770b\u6e05\u8c01\u4f1a\u5148\u56de\u5e94\uff0c\u4ee5\u53ca\u8c01\u4f1a\u5ba1\u67e5\u7ed3\u679c\u3002"
       )
     ).toBeTruthy();
-    expect(screen.getByText("\u89c6\u89d2 A")).toBeTruthy();
+    expect(screen.getByText("\u7b2c\u4e00\u89c6\u89d2")).toBeTruthy();
     expect(screen.getByText("\u8bc1\u636e\u6838\u67e5\u8005")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
     expect(screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898")).toBeTruthy();
@@ -3833,11 +3833,11 @@ describe("@deliberum/web shell", () => {
         "Before creating the discussion, see who will answer first and who will review the result."
       )
     ).toBeTruthy();
-    expect(screen.getAllByText("Perspective A").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Perspective B").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("First viewpoint").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Alternative viewpoint").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Skeptic").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Conclusion writer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Summary writer").length).toBeGreaterThan(0);
     expect(screen.getByText("Creation preview")).toBeTruthy();
     expect(screen.getByText("Ready to create a demo discussion")).toBeTruthy();
     expect(screen.getByText("2 demo perspectives")).toBeTruthy();
@@ -3995,9 +3995,9 @@ describe("@deliberum/web shell", () => {
         "Before creating the discussion, see who will answer first and who will review the result."
       )
     ).toBeTruthy();
-    expect(screen.getAllByText("Perspective A").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Perspective B").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("First viewpoint").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Alternative viewpoint").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Skeptic").length).toBeGreaterThan(0);
     expect(screen.getAllByText("OpenAI-compatible").length).toBeGreaterThan(0);
     expect(screen.getByText("Creation preview")).toBeTruthy();
     expect(screen.getByText("Ready to create a deliberation room")).toBeTruthy();
@@ -4049,18 +4049,18 @@ describe("@deliberum/web shell", () => {
     expect(
       (screen.getByRole("radio", { name: /Broader review/i }) as HTMLInputElement).checked
     ).toBe(true);
-    expect(screen.getByText("Perspective C")).toBeTruthy();
+    expect(screen.getByText("Additional viewpoint")).toBeTruthy();
     expect(screen.getByText("3 AI perspectives")).toBeTruthy();
     expect(
       screen.getByText(
-        "Perspective A, Perspective B, and Perspective C will answer independently."
+        "First viewpoint, Alternative viewpoint, and Additional viewpoint will answer independently."
       )
     ).toBeTruthy();
     expect(screen.getAllByText("First-response model").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Saved AI setup").length).toBeGreaterThan(1);
     expect(
       screen.getByText(
-        "Perspectives without their own model use the model saved in Connect AI."
+        "Viewpoints without their own model use the model saved in Connect AI."
       )
     ).toBeTruthy();
     const modelOverrideInput = document.getElementById(
@@ -4076,7 +4076,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("release-model-v1").length).toBeGreaterThan(1);
     expect(
       screen.getByText(
-        "Perspectives without their own model use this first-response model."
+        "Viewpoints without their own model use this first-response model."
       )
     ).toBeTruthy();
     const reviewModelInput = document.getElementById(
@@ -4092,31 +4092,31 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("release-model-review")).toBeTruthy();
     expect(
       screen.getByText(
-        "Review roles use this model while first-response perspectives keep their assigned models."
+        "Review roles use this model while first-response viewpoints keep their assigned models."
       )
     ).toBeTruthy();
     const perspectiveModelToggle = screen.getByRole("checkbox", {
-      name: /Customize perspective models/i
+      name: /Customize viewpoint models/i
     }) as HTMLInputElement;
     expect(perspectiveModelToggle.disabled).toBe(false);
     fireEvent.click(perspectiveModelToggle);
-    fireEvent.change(screen.getByLabelText("Perspective A model"), {
+    fireEvent.change(screen.getByLabelText("First viewpoint model"), {
       target: {
         value: "release-model-perspective-a"
       }
     });
-    fireEvent.change(screen.getByLabelText("Perspective C model"), {
+    fireEvent.change(screen.getByLabelText("Additional viewpoint model"), {
       target: {
         value: "release-model-perspective-c"
       }
     });
     expect(screen.getByDisplayValue("release-model-perspective-a")).toBeTruthy();
     expect(screen.getByDisplayValue("release-model-perspective-c")).toBeTruthy();
-    expect(screen.getByText("Perspective model assignment")).toBeTruthy();
-    expect(screen.getByText("Perspective models customized")).toBeTruthy();
+    expect(screen.getByText("Viewpoint model assignment")).toBeTruthy();
+    expect(screen.getByText("Viewpoint models customized")).toBeTruthy();
     expect(
       screen.getByText(
-        "Customized perspective models only affect independent first responses. Review roles use the review role model when one is set."
+        "Customized viewpoint models only affect independent first responses. Review roles use the review role model when one is set."
       )
     ).toBeTruthy();
     expect(screen.getByText("Participant model choices")).toBeTruthy();
@@ -4171,7 +4171,7 @@ describe("@deliberum/web shell", () => {
     });
     expect(screen.getByText("\u9009\u62e9\u8ba8\u8bba\u6df1\u5ea6")).toBeTruthy();
     expect(screen.getByText("\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5")).toBeTruthy();
-    expect(screen.getByText("\u89c6\u89d2 C")).toBeTruthy();
+    expect(screen.getByText("\u8865\u5145\u89c6\u89d2")).toBeTruthy();
     expect(screen.getByText("\u521b\u5efa\u9884\u89c8")).toBeTruthy();
     expect(screen.getByText("\u5df2\u9009\u62e9 AI \u53c2\u4e0e\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("3 \u4e2a AI \u89c6\u89d2")).toBeTruthy();
@@ -4186,17 +4186,17 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
     expect(screen.getByText("\u89c6\u89d2\u6a21\u578b\u5206\u914d")).toBeTruthy();
-    expect(screen.getByText("\u89c6\u89d2 A \u6a21\u578b")).toBeTruthy();
-    expect(screen.getByText("\u89c6\u89d2 C \u6a21\u578b")).toBeTruthy();
+    expect(screen.getByText("\u7b2c\u4e00\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
+    expect(screen.getByText("\u8865\u5145\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
     expect(screen.getByText("\u5df2\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002"
+        "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002"
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "\u5ba1\u67e5\u89d2\u8272\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\uff0c\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u4fdd\u6301\u5404\u81ea\u5206\u914d\u7684\u6a21\u578b\u3002"
+        "\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\uff0c\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u4fdd\u6301\u5404\u81ea\u5206\u914d\u7684\u6a21\u578b\u3002"
       )
     ).toBeTruthy();
     fireEvent.change(screen.getByLabelText("\u8bed\u8a00"), {
@@ -4365,11 +4365,11 @@ describe("@deliberum/web shell", () => {
     expect(
       (screen.getByRole("radio", { name: /Broader review/i }) as HTMLInputElement).checked
     ).toBe(true);
-    expect(screen.getByText("Perspective C")).toBeTruthy();
+    expect(screen.getByText("Additional viewpoint")).toBeTruthy();
     expect(screen.getByText("3 AI perspectives")).toBeTruthy();
     expect(
       screen.getByText(
-        "Perspective A, Perspective B, and Perspective C will answer independently."
+        "First viewpoint, Alternative viewpoint, and Additional viewpoint will answer independently."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
@@ -4821,7 +4821,7 @@ describe("@deliberum/web shell", () => {
       "\u672c\u6b21\u8ba8\u8bba\u4e2d\u7684\u53c2\u4e0e\u8005"
     );
     expect(localizedRoomParticipants.textContent ?? "").toContain("\u4f60");
-    expect(localizedRoomParticipants.textContent ?? "").toContain("\u89c6\u89d2 A");
+    expect(localizedRoomParticipants.textContent ?? "").toContain("\u7b2c\u4e00\u89c6\u89d2");
     expect(localizedRoomParticipants.textContent ?? "").toContain("\u8bc1\u636e\u6838\u67e5\u8005");
     expect(localizedRoomParticipants.textContent ?? "").toContain("AI \u53c2\u4e0e\u8005\u7f16\u8f91");
     expect(localizedRoomParticipants.textContent ?? "").not.toContain("providerConfigId");
@@ -4839,7 +4839,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u8ba8\u8bba\u7b2c 1 \u8f6e")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5\uff1b\u7136\u540e\u7ec4\u7ec7\u8005\u3001\u5ba1\u67e5\u8005\u548c\u8bc1\u636e\u68c0\u67e5\u8005\u4ee5\u804a\u5929\u5f0f\u56de\u590d\u52a0\u5165\u3002"
+        "\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5\uff1b\u7136\u540e\u7ec4\u7ec7\u8005\u3001\u8d28\u7591\u8005\u548c\u8bc1\u636e\u68c0\u67e5\u8005\u4ee5\u804a\u5929\u5f0f\u56de\u590d\u52a0\u5165\u3002"
       )
     ).toBeTruthy();
     expect(screen.getAllByText("\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5").length).toBeGreaterThan(1);
@@ -5739,12 +5739,12 @@ describe("@deliberum/web shell", () => {
     );
     expect(roomParticipants.textContent ?? "").toContain("You");
     expect(roomParticipants.textContent ?? "").toContain("Human participant");
-    expect(roomParticipants.textContent ?? "").toContain("Perspective A");
-    expect(roomParticipants.textContent ?? "").toContain("Perspective B");
-    expect(roomParticipants.textContent ?? "").toContain("Reviewer");
+    expect(roomParticipants.textContent ?? "").toContain("First viewpoint");
+    expect(roomParticipants.textContent ?? "").toContain("Alternative viewpoint");
+    expect(roomParticipants.textContent ?? "").toContain("Skeptic");
     expect(roomParticipants.textContent ?? "").toContain("Evidence checker");
     expect(roomParticipants.textContent ?? "").toContain("Risk reviewer");
-    expect(roomParticipants.textContent ?? "").toContain("Conclusion writer");
+    expect(roomParticipants.textContent ?? "").toContain("Summary writer");
     expect(roomParticipants.textContent ?? "").toContain("Built-in demo participant");
     expect(roomParticipants.textContent ?? "").toContain("Built-in demo review role");
     expect(roomParticipants.textContent ?? "").toContain("AI participant editing");
@@ -5938,9 +5938,9 @@ describe("@deliberum/web shell", () => {
     );
     expect(firstDiscussionRoundText).toContain("To the room's current question");
     expect(firstDiscussionRoundText).toContain("Putting one option into the room for review");
-    expect(firstDiscussionRoundText).toContain("Replying to Perspective A's latest point");
-    expect(firstDiscussionRoundText).toContain("Checking evidence behind Perspective A's claim");
-    expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
+    expect(firstDiscussionRoundText).toContain("Replying to First viewpoint's latest point");
+    expect(firstDiscussionRoundText).toContain("Checking evidence behind First viewpoint's claim");
+    expect(screen.getAllByText("Skeptic").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Raised an open disagreement").length).toBeGreaterThan(0);
     expect(
       screen.getAllByText(
@@ -6068,7 +6068,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Participants answer first; review roles respond in the same room.")).toBeTruthy();
     expect(
       screen.getByText(
-        "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies."
+        "Participants respond to the brief first; then the organizer, skeptic, and evidence checker join as chat-like replies."
       )
     ).toBeTruthy();
     expect(
@@ -6258,11 +6258,11 @@ describe("@deliberum/web shell", () => {
       "Please respond to the evidence gap before updating the conclusion."
     );
     expect((screen.getByLabelText("Send message to the room") as HTMLTextAreaElement).value).toBe("");
-    expect(updateRoundText).toContain("Perspective A");
-    expect(updateRoundText).toContain("Perspective B");
+    expect(updateRoundText).toContain("First viewpoint");
+    expect(updateRoundText).toContain("Alternative viewpoint");
     expect(updateRoundText).toContain("Shared a first response");
     expect(updateRoundText).toContain("Answered another participant");
-    expect(updateRoundText).toContain("Reviewer");
+    expect(updateRoundText).toContain("Skeptic");
     expect(updateRoundText).toContain("Waiting to review disagreements");
     expect(updateRoundText).toContain("Preparing to reply with objections");
     expect(updateRoundText).toContain("Evidence checker");
@@ -6274,7 +6274,7 @@ describe("@deliberum/web shell", () => {
       "I put an independent answer into the room"
     );
     expect(updateRoundText).toContain(
-      "Now that Perspective A's answer is visible"
+      "Now that First viewpoint's answer is visible"
     );
     expect(updateRoundText).toContain("To another participant's latest reply");
     expect(screen.queryByRole("region", { name: "Updated discussion steps" })).toBeNull();
@@ -6466,14 +6466,14 @@ describe("@deliberum/web shell", () => {
     );
 
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
-    expect((await screen.findAllByText("Perspective A")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("First viewpoint")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Discussion organizer").length).toBeGreaterThan(1);
     expect(
       screen.getAllByText("CLI-first validation exercises the lifecycle directly.").length
     ).toBeGreaterThan(0);
     const participantResponsesText =
       document.querySelector("#room-conversation-transcript")?.textContent ?? "";
-    expect(participantResponsesText).toContain("Perspective A");
+    expect(participantResponsesText).toContain("First viewpoint");
     expect(participantResponsesText).toContain(
       "CLI-first validation exercises the lifecycle directly."
     );
@@ -6506,7 +6506,7 @@ describe("@deliberum/web shell", () => {
       screen.queryByText("A risk review was recorded for the current answer.")
     ).toBeNull();
     expect(screen.getAllByText("Review coordinator").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Conclusion writer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Summary writer").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Risk reviewer").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Evidence checker").length).toBeGreaterThan(0);
     expect(
@@ -6520,13 +6520,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Discussion round 1")).toBeTruthy();
     expect(
       screen.getByText(
-        "Participants respond to the brief first; then the organizer, reviewer, and evidence checker join as chat-like replies."
+        "Participants respond to the brief first; then the organizer, skeptic, and evidence checker join as chat-like replies."
       )
     ).toBeTruthy();
     expect(screen.getAllByText("Building on the first responses").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Checking evidence before the conclusion").length).toBeGreaterThan(0);
     expect(
-      screen.getAllByText("Building on Perspective A's first response").length
+      screen.getAllByText("Building on First viewpoint's first response").length
     ).toBeGreaterThan(0);
     expect(screen.getAllByText("To the participant first responses").length).toBeGreaterThan(0);
     expect(screen.getByText("To the organized options")).toBeTruthy();
@@ -6726,19 +6726,19 @@ describe("@deliberum/web shell", () => {
       "Round one adds a separate concern about evidence quality."
     );
     expect(roundOne.textContent ?? "").toContain(
-      "Adding a separate first response alongside Perspective A"
+      "Adding a separate first response alongside First viewpoint"
     );
     expect(roundOne.textContent ?? "").toContain(
-      "Independent reply now compared with Perspective A"
+      "Independent reply now compared with First viewpoint"
     );
     expect(roundOne.textContent ?? "").toContain("Connected the first responses");
     expect(roundOne.textContent ?? "").toContain("Answered another participant");
     expect(roundOne.textContent ?? "").toContain("Responding to another participant");
     expect(roundOne.textContent ?? "").toContain(
-      "Now that the first responses are visible, I'm responding to Perspective B while keeping my position in the room: Round one says the rollout should remain reversible."
+      "Now that the first responses are visible, I'm responding to Alternative viewpoint while keeping my position in the room: Round one says the rollout should remain reversible."
     );
     expect(roundOne.textContent ?? "").toContain(
-      "Now that the first responses are visible, I'm responding to Perspective A while keeping my position in the room: Round one adds a separate concern about evidence quality."
+      "Now that the first responses are visible, I'm responding to First viewpoint while keeping my position in the room: Round one adds a separate concern about evidence quality."
     );
     const roundTwo = screen.getByRole("list", { name: "Discussion round 2 messages" });
     expect(roundTwo.textContent ?? "").toContain(
@@ -6757,10 +6757,10 @@ describe("@deliberum/web shell", () => {
     expect(roundTwo.textContent ?? "").toContain("To another participant's latest reply");
     expect(roundTwo.textContent ?? "").toContain("Continuing the round as a direct reply");
     expect(roundTwo.textContent ?? "").toContain(
-      "I'm responding to Perspective B while keeping my latest position in the room: Round two adds rollback gates before any wider rollout."
+      "I'm responding to Alternative viewpoint while keeping my latest position in the room: Round two adds rollback gates before any wider rollout."
     );
     expect(roundTwo.textContent ?? "").toContain(
-      "I'm responding to Perspective A while keeping my latest position in the room: Round two responds that evidence should be checked before launch."
+      "I'm responding to First viewpoint while keeping my latest position in the room: Round two responds that evidence should be checked before launch."
     );
     expect(roundTwo.textContent ?? "").toContain("Building on the follow-up replies");
     expect(roundTwo.textContent ?? "").toContain(
@@ -6783,18 +6783,18 @@ describe("@deliberum/web shell", () => {
     expect(roundTwo.textContent ?? "").toContain(
       "The latest replies were organized into updated options, disagreements, requirements, and evidence needs."
     );
-    expect(roundTwo.textContent ?? "").toContain("Building on Perspective B's follow-up reply");
+    expect(roundTwo.textContent ?? "").toContain("Building on Alternative viewpoint's follow-up reply");
     expect(roundTwo.textContent ?? "").toContain(
-      "Replying in round 2 to Perspective A's latest reply"
+      "Replying in round 2 to First viewpoint's latest reply"
     );
     expect(roundTwo.textContent ?? "").toContain(
-      "Responding to Perspective A's latest reply in the follow-up round"
+      "Responding to First viewpoint's latest reply in the follow-up round"
     );
-    expect(roundTwo.textContent ?? "").toContain("Replying to Perspective A's latest point");
+    expect(roundTwo.textContent ?? "").toContain("Replying to First viewpoint's latest point");
     expect(roundTwo.textContent ?? "").toContain(
-      "Replying to Perspective A's option with an open disagreement"
+      "Replying to First viewpoint's option with an open disagreement"
     );
-    expect(roundTwo.textContent ?? "").toContain("Checking evidence behind Perspective A's claim");
+    expect(roundTwo.textContent ?? "").toContain("Checking evidence behind First viewpoint's claim");
     expect((document.querySelector(".du-room-layout")?.textContent ?? "")).not.toContain(
       "round-two-opened"
     );
@@ -6968,10 +6968,10 @@ describe("@deliberum/web shell", () => {
     const roundTwoText = roundTwo.textContent ?? "";
 
     expect(roundOneText).toContain(
-      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 \u89c6\u89d2 A"
+      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 \u7b2c\u4e00\u89c6\u89d2"
     );
     expect(roundOneText).toContain(
-      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 \u89c6\u89d2 B"
+      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 \u66ff\u4ee3\u89c6\u89d2"
     );
     expect(roundOneText).toContain("\u56de\u5e94\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005");
     expect(roundOneText).toContain(
@@ -6979,8 +6979,8 @@ describe("@deliberum/web shell", () => {
     );
     expect(roundOneText).not.toContain("Now that the first responses are visible");
     expect(roundOneText).not.toContain("Responding to another participant");
-    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 \u89c6\u89d2 A");
-    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 \u89c6\u89d2 B");
+    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 \u7b2c\u4e00\u89c6\u89d2");
+    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 \u66ff\u4ee3\u89c6\u89d2");
     expect(roundTwoText).toContain(
       "\u6211\u540c\u610f\u8981\u56de\u6eda\u95e8\u69db\uff0c\u4f46\u8fd8\u8981\u5148\u8865\u9f50\u7528\u6237\u5f71\u54cd\u8bc1\u636e\u3002"
     );
@@ -6998,9 +6998,9 @@ describe("@deliberum/web shell", () => {
     expect(roundTwoText).toContain(
       "\u6211\u4f1a\u628a\u8fd9\u4e2a\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u91cc\u4f9b\u5bf9\u7167\uff1a\u5148\u4fdd\u6301\u8bd5\u70b9\u5e76\u8bbe\u7f6e\u56de\u6eda\u95e8\u69db"
     );
-    expect(roundTwoText).toContain("\u56de\u5e94 \u89c6\u89d2 A \u7684\u6700\u65b0\u89c2\u70b9");
+    expect(roundTwoText).toContain("\u56de\u5e94 \u7b2c\u4e00\u89c6\u89d2 \u7684\u6700\u65b0\u89c2\u70b9");
     expect(roundTwoText).toContain(
-      "\u6838\u67e5 \u89c6\u89d2 A \u4e3b\u5f20\u80cc\u540e\u7684\u8bc1\u636e"
+      "\u6838\u67e5 \u7b2c\u4e00\u89c6\u89d2 \u4e3b\u5f20\u80cc\u540e\u7684\u8bc1\u636e"
     );
     expect(roundTwoText).toContain(
       "1 \u4e2a\u672a\u89e3\u51b3\u95ee\u9898\u4ecd\u9700\u5904\u7406\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002"
@@ -7008,15 +7008,15 @@ describe("@deliberum/web shell", () => {
     expect(roundTwoText).toContain(
       "1 \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002"
     );
-    expect(roundTwoText).not.toContain("I'm responding to Perspective A");
+    expect(roundTwoText).not.toContain("I'm responding to First viewpoint");
     expect(roundOneText).not.toContain("Shared a strongest current option");
     expect(roundOneText).not.toContain("Candidate A");
-    expect(roundOneText).not.toContain("Perspective A");
-    expect(roundOneText).not.toContain("Perspective B");
+    expect(roundOneText).not.toContain("First viewpoint");
+    expect(roundOneText).not.toContain("Alternative viewpoint");
     expect(roundTwoText).not.toContain("Shared a strongest current option");
     expect(roundTwoText).not.toContain("Candidate A");
-    expect(roundTwoText).not.toContain("Perspective A");
-    expect(roundTwoText).not.toContain("Perspective B");
+    expect(roundTwoText).not.toContain("First viewpoint");
+    expect(roundTwoText).not.toContain("Alternative viewpoint");
     expect(roundTwoText).not.toContain(
       "The room continued again from the current answer and open questions."
     );
@@ -7134,7 +7134,7 @@ describe("@deliberum/web shell", () => {
     );
 
     await waitFor(() => expect(client.getRunEvents).toHaveBeenCalledWith("run-1"));
-    expect((await screen.findAllByText("\u89c6\u89d2 A")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("\u7b2c\u4e00\u89c6\u89d2")).length).toBeGreaterThan(0);
     expect(screen.queryByText("\u6700\u65b0\u53d1\u8a00")).toBeNull();
     expect(screen.queryByText("\u6700\u8fd1\u8c01\u53d1\u4e86\u8a00")).toBeNull();
     expect(screen.queryByRole("list", { name: "\u6700\u65b0\u53c2\u4e0e\u8005\u53d1\u8a00" })).toBeNull();
@@ -7151,11 +7151,11 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getByText("\u5ba1\u9605\u4e86\u8bc1\u636e\u7f3a\u53e3")).toBeTruthy();
     expect(
-      screen.getByText("\u57fa\u4e8e \u89c6\u89d2 A \u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed")
+      screen.getByText("\u57fa\u4e8e \u7b2c\u4e00\u89c6\u89d2 \u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed")
     ).toBeTruthy();
     expect(
       screen.getAllByText(
-        /\u68c0\u67e5 \u89c6\u89d2 [AB] \u7684\u8bba\u65ad\u80cc\u540e\u7684\u8bc1\u636e/
+        /\u68c0\u67e5 (\u7b2c\u4e00\u89c6\u89d2|\u66ff\u4ee3\u89c6\u89d2) \u7684\u8bba\u65ad\u80cc\u540e\u7684\u8bc1\u636e/
       ).length
     ).toBeTruthy();
     expect(
@@ -7163,7 +7163,7 @@ describe("@deliberum/web shell", () => {
         "1 \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002"
       ).length
     ).toBeGreaterThan(0);
-    expect(screen.getAllByText("\u7ed3\u8bba\u8d77\u8349\u8005").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("\u603b\u7ed3\u64b0\u5199\u8005").length).toBeGreaterThan(0);
     const roomText = document.querySelector(".du-room-layout")?.textContent ?? "";
     expect(roomText).not.toContain("local-preset-alpha");
     expect(roomText).not.toContain("local-preset-extractor");
@@ -7681,14 +7681,14 @@ describe("@deliberum/web shell", () => {
     expect(updateRoundText).toContain(
       "\u623f\u95f4\u4ece\u4f60\u7684\u8ba8\u8bba\u7b80\u62a5\u7ee7\u7eed"
     );
-    expect(updateRoundText).toContain("\u89c6\u89d2 A");
+    expect(updateRoundText).toContain("\u7b2c\u4e00\u89c6\u89d2");
     expect(updateRoundText).toContain(
       "\u6211\u628a\u4e00\u4efd\u72ec\u7acb\u7b54\u6848\u653e\u5165\u8ba8\u8bba\u5ba4"
     );
     expect(updateRoundText).toContain(
-      "\u73b0\u5728 \u89c6\u89d2 A \u7684\u7b54\u6848\u5df2\u53ef\u89c1"
+      "\u73b0\u5728 \u7b2c\u4e00\u89c6\u89d2 \u7684\u7b54\u6848\u5df2\u53ef\u89c1"
     );
-    expect(updateRoundText).toContain("\u5ba1\u67e5\u8005");
+    expect(updateRoundText).toContain("\u8d28\u7591\u8005");
     expect(updateRoundText).toContain("\u7b49\u5f85\u5ba1\u67e5\u5206\u6b67");
     expect(updateRoundText).toContain("\u51c6\u5907\u7528\u5206\u6b67\u56de\u5e94");
     expect(updateRoundText).toContain("\u8bc1\u636e\u6838\u67e5\u8005");
@@ -7983,11 +7983,11 @@ describe("@deliberum/web shell", () => {
     expect(updateText).toContain("Shared a follow-up reply");
     expect(updateText).toContain("Answered another participant");
     expect(updateText).toContain(
-      "I'm responding to Perspective A's latest point"
+      "I'm responding to First viewpoint's latest point"
     );
     expect(updateText).toContain("Discussion organizer");
     expect(updateText).toContain("I connected the follow-up replies into updated options");
-    expect(updateText).toContain("Reviewer");
+    expect(updateText).toContain("Skeptic");
     expect(updateText).toContain("Raised an open disagreement");
     expect(updateText).toContain(
       "I am replying to the updated options with the disagreement that still needs resolution."
@@ -7997,7 +7997,7 @@ describe("@deliberum/web shell", () => {
     expect(updateText).toContain(
       "I am checking the evidence behind this follow-up round before the room updates the conclusion."
     );
-    expect(updateText).not.toContain("Now that Perspective A's answer is visible");
+    expect(updateText).not.toContain("Now that First viewpoint's answer is visible");
   });
 
   it("labels the post-update room message with the next visible discussion round", async () => {
@@ -8654,9 +8654,9 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.startRun).toHaveBeenCalledWith("run-1", startRequest));
     expect(await screen.findByText("Discussion steps completed")).toBeTruthy();
     const updateMessages = screen.getByRole("list", { name: "Discussion update messages" });
-    expect(updateMessages.textContent ?? "").toContain("Perspective A");
-    expect(updateMessages.textContent ?? "").toContain("Perspective B");
-    expect(updateMessages.textContent ?? "").toContain("Reviewer");
+    expect(updateMessages.textContent ?? "").toContain("First viewpoint");
+    expect(updateMessages.textContent ?? "").toContain("Alternative viewpoint");
+    expect(updateMessages.textContent ?? "").toContain("Skeptic");
     expect(updateMessages.textContent ?? "").toContain("Raised an open disagreement");
     expect(updateMessages.textContent ?? "").toContain("Evidence checker");
     expect(updateMessages.textContent ?? "").toContain("Reviewed evidence gaps");
@@ -8818,7 +8818,7 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("AI review path ready")).toBeTruthy();
     expect(
       screen.getByText(
-        "Continue discussion will ask configured AI participants for independent first responses, then use Reviewer, Evidence checker, Risk reviewer, and Conclusion writer to review the result."
+        "Continue discussion will ask configured AI participants for independent first responses, then use Skeptic, Evidence checker, Risk reviewer, and Summary writer to review the result."
       )
     ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
@@ -9173,7 +9173,7 @@ describe("@deliberum/web shell", () => {
     const conclusionUpdateMessages = screen.getByRole("list", {
       name: "Discussion update messages"
     });
-    expect(conclusionUpdateMessages.textContent ?? "").toContain("Conclusion writer");
+    expect(conclusionUpdateMessages.textContent ?? "").toContain("Summary writer");
     expect(conclusionUpdateMessages.textContent ?? "").toContain("Drafted the current answer");
     expect(conclusionUpdateMessages.textContent ?? "").toContain("Risk reviewer");
     expect(conclusionUpdateMessages.textContent ?? "").toContain("Reviewed risks");
