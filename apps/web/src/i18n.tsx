@@ -434,8 +434,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u8fd9\u662f\u53ef\u5ba1\u9605\u7684\u8ba8\u8bba\u6750\u6599\u3002\u5b83\u5e94\u4fdd\u6301\u672a\u89e3\u51b3\u95ee\u9898\u3001\u98ce\u9669\u3001\u8bc1\u636e\u7f3a\u53e3\u548c\u4e0b\u4e00\u6b65\u53ef\u89c1\u3002",
   "This lineup is fixed for the current discussion. Use Connect AI before starting a new discussion to change model assignments.":
     "\u5f53\u524d\u8ba8\u8bba\u7684\u53c2\u4e0e\u8005\u9635\u5bb9\u5df2\u7ecf\u56fa\u5b9a\u3002\u82e5\u8981\u66f4\u6539\u6a21\u578b\u5206\u914d\uff0c\u8bf7\u5728\u5f00\u59cb\u65b0\u8ba8\u8bba\u524d\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u3002",
-  "This local room currently includes you and configured AI/model roles. Use Connect AI before starting a new discussion to change model assignments.":
-    "\u8fd9\u4e2a\u672c\u5730\u8ba8\u8bba\u5ba4\u5f53\u524d\u5305\u542b\u4f60\u548c\u5df2\u914d\u7f6e\u7684 AI/\u6a21\u578b\u89d2\u8272\u3002\u82e5\u8981\u66f4\u6539\u6a21\u578b\u5206\u914d\uff0c\u8bf7\u5728\u5f00\u59cb\u65b0\u8ba8\u8bba\u524d\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u3002",
+  "This local room includes you and configured AI participants. Use Connect AI before starting a new discussion to change model assignments.":
+    "\u8fd9\u4e2a\u672c\u5730\u8ba8\u8bba\u5ba4\u5305\u542b\u4f60\u548c\u5df2\u914d\u7f6e\u7684 AI \u53c2\u4e0e\u8005\u3002\u82e5\u8981\u66f4\u6539\u6a21\u578b\u5206\u914d\uff0c\u8bf7\u5728\u5f00\u59cb\u65b0\u8ba8\u8bba\u524d\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u3002",
   "This page does not show API keys. Use Connect AI to save provider setup before starting discussions with AI.":
     "\u6b64\u9875\u9762\u4e0d\u663e\u793a API key\u3002\u5f00\u59cb AI \u53c2\u4e0e\u8ba8\u8bba\u524d\uff0c\u8bf7\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u4fdd\u5b58\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u3002",
   "This shows what you can do now: try the demo, use AI participants, review the answer, and choose the next step.":
@@ -819,16 +819,16 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Model assignment": "\u6a21\u578b\u5206\u914d",
   "Single verified provider": "\u5355\u4e2a\u5df2\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
   "Verify provider first": "\u5148\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
-  "Demo roles only": "\u4ec5\u6f14\u793a\u89d2\u8272",
-  "No model roles ready": "\u5c1a\u65e0\u6a21\u578b\u89d2\u8272\u5c31\u7eea",
+  "Demo participants only": "\u4ec5\u6f14\u793a\u53c2\u4e0e\u8005",
+  "No AI participants ready": "\u5c1a\u65e0 AI \u53c2\u4e0e\u8005\u5c31\u7eea",
   "Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer use {provider} in the current Web path.":
     "\u5728\u5f53\u524d Web \u8def\u5f84\u4e2d\uff0c\u89c6\u89d2 A\u3001\u89c6\u89d2 B\u3001\u53ef\u9009\u7684\u89c6\u89d2 C\u3001\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u7ed3\u8bba\u8d77\u8349\u8005\u4f7f\u7528 {provider}\u3002",
   "The saved provider cannot power model participants until Verify connection succeeds.":
     "\u5728\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u6210\u529f\u4e4b\u524d\uff0c\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u8fd8\u4e0d\u80fd\u9a71\u52a8\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Demo discussions use built-in material. Add and verify a provider before model-backed roles are available.":
     "\u6f14\u793a\u8ba8\u8bba\u4f7f\u7528\u5185\u7f6e\u6750\u6599\u3002\u6a21\u578b\u652f\u6301\u7684\u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u3002",
-  "Demo discussions use built-in material. Add and test a provider before AI roles are available.":
-    "\u6f14\u793a\u8ba8\u8bba\u4f7f\u7528\u5185\u7f6e\u6750\u6599\u3002AI \u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002",
+  "Demo discussions use built-in material. Add and test a provider before AI participants are available.":
+    "\u6f14\u793a\u8ba8\u8bba\u4f7f\u7528\u5185\u7f6e\u6750\u6599\u3002AI \u53c2\u4e0e\u8005\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002",
   "Choose Focused review or Broader review on the start page before creating the discussion.":
     "\u521b\u5efa\u8ba8\u8bba\u524d\uff0c\u8bf7\u5728\u5f00\u59cb\u9875\u9009\u62e9\u201c\u805a\u7126\u5ba1\u67e5\u201d\u6216\u201c\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5\u201d\u3002",
   "After verification, open the start page to choose Focused review or Broader review.":
@@ -971,8 +971,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Start focused discussion": "\u5f00\u59cb\u805a\u7126\u8ba8\u8bba",
   "Start broader discussion": "\u5f00\u59cb\u66f4\u5e7f\u8ba8\u8bba",
   "Role assignment controls": "\u89d2\u8272\u5206\u914d\u63a7\u4ef6",
-  "Shared provider setup": "\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
-  "One provider for all model roles": "\u4e00\u4e2a\u63d0\u4f9b\u65b9\u7528\u4e8e\u6240\u6709\u6a21\u578b\u89d2\u8272",
+  "Provider setup": "\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
+  "One provider for all AI participants": "\u4e00\u4e2a\u63d0\u4f9b\u65b9\u7528\u4e8e\u6240\u6709 AI \u53c2\u4e0e\u8005",
   "A change here applies to Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer.":
     "\u8fd9\u91cc\u7684\u4fee\u6539\u4f1a\u5e94\u7528\u5230\u89c6\u89d2 A\u3001\u89c6\u89d2 B\u3001\u53ef\u9009\u89c6\u89d2 C\u3001\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u7ed3\u8bba\u8d77\u8349\u8005\u3002",
   "Review the saved provider fields, then verify connection to unlock model participants.":
@@ -985,7 +985,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5728\u5f00\u59cb\u9875\u5206\u914d\u521d\u59cb\u56de\u5e94\u548c\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u3002",
   "The start page can customize first-response perspective models and a separate review role model for one discussion.":
     "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u5355\u72ec\u6307\u5b9a\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u3002",
-  "Edit shared provider setup": "\u7f16\u8f91\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
+  "Edit provider setup": "\u7f16\u8f91\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
   "Review provider setup": "\u68c0\u67e5\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
   "Start discussion will select configured model participants by default while keeping demo participants available.":
     "\u5f00\u59cb\u8ba8\u8bba\u4f1a\u9ed8\u8ba4\u9009\u62e9\u5df2\u914d\u7f6e\u7684\u6a21\u578b\u53c2\u4e0e\u8005\uff0c\u540c\u65f6\u4fdd\u7559\u6f14\u793a\u53c2\u4e0e\u8005\u53ef\u7528\u3002",

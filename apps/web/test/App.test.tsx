@@ -1662,10 +1662,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Participant management")).toBeTruthy();
     expect(screen.getByText("Discussion participants")).toBeTruthy();
     expect(screen.getByText("Model assignment")).toBeTruthy();
-    expect(screen.getByText("Demo roles only")).toBeTruthy();
+    expect(screen.getByText("Demo participants only")).toBeTruthy();
     expect(
       screen.getByText(
-        "Demo discussions use built-in material. Add and test a provider before AI roles are available."
+        "Demo discussions use built-in material. Add and test a provider before AI participants are available."
       )
     ).toBeTruthy();
     expect(screen.getByText("Choose discussion depth")).toBeTruthy();
@@ -1681,8 +1681,8 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByRole("group", { name: "Role assignment controls" })).toBeTruthy();
-    expect(screen.getByText("Shared provider setup")).toBeTruthy();
-    expect(screen.getByText("One provider for all model roles")).toBeTruthy();
+    expect(screen.getByText("Provider setup")).toBeTruthy();
+    expect(screen.getByText("One provider for all AI participants")).toBeTruthy();
     expect(screen.getByText("No saved participant choices")).toBeTruthy();
     expect(
       screen.getByText(
@@ -2561,10 +2561,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u53c2\u4e0e\u8005\u7ba1\u7406")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u53c2\u4e0e\u8005")).toBeTruthy();
     expect(screen.getByText("\u6a21\u578b\u5206\u914d")).toBeTruthy();
-    expect(screen.getByText("\u4ec5\u6f14\u793a\u89d2\u8272")).toBeTruthy();
+    expect(screen.getByText("\u4ec5\u6f14\u793a\u53c2\u4e0e\u8005")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u6f14\u793a\u8ba8\u8bba\u4f7f\u7528\u5185\u7f6e\u6750\u6599\u3002AI \u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002"
+        "\u6f14\u793a\u8ba8\u8bba\u4f7f\u7528\u5185\u7f6e\u6750\u6599\u3002AI \u53c2\u4e0e\u8005\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002"
       )
     ).toBeTruthy();
     expect(screen.getByText("\u9009\u62e9\u8ba8\u8bba\u6df1\u5ea6")).toBeTruthy();
@@ -2776,8 +2776,8 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByRole("group", { name: "Role assignment controls" })).toBeTruthy();
-    expect(screen.getByText("Shared provider setup")).toBeTruthy();
-    expect(screen.getByText("One provider for all model roles")).toBeTruthy();
+    expect(screen.getByText("Provider setup")).toBeTruthy();
+    expect(screen.getByText("One provider for all AI participants")).toBeTruthy();
     const reviewProviderSetupLink = screen.getByRole("link", {
       name: "Review provider setup"
     }) as HTMLAnchorElement;
@@ -2843,10 +2843,10 @@ describe("@deliberum/web shell", () => {
         "A change here applies to First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer."
       )
     ).toBeTruthy();
-    const editSharedProviderSetupLink = screen.getByRole("link", {
-      name: "Edit shared provider setup"
+    const editProviderSetupLink = screen.getByRole("link", {
+      name: "Edit provider setup"
     }) as HTMLAnchorElement;
-    expect(editSharedProviderSetupLink.href).toContain("#setup-provider-form");
+    expect(editProviderSetupLink.href).toContain("#setup-provider-form");
     const focusedDiscussionLink = screen.getByRole("link", {
       name: "Start focused discussion"
     }) as HTMLAnchorElement;
@@ -2888,13 +2888,13 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByRole("group", { name: "\u89d2\u8272\u5206\u914d\u63a7\u4ef6" })).toBeTruthy();
-    expect(screen.getByText("\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e")).toBeTruthy();
+    expect(screen.getByText("\u63d0\u4f9b\u65b9\u8bbe\u7f6e")).toBeTruthy();
     expect(screen.getByText("\u5c1a\u672a\u4fdd\u5b58\u53c2\u4e0e\u8005\u9009\u62e9")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u6df1\u5ea6")).toBeTruthy();
-    const editSharedProviderSetupLink = screen.getByRole("link", {
-      name: "\u7f16\u8f91\u5171\u4eab\u63d0\u4f9b\u65b9\u8bbe\u7f6e"
+    const editProviderSetupLink = screen.getByRole("link", {
+      name: "\u7f16\u8f91\u63d0\u4f9b\u65b9\u8bbe\u7f6e"
     }) as HTMLAnchorElement;
-    expect(editSharedProviderSetupLink.href).toContain("#setup-provider-form");
+    expect(editProviderSetupLink.href).toContain("#setup-provider-form");
 
     const focusedDiscussionLink = screen.getByRole("link", {
       name: "\u5f00\u59cb\u805a\u7126\u8ba8\u8bba"
@@ -5735,7 +5735,7 @@ describe("@deliberum/web shell", () => {
     expect(roomParticipants).toBeTruthy();
     expect(roomParticipants.textContent ?? "").toContain("Who is in this discussion");
     expect(roomParticipants.textContent ?? "").toContain(
-      "This local room currently includes you and configured AI/model roles."
+      "This local room includes you and configured AI participants."
     );
     expect(roomParticipants.textContent ?? "").toContain("You");
     expect(roomParticipants.textContent ?? "").toContain("Human participant");

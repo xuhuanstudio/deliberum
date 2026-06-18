@@ -5119,7 +5119,7 @@ function DiscussionRoomParticipantRoster({ run }: { run: unknown }) {
         </div>
         <p>
           {t(
-            "This local room currently includes you and configured AI/model roles. Use Connect AI before starting a new discussion to change model assignments."
+            "This local room includes you and configured AI participants. Use Connect AI before starting a new discussion to change model assignments."
           )}
         </p>
       </div>

@@ -2535,8 +2535,8 @@ function SetupParticipantReadiness({
           aria-label={t("Role assignment controls")}
         >
           <div>
-            <p className="du-kicker">{t("Shared provider setup")}</p>
-            <strong>{t("One provider for all model roles")}</strong>
+            <p className="du-kicker">{t("Provider setup")}</p>
+            <strong>{t("One provider for all AI participants")}</strong>
             <span>{t(readiness.assignment.editDetail)}</span>
           </div>
           <a className="du-action-link du-secondary-link" href="#setup-provider-form">
@@ -2971,7 +2971,7 @@ function buildSetupParticipantReadiness(
           "The start page can customize first-response viewpoint models and a separate review role model for one discussion.",
         editDetail:
           "A change here applies to First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer.",
-        editAction: "Edit shared provider setup",
+        editAction: "Edit provider setup",
         tone: "ok"
       }
     : modelNeedsVerification
@@ -2991,15 +2991,15 @@ function buildSetupParticipantReadiness(
         }
       : {
           title: "Model assignment",
-          status: localPresetReady ? "Demo roles only" : "No model roles ready",
+          status: localPresetReady ? "Demo participants only" : "No AI participants ready",
           detail:
-            "Demo discussions use built-in material. Add and test a provider before AI roles are available.",
+            "Demo discussions use built-in material. Add and test a provider before AI participants are available.",
           depthAction:
             "Start a demo discussion now, or finish AI setup to choose focused or broader review.",
           modelPolicy:
             "Add and verify a provider before assigning first-response and review role models on the start page.",
           editDetail:
-            "Add the provider API key, base URL, and model name before AI roles are available.",
+            "Add the provider API key, base URL, and model name before AI participants are available.",
           editAction: "Add AI provider",
           tone: localPresetReady ? "warning" : "neutral"
         };
