@@ -1174,6 +1174,10 @@ function readWebSource(): string {
     .join("\n");
 }
 
+function readWebStyles(): string {
+  return readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -9776,5 +9780,23 @@ describe("@deliberum/web shell", () => {
     ]) {
       expect(source).not.toContain(forbiddenSnippet);
     }
+  });
+
+  it("keeps desktop navigation stable while main content scrolls independently", () => {
+    const styles = readWebStyles();
+
+    expect(styles).toMatch(/html,\s*body\s*\{[^}]*overflow:\s*hidden;/s);
+    expect(styles).toMatch(
+      /\.du-workspace-shell\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;[^}]*height:\s*100dvh;[^}]*overflow:\s*hidden;/s
+    );
+    expect(styles).toMatch(
+      /\.du-sidebar\s*\{[^}]*height:\s*100dvh;[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior:\s*contain;/s
+    );
+    expect(styles).toMatch(
+      /\.du-main\s*\{[^}]*height:\s*100dvh;[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior:\s*contain;/s
+    );
+    expect(styles).toMatch(
+      /@media\s*\(max-width:\s*820px\)\s*\{[\s\S]*?html,\s*body\s*\{[^}]*overflow:\s*auto;[\s\S]*?\.du-workspace-shell\s*\{[^}]*position:\s*static;[^}]*inset:\s*auto;[^}]*height:\s*auto;[^}]*overflow:\s*visible;[\s\S]*?\.du-sidebar\s*\{[^}]*position:\s*static;[^}]*height:\s*auto;[^}]*overflow:\s*visible;[\s\S]*?\.du-main\s*\{[^}]*height:\s*auto;[^}]*overflow:\s*visible;/s
+    );
   });
 });

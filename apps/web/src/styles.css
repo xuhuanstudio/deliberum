@@ -21,6 +21,17 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html,
+body {
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -132,9 +143,15 @@ textarea:focus-visible {
 }
 
 .du-workspace-shell {
+  position: fixed;
+  inset: 0;
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
+  overflow: hidden;
+  width: 100%;
 }
 
 .du-sidebar {
@@ -143,7 +160,11 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-right: 1px solid var(--du-line);
   background: rgba(255, 254, 250, 0.92);
   padding: 24px;
@@ -301,7 +322,12 @@ textarea:focus-visible {
 }
 
 .du-main {
+  height: 100vh;
+  height: 100dvh;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 34px;
 }
 
@@ -4787,15 +4813,34 @@ textarea:focus-visible {
 }
 
 @media (max-width: 820px) {
+  html,
+  body {
+    overflow: auto;
+  }
+
+  body,
+  #root {
+    height: auto;
+    min-height: 100vh;
+  }
+
   .du-workspace-shell {
+    position: static;
+    inset: auto;
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    width: auto;
   }
 
   .du-sidebar {
     position: static;
     width: 100%;
     min-width: 0;
+    height: auto;
     min-height: auto;
+    overflow: visible;
     border-right: 0;
     border-bottom: 1px solid var(--du-line);
     gap: 12px;
@@ -4849,6 +4894,8 @@ textarea:focus-visible {
 
   .du-main {
     width: 100%;
+    height: auto;
+    overflow: visible;
     padding: 16px 22px 22px;
   }
 
