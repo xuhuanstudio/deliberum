@@ -2070,7 +2070,7 @@ function SetupRoleDefaultsSummary({
             value:
               saved && displayedDefaults?.reviewModelOverride.trim()
                 ? displayedDefaults.reviewModelOverride.trim()
-                : t("First-response model")
+                : t("Model for first replies")
           },
           {
             label: t("Viewpoint models"),
@@ -2147,7 +2147,7 @@ function SetupRoleDefaultsSummary({
           </fieldset>
           <label className="du-discussion-model-override" htmlFor="setup-role-first-response-model">
             <span>
-              <strong>{t("First-response model")}</strong>
+              <strong>{t("Model for first replies")}</strong>
               <small>
                 {t(
                   "Leave blank to use the model saved in provider setup. Viewpoints without their own model use this value for first responses."
@@ -2170,7 +2170,7 @@ function SetupRoleDefaultsSummary({
           </label>
           <label className="du-discussion-model-override" htmlFor="setup-role-review-model">
             <span>
-              <strong>{t("Review role model")}</strong>
+              <strong>{t("Model for review and answer")}</strong>
               <small>
                 {t(
                   "Leave blank to use the first-response model. A value here applies to Skeptic, Evidence checker, Risk reviewer, and Summary writer only."
@@ -2203,7 +2203,7 @@ function SetupRoleDefaultsSummary({
               }
             />
             <span>
-              <strong>{t("Customize viewpoint models")}</strong>
+              <strong>{t("Choose models per viewpoint")}</strong>
               <small>
                 {t(
                   "Give individual first-response viewpoints their own model. Leave a field blank to use the first-response model."
@@ -2214,7 +2214,7 @@ function SetupRoleDefaultsSummary({
           {form.customPerspectiveModelsEnabled ? (
             <div
               className="du-perspective-model-grid"
-              aria-label={t("Viewpoint model assignment")}
+              aria-label={t("Viewpoint model choices")}
             >
               {editablePerspectiveFields.map((field) => (
                 <label key={field.participantId} htmlFor={`setup-${field.participantId}-model`}>
@@ -2239,7 +2239,7 @@ function SetupRoleDefaultsSummary({
               ))}
               <p>
                 {t(
-                  "Viewpoint model overrides affect independent first responses only. Review roles use the review role model when one is set."
+                  "Per-viewpoint choices affect first replies only. Review and answer steps use the review model when one is set."
                 )}
               </p>
             </div>
@@ -2512,7 +2512,7 @@ function SetupParticipantReadiness({
       </div>
       <div
         className={`du-setup-participant-assignment du-setup-participant-assignment-${readiness.assignment.tone}`}
-        aria-label={t("Model assignment")}
+        aria-label={t("AI participant setup")}
       >
         <div>
           <p className="du-kicker">{t(readiness.assignment.status)}</p>
@@ -2532,7 +2532,7 @@ function SetupParticipantReadiness({
         <div
           className="du-setup-participant-assignment-controls"
           role="group"
-          aria-label={t("Role assignment controls")}
+          aria-label={t("Participant setup controls")}
         >
           <div>
             <p className="du-kicker">{t("Provider setup")}</p>
@@ -2960,7 +2960,7 @@ function buildSetupParticipantReadiness(
     : "warning";
   const assignment: SetupParticipantAssignment = modelReady
     ? {
-        title: "Model assignment",
+        title: "AI participant setup",
         status: "Single verified provider",
         detail:
           "First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer use {provider} in the current Web path.",
@@ -2968,7 +2968,7 @@ function buildSetupParticipantReadiness(
         depthAction:
           "Choose Focused review or Broader review on the start page before creating the discussion.",
         modelPolicy:
-          "The start page can customize first-response viewpoint models and a separate review role model for one discussion.",
+          "New Discussion can choose one model for first replies, another for review and answer, or separate models for individual viewpoints.",
         editDetail:
           "A change here applies to First viewpoint, Alternative viewpoint, optional Additional viewpoint, Skeptic, Evidence checker, Risk reviewer, and Summary writer.",
         editAction: "Edit provider setup",
@@ -2976,28 +2976,28 @@ function buildSetupParticipantReadiness(
       }
     : modelNeedsVerification
       ? {
-          title: "Model assignment",
+          title: "AI participant setup",
           status: "Test provider first",
           detail:
             "The saved provider cannot power AI participants until Test connection succeeds.",
           depthAction:
             "After verification, open the start page to choose Focused review or Broader review.",
           modelPolicy:
-            "Test the provider before assigning first-response and review role models on the start page.",
+            "Test the provider before choosing models for first replies, review, and the answer.",
           editDetail:
             "Review the saved provider fields, then test the connection to unlock AI participants.",
           editAction: "Review provider setup",
           tone: "warning"
         }
       : {
-          title: "Model assignment",
+          title: "AI participant setup",
           status: localPresetReady ? "Demo participants only" : "No AI participants ready",
           detail:
             "Demo discussions use built-in material. Add and test a provider before AI participants are available.",
           depthAction:
             "Start a demo discussion now, or finish AI setup to choose focused or broader review.",
           modelPolicy:
-            "Add and verify a provider before assigning first-response and review role models on the start page.",
+            "Add and test a provider before choosing models for first replies, review, and the answer.",
           editDetail:
             "Add the provider API key, base URL, and model name before AI participants are available.",
           editAction: "Add AI provider",

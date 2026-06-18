@@ -80,7 +80,7 @@ try {
   }
   if (provider.reviewModelRequestCount < 4) {
     throw new Error(
-      `Browser product loop provider saw ${provider.reviewModelRequestCount} request(s) for the review role model; expected organizer, review, risk, and answer roles to use it.`
+      `Browser product loop provider saw ${provider.reviewModelRequestCount} request(s) for the review model; expected organizer, review, risk, and answer steps to use it.`
     );
   }
 } catch (error) {
@@ -180,11 +180,11 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("3 AI perspectives").waitFor();
   await page
     .locator('label[for="discussion-model-override"]')
-    .getByText("First-response model", { exact: true })
+    .getByText("Model for first replies", { exact: true })
     .waitFor();
   await page
     .locator('label[for="discussion-review-model-override"]')
-    .getByText("Review role model", { exact: true })
+    .getByText("Model for review and answer", { exact: true })
     .waitFor();
   await page.getByText("Saved AI setup").first().waitFor();
   if (!(await page.getByRole("radio", { name: /Broader review/i }).isChecked())) {
@@ -209,12 +209,13 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
       "Review roles use this model while first-response viewpoints keep their assigned models."
     )
     .waitFor();
-  await page.getByRole("checkbox", { name: /Customize viewpoint models/i }).click();
+  await page.getByRole("checkbox", { name: /Choose models per viewpoint/i }).click();
   await page.getByLabel("First viewpoint model").fill(perspectiveModelName);
   await page.getByText("Viewpoint models customized").waitFor();
   await page
+    .getByLabel("Viewpoint model choices")
     .getByText(
-      "Customized viewpoint models only affect independent first responses. Review roles use the review role model when one is set."
+      "Per-viewpoint choices affect first replies only. Review and answer steps use the review model when one is set."
     )
     .waitFor();
   await page.getByText("Participant model choices", { exact: true }).waitFor();
@@ -236,10 +237,10 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText(reviewModelName).waitFor();
   await page.getByText("1 custom viewpoint model").waitFor();
   if ((await page.locator("#setup-role-first-response-model").inputValue()) !== discussionModelName) {
-    throw new Error("Connect AI did not show the saved first-response role model.");
+    throw new Error("Connect AI did not show the saved model for first replies.");
   }
   if ((await page.locator("#setup-role-review-model").inputValue()) !== reviewModelName) {
-    throw new Error("Connect AI did not show the saved review role model.");
+    throw new Error("Connect AI did not show the saved review and answer model.");
   }
   if ((await page.getByLabel("First viewpoint model").inputValue()) !== perspectiveModelName) {
     throw new Error("Connect AI did not show the saved First viewpoint model.");
@@ -258,7 +259,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     throw new Error("Saved participant choices did not restore the first-response model.");
   }
   if ((await page.locator("#discussion-review-model-override").inputValue()) !== reviewModelName) {
-    throw new Error("Saved participant choices did not restore the review role model.");
+    throw new Error("Saved participant choices did not restore the review and answer model.");
   }
   if ((await page.getByLabel("First viewpoint model").inputValue()) !== perspectiveModelName) {
     throw new Error("Saved participant choices did not restore the First viewpoint model.");

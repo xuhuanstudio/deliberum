@@ -1661,7 +1661,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Try a demo discussion")).toBeTruthy();
     expect(screen.getByText("Participant management")).toBeTruthy();
     expect(screen.getByText("Discussion participants")).toBeTruthy();
-    expect(screen.getByText("Model assignment")).toBeTruthy();
+    expect(screen.getByText("AI participant setup")).toBeTruthy();
     expect(screen.getByText("Demo participants only")).toBeTruthy();
     expect(
       screen.getByText(
@@ -1677,10 +1677,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Current limit")).toBeTruthy();
     expect(
       screen.getByText(
-        "Add and verify a provider before assigning first-response and review role models on the start page."
+        "Add and test a provider before choosing models for first replies, review, and the answer."
       )
     ).toBeTruthy();
-    expect(screen.getByRole("group", { name: "Role assignment controls" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Participant setup controls" })).toBeTruthy();
     expect(screen.getByText("Provider setup")).toBeTruthy();
     expect(screen.getByText("One provider for all AI participants")).toBeTruthy();
     expect(screen.getByText("No saved participant choices")).toBeTruthy();
@@ -2560,7 +2560,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u8bd5\u7528\u6f14\u793a\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("\u53c2\u4e0e\u8005\u7ba1\u7406")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u53c2\u4e0e\u8005")).toBeTruthy();
-    expect(screen.getByText("\u6a21\u578b\u5206\u914d")).toBeTruthy();
+    expect(screen.getByText("AI \u53c2\u4e0e\u8005\u8bbe\u7f6e")).toBeTruthy();
     expect(screen.getByText("\u4ec5\u6f14\u793a\u53c2\u4e0e\u8005")).toBeTruthy();
     expect(
       screen.getByText(
@@ -2766,7 +2766,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getAllByText("Needs test").length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion participants")).toBeTruthy();
-    expect(screen.getByText("Model assignment")).toBeTruthy();
+    expect(screen.getByText("AI participant setup")).toBeTruthy();
     expect(screen.getAllByText("Test provider first").length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Start focused discussion" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Start broader discussion" })).toBeNull();
@@ -2775,7 +2775,7 @@ describe("@deliberum/web shell", () => {
         "The saved provider cannot power AI participants until Test connection succeeds."
       )
     ).toBeTruthy();
-    expect(screen.getByRole("group", { name: "Role assignment controls" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Participant setup controls" })).toBeTruthy();
     expect(screen.getByText("Provider setup")).toBeTruthy();
     expect(screen.getByText("One provider for all AI participants")).toBeTruthy();
     const reviewProviderSetupLink = screen.getByRole("link", {
@@ -2835,7 +2835,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "The start page can customize first-response viewpoint models and a separate review role model for one discussion."
+        "New Discussion can choose one model for first replies, another for review and answer, or separate models for individual viewpoints."
       )
     ).toBeTruthy();
     expect(
@@ -2884,10 +2884,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u5355\u4e2a\u5df2\u9a8c\u8bc1\u63d0\u4f9b\u65b9")).toBeTruthy();
     expect(
       screen.getByText(
-        "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u5355\u72ec\u6307\u5b9a\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u3002"
+        "\u201c\u65b0\u5efa\u8ba8\u8bba\u201d\u53ef\u4ee5\u4e3a\u9996\u8f6e\u56de\u590d\u9009\u4e00\u4e2a\u6a21\u578b\uff0c\u4e3a\u5ba1\u9605\u548c\u56de\u7b54\u9009\u53e6\u4e00\u4e2a\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u4e3a\u5355\u4e2a\u89c6\u89d2\u5355\u72ec\u9009\u6a21\u578b\u3002"
       )
     ).toBeTruthy();
-    expect(screen.getByRole("group", { name: "\u89d2\u8272\u5206\u914d\u63a7\u4ef6" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "\u53c2\u4e0e\u8005\u8bbe\u7f6e\u63a7\u4ef6" })).toBeTruthy();
     expect(screen.getByText("\u63d0\u4f9b\u65b9\u8bbe\u7f6e")).toBeTruthy();
     expect(screen.getByText("\u5c1a\u672a\u4fdd\u5b58\u53c2\u4e0e\u8005\u9009\u62e9")).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u6df1\u5ea6")).toBeTruthy();
@@ -2985,7 +2985,7 @@ describe("@deliberum/web shell", () => {
         value: " setup-review-model "
       }
     });
-    fireEvent.click(screen.getByRole("checkbox", { name: /Customize viewpoint models/i }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Choose models per viewpoint/i }));
     fireEvent.change(screen.getByLabelText("First viewpoint model"), {
       target: {
         value: " setup-perspective-a-model "
@@ -4056,7 +4056,7 @@ describe("@deliberum/web shell", () => {
         "First viewpoint, Alternative viewpoint, and Additional viewpoint will answer independently."
       )
     ).toBeTruthy();
-    expect(screen.getAllByText("First-response model").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Model for first replies").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Saved AI setup").length).toBeGreaterThan(1);
     expect(
       screen.getByText(
@@ -4096,7 +4096,7 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     const perspectiveModelToggle = screen.getByRole("checkbox", {
-      name: /Customize viewpoint models/i
+      name: /Choose models per viewpoint/i
     }) as HTMLInputElement;
     expect(perspectiveModelToggle.disabled).toBe(false);
     fireEvent.click(perspectiveModelToggle);
@@ -4112,13 +4112,13 @@ describe("@deliberum/web shell", () => {
     });
     expect(screen.getByDisplayValue("release-model-perspective-a")).toBeTruthy();
     expect(screen.getByDisplayValue("release-model-perspective-c")).toBeTruthy();
-    expect(screen.getByText("Viewpoint model assignment")).toBeTruthy();
+    expect(screen.getByText("Viewpoint model choices")).toBeTruthy();
     expect(screen.getByText("Viewpoint models customized")).toBeTruthy();
     expect(
-      screen.getByText(
-        "Customized viewpoint models only affect independent first responses. Review roles use the review role model when one is set."
-      )
-    ).toBeTruthy();
+      screen.getAllByText(
+        "Per-viewpoint choices affect first replies only. Review and answer steps use the review model when one is set."
+      ).length
+    ).toBeGreaterThan(0);
     expect(screen.getByText("Participant model choices")).toBeTruthy();
     expect(
       screen.getByText(
@@ -4175,8 +4175,8 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("\u521b\u5efa\u9884\u89c8")).toBeTruthy();
     expect(screen.getByText("\u5df2\u9009\u62e9 AI \u53c2\u4e0e\u8ba8\u8bba")).toBeTruthy();
     expect(screen.getByText("3 \u4e2a AI \u89c6\u89d2")).toBeTruthy();
-    expect(screen.getAllByText("\u521d\u59cb\u56de\u5e94\u6a21\u578b").length).toBeGreaterThan(1);
-    expect(screen.getAllByText("\u5ba1\u67e5\u89d2\u8272\u6a21\u578b").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("\u9996\u8f6e\u56de\u590d\u6a21\u578b").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("\u5ba1\u9605\u548c\u56de\u7b54\u6a21\u578b").length).toBeGreaterThan(1);
     expect(screen.getByText("\u53c2\u4e0e\u8005\u6a21\u578b\u9009\u62e9")).toBeTruthy();
     expect(screen.getByText("\u4fdd\u5b58\u53c2\u4e0e\u8005\u9009\u62e9")).toBeTruthy();
     expect(
@@ -4184,16 +4184,16 @@ describe("@deliberum/web shell", () => {
         "\u5df2\u4ece\u672c\u5730\u670d\u52a1\u6e05\u9664\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9\u3002\u5f53\u524d\u8ba8\u8bba\u5b57\u6bb5\u4e0d\u53d8\u3002"
       )
     ).toBeTruthy();
-    expect(screen.getByText("\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
-    expect(screen.getByText("\u89c6\u89d2\u6a21\u578b\u5206\u914d")).toBeTruthy();
+    expect(screen.getByText("\u6309\u89c6\u89d2\u9009\u62e9\u6a21\u578b")).toBeTruthy();
+    expect(screen.getByText("\u89c6\u89d2\u6a21\u578b\u9009\u62e9")).toBeTruthy();
     expect(screen.getByText("\u7b2c\u4e00\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
     expect(screen.getByText("\u8865\u5145\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
     expect(screen.getByText("\u5df2\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b")).toBeTruthy();
     expect(
-      screen.getByText(
-        "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002"
-      )
-    ).toBeTruthy();
+      screen.getAllByText(
+        "\u6309\u89c6\u89d2\u9009\u62e9\u7684\u6a21\u578b\u53ea\u5f71\u54cd\u9996\u8f6e\u56de\u590d\u3002\u8bbe\u7f6e\u5ba1\u9605\u6a21\u578b\u540e\uff0c\u5ba1\u9605\u548c\u56de\u7b54\u6b65\u9aa4\u4f1a\u4f7f\u7528\u8be5\u6a21\u578b\u3002"
+      ).length
+    ).toBeGreaterThan(0);
     expect(
       screen.getByText(
         "\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u8fd9\u4e2a\u6a21\u578b\uff0c\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u4fdd\u6301\u5404\u81ea\u5206\u914d\u7684\u6a21\u578b\u3002"

@@ -94,13 +94,13 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Viewpoint models customized": "\u5df2\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
   "1 custom viewpoint model": "1 \u4e2a\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
   "{count} custom viewpoint models": "{count} \u4e2a\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
-  "Customize viewpoint models": "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
-  "Viewpoint model assignment": "\u89c6\u89d2\u6a21\u578b\u5206\u914d",
+  "Choose models per viewpoint": "\u6309\u89c6\u89d2\u9009\u62e9\u6a21\u578b",
+  "Viewpoint model choices": "\u89c6\u89d2\u6a21\u578b\u9009\u62e9",
   "Viewpoint models": "\u89c6\u89d2\u6a21\u578b",
   "Give individual first-response viewpoints their own model. Leave a field blank to use the first-response model.":
     "\u4e3a\u5355\u4e2a\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u6307\u5b9a\u81ea\u5df1\u7684\u6a21\u578b\u3002\u7559\u7a7a\u5219\u4f7f\u7528\u9996\u6b21\u56de\u5e94\u6a21\u578b\u3002",
-  "Viewpoint model overrides affect independent first responses only. Review roles use the review role model when one is set.":
-    "\u89c6\u89d2\u6a21\u578b\u8986\u76d6\u4ec5\u5f71\u54cd\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002",
+  "Per-viewpoint choices affect first replies only. Review and answer steps use the review model when one is set.":
+    "\u6309\u89c6\u89d2\u9009\u62e9\u7684\u6a21\u578b\u53ea\u5f71\u54cd\u9996\u8f6e\u56de\u590d\u3002\u8bbe\u7f6e\u5ba1\u9605\u6a21\u578b\u540e\uff0c\u5ba1\u9605\u548c\u56de\u7b54\u6b65\u9aa4\u4f1a\u4f7f\u7528\u8be5\u6a21\u578b\u3002",
   "Viewpoints without their own model use this first-response model.":
     "\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f7f\u7528\u8fd9\u4e2a\u9996\u6b21\u56de\u5e94\u6a21\u578b\u3002",
   "Viewpoints without their own model use the model saved in Connect AI.":
@@ -111,8 +111,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u4e0e\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u76f8\u540c\u7684\u6a21\u578b\u3002",
   "Customized viewpoint models only affect independent first responses. Review roles use the review role model when one is set.":
     "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b\u4ec5\u5f71\u54cd\u72ec\u7acb\u9996\u6b21\u56de\u5e94\u3002\u8bbe\u7f6e\u4e86\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u65f6\uff0c\u5ba1\u9605\u89d2\u8272\u4f7f\u7528\u8be5\u6a21\u578b\u3002",
-  "The start page can customize first-response viewpoint models and a separate review role model for one discussion.":
-    "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u9996\u6b21\u56de\u5e94\u89c6\u89d2\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u5355\u72ec\u6307\u5b9a\u5ba1\u9605\u89d2\u8272\u6a21\u578b\u3002",
+  "New Discussion can choose one model for first replies, another for review and answer, or separate models for individual viewpoints.":
+    "\u201c\u65b0\u5efa\u8ba8\u8bba\u201d\u53ef\u4ee5\u4e3a\u9996\u8f6e\u56de\u590d\u9009\u4e00\u4e2a\u6a21\u578b\uff0c\u4e3a\u5ba1\u9605\u548c\u56de\u7b54\u9009\u53e6\u4e00\u4e2a\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u4e3a\u5355\u4e2a\u89c6\u89d2\u5355\u72ec\u9009\u6a21\u578b\u3002",
   "Leave blank to use the model saved in Connect AI. Viewpoints without their own model use this value for first responses.":
     "\u7559\u7a7a\u5219\u4f7f\u7528\u201c\u8fde\u63a5 AI\u201d\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f1a\u5c06\u6b64\u503c\u7528\u4f5c\u9996\u6b21\u56de\u5e94\u6a21\u578b\u3002",
   "Leave blank to use the model saved in provider setup. Viewpoints without their own model use this value for first responses.":
@@ -816,7 +816,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion participants": "\u8ba8\u8bba\u53c2\u4e0e\u8005",
   "This shows which readable roles are ready before you start: first perspectives, reviewers, evidence checks, and conclusion writing.":
     "\u8fd9\u4f1a\u5728\u5f00\u59cb\u524d\u663e\u793a\u54ea\u4e9b\u53ef\u7406\u89e3\u89d2\u8272\u5df2\u5c31\u7eea\uff1a\u521d\u59cb\u89c6\u89d2\u3001\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u548c\u7ed3\u8bba\u8d77\u8349\u3002",
-  "Model assignment": "\u6a21\u578b\u5206\u914d",
+  "AI participant setup": "AI \u53c2\u4e0e\u8005\u8bbe\u7f6e",
   "Single verified provider": "\u5355\u4e2a\u5df2\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
   "Verify provider first": "\u5148\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
   "Demo participants only": "\u4ec5\u6f14\u793a\u53c2\u4e0e\u8005",
@@ -970,7 +970,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Model-backed start options": "\u6a21\u578b\u652f\u6301\u7684\u5f00\u59cb\u9009\u9879",
   "Start focused discussion": "\u5f00\u59cb\u805a\u7126\u8ba8\u8bba",
   "Start broader discussion": "\u5f00\u59cb\u66f4\u5e7f\u8ba8\u8bba",
-  "Role assignment controls": "\u89d2\u8272\u5206\u914d\u63a7\u4ef6",
+  "Participant setup controls": "\u53c2\u4e0e\u8005\u8bbe\u7f6e\u63a7\u4ef6",
   "Provider setup": "\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
   "One provider for all AI participants": "\u4e00\u4e2a\u63d0\u4f9b\u65b9\u7528\u4e8e\u6240\u6709 AI \u53c2\u4e0e\u8005",
   "A change here applies to Perspective A, Perspective B, optional Perspective C, Reviewer, Evidence checker, Risk reviewer, and Conclusion writer.":
@@ -979,10 +979,10 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5148\u68c0\u67e5\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u5b57\u6bb5\uff0c\u7136\u540e\u9a8c\u8bc1\u8fde\u63a5\u4ee5\u89e3\u9501\u6a21\u578b\u53c2\u4e0e\u8005\u3002",
   "Add the provider API key, base URL, and model before model-backed roles are available.":
     "\u6a21\u578b\u652f\u6301\u7684\u89d2\u8272\u53ef\u7528\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\u3002",
-  "Verify the provider before assigning first-response and review role models on the start page.":
-    "\u5728\u5f00\u59cb\u9875\u5206\u914d\u521d\u59cb\u56de\u5e94\u548c\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u524d\uff0c\u8bf7\u5148\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u3002",
-  "Add and verify a provider before assigning first-response and review role models on the start page.":
-    "\u5728\u5f00\u59cb\u9875\u5206\u914d\u521d\u59cb\u56de\u5e94\u548c\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u9a8c\u8bc1\u63d0\u4f9b\u65b9\u3002",
+  "Test the provider before choosing models for first replies, review, and the answer.":
+    "\u4e3a\u9996\u8f6e\u56de\u590d\u3001\u5ba1\u9605\u548c\u56de\u7b54\u9009\u62e9\u6a21\u578b\u524d\uff0c\u8bf7\u5148\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002",
+  "Add and test a provider before choosing models for first replies, review, and the answer.":
+    "\u4e3a\u9996\u8f6e\u56de\u590d\u3001\u5ba1\u9605\u548c\u56de\u7b54\u9009\u62e9\u6a21\u578b\u524d\uff0c\u8bf7\u5148\u6dfb\u52a0\u5e76\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002",
   "The start page can customize first-response perspective models and a separate review role model for one discussion.":
     "\u5f00\u59cb\u9875\u53ef\u4ee5\u4e3a\u5355\u6b21\u8ba8\u8bba\u81ea\u5b9a\u4e49\u521d\u59cb\u56de\u5e94\u89c6\u89d2\u6a21\u578b\uff0c\u4e5f\u53ef\u4ee5\u5355\u72ec\u6307\u5b9a\u5ba1\u67e5\u89d2\u8272\u6a21\u578b\u3002",
   "Edit provider setup": "\u7f16\u8f91\u63d0\u4f9b\u65b9\u8bbe\u7f6e",
@@ -1180,10 +1180,10 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Broader review": "\u66f4\u5e7f\u89c6\u89d2\u5ba1\u67e5",
   "Three independent model perspectives give the room more comparison material.":
     "\u4e09\u4e2a\u72ec\u7acb\u6a21\u578b\u89c6\u89d2\u4f1a\u4e3a\u8ba8\u8bba\u5ba4\u63d0\u4f9b\u66f4\u591a\u6bd4\u8f83\u6750\u6599\u3002",
-  "First-response model": "\u521d\u59cb\u56de\u5e94\u6a21\u578b",
+  "Model for first replies": "\u9996\u8f6e\u56de\u590d\u6a21\u578b",
   "Leave blank to use the model saved in Setup / Models. Perspectives without their own model use this value for first responses.":
     "\u7559\u7a7a\u5219\u4f7f\u7528\u8bbe\u7f6e / \u6a21\u578b\u4e2d\u4fdd\u5b58\u7684\u6a21\u578b\u3002\u6ca1\u6709\u5355\u72ec\u6a21\u578b\u7684\u89c6\u89d2\u4f1a\u4f7f\u7528\u6b64\u503c\u4f5c\u4e3a\u521d\u59cb\u56de\u5e94\u6a21\u578b\u3002",
-  "Review role model": "\u5ba1\u67e5\u89d2\u8272\u6a21\u578b",
+  "Model for review and answer": "\u5ba1\u9605\u548c\u56de\u7b54\u6a21\u578b",
   "Leave blank to use the first-response model. A value here applies to Reviewer, Evidence checker, Risk reviewer, and Conclusion writer only.":
     "\u7559\u7a7a\u5219\u4f7f\u7528\u521d\u59cb\u56de\u5e94\u6a21\u578b\u3002\u8fd9\u91cc\u7684\u503c\u4ec5\u5e94\u7528\u4e8e\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u8005\u3001\u98ce\u9669\u5ba1\u67e5\u8005\u548c\u7ed3\u8bba\u64b0\u5199\u8005\u3002",
   "Role model defaults": "\u89d2\u8272\u6a21\u578b\u9ed8\u8ba4\u8bbe\u7f6e",

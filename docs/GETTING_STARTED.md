@@ -118,7 +118,7 @@ You can also open:
 http://127.0.0.1:3877/runs/new?participants=model-backed
 ```
 
-Write the discussion question. Use the default role models first unless you have
+Write the discussion question. Use the default participant model choices first unless you have
 a reason to customize First viewpoint, Alternative viewpoint, Additional
 viewpoint, Skeptic, Evidence checker, Risk reviewer, or Summary writer.
 

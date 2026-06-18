@@ -1191,7 +1191,7 @@ function DiscussionModelSetupPanel({
             htmlFor="discussion-model-override"
           >
             <span>
-              <strong>{t("First-response model")}</strong>
+              <strong>{t("Model for first replies")}</strong>
               <small>
                 {t(
                   "Leave blank to use the model saved in Connect AI. Viewpoints without their own model use this value for first responses."
@@ -1215,7 +1215,7 @@ function DiscussionModelSetupPanel({
             htmlFor="discussion-review-model-override"
           >
             <span>
-              <strong>{t("Review role model")}</strong>
+              <strong>{t("Model for review and answer")}</strong>
               <small>
                 {t(
                   "Leave blank to use the first-response model. A value here applies to Skeptic, Evidence checker, Risk reviewer, and Summary writer only."
@@ -1246,7 +1246,7 @@ function DiscussionModelSetupPanel({
               }
             />
             <span>
-              <strong>{t("Customize viewpoint models")}</strong>
+              <strong>{t("Choose models per viewpoint")}</strong>
               <small>
                 {t(
                   "Give individual first-response viewpoints their own model. Leave a field blank to use the first-response model."
@@ -1257,7 +1257,7 @@ function DiscussionModelSetupPanel({
           {customPerspectiveModelsEnabled ? (
             <div
               className="du-perspective-model-grid"
-              aria-label={t("Viewpoint model assignment")}
+              aria-label={t("Viewpoint model choices")}
             >
               {perspectiveModelFields.map((field) => (
                 <label key={field.participantId} htmlFor={`${field.participantId}-model`}>
@@ -1280,7 +1280,7 @@ function DiscussionModelSetupPanel({
               ))}
               <p>
                 {t(
-                  "Viewpoint model overrides affect independent first responses only. Review roles use the review role model when one is set."
+                  "Per-viewpoint choices affect first replies only. Review and answer steps use the review model when one is set."
                 )}
               </p>
             </div>
@@ -1467,7 +1467,7 @@ function buildDiscussionCreationPreview(input: {
           tone: "ok"
         },
         {
-          label: "First-response model",
+          label: "Model for first replies",
           value: firstResponseModel || "Saved AI setup",
           detail: firstResponseModel
             ? "Viewpoints without their own model use this first-response model."
@@ -1475,7 +1475,7 @@ function buildDiscussionCreationPreview(input: {
           tone: "ok"
         },
         {
-          label: "Review role model",
+          label: "Model for review and answer",
           value: reviewRoleModel || firstResponseModel || "Saved AI setup",
           detail: reviewRoleModel
             ? "Review roles use this model while first-response viewpoints keep their assigned models."
@@ -1485,10 +1485,10 @@ function buildDiscussionCreationPreview(input: {
         ...(customizedPerspectiveModelCount > 0
           ? [
               {
-                label: "Viewpoint model assignment",
+                label: "Viewpoint model choices",
                 value: "Viewpoint models customized",
                 detail:
-                  "Customized viewpoint models only affect independent first responses. Review roles use the review role model when one is set.",
+                  "Per-viewpoint choices affect first replies only. Review and answer steps use the review model when one is set.",
                 tone: "ok" as const
               }
             ]
