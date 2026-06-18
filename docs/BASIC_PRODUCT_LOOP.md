@@ -375,6 +375,7 @@ Commands:
 - `corepack pnpm smoke:web-release-readiness`
 - `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 corepack pnpm smoke:web-release-readiness`
 - `DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
 
 Path covered:
 
@@ -388,11 +389,14 @@ Path covered:
 4. Re-ran the Broader review three-perspective release-readiness path.
 5. Re-ran the focused path three consecutive times in fresh isolated local
    services.
+6. Re-ran the Broader review path three consecutive times in fresh isolated
+   local services.
 
 Result:
 
 - Passed. The focused/default path passed once, the Broader review path passed
-  once, and the focused/default path then passed three consecutive runs.
+  once, the focused/default path then passed three consecutive runs, and the
+  Broader review path later passed three consecutive runs.
 - Failure diagnostics no longer intentionally print raw page body text, which
   could include model-generated participant or answer material during a real
   provider failure.
