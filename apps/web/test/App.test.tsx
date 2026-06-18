@@ -1296,10 +1296,23 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getAllByText("Independent first responses").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "Current conclusion" })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "Discussion paths" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open discussion room" })).toBeTruthy();
+    expect(
+      screen.getByText("Continue the conversation and read participant messages in order.")
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open current conclusion" })).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Review the conclusion, open disagreements, missing evidence, risks, and next actions."
+      )
+    ).toBeTruthy();
     expect(document.body.textContent ?? "").not.toContain("Underlying session catalog");
+    expect(document.body.textContent ?? "").not.toContain("Run id");
+    expect(document.body.textContent ?? "").not.toContain("Session id");
+    expect(document.body.textContent ?? "").not.toContain("Ledger events");
 
-    fireEvent.click(screen.getByRole("link", { name: "Open discussion" }));
+    fireEvent.click(screen.getByRole("link", { name: "Open discussion room" }));
 
     expect((await screen.findAllByText("Discussion brief")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
@@ -3133,7 +3146,15 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getAllByText("Not started yet").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "Discussion paths" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open discussion room" })).toBeTruthy();
+    expect(screen.getByText("Conclusion not ready yet")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Continue the discussion first; this page appears after conclusion material exists."
+      )
+    ).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Open current conclusion" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();
 
     cleanup();
@@ -3152,7 +3173,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Next step")).toBeTruthy();
     expect(screen.getByText("Continue guided discussion")).toBeTruthy();
     expect(screen.getAllByText("Not started yet").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "Open discussion" })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "Discussion paths" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open discussion room" })).toBeTruthy();
+    expect(screen.getByText("Conclusion not ready yet")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Open current conclusion" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Current conclusion" })).toBeNull();
   });
 

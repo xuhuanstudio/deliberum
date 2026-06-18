@@ -1392,6 +1392,14 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Could not load discussion data": "\u65e0\u6cd5\u52a0\u8f7d\u8ba8\u8bba\u6570\u636e",
   "View current conclusion": "\u67e5\u770b\u5f53\u524d\u7ed3\u8bba",
   "Open discussion": "\u6253\u5f00\u8ba8\u8bba",
+  "Discussion paths": "\u8ba8\u8bba\u8def\u5f84",
+  "Continue the conversation and read participant messages in order.":
+    "\u7ee7\u7eed\u5bf9\u8bdd\uff0c\u5e76\u6309\u987a\u5e8f\u9605\u8bfb\u53c2\u4e0e\u8005\u53d1\u8a00\u3002",
+  "Review the conclusion, open disagreements, missing evidence, risks, and next actions.":
+    "\u5ba1\u9605\u7ed3\u8bba\u3001\u672a\u89e3\u5206\u6b67\u3001\u7f3a\u5931\u8bc1\u636e\u3001\u98ce\u9669\u548c\u4e0b\u4e00\u6b65\u884c\u52a8\u3002",
+  "Conclusion not ready yet": "\u7ed3\u8bba\u5c1a\u672a\u5c31\u7eea",
+  "Continue the discussion first; this page appears after conclusion material exists.":
+    "\u8bf7\u5148\u7ee7\u7eed\u8ba8\u8bba\uff1b\u6709\u7ed3\u8bba\u6750\u6599\u540e\uff0c\u6b64\u9875\u624d\u4f1a\u663e\u793a\u3002",
   "Question": "\u95ee\u9898",
   "No discussion question is available yet.": "\u5c1a\u65e0\u53ef\u7528\u8ba8\u8bba\u95ee\u9898\u3002",
   "Last updated": "\u6700\u540e\u66f4\u65b0",

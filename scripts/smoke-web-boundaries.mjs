@@ -136,7 +136,8 @@ async function verifyLandingAdvancedBoundary(page, { webBaseUrl, runId, sessionI
   await page.goto(`${webBaseUrl}/`, { waitUntil: "networkidle" });
   await page.getByRole("heading", { name: landingTitle }).waitFor();
   await page.getByText("1 existing discussion").waitFor();
-  await page.getByRole("link", { name: "Open discussion", exact: true }).first().waitFor();
+  await page.getByRole("navigation", { name: "Discussion paths" }).first().waitFor();
+  await page.getByRole("link", { name: "Open discussion room", exact: true }).first().waitFor();
   await assertNoHorizontalOverflow(page, "landing boundary default");
   await assertDefaultBoundarySafety(page, "landing boundary default", {
     runId,
@@ -167,7 +168,8 @@ async function verifyRunsListBoundary(page, { webBaseUrl, runId, sessionId }) {
   await page.getByRole("heading", { name: "Discussions", exact: true }).waitFor();
   await page.getByText("Existing discussions").waitFor();
   await page.getByText("Resume latest discussion").waitFor();
-  await page.getByRole("link", { name: "Open discussion", exact: true }).first().waitFor();
+  await page.getByRole("navigation", { name: "Discussion paths" }).first().waitFor();
+  await page.getByRole("link", { name: "Open discussion room", exact: true }).first().waitFor();
   await assertNoHorizontalOverflow(page, "runs list default");
   await assertDefaultBoundarySafety(page, "runs list default", {
     runId,

@@ -4039,8 +4039,52 @@ textarea:focus-visible {
   line-height: 1.35;
 }
 
-.du-run-list-actions {
-  padding-top: 0;
+.du-run-task-routes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: var(--du-line);
+}
+
+.du-run-task-route {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  background: var(--du-surface);
+  color: inherit;
+  padding: 14px;
+  text-decoration: none;
+}
+
+.du-run-task-route:hover {
+  background: #f0fbf8;
+}
+
+.du-run-task-route-primary {
+  border-left: 4px solid var(--du-accent);
+}
+
+.du-run-task-route-disabled {
+  background: #f7f3e8;
+}
+
+.du-run-task-route span {
+  color: var(--du-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.du-run-task-route strong {
+  line-height: 1.3;
+}
+
+.du-run-task-route small {
+  color: var(--du-muted);
+  line-height: 1.45;
 }
 
 .du-run-more-details {
@@ -4900,6 +4944,7 @@ textarea:focus-visible {
   .du-room-output-grid,
   .du-room-response-grid,
   .du-run-list-meta,
+  .du-run-task-routes,
   .du-guided-action-path-list,
   .du-projection-developer-grid,
   .du-final-lifecycle-grid,

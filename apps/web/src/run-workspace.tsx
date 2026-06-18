@@ -2535,18 +2535,7 @@ function RunListItem({
         </article>
       </div>
       <DiscussionNextStepCard run={run} />
-      {runId ? (
-        <div className="du-action-row du-run-list-actions">
-          <Link className="du-action-link" to="/runs/$runId" params={{ runId }}>
-            {t("Open discussion")}
-          </Link>
-          {reviewReady ? (
-            <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
-              {t("Current conclusion")}
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
+      {runId ? <RunListTaskRoutes runId={runId} reviewReady={reviewReady} /> : null}
       <details className="du-user-details">
         <summary>
           <span>{t("Discussion progress")}</span>
@@ -2585,6 +2574,57 @@ function RunListItem({
         />
       </AdvancedDetails>
     </article>
+  );
+}
+
+function RunListTaskRoutes({
+  runId,
+  reviewReady
+}: {
+  runId: string;
+  reviewReady: boolean;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <nav className="du-run-task-routes" aria-label={t("Discussion paths")}>
+      <Link
+        className="du-run-task-route du-run-task-route-primary"
+        to="/runs/$runId"
+        params={{ runId }}
+        aria-label={t("Open discussion room")}
+      >
+        <span>{t("Discussion Room")}</span>
+        <strong>{t("Open discussion room")}</strong>
+        <small>{t("Continue the conversation and read participant messages in order.")}</small>
+      </Link>
+      {reviewReady ? (
+        <Link
+          className="du-run-task-route"
+          to="/runs/$runId/outcome"
+          params={{ runId }}
+          aria-label={t("Open current conclusion")}
+        >
+          <span>{t("Current conclusion")}</span>
+          <strong>{t("Open current conclusion")}</strong>
+          <small>
+            {t(
+              "Review the conclusion, open disagreements, missing evidence, risks, and next actions."
+            )}
+          </small>
+        </Link>
+      ) : (
+        <article className="du-run-task-route du-run-task-route-disabled" aria-disabled="true">
+          <span>{t("Current conclusion")}</span>
+          <strong>{t("Conclusion not ready yet")}</strong>
+          <small>
+            {t(
+              "Continue the discussion first; this page appears after conclusion material exists."
+            )}
+          </small>
+        </article>
+      )}
+    </nav>
   );
 }
 
