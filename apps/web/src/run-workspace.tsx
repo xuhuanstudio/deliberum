@@ -2961,6 +2961,10 @@ function StartRunForm({
     queryKey: ["runtime-profiles"],
     queryFn: () => client.getRuntimeProfiles()
   });
+  const runEventsQuery = useQuery({
+    queryKey: ["run-events", runId],
+    queryFn: () => client.getRunEvents(runId)
+  });
   const runtimeSetupPlan = runtimeProfilesQuery.data
     ? buildRuntimeSetupPlan(runtimeProfilesQuery.data)
     : undefined;
@@ -2972,7 +2976,13 @@ function StartRunForm({
   );
   const recommendedStartRequestText = formatPresetJson(continuationSetup.startRequest);
   const latestUpdateRef = useRef<HTMLElement | null>(null);
-  const continuationRoundBeforeUpdate = hasCompletedDiscussionRoundMaterial(run) ? 2 : 1;
+  const visibleRoundCountFromEvents = runEventsQuery.data
+    ? countVisibleDiscussionRoundsFromEvents(asArray(runEventsQuery.data.events), run)
+    : undefined;
+  const continuationRoundBeforeUpdate =
+    visibleRoundCountFromEvents === undefined
+      ? getNextDiscussionContinuationRound(run)
+      : Math.max(1, visibleRoundCountFromEvents + 1);
   const [startRequestText, setStartRequestText] = useState(recommendedStartRequestText);
   const [startFeedback, setStartFeedback] = useState<DiscussionStartFeedback | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
@@ -3626,6 +3636,66 @@ function prepareUserFacingContinuationStartRequest(
 
 function hasCompletedDiscussionRoundMaterial(run: unknown): boolean {
   return countCompletedDiscussionStages(run) > 0 || isDiscussionReviewReady(run);
+}
+
+function getNextDiscussionContinuationRound(run: unknown): number {
+  return Math.max(1, countVisibleDiscussionRoundsFromRun(run) + 1);
+}
+
+function countVisibleDiscussionRoundsFromEvents(events: unknown[], run: unknown): number {
+  const activities = ensureRoundHandoffActivities(createRoomActivityItems(events, run), run);
+  const topicLanguage = getRoomTopicLanguage(run);
+  const groups = groupRoomActivitiesByRound(
+    addUserContinuationTurnActivity(activities, topicLanguage)
+  );
+
+  return groups.filter(
+    (group) => group.kind === "discussion" && hasCompletedVisibleDiscussionRound(group)
+  ).length;
+}
+
+function countVisibleDiscussionRoundsFromRun(run: unknown): number {
+  const rounds = getRecordValue(run, "rounds");
+
+  return Math.max(
+    isDiscussionStagePresent(getRecordValue(rounds, "sealedDivergence")) ? 1 : 0,
+    countDiscussionRoundEntries(getRecordValue(rounds, "extraction")),
+    countDiscussionRoundEntries(getRecordValue(rounds, "proposalReview")),
+    countDiscussionRoundEntries(getRecordValue(rounds, "evidenceCheck")),
+    countDiscussionRoundEntries(getRecordValue(rounds, "candidateRepair")),
+    countDiscussionRoundEntries(getRecordValue(rounds, "finalization"))
+  );
+}
+
+function countDiscussionRoundEntries(value: unknown): number {
+  if (Array.isArray(value)) {
+    return value.filter(isDiscussionStagePresent).length;
+  }
+
+  return isDiscussionStagePresent(value) ? 1 : 0;
+}
+
+function isDiscussionStagePresent(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return Object.keys(value).length > 0;
+}
+
+function hasCompletedVisibleDiscussionRound(group: RoomActivityGroup): boolean {
+  return group.activities.some(
+    (activity) =>
+      activity.sourceType === "sealed_batch_revealed" ||
+      activity.sourceType === "extraction_proposed" ||
+      activity.sourceType === "proposal_accepted" ||
+      activity.sourceType === "proposal_challenged" ||
+      activity.sourceType === "synthetic_open_disagreement" ||
+      activity.sourceType === "evidence_result_recorded" ||
+      activity.sourceType === "synthetic_evidence_gap_review" ||
+      activity.sourceType === "final_candidate_proposed" ||
+      activity.sourceType === "final_audit_recorded"
+  );
 }
 
 function setStartRequestRoundId(
@@ -4803,8 +4873,15 @@ function RunQualityOverview({
     ensureRoundHandoffActivities(roomActivities, run),
     run
   );
+  const outputBackedRoomActivities = ensureStrongOptionConversationActivities(
+    conversationalRoomActivities,
+    {
+      run,
+      candidates
+    }
+  );
   const visibleRoomActivities = ensureOpenDisagreementActivity(
-    ensureEvidenceGapReviewActivity(conversationalRoomActivities, {
+    ensureEvidenceGapReviewActivity(outputBackedRoomActivities, {
       run,
       mainPerspectiveCount: candidates.length,
       unresolvedEvidenceCount: unresolvedEvidenceNeeds
@@ -6048,6 +6125,102 @@ function createPendingReviewRoundActivities(
   ];
 }
 
+function ensureStrongOptionConversationActivities(
+  activities: RoomActivityItem[],
+  {
+    run,
+    candidates
+  }: {
+    run: unknown;
+    candidates: unknown[];
+  }
+): RoomActivityItem[] {
+  if (
+    candidates.length === 0 ||
+    activities.some((activity) => activity.sourceType === "synthetic_strong_option_reply")
+  ) {
+    return activities;
+  }
+
+  const topicLanguage = getRoomTopicLanguage(run);
+  const perspectiveSpeakers = getStartResultPerspectiveSpeakers(run);
+  const existingDetails = new Set(
+    activities.map((activity) => normalizeConversationDetail(activity.detail))
+  );
+  const seenDetails = new Set(existingDetails);
+  const optionActivities = candidates
+    .flatMap((candidate, index): RoomActivityItem[] => {
+      const option = describeStrongOptionForConversation(candidate);
+      const normalizedOption = option ? normalizeConversationDetail(option) : "";
+
+      if (!option || seenDetails.has(normalizedOption)) {
+        return [];
+      }
+
+      seenDetails.add(normalizedOption);
+      const speaker = perspectiveSpeakers[index % perspectiveSpeakers.length] ?? "Perspective A";
+
+      return [
+        {
+          speaker,
+          title: "Strongest option shared",
+          action: "Shared a strongest current option",
+          detail: localizeTopicLanguageDetail(
+            topicLanguage,
+            "I would keep this option in the room for comparison: {option}",
+            "\u6211\u4f1a\u628a\u8fd9\u4e2a\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u91cc\u4f9b\u5bf9\u7167\uff1a{option}"
+          ),
+          detailValues: { option },
+          tone: "ok",
+          phase: "perspectives",
+          sourceType: "synthetic_strong_option_reply"
+        }
+      ];
+    })
+    .slice(0, 2);
+
+  if (optionActivities.length === 0) {
+    return activities;
+  }
+
+  return insertRoomReviewActivities(activities, optionActivities);
+}
+
+function describeStrongOptionForConversation(candidate: unknown): string | undefined {
+  const object = getRecordValue(candidate, "object") ?? candidate;
+  const title = getFirstStringRecordValue(object, [
+    "title",
+    "summary",
+    "recommendation",
+    "claim",
+    "description",
+    "rationale",
+    "text"
+  ]);
+  const description = getFirstStringRecordValue(object, [
+    "description",
+    "summary",
+    "recommendation",
+    "claim",
+    "rationale",
+    "text"
+  ]);
+
+  if (
+    title &&
+    description &&
+    normalizeConversationDetail(title) !== normalizeConversationDetail(description)
+  ) {
+    return summarizeRoomReplyMessage(`${title}: ${description}`);
+  }
+
+  return title ? summarizeRoomReplyMessage(title) : undefined;
+}
+
+function normalizeConversationDetail(detail: string): string {
+  return detail.replace(/\s+/g, " ").trim().toLocaleLowerCase();
+}
+
 function describeEvidenceGapReviewActivityDetail(
   unresolvedEvidenceCount: number,
   topicLanguage: RoomTopicLanguage
@@ -6073,16 +6246,23 @@ function insertRoomReviewActivity(
   activities: RoomActivityItem[],
   activity: RoomActivityItem
 ): RoomActivityItem[] {
+  return insertRoomReviewActivities(activities, [activity]);
+}
+
+function insertRoomReviewActivities(
+  activities: RoomActivityItem[],
+  insertedActivities: RoomActivityItem[]
+): RoomActivityItem[] {
   const insertBeforeIndex = activities.findIndex(
     (entry) => entry.phase === "evidence" || entry.phase === "conclusion"
   );
 
   if (insertBeforeIndex < 0) {
-    return [...activities, activity];
+    return [...activities, ...insertedActivities];
   }
 
   const nextActivities = [...activities];
-  nextActivities.splice(insertBeforeIndex, 0, activity);
+  nextActivities.splice(insertBeforeIndex, 0, ...insertedActivities);
 
   return nextActivities;
 }
@@ -6336,6 +6516,14 @@ function describeRoomActivityConversationCue(
     );
   }
 
+  if (activity.sourceType === "synthetic_strong_option_reply") {
+    return localizeTopicLanguageDetail(
+      topicLanguage,
+      "Sharing a strongest current option",
+      "\u5206\u4eab\u5f53\u524d\u6700\u5f3a\u9009\u9879"
+    );
+  }
+
   if (activity.sourceType === "extraction_proposed") {
     return round > 1
       ? localizeTopicLanguageDetail(
@@ -6463,6 +6651,7 @@ function localizeRoomActivityAction(
     "Connected the first responses": "\u8fde\u63a5\u4e86\u9996\u6b21\u56de\u5e94",
     "Connected the follow-up replies": "\u8fde\u63a5\u4e86\u8ffd\u52a0\u56de\u5e94",
     "Answered another participant": "\u56de\u5e94\u4e86\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005",
+    "Shared a strongest current option": "\u5206\u4eab\u4e86\u5f53\u524d\u6700\u5f3a\u9009\u9879",
     "Waiting to review disagreements": "\u7b49\u5f85\u5ba1\u67e5\u5206\u6b67",
     "Waiting to check evidence": "\u7b49\u5f85\u6838\u67e5\u8bc1\u636e"
   };
@@ -6728,6 +6917,27 @@ function describeRoomActivityAddressLine(
     };
   }
 
+  if (activity.sourceType === "synthetic_strong_option_reply") {
+    const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    return previousSpeaker
+      ? {
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Replying to {speaker}'s latest point",
+            "\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u89c2\u70b9"
+          ),
+          values: { speaker: previousSpeaker }
+        }
+      : {
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "To the room's current question",
+            "\u56de\u5e94\u8ba8\u8bba\u5ba4\u5f53\u524d\u95ee\u9898"
+          )
+        };
+  }
+
   if (activity.sourceType === "synthetic_participant_reply_bridge") {
     return {
       text: localizeTopicLanguageDetail(
@@ -6909,6 +7119,27 @@ function describeRoomActivityReplyLine(
     };
   }
 
+  if (activity.sourceType === "synthetic_strong_option_reply") {
+    const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
+
+    return previousSpeaker
+      ? {
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Building on {speaker}'s latest point",
+            "\u57fa\u4e8e {speaker} \u7684\u6700\u65b0\u89c2\u70b9"
+          ),
+          values: { speaker: previousSpeaker }
+        }
+      : {
+          text: localizeTopicLanguageDetail(
+            topicLanguage,
+            "Putting one option into the room for review",
+            "\u628a\u4e00\u4e2a\u9009\u9879\u653e\u5165\u8ba8\u8bba\u5ba4\u4f9b\u5ba1\u9605"
+          )
+        };
+  }
+
   if (activity.sourceType === "extraction_proposed") {
     const previousSpeaker = findPreviousRoomParticipantSpeaker(roundActivities, index);
 
@@ -7069,7 +7300,9 @@ function findPreviousRoomParticipantSpeaker(
       activity &&
       !isRoomSpeaker(activity.speaker) &&
       !isUserSpeaker(activity.speaker) &&
-      activity.sourceType === "sealed_contribution_submitted"
+      (activity.sourceType === "sealed_contribution_submitted" ||
+        activity.sourceType === "synthetic_strong_option_reply") &&
+      !isRedactedContributionActivity(activity)
     ) {
       return activity.speaker;
     }

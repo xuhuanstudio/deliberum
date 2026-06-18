@@ -1734,6 +1734,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
     "\u5c06\u540e\u7eed\u56de\u590d\u5e26\u5165\u8ba8\u8bba\u5ba4",
   "Connecting participant messages": "\u6b63\u5728\u8fde\u63a5\u53c2\u4e0e\u8005\u53d1\u8a00",
   "Responding to another participant": "\u56de\u5e94\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005",
+  "Strongest option shared": "\u5df2\u5206\u4eab\u6700\u5f3a\u9009\u9879",
+  "Shared a strongest current option": "\u5206\u4eab\u4e86\u5f53\u524d\u6700\u5f3a\u9009\u9879",
+  "Sharing a strongest current option": "\u5206\u4eab\u5f53\u524d\u6700\u5f3a\u9009\u9879",
   "Building on the first responses": "\u57fa\u4e8e\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
   "Building on the follow-up replies": "\u57fa\u4e8e\u540e\u7eed\u56de\u590d\u7ee7\u7eed",
   "Responding to the strongest current options":
@@ -1752,6 +1755,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Replying in round {round} to the previous room state":
     "\u5728\u7b2c {round} \u8f6e\u4e2d\u56de\u5e94\u4e0a\u4e00\u6b21\u8ba8\u8bba\u5ba4\u72b6\u6001",
   "Replying to {speaker}'s latest point": "\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u89c2\u70b9",
+  "To the room's current question": "\u56de\u5e94\u8ba8\u8bba\u5ba4\u5f53\u524d\u95ee\u9898",
   "To the participant first responses": "\u56de\u5e94\u53c2\u4e0e\u8005\u7684\u521d\u59cb\u56de\u5e94",
   "To the latest participant replies": "\u56de\u5e94\u6700\u65b0\u7684\u53c2\u4e0e\u8005\u53d1\u8a00",
   "To another participant's latest reply": "\u56de\u5e94\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005\u7684\u6700\u65b0\u53d1\u8a00",
@@ -1775,9 +1779,13 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Responding after the follow-up replies were revealed":
     "\u5728\u540e\u7eed\u56de\u590d\u63ed\u793a\u540e\u63a5\u7740\u56de\u5e94",
   "Continuing the round as a direct reply": "\u4ee5\u76f4\u63a5\u56de\u590d\u7684\u65b9\u5f0f\u7ee7\u7eed\u672c\u8f6e",
+  "Putting one option into the room for review":
+    "\u628a\u4e00\u4e2a\u9009\u9879\u653e\u5165\u8ba8\u8bba\u5ba4\u4f9b\u5ba1\u9605",
   "Building on {speaker}'s first response": "\u57fa\u4e8e {speaker} \u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
   "Building on {speaker}'s follow-up reply":
     "\u57fa\u4e8e {speaker} \u7684\u540e\u7eed\u56de\u590d\u7ee7\u7eed",
+  "Building on {speaker}'s latest point":
+    "\u57fa\u4e8e {speaker} \u7684\u6700\u65b0\u89c2\u70b9",
   "Building on the participant first responses": "\u57fa\u4e8e\u53c2\u4e0e\u8005\u7684\u521d\u59cb\u56de\u5e94\u7ee7\u7eed",
   "Building on the latest participant replies":
     "\u57fa\u4e8e\u6700\u65b0\u7684\u53c2\u4e0e\u8005\u53d1\u8a00\u7ee7\u7eed",
@@ -1789,6 +1797,8 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Challenging the current strongest option": "\u6311\u6218\u5f53\u524d\u6700\u5f3a\u9009\u9879",
   "Preparing to reply with evidence checks": "\u51c6\u5907\u7528\u8bc1\u636e\u6838\u67e5\u56de\u5e94",
   "Checking the evidence behind the current claim": "\u68c0\u67e5\u5f53\u524d\u8bba\u65ad\u80cc\u540e\u7684\u8bc1\u636e",
+  "I would keep this option in the room for comparison: {option}":
+    "\u6211\u4f1a\u628a\u8fd9\u4e2a\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u91cc\u4f9b\u5bf9\u7167\uff1a{option}",
   "Synthesizing perspectives, disagreements, and evidence checks":
     "\u7efc\u5408\u89c2\u70b9\u3001\u5206\u6b67\u548c\u8bc1\u636e\u68c0\u67e5",
   "Reviewing risks in the draft conclusion": "\u5ba1\u67e5\u7ed3\u8bba\u8349\u7a3f\u4e2d\u7684\u98ce\u9669",

@@ -4900,7 +4900,7 @@ describe("@deliberum/web shell", () => {
         name: "\u8ba8\u8bba\u66f4\u65b0\u6d88\u606f"
       }).textContent ?? ""
     ).toContain(
-      "\u6211\u662f\u8ba8\u8bba\u5ba4\u4ecd\u5728\u7b49\u5f85\u7684\u8ffd\u52a0\u56de\u5e94"
+      "\u6211\u662f\u8ba8\u8bba\u5ba4\u4ecd\u5728\u7b49\u5f85\u7684\u56de\u5e94"
     );
     expect(
       screen.getByRole("list", {
@@ -5743,7 +5743,20 @@ describe("@deliberum/web shell", () => {
     expect(nextRoomActionText).toContain("missing evidence");
     expect(nextRoomActionText).toContain("requirements to satisfy");
     expect(screen.getByRole("list", { name: "Discussion brief updates" })).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Discussion round 1 messages" })).toBeTruthy();
+    const firstDiscussionRound = screen.getByRole("list", {
+      name: "Discussion round 1 messages"
+    });
+    const firstDiscussionRoundText = firstDiscussionRound.textContent ?? "";
+    expect(firstDiscussionRound).toBeTruthy();
+    expect(firstDiscussionRoundText).toContain("Shared a strongest current option");
+    expect(firstDiscussionRoundText).toContain("Sharing a strongest current option");
+    expect(firstDiscussionRoundText).toContain(
+      "I would keep this option in the room for comparison: Candidate A"
+    );
+    expect(firstDiscussionRoundText).toContain("To the room's current question");
+    expect(firstDiscussionRoundText).toContain("Putting one option into the room for review");
+    expect(firstDiscussionRoundText).toContain("Replying to Perspective A's latest point");
+    expect(firstDiscussionRoundText).toContain("Checking evidence behind Perspective A's claim");
     expect(screen.getAllByText("Reviewer").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Raised an open disagreement").length).toBeGreaterThan(0);
     expect(
@@ -6045,15 +6058,15 @@ describe("@deliberum/web shell", () => {
     const updateRound = screen.getByRole("list", { name: "Discussion update messages" });
     const updateRoundText = updateRound.textContent ?? "";
     expect(screen.getByRole("region", { name: "New discussion round" })).toBeTruthy();
-    expect(screen.getAllByText("Discussion round 2").length).toBeGreaterThan(0);
+    expect(screen.getByText("What participants just said")).toBeTruthy();
     expect(updateRoundText).toContain("You");
     expect(updateRoundText).toContain("Asked the room to continue");
     expect(updateRoundText).toContain(
-      "The room continued again from the current conclusion and open questions."
+      "The room continued from your brief before participants responded."
     );
     expect(updateRoundText).toContain("Perspective A");
     expect(updateRoundText).toContain("Perspective B");
-    expect(updateRoundText).toContain("Shared a follow-up reply");
+    expect(updateRoundText).toContain("Shared a first response");
     expect(updateRoundText).toContain("Answered another participant");
     expect(updateRoundText).toContain("Reviewer");
     expect(updateRoundText).toContain("Waiting to review disagreements");
@@ -6064,15 +6077,12 @@ describe("@deliberum/web shell", () => {
       "Preparing to reply with evidence checks"
     );
     expect(updateRoundText).toContain(
-      "I'm responding to the latest room state"
+      "I put an independent answer into the room"
     );
     expect(updateRoundText).toContain(
-      "I'm responding to Perspective A's latest point"
-    );
-    expect(updateRoundText).toContain("To another participant's latest reply");
-    expect(updateRoundText).not.toContain(
       "Now that Perspective A's answer is visible"
     );
+    expect(updateRoundText).toContain("To another participant's latest reply");
     expect(screen.queryByRole("region", { name: "Updated discussion steps" })).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Room update shortcuts" })).toBeNull();
     fireEvent.click(await findAdvancedModeSummaryByPanelText("Post-update discussion details"));
@@ -6586,11 +6596,11 @@ describe("@deliberum/web shell", () => {
     expect(roundTwo.textContent ?? "").toContain(
       "Responding to Perspective A's latest reply in the follow-up round"
     );
-    expect(roundTwo.textContent ?? "").toContain("Replying to Perspective B's latest point");
+    expect(roundTwo.textContent ?? "").toContain("Replying to Perspective A's latest point");
     expect(roundTwo.textContent ?? "").toContain(
-      "Replying to Perspective B's option with an open disagreement"
+      "Replying to Perspective A's option with an open disagreement"
     );
-    expect(roundTwo.textContent ?? "").toContain("Checking evidence behind Perspective B's claim");
+    expect(roundTwo.textContent ?? "").toContain("Checking evidence behind Perspective A's claim");
     expect((document.querySelector(".du-room-layout")?.textContent ?? "")).not.toContain(
       "round-two-opened"
     );
@@ -6610,6 +6620,21 @@ describe("@deliberum/web shell", () => {
       createClient({
         getRun: vi.fn(async () => ({
           run: chineseRunDetail
+        })),
+        getFrontier: vi.fn(async () => ({
+          basis: "accepted_active_candidates",
+          candidates: [
+            {
+              object: {
+                id: "candidate-zh-1",
+                title: "\u5148\u4fdd\u6301\u8bd5\u70b9\u5e76\u8bbe\u7f6e\u56de\u6eda\u95e8\u69db",
+                status: "accepted_active"
+              },
+              proposalEventId: "proposal-event-1",
+              sourceEventIds: ["event-1"]
+            }
+          ],
+          projection
         })),
         getRunEvents: vi.fn(async () => ({
           runId: runDetail.runId,
@@ -6774,6 +6799,15 @@ describe("@deliberum/web shell", () => {
     expect(roundTwoText).toContain(
       "\u6700\u65b0\u56de\u5e94\u5df2\u6574\u7406\u4e3a\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
     );
+    expect(roundTwoText).toContain("\u5206\u4eab\u4e86\u5f53\u524d\u6700\u5f3a\u9009\u9879");
+    expect(roundTwoText).toContain("\u5206\u4eab\u5f53\u524d\u6700\u5f3a\u9009\u9879");
+    expect(roundTwoText).toContain(
+      "\u6211\u4f1a\u628a\u8fd9\u4e2a\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u91cc\u4f9b\u5bf9\u7167\uff1a\u5148\u4fdd\u6301\u8bd5\u70b9\u5e76\u8bbe\u7f6e\u56de\u6eda\u95e8\u69db"
+    );
+    expect(roundTwoText).toContain("\u56de\u5e94 \u89c6\u89d2 A \u7684\u6700\u65b0\u89c2\u70b9");
+    expect(roundTwoText).toContain(
+      "\u6838\u67e5 \u89c6\u89d2 A \u4e3b\u5f20\u80cc\u540e\u7684\u8bc1\u636e"
+    );
     expect(roundTwoText).toContain(
       "1 \u4e2a\u672a\u89e3\u51b3\u5206\u6b67\u4ecd\u9700\u5904\u7406\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7ed3\u8bba\u3002"
     );
@@ -6781,8 +6815,12 @@ describe("@deliberum/web shell", () => {
       "1 \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7ed3\u8bba\u3002"
     );
     expect(roundTwoText).not.toContain("I'm responding to Perspective A");
+    expect(roundOneText).not.toContain("Shared a strongest current option");
+    expect(roundOneText).not.toContain("Candidate A");
     expect(roundOneText).not.toContain("Perspective A");
     expect(roundOneText).not.toContain("Perspective B");
+    expect(roundTwoText).not.toContain("Shared a strongest current option");
+    expect(roundTwoText).not.toContain("Candidate A");
     expect(roundTwoText).not.toContain("Perspective A");
     expect(roundTwoText).not.toContain("Perspective B");
     expect(roundTwoText).not.toContain(
@@ -7766,6 +7804,182 @@ describe("@deliberum/web shell", () => {
       "I am checking the evidence behind this follow-up round before the room updates the conclusion."
     );
     expect(updateText).not.toContain("Now that Perspective A's answer is visible");
+  });
+
+  it("labels the post-update room message with the next visible discussion round", async () => {
+    const multiRoundRun = {
+      ...localPresetNotStartedRunDetail,
+      status: "revealed",
+      sealedDivergenceStatus: "revealed",
+      latestExtractionStatus: "completed",
+      latestProposalReviewStatus: "completed",
+      latestFinalizationStatus: "completed",
+      ledger: {
+        eventCount: 12
+      },
+      rounds: {
+        sealedDivergence: {
+          status: "revealed"
+        },
+        extraction: [{ status: "completed" }, { status: "completed" }],
+        candidateRepair: [],
+        evidenceCheck: [{ status: "completed" }, { status: "completed" }],
+        proposalReview: [{ status: "completed" }, { status: "completed" }],
+        finalization: [{ status: "completed" }, { status: "completed" }]
+      }
+    };
+    const client = renderApp(
+      "/runs/run-1",
+      createClient({
+        getRun: vi.fn(async () => ({
+          run: multiRoundRun
+        })),
+        getRunEvents: vi.fn(async () => ({
+          runId: multiRoundRun.runId,
+          sessionId: multiRoundRun.sessionId,
+          events: [
+            {
+              id: "topic-event",
+              type: "topic_contract_published",
+              sequence: 0,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:00.000Z",
+              payload: {
+                topic: multiRoundRun.topic
+              },
+              basedOnEventIds: [],
+              trace: {}
+            },
+            {
+              id: "round-one-opened",
+              type: "sealed_batch_opened",
+              sequence: 1,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:01.000Z",
+              payload: {},
+              basedOnEventIds: ["topic-event"],
+              trace: {}
+            },
+            {
+              id: "round-one-response",
+              type: "sealed_contribution_submitted",
+              sequence: 2,
+              visibility: "public",
+              authorId: "local-preset-alpha",
+              createdAt: "2026-06-10T00:00:02.000Z",
+              payload: {
+                position: "Round one asks for reversible rollout."
+              },
+              basedOnEventIds: ["round-one-opened"],
+              trace: {}
+            },
+            {
+              id: "round-one-revealed",
+              type: "sealed_batch_revealed",
+              sequence: 3,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:03.000Z",
+              payload: {},
+              basedOnEventIds: ["round-one-response"],
+              trace: {}
+            },
+            {
+              id: "round-one-extraction",
+              type: "extraction_proposed",
+              sequence: 4,
+              visibility: "public",
+              authorId: "local-preset-extractor",
+              createdAt: "2026-06-10T00:00:04.000Z",
+              payload: {
+                rationale: "Round one organized the first responses into reviewable options."
+              },
+              basedOnEventIds: ["round-one-revealed"],
+              trace: {}
+            },
+            {
+              id: "round-two-opened",
+              type: "sealed_batch_opened",
+              sequence: 5,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:05.000Z",
+              payload: {},
+              basedOnEventIds: ["round-one-extraction"],
+              trace: {}
+            },
+            {
+              id: "round-two-response",
+              type: "sealed_contribution_submitted",
+              sequence: 6,
+              visibility: "public",
+              authorId: "local-preset-beta",
+              createdAt: "2026-06-10T00:00:06.000Z",
+              payload: {
+                position: "Round two answers the first round."
+              },
+              basedOnEventIds: ["round-two-opened"],
+              trace: {}
+            },
+            {
+              id: "round-two-revealed",
+              type: "sealed_batch_revealed",
+              sequence: 7,
+              visibility: "public",
+              authorId: "system",
+              createdAt: "2026-06-10T00:00:07.000Z",
+              payload: {},
+              basedOnEventIds: ["round-two-response"],
+              trace: {}
+            },
+            {
+              id: "round-two-extraction",
+              type: "extraction_proposed",
+              sequence: 8,
+              visibility: "public",
+              authorId: "local-preset-extractor",
+              createdAt: "2026-06-10T00:00:08.000Z",
+              payload: {
+                rationale: "Round two organized the follow-up into updated options."
+              },
+              basedOnEventIds: ["round-two-revealed"],
+              trace: {}
+            }
+          ]
+        })),
+        startRun: vi.fn(async () => ({
+          run: {
+            ...multiRoundRun,
+            status: "running"
+          },
+          stages: [
+            {
+              stage: "sealed_divergence",
+              executionStatus: "executed",
+              status: "completed"
+            },
+            {
+              stage: "extraction",
+              executionStatus: "executed",
+              status: "completed"
+            }
+          ],
+          stopped: false
+        }))
+      })
+    );
+
+    expect(await screen.findByRole("button", { name: "Continue discussion" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continue discussion" }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    const updateRound = await screen.findByRole("region", { name: "New discussion round" });
+    const updateRoundText = updateRound.textContent ?? "";
+
+    expect(updateRoundText).toContain("Discussion round 3");
+    expect(updateRoundText).not.toContain("Discussion round 2");
   });
 
   it("maps processing stage statuses to user-facing language before conclusion review", async () => {

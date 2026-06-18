@@ -389,12 +389,14 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     )
     .waitFor();
   await page.getByText("To the strongest current option").first().waitFor();
-  await page.getByText("Replying to Perspective B's latest point").first().waitFor();
+  await page.getByText("Shared a strongest current option").first().waitFor();
+  await page.getByText("Sharing a strongest current option").first().waitFor();
+  await page.getByText("Replying to Perspective A's latest point").first().waitFor();
   await page
-    .getByText("Replying to Perspective B's option with an open disagreement")
+    .getByText("Replying to Perspective A's option with an open disagreement")
     .first()
     .waitFor();
-  await page.getByText("Checking evidence behind Perspective B's claim").first().waitFor();
+  await page.getByText("Checking evidence behind Perspective A's claim").first().waitFor();
   await assertRoomReportDetailsHidden(page, "discussion room output summary");
   await page.getByText("Current conclusion: Ready to review").waitFor();
   await page.locator(".du-room-focus").getByText("Missing evidence", { exact: true }).waitFor();
