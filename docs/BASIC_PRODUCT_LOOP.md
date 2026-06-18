@@ -272,6 +272,42 @@ Limit:
 - This is CI stabilization for the current supported source-checkout platforms,
   not a new Windows/WSL2 support claim.
 
+### 2026-06-19 Shell First-Run Bootstrap
+
+Scope: row 1, with supporting evidence for users who start before confirming
+Node.js and Corepack are ready.
+
+Commands:
+
+- `sh -n scripts/start-local-product.sh`
+- `sh scripts/start-local-product.sh --help`
+- `sh scripts/start-local-product.sh --dry-run`
+- `PATH=/usr/bin:/bin sh scripts/start-local-product.sh --dry-run`
+- `node scripts/check-local-prerequisites.mjs`
+- `corepack pnpm smoke:local-bootstrap`
+
+Path covered:
+
+1. Added a POSIX shell entry that can run before the Node-based first-run helper.
+2. When Node.js 24 or newer and Corepack are ready, the shell entry delegates to
+   `node scripts/start-local-product.mjs`.
+3. When Node.js or Corepack is missing, the shell entry gives normal-user next
+   steps instead of failing with a raw `node` command error.
+4. Updated English and Simplified Chinese quickstart docs to point first-time
+   users at the shell entry while keeping the Node helper and manual path
+   documented.
+
+Result:
+
+- Passed. The shell entry can show help, delegate to the Node first-run helper
+  when the toolchain is ready, and show normal-user repair guidance before Node
+  is available. `smoke:local-bootstrap` now covers this path in default CI.
+
+Limit:
+
+- This helper does not install system tools, request administrator access, add
+  Windows/WSL2 support, or provide a packaged installer.
+
 ### 2026-06-19 v1.1 Fresh Clone Local Product Smoke
 
 Scope: rows 1 through 4 on the source-checkout startup path, with supporting

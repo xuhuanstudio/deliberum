@@ -8,7 +8,7 @@ Deliberum 是一个本地优先的“你 + AI 参与者”多视角审议产品�
 
 - 想直接运行本地 Web 产品：看 [快速开始](docs/zh-CN/GETTING_STARTED.md)。
 - 想了解英文默认路径：看 [Getting Started](docs/GETTING_STARTED.md)。
-- 想了解最新发布范围：看 [v1.1.1 Release Notes](docs/V1_1_1_RELEASE_NOTES.md)。
+- 想了解最新发布范围：看 [v1.1.2 Release Notes](docs/V1_1_2_RELEASE_NOTES.md)。
 - 想了解 v1.0 历史范围：看 [v1.0 Release Notes](docs/V1_0_RELEASE_NOTES.md)。
 - 想了解本地或预生产部署：看 [Deployment](docs/DEPLOYMENT.md)。
 - 想了解架构：看 [Architecture](docs/ARCHITECTURE.md)。
@@ -30,14 +30,17 @@ smoke，并通过专门的 `Local start (macos-latest)` job 覆盖 macOS。Windo
 在仓库根目录运行：
 
 ```bash
-node scripts/start-local-product.mjs
+sh scripts/start-local-product.sh
 ```
 
-这个命令会检查本地工具、安装依赖、构建 Deliberum，并启动本地 Web 服务。保持这个终端运行，然后打开：
+这个 shell 入口会先检查 Node.js 和 Corepack 是否可用，然后调用受支持的首次运行 helper，安装依赖、构建 Deliberum，并启动本地 Web 服务。保持这个终端运行，然后打开：
 
 ```text
 http://127.0.0.1:3877/
 ```
+
+如果 Node.js 和 Corepack 已经准备好，这个 shell 入口会继续调用
+`node scripts/start-local-product.mjs`。
 
 如果你想手动逐步执行，也可以运行：
 

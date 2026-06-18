@@ -37,12 +37,19 @@ v1.1 supported platforms until the local-start path is verified in CI.
 From the repository root, the recommended first-run command is:
 
 ```bash
-node scripts/start-local-product.mjs
+sh scripts/start-local-product.sh
 ```
 
-This command checks local tools, installs dependencies, builds Deliberum, and
+This command checks whether Node.js and Corepack are ready, then runs the
+supported first-run helper that installs dependencies, builds Deliberum, and
 starts the local Web service. Keep that terminal running after the service
 starts.
+
+If Node.js and Corepack are already ready, the shell helper delegates to:
+
+```bash
+node scripts/start-local-product.mjs
+```
 
 ## 2. Manual Setup Alternative
 
@@ -208,7 +215,7 @@ database support. For trusted-team or remote pre-production hardening, see
 
 | Problem | What to do |
 | --- | --- |
-| Prerequisite check fails | Install Node.js 24 or newer, enable Corepack, then rerun `node scripts/check-local-prerequisites.mjs`. |
+| Prerequisite check fails | Run `sh scripts/start-local-product.sh` to get normal-user guidance, install Node.js 24 or newer, enable Corepack, then rerun the same command. |
 | Install or build fails | Run `corepack pnpm install`, then `corepack pnpm doctor:local`, then `corepack pnpm build`. |
 | Web build is missing | Run `corepack pnpm build`, then restart with `corepack pnpm start:local`. |
 | Port `3877` is busy | Start with `DELIBERUM_PORT=3888 corepack pnpm start:local` and open the printed URL. |
@@ -222,5 +229,5 @@ database support. For trusted-team or remote pre-production hardening, see
 - Local/pre-production deployment: [Deployment](DEPLOYMENT.md).
 - Discussion Room walkthrough: [Web Discussion Room Walkthrough](WEB_DISCUSSION_ROOM_WALKTHROUGH.md).
 - Architecture details: [Architecture](ARCHITECTURE.md).
-- Latest release scope: [v1.1.1 Release Notes](V1_1_1_RELEASE_NOTES.md).
+- Latest release scope: [v1.1.2 Release Notes](V1_1_2_RELEASE_NOTES.md).
 - v1.0 historical scope: [v1.0 Release Notes](V1_0_RELEASE_NOTES.md).

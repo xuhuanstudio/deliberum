@@ -32,7 +32,7 @@ console.log("\nReady to install dependencies and start the local Web product loo
 if (process.env.DELIBERUM_LOCAL_FIRST_RUN === "true") {
   console.log("Continuing with dependency installation, build, and local start.");
 } else {
-  console.log("Recommended first run: node scripts/start-local-product.mjs");
+  console.log("Recommended first run: sh scripts/start-local-product.sh");
   console.log("Manual path: corepack pnpm install && corepack pnpm build && corepack pnpm start:local");
 }
 

@@ -27,10 +27,16 @@ smoke，并通过专门的 `Local start (macos-latest)` job 覆盖 macOS。Windo
 在仓库根目录，推荐第一次运行时直接执行：
 
 ```bash
-node scripts/start-local-product.mjs
+sh scripts/start-local-product.sh
 ```
 
-这个命令会检查本地工具、安装依赖、构建 Deliberum，并启动本地 Web 服务。服务启动后，请保持这个终端窗口运行。
+这个命令会先检查 Node.js 和 Corepack 是否可用，然后调用受支持的首次运行 helper，安装依赖、构建 Deliberum，并启动本地 Web 服务。服务启动后，请保持这个终端窗口运行。
+
+如果 Node.js 和 Corepack 已经准备好，这个 shell 入口会继续调用：
+
+```bash
+node scripts/start-local-product.mjs
+```
 
 ## 2. 手动设置替代路径
 
@@ -178,7 +184,7 @@ Deliberum v1.1 不是公共托管服务，也不声明已经具备生产级多�
 
 | 问题 | 处理方式 |
 | --- | --- |
-| 前置检查失败 | 安装 Node.js 24 或更高版本，启用 Corepack，然后重新运行 `node scripts/check-local-prerequisites.mjs`。 |
+| 前置检查失败 | 运行 `sh scripts/start-local-product.sh` 查看普通用户可理解的引导，安装 Node.js 24 或更高版本并启用 Corepack，然后重新运行同一个命令。 |
 | 安装或构建失败 | 依次运行 `corepack pnpm install`、`corepack pnpm doctor:local`、`corepack pnpm build`。 |
 | 提示 Web build 缺失 | 重新运行 `corepack pnpm build`，再运行 `corepack pnpm start:local`。 |
 | `3877` 端口被占用 | 使用 `DELIBERUM_PORT=3888 corepack pnpm start:local`，然后打开命令输出里的 URL。 |
@@ -192,5 +198,5 @@ Deliberum v1.1 不是公共托管服务，也不声明已经具备生产级多�
 - 本地或预生产部署：[Deployment](../DEPLOYMENT.md)。
 - Discussion Room 走查：[Web Discussion Room Walkthrough](../WEB_DISCUSSION_ROOM_WALKTHROUGH.md)。
 - 架构细节：[Architecture](../ARCHITECTURE.md)。
-- 最新发布范围：[v1.1.1 Release Notes](../V1_1_1_RELEASE_NOTES.md)。
+- 最新发布范围：[v1.1.2 Release Notes](../V1_1_2_RELEASE_NOTES.md)。
 - v1.0 历史范围：[v1.0 Release Notes](../V1_0_RELEASE_NOTES.md)。

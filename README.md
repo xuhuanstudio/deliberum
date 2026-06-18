@@ -110,12 +110,16 @@ the local-start path is verified in CI.
 Recommended first run from the repository root:
 
 ```bash
-node scripts/start-local-product.mjs
+sh scripts/start-local-product.sh
 ```
 
-This checks local tools, installs dependencies, builds Deliberum, and starts the
+This checks whether Node.js and Corepack are ready, then runs the supported
+first-run helper that installs dependencies, builds Deliberum, and starts the
 local Web service. Keep that terminal running, then open the URL printed by the
 command.
+
+If Node.js and Corepack are already ready, this shell helper delegates to
+`node scripts/start-local-product.mjs`.
 
 If you prefer to run each step manually, check your local setup before
 installing dependencies:
@@ -162,7 +166,7 @@ For Web UI development, you can still run the daemon and Vite dev server as sepa
 
 Use these checks before changing runtime settings or filing an issue:
 
-- **Prerequisite check fails**: install Node.js 24 or newer, enable Corepack, then rerun `node scripts/check-local-prerequisites.mjs`. The check prints the next install/build/start command when the local toolchain is ready.
+- **Prerequisite check fails**: run `sh scripts/start-local-product.sh` to get normal-user guidance, install Node.js 24 or newer, enable Corepack, then rerun the same command. The Node-based prerequisite check prints the next install/build/start command when the local toolchain is ready.
 - **Dependencies or build fail**: run `corepack pnpm install`, then `corepack pnpm doctor:local`, then `corepack pnpm build`. Do not skip the build step; `start:local` serves the built Web shell.
 - **`start:local` says the Web build is missing**: run `corepack pnpm build` again, then restart with `corepack pnpm start:local`.
 - **Port 3877 is already in use**: start on another local port, for example `DELIBERUM_PORT=3888 corepack pnpm start:local`, then open the URL printed by the command.
@@ -214,6 +218,7 @@ This command starts an isolated local service and Web UI, configures the provide
 - [v1.0 Release Notes](docs/V1_0_RELEASE_NOTES.md)
 - [v1.1 Release Notes](docs/V1_1_RELEASE_NOTES.md)
 - [v1.1.1 Release Notes](docs/V1_1_1_RELEASE_NOTES.md)
+- [v1.1.2 Release Notes](docs/V1_1_2_RELEASE_NOTES.md)
 - [Web UI Spec](docs/WEB_UI_SPEC.md)
 - [Web Discussion Room Walkthrough](docs/WEB_DISCUSSION_ROOM_WALKTHROUGH.md)
 - [Roadmap](ROADMAP.md)
