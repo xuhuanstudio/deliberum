@@ -200,6 +200,7 @@ This command starts an isolated local service and Web UI, configures the provide
 - [v1.0 Normal User Blocker Audit](docs/V1_0_NORMAL_USER_BLOCKER_AUDIT.md)
 - [v1.0 Production Stable Completion Report](docs/V1_0_COMPLETION_REPORT.md)
 - [v1.0 Release Notes](docs/V1_0_RELEASE_NOTES.md)
+- [v1.1 Release Notes](docs/V1_1_RELEASE_NOTES.md)
 - [Web UI Spec](docs/WEB_UI_SPEC.md)
 - [Web Discussion Room Walkthrough](docs/WEB_DISCUSSION_ROOM_WALKTHROUGH.md)
 - [Roadmap](ROADMAP.md)

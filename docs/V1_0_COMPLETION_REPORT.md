@@ -155,6 +155,5 @@ These limits are accepted for v1.0 Production Stable:
 Released tag: `v1.0.0`.
 
 Do not move or recreate the existing `v1.0.0` tag. Current `main` contains
-post-v1.0.0 fixes and documentation alignment. Any new release from current
-`main` should use a later patch tag after maintainer approval and green GitHub
-CI.
+post-v1.0.0 changes. Any new release from current `main` should use a later
+SemVer tag after maintainer approval and green GitHub CI.

@@ -99,6 +99,6 @@ These are intentionally outside the v1.0 supported scope:
 All 12 v1.0 production gates are complete in the
 [v1.0 Production Readiness Matrix](V1_0_PRODUCTION_READINESS_MATRIX.md).
 
-`v1.0.0` has already been tagged. Current `main` contains post-v1.0.0 fixes and
-documentation alignment; any later release should use a new patch tag after
-maintainer approval and green GitHub CI.
+`v1.0.0` has already been tagged. Current `main` contains post-v1.0.0 changes;
+any later release should use a new SemVer tag after maintainer approval and
+green GitHub CI.

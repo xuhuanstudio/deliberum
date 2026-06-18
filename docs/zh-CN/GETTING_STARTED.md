@@ -178,4 +178,5 @@ Deliberum v1.0 不是公共托管服务，也不声明已经具备生产级多�
 - 本地或预生产部署：[Deployment](../DEPLOYMENT.md)。
 - Discussion Room 走查：[Web Discussion Room Walkthrough](../WEB_DISCUSSION_ROOM_WALKTHROUGH.md)。
 - 架构细节：[Architecture](../ARCHITECTURE.md)。
-- v1.0 支持范围：[v1.0 Release Notes](../V1_0_RELEASE_NOTES.md)。
+- 最新发布范围：[v1.1 Release Notes](../V1_1_RELEASE_NOTES.md)。
+- v1.0 历史范围：[v1.0 Release Notes](../V1_0_RELEASE_NOTES.md)。
