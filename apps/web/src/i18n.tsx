@@ -331,6 +331,56 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Web writes local service configuration and does not show the API key again after saving.":
     "Web \u4f1a\u5199\u5165\u672c\u5730\u670d\u52a1\u914d\u7f6e\uff0c\u4fdd\u5b58\u540e\u4e0d\u518d\u663e\u793a API key\u3002",
   "Test connection": "\u6d4b\u8bd5\u8fde\u63a5",
+  "Testing connection": "\u6b63\u5728\u6d4b\u8bd5\u8fde\u63a5",
+  "Retry test": "\u91cd\u8bd5\u6d4b\u8bd5",
+  "Model provider management": "\u6a21\u578b\u63d0\u4f9b\u65b9\u7ba1\u7406",
+  "Saved model providers": "\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\u63d0\u4f9b\u65b9",
+  "Manage the model provider Web can safely see. API keys stay hidden, and exact saved base URL or model values are not returned to the default view.":
+    "\u7ba1\u7406 Web \u53ef\u4ee5\u5b89\u5168\u67e5\u770b\u7684\u6a21\u578b\u63d0\u4f9b\u65b9\u3002API key \u4f1a\u4fdd\u6301\u9690\u85cf\uff0c\u9ed8\u8ba4\u89c6\u56fe\u4e0d\u4f1a\u8fd4\u56de\u5df2\u4fdd\u5b58\u7684\u7cbe\u786e base URL \u6216\u6a21\u578b\u503c\u3002",
+  "Provider type": "\u63d0\u4f9b\u65b9\u7c7b\u578b",
+  "OpenAI-compatible provider": "OpenAI-compatible \u63d0\u4f9b\u65b9",
+  "Needs test": "\u9700\u8981\u6d4b\u8bd5",
+  "Not verified": "\u672a\u9a8c\u8bc1",
+  "The latest Web connection test succeeded. This provider is ready for model-backed discussions.":
+    "\u6700\u8fd1\u4e00\u6b21 Web \u8fde\u63a5\u6d4b\u8bd5\u5df2\u6210\u529f\u3002\u8be5\u63d0\u4f9b\u65b9\u53ef\u7528\u4e8e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u3002",
+  "The saved provider exists, but the latest connection test failed. Review the setup fields and retry.":
+    "\u5df2\u4fdd\u5b58\u63d0\u4f9b\u65b9\u5b58\u5728\uff0c\u4f46\u6700\u8fd1\u4e00\u6b21\u8fde\u63a5\u6d4b\u8bd5\u5931\u8d25\u3002\u8bf7\u68c0\u67e5\u8bbe\u7f6e\u5b57\u6bb5\u540e\u91cd\u8bd5\u3002",
+  "A model provider is saved locally. Test the connection before relying on model-backed discussions.":
+    "\u6a21\u578b\u63d0\u4f9b\u65b9\u5df2\u672c\u5730\u4fdd\u5b58\u3002\u4f9d\u8d56\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "Add the provider API key, base URL, and model, then test the connection.":
+    "\u6dfb\u52a0\u63d0\u4f9b\u65b9 API key\u3001base URL \u548c\u6a21\u578b\u540e\uff0c\u518d\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "The local service did not report this provider as ready for Web setup.":
+    "\u672c\u5730\u670d\u52a1\u672a\u62a5\u544a\u8be5\u63d0\u4f9b\u65b9\u5df2\u53ef\u7528\u4e8e Web \u8bbe\u7f6e\u3002",
+  "One Web-managed provider can be used for model-backed participants.":
+    "\u4e00\u4e2a\u7531 Web \u7ba1\u7406\u7684\u63d0\u4f9b\u65b9\u53ef\u7528\u4e8e\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u3002",
+  "Saved setup": "\u5df2\u4fdd\u5b58\u8bbe\u7f6e",
+  "The saved setup is active in this local service.":
+    "\u5df2\u4fdd\u5b58\u8bbe\u7f6e\u5df2\u5728\u5f53\u524d\u672c\u5730\u670d\u52a1\u4e2d\u751f\u6548\u3002",
+  "The local service reports that provider setup is available.":
+    "\u672c\u5730\u670d\u52a1\u62a5\u544a\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u5df2\u53ef\u7528\u3002",
+  "Add model provider below to save setup on this machine.":
+    "\u5728\u4e0b\u65b9\u6dfb\u52a0\u6a21\u578b\u63d0\u4f9b\u65b9\uff0c\u4ee5\u4fbf\u5728\u8fd9\u53f0\u673a\u5668\u4e0a\u4fdd\u5b58\u8bbe\u7f6e\u3002",
+  "The local service confirms a base URL exists but does not return the value to Web.":
+    "\u672c\u5730\u670d\u52a1\u786e\u8ba4 base URL \u5b58\u5728\uff0c\u4f46\u4e0d\u4f1a\u5c06\u8be5\u503c\u8fd4\u56de\u7ed9 Web\u3002",
+  "Default model": "\u9ed8\u8ba4\u6a21\u578b",
+  "The local service confirms a default model exists but does not return the value to Web.":
+    "\u672c\u5730\u670d\u52a1\u786e\u8ba4\u9ed8\u8ba4\u6a21\u578b\u5b58\u5728\uff0c\u4f46\u4e0d\u4f1a\u5c06\u8be5\u503c\u8fd4\u56de\u7ed9 Web\u3002",
+  "Verification status": "\u9a8c\u8bc1\u72b6\u6001",
+  "The latest safe provider test succeeded in this Web session.":
+    "\u672c\u6b21 Web \u4f1a\u8bdd\u4e2d\u6700\u8fd1\u4e00\u6b21\u5b89\u5168\u63d0\u4f9b\u65b9\u6d4b\u8bd5\u5df2\u6210\u529f\u3002",
+  "Run Test connection after saving or replacing setup.":
+    "\u4fdd\u5b58\u6216\u66ff\u6362\u8bbe\u7f6e\u540e\uff0c\u8bf7\u8fd0\u884c\u201c\u6d4b\u8bd5\u8fde\u63a5\u201d\u3002",
+  "Start discussion can use model-backed participants.":
+    "\u5f00\u59cb\u8ba8\u8bba\u65f6\u53ef\u4ee5\u4f7f\u7528\u6a21\u578b\u652f\u6301\u7684\u53c2\u4e0e\u8005\u3002",
+  "Test connection before using this provider for discussions.":
+    "\u4f7f\u7528\u8be5\u63d0\u4f9b\u65b9\u5f00\u59cb\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u6d4b\u8bd5\u8fde\u63a5\u3002",
+  "Save and test a provider before starting real model-backed discussions.":
+    "\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u4fdd\u5b58\u5e76\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002",
+  "Remove provider": "\u79fb\u9664\u63d0\u4f9b\u65b9",
+  "Provider removal is not available in the current local service. Replace saved setup instead, or clear saved role setup below.":
+    "\u5f53\u524d\u672c\u5730\u670d\u52a1\u4e0d\u652f\u6301\u79fb\u9664\u63d0\u4f9b\u65b9\u3002\u8bf7\u6539\u4e3a\u66ff\u6362\u5df2\u4fdd\u5b58\u8bbe\u7f6e\uff0c\u6216\u5728\u4e0b\u65b9\u6e05\u9664\u5df2\u4fdd\u5b58\u89d2\u8272\u8bbe\u7f6e\u3002",
+  "Add model provider": "\u6dfb\u52a0\u6a21\u578b\u63d0\u4f9b\u65b9",
+  "Replace saved setup": "\u66ff\u6362\u5df2\u4fdd\u5b58\u8bbe\u7f6e",
   "Use Check readiness and Verify connection to confirm model-backed discussions are ready.":
     "\u4f7f\u7528\u201c\u68c0\u67e5\u5c31\u7eea\u72b6\u6001\u201d\u548c\u201c\u9a8c\u8bc1\u8fde\u63a5\u201d\u786e\u8ba4\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u5df2\u51c6\u5907\u597d\u3002",
   "Ready for discussions": "\u53ef\u7528\u4e8e\u8ba8\u8bba",

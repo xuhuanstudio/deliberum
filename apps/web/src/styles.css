@@ -1380,7 +1380,7 @@ textarea:focus-visible {
   white-space: pre;
 }
 
-.du-provider-checklist {
+.du-provider-management {
   display: grid;
   gap: 14px;
   border: 1px solid var(--du-line);
@@ -1389,59 +1389,80 @@ textarea:focus-visible {
   padding: 16px;
 }
 
-.du-provider-checklist-heading {
+.du-provider-management-heading {
   display: grid;
   gap: 6px;
 }
 
-.du-provider-checklist-heading h4,
-.du-provider-checklist-heading p {
+.du-provider-management-heading h4,
+.du-provider-management-heading p {
   margin: 0;
 }
 
-.du-provider-checklist-heading p:not(.du-kicker) {
+.du-provider-management-heading p:not(.du-kicker) {
   max-width: 760px;
   color: var(--du-muted);
   line-height: 1.45;
 }
 
-.du-provider-check-card-grid {
+.du-provider-management-grid {
   display: grid;
   gap: 12px;
 }
 
-.du-provider-check-card {
+.du-provider-management-card {
   display: grid;
   gap: 12px;
   min-width: 0;
   border: 1px solid var(--du-line);
+  border-left: 4px solid var(--du-muted);
   border-radius: 8px;
   background: var(--du-surface);
   padding: 16px;
 }
 
-.du-provider-check-card-header {
+.du-provider-management-ok {
+  border-left-color: var(--du-accent);
+}
+
+.du-provider-management-warning {
+  border-left-color: var(--du-warn);
+}
+
+.du-provider-management-card-header {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
+  align-items: start;
   min-width: 0;
 }
 
-.du-provider-check-card-header h5,
-.du-provider-check-card-header p {
+.du-provider-management-card-header h5,
+.du-provider-management-card-header p {
   margin: 0;
 }
 
-.du-provider-check-card-header h5 {
+.du-provider-management-card-header h5 {
   font-size: 1.05rem;
   line-height: 1.3;
 }
 
-.du-provider-check-card-header p:not(.du-kicker) {
+.du-provider-management-card-header p:not(.du-kicker) {
   color: var(--du-muted);
   line-height: 1.45;
 }
 
-.du-provider-check-grid {
+.du-provider-management-card-header > strong {
+  border: 1px solid var(--du-line);
+  border-radius: 999px;
+  background: #fbfaf6;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.du-provider-management-item-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1px;
@@ -1451,7 +1472,7 @@ textarea:focus-visible {
   background: var(--du-line);
 }
 
-.du-provider-check-item {
+.du-provider-management-item {
   display: grid;
   gap: 7px;
   min-width: 0;
@@ -1460,31 +1481,50 @@ textarea:focus-visible {
   padding: 13px;
 }
 
-.du-provider-check-item span {
+.du-provider-management-item span {
   color: var(--du-muted);
   font-size: 0.74rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
-.du-provider-check-item strong {
+.du-provider-management-item strong {
   overflow-wrap: anywhere;
   line-height: 1.3;
 }
 
-.du-provider-check-item p {
+.du-provider-management-item p {
   margin: 0;
   color: var(--du-muted);
   font-size: 0.84rem;
   line-height: 1.42;
 }
 
-.du-provider-check-ok {
+.du-provider-management-item-ok {
   border-top-color: var(--du-accent);
 }
 
-.du-provider-check-warning {
+.du-provider-management-item-warning {
   border-top-color: var(--du-warn);
+}
+
+.du-provider-management-boundary {
+  display: grid;
+  gap: 5px;
+  border: 1px dashed var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 12px;
+}
+
+.du-provider-management-boundary strong {
+  font-size: 0.86rem;
+}
+
+.du-provider-management-boundary span {
+  color: var(--du-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .du-provider-setup-form-section {
@@ -4969,7 +5009,8 @@ textarea:focus-visible {
   .du-current-model-setup-grid,
   .du-provider-setup-form-layout,
   .du-provider-setup-completion,
-  .du-provider-check-grid,
+  .du-provider-management-card-header,
+  .du-provider-management-item-grid,
   .du-discussion-setup-grid,
   .du-discussion-model-override,
   .du-perspective-model-toggle,

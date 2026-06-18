@@ -1773,9 +1773,13 @@ function SetupModelsPanel({
         ))}
       </div>
       {full ? (
-        <SetupDiscussionReadiness
-          setupPlan={setupPlan}
+        <ProviderSetupChecklist
+          profiles={modelProviderProfiles}
           providerConnectionVerified={providerConnectionVerified}
+          activeInCurrentDaemon={openAISetupMutation.data?.activeInCurrentDaemon === true}
+          verificationPending={openAIVerificationMutation.isPending}
+          verificationError={openAIVerificationMutation.error}
+          onVerifyConnection={() => openAIVerificationMutation.mutate()}
         />
       ) : null}
       {full ? (
@@ -1784,9 +1788,9 @@ function SetupModelsPanel({
           providerConnectionVerified={providerConnectionVerified}
         />
       ) : null}
-      {full && modelProviderProfiles.length > 0 ? (
-        <ProviderSetupChecklist
-          profiles={modelProviderProfiles}
+      {full ? (
+        <SetupDiscussionReadiness
+          setupPlan={setupPlan}
           providerConnectionVerified={providerConnectionVerified}
         />
       ) : null}
@@ -1872,9 +1876,15 @@ function SetupModelsPanel({
   );
 }
 
-type ProviderSetupCheck = {
+type ProviderManagementItem = {
   label: string;
   value: string;
+  detail: string;
+  tone: "ok" | "warning" | "neutral";
+};
+
+type ProviderManagementStatus = {
+  title: string;
   detail: string;
   tone: "ok" | "warning" | "neutral";
 };
@@ -2359,30 +2369,42 @@ function countConfiguredPerspectiveRoleModels(
 
 function ProviderSetupChecklist({
   profiles,
-  providerConnectionVerified
+  providerConnectionVerified,
+  activeInCurrentDaemon,
+  verificationPending,
+  verificationError,
+  onVerifyConnection
 }: {
   profiles: RuntimeSetupPlanProfile[];
   providerConnectionVerified: boolean;
+  activeInCurrentDaemon: boolean;
+  verificationPending: boolean;
+  verificationError: Error | null;
+  onVerifyConnection: () => void;
 }) {
   const { t } = useI18n();
 
   return (
-    <section className="du-provider-checklist" aria-labelledby="provider-setup-checklist">
-      <div className="du-provider-checklist-heading">
-        <p className="du-kicker">{t("Real provider setup")}</p>
-        <h4 id="provider-setup-checklist">{t("Provider setup checklist")}</h4>
+    <section className="du-provider-management" aria-labelledby="model-provider-management">
+      <div className="du-provider-management-heading">
+        <p className="du-kicker">{t("Model provider management")}</p>
+        <h4 id="model-provider-management">{t("Saved model providers")}</h4>
         <p>
           {t(
-            "This summarizes what Web can safely know from local service setup status. It never shows API key values or environment variable names."
+            "Manage the model provider Web can safely see. API keys stay hidden, and exact saved base URL or model values are not returned to the default view."
           )}
         </p>
       </div>
-      <div className="du-provider-check-card-grid">
+      <div className="du-provider-management-grid">
         {profiles.map((profile) => (
-          <ProviderSetupChecklistCard
+          <ProviderManagementCard
             key={profile.id}
             profile={profile}
             providerConnectionVerified={providerConnectionVerified}
+            activeInCurrentDaemon={activeInCurrentDaemon}
+            verificationPending={verificationPending}
+            verificationError={verificationError}
+            onVerifyConnection={onVerifyConnection}
           />
         ))}
       </div>
@@ -2663,45 +2685,90 @@ function SetupDiscussionReadiness({
   );
 }
 
-function ProviderSetupChecklistCard({
+function ProviderManagementCard({
   profile,
-  providerConnectionVerified
+  providerConnectionVerified,
+  activeInCurrentDaemon,
+  verificationPending,
+  verificationError,
+  onVerifyConnection
 }: {
   profile: RuntimeSetupPlanProfile;
   providerConnectionVerified: boolean;
+  activeInCurrentDaemon: boolean;
+  verificationPending: boolean;
+  verificationError: Error | null;
+  onVerifyConnection: () => void;
 }) {
   const { t } = useI18n();
-  const checks = createProviderSetupChecks(profile, providerConnectionVerified);
-  const ready = profile.status === "ready" && providerConnectionVerified;
+  const status = describeProviderManagementStatus(
+    profile,
+    providerConnectionVerified,
+    activeInCurrentDaemon,
+    verificationError
+  );
+  const items = createProviderManagementItems(
+    profile,
+    providerConnectionVerified,
+    activeInCurrentDaemon,
+    status
+  );
+  const configured = isProviderSetupSaved(profile, activeInCurrentDaemon);
+  const canVerify = profile.status === "ready" || activeInCurrentDaemon;
+  const ready = configured && providerConnectionVerified;
 
   return (
-    <article className="du-provider-check-card">
-      <div className="du-provider-check-card-header">
-        <p className="du-kicker">{t("Model provider")}</p>
-        <h5>{t(profile.name)}</h5>
-        <p>{t(getProviderChecklistSummary(profile, providerConnectionVerified))}</p>
+    <article className={`du-provider-management-card du-provider-management-${status.tone}`}>
+      <div className="du-provider-management-card-header">
+        <div>
+          <p className="du-kicker">{t("Provider type")}</p>
+          <h5>{t("OpenAI-compatible provider")}</h5>
+          <p>{t(status.detail)}</p>
+        </div>
+        <strong>{t(status.title)}</strong>
       </div>
-      <div className="du-provider-check-grid">
-        {checks.map((check) => (
-          <div className={`du-provider-check-item du-provider-check-${check.tone}`} key={check.label}>
-            <span>{t(check.label)}</span>
-            <strong>{t(check.value)}</strong>
-            <p>{t(check.detail)}</p>
+      <div className="du-provider-management-item-grid">
+        {items.map((item) => (
+          <div
+            className={`du-provider-management-item du-provider-management-item-${item.tone}`}
+            key={item.label}
+          >
+            <span>{t(item.label)}</span>
+            <strong>{t(item.value)}</strong>
+            <p>{t(item.detail)}</p>
           </div>
         ))}
+      </div>
+      <div className="du-provider-management-boundary">
+        <strong>{t("Remove provider")}</strong>
+        <span>
+          {t(
+            "Provider removal is not available in the current local service. Replace saved setup instead, or clear saved role setup below."
+          )}
+        </span>
       </div>
       <div className="du-action-row">
         {ready ? (
           <StartModelBackedDiscussionLink />
-        ) : profile.status === "ready" ? (
-          <a className="du-action-link du-secondary-link" href="#setup-provider-form">
-            {t("Verify connection")}
-          </a>
-        ) : (
+        ) : null}
+        {canVerify ? (
+          <button
+            type="button"
+            className="du-secondary-button"
+            disabled={verificationPending}
+            onClick={onVerifyConnection}
+          >
+            {t(verificationPending ? "Testing connection" : verificationError ? "Retry test" : "Test connection")}
+          </button>
+        ) : null}
+        <a className="du-action-link du-secondary-link" href="#setup-provider-form">
+          {t(configured ? "Replace saved setup" : "Add model provider")}
+        </a>
+        {!canVerify ? (
           <a className="du-action-link du-secondary-link" href="#setup-local-instructions">
             {t("View setup steps")}
           </a>
-        )}
+        ) : null}
       </div>
     </article>
   );
@@ -3056,6 +3123,13 @@ function buildSetupParticipantReadiness(
     },
     {
       role: "Evidence checker",
+      source: organizerSource,
+      status: organizerStatus,
+      detail: organizerDetail,
+      tone: organizerTone
+    },
+    {
+      role: "Risk reviewer",
       source: organizerSource,
       status: organizerStatus,
       detail: organizerDetail,
@@ -3563,205 +3637,152 @@ function ProviderSetupCompletion({
   );
 }
 
-function createProviderSetupChecks(
+function describeProviderManagementStatus(
   profile: RuntimeSetupPlanProfile,
-  providerConnectionVerified: boolean
-): ProviderSetupCheck[] {
-  const checks: ProviderSetupCheck[] = [
-    describeProviderEnabledCheck(profile),
-    describeProviderApiKeyCheck(profile)
+  providerConnectionVerified: boolean,
+  activeInCurrentDaemon: boolean,
+  verificationError: Error | null
+): ProviderManagementStatus {
+  const configured = isProviderSetupSaved(profile, activeInCurrentDaemon);
+
+  if (configured && providerConnectionVerified) {
+    return {
+      title: "Verified",
+      detail:
+        "The latest Web connection test succeeded. This provider is ready for model-backed discussions.",
+      tone: "ok"
+    };
+  }
+
+  if (configured && verificationError) {
+    return {
+      title: "Failed",
+      detail:
+        "The saved provider exists, but the latest connection test failed. Review the setup fields and retry.",
+      tone: "warning"
+    };
+  }
+
+  if (configured) {
+    return {
+      title: "Needs test",
+      detail:
+        "A model provider is saved locally. Test the connection before relying on model-backed discussions.",
+      tone: "warning"
+    };
+  }
+
+  if (profile.enabled) {
+    return {
+      title: "Not verified",
+      detail:
+        "Add the provider API key, base URL, and model, then test the connection.",
+      tone: "warning"
+    };
+  }
+
+  return {
+    title: "Setup needed",
+    detail: "The local service did not report this provider as ready for Web setup.",
+    tone: "neutral"
+  };
+}
+
+function createProviderManagementItems(
+  profile: RuntimeSetupPlanProfile,
+  providerConnectionVerified: boolean,
+  activeInCurrentDaemon: boolean,
+  status: ProviderManagementStatus
+): ProviderManagementItem[] {
+  const configured = isProviderSetupSaved(profile, activeInCurrentDaemon);
+  const baseUrlSaved = isProviderBaseUrlSaved(profile, activeInCurrentDaemon);
+  const modelSaved = isProviderModelSaved(profile, activeInCurrentDaemon);
+  const ready = configured && providerConnectionVerified;
+
+  return [
+    {
+      label: "Provider type",
+      value: "OpenAI-compatible",
+      detail: "One Web-managed provider can be used for model-backed participants.",
+      tone: "ok"
+    },
+    {
+      label: "Saved setup",
+      value: configured ? "Saved locally" : "Not saved yet",
+      detail: configured
+        ? activeInCurrentDaemon
+          ? "The saved setup is active in this local service."
+          : "The local service reports that provider setup is available."
+        : "Add model provider below to save setup on this machine.",
+      tone: configured ? "ok" : profile.enabled ? "warning" : "neutral"
+    },
+    {
+      label: "Base URL",
+      value: baseUrlSaved ? "Saved locally" : "Required",
+      detail: baseUrlSaved
+        ? "The local service confirms a base URL exists but does not return the value to Web."
+        : "Enter the provider base URL in the form below.",
+      tone: baseUrlSaved ? "ok" : profile.enabled ? "warning" : "neutral"
+    },
+    {
+      label: "Default model",
+      value: modelSaved ? "Saved locally" : "Required",
+      detail: modelSaved
+        ? "The local service confirms a default model exists but does not return the value to Web."
+        : "Enter the provider model in the form below.",
+      tone: modelSaved ? "ok" : profile.enabled ? "warning" : "neutral"
+    },
+    {
+      label: "Verification status",
+      value: status.title,
+      detail:
+        status.title === "Verified"
+          ? "The latest safe provider test succeeded in this Web session."
+          : "Run Test connection after saving or replacing setup.",
+      tone: status.tone
+    },
+    {
+      label: "Ready for discussions",
+      value: ready ? "Ready" : configured ? "Needs test" : "Setup needed",
+      detail: ready
+        ? "Start discussion can use model-backed participants."
+        : configured
+          ? "Test connection before using this provider for discussions."
+          : "Save and test a provider before starting real model-backed discussions.",
+      tone: ready ? "ok" : configured || profile.enabled ? "warning" : "neutral"
+    }
   ];
-  const requestTargetCheck = describeProviderRequestTargetCheck(profile);
-  const modelCheck = describeProviderModelCheck(profile);
-
-  if (requestTargetCheck) {
-    checks.push(requestTargetCheck);
-  }
-
-  if (modelCheck) {
-    checks.push(modelCheck);
-  }
-
-  checks.push(describeProviderConnectionCheck(profile, providerConnectionVerified));
-
-  return checks;
 }
 
-function describeProviderEnabledCheck(profile: RuntimeSetupPlanProfile): ProviderSetupCheck {
-  if (profile.enabled) {
-    return {
-      label: "Provider",
-      value: "Enabled locally",
-      detail: "The local service reports this provider as available for setup.",
-      tone: "ok"
-    };
-  }
-
-  return {
-    label: "Provider",
-    value: "Not enabled",
-    detail: "Enable this provider before configuring model details.",
-    tone: "neutral"
-  };
-}
-
-function describeProviderApiKeyCheck(profile: RuntimeSetupPlanProfile): ProviderSetupCheck {
-  if (profile.secretEnvVarNames.length === 0) {
-    return {
-      label: "API key",
-      value: "No API key reported",
-      detail: "This provider did not report a secret setup field through safe local service status.",
-      tone: "neutral"
-    };
-  }
-
-  if (profile.configuredSecretEnvVarCount > 0) {
-    return {
-      label: "API key",
-      value: "Configured locally",
-      detail: "The local service reports that a provider secret is present without exposing its value.",
-      tone: "ok"
-    };
-  }
-
-  return {
-    label: "API key",
-    value: "API key required",
-    detail: "Enter the provider API key in the Web setup form; the saved value is never shown.",
-    tone: profile.enabled ? "warning" : "neutral"
-  };
-}
-
-function describeProviderRequestTargetCheck(
-  profile: RuntimeSetupPlanProfile
-): ProviderSetupCheck | undefined {
-  if (!hasAnySetupName(profile, isRequestTargetSetupName)) {
-    return undefined;
-  }
-
-  if (!profile.enabled) {
-    return {
-      label: "Base URL",
-      value: "Not checked yet",
-      detail: "Enable the provider locally before Web can summarize request target readiness.",
-      tone: "neutral"
-    };
-  }
-
-  if (isAnySetupNameMissing(profile, isRequestTargetSetupName)) {
-    return {
-      label: "Base URL",
-      value: "Base URL needed",
-      detail: "Add the provider base URL or request target in Web setup, then check readiness.",
-      tone: "warning"
-    };
-  }
-
-  return {
-    label: "Base URL",
-    value: "Configured locally",
-    detail: "The local service reports that provider request routing is available.",
-    tone: "ok"
-  };
-}
-
-function describeProviderModelCheck(
-  profile: RuntimeSetupPlanProfile
-): ProviderSetupCheck | undefined {
-  if (profile.id !== "openai-compatible") {
-    return undefined;
-  }
-
-  if (!hasAnySetupName(profile, isModelSetupName)) {
-    return undefined;
-  }
-
-  if (!profile.enabled) {
-    return {
-      label: "Model",
-      value: "Not checked yet",
-      detail: "Enable the provider locally before Web can summarize model readiness.",
-      tone: "neutral"
-    };
-  }
-
-  if (isAnySetupNameMissing(profile, isModelSetupName)) {
-    return {
-      label: "Model",
-      value: "Model needed",
-      detail: "Add the provider model in Web setup or local setup before relying on model-backed discussions.",
-      tone: "warning"
-    };
-  }
-
-  return {
-    label: "Model",
-    value: "Configured locally",
-    detail: "The local service reports that a model choice is available for this provider.",
-    tone: "ok"
-  };
-}
-
-function describeProviderConnectionCheck(
+function isProviderSetupSaved(
   profile: RuntimeSetupPlanProfile,
-  providerConnectionVerified: boolean
-): ProviderSetupCheck {
-  if (profile.status === "ready" && providerConnectionVerified) {
-    return {
-      label: "Test connection",
-      value: "Verified",
-      detail: "The latest safe provider test succeeded.",
-      tone: "ok"
-    };
-  }
-
-  if (profile.status === "ready") {
-    return {
-      label: "Test connection",
-      value: "Ready to test",
-      detail: "Use Verify connection to confirm the provider accepts a minimal request.",
-      tone: "warning"
-    };
-  }
-
-  if (profile.enabled) {
-    return {
-      label: "Test connection",
-      value: "Verify after setup",
-      detail: "After saving setup, check readiness, then verify connection.",
-      tone: "warning"
-    };
-  }
-
-  return {
-    label: "Test connection",
-    value: "Enable provider first",
-    detail: "Connection verification is available after this provider is enabled locally.",
-    tone: "neutral"
-  };
+  activeInCurrentDaemon: boolean
+): boolean {
+  return activeInCurrentDaemon || profile.status === "ready";
 }
 
-function getProviderChecklistSummary(
+function isProviderBaseUrlSaved(
   profile: RuntimeSetupPlanProfile,
-  providerConnectionVerified: boolean
-): string {
-  if (profile.status === "ready" && providerConnectionVerified) {
-    return "Ready for model-backed discussions.";
-  }
+  activeInCurrentDaemon: boolean
+): boolean {
+  return (
+    activeInCurrentDaemon ||
+    (profile.status === "ready" &&
+      hasAnySetupName(profile, isRequestTargetSetupName) &&
+      !isAnySetupNameMissing(profile, isRequestTargetSetupName))
+  );
+}
 
-  if (profile.status === "ready") {
-    return "Provider setup is saved; verify the connection before starting model-backed discussions.";
-  }
-
-  if (profile.status === "ready_with_run_config") {
-    return "Enabled, but base URL, model, or request details still need setup.";
-  }
-
-  if (profile.status === "needs_configuration") {
-    return "Configuration is missing before this provider can be used.";
-  }
-
-  return "Enable this provider locally before it can be used.";
+function isProviderModelSaved(
+  profile: RuntimeSetupPlanProfile,
+  activeInCurrentDaemon: boolean
+): boolean {
+  return (
+    activeInCurrentDaemon ||
+    (profile.status === "ready" &&
+      hasAnySetupName(profile, isModelSetupName) &&
+      !isAnySetupNameMissing(profile, isModelSetupName))
+  );
 }
 
 function isWebConfigurableModelProviderProfile(profile: RuntimeSetupPlanProfile): boolean {

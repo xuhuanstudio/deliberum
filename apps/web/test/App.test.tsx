@@ -1639,7 +1639,7 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getByText("Discussion depth")).toBeTruthy();
-    expect(screen.getByText("Not saved yet")).toBeTruthy();
+    expect(screen.getAllByText("Not saved yet").length).toBeGreaterThan(0);
     expect(screen.getByText("Provider setup model")).toBeTruthy();
     expect(screen.getByText("Who joins the discussion")).toBeTruthy();
     expect(screen.getByText("First responses")).toBeTruthy();
@@ -1670,7 +1670,28 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Evidence checker")).toBeTruthy();
     expect(screen.getByText("Conclusion writer")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "Add model setup" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Provider setup checklist")).toBeTruthy();
+    expect(screen.getByText("Model provider management")).toBeTruthy();
+    expect(screen.getByText("Saved model providers")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Manage the model provider Web can safely see. API keys stay hidden, and exact saved base URL or model values are not returned to the default view."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("OpenAI-compatible provider")).toBeTruthy();
+    expect(screen.getAllByText("Provider type").length).toBeGreaterThan(0);
+    expect(screen.getByText("Saved setup")).toBeTruthy();
+    expect(screen.getByText("Add model provider below to save setup on this machine.")).toBeTruthy();
+    expect(screen.getByText("Default model")).toBeTruthy();
+    expect(screen.getByText("Verification status")).toBeTruthy();
+    expect(screen.getAllByText("Not verified").length).toBeGreaterThan(0);
+    expect(screen.getByText("Run Test connection after saving or replacing setup.")).toBeTruthy();
+    expect(screen.getByText("Remove provider")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Provider removal is not available in the current local service. Replace saved setup instead, or clear saved role setup below."
+      )
+    ).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Add model provider" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Configure OpenAI-compatible provider")).toBeTruthy();
     expect(screen.getByText("Current model setup")).toBeTruthy();
     expect(screen.getByText("Model management")).toBeTruthy();
@@ -1710,12 +1731,12 @@ describe("@deliberum/web shell", () => {
       (screen.getByRole("button", { name: "Verify connection" }) as HTMLButtonElement)
         .disabled
     ).toBe(true);
-    expect(screen.getByText("Real provider setup")).toBeTruthy();
+    expect(screen.getByText("Model provider management")).toBeTruthy();
     expect(screen.getAllByText("API key").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Configured locally").length).toBeGreaterThan(0);
-    expect(screen.getByText("Base URL needed")).toBeTruthy();
-    expect(screen.getByText("Model needed")).toBeTruthy();
-    expect(screen.getByText("Verify after setup")).toBeTruthy();
+    expect(screen.getAllByText("Required").length).toBeGreaterThan(1);
+    expect(
+      screen.getByText("Save and test a provider before starting real model-backed discussions.")
+    ).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "View setup steps" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Start a discussion" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Continue discussions" }).length).toBeGreaterThan(0);
@@ -1765,7 +1786,20 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getAllByText("Saved locally").length).toBeGreaterThan(2);
+    expect(
+      screen.getByText(
+        "The local service confirms a base URL exists but does not return the value to Web."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The local service confirms a default model exists but does not return the value to Web."
+      )
+    ).toBeTruthy();
     expect(screen.getAllByText("Ready to verify").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Needs test").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Test connection" })).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Replace saved setup" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Setup path")).toBeTruthy();
     expect(screen.getByText("Verify the provider before starting")).toBeTruthy();
     expect(
@@ -1784,6 +1818,14 @@ describe("@deliberum/web shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Verify connection" }));
     await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalled());
     expect(await screen.findByText("Provider connection verified")).toBeTruthy();
+    expect(screen.getAllByText("Verified").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "The latest Web connection test succeeded. This provider is ready for model-backed discussions."
+      )
+    ).toBeTruthy();
+    expect(screen.getAllByText("Ready").length).toBeGreaterThan(0);
+    expect(screen.getByText("Start discussion can use model-backed participants.")).toBeTruthy();
     const verifiedModelBackedStartLinks = screen.getAllByRole("link", {
       name: "Start model-backed discussion"
     });
@@ -1813,6 +1855,16 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(
       await screen.findByText("\u7ed3\u6784\u5316\u5ba1\u8bae\u517c\u5bb9\u6027")
+    ).toBeTruthy();
+    expect(await screen.findByText("\u6a21\u578b\u63d0\u4f9b\u65b9\u7ba1\u7406")).toBeTruthy();
+    expect(screen.getByText("\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\u63d0\u4f9b\u65b9")).toBeTruthy();
+    expect(screen.getByText("OpenAI-compatible \u63d0\u4f9b\u65b9")).toBeTruthy();
+    expect(screen.getByText("\u9a8c\u8bc1\u72b6\u6001")).toBeTruthy();
+    expect(screen.getByText("\u79fb\u9664\u63d0\u4f9b\u65b9")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u5f53\u524d\u672c\u5730\u670d\u52a1\u4e0d\u652f\u6301\u79fb\u9664\u63d0\u4f9b\u65b9\u3002\u8bf7\u6539\u4e3a\u66ff\u6362\u5df2\u4fdd\u5b58\u8bbe\u7f6e\uff0c\u6216\u5728\u4e0b\u65b9\u6e05\u9664\u5df2\u4fdd\u5b58\u89d2\u8272\u8bbe\u7f6e\u3002"
+      )
     ).toBeTruthy();
     expect(
       await screen.findByText(
@@ -2406,14 +2458,18 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByText("Start the local service")).toBeNull();
   });
 
-  it("localizes the setup provider checklist without exposing setup internals", async () => {
+  it("localizes model provider management without exposing setup internals", async () => {
     const client = renderApp("/setup/models", createClient(), {
       initialLanguage: "zh-CN"
     });
 
     expect(await screen.findByRole("heading", { name: "\u8bbe\u7f6e / \u6a21\u578b" })).toBeTruthy();
     await waitFor(() => expect(client.getRuntimeProfiles).toHaveBeenCalled());
-    expect(screen.getByText("\u63d0\u4f9b\u65b9\u8bbe\u7f6e\u68c0\u67e5\u6e05\u5355")).toBeTruthy();
+    expect(screen.getByText("\u6a21\u578b\u63d0\u4f9b\u65b9\u7ba1\u7406")).toBeTruthy();
+    expect(screen.getByText("\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\u63d0\u4f9b\u65b9")).toBeTruthy();
+    expect(screen.getByText("OpenAI-compatible \u63d0\u4f9b\u65b9")).toBeTruthy();
+    expect(screen.getAllByText("\u672a\u9a8c\u8bc1").length).toBeGreaterThan(0);
+    expect(screen.getByText("\u79fb\u9664\u63d0\u4f9b\u65b9")).toBeTruthy();
     expect(screen.getByText("\u914d\u7f6e OpenAI-compatible \u63d0\u4f9b\u65b9")).toBeTruthy();
     expect(screen.getByText("\u5f53\u524d\u6a21\u578b\u8bbe\u7f6e")).toBeTruthy();
     expect(screen.getByText("\u6a21\u578b\u7ba1\u7406")).toBeTruthy();
@@ -2431,10 +2487,13 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByRole("button", { name: "\u68c0\u67e5\u5c31\u7eea\u72b6\u6001" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "\u9a8c\u8bc1\u8fde\u63a5" })).toBeTruthy();
     expect(screen.getAllByText("API key").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("\u672c\u5730\u5df2\u914d\u7f6e").length).toBeGreaterThan(0);
-    expect(screen.getByText("\u9700\u8981 Base URL")).toBeTruthy();
-    expect(screen.getByText("\u9700\u8981\u6a21\u578b")).toBeTruthy();
-    expect(screen.getByText("\u8bbe\u7f6e\u540e\u9a8c\u8bc1")).toBeTruthy();
+    expect(screen.getAllByText("\u5fc5\u586b").length).toBeGreaterThan(1);
+    expect(screen.getByText("\u9ed8\u8ba4\u6a21\u578b")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u5f00\u59cb\u771f\u5b9e\u6a21\u578b\u652f\u6301\u7684\u8ba8\u8bba\u524d\uff0c\u8bf7\u5148\u4fdd\u5b58\u5e76\u6d4b\u8bd5\u63d0\u4f9b\u65b9\u3002"
+      )
+    ).toBeTruthy();
     expect(screen.getByText("\u8ba8\u8bba\u5c31\u7eea\u72b6\u6001")).toBeTruthy();
     expect(screen.getByText("\u73b0\u5728\u53ef\u4ee5\u8fd0\u884c\u4ec0\u4e48")).toBeTruthy();
     expect(screen.getAllByText("\u6f14\u793a\u6d41\u7a0b").length).toBeGreaterThan(0);
@@ -2635,7 +2694,7 @@ describe("@deliberum/web shell", () => {
     ).toBeTruthy();
     expect(screen.getAllByText("Saved locally").length).toBeGreaterThan(2);
     expect(screen.getAllByText("Ready to verify").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "Verify connection" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Test connection" })).toBeTruthy();
     expect(screen.getByText("Discussion readiness")).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Start model-backed discussion" })).toBeNull();
     expect(
@@ -2648,7 +2707,7 @@ describe("@deliberum/web shell", () => {
         "A model provider is saved locally. Verify the connection before relying on real model participants."
       )
     ).toBeTruthy();
-    expect(screen.getByText("Ready to test")).toBeTruthy();
+    expect(screen.getAllByText("Needs test").length).toBeGreaterThan(0);
     expect(screen.getByText("Discussion participants")).toBeTruthy();
     expect(screen.getByText("Model assignment")).toBeTruthy();
     expect(screen.getAllByText("Verify provider first").length).toBeGreaterThan(0);
@@ -2968,6 +3027,13 @@ describe("@deliberum/web shell", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Verify connection" }));
     expect(await screen.findByText("Provider connection could not be verified")).toBeTruthy();
+    expect(screen.getAllByText("Failed").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Retry test" })).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The saved provider exists, but the latest connection test failed. Review the setup fields and retry."
+      )
+    ).toBeTruthy();
     expect(
       screen.getByText("Provider authentication failed. Check the API key, then verify again.")
     ).toBeTruthy();
