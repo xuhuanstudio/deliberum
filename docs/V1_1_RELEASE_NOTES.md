@@ -66,7 +66,8 @@ Release evidence:
 - Post-tag fresh clone smoke of `v1.1.0`: prerequisite check, install,
   doctor, build, local start, `smoke:local-start`, and
   `smoke:web-product-loop` passed on macOS;
-- CI jobs: Validate, Local start on Ubuntu Linux, and Local start on macOS;
+- for the `v1.1.0` tag target, CI jobs included Validate, Local start on
+  Ubuntu Linux, and Local start on macOS;
 - default Web smoke coverage includes entry, boundary, resilience, and product
   loop browser paths;
 - local-start smoke continues to cover the source-checkout single-process start

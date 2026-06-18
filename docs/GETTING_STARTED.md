@@ -27,8 +27,10 @@ Developer Mode.
 - An OpenAI-compatible provider API key, base URL, and model if you want a real
   discussion with AI participants.
 
-Windows and WSL2 may work, but they are not v1.1 supported platforms until the
-local-start path is verified in CI.
+GitHub CI verifies the Ubuntu Linux path through the main `Validate` job, which
+runs the full local-start smoke, and verifies macOS through the dedicated
+`Local start (macos-latest)` job. Windows and WSL2 may work, but they are not
+v1.1 supported platforms until the local-start path is verified in CI.
 
 ## 1. Start the Local Product
 
@@ -220,5 +222,5 @@ database support. For trusted-team or remote pre-production hardening, see
 - Local/pre-production deployment: [Deployment](DEPLOYMENT.md).
 - Discussion Room walkthrough: [Web Discussion Room Walkthrough](WEB_DISCUSSION_ROOM_WALKTHROUGH.md).
 - Architecture details: [Architecture](ARCHITECTURE.md).
-- Latest release scope: [v1.1 Release Notes](V1_1_RELEASE_NOTES.md).
+- Latest release scope: [v1.1.1 Release Notes](V1_1_1_RELEASE_NOTES.md).
 - v1.0 historical scope: [v1.0 Release Notes](V1_0_RELEASE_NOTES.md).

@@ -239,6 +239,39 @@ Limit:
 - This is still a source-checkout helper, not a packaged installer, desktop app,
   Windows/WSL2 support claim, or hosted service.
 
+### 2026-06-19 CI Release-Readiness Stabilization
+
+Scope: row 1 and release-readiness evidence for the supported source-checkout
+startup path.
+
+Commands and checks:
+
+- `gh run cancel 27787120002`
+- `git diff --check`
+- `gh run watch 27788361935 --exit-status`
+
+Path covered:
+
+1. The first GitHub CI run for the one-command first-run helper was cancelled
+   after it stalled in the duplicate Ubuntu platform local-start browser
+   dependency installation step. `Validate` had already passed in that run, and
+   macOS local-start had passed.
+2. The workflow now keeps Ubuntu Linux coverage in the main `Validate` job,
+   which runs full `corepack pnpm run ci` including `smoke:local-start`.
+3. The dedicated platform local-start job now covers macOS, avoiding the
+   redundant Linux browser dependency installation step while preserving
+   supported-platform evidence.
+
+Result:
+
+- Passed. GitHub CI run `27788361935` completed successfully with `Validate`
+  and `Local start (macos-latest)`.
+
+Limit:
+
+- This is CI stabilization for the current supported source-checkout platforms,
+  not a new Windows/WSL2 support claim.
+
 ### 2026-06-19 v1.1 Fresh Clone Local Product Smoke
 
 Scope: rows 1 through 4 on the source-checkout startup path, with supporting

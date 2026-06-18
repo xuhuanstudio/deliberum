@@ -18,7 +18,9 @@ Deliberum 是一个本地优先的多视角审议产品。你输入一个问题�
 - 通过 Corepack 使用 pnpm 11。
 - 如果要运行真实模型讨论，需要一个 OpenAI-compatible provider 的 API key、base URL 和 model。
 
-Windows 和 WSL2 可能可以运行，但在本地启动路径进入 CI 验证前，不属于 v1.1 支持平台。
+GitHub CI 现在通过主 `Validate` job 覆盖 Ubuntu Linux 的完整本地启动
+smoke，并通过专门的 `Local start (macos-latest)` job 覆盖 macOS。Windows
+和 WSL2 可能可以运行，但在本地启动路径进入 CI 验证前，不属于 v1.1 支持平台。
 
 ## 1. 启动本地产品
 
@@ -190,5 +192,5 @@ Deliberum v1.1 不是公共托管服务，也不声明已经具备生产级多�
 - 本地或预生产部署：[Deployment](../DEPLOYMENT.md)。
 - Discussion Room 走查：[Web Discussion Room Walkthrough](../WEB_DISCUSSION_ROOM_WALKTHROUGH.md)。
 - 架构细节：[Architecture](../ARCHITECTURE.md)。
-- 最新发布范围：[v1.1 Release Notes](../V1_1_RELEASE_NOTES.md)。
+- 最新发布范围：[v1.1.1 Release Notes](../V1_1_1_RELEASE_NOTES.md)。
 - v1.0 历史范围：[v1.0 Release Notes](../V1_0_RELEASE_NOTES.md)。
