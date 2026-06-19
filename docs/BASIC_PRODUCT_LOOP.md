@@ -41,7 +41,7 @@ Updated: 2026-06-19.
 
 | # | Product loop step | Current status | Current evidence | Highest-priority gap |
 | --- | --- | --- | --- | --- |
-| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:3877/` through `sh scripts/start-local-product.sh` on macOS/Linux, `node scripts/start-local-product.mjs` on native Windows, or `corepack pnpm start:local` after a manual build. It includes a local prerequisite check for Node.js, Corepack, and pnpm before dependency installation, and now includes normal-user troubleshooting for prerequisite, install/build, missing built Web assets, busy local port, local-service-unavailable, provider verification, and paused real-provider discussion failures. Web tests cover the shell and landing readiness states. `smoke:local-start` verifies the single-process local start script serves the built Web shell from the daemon. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. A 2026-06-19 fresh clone of the pushed `v1.1.0` tag passed the documented prerequisite, install, build, local-start, and browser product-loop smoke path. A later 2026-06-19 first-run helper check verified `node scripts/start-local-product.mjs --dry-run`, the prerequisite output, and a real temporary-port start that returned daemon health and the built Connect AI Web shell. | Keep covered; packaging and installer work can improve first-run convenience later. |
+| 1 | Open the Web UI. | `verified` | README quickstart points users to `http://127.0.0.1:3877/` through `sh scripts/start-local-product.sh` on macOS/Linux, `node scripts/start-local-product.mjs` on native Windows, or `corepack pnpm start:local` after a manual build. It includes a local prerequisite check for Node.js, Corepack, and pnpm before dependency installation, and now includes normal-user troubleshooting for prerequisite, install/build, missing built Web assets, busy local port, local-service-unavailable, provider verification, and paused real-provider discussion failures. Web tests cover the shell and landing readiness states. `smoke:local-start` verifies the single-process local start script serves the built Web shell from the daemon. `smoke:web-entry` starts Web from a clean local browser path with both connected and unavailable local service states. A 2026-06-19 fresh clone of the pushed `v1.1.0` tag passed the documented prerequisite, install, build, local-start, and browser product-loop smoke path. A later 2026-06-19 first-run helper check verified `node scripts/start-local-product.mjs --dry-run`, the prerequisite output, and a real temporary-port start that returned daemon health and the built Connect AI Web shell. GitHub CI run `27800514091` passed `Validate`, `Local start (macos-latest)`, and `Local start (windows-latest)`, adding native Windows source-checkout local-start evidence on current `main`. | Keep covered; packaging and installer work can improve first-run convenience later. |
 | 2 | Understand within 30 seconds that Deliberum is a multi-perspective deliberation product. | `verified` | README and default Web copy describe the human-first product. The landing page now leads with `Multi-perspective deliberation for better decisions`. `smoke:web-entry` verifies desktop and mobile first viewports include Deliberum, multi-perspective deliberation, independent perspectives, strongest options, and reviewable conclusion language. | Keep covered; future visual design work should preserve this first-viewport product signal. |
 | 3 | See whether the local service is connected. | `verified` | Web setup and landing tests cover connected and unavailable local service states. `smoke:web-entry` starts a fresh local daemon and confirms the default Web path shows `Local service connected` and readiness state in the browser. | Keep covered; future setup work should preserve this status before model setup details. |
 | 4 | If the local service is not connected, understand how to start it. | `verified` | Web onboarding copy and README show `corepack pnpm build && corepack pnpm start:local` as the local start path, and README troubleshooting explains keeping the `start:local` terminal running, opening the printed local URL, and using Check again in Connect AI after the service responds. `smoke:local-start` verifies that script starts a daemon-served Web shell. `smoke:web-entry` starts Web against an unavailable local service, confirms the landing page points to Connect AI, and confirms `/setup/models` shows `Start the local service`, the local service command, Check again, and model setup next step without raw connection errors. | Keep covered; future installer work may simplify dependency installation, but the current local product start path is proven. |
@@ -205,6 +205,41 @@ the release-readiness path aligned with what a normal local user can do in Web
 instead of requiring hidden environment variables.
 
 ## Recent Automated Evidence
+
+### 2026-06-19 Native Windows Local-Start CI Coverage
+
+Scope: row 1 and release-readiness evidence for the supported source-checkout
+startup path.
+
+Commands and checks:
+
+- `git diff --check`
+- `corepack pnpm run ci:local-start`
+- `corepack pnpm run ci`
+- GitHub CI run `27800514091`
+
+Path covered:
+
+1. Added `windows-latest` to the dedicated `Local start` platform CI matrix
+   while Ubuntu Linux remains covered by the main `Validate` job.
+2. Updated source-checkout startup docs so native Windows users run
+   `node scripts/start-local-product.mjs`.
+3. Reproduced and fixed Windows command-invocation blockers for Corepack and
+   pnpm inside the prerequisite, first-run, and local-start smoke scripts.
+4. Reproduced and fixed Windows local-start smoke cleanup issues around process
+   tree termination and short-lived temporary-directory locks.
+5. Verified the final pushed commit with GitHub CI jobs `Validate`,
+   `Local start (macos-latest)`, and `Local start (windows-latest)`.
+
+Result:
+
+- Passed. Current `main` now has CI-backed native Windows source-checkout
+  local-start support in addition to macOS and Ubuntu Linux coverage.
+
+Limit:
+
+- This does not add WSL2 support, packaged desktop installers, public hosted
+  service operation, or broader provider compatibility guarantees.
 
 ### 2026-06-19 One-Command Local First-Run Helper
 

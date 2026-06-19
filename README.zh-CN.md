@@ -8,7 +8,7 @@ Deliberum 是一个本地优先的“你 + AI 参与者”多视角审议产品�
 
 - 想直接运行本地 Web 产品：看 [快速开始](docs/zh-CN/GETTING_STARTED.md)。
 - 想了解英文默认路径：看 [Getting Started](docs/GETTING_STARTED.md)。
-- 想了解最新发布范围：看 [v1.1.2 Release Notes](docs/V1_1_2_RELEASE_NOTES.md)。
+- 想了解最新发布范围：看 [v1.1.3 Release Notes](docs/V1_1_3_RELEASE_NOTES.md)。
 - 想了解 v1.0 历史范围：看 [v1.0 Release Notes](docs/V1_0_RELEASE_NOTES.md)。
 - 想了解本地或预生产部署：看 [Deployment](docs/DEPLOYMENT.md)。
 - 想了解架构：看 [Architecture](docs/ARCHITECTURE.md)。

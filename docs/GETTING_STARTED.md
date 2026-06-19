@@ -236,5 +236,5 @@ database support. For trusted-team or remote pre-production hardening, see
 - Local/pre-production deployment: [Deployment](DEPLOYMENT.md).
 - Discussion Room walkthrough: [Web Discussion Room Walkthrough](WEB_DISCUSSION_ROOM_WALKTHROUGH.md).
 - Architecture details: [Architecture](ARCHITECTURE.md).
-- Latest release scope: [v1.1.2 Release Notes](V1_1_2_RELEASE_NOTES.md).
+- Latest release scope: [v1.1.3 Release Notes](V1_1_3_RELEASE_NOTES.md).
 - v1.0 historical scope: [v1.0 Release Notes](V1_0_RELEASE_NOTES.md).
