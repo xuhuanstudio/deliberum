@@ -31,7 +31,7 @@ FROM deps AS build
 COPY . .
 
 RUN git init --quiet && git add -A && pnpm run ci && rm -rf .git
-RUN pnpm prune --prod
+RUN CI=true pnpm prune --prod
 
 FROM node:24-bookworm-slim AS runtime
 

@@ -41,6 +41,7 @@ function checkDockerfile() {
     /RUN git init --quiet && git add -A && pnpm run ci && rm -rf \.git/,
     "runs workspace CI during image build without copying host git metadata to runtime"
   );
+  requireMatch("Dockerfile", dockerfile, /RUN CI=true pnpm prune --prod/, "prunes development dependencies non-interactively");
   requireMatch("Dockerfile", dockerfile, /DELIBERUM_HOST=0\.0\.0\.0/, "binds the daemon inside the container");
   requireMatch("Dockerfile", dockerfile, /DELIBERUM_PORT=3877/, "uses the documented local port");
   requireMatch(
