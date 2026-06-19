@@ -93,7 +93,10 @@ try {
     await browser.close();
   }
   await terminateChild(child, exitPromise);
-  rmSync(tempDir, { recursive: true, force: true });
+  if (useWindowsShell) {
+    await delay(500);
+  }
+  rmSync(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }
 
 console.log("Local start smoke checks passed.");
