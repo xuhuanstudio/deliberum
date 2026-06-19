@@ -245,15 +245,18 @@ Result:
 
 - Passed once on the focused two-perspective Chinese topic path.
 - Passed once on the Broader review three-perspective Chinese topic path.
+- Follow-up stability recheck passed two consecutive focused two-perspective
+  Chinese topic runs in fresh isolated local services.
+- Follow-up stability recheck passed two consecutive Broader review
+  three-perspective Chinese topic runs in fresh isolated local services.
 - Exact provider values, raw provider responses, and provider output were
   intentionally omitted.
 
 Limit:
 
-- This is one Chinese topic, one focused pass, one Broader review pass, and one
-  external provider. It does not replace repeated multilingual
-  release-readiness runs, broader provider coverage, or long-run stability
-  testing.
+- This is one Chinese topic, three focused passes, three Broader review passes,
+  and one external provider. It does not replace broader provider coverage,
+  longer multilingual release-readiness runs, or long-run stability testing.
 
 ### 2026-06-19 v1.1.3 Fresh Clone Local Product Smoke
 
