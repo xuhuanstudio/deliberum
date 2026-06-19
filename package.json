@@ -28,6 +28,7 @@
     "start:local:setup": "node scripts/start-local-product.mjs",
     "start:local": "node scripts/start-local-web.mjs",
     "smoke:built": "node scripts/smoke-built-runtime.mjs",
+    "smoke:container": "node scripts/smoke-container-local.mjs",
     "smoke:local-bootstrap": "node scripts/smoke-local-bootstrap.mjs",
     "smoke:local-start": "node scripts/smoke-local-start.mjs",
     "smoke:product-loop": "node scripts/smoke-product-loop.mjs",

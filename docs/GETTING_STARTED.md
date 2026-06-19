@@ -213,6 +213,15 @@ docker run --rm \
   deliberum:local
 ```
 
+To verify this container path in a Docker-enabled environment, run:
+
+```bash
+corepack pnpm smoke:container
+```
+
+If Docker is not available, `corepack pnpm smoke:container -- --dry-run`
+previews the commands but does not prove the container starts.
+
 Deliberum v1.1 is not a public hosted service and does not claim production
 multi-user authorization, production identity, or distributed production
 database support. For trusted-team or remote pre-production hardening, see

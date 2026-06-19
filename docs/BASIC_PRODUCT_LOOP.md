@@ -258,6 +258,7 @@ Commands:
 
 - `docker --version`
 - `corepack pnpm lint:container`
+- `corepack pnpm smoke:container -- --dry-run`
 
 Path covered:
 
@@ -270,17 +271,22 @@ Path covered:
    host-side Compose binding to `127.0.0.1:3877`, durable daemon state under
    `/data`, daemon-served Web assets, a health check, a non-root runtime user,
    and no baked provider keys or token-like secret settings.
+4. Added an explicit `corepack pnpm smoke:container` command for
+   Docker-enabled environments. Its dry-run mode prints the planned build, run,
+   health, Web-shell, and cleanup path without claiming runtime verification.
 
 Result:
 
 - Static check passed locally. Future CI runs now fail if the documented
   container files drift away from these safety and startup invariants.
+- Container smoke dry-run passed locally.
 
 Limit:
 
 - This is a static release-readiness guard, not a Docker build, Compose run, or
-  runtime container health smoke. A Docker-enabled environment is still required
-  before claiming the container path itself is release-smoked.
+  runtime container health smoke. The dry run only verifies the smoke command
+  plan. A Docker-enabled environment is still required before claiming the
+  container path itself is release-smoked.
 
 ### 2026-06-19 Native Windows Local-Start CI Coverage
 
