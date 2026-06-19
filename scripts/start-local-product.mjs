@@ -6,7 +6,6 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
 const help = args.has("--help") || args.has("-h");
-const useWindowsShell = process.platform === "win32";
 
 const steps = [
   {
@@ -96,13 +95,12 @@ Keep the terminal open after the local Web service starts, then open the URL pri
 
 function run(command, commandArgs, stepEnv = {}) {
   return new Promise((resolveRun, rejectRun) => {
-    const child = spawn(command, commandArgs, {
+    const child = spawn(commandForPlatform(command), commandArgs, {
       cwd: repoRoot,
       env: {
         ...process.env,
         ...stepEnv
       },
-      shell: useWindowsShell,
       stdio: "inherit"
     });
 
@@ -129,4 +127,12 @@ function formatShellArg(value) {
   }
 
   return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function commandForPlatform(command) {
+  if (process.platform === "win32" && command === "corepack") {
+    return "corepack.cmd";
+  }
+
+  return command;
 }

@@ -55,10 +55,9 @@ function checkNodeVersion() {
 }
 
 function checkCommand(command, args, label) {
-  const result = spawnSync(command, args, {
+  const result = spawnSync(commandForPlatform(command), args, {
     cwd: repoRoot,
-    encoding: "utf8",
-    shell: process.platform === "win32"
+    encoding: "utf8"
   });
 
   if (result.status === 0) {
@@ -77,10 +76,9 @@ function checkCommand(command, args, label) {
 }
 
 function checkPnpmVersion() {
-  const result = spawnSync("corepack", ["pnpm", "--version"], {
+  const result = spawnSync(commandForPlatform("corepack"), ["pnpm", "--version"], {
     cwd: repoRoot,
-    encoding: "utf8",
-    shell: process.platform === "win32"
+    encoding: "utf8"
   });
 
   if (result.status !== 0) {
@@ -130,4 +128,12 @@ function getRecommendedFirstRunCommand() {
   }
 
   return "sh scripts/start-local-product.sh";
+}
+
+function commandForPlatform(command) {
+  if (process.platform === "win32" && command === "corepack") {
+    return "corepack.cmd";
+  }
+
+  return command;
 }

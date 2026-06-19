@@ -11,9 +11,9 @@ import { chromium } from "@playwright/test";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const port = await reserveLocalPort();
 const tempDir = mkdtempSync(join(tmpdir(), "deliberum-local-start-"));
-const detachedChild = process.platform !== "win32";
-const useWindowsShell = process.platform === "win32";
-const child = spawn("corepack", ["pnpm", "start:local"], {
+const isWindows = process.platform === "win32";
+const detachedChild = !isWindows;
+const child = spawn(commandForPlatform("corepack"), ["pnpm", "start:local"], {
   cwd: repoRoot,
   env: {
     ...buildMinimalEnv(),
@@ -22,7 +22,6 @@ const child = spawn("corepack", ["pnpm", "start:local"], {
     DELIBERUM_DAEMON_SQLITE_PATH: join(tempDir, "deliberum.sqlite")
   },
   detached: detachedChild,
-  shell: useWindowsShell,
   stdio: ["ignore", "pipe", "pipe"]
 });
 let stdout = "";
@@ -174,7 +173,7 @@ async function terminateChild(processChild, processExitPromise) {
 }
 
 function signalChildTree(processChild, signal) {
-  if (useWindowsShell && processChild.pid !== undefined) {
+  if (isWindows && processChild.pid !== undefined) {
     const force = signal === "SIGKILL" ? ["/f"] : [];
     const result = spawnSync("taskkill", ["/pid", String(processChild.pid), "/t", ...force], {
       encoding: "utf8"
@@ -197,7 +196,7 @@ function signalChildTree(processChild, signal) {
 }
 
 async function cleanupTemporaryDirectory(directory) {
-  const attempts = useWindowsShell ? 20 : 1;
+  const attempts = isWindows ? 20 : 1;
   let lastError;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -206,7 +205,7 @@ async function cleanupTemporaryDirectory(directory) {
       return;
     } catch (error) {
       lastError = error;
-      if (!useWindowsShell || !isRetryableCleanupError(error)) {
+      if (!isWindows || !isRetryableCleanupError(error)) {
         throw error;
       }
       await delay(250);
@@ -220,6 +219,14 @@ async function cleanupTemporaryDirectory(directory) {
 
 function isRetryableCleanupError(error) {
   return ["EBUSY", "EMFILE", "ENFILE", "ENOTEMPTY", "EPERM"].includes(error.code);
+}
+
+function commandForPlatform(command) {
+  if (isWindows && command === "corepack") {
+    return "corepack.cmd";
+  }
+
+  return command;
 }
 
 function formatProcessOutput(processStdout, processStderr) {
