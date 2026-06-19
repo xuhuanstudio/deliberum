@@ -249,6 +249,39 @@ Limit:
   (windows-latest)` on the same tag target commit. This smoke did not use a real
   external provider, WSL2, or a packaged installer.
 
+### 2026-06-20 Static Container File Safety Check
+
+Scope: row 1 and release-readiness evidence for the documented
+local/pre-production container files.
+
+Commands:
+
+- `docker --version`
+- `corepack pnpm lint:container`
+
+Path covered:
+
+1. Confirmed the current verification environment does not have Docker
+   installed, so no runtime container smoke was claimed.
+2. Added a default CI check for the existing root `Dockerfile` and
+   `compose.yaml`.
+3. The check verifies that the container files keep the documented local
+   security boundary: daemon host `0.0.0.0` only inside the container,
+   host-side Compose binding to `127.0.0.1:3877`, durable daemon state under
+   `/data`, daemon-served Web assets, a health check, a non-root runtime user,
+   and no baked provider keys or token-like secret settings.
+
+Result:
+
+- Static check passed locally. Future CI runs now fail if the documented
+  container files drift away from these safety and startup invariants.
+
+Limit:
+
+- This is a static release-readiness guard, not a Docker build, Compose run, or
+  runtime container health smoke. A Docker-enabled environment is still required
+  before claiming the container path itself is release-smoked.
+
 ### 2026-06-19 Native Windows Local-Start CI Coverage
 
 Scope: row 1 and release-readiness evidence for the supported source-checkout

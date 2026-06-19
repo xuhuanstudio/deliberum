@@ -18,6 +18,7 @@
     "lint:workspace": "corepack pnpm -r lint",
     "lint:language": "node scripts/check-public-language.mjs",
     "lint:public-files": "node scripts/check-public-files.mjs",
+    "lint:container": "node scripts/check-container-files.mjs",
     "lint:docs": "node scripts/check-markdown-links.mjs",
     "lint:evaluation": "node scripts/check-evaluation-fixtures.mjs",
     "report:evaluation": "corepack pnpm build:packages && node scripts/report-evaluation-fixtures.mjs",
@@ -37,7 +38,7 @@
     "smoke:web-product-loop": "node scripts/smoke-web-product-loop.mjs",
     "smoke:web-release-readiness": "node scripts/smoke-web-release-readiness.mjs",
     "ci:local-start": "corepack pnpm doctor:local && corepack pnpm build && corepack pnpm smoke:local-start",
-    "ci": "corepack pnpm clean:dist && corepack pnpm doctor:local && corepack pnpm lint:language && corepack pnpm lint:public-files && corepack pnpm lint:docs && corepack pnpm build:packages && corepack pnpm lint:evaluation && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built && corepack pnpm smoke:local-bootstrap && corepack pnpm smoke:local-start && corepack pnpm smoke:product-loop && corepack pnpm smoke:storage-recovery && corepack pnpm smoke:web-entry && corepack pnpm smoke:web-boundaries && corepack pnpm smoke:web-resilience && corepack pnpm smoke:web-product-loop"
+    "ci": "corepack pnpm clean:dist && corepack pnpm doctor:local && corepack pnpm lint:language && corepack pnpm lint:public-files && corepack pnpm lint:container && corepack pnpm lint:docs && corepack pnpm build:packages && corepack pnpm lint:evaluation && corepack pnpm lint:workspace && corepack pnpm typecheck:workspace && corepack pnpm test:workspace && corepack pnpm build && corepack pnpm smoke:built && corepack pnpm smoke:local-bootstrap && corepack pnpm smoke:local-start && corepack pnpm smoke:product-loop && corepack pnpm smoke:storage-recovery && corepack pnpm smoke:web-entry && corepack pnpm smoke:web-boundaries && corepack pnpm smoke:web-resilience && corepack pnpm smoke:web-product-loop"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
