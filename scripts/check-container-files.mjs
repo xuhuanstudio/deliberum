@@ -23,6 +23,12 @@ if (findings.length > 0) {
 function checkDockerfile() {
   requireMatch("Dockerfile", dockerfile, /FROM node:24-bookworm-slim AS deps/, "uses the Node 24 dependency stage");
   requireMatch("Dockerfile", dockerfile, /FROM node:24-bookworm-slim AS runtime/, "uses the Node 24 runtime stage");
+  requireMatch(
+    "Dockerfile",
+    dockerfile,
+    /apt-get install -y --no-install-recommends git python3 make g\+\+/,
+    "installs build-time tools needed by workspace CI"
+  );
   requireMatch("Dockerfile", dockerfile, /RUN pnpm run ci/, "runs workspace CI during image build");
   requireMatch("Dockerfile", dockerfile, /DELIBERUM_HOST=0\.0\.0\.0/, "binds the daemon inside the container");
   requireMatch("Dockerfile", dockerfile, /DELIBERUM_PORT=3877/, "uses the documented local port");
