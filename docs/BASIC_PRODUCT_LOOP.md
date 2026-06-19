@@ -654,6 +654,63 @@ Limit:
   not Windows/WSL2 Docker Desktop verification, a signed release image, or a
   production hosted deployment claim.
 
+### 2026-06-20 Real Provider Release-Readiness Recheck
+
+Scope: rows 5 through 16 on the opt-in real-provider Web product loop, covering
+both the default focused path and the Broader review path.
+
+Commands:
+
+- `node --check scripts/smoke-web-release-readiness.mjs`
+- `node --check scripts/smoke-web-release-readiness-once.mjs`
+- `corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 DELIBERUM_RELEASE_SMOKE_RUNS=3 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Supplied a temporary reachable OpenAI-compatible provider only through
+   process environment variables.
+2. Opened `/setup/models` in a browser.
+3. Entered API key, base URL, model, and structured review compatibility through
+   the normal Web setup form.
+4. Saved setup and verified the provider connection from Web.
+5. Started the focused two-perspective model-backed discussion path.
+6. Used `Continue discussion` until the room reached reviewable participant
+   perspectives, strongest options, still-unresolved points, needs-checking
+   material, risks, current answer, and next steps.
+7. Opened the current answer page and repeated the default-view safety scan.
+8. Repeated the same path through Broader review with a third model perspective.
+9. Re-ran focused/default three consecutive times.
+10. Re-ran Broader review three consecutive times.
+
+Result:
+
+- Passed. One focused/default smoke completed.
+- Passed. One Broader review smoke completed.
+- Passed. Three consecutive focused/default smokes completed.
+- Passed. Three consecutive Broader review smokes completed.
+- No Deliberum-side blocker was reproduced, so no runtime, daemon, adapter,
+  provider, Web, or infrastructure code change was made for this evidence-only
+  batch.
+
+Safety:
+
+- Provider API key, base URL, model value, raw provider response, and raw model
+  output were not written into this document, source files, snapshots, or
+  default Web UI.
+- The release-readiness smoke continued scanning setup, start, room, retry, and
+  outcome surfaces for secrets, provider values, env var names, provider config
+  ids, raw JSON, and low-level ids.
+
+Limit:
+
+- This strengthens repeatability evidence for one temporary reachable
+  OpenAI-compatible provider. It is not broad provider compatibility, sustained
+  load testing, quota resilience, Windows/WSL2 browser verification, or a
+  production hosting claim.
+
 ### 2026-06-19 v1.1 Fresh Clone Local Product Smoke
 
 Scope: rows 1 through 4 on the source-checkout startup path, with supporting
