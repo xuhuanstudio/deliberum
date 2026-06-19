@@ -100,7 +100,7 @@ docker compose up --build
 The container sets `DELIBERUM_HOST=0.0.0.0` inside the container so Docker port publishing can reach the daemon. The Compose file still binds the published host port to `127.0.0.1`. Keep that host-side localhost binding unless a separate fronting auth layer and network policy are in place. Use runtime environment injection, the local setup wizard, or the local Web setup page for provider keys and daemon auth tokens; do not bake secrets into the image, Compose file, Dockerfile, or Web build.
 
 Before treating the container path as release-ready in a Docker-enabled
-environment, run the container runtime smoke:
+environment, run the direct container runtime smoke:
 
 ```bash
 corepack pnpm smoke:container
@@ -111,6 +111,18 @@ checks `/health`, verifies the daemon-served Web shell, and removes its
 temporary container and data volume. If Docker is not available, use
 `corepack pnpm smoke:container -- --dry-run` only to preview the commands; a
 dry run is not runtime verification.
+
+To verify the documented Compose path, run:
+
+```bash
+corepack pnpm smoke:compose
+```
+
+The Compose smoke builds the stack through `compose.yaml`, uses an isolated
+Compose project name, publishes a temporary localhost port, checks `/health`,
+verifies the daemon-served Web shell, and removes the temporary stack, data
+volume, and smoke image. Normal `docker compose up --build` still defaults to
+host port `127.0.0.1:3877` and image `deliberum:local`.
 
 ## Remote/pre-production hardening runbook
 

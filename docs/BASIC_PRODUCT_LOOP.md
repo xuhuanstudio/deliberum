@@ -595,6 +595,65 @@ Limit:
   Desktop verification, a signed release image, or a production hosted
   deployment claim.
 
+### 2026-06-20 Compose Runtime Smoke
+
+Scope: rows 1 through 4 on the documented Docker Compose startup path, with
+supporting evidence that the daemon-served Web shell is reachable from the
+Compose-managed container runtime.
+
+Commands:
+
+- `corepack pnpm smoke:compose -- --dry-run`
+- `corepack pnpm run ci`
+- GitHub Actions `CI` on commit `1c3a455`
+- GitHub Actions `Compose Smoke` on commit `1c3a455`
+
+Path covered:
+
+1. Built the local/pre-production Compose stack on a Docker-enabled Ubuntu
+   runner.
+2. Used an isolated Compose project name so the smoke does not collide with a
+   user's default local stack.
+3. Used a temporary host port while keeping the documented default
+   `127.0.0.1:3877` binding for normal `docker compose up --build` usage.
+4. Used a temporary image tag for the smoke while keeping `deliberum:local` as
+   the documented default Compose image.
+5. Started the Compose-managed daemon container with a named data volume.
+6. Verified `/health`.
+7. Verified `/setup/models` returns the daemon-served built Web shell.
+8. Removed the temporary Compose stack, volume, and smoke image after the run.
+
+Reproduced blocker fixed during this batch:
+
+- The first manual Compose workflow run failed before reaching Compose because
+  `actions/setup-node@v5` tried to use pnpm cache before pnpm existed on PATH.
+  The workflow now follows the already-passing Container Smoke setup pattern
+  with `actions/setup-node@v6`, `pnpm/action-setup@v6`, and
+  `run_install: false`.
+
+Result:
+
+- Passed. `Compose Smoke`
+  <https://github.com/xuhuanstudio/deliberum/actions/runs/27839873858>
+  completed successfully on commit `1c3a455`.
+- Passed. Default GitHub `CI`
+  <https://github.com/xuhuanstudio/deliberum/actions/runs/27839870942>
+  completed successfully on the same commit.
+
+Safety:
+
+- No provider API key, base URL, model value, raw provider response, provider
+  output, or local secret was written into the Compose file, smoke logs, or this
+  document.
+- The default Compose file still binds the host-side port to `127.0.0.1` and
+  keeps secrets environment-based.
+
+Limit:
+
+- This validates the repository Compose file on a GitHub Ubuntu runner. It is
+  not Windows/WSL2 Docker Desktop verification, a signed release image, or a
+  production hosted deployment claim.
+
 ### 2026-06-19 v1.1 Fresh Clone Local Product Smoke
 
 Scope: rows 1 through 4 on the source-checkout startup path, with supporting

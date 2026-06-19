@@ -222,6 +222,15 @@ corepack pnpm smoke:container
 If Docker is not available, `corepack pnpm smoke:container -- --dry-run`
 previews the commands but does not prove the container starts.
 
+To verify the Compose path, run:
+
+```bash
+corepack pnpm smoke:compose
+```
+
+If Docker Compose is not available, `corepack pnpm smoke:compose -- --dry-run`
+previews the commands but does not prove the Compose stack starts.
+
 Deliberum v1.1 is not a public hosted service and does not claim production
 multi-user authorization, production identity, or distributed production
 database support. For trusted-team or remote pre-production hardening, see

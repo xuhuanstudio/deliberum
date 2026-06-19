@@ -193,6 +193,15 @@ corepack pnpm smoke:container
 如果当前环境没有 Docker，`corepack pnpm smoke:container -- --dry-run`
 只会预览命令，不代表容器已经成功启动。
 
+如果要验证 Compose 路径，请运行：
+
+```bash
+corepack pnpm smoke:compose
+```
+
+如果当前环境没有 Docker Compose，`corepack pnpm smoke:compose -- --dry-run`
+只会预览命令，不代表 Compose 服务栈已经成功启动。
+
 Deliberum v1.1 不是公共托管服务，也不声明已经具备生产级多人权限、生产身份系统或分布式生产数据库支持。可信团队或远程预生产部署请看英文 [Deployment](../DEPLOYMENT.md)。
 
 ## 常见问题
