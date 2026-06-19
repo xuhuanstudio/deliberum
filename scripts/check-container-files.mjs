@@ -43,7 +43,36 @@ function checkDockerfile() {
     /RUN git init --quiet && git add -A && pnpm run ci && rm -rf \.git/,
     "runs workspace CI during image build without copying host git metadata to runtime"
   );
-  requireMatch("Dockerfile", dockerfile, /RUN CI=true pnpm prune --prod/, "prunes development dependencies non-interactively");
+  requireMatch(
+    "Dockerfile",
+    dockerfile,
+    /pnpm --filter @deliberum\/daemon --prod deploy --legacy \/app\/deploy/,
+    "creates a production daemon deploy directory with workspace dependencies"
+  );
+  requireMatch(
+    "Dockerfile",
+    dockerfile,
+    /COPY --from=build --chown=deliberum:deliberum \/app\/deploy \.\//,
+    "copies the production daemon deploy directory into the runtime image"
+  );
+  requireMatch(
+    "Dockerfile",
+    dockerfile,
+    /COPY --from=build --chown=deliberum:deliberum \/app\/apps\/web\/dist \.\/apps\/web\/dist/,
+    "copies only the built Web shell into the runtime image"
+  );
+  rejectMatch(
+    "Dockerfile",
+    dockerfile,
+    /COPY --from=build --chown=deliberum:deliberum \/app\/apps \.\/apps/,
+    "must not copy the full workspace apps tree into the runtime image"
+  );
+  rejectMatch(
+    "Dockerfile",
+    dockerfile,
+    /COPY --from=build --chown=deliberum:deliberum \/app\/packages \.\/packages/,
+    "must not rely on workspace symlinks in the runtime image"
+  );
   requireMatch("Dockerfile", dockerfile, /DELIBERUM_HOST=0\.0\.0\.0/, "binds the daemon inside the container");
   requireMatch("Dockerfile", dockerfile, /DELIBERUM_PORT=3877/, "uses the documented local port");
   requireMatch(
@@ -65,8 +94,8 @@ function checkDockerfile() {
   requireMatch(
     "Dockerfile",
     dockerfile,
-    /CMD \["node", "apps\/daemon\/dist\/index\.js"\]/,
-    "starts the built daemon"
+    /CMD \["node", "dist\/index\.js"\]/,
+    "starts the deployed daemon"
   );
   rejectSecretLikeEntries("Dockerfile", dockerfile);
 }

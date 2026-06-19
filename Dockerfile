@@ -31,7 +31,8 @@ FROM deps AS build
 COPY . .
 
 RUN git init --quiet && git add -A && pnpm run ci && rm -rf .git
-RUN CI=true pnpm prune --prod
+RUN rm -rf /app/deploy \
+  && pnpm --filter @deliberum/daemon --prod deploy --legacy /app/deploy
 
 FROM node:24-bookworm-slim AS runtime
 
@@ -49,10 +50,8 @@ RUN corepack enable \
   && mkdir -p /data \
   && chown -R deliberum:deliberum /app /data
 
-COPY --from=build --chown=deliberum:deliberum /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
-COPY --from=build --chown=deliberum:deliberum /app/node_modules ./node_modules
-COPY --from=build --chown=deliberum:deliberum /app/apps ./apps
-COPY --from=build --chown=deliberum:deliberum /app/packages ./packages
+COPY --from=build --chown=deliberum:deliberum /app/deploy ./
+COPY --from=build --chown=deliberum:deliberum /app/apps/web/dist ./apps/web/dist
 
 USER deliberum
 
@@ -62,4 +61,4 @@ VOLUME ["/data"]
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:' + (process.env.DELIBERUM_PORT || '3877') + '/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-CMD ["node", "apps/daemon/dist/index.js"]
+CMD ["node", "dist/index.js"]
