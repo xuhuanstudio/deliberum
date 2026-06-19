@@ -44,7 +44,6 @@ try {
     "docker",
     [
       "run",
-      "--rm",
       "--detach",
       "--name",
       containerName,
@@ -66,6 +65,17 @@ try {
   console.log(`Verified local Web URL: http://127.0.0.1:${port}/`);
 } catch (error) {
   if (containerStarted) {
+    const state = runCapturedAllowFailure("docker", [
+      "inspect",
+      "--format",
+      "status={{.State.Status}} exitCode={{.State.ExitCode}} error={{.State.Error}}",
+      containerName
+    ]);
+    if (state) {
+      console.error("Container state:");
+      console.error(state);
+    }
+
     const logs = runCapturedAllowFailure("docker", ["logs", "--tail", "120", containerName]);
     if (logs) {
       console.error("Container logs:");
@@ -106,7 +116,6 @@ function printPlan() {
     formatCommand([
       "docker",
       "run",
-      "--rm",
       "--detach",
       "--name",
       containerName,

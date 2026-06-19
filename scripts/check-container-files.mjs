@@ -6,9 +6,11 @@ const findings = [];
 
 const dockerfile = readTrackedText("Dockerfile");
 const compose = readTrackedText("compose.yaml");
+const containerSmoke = readTrackedText("scripts/smoke-container-local.mjs");
 
 checkDockerfile();
 checkCompose();
+checkContainerSmoke();
 
 if (findings.length > 0) {
   console.error("Container file check failed.");
@@ -96,6 +98,22 @@ function checkCompose() {
   rejectSecretLikeEntries("compose.yaml", compose);
 }
 
+function checkContainerSmoke() {
+  requireMatch(
+    "scripts/smoke-container-local.mjs",
+    containerSmoke,
+    /"inspect"[\s\S]*\.State\.Status/,
+    "captures container state before cleanup when runtime smoke fails"
+  );
+  rejectMatch(
+    "scripts/smoke-container-local.mjs",
+    containerSmoke,
+    /"run",\s*"--rm"/,
+    "must keep failed smoke containers available for logs before cleanup"
+  );
+  rejectSecretLikeEntries("scripts/smoke-container-local.mjs", containerSmoke);
+}
+
 function readTrackedText(filePath) {
   return readFileSync(resolve(repoRoot, filePath), "utf8");
 }
@@ -103,6 +121,12 @@ function readTrackedText(filePath) {
 function requireMatch(filePath, content, pattern, expectation) {
   if (!pattern.test(content)) {
     findings.push(`${filePath}: expected ${expectation}`);
+  }
+}
+
+function rejectMatch(filePath, content, pattern, expectation) {
+  if (pattern.test(content)) {
+    findings.push(`${filePath}: ${expectation}`);
   }
 }
 
