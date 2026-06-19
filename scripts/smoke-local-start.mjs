@@ -93,10 +93,7 @@ try {
     await browser.close();
   }
   await terminateChild(child, exitPromise);
-  if (useWindowsShell) {
-    await delay(500);
-  }
-  rmSync(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  await cleanupTemporaryDirectory(tempDir);
 }
 
 console.log("Local start smoke checks passed.");
@@ -197,6 +194,32 @@ function signalChildTree(processChild, signal) {
   }
 
   processChild.kill(signal);
+}
+
+async function cleanupTemporaryDirectory(directory) {
+  const attempts = useWindowsShell ? 20 : 1;
+  let lastError;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      rmSync(directory, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!useWindowsShell || !isRetryableCleanupError(error)) {
+        throw error;
+      }
+      await delay(250);
+    }
+  }
+
+  console.warn(
+    `Local start smoke passed, but Windows kept the temporary directory locked during cleanup (${lastError.code}).`
+  );
+}
+
+function isRetryableCleanupError(error) {
+  return ["EBUSY", "EMFILE", "ENFILE", "ENOTEMPTY", "EPERM"].includes(error.code);
 }
 
 function formatProcessOutput(processStdout, processStderr) {
