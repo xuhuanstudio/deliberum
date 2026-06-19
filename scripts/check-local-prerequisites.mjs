@@ -57,7 +57,8 @@ function checkNodeVersion() {
 function checkCommand(command, args, label) {
   const result = spawnSync(command, args, {
     cwd: repoRoot,
-    encoding: "utf8"
+    encoding: "utf8",
+    shell: process.platform === "win32"
   });
 
   if (result.status === 0) {
@@ -78,7 +79,8 @@ function checkCommand(command, args, label) {
 function checkPnpmVersion() {
   const result = spawnSync("corepack", ["pnpm", "--version"], {
     cwd: repoRoot,
-    encoding: "utf8"
+    encoding: "utf8",
+    shell: process.platform === "win32"
   });
 
   if (result.status !== 0) {

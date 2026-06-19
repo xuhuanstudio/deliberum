@@ -6,6 +6,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
 const help = args.has("--help") || args.has("-h");
+const useWindowsShell = process.platform === "win32";
 
 const steps = [
   {
@@ -101,6 +102,7 @@ function run(command, commandArgs, stepEnv = {}) {
         ...process.env,
         ...stepEnv
       },
+      shell: useWindowsShell,
       stdio: "inherit"
     });
 

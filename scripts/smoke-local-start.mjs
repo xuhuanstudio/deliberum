@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
@@ -12,6 +12,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const port = await reserveLocalPort();
 const tempDir = mkdtempSync(join(tmpdir(), "deliberum-local-start-"));
 const detachedChild = process.platform !== "win32";
+const useWindowsShell = process.platform === "win32";
 const child = spawn("corepack", ["pnpm", "start:local"], {
   cwd: repoRoot,
   env: {
@@ -21,6 +22,7 @@ const child = spawn("corepack", ["pnpm", "start:local"], {
     DELIBERUM_DAEMON_SQLITE_PATH: join(tempDir, "deliberum.sqlite")
   },
   detached: detachedChild,
+  shell: useWindowsShell,
   stdio: ["ignore", "pipe", "pipe"]
 });
 let stdout = "";
@@ -172,6 +174,16 @@ async function terminateChild(processChild, processExitPromise) {
 }
 
 function signalChildTree(processChild, signal) {
+  if (useWindowsShell && processChild.pid !== undefined) {
+    const force = signal === "SIGKILL" ? ["/f"] : [];
+    const result = spawnSync("taskkill", ["/pid", String(processChild.pid), "/t", ...force], {
+      encoding: "utf8"
+    });
+    if (result.status === 0) {
+      return;
+    }
+  }
+
   if (detachedChild && processChild.pid !== undefined) {
     try {
       process.kill(-processChild.pid, signal);
