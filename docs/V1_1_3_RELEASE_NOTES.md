@@ -1,8 +1,10 @@
 # Deliberum v1.1.3 Release Notes
 
-Status: release notes for the `v1.1.3` source-checkout local-first patch
-release. Create the annotated `v1.1.3` tag only after this release notes commit
-passes GitHub CI on `main`.
+Status: published source-checkout local-first patch release.
+
+The annotated `v1.1.3` tag points to
+`aa599b14a263050a15336011068d140987adebc1` and was created after GitHub CI
+passed on `main`.
 
 Keep the existing `v1.0.0`, `v1.1.0`, `v1.1.1`, and `v1.1.2` tags unchanged.
 
@@ -99,7 +101,24 @@ Local verification for this release-notes batch:
 - `corepack pnpm lint:language`;
 - `corepack pnpm run ci`.
 
-This release-notes commit must also pass GitHub CI before `v1.1.3` is tagged.
+Post-tag source-checkout smoke:
+
+- cloned the pushed `v1.1.3` tag with
+  `git clone --branch v1.1.3 --depth 1`;
+- confirmed the checkout was exactly `v1.1.3` at
+  `aa599b14a263050a15336011068d140987adebc1`;
+- passed `node scripts/check-local-prerequisites.mjs`;
+- passed `sh scripts/start-local-product.sh --dry-run`;
+- passed `node scripts/start-local-product.mjs --dry-run`;
+- passed `corepack pnpm install`;
+- passed `corepack pnpm doctor:local`;
+- passed `corepack pnpm build`;
+- passed `corepack pnpm smoke:local-bootstrap`;
+- passed `corepack pnpm smoke:local-start`;
+- passed `corepack pnpm smoke:web-product-loop`.
+
+The post-tag smoke was run without provider secrets and used the deterministic
+local browser product-loop smoke, not a real external provider.
 
 ## Upgrade Notes
 

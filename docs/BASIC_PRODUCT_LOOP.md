@@ -206,6 +206,49 @@ instead of requiring hidden environment variables.
 
 ## Recent Automated Evidence
 
+### 2026-06-19 v1.1.3 Fresh Clone Local Product Smoke
+
+Scope: rows 1 through 4 on the source-checkout startup path, with supporting
+evidence for rows 5 through 16 on the deterministic browser product loop.
+
+Commands:
+
+- `git clone --branch v1.1.3 --depth 1 https://github.com/xuhuanstudio/deliberum.git <temp-dir>/repo`
+- `git rev-parse HEAD`
+- `git describe --tags --exact-match`
+- `node scripts/check-local-prerequisites.mjs`
+- `sh scripts/start-local-product.sh --dry-run`
+- `node scripts/start-local-product.mjs --dry-run`
+- `corepack pnpm install`
+- `corepack pnpm doctor:local`
+- `corepack pnpm build`
+- `corepack pnpm smoke:local-bootstrap`
+- `corepack pnpm smoke:local-start`
+- `corepack pnpm smoke:web-product-loop`
+
+Path covered:
+
+1. Cloned the pushed `v1.1.3` tag into a new temporary directory.
+2. Confirmed the checkout was exactly `v1.1.3` at
+   `aa599b14a263050a15336011068d140987adebc1`.
+3. Ran the documented prerequisite check and both first-run dry-run paths.
+4. Installed dependencies, ran the local setup doctor, and built the project.
+5. Verified the shell bootstrap helper, daemon-served local Web startup, and the
+   browser Basic Product Loop smoke from the fresh checkout.
+
+Result:
+
+- Passed. The published `v1.1.3` tag can be cloned from GitHub and used to run
+  the documented local source-checkout path through the deterministic browser
+  product-loop smoke.
+
+Limit:
+
+- This fresh-clone smoke was run on macOS. Native Windows source-checkout
+  local-start support is covered separately by GitHub CI `Local start
+  (windows-latest)` on the same tag target commit. This smoke did not use a real
+  external provider, WSL2, or a packaged installer.
+
 ### 2026-06-19 Native Windows Local-Start CI Coverage
 
 Scope: row 1 and release-readiness evidence for the supported source-checkout
