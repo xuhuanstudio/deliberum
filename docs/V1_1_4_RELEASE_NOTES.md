@@ -1,8 +1,10 @@
 # Deliberum v1.1.4 Release Notes
 
-Status: release candidate for the next source-checkout local-first patch
-release. Create the annotated `v1.1.4` tag only after this release-notes commit
-passes GitHub CI.
+Status: published source-checkout local-first patch release.
+
+The annotated `v1.1.4` tag points to
+`6c4fd17d2422ebaf502ee36849e35768e99a4965` and was created after GitHub CI
+passed on `main`.
 
 Keep the existing `v1.0.0`, `v1.1.0`, `v1.1.1`, `v1.1.2`, and `v1.1.3` tags
 unchanged.
@@ -106,16 +108,46 @@ Evidence since `v1.1.3`:
 - focused Chinese-topic and Broader review Chinese-topic paths each passed two
   consecutive follow-up runs in fresh isolated local services;
 - local `corepack pnpm run ci` passed after the release-readiness smoke updates;
-- pushed GitHub CI run `27843076522` passed `Validate`, `Local start
-  (macos-latest)`, and `Local start (windows-latest)` for the latest evidence
-  commit before this release-notes batch.
+- pushed GitHub CI run `27843256257` passed `Validate`, `Local start
+  (macos-latest)`, and `Local start (windows-latest)` for the release-notes
+  commit that became the `v1.1.4` tag target.
 
 Exact provider keys, base URLs, model names, raw provider responses, and model
 output were intentionally omitted from docs and logs.
 
+## Post-Tag Source-Checkout Smoke
+
+After the annotated tag was pushed, the release path was verified from a fresh
+source checkout:
+
+- `git clone --branch v1.1.4 --depth 1 https://github.com/xuhuanstudio/deliberum.git <temp-dir>/repo`
+- `git rev-parse HEAD`
+- `git describe --tags --exact-match`
+- `node scripts/check-local-prerequisites.mjs`
+- `sh scripts/start-local-product.sh --dry-run`
+- `node scripts/start-local-product.mjs --dry-run`
+- `corepack pnpm install`
+- `corepack pnpm doctor:local`
+- `corepack pnpm build`
+- `corepack pnpm smoke:local-bootstrap`
+- `corepack pnpm smoke:local-start`
+- `corepack pnpm smoke:web-product-loop`
+
+Result:
+
+- Passed. The pushed `v1.1.4` tag cloned successfully, resolved exactly to
+  `6c4fd17d2422ebaf502ee36849e35768e99a4965`, and could run the documented
+  source-checkout startup path through the deterministic browser product-loop
+  smoke.
+
+Limit:
+
+- This post-tag smoke was run on macOS and did not use a real external provider.
+  Real-provider release-readiness evidence is listed above.
+
 ## Upgrade Notes
 
-After the tag is created, source-checkout users can upgrade with:
+Source-checkout users can upgrade with:
 
 ```bash
 git fetch --tags

@@ -227,7 +227,7 @@ This command starts an isolated local service and Web UI, configures the provide
 - [v1.1.1 Release Notes](docs/V1_1_1_RELEASE_NOTES.md)
 - [v1.1.2 Release Notes](docs/V1_1_2_RELEASE_NOTES.md)
 - [v1.1.3 Release Notes](docs/V1_1_3_RELEASE_NOTES.md)
-- [v1.1.4 Release Candidate Notes](docs/V1_1_4_RELEASE_NOTES.md)
+- [v1.1.4 Release Notes](docs/V1_1_4_RELEASE_NOTES.md)
 - [Web UI Spec](docs/WEB_UI_SPEC.md)
 - [Web Discussion Room Walkthrough](docs/WEB_DISCUSSION_ROOM_WALKTHROUGH.md)
 - [Roadmap](ROADMAP.md)
