@@ -2,9 +2,9 @@ services:
   deliberum:
     build:
       context: .
-    image: deliberum:local
+    image: ${DELIBERUM_COMPOSE_IMAGE:-deliberum:local}
     ports:
-      - "127.0.0.1:3877:3877"
+      - "127.0.0.1:${DELIBERUM_COMPOSE_PORT:-3877}:3877"
     environment:
       DELIBERUM_HOST: 0.0.0.0
       DELIBERUM_PORT: 3877

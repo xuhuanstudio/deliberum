@@ -7,10 +7,12 @@ const findings = [];
 const dockerfile = readTrackedText("Dockerfile");
 const compose = readTrackedText("compose.yaml");
 const containerSmoke = readTrackedText("scripts/smoke-container-local.mjs");
+const composeSmoke = readTrackedText("scripts/smoke-container-compose.mjs");
 
 checkDockerfile();
 checkCompose();
 checkContainerSmoke();
+checkComposeSmoke();
 
 if (findings.length > 0) {
   console.error("Container file check failed.");
@@ -101,12 +103,17 @@ function checkDockerfile() {
 }
 
 function checkCompose() {
-  requireMatch("compose.yaml", compose, /image:\s+deliberum:local/, "uses the documented local image name");
   requireMatch(
     "compose.yaml",
     compose,
-    /"127\.0\.0\.1:3877:3877"/,
-    "keeps the host-side port bound to localhost"
+    /image:\s+\$\{DELIBERUM_COMPOSE_IMAGE:-deliberum:local\}/,
+    "uses the documented local image name with a smoke-test override"
+  );
+  requireMatch(
+    "compose.yaml",
+    compose,
+    /"127\.0\.0\.1:\$\{DELIBERUM_COMPOSE_PORT:-3877\}:3877"/,
+    "keeps the default host-side port bound to localhost with a smoke-test override"
   );
   requireMatch("compose.yaml", compose, /DELIBERUM_HOST:\s+0\.0\.0\.0/, "binds the daemon inside the container");
   requireMatch("compose.yaml", compose, /DELIBERUM_PORT:\s+3877/, "uses the documented local port");
@@ -141,6 +148,46 @@ function checkContainerSmoke() {
     "must keep failed smoke containers available for logs before cleanup"
   );
   rejectSecretLikeEntries("scripts/smoke-container-local.mjs", containerSmoke);
+}
+
+function checkComposeSmoke() {
+  requireMatch(
+    "scripts/smoke-container-compose.mjs",
+    composeSmoke,
+    /"compose", "--project-name", projectName/,
+    "runs Compose with an isolated project name"
+  );
+  requireMatch(
+    "scripts/smoke-container-compose.mjs",
+    composeSmoke,
+    /DELIBERUM_COMPOSE_IMAGE: imageName/,
+    "uses a temporary Compose image name"
+  );
+  requireMatch(
+    "scripts/smoke-container-compose.mjs",
+    composeSmoke,
+    /DELIBERUM_COMPOSE_PORT: String\(port\)/,
+    "uses a temporary Compose host port"
+  );
+  requireMatch(
+    "scripts/smoke-container-compose.mjs",
+    composeSmoke,
+    /"up", "--build", "--detach"/,
+    "builds and starts the Compose stack"
+  );
+  requireMatch(
+    "scripts/smoke-container-compose.mjs",
+    composeSmoke,
+    /"down", "--volumes", "--remove-orphans"/,
+    "cleans up the Compose stack and smoke data volume"
+  );
+  requireMatch(
+    "scripts/smoke-container-compose.mjs",
+    composeSmoke,
+    /"logs", "--tail", "120"/,
+    "captures Compose logs when runtime smoke fails"
+  );
+  rejectSecretLikeEntries("scripts/smoke-container-compose.mjs", composeSmoke);
 }
 
 function readTrackedText(filePath) {
