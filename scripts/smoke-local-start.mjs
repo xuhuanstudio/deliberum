@@ -13,7 +13,8 @@ const port = await reserveLocalPort();
 const tempDir = mkdtempSync(join(tmpdir(), "deliberum-local-start-"));
 const isWindows = process.platform === "win32";
 const detachedChild = !isWindows;
-const child = spawn(commandForPlatform("corepack"), ["pnpm", "start:local"], {
+const startInvocation = commandInvocation("corepack", ["pnpm", "start:local"]);
+const child = spawn(startInvocation.command, startInvocation.args, {
   cwd: repoRoot,
   env: {
     ...buildMinimalEnv(),
@@ -174,8 +175,7 @@ async function terminateChild(processChild, processExitPromise) {
 
 function signalChildTree(processChild, signal) {
   if (isWindows && processChild.pid !== undefined) {
-    const force = signal === "SIGKILL" ? ["/f"] : [];
-    const result = spawnSync("taskkill", ["/pid", String(processChild.pid), "/t", ...force], {
+    const result = spawnSync("taskkill", ["/pid", String(processChild.pid), "/t", "/f"], {
       encoding: "utf8"
     });
     if (result.status === 0) {
@@ -221,12 +221,15 @@ function isRetryableCleanupError(error) {
   return ["EBUSY", "EMFILE", "ENFILE", "ENOTEMPTY", "EPERM"].includes(error.code);
 }
 
-function commandForPlatform(command) {
+function commandInvocation(command, args) {
   if (isWindows && command === "corepack") {
-    return "corepack.cmd";
+    return {
+      command: process.env.ComSpec ?? "cmd.exe",
+      args: ["/d", "/s", "/c", command, ...args]
+    };
   }
 
-  return command;
+  return { command, args };
 }
 
 function formatProcessOutput(processStdout, processStderr) {

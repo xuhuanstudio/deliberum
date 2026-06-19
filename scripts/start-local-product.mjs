@@ -95,7 +95,8 @@ Keep the terminal open after the local Web service starts, then open the URL pri
 
 function run(command, commandArgs, stepEnv = {}) {
   return new Promise((resolveRun, rejectRun) => {
-    const child = spawn(commandForPlatform(command), commandArgs, {
+    const invocation = commandInvocation(command, commandArgs);
+    const child = spawn(invocation.command, invocation.args, {
       cwd: repoRoot,
       env: {
         ...process.env,
@@ -129,10 +130,13 @@ function formatShellArg(value) {
   return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
-function commandForPlatform(command) {
+function commandInvocation(command, args) {
   if (process.platform === "win32" && command === "corepack") {
-    return "corepack.cmd";
+    return {
+      command: process.env.ComSpec ?? "cmd.exe",
+      args: ["/d", "/s", "/c", command, ...args]
+    };
   }
 
-  return command;
+  return { command, args };
 }
