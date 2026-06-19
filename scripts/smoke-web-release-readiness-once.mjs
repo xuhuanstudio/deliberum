@@ -10,14 +10,20 @@ import { chromium } from "@playwright/test";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
-const releaseSmokeEnv = readReleaseSmokeEnv();
-const releaseConfig = readReleaseSmokeConfig(releaseSmokeEnv);
-const discussionQuestion = [
+const defaultDiscussionQuestion = [
   "Run a Deliberum release-readiness check for a normal local user.",
   "Assess whether the product loop is ready to configure a real model provider,",
   "start a discussion with AI, review unresolved points, inspect what needs checking,",
   "understand risks, read the current answer, and choose next steps."
 ].join(" ");
+const recoverableContinuationStopReasons = new Set([
+  "failed",
+  "timed_out",
+  "waiting_for_auditors",
+  "waiting_for_final_candidate"
+]);
+const releaseSmokeEnv = readReleaseSmokeEnv();
+const releaseConfig = readReleaseSmokeConfig(releaseSmokeEnv);
 
 assertFile(daemonEntry);
 
@@ -166,19 +172,19 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await selectPerspectiveDepth(page);
   await assertDefaultViewSafety(page, "start discussion");
 
-  await page.getByLabel("Discussion question").fill(discussionQuestion);
+  await page.getByLabel("Discussion question").fill(releaseConfig.discussionQuestion);
   await page.getByRole("button", { name: "Create discussion" }).click();
   await page.getByText("Discussion room").waitFor();
-  await page.getByText("Discussion with AI").first().waitFor();
   await assertDiscussionRoomChatSurface(page, "discussion room before continuation");
   await assertDefaultViewSafety(page, "discussion room before continuation");
 
   await continueDiscussionUntilCompleted(page);
 
   await assertSuccessfulRoomUpdate(page, "discussion room after continuation");
+  await assertGeneratedTextMatchesTopicLanguage(page, "discussion room after continuation");
   const roomFocus = page.locator(".du-room-focus");
   await roomFocus.getByText("Decision workspace", { exact: true }).waitFor();
-  await page.getByText("Strongest current options").first().waitFor();
+  await assertRoomShowsStrongestOptionsStage(page, "discussion room after continuation");
   await roomFocus.getByText("Still unresolved", { exact: true }).waitFor();
   await roomFocus.getByText("Needs checking", { exact: true }).waitFor();
   await roomFocus.getByText("Risks", { exact: true }).waitFor();
@@ -199,6 +205,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByText("Needs checking").first().waitFor();
   await page.getByText("Risks").first().waitFor();
   await page.getByRole("heading", { name: "Next steps", exact: true }).waitFor();
+  await assertOutcomeTextMatchesTopicLanguage(page, "current answer");
   await assertDefaultViewSafety(page, "current answer", {
     allowModelGeneratedLowLevelLanguage: true
   });
@@ -250,21 +257,24 @@ async function assertSuccessfulRoomUpdate(page, label) {
     await roomUpdate.getByText("Room update", { exact: true }).waitFor();
     await roomUpdate.getByRole("heading", { name: "The room just updated" }).waitFor();
     await roomUpdate.getByRole("region", { name: "New discussion round" }).waitFor();
-    await roomUpdate.getByText("First viewpoint", { exact: true }).first().waitFor();
-    await roomUpdate.getByText("Alternative viewpoint", { exact: true }).first().waitFor();
-    if (releaseConfig.perspectiveCount === 3) {
-      const transcriptText = await page
-        .getByRole("region", { name: "Conversation transcript" })
-        .innerText();
-      if (!transcriptText.includes("Additional viewpoint")) {
-        throw new Error("Broader review transcript did not include Additional viewpoint.");
-      }
-    }
+    await assertRoomUpdateParticipantMessageCount(roomUpdate, label);
     await assertRoomReportDetailsHidden(page, label);
   } catch (error) {
     throw new Error(`${label} did not show the successful continuation as readable room messages.`, {
       cause: error
     });
+  }
+}
+
+async function assertRoomUpdateParticipantMessageCount(roomUpdate, label) {
+  const participantMessageCount = await roomUpdate
+    .locator("[data-speaker='participant'] .du-room-message-detail")
+    .count();
+
+  if (participantMessageCount < releaseConfig.perspectiveCount) {
+    throw new Error(
+      `${label} should include at least ${releaseConfig.perspectiveCount} readable participant message(s), got ${participantMessageCount}.`
+    );
   }
 }
 
@@ -292,6 +302,63 @@ async function assertRoomReportDetailsHidden(page, label) {
       })}.`
     );
   }
+}
+
+async function assertGeneratedTextMatchesTopicLanguage(page, label) {
+  if (!expectsSimplifiedChineseResponse()) {
+    return;
+  }
+
+  await assertLocatorHasCjkText(
+    page.locator("[data-speaker='participant'] .du-room-message-detail"),
+    `${label} participant messages`,
+    48
+  );
+}
+
+async function assertOutcomeTextMatchesTopicLanguage(page, label) {
+  if (!expectsSimplifiedChineseResponse()) {
+    return;
+  }
+
+  await assertLocatorHasCjkText(
+    page.locator(".du-outcome-recommendation h4"),
+    `${label} recommendation`,
+    6
+  );
+  await assertLocatorHasCjkText(page.locator(".du-outcome-brief"), `${label} review material`, 48);
+}
+
+async function assertRoomShowsStrongestOptionsStage(page, label) {
+  const transcriptText = await page
+    .getByRole("region", { name: "Conversation transcript" })
+    .innerText();
+  const expectedPattern = expectsSimplifiedChineseResponse()
+    ? /\u6700\u5f3a\u9009\u9879/u
+    : /strongest current option/i;
+
+  if (!expectedPattern.test(transcriptText)) {
+    throw new Error(`${label} did not show the strongest-options stage in the room timeline.`);
+  }
+}
+
+async function assertLocatorHasCjkText(locator, label, minimumCharacterCount) {
+  const texts = await locator.allInnerTexts();
+  const characterCount = countCjkCharacters(texts.join("\n"));
+
+  if (characterCount < minimumCharacterCount) {
+    throw new Error(
+      `${label} should follow the Chinese discussion topic language; found ${characterCount} CJK character(s), expected at least ${minimumCharacterCount}.`
+    );
+  }
+}
+
+function expectsSimplifiedChineseResponse() {
+  return countCjkCharacters(releaseConfig.discussionQuestion) > 0;
+}
+
+function countCjkCharacters(value) {
+  return (value.match(/[\u3400-\u9fff\uf900-\ufaff]/gu) ?? []).length;
 }
 
 async function continueDiscussionUntilCompleted(page) {
@@ -431,7 +498,7 @@ function shouldExpectContinuationRecovery(finalState, summary) {
   return (
     finalState === "paused" &&
     summary.stopped === true &&
-    (summary.stopReason === "failed" || summary.stopReason === "timed_out")
+    recoverableContinuationStopReasons.has(summary.stopReason)
   );
 }
 
@@ -909,6 +976,8 @@ function readReleaseSmokeConfig(env) {
       "DELIBERUM_RELEASE_SMOKE_PROVIDER_TIMEOUT_MS",
       180_000
     ),
+    discussionQuestion:
+      readOptionalEnv(env, "DELIBERUM_RELEASE_SMOKE_QUESTION") ?? defaultDiscussionQuestion,
     productLoopTimeoutMs: readOptionalPositiveIntegerEnv(
       env,
       "DELIBERUM_RELEASE_SMOKE_PRODUCT_LOOP_TIMEOUT_MS",

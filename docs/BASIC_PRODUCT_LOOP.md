@@ -192,12 +192,19 @@ Set `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3` to run the same walkthrough through
 the Broader review start path with Perspective A, Perspective B, and Perspective
 C. The default remains `2`, which verifies the focused two-perspective path.
 
+Set `DELIBERUM_RELEASE_SMOKE_QUESTION=<discussion-question>` to run the same
+walkthrough with a specific user question. When the question contains Chinese
+characters, the smoke also checks that readable participant messages and current
+answer material contain substantial Chinese text. This verifies the user-visible
+language contract without storing provider output in docs, logs, or snapshots.
+
 When a real-provider continuation stops with a recoverable failed stage
-(`run_stage_failed`, `failed`, or `timed_out`), the smoke verifies the default
-Web view shows normal-user recovery actions: Check model setup, Try Continue
-discussion again, and Start a new model-backed discussion. These checks keep
-recovery usability in the release-readiness path without exposing raw stage
-codes, provider values, or secrets.
+(`run_stage_failed`, `failed`, `timed_out`, `waiting_for_auditors`, or
+`waiting_for_final_candidate`), the smoke verifies the default Web view shows
+normal-user recovery actions: Check model setup, Try Continue discussion again,
+and Start a new model-backed discussion. These checks keep recovery usability in
+the release-readiness path without exposing raw stage codes, provider values, or
+secrets.
 
 The smoke relies on Web setup's default Structured review compatibility option
 for organizer, reviewer, risk-review, and conclusion-writer stages. This keeps
@@ -205,6 +212,48 @@ the release-readiness path aligned with what a normal local user can do in Web
 instead of requiring hidden environment variables.
 
 ## Recent Automated Evidence
+
+### 2026-06-20 Chinese Topic Real Provider Release Smoke
+
+Scope: rows 5 through 16 against an explicit temporary real external
+OpenAI-compatible provider configuration, plus the user-visible language
+contract for Chinese discussion topics.
+
+Commands:
+
+- `DELIBERUM_RELEASE_SMOKE_QUESTION=<Chinese discussion question> corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_QUESTION=<Chinese discussion question> DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Opened `/setup/models`, entered provider setup through Web, and verified the
+   provider connection without rendering or logging provider secrets.
+2. Started a model-backed discussion from Web using a Simplified Chinese topic.
+3. Completed the focused two-perspective Continue discussion path to readable
+   participant messages, strongest-options timeline material, open
+   disagreements, evidence gaps, risks, current answer material, and next steps.
+4. Checked that participant messages and current answer material contained
+   substantial Chinese text, while default Web chrome remained English.
+5. Re-ran the same Chinese topic through the Broader review path with three
+   perspectives.
+6. Updated the release-readiness smoke so topic-language checks use stable room
+   structure instead of English-only participant labels, and so recoverable
+   finalization auditor waits can be retried through the normal user recovery
+   path.
+
+Result:
+
+- Passed once on the focused two-perspective Chinese topic path.
+- Passed once on the Broader review three-perspective Chinese topic path.
+- Exact provider values, raw provider responses, and provider output were
+  intentionally omitted.
+
+Limit:
+
+- This is one Chinese topic, one focused pass, one Broader review pass, and one
+  external provider. It does not replace repeated multilingual
+  release-readiness runs, broader provider coverage, or long-run stability
+  testing.
 
 ### 2026-06-19 v1.1.3 Fresh Clone Local Product Smoke
 
