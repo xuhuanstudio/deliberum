@@ -68,7 +68,7 @@ http://127.0.0.1:3877/setup/models
 
 ## 开始一次模型讨论
 
-provider 验证通过后，可以在 Setup / Models 里选择：
+provider 验证通过后，可以在 Connect AI 里选择：
 
 - Start focused discussion：两个模型视角；
 - Start broader discussion：三个模型视角。
@@ -95,7 +95,7 @@ http://127.0.0.1:3877/runs/new?participants=model-backed
 
 ## 常见恢复动作
 
-如果本地服务不可用，确认 `corepack pnpm start:local` 仍在运行，然后在 Setup / Models 点击 Check again。
+如果本地服务不可用，确认 `corepack pnpm start:local` 仍在运行，然后在 Connect AI 点击 Check again。
 
 如果 provider 验证失败，检查 API key、base URL、model 和 Structured review compatibility，然后再次 Verify connection。
 

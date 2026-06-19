@@ -70,7 +70,7 @@ Outcome Compilation
 
 The default Web path is designed for a first-time user, not for a daemon operator.
 
-- Start a discussion from `/runs/new`.
+- Start a new discussion from `/runs/new`.
 - Check local service and model/provider readiness from `/setup/models`, including a plain-language provider setup checklist and a local OpenAI-compatible setup form that writes provider setup through the local service without showing saved secrets or default-mode env var names.
 - Continue existing discussions from `/runs`.
 - Read participant/model perspectives as discussion contributions.
