@@ -24,6 +24,7 @@ COPY packages/storage/package.json packages/storage/package.json
 COPY packages/ui/package.json packages/ui/package.json
 
 RUN pnpm install --frozen-lockfile
+RUN pnpm exec playwright install --with-deps chromium
 
 FROM deps AS build
 

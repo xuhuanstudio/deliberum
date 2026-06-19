@@ -32,6 +32,12 @@ function checkDockerfile() {
   requireMatch(
     "Dockerfile",
     dockerfile,
+    /RUN pnpm exec playwright install --with-deps chromium/,
+    "installs the browser needed by Web smoke checks during image build"
+  );
+  requireMatch(
+    "Dockerfile",
+    dockerfile,
     /RUN git init --quiet && git add -A && pnpm run ci && rm -rf \.git/,
     "runs workspace CI during image build without copying host git metadata to runtime"
   );
