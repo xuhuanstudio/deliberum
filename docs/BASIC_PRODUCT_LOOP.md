@@ -532,6 +532,69 @@ Limit:
   rate-limit resilience, slow-provider resilience, Windows/WSL2 support, or a
   packaged installer.
 
+### 2026-06-20 Container Runtime Smoke
+
+Scope: rows 1 through 4 on the local/pre-production container startup path,
+with supporting evidence that the daemon-served Web shell is reachable from the
+container runtime.
+
+Commands:
+
+- `corepack pnpm smoke:container -- --dry-run`
+- `corepack pnpm run ci`
+- GitHub Actions `CI` on commit `7897aa9`
+- GitHub Actions `Container Smoke` on commit `7897aa9`
+
+Path covered:
+
+1. Built the local/pre-production Docker image on a Docker-enabled Ubuntu
+   runner.
+2. Ran the full workspace CI inside the image build before producing the
+   runtime image.
+3. Created a production daemon deploy directory so runtime dependencies,
+   including workspace packages, are resolvable without relying on monorepo
+   symlinks.
+4. Started the runtime container on a temporary localhost port with a named data
+   volume.
+5. Verified `/health`.
+6. Verified `/setup/models` returns the daemon-served built Web shell.
+
+Reproduced blockers fixed during this batch:
+
+- image-build CI needed `git`;
+- image-build CI needed a temporary git index without copying host `.git` into
+  the runtime image;
+- Web smoke checks inside the image needed Playwright Chromium during build;
+- pnpm production cleanup had to run non-interactively;
+- failed runtime containers had to keep logs available until the smoke script
+  captured container state and logs;
+- the runtime image could not resolve `@deliberum/core` when it copied the
+  monorepo workspace layout after pruning; the runtime image now starts from a
+  daemon deploy directory and separately copies the built Web shell.
+
+Result:
+
+- Passed. `Container Smoke`
+  <https://github.com/xuhuanstudio/deliberum/actions/runs/27839341376> completed
+  successfully on commit `7897aa9`.
+- Passed. Default GitHub `CI`
+  <https://github.com/xuhuanstudio/deliberum/actions/runs/27839327797> completed
+  successfully on the same commit.
+
+Safety:
+
+- No provider API key, base URL, model value, raw provider response, provider
+  output, or local secret was written into the container files, smoke logs, or
+  this document.
+- The runtime image keeps provider and daemon secrets environment-based.
+
+Limit:
+
+- This validates the Dockerfile-based local/pre-production container path on a
+  GitHub Ubuntu runner. It is not Compose verification, Windows/WSL2 Docker
+  Desktop verification, a signed release image, or a production hosted
+  deployment claim.
+
 ### 2026-06-19 v1.1 Fresh Clone Local Product Smoke
 
 Scope: rows 1 through 4 on the source-checkout startup path, with supporting
