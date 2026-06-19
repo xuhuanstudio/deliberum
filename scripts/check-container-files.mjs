@@ -29,7 +29,12 @@ function checkDockerfile() {
     /apt-get install -y --no-install-recommends git python3 make g\+\+/,
     "installs build-time tools needed by workspace CI"
   );
-  requireMatch("Dockerfile", dockerfile, /RUN pnpm run ci/, "runs workspace CI during image build");
+  requireMatch(
+    "Dockerfile",
+    dockerfile,
+    /RUN git init --quiet && git add -A && pnpm run ci && rm -rf \.git/,
+    "runs workspace CI during image build without copying host git metadata to runtime"
+  );
   requireMatch("Dockerfile", dockerfile, /DELIBERUM_HOST=0\.0\.0\.0/, "binds the daemon inside the container");
   requireMatch("Dockerfile", dockerfile, /DELIBERUM_PORT=3877/, "uses the documented local port");
   requireMatch(
