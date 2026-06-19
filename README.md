@@ -96,21 +96,28 @@ Prerequisites:
 - Corepack;
 - pnpm 11 through Corepack.
 
-Supported v1.1 source-checkout platforms:
+Supported v1.1 source-checkout platforms on the current branch:
 
 - macOS with Node.js 24 or newer and Corepack-managed pnpm 11;
-- Ubuntu Linux with Node.js 24 or newer and Corepack-managed pnpm 11.
+- Ubuntu Linux with Node.js 24 or newer and Corepack-managed pnpm 11;
+- native Windows with Node.js 24 or newer and Corepack-managed pnpm 11.
 
 GitHub CI verifies the Ubuntu Linux path through the main `Validate` job, which
-runs the full local-start smoke, and verifies macOS through the dedicated
-`Local start (macos-latest)` job. Windows and WSL2 may work with the same
-Node.js and pnpm requirements, but they are not v1.1 supported platforms until
-the local-start path is verified in CI.
+runs the full local-start smoke, and verifies macOS plus native Windows through
+the dedicated `Local start` platform jobs. WSL2 may work with the same Node.js
+and pnpm requirements, but it is not a v1.1 supported platform until the
+local-start path is verified in CI.
 
-Recommended first run from the repository root:
+Recommended first run from the repository root on macOS or Ubuntu Linux:
 
 ```bash
 sh scripts/start-local-product.sh
+```
+
+Recommended first run on native Windows:
+
+```bash
+node scripts/start-local-product.mjs
 ```
 
 This checks whether Node.js and Corepack are ready, then runs the supported
@@ -118,7 +125,7 @@ first-run helper that installs dependencies, builds Deliberum, and starts the
 local Web service. Keep that terminal running, then open the URL printed by the
 command.
 
-If Node.js and Corepack are already ready, this shell helper delegates to
+The macOS/Linux shell helper delegates to
 `node scripts/start-local-product.mjs`.
 
 If you prefer to run each step manually, check your local setup before
@@ -166,7 +173,7 @@ For Web UI development, you can still run the daemon and Vite dev server as sepa
 
 Use these checks before changing runtime settings or filing an issue:
 
-- **Prerequisite check fails**: run `sh scripts/start-local-product.sh` to get normal-user guidance, install Node.js 24 or newer, enable Corepack, then rerun the same command. The Node-based prerequisite check prints the next install/build/start command when the local toolchain is ready.
+- **Prerequisite check fails**: on macOS or Ubuntu Linux, run `sh scripts/start-local-product.sh`; on native Windows, run `node scripts/start-local-product.mjs`. Install Node.js 24 or newer, enable Corepack, then rerun the same command. The Node-based prerequisite check prints the next install/build/start command when the local toolchain is ready.
 - **Dependencies or build fail**: run `corepack pnpm install`, then `corepack pnpm doctor:local`, then `corepack pnpm build`. Do not skip the build step; `start:local` serves the built Web shell.
 - **`start:local` says the Web build is missing**: run `corepack pnpm build` again, then restart with `corepack pnpm start:local`.
 - **Port 3877 is already in use**: start on another local port, for example `DELIBERUM_PORT=3888 corepack pnpm start:local`, then open the URL printed by the command.

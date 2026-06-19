@@ -20,7 +20,7 @@ Developer Mode.
 
 ## What You Need
 
-- macOS or Ubuntu Linux.
+- macOS, Ubuntu Linux, or native Windows.
 - Node.js 24 or newer.
 - Corepack enabled.
 - pnpm 11 through Corepack.
@@ -28,24 +28,31 @@ Developer Mode.
   discussion with AI participants.
 
 GitHub CI verifies the Ubuntu Linux path through the main `Validate` job, which
-runs the full local-start smoke, and verifies macOS through the dedicated
-`Local start (macos-latest)` job. Windows and WSL2 may work, but they are not
-v1.1 supported platforms until the local-start path is verified in CI.
+runs the full local-start smoke, and verifies macOS plus native Windows through
+the dedicated `Local start` platform jobs. WSL2 may work, but it is not a v1.1
+supported platform until the local-start path is verified in CI.
 
 ## 1. Start the Local Product
 
-From the repository root, the recommended first-run command is:
+From the repository root on macOS or Ubuntu Linux, the recommended first-run
+command is:
 
 ```bash
 sh scripts/start-local-product.sh
 ```
 
-This command checks whether Node.js and Corepack are ready, then runs the
+On native Windows, run the Node.js helper directly:
+
+```bash
+node scripts/start-local-product.mjs
+```
+
+These commands check whether Node.js and Corepack are ready, then run the
 supported first-run helper that installs dependencies, builds Deliberum, and
 starts the local Web service. Keep that terminal running after the service
 starts.
 
-If Node.js and Corepack are already ready, the shell helper delegates to:
+The macOS/Linux shell helper delegates to:
 
 ```bash
 node scripts/start-local-product.mjs
@@ -215,7 +222,7 @@ database support. For trusted-team or remote pre-production hardening, see
 
 | Problem | What to do |
 | --- | --- |
-| Prerequisite check fails | Run `sh scripts/start-local-product.sh` to get normal-user guidance, install Node.js 24 or newer, enable Corepack, then rerun the same command. |
+| Prerequisite check fails | On macOS or Ubuntu Linux, run `sh scripts/start-local-product.sh`; on native Windows, run `node scripts/start-local-product.mjs`. Install Node.js 24 or newer, enable Corepack, then rerun the same command. |
 | Install or build fails | Run `corepack pnpm install`, then `corepack pnpm doctor:local`, then `corepack pnpm build`. |
 | Web build is missing | Run `corepack pnpm build`, then restart with `corepack pnpm start:local`. |
 | Port `3877` is busy | Start with `DELIBERUM_PORT=3888 corepack pnpm start:local` and open the printed URL. |

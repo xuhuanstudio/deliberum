@@ -12,27 +12,33 @@ Deliberum 是一个本地优先的多视角审议产品。你输入一个问题�
 
 ## 你需要准备什么
 
-- macOS 或 Ubuntu Linux。
+- macOS、Ubuntu Linux 或原生 Windows。
 - Node.js 24 或更高版本。
 - 已启用 Corepack。
 - 通过 Corepack 使用 pnpm 11。
 - 如果要运行真实模型讨论，需要一个 OpenAI-compatible provider 的 API key、base URL 和 model。
 
 GitHub CI 现在通过主 `Validate` job 覆盖 Ubuntu Linux 的完整本地启动
-smoke，并通过专门的 `Local start (macos-latest)` job 覆盖 macOS。Windows
-和 WSL2 可能可以运行，但在本地启动路径进入 CI 验证前，不属于 v1.1 支持平台。
+smoke，并通过专门的 `Local start` 平台 job 覆盖 macOS 和原生 Windows。
+WSL2 可能可以运行，但在本地启动路径进入 CI 验证前，不属于 v1.1 支持平台。
 
 ## 1. 启动本地产品
 
-在仓库根目录，推荐第一次运行时直接执行：
+在 macOS 或 Ubuntu Linux 的仓库根目录，推荐第一次运行时直接执行：
 
 ```bash
 sh scripts/start-local-product.sh
 ```
 
-这个命令会先检查 Node.js 和 Corepack 是否可用，然后调用受支持的首次运行 helper，安装依赖、构建 Deliberum，并启动本地 Web 服务。服务启动后，请保持这个终端窗口运行。
+在原生 Windows 的仓库根目录，直接运行 Node.js helper：
 
-如果 Node.js 和 Corepack 已经准备好，这个 shell 入口会继续调用：
+```bash
+node scripts/start-local-product.mjs
+```
+
+这些命令会先检查 Node.js 和 Corepack 是否可用，然后调用受支持的首次运行 helper，安装依赖、构建 Deliberum，并启动本地 Web 服务。服务启动后，请保持这个终端窗口运行。
+
+macOS/Linux 的 shell 入口会继续调用：
 
 ```bash
 node scripts/start-local-product.mjs
@@ -184,7 +190,7 @@ Deliberum v1.1 不是公共托管服务，也不声明已经具备生产级多�
 
 | 问题 | 处理方式 |
 | --- | --- |
-| 前置检查失败 | 运行 `sh scripts/start-local-product.sh` 查看普通用户可理解的引导，安装 Node.js 24 或更高版本并启用 Corepack，然后重新运行同一个命令。 |
+| 前置检查失败 | macOS 或 Ubuntu Linux 运行 `sh scripts/start-local-product.sh`；原生 Windows 运行 `node scripts/start-local-product.mjs`。安装 Node.js 24 或更高版本并启用 Corepack，然后重新运行同一个命令。 |
 | 安装或构建失败 | 依次运行 `corepack pnpm install`、`corepack pnpm doctor:local`、`corepack pnpm build`。 |
 | 提示 Web build 缺失 | 重新运行 `corepack pnpm build`，再运行 `corepack pnpm start:local`。 |
 | `3877` 端口被占用 | 使用 `DELIBERUM_PORT=3888 corepack pnpm start:local`，然后打开命令输出里的 URL。 |
