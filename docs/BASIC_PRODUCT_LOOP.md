@@ -154,16 +154,20 @@ daemon setup, `corepack pnpm smoke:web-release-readiness` can reuse those values
 Explicit `DELIBERUM_RELEASE_SMOKE_*` variables still take precedence for
 provider-specific release checks.
 
-Latest 2026-06-15 evidence: the repository-local `.env` provider setup still
-exercises the safe provider-verification recovery path because that local
-provider endpoint is not reachable, but an explicit temporary real external
-OpenAI-compatible provider configuration passed the Web-managed release smoke
-three consecutive times on the default focused two-perspective path and once on
-the Broader review three-perspective path. A later Broader review batch also
-passed three consecutive runs. This means the current highest-priority product
-gap is not provider verification in Deliberum itself; it is continued
-real-provider release hardening across more providers, longer run batches, and
-failure recovery states.
+2026-06-15 evidence: the repository-local `.env` provider setup exercised the
+safe provider-verification recovery path because that local provider endpoint
+was not reachable, but an explicit temporary real external OpenAI-compatible
+provider configuration passed the Web-managed release smoke three consecutive
+times on the default focused two-perspective path and once on the Broader review
+three-perspective path. A later Broader review batch also passed three
+consecutive runs.
+
+2026-06-21 update: the repository-local `.env` provider setup available in this
+verification workspace exercised the real provider path and passed the focused
+and Broader review release-readiness browser smokes. This means the current
+highest-priority product gap is not provider verification in Deliberum itself;
+it is continued real-provider release hardening across more providers, longer
+run batches, and failure recovery states.
 
 Additional 2026-06-15 post-change evidence: after the verified Connect AI
 focused and broader start links were added, the opt-in real-provider
@@ -212,6 +216,44 @@ the release-readiness path aligned with what a normal local user can do in Web
 instead of requiring hidden environment variables.
 
 ## Recent Automated Evidence
+
+### 2026-06-21 Post-v1.1.4 Real Provider Stability Smoke
+
+Scope: rows 5 through 16 against the repository-local `.env`
+OpenAI-compatible provider setup. Required provider variable names were present;
+provider keys, base URLs, model names, raw provider responses, and model output
+were not printed or recorded.
+
+Commands:
+
+- `corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_RUNS=2 corepack pnpm smoke:web-release-readiness`
+- `DELIBERUM_RELEASE_SMOKE_PERSPECTIVES=3 DELIBERUM_RELEASE_SMOKE_RUNS=2 corepack pnpm smoke:web-release-readiness`
+
+Path covered:
+
+1. Reused the repository-local provider setup through the Web-managed release
+   smoke without exposing secrets or provider values.
+2. Verified the focused two-perspective path from provider setup through
+   readable participant perspectives, strongest-options material, unresolved
+   points, what needs checking, risks, current answer material, and next steps.
+3. Re-ran the focused path for two consecutive fresh browser walkthroughs.
+4. Verified the Broader review three-perspective path for two consecutive fresh
+   browser walkthroughs.
+
+Result:
+
+- Passed once on the focused two-perspective path.
+- Passed two consecutive focused two-perspective runs.
+- Passed two consecutive Broader review three-perspective runs.
+- No Deliberum-side product-loop blocker was reproduced.
+
+Limit:
+
+- This is one repository-local OpenAI-compatible provider setup on macOS. It
+  does not replace cross-provider compatibility checks, longer stress runs,
+  Windows/macOS real-provider manual walkthroughs, or packaged installer
+  verification.
 
 ### 2026-06-20 v1.1.4 Fresh Clone Local Product Smoke
 
