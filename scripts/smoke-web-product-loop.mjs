@@ -203,7 +203,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .getByText("Viewpoints without their own model use this first-response model.")
     .waitFor();
   await page.locator("#discussion-review-model-override").fill(reviewModelName);
-  await page.getByText(reviewModelName).waitFor();
+  await page.getByText(reviewModelName).first().waitFor();
   await page
     .getByText(
       "Review roles use this model while first-response viewpoints keep their assigned models."
@@ -227,15 +227,23 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page.getByRole("link", { name: "Open Connect AI" }).click();
   await page.getByRole("heading", { name: "Connect AI" }).waitFor();
-  await page.getByText("Saved participant choices", { exact: true }).waitFor();
+  await page.getByText("Saved participant choices", { exact: true }).first().waitFor();
   await page
     .getByText(
       "Connect AI shows the saved participant choices before you start. API keys, base URLs, and internal provider details are not shown here."
     )
     .waitFor();
-  await page.getByText(discussionModelName).waitFor();
-  await page.getByText(reviewModelName).waitFor();
+  await page.getByText(discussionModelName).first().waitFor();
+  await page.getByText(reviewModelName).first().waitFor();
   await page.getByText("1 custom viewpoint model").waitFor();
+  const roleModelMap = page.getByLabel("Participant role model map");
+  await roleModelMap.getByText("Saved participant choices", { exact: true }).waitFor();
+  await roleModelMap.getByText("First viewpoint", { exact: true }).waitFor();
+  await roleModelMap.getByText("Alternative viewpoint", { exact: true }).waitFor();
+  await roleModelMap.getByText("Skeptic", { exact: true }).waitFor();
+  await roleModelMap.getByText(perspectiveModelName).waitFor();
+  await roleModelMap.getByText(discussionModelName).waitFor();
+  await roleModelMap.getByText(reviewModelName).first().waitFor();
   if ((await page.locator("#setup-role-first-response-model").inputValue()) !== discussionModelName) {
     throw new Error("Connect AI did not show the saved model for first replies.");
   }

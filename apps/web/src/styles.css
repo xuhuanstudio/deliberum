@@ -3781,6 +3781,64 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
+.du-role-model-map {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--du-line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 12px;
+}
+
+.du-role-model-map-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.du-role-model-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.du-role-model-card {
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(45, 44, 40, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.du-role-model-card > span {
+  color: var(--du-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.du-role-model-card strong,
+.du-role-model-value {
+  color: var(--du-text);
+}
+
+.du-role-model-value {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+.du-role-model-card small {
+  color: var(--du-muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.du-role-model-card-ok {
+  border-color: rgba(26, 127, 55, 0.24);
+}
+
 .du-discussion-model-override,
 .du-perspective-model-toggle {
   display: grid;
@@ -5201,6 +5259,7 @@ textarea:focus-visible {
   .du-provider-setup-completion,
   .du-provider-management-card-header,
   .du-provider-management-item-grid,
+  .du-role-model-map-grid,
   .du-discussion-setup-grid,
   .du-discussion-model-override,
   .du-perspective-model-toggle,

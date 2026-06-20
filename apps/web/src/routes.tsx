@@ -1955,6 +1955,15 @@ type SetupParticipantReadinessView = {
   items: SetupParticipantReadinessItem[];
 };
 
+type SetupRoleModelAssignmentItem = {
+  role: string;
+  model: string;
+  modelIsLiteral: boolean;
+  source: string;
+  detail: string;
+  tone: "ok" | "warning" | "neutral";
+};
+
 type OpenAICompatibleSetupFormInput = {
   apiKey: string;
   baseUrl: string;
@@ -2009,9 +2018,11 @@ function SetupRoleDefaultsSummary({
 }) {
   const { t } = useI18n();
   const responseDefaults = response?.status === "configured" ? response.defaults : undefined;
-  const displayedDefaults = responseDefaults ?? (status === "saved" ? form : undefined);
-  const saved = Boolean(displayedDefaults);
-  const startPath = getRoleDefaultsStartPath(displayedDefaults);
+  const savedDefaults = responseDefaults ?? (status === "saved" ? form : undefined);
+  const saved = Boolean(savedDefaults);
+  const displayedDefaults = dirty ? form : savedDefaults;
+  const defaultsPreview = displayedDefaults ?? form;
+  const startPath = getRoleDefaultsStartPath(savedDefaults);
   const perspectiveOverrideCount = displayedDefaults
     ? countConfiguredPerspectiveRoleModels(displayedDefaults)
     : 0;
@@ -2054,28 +2065,27 @@ function SetupRoleDefaultsSummary({
         items={[
           {
             label: t("Discussion depth"),
-            value: saved
+            value: displayedDefaults
               ? t(displayedDefaults?.perspectiveCount === 3 ? "Broader review" : "Focused review")
               : t("Not saved yet")
           },
           {
             label: t("First responses use"),
             value:
-              saved && displayedDefaults?.modelOverride.trim()
+              displayedDefaults?.modelOverride.trim()
                 ? displayedDefaults.modelOverride.trim()
                 : t("Provider setup model")
           },
           {
             label: t("Review roles use"),
             value:
-              saved && displayedDefaults?.reviewModelOverride.trim()
+              displayedDefaults?.reviewModelOverride.trim()
                 ? displayedDefaults.reviewModelOverride.trim()
                 : t("Model for first replies")
           },
           {
             label: t("Viewpoint models"),
             value:
-              saved &&
               displayedDefaults?.customPerspectiveModelsEnabled &&
               perspectiveOverrideCount > 0
                 ? perspectiveOverrideCount === 1
@@ -2087,6 +2097,12 @@ function SetupRoleDefaultsSummary({
           }
         ]}
       />
+      {modelBackedAvailable ? (
+        <SetupRoleModelAssignmentPreview
+          defaults={defaultsPreview}
+          mode={dirty ? "draft" : saved ? "saved" : "default"}
+        />
+      ) : null}
       {modelBackedAvailable ? (
         <div
           className="du-discussion-model-assignment"
@@ -2291,6 +2307,51 @@ function SetupRoleDefaultsSummary({
   );
 }
 
+function SetupRoleModelAssignmentPreview({
+  defaults,
+  mode
+}: {
+  defaults: OpenAICompatibleRoleModelDefaults;
+  mode: "saved" | "draft" | "default";
+}) {
+  const { t } = useI18n();
+  const items = createSetupRoleModelAssignments(defaults);
+  const status =
+    mode === "draft"
+      ? "Unsaved participant choices"
+      : mode === "saved"
+        ? "Saved participant choices"
+        : "Default participant choices";
+  const detail =
+    mode === "draft"
+      ? "This preview reflects your current edits. Save participant choices to reuse them for future discussions."
+      : mode === "saved"
+        ? "New Discussion will use this role and model map unless you change it before starting."
+        : "These defaults use the saved provider model until you choose and save participant models.";
+
+  return (
+    <section className="du-role-model-map" aria-label={t("Participant role model map")}>
+      <div className="du-role-model-map-heading">
+        <p className="du-kicker">{t("Participant role model map")}</p>
+        <strong>{t(status)}</strong>
+        <p>{t(detail)}</p>
+      </div>
+      <div className="du-role-model-map-grid">
+        {items.map((item) => (
+          <article className={`du-role-model-card du-role-model-card-${item.tone}`} key={item.role}>
+            <span>{t(item.source)}</span>
+            <strong>{t(item.role)}</strong>
+            <p className="du-role-model-value">
+              {item.modelIsLiteral ? item.model : t(item.model)}
+            </p>
+            <small>{t(item.detail)}</small>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function createEmptyRoleDefaults(): OpenAICompatibleRoleModelDefaults {
   return {
     perspectiveCount: 2,
@@ -2365,6 +2426,90 @@ function countConfiguredPerspectiveRoleModels(
   return Object.values(defaults.perspectiveModelOverrides).filter(
     (model) => typeof model === "string" && model.trim().length > 0
   ).length;
+}
+
+function createSetupRoleModelAssignments(
+  defaults: OpenAICompatibleRoleModelDefaults
+): SetupRoleModelAssignmentItem[] {
+  const firstResponseModel = createSetupRoleModelValue(
+    defaults.modelOverride,
+    "Provider setup model"
+  );
+  const reviewModel = defaults.reviewModelOverride.trim()
+    ? createSetupRoleModelValue(defaults.reviewModelOverride, "Provider setup model")
+    : firstResponseModel;
+  const perspectiveFields = getSetupRolePerspectiveFields(defaults.perspectiveCount);
+  const perspectiveItems = perspectiveFields.map((field) => {
+    const customModel =
+      defaults.customPerspectiveModelsEnabled
+        ? defaults.perspectiveModelOverrides[field.participantId]
+        : undefined;
+    const model = customModel?.trim()
+      ? createSetupRoleModelValue(customModel, "Provider setup model")
+      : firstResponseModel;
+
+    return {
+      role: getSetupRolePerspectiveRole(field.participantId),
+      model: model.model,
+      modelIsLiteral: model.modelIsLiteral,
+      source: customModel?.trim() ? "Custom viewpoint model" : "First-response model",
+      detail:
+        "This role gives an independent first response before seeing the other perspectives.",
+      tone: model.modelIsLiteral ? "ok" : "neutral"
+    } satisfies SetupRoleModelAssignmentItem;
+  });
+  const reviewItems: SetupRoleModelAssignmentItem[] = [
+    "Skeptic",
+    "Evidence checker",
+    "Risk reviewer",
+    "Summary writer"
+  ].map((role) => ({
+    role,
+    model: reviewModel.model,
+    modelIsLiteral: reviewModel.modelIsLiteral,
+    source: defaults.reviewModelOverride.trim() ? "Review model" : "Review uses first-response model",
+    detail:
+      role === "Summary writer"
+        ? "This role drafts the current answer and next steps after review."
+        : "This role reviews disagreements, evidence, and risks after first responses.",
+    tone: reviewModel.modelIsLiteral ? "ok" : "neutral"
+  }));
+
+  return [...perspectiveItems, ...reviewItems];
+}
+
+function createSetupRoleModelValue(
+  value: string | undefined,
+  fallback: string
+): { model: string; modelIsLiteral: boolean } {
+  const normalized = value?.trim();
+
+  if (normalized) {
+    return {
+      model: normalized,
+      modelIsLiteral: true
+    };
+  }
+
+  return {
+    model: fallback,
+    modelIsLiteral: false
+  };
+}
+
+function getSetupRolePerspectiveRole(
+  participantId: keyof OpenAICompatibleRoleModelDefaults["perspectiveModelOverrides"]
+): string {
+  switch (participantId) {
+    case "provider-perspective-a":
+      return "First viewpoint";
+    case "provider-perspective-b":
+      return "Alternative viewpoint";
+    case "provider-perspective-c":
+      return "Additional viewpoint";
+    default:
+      return "First viewpoint";
+  }
 }
 
 function ProviderSetupChecklist({

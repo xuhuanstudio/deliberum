@@ -2935,7 +2935,7 @@ describe("@deliberum/web shell", () => {
 
     renderApp("/setup/models", client);
 
-    expect(await screen.findByText("Saved participant choices")).toBeTruthy();
+    expect((await screen.findAllByText("Saved participant choices")).length).toBeGreaterThan(0);
     await waitFor(() =>
       expect(client.getOpenAICompatibleRoleModelDefaults).toHaveBeenCalledTimes(1)
     );
@@ -2945,9 +2945,25 @@ describe("@deliberum/web shell", () => {
       )
     ).toBeTruthy();
     expect(screen.getAllByText("Broader review").length).toBeGreaterThan(0);
-    expect(screen.getByText("service-first-response-model")).toBeTruthy();
-    expect(screen.getByText("service-review-model")).toBeTruthy();
+    expect(screen.getAllByText("service-first-response-model").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("service-review-model").length).toBeGreaterThan(0);
     expect(screen.getByText("2 custom viewpoint models")).toBeTruthy();
+    const roleModelMap = screen.getByRole("region", {
+      name: "Participant role model map"
+    });
+    const roleModelMapText = roleModelMap.textContent ?? "";
+    expect(roleModelMapText).toContain("Saved participant choices");
+    expect(roleModelMapText).toContain("First viewpoint");
+    expect(roleModelMapText).toContain("Alternative viewpoint");
+    expect(roleModelMapText).toContain("Additional viewpoint");
+    expect(roleModelMapText).toContain("Skeptic");
+    expect(roleModelMapText).toContain("Evidence checker");
+    expect(roleModelMapText).toContain("Risk reviewer");
+    expect(roleModelMapText).toContain("Summary writer");
+    expect(roleModelMapText).toContain("service-perspective-a-model");
+    expect(roleModelMapText).toContain("service-first-response-model");
+    expect(roleModelMapText).toContain("service-perspective-c-model");
+    expect(roleModelMapText).toContain("service-review-model");
     const startWithSavedRoleSetupLink = screen.getByRole("link", {
       name: "Start with saved participant choices"
     }) as HTMLAnchorElement;
@@ -2963,6 +2979,15 @@ describe("@deliberum/web shell", () => {
     expect(pageText).not.toContain("DELIBERUM_OPENAI_BASE_URL");
     expect(pageText).not.toContain("providerConfigId");
     expect(pageText).not.toContain("openai-main");
+    expect(roleModelMapText).not.toContain("providerConfigId");
+
+    fireEvent.change(screen.getByLabelText("Language"), {
+      target: {
+        value: "zh-CN"
+      }
+    });
+    expect(screen.getAllByText("\u53c2\u4e0e\u8005\u89d2\u8272\u6a21\u578b\u6620\u5c04").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("\u5df2\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9").length).toBeGreaterThan(0);
   });
 
   it("edits participant choices directly from setup and models", async () => {
@@ -2997,6 +3022,16 @@ describe("@deliberum/web shell", () => {
       }
     });
     expect(screen.getByText("Role changes are not saved yet.")).toBeTruthy();
+    const draftRoleModelMap = screen.getByRole("region", {
+      name: "Participant role model map"
+    });
+    const draftRoleModelMapText = draftRoleModelMap.textContent ?? "";
+    expect(draftRoleModelMapText).toContain("Unsaved participant choices");
+    expect(draftRoleModelMapText).toContain("setup-perspective-a-model");
+    expect(draftRoleModelMapText).toContain("setup-first-response-model");
+    expect(draftRoleModelMapText).toContain("setup-perspective-c-model");
+    expect(draftRoleModelMapText).toContain("setup-review-model");
+    expect(draftRoleModelMapText).not.toContain("providerConfigId");
 
     fireEvent.click(screen.getByRole("button", { name: "Save participant choices" }));
     await waitFor(() =>

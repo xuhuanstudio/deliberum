@@ -816,6 +816,25 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Discussion participants": "\u8ba8\u8bba\u53c2\u4e0e\u8005",
   "This shows which readable roles are ready before you start: first perspectives, reviewers, evidence checks, and conclusion writing.":
     "\u8fd9\u4f1a\u5728\u5f00\u59cb\u524d\u663e\u793a\u54ea\u4e9b\u53ef\u7406\u89e3\u89d2\u8272\u5df2\u5c31\u7eea\uff1a\u521d\u59cb\u89c6\u89d2\u3001\u5ba1\u67e5\u8005\u3001\u8bc1\u636e\u6838\u67e5\u548c\u7ed3\u8bba\u8d77\u8349\u3002",
+  "Participant role model map": "\u53c2\u4e0e\u8005\u89d2\u8272\u6a21\u578b\u6620\u5c04",
+  "Unsaved participant choices": "\u672a\u4fdd\u5b58\u7684\u53c2\u4e0e\u8005\u9009\u62e9",
+  "Default participant choices": "\u9ed8\u8ba4\u53c2\u4e0e\u8005\u9009\u62e9",
+  "This preview reflects your current edits. Save participant choices to reuse them for future discussions.":
+    "\u6b64\u9884\u89c8\u53cd\u6620\u5f53\u524d\u7f16\u8f91\u3002\u4fdd\u5b58\u53c2\u4e0e\u8005\u9009\u62e9\u540e\uff0c\u5373\u53ef\u5728\u4e4b\u540e\u7684\u8ba8\u8bba\u4e2d\u590d\u7528\u3002",
+  "New Discussion will use this role and model map unless you change it before starting.":
+    "\u5982\u679c\u5f00\u59cb\u524d\u4e0d\u518d\u4fee\u6539\uff0c\u201c\u65b0\u5efa\u8ba8\u8bba\u201d\u5c06\u4f7f\u7528\u8fd9\u4efd\u89d2\u8272\u548c\u6a21\u578b\u6620\u5c04\u3002",
+  "These defaults use the saved provider model until you choose and save participant models.":
+    "\u5728\u4f60\u9009\u62e9\u5e76\u4fdd\u5b58\u53c2\u4e0e\u8005\u6a21\u578b\u4e4b\u524d\uff0c\u8fd9\u4e9b\u9ed8\u8ba4\u503c\u4f1a\u4f7f\u7528\u5df2\u4fdd\u5b58\u7684\u63d0\u4f9b\u65b9\u6a21\u578b\u3002",
+  "Custom viewpoint model": "\u81ea\u5b9a\u4e49\u89c6\u89d2\u6a21\u578b",
+  "First-response model": "\u9996\u6b21\u56de\u5e94\u6a21\u578b",
+  "Review model": "\u5ba1\u9605\u6a21\u578b",
+  "Review uses first-response model": "\u5ba1\u9605\u4f7f\u7528\u9996\u6b21\u56de\u5e94\u6a21\u578b",
+  "This role gives an independent first response before seeing the other perspectives.":
+    "\u8be5\u89d2\u8272\u4f1a\u5728\u770b\u5230\u5176\u4ed6\u89c6\u89d2\u524d\u7ed9\u51fa\u72ec\u7acb\u7684\u9996\u6b21\u56de\u5e94\u3002",
+  "This role drafts the current answer and next steps after review.":
+    "\u8be5\u89d2\u8272\u4f1a\u5728\u5ba1\u9605\u540e\u8d77\u8349\u5f53\u524d\u7b54\u6848\u548c\u4e0b\u4e00\u6b65\u3002",
+  "This role reviews disagreements, evidence, and risks after first responses.":
+    "\u8be5\u89d2\u8272\u4f1a\u5728\u9996\u6b21\u56de\u5e94\u540e\u5ba1\u9605\u5206\u6b67\u3001\u8bc1\u636e\u548c\u98ce\u9669\u3002",
   "AI participant setup": "AI \u53c2\u4e0e\u8005\u8bbe\u7f6e",
   "Single verified provider": "\u5355\u4e2a\u5df2\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
   "Verify provider first": "\u5148\u9a8c\u8bc1\u63d0\u4f9b\u65b9",
