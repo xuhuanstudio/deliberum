@@ -1861,6 +1861,10 @@ function isSupportedModelBackedDiscussionProfile(
   return WEB_CONFIGURABLE_MODEL_BACKED_DISCUSSION_PROFILE_IDS.has(profile.id);
 }
 
+function getRoomContinuationFormId(runId: string): string {
+  return `room-continuation-form-${runId}`;
+}
+
 export function RunDetailPage() {
   const { t } = useI18n();
   const { runId } = useRunParams();
@@ -3185,6 +3189,7 @@ function StartRunForm({
     : continuationView.reviewReady || hasCompletedDiscussionRoundMaterial(run)
       ? "Start another readable round from the current room state."
       : "Continue the room from here.";
+  const roomContinuationFormId = getRoomContinuationFormId(runId);
   const shouldShowLatestDiscussionUpdate =
     Boolean(startMutation.data) && (!isRoomComposer || !startMutation.isPending);
   const latestDiscussionUpdate = shouldShowLatestDiscussionUpdate ? (
@@ -3289,6 +3294,14 @@ function StartRunForm({
     </>
   );
 
+  function submitRecommendedPipeline(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    startRecommendedPipeline({
+      title: primaryResultTitle,
+      detail: primaryResultDetail
+    });
+  }
+
   if (isAdvancedStartRequest) {
     return (
       <>
@@ -3300,14 +3313,8 @@ function StartRunForm({
     );
   }
 
-  const formContent = (
+  const discussionActionsContent = (
     <>
-      <div
-        className={`du-discussion-actions${
-          isRoomComposer ? " du-discussion-actions-room" : ""
-        }`}
-        aria-label={t(isRoomComposer ? "Room quick replies" : "Discussion action composer")}
-      >
         <div className="du-discussion-actions-heading">
           {isRoomComposer ? (
             <>
@@ -3345,14 +3352,17 @@ function StartRunForm({
         ) : null}
         <div className="du-discussion-action-list">
           <button
-            type="button"
+            type={isRoomComposer ? "submit" : "button"}
             className="du-discussion-action-button"
             aria-label={t(primaryActionLabel)}
-            onClick={() =>
-              startRecommendedPipeline({
-                title: primaryResultTitle,
-                detail: primaryResultDetail
-              })
+            onClick={
+              isRoomComposer
+                ? undefined
+                : () =>
+                    startRecommendedPipeline({
+                      title: primaryResultTitle,
+                      detail: primaryResultDetail
+                    })
             }
             disabled={startMutation.isPending}
           >
@@ -3522,7 +3532,28 @@ function StartRunForm({
             )
           )}
         </div>
-      </div>
+    </>
+  );
+
+  const formContent = (
+    <>
+      {isRoomComposer ? (
+        <form
+          id={roomContinuationFormId}
+          className="du-discussion-actions du-discussion-actions-room"
+          aria-label={t("Room quick replies")}
+          onSubmit={submitRecommendedPipeline}
+        >
+          {discussionActionsContent}
+        </form>
+      ) : (
+        <div
+          className="du-discussion-actions"
+          aria-label={t("Discussion action composer")}
+        >
+          {discussionActionsContent}
+        </div>
+      )}
       {!isRoomComposer ? continuationDetails : null}
       {continuationView.reviewReady && !isRoomComposer ? (
         <div className="du-action-row">
@@ -5086,6 +5117,7 @@ function DiscussionRoomHeader({
     "Discussion brief";
   const nextActionLabel = reviewReady ? "Review current answer" : "Continue discussion";
   const statusLabel = reviewReady ? "Conclusion ready" : "Next step";
+  const continuationFormId = getRoomContinuationFormId(runId);
 
   return (
     <section
@@ -5119,9 +5151,13 @@ function DiscussionRoomHeader({
               {t(nextActionLabel)}
             </Link>
           ) : (
-            <a className="du-room-header-action" href="#continue-discussion">
+            <button
+              className="du-room-header-action"
+              type="submit"
+              form={continuationFormId}
+            >
               {t(nextActionLabel)}
-            </a>
+            </button>
           )}
         </div>
       </div>
@@ -5739,6 +5775,7 @@ function DiscussionRoomNextTurnPrompt({
   openRequirementCount: number;
 }) {
   const { t } = useI18n();
+  const continuationFormId = getRoomContinuationFormId(runId);
 
   return (
     <section
@@ -5783,9 +5820,13 @@ function DiscussionRoomNextTurnPrompt({
               <a href="#continue-discussion">{t("Update answer")}</a>
             </>
           ) : (
-            <a className="du-room-next-turn-primary" href="#continue-discussion">
+            <button
+              className="du-room-next-turn-primary"
+              type="submit"
+              form={continuationFormId}
+            >
               {t("Continue discussion")}
-            </a>
+            </button>
           )}
         </div>
         {reviewReady ? (
@@ -8135,6 +8176,7 @@ function DiscussionRoomFocusPanel({
   const { t } = useI18n();
   const openItemCount = openDisagreementCount + unresolvedEvidenceCount + openRequirementCount;
   const nextActionLabel = reviewReady ? "Review current answer" : "Continue discussion";
+  const continuationFormId = getRoomContinuationFormId(runId);
 
   return (
     <aside
@@ -8157,9 +8199,9 @@ function DiscussionRoomFocusPanel({
               {t("Review current answer")}
             </Link>
           ) : (
-            <a className="du-action-link" href="#continue-discussion">
+            <button className="du-action-link" type="submit" form={continuationFormId}>
               {t("Continue discussion")}
-            </a>
+            </button>
           )}
         </div>
       </div>

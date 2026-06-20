@@ -7606,10 +7606,8 @@ describe("@deliberum/web shell", () => {
   });
 
   it("explains created runs and stages that have not run yet", async () => {
-    renderApp(
-      "/runs/run-1",
-      createClient({
-        getRun: vi.fn(async () => ({
+    const client = createClient({
+      getRun: vi.fn(async () => ({
           run: {
             ...runDetail,
             sealedDivergenceStatus: undefined,
@@ -7621,8 +7619,8 @@ describe("@deliberum/web shell", () => {
             }
           }
         }))
-      })
-    );
+    });
+    renderApp("/runs/run-1", client);
 
     expect((await screen.findAllByText("Continue discussion")).length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.queryByText("Loading discussion data")).toBeNull());
@@ -7646,7 +7644,12 @@ describe("@deliberum/web shell", () => {
     ).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Discussion actions" })).toBeNull();
     expect(document.querySelector(".du-room-action-strip")).toBeNull();
-    expect(screen.getAllByRole("link", { name: "Continue discussion" }).length).toBeGreaterThan(0);
+    const headerContinueButton = within(roomStatus).getByRole("button", {
+      name: "Continue discussion"
+    });
+    expect(headerContinueButton.getAttribute("form")).toBe("room-continuation-form-run-1");
+    expect(screen.getAllByRole("button", { name: "Continue discussion" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Continue discussion" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Ask for stronger options" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Review unresolved points" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Confirm answer requirements" })).toBeNull();
@@ -7666,6 +7669,9 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByRole("region", {
       name: "Recommended action path"
     })).toBeNull();
+    fireEvent.click(headerContinueButton);
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("region", { name: "Latest discussion update" })).toBeTruthy();
     await openStructuredDiscussionDetails();
     await openContinuationDetails();
     const pendingActionPath = screen.getByRole("region", {

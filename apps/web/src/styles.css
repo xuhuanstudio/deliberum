@@ -405,6 +405,7 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   min-height: 40px;
+  border: 0;
   border-radius: 6px;
   background: var(--du-accent);
   color: #ffffff;
@@ -3056,7 +3057,8 @@ textarea:focus-visible {
   min-width: 0;
 }
 
-.du-room-next-turn-actions a {
+.du-room-next-turn-actions a,
+.du-room-next-turn-actions button {
   display: inline-flex;
   min-height: 34px;
   align-items: center;
@@ -3072,7 +3074,8 @@ textarea:focus-visible {
   text-decoration: none;
 }
 
-.du-room-next-turn-actions a:hover {
+.du-room-next-turn-actions a:hover,
+.du-room-next-turn-actions button:hover:not(:disabled) {
   background: #edf5f2;
 }
 
@@ -3082,7 +3085,7 @@ textarea:focus-visible {
   color: #ffffff;
 }
 
-.du-room-next-turn-actions .du-room-next-turn-primary:hover {
+.du-room-next-turn-actions .du-room-next-turn-primary:hover:not(:disabled) {
   background: var(--du-accent-strong);
 }
 
