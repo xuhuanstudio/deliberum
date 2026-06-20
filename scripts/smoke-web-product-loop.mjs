@@ -437,6 +437,13 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("The browser walkthrough still needs to prove checks stay visible.").waitFor();
   await page.getByText("Run another browser walkthrough after UI changes.").waitFor();
   await assertDefaultViewSafety(page, "current answer", { providerBaseUrl });
+
+  await page.getByText("Discussion is ready to review", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "Update answer", exact: true }).click();
+  await page.getByRole("heading", { name: "What just changed", exact: true }).waitFor();
+  await page.getByText("2 unresolved points need review", { exact: true }).waitFor();
+  await page.getByText("2 of 2 evidence gaps need verification", { exact: true }).waitFor();
+  await assertDefaultViewSafety(page, "current answer after update", { providerBaseUrl });
 }
 
 async function assertDiscussionRoomOverview(page, { label, expectedNextAction }) {

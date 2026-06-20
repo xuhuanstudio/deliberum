@@ -1893,9 +1893,19 @@ export function RunDetailPage() {
               <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
                 {t("View current answer")}
               </Link>
-              <a className="du-action-link du-secondary-link" href="#continue-discussion">
-                {t("Update answer")}
-              </a>
+              {sessionId ? (
+                <button
+                  className="du-action-link du-secondary-link"
+                  type="submit"
+                  form={getRoomContinuationFormId(runId)}
+                >
+                  {t("Update answer")}
+                </button>
+              ) : (
+                <a className="du-action-link du-secondary-link" href="#continue-discussion">
+                  {t("Update answer")}
+                </a>
+              )}
             </>
           ) : (
             <a className="du-action-link" href="#continue-discussion">
@@ -1999,8 +2009,14 @@ export function RunOutcomePage() {
           })
         : client.getRunOutcome(runId)
   });
+  const runQuery = useQuery({
+    queryKey: ["run", runId],
+    queryFn: () => client.getRun(runId)
+  });
   const outcome = outcomeQuery.data;
   const outcomeSessionId = getStringRecordValue(outcome, "sessionId");
+  const run = runQuery.data?.run;
+  const runSessionId = getStringRecordValue(run, "sessionId") ?? outcomeSessionId;
   const compiledOutcome = outcome?.status === "compiled" ? outcome.outcome : undefined;
   const provenance = getRecordValue(compiledOutcome, "provenance");
   const conclusionStatus = describeRunOutcomeReviewStatus(
@@ -2060,8 +2076,19 @@ export function RunOutcomePage() {
               >
                 <OutcomeBrief outcome={outcome.outcome} context={contextQueries.context} />
               </DataPanel>
+              <QueryState query={runQuery}>
+                {run ? (
+                  <StartRunForm
+                    runId={runId}
+                    sessionId={runSessionId}
+                    run={run}
+                    variant="outcome-actions"
+                  />
+                ) : null}
+              </QueryState>
               <AdvancedDetails
                 description="Projection override, internal ids, draft status, and raw outcome material for developer inspection."
+                panelLabel="Current answer details"
                 lazy
               >
                 <form className="du-inline-form" onSubmit={submitProjectionOverride}>
@@ -3031,7 +3058,7 @@ function StartRunForm({
   runId: string;
   sessionId?: string;
   run: unknown;
-  variant?: "panel" | "room-composer" | "advanced-start-request";
+  variant?: "panel" | "room-composer" | "advanced-start-request" | "outcome-actions";
 }) {
   const { t } = useI18n();
   const { client } = useDaemonRuntime();
@@ -3173,6 +3200,7 @@ function StartRunForm({
     continuationSetup.primaryResultDetail ?? continuationView.primaryResultDetail;
   const isRoomComposer = variant === "room-composer";
   const isAdvancedStartRequest = variant === "advanced-start-request";
+  const isOutcomeActions = variant === "outcome-actions";
   const usesRoomUpdatePresentation =
     isRoomComposer || (isAdvancedStartRequest && Boolean(sessionId));
   const roomComposerTitle = "Send message to the room";
@@ -3423,6 +3451,27 @@ function StartRunForm({
                   <strong>{t("Check evidence")}</strong>
                 </Link>
               </>
+            ) : isOutcomeActions ? (
+              <button
+                type="button"
+                className="du-discussion-action-button du-discussion-action-secondary"
+                aria-label={t("Ask for stronger options")}
+                onClick={() => startRecommendedPipeline(strongerOptionsFeedback)}
+                disabled={startMutation.isPending}
+              >
+                <span className="du-discussion-action-badge-row">
+                  <span className="du-discussion-action-badge">{t("Updates discussion")}</span>
+                </span>
+                <strong>{t("Ask for stronger options")}</strong>
+                <span>
+                  {t(
+                    "Refresh the discussion so the strongest current options can be compared and improved."
+                  )}
+                </span>
+                <span className="du-discussion-action-result">
+                  {t("After it finishes, compare the refreshed strongest options.")}
+                </span>
+              </button>
             ) : (
               <>
                 <button
@@ -3555,7 +3604,7 @@ function StartRunForm({
         </div>
       )}
       {!isRoomComposer ? continuationDetails : null}
-      {continuationView.reviewReady && !isRoomComposer ? (
+      {continuationView.reviewReady && !isRoomComposer && !isOutcomeActions ? (
         <div className="du-action-row">
           <Link className="du-action-link" to="/runs/$runId/outcome" params={{ runId }}>
             {t("View current answer")}

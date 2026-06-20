@@ -253,7 +253,7 @@ async function verifyOutcomeAdvancedBoundary(page, { webBaseUrl, runId, sessionI
   await assertHiddenFromDefault(page, "Candidate proposal event override", "current answer default");
   await assertHiddenFromDefault(page, "Raw outcome material", "current answer default");
 
-  await page.locator("details.du-advanced-panel > summary").first().click();
+  await page.locator('details[data-advanced-panel="Current answer details"] > summary').click();
   await page.getByText("Candidate proposal event override").waitFor();
   await page.getByRole("heading", { name: "Raw outcome material" }).waitFor();
   await page.getByText(runId).first().waitFor();

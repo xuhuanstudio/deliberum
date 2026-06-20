@@ -1100,6 +1100,19 @@ async function findAdvancedModeSummaryByPanelText(text: string) {
   return getAdvancedModeSummaryByPanelText(text);
 }
 
+async function ensureAdvancedDetailsOpenByPanelText(text: string) {
+  const summary = await findAdvancedModeSummaryByPanelText(text);
+  const details = summary.closest("details") as HTMLDetailsElement | null;
+
+  expect(details).toBeTruthy();
+
+  if (details && !details.open) {
+    fireEvent.click(summary);
+  }
+
+  await waitFor(() => expect(details?.open).toBe(true));
+}
+
 function openAllClosedAdvancedModeDetails() {
   for (let pass = 0; pass < 3; pass += 1) {
     const closedSummaries = screen
@@ -9418,9 +9431,16 @@ describe("@deliberum/web shell", () => {
 
     expect((await screen.findAllByText("Current Answer")).length).toBeGreaterThan(0);
     await waitFor(() => expect(client.getRunOutcome).toHaveBeenCalledWith("run-1"));
+    await waitFor(() => expect(client.getRun).toHaveBeenCalledWith("run-1"));
     expect(screen.getByText("Current answer remains provisional")).toBeTruthy();
     expect(screen.getAllByText(/provisional/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Current Answer").length).toBeGreaterThan(0);
+    expect(screen.getByText("Discussion is ready to review")).toBeTruthy();
+    const updateAnswerButton = screen.getByRole("button", { name: "Update answer" });
+    fireEvent.click(updateAnswerButton);
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("What just changed")).toBeTruthy();
+    expect(screen.getByText("Discussion update completed")).toBeTruthy();
     expect(screen.getByRole("region", { name: "Current answer snapshot" })).toBeTruthy();
     expect(screen.getByRole("region", { name: "Answer review path" })).toBeTruthy();
     expect(screen.getByText("Before relying on this answer")).toBeTruthy();
@@ -9480,7 +9500,7 @@ describe("@deliberum/web shell", () => {
     expect(defaultPageText).not.toContain("evidence-1");
     expect(defaultPageText).not.toContain("final-audit-event-1");
 
-    fireEvent.click(screen.getByText("Advanced / Developer Mode"));
+    await ensureAdvancedDetailsOpenByPanelText("Current answer details");
     expect(await screen.findByText("Draft status")).toBeTruthy();
     expect(screen.getByText("Raw outcome material")).toBeTruthy();
 
@@ -9683,7 +9703,7 @@ describe("@deliberum/web shell", () => {
     expect((await screen.findAllByText("Current Answer")).length).toBeGreaterThan(0);
     await waitFor(() => expect(getRunOutcome).toHaveBeenCalledWith("run-1"));
 
-    await ensureDetailsOpen("Advanced / Developer Mode");
+    await ensureAdvancedDetailsOpenByPanelText("Current answer details");
     fireEvent.change(await screen.findByLabelText("Candidate proposal event override"), {
       target: {
         value: " final-candidate-event-2 "
@@ -9696,7 +9716,7 @@ describe("@deliberum/web shell", () => {
         finalCandidateProposalEventId: "final-candidate-event-2"
       })
     );
-    await ensureDetailsOpen("Advanced / Developer Mode");
+    await ensureAdvancedDetailsOpenByPanelText("Current answer details");
     expect(await screen.findByText("Specific final proposal selected")).toBeTruthy();
     expect(screen.getByText("final-candidate-event-2")).toBeTruthy();
 
