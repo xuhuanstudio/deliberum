@@ -5817,7 +5817,9 @@ function DiscussionRoomNextTurnPrompt({
               <Link to="/runs/$runId/outcome" params={{ runId }}>
                 {t("Check evidence")}
               </Link>
-              <a href="#continue-discussion">{t("Update answer")}</a>
+              <button type="submit" form={continuationFormId}>
+                {t("Update answer")}
+              </button>
             </>
           ) : (
             <button

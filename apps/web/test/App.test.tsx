@@ -2474,6 +2474,10 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Review unresolved points").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Check evidence").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Update answer").length).toBeGreaterThan(0);
+    const updateAnswerButton = screen.getByRole("button", { name: "Update answer" });
+    expect(updateAnswerButton.getAttribute("form")).toBe("room-continuation-form-run-1");
+    fireEvent.click(updateAnswerButton);
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(2));
 
     const defaultPageText = document.body.textContent ?? "";
     expect(defaultPageText).not.toContain("sk-product-loop-secret");

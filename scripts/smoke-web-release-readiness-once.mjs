@@ -193,7 +193,7 @@ async function runReleaseReadinessProductLoop(page, { webBaseUrl }) {
   await page.getByRole("link", { name: "Review current answer", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Review unresolved points", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Check evidence", exact: true }).first().waitFor();
-  await page.getByRole("link", { name: "Update answer", exact: true }).first().waitFor();
+  await page.getByRole("button", { name: "Update answer", exact: true }).first().waitFor();
   await assertDefaultViewSafety(page, "discussion room after continuation", {
     allowModelGeneratedLowLevelLanguage: true
   });

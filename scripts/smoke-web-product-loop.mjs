@@ -418,7 +418,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await roomReviewConclusionLink.waitFor();
   await page.getByRole("link", { name: "Review unresolved points", exact: true }).first().waitFor();
   await page.getByRole("link", { name: "Check evidence", exact: true }).first().waitFor();
-  await page.getByRole("link", { name: "Update answer", exact: true }).first().waitFor();
+  await page.getByRole("button", { name: "Update answer", exact: true }).first().waitFor();
   await assertComposerActionsCompact(page, "discussion room after continuation", {
     maxActionListHeight: 240,
     maxButtonHeight: 64
