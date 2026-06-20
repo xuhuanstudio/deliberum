@@ -140,7 +140,17 @@ async function assertConnectedLanding(page, label) {
   await page.getByText("Ready to use Deliberum").waitFor();
   await page.getByText("Local service connected").first().waitFor();
   await page.getByText("Demo discussion ready").waitFor();
-  await page.getByRole("link", { name: "Start demo discussion", exact: true }).first().waitFor();
+  const demoStartLink = page.getByRole("link", { name: "Start demo discussion", exact: true }).first();
+  await demoStartLink.waitFor();
+  const demoStartHref = await demoStartLink.getAttribute("href");
+
+  for (const expected of ["participants=demo", "sample=demo"]) {
+    if (!demoStartHref?.includes(expected)) {
+      throw new Error(
+        `${label} Start demo discussion link did not include ${expected}; got ${demoStartHref ?? "none"}.`
+      );
+    }
+  }
 
   const bodyText = await page.locator("body").innerText();
   for (const expected of [

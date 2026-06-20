@@ -955,6 +955,7 @@ type LandingReadinessAction = {
   to: "/runs/new" | "/setup/models" | "/runs";
   tone: LandingReadinessTone;
   participantSource?: "demo" | "model-backed";
+  sampleBrief?: "demo";
 };
 
 type LandingFirstUseStep = {
@@ -967,14 +968,22 @@ type LandingFirstUseStep = {
 
 function parseRunStartSearch(search: Record<string, unknown>): {
   participants?: "demo" | "model-backed";
+  sample?: "demo";
 } {
+  const parsed: {
+    participants?: "demo" | "model-backed";
+    sample?: "demo";
+  } = {};
+
   if (search.participants === "demo" || search.participants === "model-backed") {
-    return {
-      participants: search.participants
-    };
+    parsed.participants = search.participants;
   }
 
-  return {};
+  if (search.sample === "demo") {
+    parsed.sample = "demo";
+  }
+
+  return parsed;
 }
 
 function StartDiscussionActionLink({
@@ -986,13 +995,14 @@ function StartDiscussionActionLink({
 }) {
   const { t } = useI18n();
 
-  if (action.participantSource) {
+  if (action.participantSource || action.sampleBrief) {
     return (
       <Link
         className={className}
         to={action.to}
         search={{
-          participants: action.participantSource
+          participants: action.participantSource,
+          sample: action.sampleBrief
         }}
       >
         {t(action.label)}
@@ -1540,7 +1550,9 @@ function describeLandingNextAction(input: {
       detail:
         "Try the full discussion path with built-in participants while you connect AI.",
       to: "/runs/new",
-      tone: input.modelSetup.needsSetup ? "warning" : "ok"
+      tone: input.modelSetup.needsSetup ? "warning" : "ok",
+      participantSource: "demo",
+      sampleBrief: "demo"
     };
   }
 
@@ -3576,7 +3588,8 @@ function ProviderVerificationRecoveryActions({
           className="du-provider-recovery-card du-provider-recovery-primary"
           to="/runs/new"
           search={{
-            participants: "demo"
+            participants: "demo",
+            sample: "demo"
           }}
         >
           <span>{t("While fixing setup")}</span>

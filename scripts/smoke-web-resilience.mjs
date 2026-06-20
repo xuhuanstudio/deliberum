@@ -310,6 +310,7 @@ async function verifyProviderRateLimitRecovery(page, { webBaseUrl, providerBaseU
     "participants=demo",
     "rate limit recovery"
   );
+  await assertLinkHrefIncludes(page, "Start demo discussion", "sample=demo", "rate limit recovery");
   await assertNoHorizontalOverflow(page, "rate limit provider verification recovery");
   await assertDefaultResilienceSafety(page, "rate limit provider verification recovery", {
     providerBaseUrl,
@@ -344,6 +345,7 @@ async function verifyProviderTimeoutRecovery(page, { webBaseUrl, providerBaseUrl
     "participants=demo",
     "timeout recovery"
   );
+  await assertLinkHrefIncludes(page, "Start demo discussion", "sample=demo", "timeout recovery");
   await assertNoHorizontalOverflow(page, "timeout provider verification recovery");
   await assertDefaultResilienceSafety(page, "timeout provider verification recovery", {
     providerBaseUrl,

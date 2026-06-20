@@ -1169,6 +1169,9 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Create a discussion that keeps the brief, independent first responses, strongest options, disagreements, requirements, evidence and verification, risk review, and current conclusion visible.":
     "\u521b\u5efa\u4e00\u4e2a\u8ba8\u8bba\uff0c\u5e76\u6301\u7eed\u5c55\u793a\u7b80\u62a5\u3001\u72ec\u7acb\u521d\u59cb\u56de\u5e94\u3001\u6700\u5f3a\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u3001\u8bc1\u636e\u4e0e\u6838\u67e5\u3001\u98ce\u9669\u5ba1\u67e5\u548c\u5f53\u524d\u7ed3\u8bba\u3002",
   "Start from a question": "\u4ece\u4e00\u4e2a\u95ee\u9898\u5f00\u59cb",
+  "Sample brief ready": "\u793a\u4f8b\u7b80\u62a5\u5df2\u51c6\u5907\u597d",
+  "The sample brief is filled in. Create the discussion to open the room.":
+    "\u793a\u4f8b\u7b80\u62a5\u5df2\u586b\u5199\u3002\u521b\u5efa\u8ba8\u8bba\u5373\u53ef\u6253\u5f00\u8ba8\u8bba\u5ba4\u3002",
   "Write a brief in plain language or use the sample brief to try the full discussion flow immediately.":
     "\u7528\u81ea\u7136\u8bed\u8a00\u5199\u4e00\u4efd\u7b80\u62a5\uff0c\u6216\u4f7f\u7528\u793a\u4f8b\u7b80\u62a5\u7acb\u5373\u4f53\u9a8c\u5b8c\u6574\u8ba8\u8bba\u6d41\u7a0b\u3002",
   "Model setup for this discussion": "\u672c\u6b21\u8ba8\u8bba\u7684\u6a21\u578b\u8bbe\u7f6e",

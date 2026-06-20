@@ -1279,6 +1279,11 @@ describe("@deliberum/web shell", () => {
     expect(await screen.findByText("1 existing discussion")).toBeTruthy();
     expect(screen.getByText("Recommended next step")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "Start demo discussion" }).length).toBeGreaterThan(0);
+    const demoDiscussionLink = screen.getAllByRole("link", {
+      name: "Start demo discussion"
+    })[0] as HTMLAnchorElement;
+    expect(demoDiscussionLink.getAttribute("href")).toContain("participants=demo");
+    expect(demoDiscussionLink.getAttribute("href")).toContain("sample=demo");
     expect(screen.getByText("What you can do")).toBeTruthy();
     expect(screen.getByText("What the discussion keeps visible")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "Developer Tools" }).length).toBeGreaterThan(0);
@@ -3145,6 +3150,7 @@ describe("@deliberum/web shell", () => {
     await waitFor(() => expect(client.verifyOpenAICompatibleSetup).toHaveBeenCalledTimes(2));
     const demoLink = within(recovery).getByText("Start demo discussion").closest("a");
     expect((demoLink as HTMLAnchorElement).href).toContain("participants=demo");
+    expect((demoLink as HTMLAnchorElement).href).toContain("sample=demo");
     expect(document.body.textContent ?? "").not.toContain("sk-");
     expect(document.body.textContent ?? "").not.toContain("DELIBERUM_OPENAI_API_KEY");
   });
@@ -5663,6 +5669,46 @@ describe("@deliberum/web shell", () => {
       expect(JSON.stringify(vi.mocked(client.createRun).mock.calls[0]?.[0])).not.toContain(
         "daemon run API"
       )
+    );
+  });
+
+  it("prefills the sample brief from the demo start link", async () => {
+    const client = renderApp("/runs/new?participants=demo&sample=demo");
+
+    expect((await screen.findAllByText("New Discussion")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Sample brief ready")).toBeTruthy();
+    expect((screen.getByLabelText("Discussion question") as HTMLTextAreaElement).value).toBe(
+      "How should we review a proposed rollout before relying on it?"
+    );
+    openBriefOptions();
+    expect((screen.getByLabelText("Goals") as HTMLTextAreaElement).value).toContain(
+      "Compare the strongest current options."
+    );
+    expect((screen.getByLabelText("Constraints") as HTMLTextAreaElement).value).toContain(
+      "Keep the walkthrough deterministic and reviewable."
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Create discussion" }));
+
+    await waitFor(() => expect(client.createRun).toHaveBeenCalled());
+    const serializedRunPlan = JSON.stringify(vi.mocked(client.createRun).mock.calls[0]?.[0]);
+    expect(serializedRunPlan).not.toContain("daemon run API");
+    expect(serializedRunPlan).not.toContain("Candidate Frontier");
+  });
+
+  it("localizes the demo sample prefill notice in Simplified Chinese", async () => {
+    renderApp("/runs/new?participants=demo&sample=demo", createClient(), {
+      initialLanguage: "zh-CN"
+    });
+
+    expect(await screen.findByText("\u793a\u4f8b\u7b80\u62a5\u5df2\u51c6\u5907\u597d")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "\u793a\u4f8b\u7b80\u62a5\u5df2\u586b\u5199\u3002\u521b\u5efa\u8ba8\u8bba\u5373\u53ef\u6253\u5f00\u8ba8\u8bba\u5ba4\u3002"
+      )
+    ).toBeTruthy();
+    expect((screen.getByLabelText("\u8ba8\u8bba\u95ee\u9898") as HTMLTextAreaElement).value).toBe(
+      "How should we review a proposed rollout before relying on it?"
     );
   });
 

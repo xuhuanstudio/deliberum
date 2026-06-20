@@ -539,6 +539,7 @@ async function assertProviderVerificationRecoveryActions(page, label) {
 
   await assertLinkHref(page, "Review setup fields", "#setup-provider-form", label);
   await assertLinkHrefIncludes(page, "Start demo discussion", "participants=demo", label);
+  await assertLinkHrefIncludes(page, "Start demo discussion", "sample=demo", label);
 }
 
 async function assertLinkHref(page, text, expectedHref, label) {

@@ -332,12 +332,24 @@ export function RunNewPage() {
   const requestedPerspectiveCount = useLocation({
     select: (location) => getRequestedPerspectiveCount(location.search)
   });
+  const requestedSampleBrief = useLocation({
+    select: (location) => getRequestedSampleBrief(location.search)
+  });
   const queryClient = useQueryClient();
   const [runPlanText, setRunPlanText] = useState(DEFAULT_RUN_PLAN_TEXT);
-  const [discussionQuestion, setDiscussionQuestion] = useState("");
-  const [discussionGoals, setDiscussionGoals] = useState("");
-  const [discussionConstraints, setDiscussionConstraints] = useState("");
-  const [discussionExpectedOutcome, setDiscussionExpectedOutcome] = useState("");
+  const sampleBriefRequested = requestedSampleBrief === "demo";
+  const [discussionQuestion, setDiscussionQuestion] = useState(
+    sampleBriefRequested ? LOCAL_PRESET_DISCUSSION_BRIEF.question : ""
+  );
+  const [discussionGoals, setDiscussionGoals] = useState(
+    sampleBriefRequested ? LOCAL_PRESET_DISCUSSION_BRIEF.goalsText : ""
+  );
+  const [discussionConstraints, setDiscussionConstraints] = useState(
+    sampleBriefRequested ? LOCAL_PRESET_DISCUSSION_BRIEF.constraintsText : ""
+  );
+  const [discussionExpectedOutcome, setDiscussionExpectedOutcome] = useState(
+    sampleBriefRequested ? LOCAL_PRESET_DISCUSSION_BRIEF.expectedOutcomeText : ""
+  );
   const [participantSource, setParticipantSource] =
     useState<DiscussionParticipantSource>(requestedParticipantSource ?? "demo");
   const [participantSourceTouched, setParticipantSourceTouched] = useState(false);
@@ -679,9 +691,11 @@ export function RunNewPage() {
         )}
       >
         <StatusBanner
-          title={t("Start from a question")}
+          title={t(sampleBriefRequested ? "Sample brief ready" : "Start from a question")}
           detail={t(
-            "Write a brief in plain language or use the sample brief to try the full discussion flow immediately."
+            sampleBriefRequested
+              ? "The sample brief is filled in. Create the discussion to open the room."
+              : "Write a brief in plain language or use the sample brief to try the full discussion flow immediately."
           )}
         />
         <DataPanel
@@ -909,6 +923,14 @@ function getRequestedPerspectiveCount(
     : perspectives === "2" || perspectives === 2
       ? 2
       : undefined;
+}
+
+function getRequestedSampleBrief(search: unknown): "demo" | undefined {
+  if (!search || typeof search !== "object" || Array.isArray(search)) {
+    return undefined;
+  }
+
+  return (search as Record<string, unknown>).sample === "demo" ? "demo" : undefined;
 }
 
 function DiscussionCreationPreview({ view }: { view: DiscussionCreationPreviewView }) {
