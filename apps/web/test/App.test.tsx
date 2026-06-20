@@ -5906,6 +5906,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.queryByText("Detailed review panels")).toBeNull();
     expect(screen.getAllByText("Advanced / Developer Mode").length).toBeGreaterThan(0);
     expect(roomMain?.contains(roomHeader as Node)).toBe(true);
+    expect(roomMain?.contains(roomParticipants as Node)).toBe(true);
     expect(roomMain?.contains(roomComposer as Node)).toBe(true);
     expect(timeline?.contains(roomComposer as Node)).toBe(true);
     expect(chatShell?.contains(transcript as Node)).toBe(true);
@@ -5916,6 +5917,12 @@ describe("@deliberum/web shell", () => {
     expect(
       Boolean(
         roomHeader?.compareDocumentPosition(timeline as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      Boolean(
+        timeline?.compareDocumentPosition(roomParticipants as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       )
     ).toBe(true);

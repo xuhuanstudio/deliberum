@@ -5309,7 +5309,7 @@ textarea:focus-visible {
   }
 
   .du-room-roster {
-    order: 2;
+    order: 3;
   }
 
   .du-room-chat-shell {
@@ -5317,7 +5317,7 @@ textarea:focus-visible {
   }
 
   .du-room-timeline {
-    order: 3;
+    order: 2;
   }
 
   .du-room-composer {

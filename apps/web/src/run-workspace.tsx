@@ -5015,7 +5015,6 @@ function RunQualityOverview({
               reviewReady={continuationView.reviewReady}
               hasConversationMessages={hasVisibleRoomConversation(readableRoomActivities)}
             />
-            <DiscussionRoomParticipantRoster run={run} />
             <DiscussionRoomTimeline
               runId={runId}
               reviewReady={continuationView.reviewReady}
@@ -5031,6 +5030,7 @@ function RunQualityOverview({
               openRequirementCount={openObligations}
               roomComposer={discussionComposer}
             />
+            <DiscussionRoomParticipantRoster run={run} />
           </div>
           <DiscussionRoomFocusPanel
             runId={runId}
