@@ -6283,9 +6283,8 @@ describe("@deliberum/web shell", () => {
     );
     await waitFor(() => expect(client.getSessionResources).toHaveBeenCalledTimes(2));
     expect(document.querySelector("#room-conversation-transcript")).toBeTruthy();
-    await waitFor(() => expect(scrollTargets).toContain("room-conversation-transcript"));
+    await waitFor(() => expect(scrollTargets).toContain("latest-discussion-update"));
     expect(scrollTargets).not.toContain("room-next-action");
-    expect(scrollTargets).not.toContain("latest-discussion-update");
     expect(screen.getByRole("region", { name: "Latest discussion update" })).toBeTruthy();
     expect(screen.getByText("Discussion update completed")).toBeTruthy();
     const updateRound = screen.getByRole("list", { name: "Discussion update messages" });

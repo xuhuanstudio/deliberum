@@ -3069,9 +3069,10 @@ function StartRunForm({
 
     const scrollTarget =
       variant === "room-composer" && typeof document !== "undefined"
-        ? document.getElementById("room-conversation-transcript") ??
+        ? latestUpdateRef.current ??
+          document.getElementById("room-conversation-transcript") ??
           document.getElementById("discussion-timeline") ??
-          latestUpdateRef.current
+          undefined
         : latestUpdateRef.current;
 
     const scrollToTarget = () => {

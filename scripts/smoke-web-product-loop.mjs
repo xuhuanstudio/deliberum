@@ -309,7 +309,7 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Send message and continue" }).click();
   await page.getByText("Discussion paused", { exact: true }).waitFor();
   await assertRoomUpdateMessage(page, "discussion room after transient participant failure");
-  await assertConversationTranscriptReturnedToViewport(page, "discussion room after transient participant failure");
+  await assertLatestRoomUpdateReturnedToViewport(page, "discussion room after transient participant failure");
   await page
     .getByText(
       "A first-response participant still needs to finish. Review visible progress, then try Continue discussion again."
@@ -327,9 +327,8 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
 
   await page.getByRole("button", { name: "Send message and continue" }).click();
   await page.getByRole("link", { name: "Review current answer" }).first().waitFor();
-  await assertRoomConversationShellAfterMessages(page, "discussion room after continuation");
+  await assertLatestRoomUpdateReturnedToViewport(page, "discussion room after continuation");
   await assertSuccessfulRoomUpdateReceipt(page, "discussion room after continuation");
-  await assertConversationTranscriptReturnedToViewport(page, "discussion room after continuation");
   await page
     .locator(".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble")
     .first()
@@ -636,11 +635,15 @@ async function openDetailedReviewPanels(page, label) {
   }
 }
 
-async function assertConversationTranscriptReturnedToViewport(page, label) {
+async function assertLatestRoomUpdateReturnedToViewport(page, label) {
   await page.getByText("Conversation transcript", { exact: true }).waitFor();
+  await page.getByRole("region", { name: "Latest discussion update" }).waitFor();
 
-  const metrics = await page.locator("#room-conversation-transcript").evaluate((element) => {
+  const metrics = await page.locator("#latest-discussion-update").evaluate((element) => {
     const rect = element.getBoundingClientRect();
+    const transcriptRect = document
+      .querySelector("#room-conversation-transcript")
+      ?.getBoundingClientRect();
     const actionRailRect = document
       .querySelector(".du-room-action-rail")
       ?.getBoundingClientRect();
@@ -653,13 +656,11 @@ async function assertConversationTranscriptReturnedToViewport(page, label) {
     const nextActionRect = document
       .querySelector("#room-next-action")
       ?.getBoundingClientRect();
-    const updateRect = document
-      .querySelector("#latest-discussion-update")
-      ?.getBoundingClientRect();
-
     return {
-      transcriptTop: rect.top,
-      transcriptBottom: rect.bottom,
+      updateTop: rect.top,
+      updateBottom: rect.bottom,
+      transcriptTop: transcriptRect?.top ?? null,
+      transcriptBottom: transcriptRect?.bottom ?? null,
       actionRailTop: actionRailRect?.top ?? null,
       actionRailBottom: actionRailRect?.bottom ?? null,
       timelineTop: timelineRect?.top ?? null,
@@ -667,22 +668,19 @@ async function assertConversationTranscriptReturnedToViewport(page, label) {
       firstParticipantTop: firstParticipantRect?.top ?? null,
       firstParticipantBottom: firstParticipantRect?.bottom ?? null,
       nextActionTop: nextActionRect?.top ?? null,
-      updateTop: updateRect?.top ?? null,
       viewportHeight: window.innerHeight
     };
   });
 
   if (
-    metrics.transcriptTop < -24 ||
-    metrics.transcriptTop > metrics.viewportHeight * 0.65 ||
-    metrics.transcriptBottom <= 240 ||
-    (metrics.firstParticipantTop !== null &&
-      metrics.firstParticipantTop > metrics.viewportHeight) ||
+    metrics.updateTop < -24 ||
+    metrics.updateTop > metrics.viewportHeight * 0.4 ||
+    metrics.updateBottom <= 180 ||
     metrics.timelineBottom === null ||
     metrics.timelineBottom <= 240
   ) {
     throw new Error(
-      `${label} should return the viewport to the conversation transcript, got ${JSON.stringify(
+      `${label} should return the viewport to the latest discussion update, got ${JSON.stringify(
         metrics
       )}.`
     );
