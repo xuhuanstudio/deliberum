@@ -20,7 +20,9 @@ Deliberum 是一个本地优先的多视角审议产品。你输入一个问题�
 
 GitHub CI 现在通过主 `Validate` job 覆盖 Ubuntu Linux 的完整本地启动
 smoke，并通过专门的 `Local start` 平台 job 覆盖 macOS 和原生 Windows。
-WSL2 可能可以运行，但在本地启动路径进入 CI 验证前，不属于 v1.1 支持平台。
+对于当前 v1.2.0 发布候选版本，已支持的源码仓库启动平台是 macOS、
+Ubuntu Linux 和原生 Windows。WSL2 可能可以运行，但在本地启动路径进入
+CI 验证前，不属于 v1.2.0 支持平台。
 
 ## 1. 启动本地产品
 
@@ -202,7 +204,7 @@ corepack pnpm smoke:compose
 如果当前环境没有 Docker Compose，`corepack pnpm smoke:compose -- --dry-run`
 只会预览命令，不代表 Compose 服务栈已经成功启动。
 
-Deliberum v1.1 不是公共托管服务，也不声明已经具备生产级多人权限、生产身份系统或分布式生产数据库支持。可信团队或远程预生产部署请看英文 [Deployment](../DEPLOYMENT.md)。
+当前源码仓库产品不是公共托管服务，也不声明已经具备生产级多人权限、生产身份系统或分布式生产数据库支持。可信团队或远程预生产部署请看英文 [Deployment](../DEPLOYMENT.md)。
 
 ## 常见问题
 
@@ -219,6 +221,7 @@ Deliberum v1.1 不是公共托管服务，也不声明已经具备生产级多�
 ## 接下来读什么
 
 - 产品主路径验收清单：[Basic Product Loop Completion Matrix](../BASIC_PRODUCT_LOOP.md)。
+- v1.2.0 发布候选门槛：[v1.2.0 Release Checklist](../V1_2_0_RELEASE_CHECKLIST.md)。
 - 本地或预生产部署：[Deployment](../DEPLOYMENT.md)。
 - Discussion Room 走查：[Web Discussion Room Walkthrough](../WEB_DISCUSSION_ROOM_WALKTHROUGH.md)。
 - 架构细节：[Architecture](../ARCHITECTURE.md)。

@@ -96,7 +96,7 @@ Prerequisites:
 - Corepack;
 - pnpm 11 through Corepack.
 
-Supported v1.1 source-checkout platforms on the current branch:
+Supported source-checkout platforms for the current v1.2.0 release candidate:
 
 - macOS with Node.js 24 or newer and Corepack-managed pnpm 11;
 - Ubuntu Linux with Node.js 24 or newer and Corepack-managed pnpm 11;
@@ -105,8 +105,10 @@ Supported v1.1 source-checkout platforms on the current branch:
 GitHub CI verifies the Ubuntu Linux path through the main `Validate` job, which
 runs the full local-start smoke, and verifies macOS plus native Windows through
 the dedicated `Local start` platform jobs. WSL2 may work with the same Node.js
-and pnpm requirements, but it is not a v1.1 supported platform until the
-local-start path is verified in CI.
+and pnpm requirements, but it is not a v1.2.0 supported platform until the
+local-start path is verified in CI. The latest published release is still
+v1.1.4 until the v1.2.0 release-candidate checklist, release notes, source
+checkout verification, and tag/release steps are completed.
 
 Recommended first run from the repository root on macOS or Ubuntu Linux:
 
@@ -213,6 +215,7 @@ This command starts an isolated local service and Web UI, configures the provide
 - [Storage Compatibility and Recovery](docs/STORAGE_RECOVERY.md)
 - [Technology Stack](docs/TECH_STACK.md)
 - [Basic Product Loop Completion Matrix](docs/BASIC_PRODUCT_LOOP.md)
+- [v1.2.0 Release Checklist](docs/V1_2_0_RELEASE_CHECKLIST.md)
 - [v0.1 Open Beta Completion Report](docs/V0_1_OPEN_BETA_COMPLETION_REPORT.md)
 - [v1.0 Production Readiness Matrix](docs/V1_0_PRODUCTION_READINESS_MATRIX.md)
 - [v1.0 Web Product Coherence Audit](docs/V1_0_WEB_PRODUCT_COHERENCE_AUDIT.md)

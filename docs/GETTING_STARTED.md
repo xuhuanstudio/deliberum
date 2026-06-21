@@ -29,8 +29,10 @@ Developer Mode.
 
 GitHub CI verifies the Ubuntu Linux path through the main `Validate` job, which
 runs the full local-start smoke, and verifies macOS plus native Windows through
-the dedicated `Local start` platform jobs. WSL2 may work, but it is not a v1.1
-supported platform until the local-start path is verified in CI.
+the dedicated `Local start` platform jobs. For the current v1.2.0 release
+candidate, the supported source-checkout platforms are macOS, Ubuntu Linux, and
+native Windows. WSL2 may work, but it is not a v1.2.0 supported platform until
+the local-start path is verified in CI.
 
 ## 1. Start the Local Product
 
@@ -231,9 +233,9 @@ corepack pnpm smoke:compose
 If Docker Compose is not available, `corepack pnpm smoke:compose -- --dry-run`
 previews the commands but does not prove the Compose stack starts.
 
-Deliberum v1.1 is not a public hosted service and does not claim production
-multi-user authorization, production identity, or distributed production
-database support. For trusted-team or remote pre-production hardening, see
+The current source-checkout product is not a public hosted service and does not
+claim production multi-user authorization, production identity, or distributed
+production database support. For trusted-team or remote pre-production hardening, see
 [Deployment](DEPLOYMENT.md).
 
 ## Troubleshooting
@@ -251,6 +253,7 @@ database support. For trusted-team or remote pre-production hardening, see
 ## Where to Go Next
 
 - Product path and acceptance checklist: [Basic Product Loop Completion Matrix](BASIC_PRODUCT_LOOP.md).
+- v1.2.0 release-candidate gate: [v1.2.0 Release Checklist](V1_2_0_RELEASE_CHECKLIST.md).
 - Local/pre-production deployment: [Deployment](DEPLOYMENT.md).
 - Discussion Room walkthrough: [Web Discussion Room Walkthrough](WEB_DISCUSSION_ROOM_WALKTHROUGH.md).
 - Architecture details: [Architecture](ARCHITECTURE.md).
