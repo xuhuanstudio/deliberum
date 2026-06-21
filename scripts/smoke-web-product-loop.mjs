@@ -651,9 +651,13 @@ async function assertLatestRoomUpdateReturnedToViewport(page, label) {
     const transcriptRect = document
       .querySelector("#room-conversation-transcript")
       ?.getBoundingClientRect();
+    const transcript = document.querySelector("#room-conversation-transcript");
+    const chatShell = document.querySelector(".du-room-chat-shell");
+    const mainScroller = document.querySelector("main");
     const actionRailRect = document
       .querySelector(".du-room-action-rail")
       ?.getBoundingClientRect();
+    const actionRail = document.querySelector(".du-room-action-rail");
     const timelineRect = document
       .querySelector("#discussion-timeline")
       ?.getBoundingClientRect();
@@ -670,6 +674,13 @@ async function assertLatestRoomUpdateReturnedToViewport(page, label) {
       transcriptBottom: transcriptRect?.bottom ?? null,
       actionRailTop: actionRailRect?.top ?? null,
       actionRailBottom: actionRailRect?.bottom ?? null,
+      updateInsideTranscript: Boolean(transcript && transcript.contains(element)),
+      updateInsideActionRail: Boolean(actionRail && actionRail.contains(element)),
+      chatShellOverflow: chatShell ? getComputedStyle(chatShell).overflow : null,
+      chatShellScrollHeight: chatShell?.scrollHeight ?? null,
+      chatShellClientHeight: chatShell?.clientHeight ?? null,
+      mainScrollHeight: mainScroller?.scrollHeight ?? null,
+      mainClientHeight: mainScroller?.clientHeight ?? null,
       timelineTop: timelineRect?.top ?? null,
       timelineBottom: timelineRect?.bottom ?? null,
       firstParticipantTop: firstParticipantRect?.top ?? null,
@@ -684,7 +695,13 @@ async function assertLatestRoomUpdateReturnedToViewport(page, label) {
     metrics.updateTop > metrics.viewportHeight * 0.4 ||
     metrics.updateBottom <= 180 ||
     metrics.timelineBottom === null ||
-    metrics.timelineBottom <= 240
+    metrics.timelineBottom <= 240 ||
+    !metrics.updateInsideTranscript ||
+    metrics.updateInsideActionRail ||
+    metrics.chatShellOverflow === "hidden" ||
+    metrics.mainScrollHeight === null ||
+    metrics.mainClientHeight === null ||
+    metrics.mainScrollHeight <= metrics.mainClientHeight
   ) {
     throw new Error(
       `${label} should return the viewport to the latest discussion update, got ${JSON.stringify(

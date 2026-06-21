@@ -26,6 +26,7 @@ import {
   type FormEvent,
   type ReactNode
 } from "react";
+import { createPortal } from "react-dom";
 import { useDaemonRuntime } from "./daemon-runtime";
 import { LanguageSwitcher, useI18n } from "./i18n";
 import { LocalServiceSetupGuide } from "./local-service-setup";
@@ -3120,15 +3121,24 @@ function StartRunForm({
       typeof globalThis.matchMedia === "function" &&
       globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    const roomTranscript =
+      variant === "room-composer" && typeof document !== "undefined"
+        ? document.getElementById("room-conversation-transcript")
+        : null;
     const scrollTarget =
       variant === "room-composer" && typeof document !== "undefined"
         ? latestUpdateRef.current ??
-          document.getElementById("room-conversation-transcript") ??
+          document.getElementById("room-next-action") ??
+          roomTranscript ??
           document.getElementById("discussion-timeline") ??
           undefined
         : latestUpdateRef.current;
 
     const scrollToTarget = () => {
+      roomTranscript?.scrollTo?.({
+        top: roomTranscript.scrollHeight,
+        behavior: "auto"
+      });
       scrollTarget?.scrollIntoView?.({
         block: "start",
         behavior: variant === "room-composer" || prefersReducedMotion ? "auto" : "smooth"
@@ -3136,7 +3146,11 @@ function StartRunForm({
     };
     const scrollTimers =
       variant === "room-composer"
-        ? [globalThis.setTimeout(scrollToTarget, 0), globalThis.setTimeout(scrollToTarget, 160)]
+        ? [
+            globalThis.setTimeout(scrollToTarget, 0),
+            globalThis.setTimeout(scrollToTarget, 160),
+            globalThis.setTimeout(scrollToTarget, 360)
+          ]
         : [globalThis.setTimeout(scrollToTarget, 0)];
 
     return () => {
@@ -3201,6 +3215,18 @@ function StartRunForm({
   const isRoomComposer = variant === "room-composer";
   const isAdvancedStartRequest = variant === "advanced-start-request";
   const isOutcomeActions = variant === "outcome-actions";
+  const [roomTranscriptPortalTarget, setRoomTranscriptPortalTarget] =
+    useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!isRoomComposer || typeof document === "undefined") {
+      setRoomTranscriptPortalTarget(null);
+      return;
+    }
+
+    setRoomTranscriptPortalTarget(document.getElementById("room-conversation-transcript"));
+  }, [isRoomComposer, startMutation.data]);
+
   const usesRoomUpdatePresentation =
     isRoomComposer || (isAdvancedStartRequest && Boolean(sessionId));
   const roomComposerTitle = "Send message to the room";
@@ -3260,6 +3286,12 @@ function StartRunForm({
       </div>
     </section>
   ) : null;
+  const visibleLatestDiscussionUpdate =
+    isRoomComposer && latestDiscussionUpdate
+      ? roomTranscriptPortalTarget
+        ? createPortal(latestDiscussionUpdate, roomTranscriptPortalTarget)
+        : null
+      : latestDiscussionUpdate;
   const advancedStartRequestDetails = (
     <AdvancedDetails
       summary="Advanced / Developer Mode"
@@ -3627,7 +3659,7 @@ function StartRunForm({
         >
           {formContent}
         </section>
-        {latestDiscussionUpdate}
+        {visibleLatestDiscussionUpdate}
       </>
     );
   }
@@ -3638,7 +3670,7 @@ function StartRunForm({
       description={t(continuationView.description)}
     >
       {formContent}
-      {latestDiscussionUpdate}
+      {visibleLatestDiscussionUpdate}
     </DataPanel>
   );
 }

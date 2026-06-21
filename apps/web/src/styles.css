@@ -2244,9 +2244,9 @@ textarea:focus-visible {
 
 .du-room-chat-shell {
   display: grid;
-  grid-template-rows: minmax(280px, 1fr) auto;
-  height: clamp(420px, calc(100vh - 268px), 640px);
-  overflow: hidden;
+  grid-template-rows: auto auto;
+  min-height: clamp(420px, calc(100vh - 268px), 640px);
+  overflow: visible;
   border: 1px solid var(--du-line);
   border-radius: 8px;
   background: #fdfbf6;
@@ -2531,10 +2531,9 @@ textarea:focus-visible {
 .du-room-chat-shell .du-room-activity-wrap {
   align-content: start;
   min-height: 0;
-  overflow-y: auto;
+  overflow: visible;
   padding: 10px;
-  scroll-padding: 12px;
-  scrollbar-width: thin;
+  scroll-padding: 12px 12px 24px;
 }
 
 .du-room-response-wrap h5,
@@ -5316,7 +5315,7 @@ textarea:focus-visible {
   }
 
   .du-room-chat-shell {
-    height: clamp(420px, calc(100vh - 164px), 620px);
+    min-height: clamp(420px, calc(100vh - 164px), 620px);
   }
 
   .du-room-timeline {
