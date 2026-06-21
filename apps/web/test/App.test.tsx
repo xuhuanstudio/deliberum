@@ -5888,20 +5888,21 @@ describe("@deliberum/web shell", () => {
       screen.getByText("Start another readable round from the current room state.")
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Send message and continue" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
+    const moreRoomActions = screen.getByRole("group", { name: "More room actions" });
+    expect(within(moreRoomActions).getByRole("button", { name: "Ask for stronger options" })).toBeTruthy();
     const discussionActions = document.querySelector(".du-discussion-actions") as HTMLElement;
     expect(
-      within(discussionActions).getByRole("link", { name: "Review unresolved points" })
+      within(moreRoomActions).getByRole("link", { name: "Review unresolved points" })
     ).toBeTruthy();
     expect(
-      within(discussionActions).getByRole("link", { name: "Confirm answer requirements" })
+      within(moreRoomActions).getByRole("link", { name: "Confirm answer requirements" })
     ).toBeTruthy();
     expect(
-      within(discussionActions)
+      within(moreRoomActions)
         .getByRole("link", { name: "Confirm answer requirements" })
         .getAttribute("href")
     ).toBe("/runs/run-1/outcome");
-    expect(within(discussionActions).getByRole("link", { name: "Check evidence" })).toBeTruthy();
+    expect(within(moreRoomActions).getByRole("link", { name: "Check evidence" })).toBeTruthy();
     const discussionActionsText =
       discussionActions.textContent ?? "";
     expect(discussionActionsText).not.toContain("Updates discussion");

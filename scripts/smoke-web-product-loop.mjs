@@ -300,8 +300,8 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("button", { name: "Send message and continue" }).waitFor();
   await assertDesktopRoomConversationFirstView(page, "discussion room before continuation");
   await assertComposerActionsCompact(page, "discussion room before continuation", {
-    maxActionListHeight: 120,
-    maxButtonHeight: 64
+    maxActionListHeight: 48,
+    maxButtonHeight: 44
   });
   await assertDefaultViewSafety(page, "discussion room before continuation", { providerBaseUrl });
   await assertMobileDiscussionRoomShell(page, "discussion room mobile before continuation");
@@ -420,12 +420,12 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByRole("link", { name: "Check evidence", exact: true }).first().waitFor();
   await page.getByRole("button", { name: "Update answer", exact: true }).first().waitFor();
   await assertComposerActionsCompact(page, "discussion room after continuation", {
-    maxActionListHeight: 240,
-    maxButtonHeight: 64
+    maxActionListHeight: 48,
+    maxButtonHeight: 44
   });
   await assertRoomComposerShellCompact(page, "discussion room after continuation", {
-    maxComposerHeight: 560,
-    maxActionListHeight: 150
+    maxComposerHeight: 210,
+    maxActionListHeight: 48
   });
   await assertDefaultViewSafety(page, "discussion room after continuation", { providerBaseUrl });
 
@@ -781,10 +781,15 @@ async function assertComposerActionsCompact(
 ) {
   const metrics = await page.locator(".du-discussion-actions-room").evaluate((element) => {
     const actionList = element.querySelector(".du-discussion-action-list");
+    const secondaryGroup = element.querySelector(".du-room-secondary-actions");
     const buttons = Array.from(element.querySelectorAll(".du-discussion-action-button"));
 
     return {
       actionListHeight: actionList?.getBoundingClientRect().height ?? 0,
+      actionListOverflow: actionList ? getComputedStyle(actionList).overflow : null,
+      secondaryGroupHeight: secondaryGroup?.getBoundingClientRect().height ?? 0,
+      secondaryGroupOverflowX: secondaryGroup ? getComputedStyle(secondaryGroup).overflowX : null,
+      secondaryGroupCount: secondaryGroup?.querySelectorAll(".du-discussion-action-secondary").length ?? 0,
       buttonHeights: buttons.map((button) => button.getBoundingClientRect().height),
       buttonCount: buttons.length
     };
@@ -795,7 +800,8 @@ async function assertComposerActionsCompact(
   if (
     metrics.buttonCount === 0 ||
     metrics.actionListHeight > maxActionListHeight ||
-    tallestButton > maxButtonHeight
+    tallestButton > maxButtonHeight ||
+    (metrics.secondaryGroupCount > 0 && metrics.secondaryGroupOverflowX !== "auto")
   ) {
     throw new Error(
       `${label} should keep room actions compact, got ${JSON.stringify(metrics)}.`
@@ -806,7 +812,12 @@ async function assertComposerActionsCompact(
 async function assertRoomComposerShellCompact(
   page,
   label,
-  { maxComposerHeight = 540, maxCopyHeight = 88, maxActionListHeight = 96 } = {}
+  {
+    maxComposerHeight = 210,
+    maxCopyHeight = 48,
+    maxActionListHeight = 48,
+    maxTextareaHeight = 96
+  } = {}
 ) {
   await page.locator(".du-room-composer").waitFor();
   await page.locator(".du-room-composer-copy").waitFor();
@@ -816,6 +827,7 @@ async function assertRoomComposerShellCompact(
     const copy = element.querySelector(".du-room-composer-copy");
     const actionList = element.querySelector(".du-discussion-action-list");
     const messageInput = element.querySelector(".du-room-message-input textarea");
+    const secondaryGroup = element.querySelector(".du-room-secondary-actions");
     const details = element.querySelector(".du-continuation-details");
     const avatar = element.querySelector(".du-room-composer-avatar");
     const rect = element.getBoundingClientRect();
@@ -828,6 +840,9 @@ async function assertRoomComposerShellCompact(
       composerHeight: rect.height,
       copyHeight: copy?.getBoundingClientRect().height ?? 0,
       actionListHeight: actionList?.getBoundingClientRect().height ?? 0,
+      textareaHeight: messageInput?.getBoundingClientRect().height ?? 0,
+      secondaryGroupCount: secondaryGroup?.querySelectorAll(".du-discussion-action-secondary").length ?? 0,
+      secondaryGroupOverflowX: secondaryGroup ? getComputedStyle(secondaryGroup).overflowX : null,
       detailsOpen: Boolean(details?.open),
       continuationDetailsVisible,
       hasAvatar: Boolean(avatar),
@@ -847,6 +862,9 @@ async function assertRoomComposerShellCompact(
     metrics.composerHeight > maxComposerHeight ||
     metrics.copyHeight > maxCopyHeight ||
     metrics.actionListHeight > maxActionListHeight ||
+    metrics.textareaHeight > maxTextareaHeight ||
+    (metrics.actionCount > 1 && metrics.secondaryGroupCount === 0) ||
+    (metrics.secondaryGroupCount > 0 && metrics.secondaryGroupOverflowX !== "auto") ||
     metrics.detailsOpen ||
     metrics.continuationDetailsVisible ||
     !metrics.hasAvatar ||

@@ -2196,6 +2196,7 @@ const ZH_CN_TRANSLATIONS: TranslationMap = {
   "Room actions": "\u8ba8\u8bba\u5ba4\u52a8\u4f5c",
   "Room participants": "\u8ba8\u8bba\u5ba4\u53c2\u4e0e\u8005",
   "Room quick replies": "\u8ba8\u8bba\u5ba4\u5feb\u6377\u56de\u590d",
+  "More room actions": "\u66f4\u591a\u8ba8\u8bba\u5ba4\u52a8\u4f5c",
   "Room conversation": "\u8ba8\u8bba\u5ba4\u5bf9\u8bdd",
   "Quick replies": "\u5feb\u6377\u56de\u590d",
   "Send message to the room": "\u5411\u8ba8\u8bba\u5ba4\u53d1\u9001\u6d88\u606f",

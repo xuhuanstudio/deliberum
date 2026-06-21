@@ -3401,7 +3401,7 @@ function StartRunForm({
               value={roomMessageText}
               onChange={(event) => setRoomMessageText(event.currentTarget.value)}
               placeholder={t("Ask participants to respond to a concern, evidence gap, or next step.")}
-              rows={3}
+              rows={2}
             />
             <p>
               {t(
@@ -3448,7 +3448,11 @@ function StartRunForm({
           </button>
           {continuationView.reviewReady ? (
             isRoomComposer ? (
-              <>
+              <div
+                className="du-room-secondary-actions"
+                role="group"
+                aria-label={t("More room actions")}
+              >
                 <button
                   type="button"
                   className="du-discussion-action-button du-discussion-action-secondary"
@@ -3482,7 +3486,7 @@ function StartRunForm({
                 >
                   <strong>{t("Check evidence")}</strong>
                 </Link>
-              </>
+              </div>
             ) : isOutcomeActions ? (
               <button
                 type="button"

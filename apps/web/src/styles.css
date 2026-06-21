@@ -495,24 +495,33 @@ textarea:focus-visible {
   padding: 8px 12px;
 }
 
+.du-room-composer-copy .du-kicker {
+  display: none;
+}
+
 .du-room-message-input {
   display: grid;
   grid-column: 2;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
   max-width: 720px;
 }
 
 .du-room-message-input label {
-  color: var(--du-ink);
-  font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1.2;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .du-room-message-input textarea {
   width: 100%;
   min-width: 0;
+  min-height: 56px;
+  max-height: 132px;
   resize: vertical;
   border: 1px solid var(--du-line);
   border-radius: 8px;
@@ -531,10 +540,7 @@ textarea:focus-visible {
 }
 
 .du-room-message-input p {
-  margin: 0;
-  color: var(--du-muted);
-  font-size: 0.76rem;
-  line-height: 1.35;
+  display: none;
 }
 
 .du-discussion-actions-room .du-discussion-actions-heading h4 {
@@ -561,29 +567,33 @@ textarea:focus-visible {
 }
 
 .du-discussion-actions-room .du-discussion-action-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   grid-column: 2;
   gap: 6px;
-  width: fit-content;
+  align-items: center;
+  width: 100%;
   max-width: 100%;
-  border: 1px solid var(--du-line);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.84);
-  padding: 5px;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .du-discussion-actions-room .du-discussion-action-button {
   display: inline-flex;
+  flex: 0 0 auto;
   width: fit-content;
-  min-height: 34px;
+  min-height: 32px;
   align-items: center;
   justify-content: center;
   gap: 6px;
   border: 1px solid transparent;
   border-radius: 999px;
-  padding: 7px 11px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.du-discussion-actions-room .du-discussion-action-list > .du-discussion-action-button:first-child {
+  min-height: 36px;
+  padding: 7px 12px;
 }
 
 .du-discussion-actions-room .du-discussion-action-secondary {
@@ -602,6 +612,15 @@ textarea:focus-visible {
 
 .du-discussion-actions-room .du-discussion-action-secondary small {
   color: var(--du-muted);
+}
+
+.du-room-secondary-actions {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 1px 1px 3px;
+  scrollbar-width: thin;
 }
 
 .du-room-composer-note {
@@ -672,10 +691,9 @@ textarea:focus-visible {
   }
 
   .du-discussion-actions-room .du-discussion-action-list {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    grid-template-columns: auto minmax(0, 1fr);
+    overflow: hidden;
     padding-bottom: 2px;
-    scrollbar-width: thin;
   }
 
   .du-discussion-actions-room .du-discussion-action-button {
@@ -2244,7 +2262,7 @@ textarea:focus-visible {
 
 .du-room-chat-shell {
   display: grid;
-  grid-template-rows: auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   min-height: clamp(420px, calc(100vh - 268px), 640px);
   overflow: visible;
   border: 1px solid var(--du-line);
