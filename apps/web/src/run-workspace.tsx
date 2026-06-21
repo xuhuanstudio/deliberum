@@ -5588,6 +5588,7 @@ function RoomActivityMessage({
     round,
     topicLanguage
   );
+  const threadCue = selectRoomActivityThreadCue(activity, addressLine, replyLine);
   const displayAction = describeRoomActivityDisplayAction(activity, round, topicLanguage);
   const displayDetail = describeRoomActivityDisplayDetail(activity, round, topicLanguage);
   const roomSpeaker = isRoomSpeaker(activity.speaker);
@@ -5617,29 +5618,19 @@ function RoomActivityMessage({
           <div className="du-room-activity-bubble" aria-label={`${speakerLabel}: ${detailText}`}>
             <div className="du-room-message-header">
               <strong>{speakerLabel}</strong>
-              <small className="du-room-message-context">
+              <small className="du-room-message-context du-sr-only">
                 <span>{formatRoomContributionText(t, topicLanguage, displayAction)}</span>
                 <span aria-hidden="true">·</span>
                 <span>{formatRoomContributionText(t, topicLanguage, conversationCue)}</span>
               </small>
             </div>
-            {addressLine ? (
-              <p className="du-room-message-address">
+            {threadCue ? (
+              <p className="du-room-message-thread-cue">
                 {formatRoomContributionText(
                   t,
                   topicLanguage,
-                  addressLine.text,
-                  translateRoomActivityValues(t, addressLine.values)
-                )}
-              </p>
-            ) : null}
-            {replyLine ? (
-              <p className="du-room-message-reply">
-                {formatRoomContributionText(
-                  t,
-                  topicLanguage,
-                  replyLine.text,
-                  translateRoomActivityValues(t, replyLine.values)
+                  threadCue.text,
+                  translateRoomActivityValues(t, threadCue.values)
                 )}
               </p>
             ) : null}
@@ -5657,29 +5648,19 @@ function RoomActivityMessage({
           <div className="du-room-activity-bubble" aria-label={`${speakerLabel}: ${detailText}`}>
             <div className="du-room-message-header">
               <strong>{speakerLabel}</strong>
-              <small className="du-room-message-context">
+              <small className="du-room-message-context du-sr-only">
                 <span>{formatRoomContributionText(t, topicLanguage, displayAction)}</span>
                 <span aria-hidden="true">·</span>
                 <span>{formatRoomContributionText(t, topicLanguage, conversationCue)}</span>
               </small>
             </div>
-            {addressLine ? (
-              <p className="du-room-message-address">
+            {threadCue ? (
+              <p className="du-room-message-thread-cue">
                 {formatRoomContributionText(
                   t,
                   topicLanguage,
-                  addressLine.text,
-                  translateRoomActivityValues(t, addressLine.values)
-                )}
-              </p>
-            ) : null}
-            {replyLine ? (
-              <p className="du-room-message-reply">
-                {formatRoomContributionText(
-                  t,
-                  topicLanguage,
-                  replyLine.text,
-                  translateRoomActivityValues(t, replyLine.values)
+                  threadCue.text,
+                  translateRoomActivityValues(t, threadCue.values)
                 )}
               </p>
             ) : null}
@@ -5689,6 +5670,57 @@ function RoomActivityMessage({
       )}
     </li>
   );
+}
+
+type RoomActivityThreadLine = {
+  text: string;
+  values?: Record<string, string | number>;
+};
+
+function selectRoomActivityThreadCue(
+  activity: RoomActivityItem,
+  addressLine: RoomActivityThreadLine | null,
+  replyLine: RoomActivityThreadLine | null
+): RoomActivityThreadLine | null {
+  if (isRoomSpeaker(activity.speaker) || isUserSpeaker(activity.speaker)) {
+    return null;
+  }
+
+  if (!addressLine) {
+    return replyLine;
+  }
+
+  if (!replyLine) {
+    return addressLine;
+  }
+
+  if (activity.sourceType === "sealed_contribution_submitted") {
+    return addressLine.values?.speaker ? addressLine : replyLine;
+  }
+
+  if (
+    activity.sourceType === "synthetic_round_handoff" ||
+    activity.sourceType === "extraction_proposed" ||
+    activity.sourceType === "proposal_accepted" ||
+    activity.sourceType === "synthetic_pending_objection_review" ||
+    activity.sourceType === "synthetic_pending_evidence_review" ||
+    activity.sourceType === "final_candidate_proposed" ||
+    activity.sourceType === "final_audit_recorded"
+  ) {
+    return replyLine;
+  }
+
+  if (
+    activity.sourceType === "synthetic_strong_option_reply" ||
+    activity.sourceType === "proposal_challenged" ||
+    activity.sourceType === "synthetic_open_disagreement" ||
+    activity.sourceType === "evidence_result_recorded" ||
+    activity.sourceType === "synthetic_evidence_gap_review"
+  ) {
+    return addressLine.values?.speaker ? addressLine : replyLine;
+  }
+
+  return addressLine;
 }
 
 function DiscussionRoomProgressDetails({

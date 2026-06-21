@@ -2954,6 +2954,10 @@ textarea:focus-visible {
   line-height: 1.25;
 }
 
+.du-room-message-context.du-sr-only {
+  display: block;
+}
+
 .du-room-activity-item[data-speaker="participant"] .du-room-message-context {
   color: #7a5a25;
 }
@@ -2978,6 +2982,21 @@ textarea:focus-visible {
   padding: 2px 8px;
 }
 
+.du-room-message-thread-cue {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  border-left: 3px solid #d7e9df;
+  background: #f6fbf8;
+  border-radius: 6px;
+  color: var(--du-muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.22;
+  padding: 3px 8px;
+}
+
 .du-room-message-address {
   width: fit-content;
   max-width: 100%;
@@ -2997,6 +3016,12 @@ textarea:focus-visible {
   color: #6f4f19;
 }
 
+.du-room-activity-item[data-speaker="participant"] .du-room-message-thread-cue {
+  border-left-color: #e4d6bd;
+  background: #fffaf0;
+  color: #6f4f19;
+}
+
 .du-room-activity-item[data-speaker="user"] .du-room-message-address {
   justify-self: end;
   border-color: #cfe7dd;
@@ -3006,6 +3031,12 @@ textarea:focus-visible {
 }
 
 .du-room-activity-item[data-speaker="user"] .du-room-message-reply {
+  justify-self: end;
+  border-left-color: #cfe7dd;
+  text-align: right;
+}
+
+.du-room-activity-item[data-speaker="user"] .du-room-message-thread-cue {
   justify-self: end;
   border-left-color: #cfe7dd;
   text-align: right;

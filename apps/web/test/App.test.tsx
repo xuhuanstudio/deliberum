@@ -4900,7 +4900,7 @@ describe("@deliberum/web shell", () => {
         "\u53c2\u4e0e\u8005\u5148\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5\uff1b\u7136\u540e\u7ec4\u7ec7\u8005\u3001\u8d28\u7591\u8005\u548c\u8bc1\u636e\u68c0\u67e5\u8005\u4ee5\u804a\u5929\u5f0f\u56de\u590d\u52a0\u5165\u3002"
       )
     ).toBeTruthy();
-    expect(screen.getAllByText("\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("\u56de\u5e94\u8ba8\u8bba\u7b80\u62a5").length).toBeGreaterThan(0);
     expect(screen.getByText("\u5206\u4eab\u4e86\u8ba8\u8bba\u7b80\u62a5")).toBeTruthy();
     expect(screen.getByText("\u63d0\u4ea4\u4e86\u5c01\u5b58\u7684\u521d\u59cb\u56de\u5e94")).toBeTruthy();
     expect(
@@ -6042,7 +6042,6 @@ describe("@deliberum/web shell", () => {
     expect(firstDiscussionRoundText).toContain(
       "I would keep this option in the room for comparison: Candidate A"
     );
-    expect(firstDiscussionRoundText).toContain("To the room's current question");
     expect(firstDiscussionRoundText).toContain("Putting one option into the room for review");
     expect(firstDiscussionRoundText).toContain("Replying to First viewpoint's latest point");
     expect(firstDiscussionRoundText).toContain("Checking evidence behind First viewpoint's claim");
@@ -6134,26 +6133,30 @@ describe("@deliberum/web shell", () => {
     const firstRoomMessageHeader = firstRoomMessage?.querySelector(".du-room-message-header");
     const firstRoomMessageDetail = firstRoomMessage?.querySelector(".du-room-message-detail");
     const firstRoomMessageContext = firstRoomMessage?.querySelector(".du-room-message-context");
-    const firstRoomMessageAddress = firstRoomMessage?.querySelector(".du-room-message-address");
-    const firstRoomMessageReply = firstRoomMessage?.querySelector(".du-room-message-reply");
+    const firstRoomMessageThreadCue = firstRoomMessage?.querySelector(
+      ".du-room-message-thread-cue"
+    );
     expect(firstRoomMessageHeader).toBeTruthy();
     expect(firstRoomMessageDetail).toBeTruthy();
     expect(firstRoomMessageContext).toBeTruthy();
-    expect(firstRoomMessageAddress).toBeTruthy();
-    expect(firstRoomMessageReply).toBeTruthy();
+    expect(firstRoomMessageThreadCue).toBeTruthy();
     expect(firstRoomMessageHeader?.contains(firstRoomMessageContext as Node)).toBe(true);
     expect(firstRoomMessageContext?.tagName).toBe("SMALL");
-    expect(firstRoomMessageAddress?.previousElementSibling).toBe(firstRoomMessageHeader);
-    expect(firstRoomMessageReply?.previousElementSibling).toBe(firstRoomMessageAddress);
-    expect(firstRoomMessageDetail?.previousElementSibling).toBe(firstRoomMessageReply);
-    expect(firstRoomMessageAddress?.textContent ?? "").toContain("To the discussion brief");
+    expect(firstRoomMessageContext?.classList.contains("du-sr-only")).toBe(true);
+    expect(firstRoomMessageThreadCue?.previousElementSibling).toBe(firstRoomMessageHeader);
+    expect(firstRoomMessageDetail?.previousElementSibling).toBe(firstRoomMessageThreadCue);
+    expect(firstRoomMessageThreadCue?.textContent ?? "").toContain(
+      "Replying to the discussion brief before seeing other participants"
+    );
     expect(firstRoomMessageContext?.textContent ?? "").toContain(
       "Submitted a sealed first response"
     );
     expect(firstRoomMessageContext?.textContent ?? "").toContain(
       "Responding to the discussion brief"
     );
-    expect(document.querySelectorAll(".du-room-message-reply").length).toBeGreaterThan(0);
+    expect(document.querySelector(".du-room-message-address")).toBeNull();
+    expect(document.querySelector(".du-room-message-reply")).toBeNull();
+    expect(document.querySelectorAll(".du-room-message-thread-cue").length).toBeGreaterThan(0);
     expect(
       screen.getByText("Replying to the discussion brief before seeing other participants")
     ).toBeTruthy();
@@ -6640,9 +6643,6 @@ describe("@deliberum/web shell", () => {
     expect(
       screen.getAllByText("Building on First viewpoint's first response").length
     ).toBeGreaterThan(0);
-    expect(screen.getAllByText("To the participant first responses").length).toBeGreaterThan(0);
-    expect(screen.getByText("To the organized options")).toBeTruthy();
-    expect(screen.getByText("To the draft conclusion")).toBeTruthy();
     expect(screen.getByText("Keeping the organized options in the room for review")).toBeTruthy();
     expect(
       screen.getByText("Synthesizing perspectives, disagreements, and evidence checks")
@@ -6838,9 +6838,6 @@ describe("@deliberum/web shell", () => {
       "Round one adds a separate concern about evidence quality."
     );
     expect(roundOne.textContent ?? "").toContain(
-      "Adding a separate first response alongside First viewpoint"
-    );
-    expect(roundOne.textContent ?? "").toContain(
       "Independent reply now compared with First viewpoint"
     );
     expect(roundOne.textContent ?? "").toContain("Connected the first responses");
@@ -6867,7 +6864,6 @@ describe("@deliberum/web shell", () => {
     expect(roundTwo.textContent ?? "").toContain("Answered another participant");
     expect(roundTwo.textContent ?? "").toContain("Responding to another participant");
     expect(roundTwo.textContent ?? "").toContain("To another participant's latest reply");
-    expect(roundTwo.textContent ?? "").toContain("Continuing the round as a direct reply");
     expect(roundTwo.textContent ?? "").toContain(
       "I'm responding to Alternative viewpoint while keeping my latest position in the room: Round two adds rollback gates before any wider rollout."
     );
@@ -6875,9 +6871,6 @@ describe("@deliberum/web shell", () => {
       "I'm responding to First viewpoint while keeping my latest position in the room: Round two responds that evidence should be checked before launch."
     );
     expect(roundTwo.textContent ?? "").toContain("Building on the follow-up replies");
-    expect(roundTwo.textContent ?? "").toContain(
-      "Replying in round 2 to the previous room state"
-    );
     expect(roundTwo.textContent ?? "").toContain("Responding to the previous discussion round");
     expect(roundTwo.textContent ?? "").not.toContain("Responding to the discussion brief");
     expect(roundTwo.textContent ?? "").not.toContain("Opened independent first responses");
@@ -6891,7 +6884,6 @@ describe("@deliberum/web shell", () => {
     expect(roundTwo.textContent ?? "").toContain(
       "Responding after the follow-up replies were revealed"
     );
-    expect(roundTwo.textContent ?? "").toContain("To the latest participant replies");
     expect(roundTwo.textContent ?? "").toContain(
       "The latest replies were organized into updated options, disagreements, requirements, and evidence needs."
     );
@@ -6899,13 +6891,7 @@ describe("@deliberum/web shell", () => {
     expect(roundTwo.textContent ?? "").toContain(
       "Replying in round 2 to First viewpoint's latest reply"
     );
-    expect(roundTwo.textContent ?? "").toContain(
-      "Responding to First viewpoint's latest reply in the follow-up round"
-    );
     expect(roundTwo.textContent ?? "").toContain("Replying to First viewpoint's latest point");
-    expect(roundTwo.textContent ?? "").toContain(
-      "Replying to First viewpoint's option with an open disagreement"
-    );
     expect(roundTwo.textContent ?? "").toContain("Checking evidence behind First viewpoint's claim");
     expect((document.querySelector(".du-room-layout")?.textContent ?? "")).not.toContain(
       "round-two-opened"

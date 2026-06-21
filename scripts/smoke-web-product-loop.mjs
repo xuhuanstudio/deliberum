@@ -403,11 +403,8 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
   await page.getByText("Shared a strongest current option").first().waitFor();
   await page.getByText("Sharing a strongest current option").first().waitFor();
   await page.getByText("Replying to First viewpoint's latest point").first().waitFor();
-  await page
-    .getByText("Replying to First viewpoint's option with an open disagreement")
-    .first()
-    .waitFor();
   await page.getByText("Checking evidence behind First viewpoint's claim").first().waitFor();
+  await assertRoomTimelineMessageCuesCompact(page, "discussion room after continuation");
   await assertRoomReportDetailsHidden(page, "discussion room output summary");
   await page.getByText("Current answer: Ready to review").waitFor();
   await page.locator(".du-room-focus").getByText("Needs checking", { exact: true }).waitFor();
@@ -1109,6 +1106,23 @@ async function assertRoomConversationShellAfterMessages(page, label) {
       messageContextCount: document.querySelectorAll(
         ".du-room-activity-item[data-speaker='participant'] .du-room-message-context"
       ).length,
+      visibleMessageContextCount: Array.from(
+        document.querySelectorAll(
+          ".du-room-activity-item[data-speaker='participant'] .du-room-message-context"
+        )
+      ).filter((element) => {
+        const style = getComputedStyle(element);
+        return style.position !== "absolute" && style.display !== "none";
+      }).length,
+      threadCueCount: document.querySelectorAll(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-thread-cue"
+      ).length,
+      addressCueCount: document.querySelectorAll(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-address"
+      ).length,
+      replyCueCount: document.querySelectorAll(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-reply"
+      ).length,
       messageActionChipCount: document.querySelectorAll(
         ".du-room-activity-item[data-speaker='participant'] .du-room-message-action"
       ).length,
@@ -1129,6 +1143,10 @@ async function assertRoomConversationShellAfterMessages(page, label) {
     metrics.firstParticipant.top < 0 ||
     metrics.firstParticipant.bottom > metrics.viewportHeight + 32 ||
     metrics.messageContextCount < 1 ||
+    metrics.visibleMessageContextCount !== 0 ||
+    metrics.threadCueCount < 1 ||
+    metrics.addressCueCount !== 0 ||
+    metrics.replyCueCount !== 0 ||
     metrics.messageActionChipCount !== 0 ||
     metrics.messagePhaseChipCount !== 0 ||
     metrics.outputSummaryOpen ||
@@ -1138,6 +1156,64 @@ async function assertRoomConversationShellAfterMessages(page, label) {
   ) {
     throw new Error(
       `${label} should show participant messages as the first-view room conversation, got ${JSON.stringify(
+        metrics
+      )}.`
+    );
+  }
+}
+
+async function assertRoomTimelineMessageCuesCompact(page, label) {
+  const metrics = await page.locator("#room-conversation-transcript").evaluate((root) => {
+    const isVisible = (element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+
+      return (
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        style.position !== "absolute" &&
+        rect.width > 1 &&
+        rect.height > 1
+      );
+    };
+
+    const participantMessages = root.querySelectorAll(
+      ".du-room-activity-item[data-speaker='participant'] .du-room-activity-bubble"
+    );
+    const userThreadCues = root.querySelectorAll(
+      ".du-room-activity-item[data-speaker='user'] .du-room-message-thread-cue"
+    );
+    const threadCues = Array.from(
+      root.querySelectorAll(
+        ".du-room-activity-item[data-speaker='participant'] .du-room-message-thread-cue"
+      )
+    ).map((cue) => cue.textContent?.replace(/\s+/g, " ").trim() ?? "");
+    const visibleContexts = Array.from(
+      root.querySelectorAll(".du-room-message-context")
+    ).filter(isVisible);
+
+    return {
+      participantMessageCount: participantMessages.length,
+      threadCueCount: threadCues.length,
+      visibleContextCount: visibleContexts.length,
+      addressCueCount: root.querySelectorAll(".du-room-message-address").length,
+      replyCueCount: root.querySelectorAll(".du-room-message-reply").length,
+      userThreadCueCount: userThreadCues.length,
+      sampleThreadCues: threadCues.slice(0, 8)
+    };
+  });
+
+  if (
+    metrics.participantMessageCount === 0 ||
+    metrics.threadCueCount === 0 ||
+    metrics.threadCueCount > metrics.participantMessageCount ||
+    metrics.visibleContextCount !== 0 ||
+    metrics.addressCueCount !== 0 ||
+    metrics.replyCueCount !== 0 ||
+    metrics.userThreadCueCount !== 0
+  ) {
+    throw new Error(
+      `${label} should show one lightweight reply cue per participant message without visible metadata chips, got ${JSON.stringify(
         metrics
       )}.`
     );
