@@ -216,6 +216,7 @@ This command starts an isolated local service and Web UI, configures the provide
 - [Technology Stack](docs/TECH_STACK.md)
 - [Basic Product Loop Completion Matrix](docs/BASIC_PRODUCT_LOOP.md)
 - [v1.2.0 Release Checklist](docs/V1_2_0_RELEASE_CHECKLIST.md)
+- [v1.2.0 Release Notes](docs/V1_2_0_RELEASE_NOTES.md)
 - [v0.1 Open Beta Completion Report](docs/V0_1_OPEN_BETA_COMPLETION_REPORT.md)
 - [v1.0 Production Readiness Matrix](docs/V1_0_PRODUCTION_READINESS_MATRIX.md)
 - [v1.0 Web Product Coherence Audit](docs/V1_0_WEB_PRODUCT_COHERENCE_AUDIT.md)

@@ -254,6 +254,7 @@ production database support. For trusted-team or remote pre-production hardening
 
 - Product path and acceptance checklist: [Basic Product Loop Completion Matrix](BASIC_PRODUCT_LOOP.md).
 - v1.2.0 release-candidate gate: [v1.2.0 Release Checklist](V1_2_0_RELEASE_CHECKLIST.md).
+- v1.2.0 release-candidate notes: [v1.2.0 Release Notes](V1_2_0_RELEASE_NOTES.md).
 - Local/pre-production deployment: [Deployment](DEPLOYMENT.md).
 - Discussion Room walkthrough: [Web Discussion Room Walkthrough](WEB_DISCUSSION_ROOM_WALKTHROUGH.md).
 - Architecture details: [Architecture](ARCHITECTURE.md).

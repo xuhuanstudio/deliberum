@@ -222,6 +222,7 @@ corepack pnpm smoke:compose
 
 - 产品主路径验收清单：[Basic Product Loop Completion Matrix](../BASIC_PRODUCT_LOOP.md)。
 - v1.2.0 发布候选门槛：[v1.2.0 Release Checklist](../V1_2_0_RELEASE_CHECKLIST.md)。
+- v1.2.0 发布候选说明：[v1.2.0 Release Notes](../V1_2_0_RELEASE_NOTES.md)。
 - 本地或预生产部署：[Deployment](../DEPLOYMENT.md)。
 - Discussion Room 走查：[Web Discussion Room Walkthrough](../WEB_DISCUSSION_ROOM_WALKTHROUGH.md)。
 - 架构细节：[Architecture](../ARCHITECTURE.md)。
