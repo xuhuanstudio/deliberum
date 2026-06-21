@@ -71,8 +71,8 @@ or provider-family infrastructure.
 - A v1.2.0 release checklist now tracks the eight release criteria for the
   local-first product loop.
 - README, Getting Started, and the Simplified Chinese Getting Started guide now
-  describe the current v1.2.0 release-candidate source-checkout platform scope:
-  macOS, Ubuntu Linux, and native Windows.
+  describe the v1.2.0 source-checkout platform scope: macOS, Ubuntu Linux, and
+  native Windows.
 
 ## Supported Source-Checkout Path
 
@@ -112,8 +112,8 @@ Source-checkout path:
   during TLS setup before the repository could be cloned.
 - As a fallback, an isolated source checkout was created with
   `git clone --no-local` from the repository root.
-- The isolated checkout resolved to the release-candidate `main` commit with a
-  clean tracked worktree.
+- The isolated checkout resolved to the release-preparation `main` commit with
+  a clean tracked worktree.
 - The isolated checkout passed:
   - `node scripts/check-local-prerequisites.mjs`
   - `sh scripts/start-local-product.sh --dry-run`
@@ -137,6 +137,22 @@ Real OpenAI-compatible provider release-readiness:
 
 Exact provider keys, base URLs, model names, raw provider responses, and model
 output were intentionally omitted from docs and logs.
+
+Post-tag source-checkout smoke:
+
+- A fresh GitHub checkout of `v1.2.0` resolved exactly to
+  `b59607d58a5b2c3d36373b95fb43aa95cab72708`.
+- `git describe --tags --exact-match` returned `v1.2.0`.
+- The checkout passed:
+  - `node scripts/check-local-prerequisites.mjs`
+  - `sh scripts/start-local-product.sh --dry-run`
+  - `node scripts/start-local-product.mjs --dry-run`
+  - `corepack pnpm install --frozen-lockfile`
+  - `corepack pnpm doctor:local`
+  - `corepack pnpm build`
+  - `corepack pnpm smoke:local-bootstrap`
+  - `corepack pnpm smoke:local-start`
+  - `corepack pnpm smoke:web-product-loop`
 
 ## Not Claimed
 

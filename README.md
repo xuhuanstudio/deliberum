@@ -96,7 +96,7 @@ Prerequisites:
 - Corepack;
 - pnpm 11 through Corepack.
 
-Supported source-checkout platforms for the current v1.2.0 release candidate:
+Supported source-checkout platforms for v1.2.0:
 
 - macOS with Node.js 24 or newer and Corepack-managed pnpm 11;
 - Ubuntu Linux with Node.js 24 or newer and Corepack-managed pnpm 11;
@@ -106,9 +106,7 @@ GitHub CI verifies the Ubuntu Linux path through the main `Validate` job, which
 runs the full local-start smoke, and verifies macOS plus native Windows through
 the dedicated `Local start` platform jobs. WSL2 may work with the same Node.js
 and pnpm requirements, but it is not a v1.2.0 supported platform until the
-local-start path is verified in CI. The latest published release is still
-v1.1.4 until the v1.2.0 release-candidate checklist, release notes, source
-checkout verification, and tag/release steps are completed.
+local-start path is verified in CI. The latest published release is v1.2.0.
 
 Recommended first run from the repository root on macOS or Ubuntu Linux:
 

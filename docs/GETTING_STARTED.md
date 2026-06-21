@@ -29,8 +29,8 @@ Developer Mode.
 
 GitHub CI verifies the Ubuntu Linux path through the main `Validate` job, which
 runs the full local-start smoke, and verifies macOS plus native Windows through
-the dedicated `Local start` platform jobs. For the current v1.2.0 release
-candidate, the supported source-checkout platforms are macOS, Ubuntu Linux, and
+the dedicated `Local start` platform jobs. For v1.2.0, the supported
+source-checkout platforms are macOS, Ubuntu Linux, and
 native Windows. WSL2 may work, but it is not a v1.2.0 supported platform until
 the local-start path is verified in CI.
 
@@ -253,10 +253,10 @@ production database support. For trusted-team or remote pre-production hardening
 ## Where to Go Next
 
 - Product path and acceptance checklist: [Basic Product Loop Completion Matrix](BASIC_PRODUCT_LOOP.md).
-- v1.2.0 release-candidate gate: [v1.2.0 Release Checklist](V1_2_0_RELEASE_CHECKLIST.md).
-- v1.2.0 release-candidate notes: [v1.2.0 Release Notes](V1_2_0_RELEASE_NOTES.md).
+- v1.2.0 release gate and evidence: [v1.2.0 Release Checklist](V1_2_0_RELEASE_CHECKLIST.md).
+- Latest published release scope: [v1.2.0 Release Notes](V1_2_0_RELEASE_NOTES.md).
 - Local/pre-production deployment: [Deployment](DEPLOYMENT.md).
 - Discussion Room walkthrough: [Web Discussion Room Walkthrough](WEB_DISCUSSION_ROOM_WALKTHROUGH.md).
 - Architecture details: [Architecture](ARCHITECTURE.md).
-- Latest published release scope: [v1.1.4 Release Notes](V1_1_4_RELEASE_NOTES.md).
+- Previous release scope: [v1.1.4 Release Notes](V1_1_4_RELEASE_NOTES.md).
 - v1.0 historical scope: [v1.0 Release Notes](V1_0_RELEASE_NOTES.md).

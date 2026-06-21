@@ -20,9 +20,9 @@ Deliberum 是一个本地优先的多视角审议产品。你输入一个问题�
 
 GitHub CI 现在通过主 `Validate` job 覆盖 Ubuntu Linux 的完整本地启动
 smoke，并通过专门的 `Local start` 平台 job 覆盖 macOS 和原生 Windows。
-对于当前 v1.2.0 发布候选版本，已支持的源码仓库启动平台是 macOS、
-Ubuntu Linux 和原生 Windows。WSL2 可能可以运行，但在本地启动路径进入
-CI 验证前，不属于 v1.2.0 支持平台。
+对于 v1.2.0，已支持的源码仓库启动平台是 macOS、Ubuntu Linux 和原生
+Windows。WSL2 可能可以运行，但在本地启动路径进入 CI 验证前，不属于
+v1.2.0 支持平台。
 
 ## 1. 启动本地产品
 
@@ -221,10 +221,10 @@ corepack pnpm smoke:compose
 ## 接下来读什么
 
 - 产品主路径验收清单：[Basic Product Loop Completion Matrix](../BASIC_PRODUCT_LOOP.md)。
-- v1.2.0 发布候选门槛：[v1.2.0 Release Checklist](../V1_2_0_RELEASE_CHECKLIST.md)。
-- v1.2.0 发布候选说明：[v1.2.0 Release Notes](../V1_2_0_RELEASE_NOTES.md)。
+- v1.2.0 发布门槛和证据：[v1.2.0 Release Checklist](../V1_2_0_RELEASE_CHECKLIST.md)。
+- 最新已发布范围：[v1.2.0 Release Notes](../V1_2_0_RELEASE_NOTES.md)。
 - 本地或预生产部署：[Deployment](../DEPLOYMENT.md)。
 - Discussion Room 走查：[Web Discussion Room Walkthrough](../WEB_DISCUSSION_ROOM_WALKTHROUGH.md)。
 - 架构细节：[Architecture](../ARCHITECTURE.md)。
-- 最新已发布范围：[v1.1.4 Release Notes](../V1_1_4_RELEASE_NOTES.md)。
+- 上一个发布范围：[v1.1.4 Release Notes](../V1_1_4_RELEASE_NOTES.md)。
 - v1.0 历史范围：[v1.0 Release Notes](../V1_0_RELEASE_NOTES.md)。
