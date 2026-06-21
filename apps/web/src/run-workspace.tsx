@@ -4476,11 +4476,11 @@ function createStartResultStageConversationActivities(
           : localizeTopicLanguageDetail(
               topicLanguage,
               round > 1
-                ? "I'm responding to the latest room state with a follow-up view that can be compared against the earlier replies."
-                : "I put an independent answer into the room so it can be compared before anyone converges too early.",
+                ? "Adding a follow-up view for comparison."
+                : "Adding an independent answer for comparison.",
               round > 1
-                ? "\u6211\u6b63\u5728\u56de\u5e94\u6700\u65b0\u623f\u95f4\u72b6\u6001\uff0c\u5e76\u63d0\u4f9b\u4e00\u4e2a\u53ef\u4e0e\u5148\u524d\u53d1\u8a00\u5bf9\u7167\u7684\u8ffd\u52a0\u89c6\u89d2\u3002"
-                : "\u6211\u628a\u4e00\u4efd\u72ec\u7acb\u7b54\u6848\u653e\u5165\u8ba8\u8bba\u5ba4\uff0c\u8fd9\u6837\u5927\u5bb6\u5728\u8fc7\u65e9\u6536\u655b\u524d\u53ef\u4ee5\u5148\u5bf9\u7167\u6bd4\u8f83\u3002"
+                ? "\u8865\u5145\u4e00\u4e2a\u53ef\u4f9b\u5bf9\u7167\u7684\u8ffd\u52a0\u89c6\u89d2\u3002"
+                : "\u8865\u5145\u4e00\u4e2a\u53ef\u4f9b\u5bf9\u7167\u7684\u72ec\u7acb\u7b54\u6848\u3002"
             ),
         tone,
         phase: "first-responses",
@@ -4503,11 +4503,11 @@ function createStartResultStageConversationActivities(
           : localizeTopicLanguageDetail(
               topicLanguage,
               round > 1
-                ? "I'm responding to {speaker}'s latest point and keeping a separate follow-up view in the room."
-                : "Now that {speaker}'s answer is visible, I'm keeping a separate view in the room for comparison.",
+                ? "Adding another follow-up view for comparison."
+                : "Adding another independent view for comparison.",
               round > 1
-                ? "\u6211\u6b63\u5728\u56de\u5e94 {speaker} \u7684\u6700\u65b0\u89c2\u70b9\uff0c\u5e76\u628a\u4e00\u4e2a\u72ec\u7acb\u8ffd\u52a0\u89c6\u89d2\u7559\u5728\u623f\u95f4\u4e2d\u3002"
-                : "\u73b0\u5728 {speaker} \u7684\u7b54\u6848\u5df2\u53ef\u89c1\uff0c\u6211\u4f1a\u628a\u53e6\u4e00\u4e2a\u89c6\u89d2\u4fdd\u7559\u5728\u623f\u95f4\u4e2d\u4f9b\u5bf9\u7167\u3002"
+                ? "\u8865\u5145\u53e6\u4e00\u4e2a\u53ef\u4f9b\u5bf9\u7167\u7684\u8ffd\u52a0\u89c6\u89d2\u3002"
+                : "\u8865\u5145\u53e6\u4e00\u4e2a\u53ef\u4f9b\u5bf9\u7167\u7684\u72ec\u7acb\u89c6\u89d2\u3002"
             ),
         detailValues: attentionNeeded ? undefined : { speaker: firstSpeaker },
         tone,
@@ -4532,11 +4532,11 @@ function createStartResultStageConversationActivities(
           : localizeTopicLanguageDetail(
               topicLanguage,
               round > 1
-                ? "I connected the follow-up replies into updated options, unresolved points, must-cover items, and evidence gaps."
-                : "I connected the participant replies into strongest current options, unresolved points, must-cover items, and evidence gaps.",
+                ? "Updated options, unresolved points, must-cover items, and evidence gaps are ready to review."
+                : "Strongest current options, unresolved points, must-cover items, and evidence gaps are ready to review.",
               round > 1
-                ? "\u6211\u628a\u8ffd\u52a0\u56de\u5e94\u8fde\u63a5\u6210\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
-                : "\u6211\u628a\u53c2\u4e0e\u8005\u56de\u5e94\u8fde\u63a5\u6210\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
+                ? "\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u672a\u89e3\u51b3\u70b9\u3001\u5fc5\u987b\u8986\u76d6\u7684\u4e8b\u9879\u548c\u8bc1\u636e\u7f3a\u53e3\u5df2\u53ef\u5ba1\u9605\u3002"
+                : "\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3001\u672a\u89e3\u51b3\u70b9\u3001\u5fc5\u987b\u8986\u76d6\u7684\u4e8b\u9879\u548c\u8bc1\u636e\u7f3a\u53e3\u5df2\u53ef\u5ba1\u9605\u3002"
             ),
         tone,
         phase: "perspectives",
@@ -4560,11 +4560,11 @@ function createStartResultStageConversationActivities(
           : localizeTopicLanguageDetail(
               topicLanguage,
               round > 1
-                ? "I am replying to the updated options with the disagreement that still needs resolution."
-                : "I checked the strongest current option against the disagreements and answer requirements that still matter.",
+                ? "This disagreement still needs resolution before the answer changes."
+                : "This strongest option still needs to satisfy the unresolved points and answer requirements.",
               round > 1
-                ? "\u6211\u6b63\u5728\u9488\u5bf9\u66f4\u65b0\u540e\u7684\u9009\u9879\u63d0\u51fa\u4ecd\u9700\u89e3\u51b3\u7684\u5206\u6b67\u3002"
-                : "\u6211\u5df2\u6839\u636e\u4ecd\u7136\u91cd\u8981\u7684\u5206\u6b67\u548c\u7b54\u6848\u8981\u6c42\u68c0\u67e5\u5f53\u524d\u6700\u5f3a\u9009\u9879\u3002"
+                ? "\u8fd9\u4e2a\u5206\u6b67\u5728\u66f4\u65b0\u7b54\u6848\u524d\u4ecd\u9700\u89e3\u51b3\u3002"
+                : "\u8fd9\u4e2a\u6700\u5f3a\u9009\u9879\u4ecd\u9700\u6ee1\u8db3\u672a\u89e3\u51b3\u70b9\u548c\u7b54\u6848\u8981\u6c42\u3002"
             ),
         tone,
         phase: "perspectives",
@@ -4588,11 +4588,11 @@ function createStartResultStageConversationActivities(
           : localizeTopicLanguageDetail(
               topicLanguage,
               round > 1
-                ? "I am checking the evidence behind this follow-up round before the room updates the conclusion."
-                : "I checked the evidence gaps the room surfaced and kept unresolved verification work visible.",
+                ? "Evidence needs checking before the answer changes."
+                : "These evidence gaps still need to stay visible before anyone relies on the answer.",
               round > 1
-                ? "\u6211\u6b63\u5728\u6838\u67e5\u8fd9\u4e00\u8ffd\u52a0\u8f6e\u80cc\u540e\u7684\u8bc1\u636e\uff0c\u7136\u540e\u8ba8\u8bba\u5ba4\u518d\u66f4\u65b0\u7ed3\u8bba\u3002"
-                : "\u6211\u6838\u67e5\u4e86\u8ba8\u8bba\u5ba4\u63d0\u51fa\u7684\u8bc1\u636e\u7f3a\u53e3\uff0c\u5e76\u4fdd\u7559\u4e86\u5c1a\u672a\u89e3\u51b3\u7684\u6838\u9a8c\u5de5\u4f5c\u3002"
+                ? "\u66f4\u65b0\u7b54\u6848\u524d\uff0c\u8fd8\u9700\u5148\u6838\u67e5\u8bc1\u636e\u3002"
+                : "\u5728\u4efb\u4f55\u4eba\u4f9d\u8d56\u7b54\u6848\u524d\uff0c\u8fd9\u4e9b\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u4fdd\u6301\u53ef\u89c1\u3002"
             ),
         tone,
         phase: "evidence",
@@ -6426,8 +6426,8 @@ function createRoundHandoffActivity(
       action: "Connected the follow-up replies",
       detail: localizeTopicLanguageDetail(
         topicLanguage,
-        "The latest participant replies are visible. I'm connecting them to the prior room state before the room compares updated options, disagreements, and evidence gaps.",
-        "\u6700\u65b0\u53c2\u4e0e\u8005\u56de\u5e94\u5df2\u7ecf\u53ef\u89c1\u3002\u6211\u4f1a\u5148\u628a\u5b83\u4eec\u8fde\u63a5\u5230\u4e4b\u524d\u7684\u8ba8\u8bba\u72b6\u6001\uff0c\u518d\u8ba9\u623f\u95f4\u6bd4\u8f83\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
+        "The follow-up replies are visible. Next, the room can compare updated options, disagreements, and evidence gaps.",
+        "\u8ffd\u52a0\u56de\u5e94\u5df2\u7ecf\u53ef\u89c1\u3002\u63a5\u4e0b\u6765\uff0c\u8ba8\u8bba\u5ba4\u53ef\u4ee5\u6bd4\u8f83\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
       ),
       tone: "neutral",
       phase: "perspectives",
@@ -6441,8 +6441,8 @@ function createRoundHandoffActivity(
     action: "Connected the first responses",
     detail: localizeTopicLanguageDetail(
       topicLanguage,
-      "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps.",
-      "\u521d\u59cb\u56de\u5e94\u5df2\u7ecf\u53ef\u89c1\u3002\u6211\u4f1a\u5148\u628a\u5b83\u4eec\u8fde\u63a5\u8d77\u6765\uff0c\u518d\u8ba9\u623f\u95f4\u6bd4\u8f83\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
+      "The first responses are visible. Next, the room can compare options, disagreements, and evidence gaps.",
+      "\u9996\u6b21\u56de\u5e94\u5df2\u7ecf\u53ef\u89c1\u3002\u63a5\u4e0b\u6765\uff0c\u8ba8\u8bba\u5ba4\u53ef\u4ee5\u6bd4\u8f83\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
     ),
     tone: "neutral",
     phase: "perspectives",
@@ -6520,14 +6520,7 @@ function createParticipantReplyBridgeActivities(
       speaker: activity.speaker,
       title: "Participant replied to another participant",
       action: "Answered another participant",
-      detail:
-        topicLanguage === "zh-CN"
-          ? round > 1
-            ? "\u6211\u5728\u56de\u5e94 {speaker}\uff0c\u5e76\u628a\u6211\u7684\u6700\u65b0\u7acb\u573a\u653e\u56de\u8ba8\u8bba\uff1a{message}"
-            : "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 {speaker}\uff0c\u5e76\u628a\u6211\u7684\u7acb\u573a\u653e\u56de\u8ba8\u8bba\uff1a{message}"
-          : round > 1
-            ? "I'm responding to {speaker} while keeping my latest position in the room: {message}"
-            : "Now that the first responses are visible, I'm responding to {speaker} while keeping my position in the room: {message}",
+      detail: "{message}",
       detailValues: {
         speaker: targetContribution.speaker,
         message
@@ -6683,8 +6676,8 @@ function createPendingReviewRoundActivities(
       action: "Waiting to review disagreements",
       detail: localizeTopicLanguageDetail(
         topicLanguage,
-        "When this round is organized, I will reply with any open disagreement instead of leaving it hidden in a report.",
-        "\u5f53\u672c\u8f6e\u5185\u5bb9\u6574\u7406\u5b8c\u6210\u540e\uff0c\u6211\u4f1a\u628a\u4ecd\u9700\u5904\u7406\u7684\u5206\u6b67\u4f5c\u4e3a\u56de\u590d\u7559\u5728\u8ba8\u8bba\u91cc\uff0c\u800c\u4e0d\u662f\u85cf\u5728\u62a5\u544a\u4e2d\u3002"
+        "I will bring any open disagreement into the room after these replies are organized.",
+        "\u8fd9\u4e9b\u56de\u5e94\u88ab\u6574\u7406\u540e\uff0c\u6211\u4f1a\u628a\u4ecd\u672a\u89e3\u51b3\u7684\u5206\u6b67\u5e26\u56de\u8ba8\u8bba\u5ba4\u3002"
       ),
       tone: "warning",
       phase: "perspectives",
@@ -6696,8 +6689,8 @@ function createPendingReviewRoundActivities(
       action: "Waiting to check evidence",
       detail: localizeTopicLanguageDetail(
         topicLanguage,
-        "When claims are organized, I will reply with evidence gaps or checks before the conclusion changes.",
-        "\u5f53\u4e3b\u5f20\u88ab\u6574\u7406\u51fa\u6765\u540e\uff0c\u6211\u4f1a\u628a\u8bc1\u636e\u7f3a\u53e3\u6216\u6838\u67e5\u7ed3\u679c\u4f5c\u4e3a\u56de\u590d\u7559\u5728\u8ba8\u8bba\u91cc\uff0c\u7136\u540e\u518d\u66f4\u65b0\u7ed3\u8bba\u3002"
+        "I will call out evidence gaps before the room changes the answer.",
+        "\u8ba8\u8bba\u5ba4\u66f4\u65b0\u7b54\u6848\u524d\uff0c\u6211\u4f1a\u5148\u6307\u51fa\u8bc1\u636e\u7f3a\u53e3\u3002"
       ),
       tone: "warning",
       phase: "evidence",
@@ -6746,11 +6739,7 @@ function ensureStrongOptionConversationActivities(
           speaker,
           title: "Strongest option shared",
           action: "Shared a strongest current option",
-          detail: localizeTopicLanguageDetail(
-            topicLanguage,
-            "I would keep this option in the room for comparison: {option}",
-            "\u6211\u4f1a\u628a\u8fd9\u4e2a\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u91cc\u4f9b\u5bf9\u7167\uff1a{option}"
-          ),
+          detail: "{option}",
           detailValues: { option },
           tone: "ok",
           phase: "perspectives",
@@ -7280,13 +7269,13 @@ function describeRoomActivityDisplayDetail(
     return round > 1
       ? localizeTopicLanguageDetail(
           topicLanguage,
-          "The latest replies were organized into updated options, disagreements, requirements, and evidence needs.",
-          "\u6700\u65b0\u56de\u5e94\u5df2\u6574\u7406\u4e3a\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
+          "I grouped the latest replies into updated options, unresolved points, must-cover items, and evidence needs.",
+          "\u6211\u5df2\u628a\u6700\u65b0\u56de\u5e94\u5206\u6210\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u672a\u89e3\u51b3\u70b9\u3001\u5fc5\u987b\u8986\u76d6\u7684\u4e8b\u9879\u548c\u8bc1\u636e\u9700\u6c42\u3002"
         )
       : localizeTopicLanguageDetail(
           topicLanguage,
-          "The first responses were organized into reviewable options, disagreements, requirements, and evidence needs.",
-          "\u9996\u6b21\u56de\u5e94\u5df2\u6574\u7406\u4e3a\u53ef\u5ba1\u9605\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
+          "I grouped the first responses into options, unresolved points, must-cover items, and evidence needs.",
+          "\u6211\u5df2\u628a\u9996\u6b21\u56de\u5e94\u5206\u6210\u9009\u9879\u3001\u672a\u89e3\u51b3\u70b9\u3001\u5fc5\u987b\u8986\u76d6\u7684\u4e8b\u9879\u548c\u8bc1\u636e\u9700\u6c42\u3002"
         );
   }
 

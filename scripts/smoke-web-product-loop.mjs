@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { chromium } from "@playwright/test";
+import { chromium, expect } from "@playwright/test";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const daemonEntry = join(repoRoot, "apps", "daemon", "dist", "index.js");
@@ -344,11 +344,14 @@ async function runBrowserProductLoop(page, { webBaseUrl, providerBaseUrl }) {
     .waitFor();
   await page
     .locator("#room-conversation-transcript")
-    .getByText(
-      /Now that the first responses are visible, I'm responding to (First viewpoint|Alternative viewpoint|Additional viewpoint)/
-    )
+    .getByText("To another participant's latest reply", { exact: true })
     .first()
     .waitFor();
+  await expect(
+    page
+      .locator("#room-conversation-transcript")
+      .getByText(/Now that the first responses are visible, I'm responding/)
+  ).toHaveCount(0);
   await page.locator("#room-conversation-transcript").waitFor();
   await page.getByText("Discussion round 1", { exact: true }).waitFor();
   const conversationTranscript = page.locator("#room-conversation-transcript");

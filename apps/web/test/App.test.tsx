@@ -6039,8 +6039,9 @@ describe("@deliberum/web shell", () => {
     expect(firstDiscussionRound).toBeTruthy();
     expect(firstDiscussionRoundText).toContain("Shared a strongest current option");
     expect(firstDiscussionRoundText).toContain("Sharing a strongest current option");
-    expect(firstDiscussionRoundText).toContain(
-      "I would keep this option in the room for comparison: Candidate A"
+    expect(firstDiscussionRoundText).toContain("Candidate A");
+    expect(firstDiscussionRoundText).not.toContain(
+      "I would keep this option in the room for comparison"
     );
     expect(firstDiscussionRoundText).toContain("Putting one option into the room for review");
     expect(firstDiscussionRoundText).toContain("Replying to First viewpoint's latest point");
@@ -6385,12 +6386,10 @@ describe("@deliberum/web shell", () => {
     expect(updateRoundText).toContain(
       "Preparing to reply with evidence checks"
     );
-    expect(updateRoundText).toContain(
-      "I put an independent answer into the room"
-    );
-    expect(updateRoundText).toContain(
-      "Now that First viewpoint's answer is visible"
-    );
+    expect(updateRoundText).toContain("Adding an independent answer for comparison.");
+    expect(updateRoundText).toContain("Adding another independent view for comparison.");
+    expect(updateRoundText).not.toContain("I put an independent answer into the room");
+    expect(updateRoundText).not.toContain("Now that First viewpoint's answer is visible");
     expect(updateRoundText).toContain("To another participant's latest reply");
     expect(screen.queryByRole("region", { name: "Updated discussion steps" })).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Room update shortcuts" })).toBeNull();
@@ -6603,7 +6602,7 @@ describe("@deliberum/web shell", () => {
     expect(screen.getByText("Responding after the first responses were revealed")).toBeTruthy();
     expect(
       screen.getByText(
-        "The first responses are visible. I'm connecting them before the room compares options, disagreements, and evidence gaps."
+        "The first responses are visible. Next, the room can compare options, disagreements, and evidence gaps."
       )
     ).toBeTruthy();
     const providerSystemMessages = Array.from(
@@ -6843,11 +6842,15 @@ describe("@deliberum/web shell", () => {
     expect(roundOne.textContent ?? "").toContain("Connected the first responses");
     expect(roundOne.textContent ?? "").toContain("Answered another participant");
     expect(roundOne.textContent ?? "").toContain("Responding to another participant");
+    expect(roundOne.textContent ?? "").toContain("To another participant's latest reply");
     expect(roundOne.textContent ?? "").toContain(
-      "Now that the first responses are visible, I'm responding to Alternative viewpoint while keeping my position in the room: Round one says the rollout should remain reversible."
+      "Round one says the rollout should remain reversible."
     );
     expect(roundOne.textContent ?? "").toContain(
-      "Now that the first responses are visible, I'm responding to First viewpoint while keeping my position in the room: Round one adds a separate concern about evidence quality."
+      "Round one adds a separate concern about evidence quality."
+    );
+    expect(roundOne.textContent ?? "").not.toContain(
+      "Now that the first responses are visible, I'm responding"
     );
     const roundTwo = screen.getByRole("list", { name: "Discussion round 2 messages" });
     expect(roundTwo.textContent ?? "").toContain(
@@ -6865,10 +6868,16 @@ describe("@deliberum/web shell", () => {
     expect(roundTwo.textContent ?? "").toContain("Responding to another participant");
     expect(roundTwo.textContent ?? "").toContain("To another participant's latest reply");
     expect(roundTwo.textContent ?? "").toContain(
-      "I'm responding to Alternative viewpoint while keeping my latest position in the room: Round two adds rollback gates before any wider rollout."
+      "Round two adds rollback gates before any wider rollout."
     );
     expect(roundTwo.textContent ?? "").toContain(
-      "I'm responding to First viewpoint while keeping my latest position in the room: Round two responds that evidence should be checked before launch."
+      "Round two responds that evidence should be checked before launch."
+    );
+    expect(roundTwo.textContent ?? "").not.toContain(
+      "I'm responding to Alternative viewpoint while keeping my latest position in the room"
+    );
+    expect(roundTwo.textContent ?? "").not.toContain(
+      "I'm responding to First viewpoint while keeping my latest position in the room"
     );
     expect(roundTwo.textContent ?? "").toContain("Building on the follow-up replies");
     expect(roundTwo.textContent ?? "").toContain("Responding to the previous discussion round");
@@ -6885,7 +6894,7 @@ describe("@deliberum/web shell", () => {
       "Responding after the follow-up replies were revealed"
     );
     expect(roundTwo.textContent ?? "").toContain(
-      "The latest replies were organized into updated options, disagreements, requirements, and evidence needs."
+      "I grouped the latest replies into updated options, unresolved points, must-cover items, and evidence needs."
     );
     expect(roundTwo.textContent ?? "").toContain("Building on Alternative viewpoint's follow-up reply");
     expect(roundTwo.textContent ?? "").toContain(
@@ -7065,20 +7074,16 @@ describe("@deliberum/web shell", () => {
     const roundTwo = await screen.findByRole("list", { name: "Discussion round 2 messages" });
     const roundTwoText = roundTwo.textContent ?? "";
 
-    expect(roundOneText).toContain(
-      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 \u7b2c\u4e00\u89c6\u89d2"
-    );
-    expect(roundOneText).toContain(
-      "\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94 \u66ff\u4ee3\u89c6\u89d2"
-    );
+    expect(roundOneText).toContain("\u5148\u4fdd\u6301\u8bd5\u70b9\uff0c\u4e0d\u8981\u7acb\u5373\u6269\u5927\u3002");
+    expect(roundOneText).toContain("\u5148\u68c0\u67e5\u8bc1\u636e\u7f3a\u53e3\uff0c\u518d\u51b3\u5b9a\u662f\u5426\u6269\u5927\u3002");
     expect(roundOneText).toContain("\u56de\u5e94\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005");
     expect(roundOneText).toContain(
       "\u5bf9\u53e6\u4e00\u4f4d\u53c2\u4e0e\u8005\u7684\u6700\u65b0\u53d1\u8a00"
     );
+    expect(roundOneText).not.toContain("\u9996\u8f6e\u56de\u5e94\u516c\u5f00\u540e\uff0c\u6211\u5728\u56de\u5e94");
     expect(roundOneText).not.toContain("Now that the first responses are visible");
     expect(roundOneText).not.toContain("Responding to another participant");
-    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 \u7b2c\u4e00\u89c6\u89d2");
-    expect(roundTwoText).toContain("\u6211\u5728\u56de\u5e94 \u66ff\u4ee3\u89c6\u89d2");
+    expect(roundTwoText).toContain("\u53ef\u4ee5\u6269\u5927\uff0c\u4f46\u5fc5\u987b\u5148\u8bbe\u7f6e\u56de\u6eda\u95e8\u69db\u3002");
     expect(roundTwoText).toContain(
       "\u6211\u540c\u610f\u8981\u56de\u6eda\u95e8\u69db\uff0c\u4f46\u8fd8\u8981\u5148\u8865\u9f50\u7528\u6237\u5f71\u54cd\u8bc1\u636e\u3002"
     );
@@ -7086,15 +7091,15 @@ describe("@deliberum/web shell", () => {
       "\u623f\u95f4\u4ece\u5f53\u524d\u7b54\u6848\u548c\u5f00\u653e\u95ee\u9898\u7ee7\u7eed\u4e0b\u4e00\u8f6e\u3002"
     );
     expect(roundTwoText).toContain(
-      "\u6700\u65b0\u53c2\u4e0e\u8005\u56de\u5e94\u5df2\u7ecf\u53ef\u89c1\u3002\u6211\u4f1a\u5148\u628a\u5b83\u4eec\u8fde\u63a5\u5230\u4e4b\u524d\u7684\u8ba8\u8bba\u72b6\u6001\uff0c\u518d\u8ba9\u623f\u95f4\u6bd4\u8f83\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
+      "\u8ffd\u52a0\u56de\u5e94\u5df2\u7ecf\u53ef\u89c1\u3002\u63a5\u4e0b\u6765\uff0c\u8ba8\u8bba\u5ba4\u53ef\u4ee5\u6bd4\u8f83\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u548c\u8bc1\u636e\u7f3a\u53e3\u3002"
     );
     expect(roundTwoText).toContain(
-      "\u6700\u65b0\u56de\u5e94\u5df2\u6574\u7406\u4e3a\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u5206\u6b67\u3001\u8981\u6c42\u548c\u8bc1\u636e\u9700\u6c42\u3002"
+      "\u6211\u5df2\u628a\u6700\u65b0\u56de\u5e94\u5206\u6210\u66f4\u65b0\u540e\u7684\u9009\u9879\u3001\u672a\u89e3\u51b3\u70b9\u3001\u5fc5\u987b\u8986\u76d6\u7684\u4e8b\u9879\u548c\u8bc1\u636e\u9700\u6c42\u3002"
     );
     expect(roundTwoText).toContain("\u5206\u4eab\u4e86\u5f53\u524d\u6700\u5f3a\u9009\u9879");
     expect(roundTwoText).toContain("\u5206\u4eab\u5f53\u524d\u6700\u5f3a\u9009\u9879");
     expect(roundTwoText).toContain(
-      "\u6211\u4f1a\u628a\u8fd9\u4e2a\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u91cc\u4f9b\u5bf9\u7167\uff1a\u5148\u4fdd\u6301\u8bd5\u70b9\u5e76\u8bbe\u7f6e\u56de\u6eda\u95e8\u69db"
+      "\u5148\u4fdd\u6301\u8bd5\u70b9\u5e76\u8bbe\u7f6e\u56de\u6eda\u95e8\u69db"
     );
     expect(roundTwoText).toContain("\u56de\u5e94 \u7b2c\u4e00\u89c6\u89d2 \u7684\u6700\u65b0\u89c2\u70b9");
     expect(roundTwoText).toContain(
@@ -7107,6 +7112,8 @@ describe("@deliberum/web shell", () => {
       "1 \u4e2a\u8bc1\u636e\u7f3a\u53e3\u4ecd\u9700\u6838\u67e5\uff0c\u7136\u540e\u624d\u80fd\u4f9d\u8d56\u7b54\u6848\u3002"
     );
     expect(roundTwoText).not.toContain("I'm responding to First viewpoint");
+    expect(roundTwoText).not.toContain("\u6211\u5728\u56de\u5e94 \u7b2c\u4e00\u89c6\u89d2");
+    expect(roundTwoText).not.toContain("\u6211\u4f1a\u628a\u8fd9\u4e2a\u9009\u9879\u7559\u5728\u8ba8\u8bba\u5ba4\u91cc\u4f9b\u5bf9\u7167");
     expect(roundOneText).not.toContain("Shared a strongest current option");
     expect(roundOneText).not.toContain("Candidate A");
     expect(roundOneText).not.toContain("First viewpoint");
@@ -7787,10 +7794,10 @@ describe("@deliberum/web shell", () => {
     );
     expect(updateRoundText).toContain("\u7b2c\u4e00\u89c6\u89d2");
     expect(updateRoundText).toContain(
-      "\u6211\u628a\u4e00\u4efd\u72ec\u7acb\u7b54\u6848\u653e\u5165\u8ba8\u8bba\u5ba4"
+      "\u8865\u5145\u4e00\u4e2a\u53ef\u4f9b\u5bf9\u7167\u7684\u72ec\u7acb\u7b54\u6848"
     );
     expect(updateRoundText).toContain(
-      "\u73b0\u5728 \u7b2c\u4e00\u89c6\u89d2 \u7684\u7b54\u6848\u5df2\u53ef\u89c1"
+      "\u8865\u5145\u53e6\u4e00\u4e2a\u53ef\u4f9b\u5bf9\u7167\u7684\u72ec\u7acb\u89c6\u89d2"
     );
     expect(updateRoundText).toContain("\u8d28\u7591\u8005");
     expect(updateRoundText).toContain("\u7b49\u5f85\u5ba1\u67e5\u5206\u6b67");
@@ -8086,21 +8093,18 @@ describe("@deliberum/web shell", () => {
     expect(screen.getAllByText("Discussion round 2").length).toBeGreaterThan(0);
     expect(updateText).toContain("Shared a follow-up reply");
     expect(updateText).toContain("Answered another participant");
-    expect(updateText).toContain(
-      "I'm responding to First viewpoint's latest point"
-    );
+    expect(updateText).toContain("Adding another follow-up view for comparison.");
+    expect(updateText).not.toContain("I'm responding to First viewpoint's latest point");
     expect(updateText).toContain("Discussion organizer");
-    expect(updateText).toContain("I connected the follow-up replies into updated options");
+    expect(updateText).toContain(
+      "Updated options, unresolved points, must-cover items, and evidence gaps are ready to review."
+    );
     expect(updateText).toContain("Skeptic");
     expect(updateText).toContain("Raised an open disagreement");
-    expect(updateText).toContain(
-      "I am replying to the updated options with the disagreement that still needs resolution."
-    );
+    expect(updateText).toContain("This disagreement still needs resolution before the answer changes.");
     expect(updateText).toContain("Evidence checker");
     expect(updateText).toContain("Reviewed evidence gaps");
-    expect(updateText).toContain(
-      "I am checking the evidence behind this follow-up round before the room updates the conclusion."
-    );
+    expect(updateText).toContain("Evidence needs checking before the answer changes.");
     expect(updateText).not.toContain("Now that First viewpoint's answer is visible");
   });
 
