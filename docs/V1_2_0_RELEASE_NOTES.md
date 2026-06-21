@@ -1,10 +1,6 @@
 # Deliberum v1.2.0 Release Notes
 
-Status: release-candidate notes prepared for the Human-First Web Product
-Release. The `v1.2.0` tag and GitHub Release have not been created yet.
-
-The current release-candidate commit is
-`80614914ed0491567c67d940c8dbbba09202eacf`.
+Status: published source-checkout local-first product release.
 
 Package metadata versions remain `0.0.0`; Deliberum currently uses annotated
 git tags and release notes for release identity instead of package version
@@ -106,9 +102,9 @@ After the local service starts, open `http://127.0.0.1:3877/`, then use Connect
 AI to configure and test an OpenAI-compatible provider before starting a
 model-backed discussion.
 
-## Release-Candidate Evidence
+## Release Evidence
 
-Fresh release-candidate verification was run before these notes were added.
+Fresh release verification was run during final release preparation.
 
 Source-checkout path:
 
@@ -116,8 +112,8 @@ Source-checkout path:
   during TLS setup before the repository could be cloned.
 - As a fallback, an isolated source checkout was created with
   `git clone --no-local` from the repository root.
-- The isolated checkout resolved to
-  `80614914ed0491567c67d940c8dbbba09202eacf` with a clean tracked worktree.
+- The isolated checkout resolved to the release-candidate `main` commit with a
+  clean tracked worktree.
 - The isolated checkout passed:
   - `node scripts/check-local-prerequisites.mjs`
   - `sh scripts/start-local-product.sh --dry-run`
@@ -158,14 +154,24 @@ v1.2.0 does not add:
 - a database migration framework;
 - WSL2 as a supported platform before CI verifies the local-start path there.
 
-## Final Release Steps Still Pending
+## Upgrade Notes
 
-Before publishing v1.2.0:
+Source-checkout users can upgrade with:
 
-1. run full local CI after these release notes are committed;
-2. push and verify GitHub CI on `main`;
-3. create the annotated `v1.2.0` tag;
-4. push the tag;
-5. create the GitHub Release from this file;
-6. mark `v1.2.0` as Latest;
-7. verify source checkout from the final `v1.2.0` tag.
+```bash
+git fetch --tags
+git checkout v1.2.0
+```
+
+Then start Deliberum with the platform-specific first-run command:
+
+```bash
+# macOS or Ubuntu Linux
+sh scripts/start-local-product.sh
+
+# native Windows
+node scripts/start-local-product.mjs
+```
+
+Back up `.deliberum/deliberum.sqlite` before upgrading local data if the
+previous checkout contains important discussion history.
